@@ -572,22 +572,17 @@ def reveal_secret_value(request_id: str):
         _validate_secret_operation_csrf()
         if not _secret_reveal_step_up_active():
             raise ValueError('Reauthenticate before performing a protected Secret reveal.')
-        result = execute_secret_value_reveal(request_id, user_id=current_user.id)
-        revealed_value = result
-        feedback = _record_secret_activity(
-            event_type='kubernetes_secret_revealed',
-            status='success',
-            title='Secret value revealed',
-            message=(
-                f'{result.key_name} was revealed once for '
-                f'{result.expires_in_seconds} seconds. The value was not stored by KAORI.'
-            ),
-            action_url=url_for(
+        result = execute_secret_value_reveal(
+            request_id,
+            user_id=current_user.id,
+            audit_action_url=url_for(
                 'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
             ),
-            action_label='Open Protected Secret Reveal',
-            metadata=result.metadata,
         )
+        revealed_value = result
+        # The one-time transition and Activity Audit were committed together.
+        # Never write the same success event again through best-effort feedback.
+        feedback = result.audit_feedback
     except ValueError as exc:
         # A failed locking/API query can leave PostgreSQL in an aborted transaction.
         # Reset the session before reading request metadata or writing activity data.

@@ -66,6 +66,8 @@ The application must never:
 Protected Reveal is the only plaintext-read workflow. It decodes one approved key, returns a no-store one-time response, clears in-memory buffers, and marks the request consumed.
 The one-time consumption path serializes the `SecretRevealRequest` row with a PostgreSQL `FOR UPDATE OF secret_reveal_requests` boundary while suppressing model-level joined eager relationships. This prevents nullable requester/approver/inventory joins from entering the locking SELECT and keeps the lock scoped to the request row that owns the one-time state transition.
 
+**Reveal Once audit durability:** The consumed request state and its payload-free Activity Audit event are staged in the same database transaction. The committed event uses the existing audit-only delivery policy (no Notification Deck item). If audit persistence or transaction commit fails, the request transition rolls back and no plaintext result is returned. The operator must retry only after reviewing the failure; normal authorization, live UID, policy and one-time locking checks still apply.
+
 ## Workflow contracts
 
 ### Create Secret
