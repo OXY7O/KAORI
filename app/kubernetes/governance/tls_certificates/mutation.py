@@ -12,6 +12,10 @@ from app.kubernetes.governance.tls_certificates.constants import TLS_CRT_KEY, TL
 from app.models import Cluster
 
 
+class TLSSecretIdentityError(ValueError):
+    """An immutable Secret target could not be proven safe for rotation."""
+
+
 def read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
     return (
         read_required_upload_bytes(
@@ -48,14 +52,14 @@ def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
         raise ValueError('The live Kubernetes Secret is no longer a TLS Secret.')
     expected_uid = str(getattr(record, 'secret_uid', None) or '')
     if not expected_uid or not live_uid:
-        raise ValueError('TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.')
+        raise TLSSecretIdentityError('TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.')
     try:
         expected_object_uid = str(UUID(expected_uid))
         live_object_uid = str(UUID(live_uid))
     except (TypeError, ValueError) as exc:
-        raise ValueError('TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.') from exc
+        raise TLSSecretIdentityError('TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.') from exc
     if expected_object_uid != live_object_uid:
-        raise ValueError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
+        raise TLSSecretIdentityError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
     if not resource_version:
         raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
 
