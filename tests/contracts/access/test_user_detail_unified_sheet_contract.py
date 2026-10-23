@@ -257,3 +257,12 @@ def test_uat6_user_detail_left_headers_use_source_backed_labels() -> None:
     assert 'mt-3 hidden xl:flex' in shared
     assert 'table_label.metadata_label(badge' in shared
     assert 'table_label.status_label(badge, badge_tone' in shared
+
+
+def test_directory_credential_boundary_copy_is_concise_and_authoritative() -> None:
+    context = source('app/access/users/directory.py')
+    detail = source('app/templates/access/users/partials/_user_detail.html')
+    assert 'Directory verifies passwords; KAORI manages identity links and access.' in context
+    assert 'The directory validates the password; KAORI stores only' not in context
+    assert 'identity_context.credential_detail' in detail
+    assert 'data-kaori-user-credential-boundary' in detail
