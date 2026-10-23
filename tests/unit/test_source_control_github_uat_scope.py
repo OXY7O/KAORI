@@ -103,6 +103,7 @@ def test_uat_templates_keep_committed_unknown_vs_zero_and_htmx_pagination():
     assert 'inventory.total == 0' in inventory
     assert 'hx-target="#source-control-inventory"' in inventory
     assert '[5, 10, 25, 50]' in inventory
+    assert 'hx-trigger="every 15s"' in inventory
     assert 'exact_default_branch_sha' in inventory
     assert 'revision_observed_at' in inventory
     assert 'action_form.hidden_tag()' in detail
