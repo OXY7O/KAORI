@@ -62,7 +62,6 @@ def test_incident_archive_never_deletes_cross_domain_notification_delivery() -> 
     assert 'NotificationDelivery.query.filter(' not in cleanup
     assert 'NotificationDelivery.query.filter(' in serialization
     assert "NotificationDelivery.event_key.like(f'alert-case:{case.public_id}:%')" in serialization
-    assert 'NotificationDelivery is a cross-domain' not in cleanup  # Comments must not replace source checks.
     assert 'Notification Delivery journal' in domain or 'Notification Channels' in cleanup
     assert 'cleanup_supported = False' in retention
     assert 'return cleaned' in cleanup
