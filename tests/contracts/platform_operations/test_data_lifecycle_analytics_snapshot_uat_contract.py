@@ -17,6 +17,7 @@ from app.platform_operations.data_lifecycle.service import queue_lifecycle_execu
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 
 ROOT = Path(__file__).resolve().parents[3]
+SERVICE = 'app.platform_operations.data_lifecycle.service'
 WORKSPACE = 'app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html'
 CUTOFF = datetime(2026, 10, 1, tzinfo=UTC)
 
@@ -129,11 +130,11 @@ def test_analytics_manual_archive_buttons_create_canonical_job_with_info_toast(m
     job = SimpleNamespace(id=27, celery_task_id='synthetic-uat-task')
     with (
         app.app_context(),
-        patch('app.platform_operations.data_lifecycle.service.get_archive_domain', return_value=domain),
-        patch('app.platform_operations.data_lifecycle.service.get_policy', return_value=SimpleNamespace(enabled=True)),
-        patch('app.platform_operations.data_lifecycle.service.enqueue_canonical_job', return_value=(job, True)) as queue,
-        patch('app.platform_operations.data_lifecycle.service.record_operational_activity', side_effect=lambda **kw: kw),
-        patch('app.platform_operations.data_lifecycle.service.url_for', return_value='/test/jobs'),
+        patch(f'{SERVICE}.get_archive_domain', return_value=domain),
+        patch(f'{SERVICE}.get_policy', return_value=SimpleNamespace(enabled=True)),
+        patch(f'{SERVICE}.enqueue_canonical_job', return_value=(job, True)) as queue,
+        patch(f'{SERVICE}.record_operational_activity', side_effect=lambda **kw: kw),
+        patch(f'{SERVICE}.url_for', return_value='/test/jobs'),
     ):
         feedback = queue_lifecycle_execution(
             domain_name='analytics_snapshot', mode=mode, user_id=7,
@@ -159,11 +160,11 @@ def test_disabled_analytics_policy_does_not_queue_job_and_warns_in_deck() -> Non
         build_policy=lambda: _fake_policy(enabled=False),
     )
     with (
-        patch('app.platform_operations.data_lifecycle.service.get_archive_domain', return_value=domain),
-        patch('app.platform_operations.data_lifecycle.service.get_policy', return_value=SimpleNamespace(enabled=False)),
-        patch('app.platform_operations.data_lifecycle.service.enqueue_canonical_job') as queue,
-        patch('app.platform_operations.data_lifecycle.service.record_operational_activity', side_effect=lambda **kw: kw),
-        patch('app.platform_operations.data_lifecycle.service.url_for', return_value='/test/lifecycle'),
+        patch(f'{SERVICE}.get_archive_domain', return_value=domain),
+        patch(f'{SERVICE}.get_policy', return_value=SimpleNamespace(enabled=False)),
+        patch(f'{SERVICE}.enqueue_canonical_job') as queue,
+        patch(f'{SERVICE}.record_operational_activity', side_effect=lambda **kw: kw),
+        patch(f'{SERVICE}.url_for', return_value='/test/lifecycle'),
     ):
         feedback = queue_lifecycle_execution(
             domain_name='analytics_snapshot', mode='archive_only', user_id=7,
@@ -179,10 +180,10 @@ def test_analytics_policy_save_is_committed_through_standard_feedback() -> None:
         build_policy=lambda: _fake_policy(enabled=True),
     )
     with (
-        patch('app.platform_operations.data_lifecycle.service.get_archive_domain', return_value=domain),
-        patch('app.platform_operations.data_lifecycle.service.update_policy') as update,
-        patch('app.platform_operations.data_lifecycle.service.record_operational_activity', side_effect=lambda **kw: kw),
-        patch('app.platform_operations.data_lifecycle.service.url_for', return_value='/test/lifecycle'),
+        patch(f'{SERVICE}.get_archive_domain', return_value=domain),
+        patch(f'{SERVICE}.update_policy') as update,
+        patch(f'{SERVICE}.record_operational_activity', side_effect=lambda **kw: kw),
+        patch(f'{SERVICE}.url_for', return_value='/test/lifecycle'),
     ):
         feedback = update_lifecycle_policy(
             domain_name='analytics_snapshot',
