@@ -150,3 +150,27 @@ class NotificationDelivery(db.Model):
     )
 
     channel: Mapped[NotificationChannel] = relationship('NotificationChannel', back_populates='deliveries')
+
+class NotificationDeliveryIdentity(db.Model):
+    """Inert durable event/channel reservation identity for future archive safety.
+
+    Schema-only first slice of #2868. The existing delivery journal is still
+    authoritative. Do not read this ledger for dispatch, backfill, delete or
+    cleanup until the migration/cutover contracts receive explicit admission.
+    """
+
+    __tablename__ = 'notification_delivery_identities'
+    __table_args__ = (
+        UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_identity_event'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    channel_id: Mapped[int] = mapped_column(
+        db.ForeignKey('notification_channels.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
+    )
+    event_key: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    # Historical source reference, deliberately not an FK to removable hot data.
+    source_delivery_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True, unique=True)
+    first_seen_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
