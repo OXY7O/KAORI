@@ -1,0 +1,77 @@
+"""KAORI Identity Provider Registry actions and expanded detail UI contract (#2932)."""
+
+from pathlib import Path
+
+from jinja2 import Environment
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding="utf-8")
+
+
+def test_registry_uses_shared_compact_accessible_view_more_action() -> None:
+    registry = read("app/templates/access/identity_providers/partials/_registry.html")
+    shared = read("app/templates/components/details/_expandable_row.html")
+
+    Environment().parse(registry)
+    assert "expandable.toggle_button('identity-providers'" in registry
+    assert "open_label='View More', close_label='View Less', compact=true" in registry
+    assert "expandable.static_detail_row(detail_row_id, detail_target_id, 6)" in registry
+    assert "data-detail-toggle" in shared
+    assert 'aria-expanded="false"' in shared
+    assert 'aria-controls="{{ row_id }}"' in shared
+    assert "url_for('identity_providers.edit', provider_id=provider.id)" not in registry
+    assert 'access/identity_providers/partials/_provider_detail.html' in registry
+    assert 'registry_ui.footer(' in registry
+    assert "form_id='identity-provider-registry-filter-form'" in registry
+
+
+def test_expanded_detail_reuses_unified_resource_sheet_instead_of_four_cards() -> None:
+    detail = read("app/templates/access/identity_providers/partials/_provider_detail.html")
+    macros = read("app/templates/components/details/_detail_content.html")
+
+    Environment().parse(detail)
+    assert '{% import "components/details/_detail_content.html" as detail_ui %}' in detail
+    assert "detail_ui.resource_sheet()" in detail
+    assert detail.count("detail_ui.inventory_section(") == 2
+    assert detail.count("compact_layout=true") == 2
+    assert "data-kaori-idp-expanded-detail" in detail
+    assert "data-kaori-idp-connection-facts" in detail
+    assert "data-kaori-idp-access-facts" in detail
+    assert "xl:grid-cols-4" not in detail
+    assert "detail_ui.detail_card(" not in detail
+    assert "data-kaori-unified-resource-sheet" in macros
+    assert "data-kaori-inventory-section-layout" in macros
+    assert detail.index("'Provider & Connection'") < detail.index("'Identity & Access'")
+    assert "row.connection" in detail
+    assert "row.credential_reference" in detail
+    assert "row.access_model.label" in detail
+    assert "provider.default_role" in detail
+    assert "row.identity_links" in detail
+    # The main table already owns configuration and enabled indicators.
+    assert "row.configuration.label" not in detail
+    assert "row.state.label" not in detail
+
+
+def test_actions_use_shared_button_variants_and_preserve_permission_gates() -> None:
+    detail = read("app/templates/access/identity_providers/partials/_provider_detail.html")
+    shared = read("app/templates/components/action_button.html")
+
+    Environment().parse(detail)
+    assert '{% import "components/action_button.html" as action_button %}' in detail
+    assert "action_button.classes('secondary')" in detail
+    assert "action_button.classes('primary')" in detail
+    assert "data-kaori-idp-detail-actions" in detail
+    assert "url_for('identity_providers.validate', provider_id=provider.id)" in detail
+    assert 'name="csrf_token"' in detail
+    assert "url_for('identity_providers.edit', provider_id=provider.id)" in detail
+    assert "url_for('identity_providers.directory_provisioning')" in detail
+    assert "current_user.has_permission('identity_providers.manage')" in detail
+    assert "current_user.has_permission('identity_providers.provision')" in detail
+    assert "'directory'" in detail
+    assert "Read-only provider details" in detail
+    assert "inline-flex min-h-9" not in detail
+    assert "bg-kaori-primary px-3" not in detail
+    assert "disabled:cursor-not-allowed" in shared
