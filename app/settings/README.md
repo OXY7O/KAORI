@@ -11,8 +11,8 @@ Create a Settings Overview only when at least three independently owned Settings
 
 ## Loading and action feedback contract
 
-- General and Account tab switches use `components/workspace_tabs.html::render_query_tabs` as the shared query-backed HTMX tab authority and `components/loading_bar.html` for the workspace loading indicator.
-- Settings save/password actions use the same indicator and shared primary action-button primitive.
+- General and Account tab switches use `components/workspace_tabs.html::render_query_tabs` as the shared query-backed HTMX tab authority. **No visual loading bar is allowed** on either Settings page under the superseding #2225 UAT decision.
+- Each page retains its own existing `htmx-indicator sr-only` live `role=status` / `aria-live=polite` region for screen-reader pending feedback; `hx-indicator` must target this nonvisual region. Settings save/password actions use their existing shared primary action-button pending state, field validation and operational toast. Do not reintroduce `components/loading_bar.html` into either workspace.
 - Successful preference and credential mutations use the shared operational toast.
 - User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.
 - Automatic browser-timezone synchronization is intentionally silent because it is background preference convergence, not a user-triggered CRUD action.
