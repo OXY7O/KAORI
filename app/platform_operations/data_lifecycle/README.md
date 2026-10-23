@@ -82,6 +82,42 @@ change Celery retries, cleanup, policy, or archive semantics. Review
 light/dark, focus, responsive, varied-domain layouts, and status-aware
 wording in DevContainer before human Visual QA acceptance.
 
+## Policy action feedback and Alert Incidents guide (#2929)
+
+The Alert Incidents Policy title uses the canonical **title-level KAORI
+Info Tip Guide** (keyboard, pointer and touch) for source scope, closed-case
+admission and archive/cleanup boundaries. The Incident Timeline summary and
+Failure Recovery operator sentence were adjusted without modifying
+retention behavior.
+
+All four Retention Policies controls retain their owning permissions and
+routes: **Preview** is read-only; **Save Policy** persists the supplied
+policy; **Archive Only** and **Archive & Cleanup** request a canonical
+maintenance `JobExecution`, not an inline archive job. Archive & Cleanup
+remains disallowed on non-destructive evidence domains. All state-changing
+buttons use explicit submit types, CSRF-protected forms and HTMX in-flight
+submission disabling. Read-only Preview GET and archive POST return a
+full workspace on non-HTMX navigation, rather than an orphaned fragment.
+
+Feedback uses the existing `record_operational_activity` /
+`operation_feedback_oob` / `operational_toast` pipeline:
+- **Policy save success:** foreground success toast + Activity Audit, no
+  routine Notification Deck entry.
+- **Manual job queued:** foreground info toast + Activity Audit; the
+  canonical job appears in **Notification Deck → Active Work** and
+  **Jobs & Executions**, never as a duplicate queued Notification row.
+- **Rejected/failed save, dispatch or verification:** warning/error toast,
+  persistent **Notification Deck** entry where actionable, and Activity
+  Audit attempt evidence when persistence succeeds.
+- **Read-only Preview:** inline selected-boundary result, no artificial
+  success toast and no job/Notification row.
+- **Archive verification:** direct toast and Activity Audit for the
+  foreground response; verified status is source-owned Archive History.
+
+This is a presentation and feedback-delivery boundary only. Storage,
+retention thresholds, schedule admission, cleanup and retry semantics
+are unchanged. Browser/worker/Deck runtime UAT remains required.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
