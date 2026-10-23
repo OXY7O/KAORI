@@ -119,3 +119,39 @@ The Generated Reports table remains a hot operational registry. Data Lifecycle o
 ### Storage ownership
 
 Lifecycle domains do not configure independent archive buckets. Hot source storage remains domain-owned (for example, Runtime Observations live in PostgreSQL table `integration_runtime_observations`), while every domain writes verified cold evidence to the shared **Archive Storage** profile. Runtime Observations archive structured provider-neutral evidence as JSONL.GZ + manifest JSON and do not carry supplemental binary artifacts. Generated Reports are the exception at the payload level: their PDF/XLSX/CSV files are copied as supplemental evidence into the same shared archive target. The Retention Policies workspace exposes this boundary without probing the backend; readiness and verification stay demand-loaded in **Archive Storage**.
+
+## Notification Delivery — archive-only safety admission (#2848)
+
+`notification_delivery` is a separate provider-neutral archive domain for
+`notification_deliveries`; it is **not** the persistent user Notification Center
+(`operational_activity`) and **not** a substitute for Activity Audit or Alert
+Incident archives. It uses the shared preview, immutable JSONL.GZ and manifest,
+verified storage, canonical Jobs, policy and permission controls.
+
+First admission is **paused, manual, archive-only** (90-day eligible hot boundary,
+365-day archive-retention proposal, batch size 1,000). Only aged `sent` and
+`skipped` records with both `created_at` and `updated_at` older than the cutoff
+are selected. `queued` and all `failed` attempts are protected while recovery
+rules remain provider/domain-owned. Archives retain event/channel correlation,
+status, attempts and timestamp fields, but **not** `payload_json`, encrypted
+transport replay envelopes, credentials or untrusted provider error strings.
+Archive export requires the existing Data Lifecycle permissions and shared
+archive storage protections; operators should still treat correlation
+identifiers as sensitive.
+
+**Hot cleanup, scheduled dispatch, and any destructive purge of hot rows are
+NOT ADMITTED**. The policy UI permits Archive Only; both mutation/queue and
+engine preflight reject unsupported cleanup, and the adapter itself refuses
+direct cleanup. No automatic policy is created by GET. A manually enabled,
+persisted policy may be used for explicit archive-only UAT after storage
+readiness review. Repeated archive-only executions may produce overlapping
+verified bundles; they do not relieve hot storage pressure yet. The existing
+archive-retention purge contract still applies to expired archive *objects*.
+
+The later #2850 safety foundation must implement durable dedup keys,
+cross-domain Alert Incident deletion ownership, channel lifetime dependency
+and source-linked historical aggregate preservation, with migration/backfill
+and concurrency tests, **before** hot cleanup can be admitted. The operational
+journal and Overview remain truthful only for committed hot state in this
+phase (currently the complete delivery history). Archive History lists
+artifact-level bundles only; it does not provide individual delivery lookup.
