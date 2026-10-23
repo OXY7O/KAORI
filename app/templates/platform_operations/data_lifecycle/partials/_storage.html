@@ -1,7 +1,8 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% set storage_ready = lifecycle.storage.status in ['ready', 'verified', 'reachable'] %}
-{% set worker_ready = lifecycle.worker.queue_ready %}
+{% set storage_verified = lifecycle.storage.last_verified_at and lifecycle.storage.status in ['verified', 'ready'] %}
+{% set storage_pending = lifecycle.storage.status in ['reachable', 'ready', 'configured'] and not storage_verified %}
+{% set storage_tone = 'normal' if storage_verified else ('info' if storage_pending else 'warning') %}
 <section class="{{ table_ui.block_classes() }}">
     <div class="{{ table_ui.block_header_classes() }}">
         <div class="flex items-start gap-3">
@@ -11,7 +12,7 @@
                 <p class="{{ table_ui.block_description_classes() }}">Shared archive target, verification evidence, and lifecycle execution dependencies.</p>
             </div>
         </div>
-        {{ table_label.status_label(lifecycle.storage.status_label, 'normal' if storage_ready else 'warning', 'database') }}
+        {{ table_label.status_label(lifecycle.storage.status_label, storage_tone, 'database') }}
     </div>
     <div class="space-y-5 p-5 lg:p-6">
         <section aria-label="Archive storage posture">
@@ -54,8 +55,8 @@
                 </div>
             </div>
         </section>
-        <div class="grid gap-5 xl:grid-cols-12">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-7"
+        <div class="grid gap-4 xl:grid-cols-12">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-6"
                      aria-labelledby="archive-target-contract-title">
                 <header class="border-b border-outline-subtle px-4 py-3.5">
                     <h3 id="archive-target-contract-title"
@@ -99,51 +100,51 @@
                     </div>
                 </dl>
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-6"
                      aria-labelledby="archive-execution-contract-title">
                 <header class="border-b border-outline-subtle px-4 py-3.5">
                     <h3 id="archive-execution-contract-title"
                         class="text-base font-semibold leading-6 text-content-primary">Execution Contract</h3>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Retention intent runs asynchronously through the canonical maintenance path.</p>
                 </header>
-                <div class="space-y-3 p-4">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="timer" class="h-3.5 w-3.5"></i></span>
-                        <div>
+                <div class="grid gap-3 p-4 sm:grid-cols-2">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="timer" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Dispatcher</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                                {% if lifecycle.scheduler_enabled %}
-                                    Enabled · checks due persisted policies every 15 minutes.
-                                {% else %}
-                                    <span class="font-semibold text-status-warning-text">Disabled globally</span> · scheduled policies remain saved but will not dispatch automatically.
-                                {% endif %}
-                            </p>
                         </div>
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                            {% if lifecycle.scheduler_enabled %}
+                                Enabled · checks due policies every 15 minutes.
+                            {% else %}
+                                <span class="font-semibold text-status-warning-text">Disabled globally</span> · no automatic dispatch.
+                            {% endif %}
+                        </p>
                     </div>
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i></span>
-                        <div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar-clock" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Scheduled Run</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Requires both Policy enabled and Scheduled execution.</p>
                         </div>
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Requires enabled policy and permitted scheduling.</p>
                     </div>
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i></span>
-                        <div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Cleanup stays blocked; transient failures retry once, then require manual retry.</p>
                         </div>
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Transient failures retry once, then need manual retry.</p>
                     </div>
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></span>
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">Archive Purge Batch</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Each run purges up to {{ lifecycle.purge_batch_size }} expired artifacts. Partial deletion becomes Purge Failed and retries safely later.</p>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="trash-2" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                            <p class="text-xs font-semibold text-content-primary">Purge Batch Limit</p>
                         </div>
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Up to {{ lifecycle.purge_batch_size }} expired artifacts per admitted run; partial failures remain retryable.</p>
                     </div>
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="shield" class="h-3.5 w-3.5"></i></span>
-                        <div>
+                    <div class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:col-span-2">
+                        <i data-lucide="shield" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                        <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-primary">Worker Isolation</p>
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Production uses the dedicated maintenance worker service.</p>
                         </div>
@@ -157,7 +158,7 @@
                 <div>
                     <h3 id="archive-safety-boundary-title"
                         class="text-sm font-semibold text-content-primary">Archive-First Safety Boundary</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Hot records cannot be removed until archive evidence is written and verified.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Hot records require verified archive evidence and source-specific cleanup admission.</p>
                 </div>
                 {{ table_label.status_label('Cleanup Gated', 'info', 'shield-check') }}
             </div>
@@ -166,7 +167,7 @@
                     ('1','Freeze Boundary','Select immutable eligible source IDs.'),
                     ('2','Write Archive','Store JSONL.GZ data and manifest.'),
                     ('3','Verify Evidence','Validate data and manifest checksums.'),
-                    ('4','Cleanup Hot Data','Delete only rows inside the verified boundary.')
+                    ('4','Cleanup (if admitted)','Delete eligible rows only when authorized.')
                     ] %}
                     <div class="rounded-lg border border-outline-default bg-surface-card p-3.5">
                         <div class="flex items-center gap-2">
@@ -178,18 +179,25 @@
                 {% endfor %}
             </div>
         </section>
-        <div class="rounded-xl border border-outline-default {{ 'bg-status-normal-soft' if storage_ready else 'bg-status-warning-soft' }} p-4">
-            <div class="flex items-start gap-3">
-                <i data-lucide="{{ 'badge-check' if storage_ready else 'triangle-alert' }}"
-                   class="mt-0.5 h-4 w-4 {{ 'text-status-normal-text' if storage_ready else 'text-status-warning-text' }}"></i>
-                <div>
-                    <p class="text-sm font-semibold {{ 'text-status-normal-text' if storage_ready else 'text-status-warning-text' }}">Storage Interpretation</p>
+        <section class="rounded-lg border border-outline-subtle {{ 'bg-status-normal-soft' if storage_verified else ('bg-status-warning-soft' if not storage_pending else 'bg-surface-subtle') }} px-4 py-3"
+                 aria-label="Storage interpretation">
+            <div class="flex flex-wrap items-start gap-3">
+                <i data-lucide="{{ 'badge-check' if storage_verified else ('info' if storage_pending else 'triangle-alert') }}"
+                   class="mt-0.5 h-4 w-4 shrink-0 {{ 'text-status-normal-text' if storage_verified else ('text-status-info-text' if storage_pending else 'text-status-warning-text') }}"
+                   aria-hidden="true"></i>
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-sm font-semibold text-content-primary">Storage Interpretation</h3>
+                        {{ table_label.status_label('Verified evidence' if storage_verified else ('Verification pending' if storage_pending else 'Needs attention'), storage_tone) }}
+                    </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ lifecycle.storage.detail }}</p>
                     {% if lifecycle.storage.status == 'reachable' %}
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Endpoint reachability proves transport only. A verified archive is the write/read/checksum evidence.</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Transport reachable only; write/read/checksum verification awaits an archive execution.</p>
+                    {% elif lifecycle.storage.status == 'ready' and not storage_verified %}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">The local target is writable; archive integrity evidence is still pending.</p>
                     {% endif %}
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </section>
