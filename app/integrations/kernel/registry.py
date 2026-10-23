@@ -228,7 +228,9 @@ class IntegrationRegistry:
         key = (integration_type, provider_key)
         with self._lock:
             if key in self._implementations and not replace:
-                raise ValueError(f'Integration implementation {integration_type}:{provider_key} is already registered.')
+                raise ValueError(
+                    f'Integration implementation {integration_type}:{provider_key} is already registered.'
+                )
             self._implementations[key] = implementation
 
     def _load_builtins(self) -> None:
