@@ -11,6 +11,7 @@ import hmac
 from dataclasses import dataclass, field
 
 from app.extensions.db import db
+from app.integrations.provider_matrix import provider_kind
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.integrations.source_control.source_control.providers.github.auth import _positive_provider_id
 from app.integrations.source_control.source_control.providers.github.transport import (
@@ -96,6 +97,8 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
     trust a client-side proof or count. This is intentionally a double check.
     No hidden propagation of GitHub App PEM through Celery/job arguments.
     """
+    if not provider_kind('source_control', 'github').available:
+        raise GitHubProviderError('GitHub App provider admission is pending; registration is disabled.')
     name = _validate_name(values.name)
     _validate_configuration(values)
     app_id, installation_id, account_id = _verified_ids(values)

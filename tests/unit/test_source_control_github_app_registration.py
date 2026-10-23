@@ -108,3 +108,12 @@ def test_webhook_secret_requires_safe_length_and_characters(webhook_secret):
 def test_secret_digest_comparison_handles_unicode_without_exposing_value():
     assert registration._same_secret('unicode-\u2603', 'unicode-\u2603')
     assert not registration._same_secret('unicode-\u2603', 'unicode-\u2602')
+
+
+def test_registration_is_blocked_while_provider_is_only_planned(monkeypatch):
+    def reject_network(_values):
+        raise AssertionError('planned provider must fail before network or database')
+
+    monkeypatch.setattr(registration, 'test_connection', reject_network)
+    with pytest.raises(GitHubProviderError, match='admission is pending'):
+        registration.save_tested_connection(_input())
