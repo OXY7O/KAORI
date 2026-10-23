@@ -279,3 +279,41 @@ def test_no_alertcase_or_notification_side_effects_exist_in_source_module():
     assert 'AlertRoutingPolicy' not in code
     assert 'send_channel' not in code
     assert 'get_alerts(' not in code
+
+
+def test_identical_upstream_fingerprint_cannot_correlate_across_vaults(accepted_source):
+    first_vault, _source, first_binding = accepted_source
+    _commit(first_binding.id, [_alert(first_vault.id)])
+    first_handle = read_vault_alert_observations(
+        binding_id=first_binding.id, now=AT,
+    )['entries'][0]['handle']
+    second_vault = _instance('secrets_pki', 'vault')
+    second_source = _instance('alert_source', 'alertmanager')
+    second_binding = _scoped_binding(second_vault, second_source)
+    _commit(second_binding.id, [_alert(second_vault.id)])
+    second_handle = read_vault_alert_observations(
+        binding_id=second_binding.id, now=AT,
+    )['entries'][0]['handle']
+    assert first_handle != second_handle
+
+
+def test_binding_replaced_after_snapshot_cannot_reuse_old_source_identity(accepted_source):
+    vault, source, binding = accepted_source
+    _commit(binding.id, [_alert(vault.id)])
+    source.enabled = False
+    new_source = _instance('alert_source', 'alertmanager')
+    new_binding = _scoped_binding(vault, new_source)
+    assert read_vault_alert_observations(
+        binding_id=new_binding.id, now=AT,
+    ) == {'state': 'unavailable', 'entries': None}
+
+
+def test_trusted_payload_failure_does_not_write_fingerprint_on_initial_failure(accepted_source):
+    vault, _source, binding = accepted_source
+    bad = _alert(vault.id)
+    bad['fingerprint'] = 'PRIVATE-PATH-RAW-VALUE'
+    outcome = _commit(binding.id, [bad])
+    assert outcome['state'] == 'blocked'
+    snapshot = AlertSignalSnapshot.query.one()
+    assert snapshot.payload_json is None
+    assert 'PRIVATE-PATH-RAW-VALUE' not in str(snapshot.last_error)

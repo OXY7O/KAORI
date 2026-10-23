@@ -247,7 +247,10 @@ def commit_vault_alert_observations(
     snapshot.last_attempt_at = observed
     snapshot.last_error = None
     db.session.commit()
-    return {'state': normalized['status'], 'observed_rows': len(normalized['entries']) if normalized['entries'] else None}
+    return {
+        'state': normalized['status'],
+        'observed_rows': len(normalized['entries']) if normalized['entries'] else None,
+    }
 
 
 def read_vault_alert_observations(
