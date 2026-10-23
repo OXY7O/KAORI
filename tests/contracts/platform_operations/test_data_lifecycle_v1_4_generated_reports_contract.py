@@ -105,7 +105,7 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'failed_retention_days' in workspace
     assert 'archived_retention_days' in workspace
     assert 'max="{{ 2500 if selected.name == \'generated_report\' else 25000 }}"' in workspace
-    assert 'verify SHA-256 before the source artifact or database row can be cleaned' in workspace
+    assert 'verifying SHA-256 before source-file or row cleanup' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
 
 
@@ -153,3 +153,24 @@ def test_report_exports_stamp_the_canonical_generated_report_hot_retention_windo
     for renderer in (pdf_renderer, csv_renderer):
         assert 'get_generated_report_hot_retention_days' in renderer
         assert 'retention_days=get_generated_report_hot_retention_days()' in renderer
+
+def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms() -> None:
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    generated = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
+    workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+
+    assert 'Source-owned AuditEvent evidence; manual Archive Only.' in presentation
+    assert 'Closed alert cases, operator evidence, delivery, and postmortems.' in presentation
+    assert 'Report metadata and retained PDF, XLSX, or CSV evidence.' in generated
+    assert 'Ready, Failed, and Archived reports past their status-specific hot retention.' in generated
+    assert (
+        'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.'
+        in generated
+    )
+    assert 'Source files stay intact until archive and supplements pass verification.' in generated
+    assert (
+        'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '
+        'verifying SHA-256 before source-file or row cleanup.'
+    ) in workspace
+    assert 'Requested, Queued, Generating, and active regeneration remain protected.' in workspace
+
