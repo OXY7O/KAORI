@@ -206,6 +206,8 @@ def get_archive_download_path(
     artifact = db.session.get(ArchiveArtifact, archive_id)
     if artifact is None:
         raise LookupError('Archive record was not found.')
+    if artifact.domain == 'audit_event':
+        raise PermissionError('AuditEvent archive bundle export is not admitted pending source authorization.')
     if not artifact.is_downloadable:
         raise RuntimeError('Archive is not ready for download.')
     if not artifact.storage_backend:
