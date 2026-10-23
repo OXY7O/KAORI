@@ -136,12 +136,13 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
     assert sum(source.count('operational_section_card.shell_classes()') for source in sources.values()) == 8
 
     form = sources['app/templates/access/identity_providers/form.html']
-    assert 'components/operational_callout.html' in form
-    assert "operational_callout.semantic_surface_classes('normal' if test_passed else 'critical')" in form
-    assert 'border-status-normal-border' not in form
-    assert 'border-status-critical-border' not in form
-    assert 'aria-live="polite"' in form
+    # Test Connection now renders via the canonical toast stack in layouts/app.html.
+    assert 'components/operational_callout.html' not in form
+    assert 'test_result' not in form
     assert 'identity_provider_form.js' in form
+    layout = read('app/templates/layouts/app.html')
+    assert 'id="operational-toast-stack"' in layout
+    assert 'components/operational_toast.html' in layout
 
     sso = sources['app/templates/access/identity_providers/partials/_sso_configuration.html']
     assert 'components/operational_callout.html' in sso

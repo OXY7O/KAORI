@@ -54,6 +54,7 @@ from app.access.identity_providers.service import (
 from app.access.rbac.decorators import permission_required
 from app.common.admin_audit import record_admin_event
 from app.models import IdentityProvider, User
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 
 bp = Blueprint('identity_providers', __name__, url_prefix='/access/identity-providers')
 
@@ -195,31 +196,38 @@ def test_configuration(provider_id: int | None = None):
     actor = cast(User, current_user)
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
-    test_result: dict[str, str]
+    status = 'error'
+    title = 'Connection Test Blocked'
+    message = 'Complete the required provider fields before testing the current configuration.'
     if form.validate_on_submit():
         role_error = provider_default_role_assignment_error(
             actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
         )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
-            return render_template('access/identity_providers/form.html', **_form_context(form, provider))
-        candidate = IdentityProvider()
-        apply_identity_provider_configuration(candidate, configuration_from_form(form))
-        try:
-            message = validate_identity_provider(candidate)
-        except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
-            test_result = {'status': 'error', 'title': 'Connection Test Failed', 'message': str(exc)}
         else:
-            test_result = {'status': 'success', 'title': 'Connection Test Passed', 'message': message}
-    else:
-        test_result = {
-            'status': 'error',
-            'title': 'Connection Test Blocked',
-            'message': 'Complete the required provider fields before testing the current configuration.',
-        }
-    return render_template(
-        'access/identity_providers/form.html', **_form_context(form, provider, test_result=test_result)
+            candidate = IdentityProvider()
+            apply_identity_provider_configuration(candidate, configuration_from_form(form))
+            try:
+                message = validate_identity_provider(candidate)
+            except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
+                title, message = 'Connection Test Failed', str(exc)
+            else:
+                status, title = 'success', 'Connection Test Passed'
+
+    # Connection tests use canonical feedback while preserving unsaved form values.
+    # Only failures enter the Notification Deck; both outcomes retain Activity Audit.
+    identity_provider_feedback(
+        actor=actor,
+        event_type='identity_provider_connection_tested',
+        status=status,
+        title=title,
+        message=message,
+        provider_id=provider.id if provider else None,
+        provider_key=str(form.provider_key.data or ''),
+        delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
     )
+    return render_template('access/identity_providers/form.html', **_form_context(form, provider))
 
 
 @bp.post('/<int:provider_id>/validate')

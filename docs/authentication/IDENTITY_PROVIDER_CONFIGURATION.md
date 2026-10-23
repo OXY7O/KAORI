@@ -57,7 +57,7 @@ KAORI does not store the LDAP user's password.
 - Use TCP 636 for LDAPS or TCP 389 for StartTLS.
 - Install the issuing CA certificate in the KAORI container trust store when the LDAP certificate is private or internally issued.
 - The certificate hostname must match the hostname configured in **LDAP Server URI**.
-- Plain LDAP is intended only for isolated development testing.
+- The administrative UI offers encrypted LDAPS and StartTLS only. Plain LDAP is not selectable or accepted by the Identity Provider form, including in development.
 
 KAORI validates server certificates for LDAPS and StartTLS. StartTLS is negotiated before the bind credentials are sent.
 
@@ -76,7 +76,7 @@ It does not need account creation, password reset, group modification, or direct
 | KAORI field                        | Required value                                            | Active Directory example                             | Generic LDAP example                         |
 | ---------------------------------- | --------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------- |
 | LDAP Server URI                    | LDAP endpoint and optional port                           | `ldaps://dc01.example.com:636`                       | `ldaps://ldap.example.com:636`               |
-| TLS Mode                           | `LDAPS`, `StartTLS`, or development-only plain            | `LDAPS`                                              | `StartTLS`                                   |
+| TLS Mode                           | `LDAPS` or `StartTLS`            | `LDAPS`                                              | `StartTLS`                                   |
 | Base DN                            | Root of the searchable user subtree                       | `OU=Users,DC=example,DC=com`                         | `ou=people,dc=example,dc=com`                |
 | Bind DN                            | Read-only service account identity                        | `CN=svc-kaori,OU=Service Accounts,DC=example,DC=com` | `uid=svc-kaori,ou=service,dc=example,dc=com` |
 | Bind Password Environment Variable | Environment-variable name containing the service password | `KAORI_LDAP_BIND_PASSWORD`                           | `KAORI_LDAP_BIND_PASSWORD`                   |
@@ -114,6 +114,8 @@ KAORI_LDAP_BIND_PASSWORD=replace-with-directory-service-password
 
 In Docker Compose, make the variable available to the web application container. Production deployments should source it from the deployment secret mechanism rather than committing it to the repository.
 
+For VS Code Dev Container UAT using the supported F5 Flask Debug profiles, `.vscode/launch.json` explicitly reads `${workspaceFolder}/.env`. After writing/updating the ignored `.env` file (using masked local input), stop and start the **Flask debugger process** to load the new secret. Merely editing `.env` or running a standalone `ldap3` script does **not** update an already-running application process environment. Do not rebuild the Dev Container solely for this; its temporary `/etc/hosts` and CA trust setup may be lost. For Compose-launched non-debug processes, environment is loaded at container creation and requires a separately controlled service recreate (without volume deletion) or an approved equivalent mechanism.
+
 The value entered in the KAORI provider form is only:
 
 ```text
@@ -124,7 +126,7 @@ KAORI_LDAP_BIND_PASSWORD
 
 1. Save the LDAP provider while disabled.
 2. Ensure the bind secret is present in the running KAORI container.
-3. Run **Validate**. This opens the configured connection, negotiates TLS when selected, and performs the service bind.
+3. Run **Test Connection** on the unsaved form, or **Validate** on an existing provider. Both test encrypted transport and service bind; the test result uses the canonical Operational Toast. Failed tests appear in Notification Deck and both outcomes have audit evidence; no password values are persisted in provider fields.
 4. Enable the provider.
 5. Open **LDAP Directory Provisioning**.
 6. Search by username, email, or display name.
