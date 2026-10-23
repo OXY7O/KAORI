@@ -203,9 +203,9 @@ def test_interface_distinguishes_paused_and_manual_archive_ready_with_no_other_a
     text = workspace.read_text(encoding='utf-8')
     assert "selected.name == 'audit_event'" in text
     assert "selected.name not in ('notification_delivery', 'audit_event')" in text
-    assert 'AuditEvent archive policy paused by default.' in text
-    assert 'Manual Archive Only enabled.' in text
-    assert 'Disable the policy after UAT.' in text
+    assert 'Policy paused' in text
+    assert 'Manual Archive Only enabled' in text
+    assert 'Original audit events remain in PostgreSQL.' in text
     assert 'role="status"' in text
     assert '{% if execution_blocked %}disabled{% endif %}' in text
     assert 'name="enabled"' in text
@@ -215,8 +215,8 @@ def test_interface_distinguishes_paused_and_manual_archive_ready_with_no_other_a
         encoding='utf-8',
     )
     assert "'audit_event': 'Source-owned administrative AuditEvent evidence; manual Archive Only.'" in source
-    assert 'Manual Archive Only; paused by default. Separate from Activity Register' in source
-    assert 'Retention/RBAC review pending.' in source
+    assert 'Manual Archive Only. Separate from Activity Register' in source
+    assert 'Source-level retention and access controls remain restricted.' in source
 
 
 def test_preview_remains_read_only_and_archive_download_bypass_stays_blocked() -> None:
