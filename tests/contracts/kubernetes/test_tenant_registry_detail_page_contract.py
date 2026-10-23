@@ -1607,3 +1607,17 @@ def test_verified_native_release_finalization_uses_full_width_action_sheet() -> 
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
+
+
+def test_verified_handoff_next_action_copy_preserves_release_gate() -> None:
+    detail = read(DETAIL)
+    step = detail.split('id="tenant-release-stage-finalize"', 1)[1]
+    Environment().parse(detail)
+    assert 'Handoff verified. Complete checks before authorized Release.' in step
+    assert 'native_cycle.provider_transfer_verified' in step
+    assert 'Complete Release Finalization' in step
+    assert "('Review Committed Evidence', 'Confirm handoff proof and admission checks.')" in step
+    assert "('Finalize Authorized Release', 'Use the existing guarded Release action when eligible.')" in step
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
