@@ -164,10 +164,10 @@ def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms
     assert 'Report metadata and retained PDF, XLSX, or CSV evidence.' in generated
     assert 'Ready, Failed, and Archived reports past their status-specific hot retention.' in generated
     assert (
-        'Ready/Archived PDF, XLSX, and CSV files are copied and checksum-verified before cleanup.'
+        'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.'
         in generated
     )
-    assert 'Source files remain until archive and supplemental evidence verify.' in generated
+    assert 'Source files stay intact until archive and supplements pass verification.' in generated
     assert (
         'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '
         'verifying SHA-256 before source-file or row cleanup.'
