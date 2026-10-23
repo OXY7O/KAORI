@@ -26,6 +26,7 @@ def _policy(*, enabled: bool) -> SimpleNamespace:
         archive_retention_days=3650,
         batch_size=250,
         protected_max_days=None,
+        protect_unreviewed=False,
         settings={'archive_only': True, 'manual_execution_only': True},
     )
 
