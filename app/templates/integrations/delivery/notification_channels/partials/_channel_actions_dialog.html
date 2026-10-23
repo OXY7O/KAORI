@@ -65,26 +65,16 @@
                     <i data-lucide="lock-keyhole" class="h-3.5 w-3.5" aria-hidden="true"></i>Locked
                 </button>
             {% else %}
-                <form method="post" action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
-                      hx-post="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
-                      hx-target="#notification-channels-workspace" hx-select="#notification-channels-workspace"
-                      hx-swap="outerHTML" hx-push-url="false" hx-indicator="#notification-channel-loading"
-                      hx-disabled-elt="button[type='submit']">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    {{ channel_return_fields() }}
-                    <button type="submit" class="hidden" tabindex="-1" aria-hidden="true"
-                            id="notification-channel-delete-submit-{{ channel.id }}">Confirm Delete</button>
-                    <button type="button" @click="$el.closest('dialog').close()"
-                            data-destructive-modal-open
-                            data-destructive-modal-id="notification-channel-delete-confirmation"
-                            data-destructive-target="{{ channel.name }}"
-                            data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"
-                            aria-haspopup="dialog" aria-controls="notification-channel-delete-confirmation"
-                            aria-label="Confirm deletion of {{ channel.name }}"
-                            class="{{ table_ui.action_classes(destructive=true) }} w-full justify-start">
-                        <i data-lucide="trash-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Delete Channel
-                    </button>
-                </form>
+                <button type="button" @click="$el.closest('dialog').close()"
+                        data-destructive-modal-open
+                        data-destructive-modal-id="notification-channel-delete-confirmation"
+                        data-destructive-target="{{ channel.name }}"
+                        data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"
+                        aria-haspopup="dialog" aria-controls="notification-channel-delete-confirmation"
+                        aria-label="Confirm deletion of {{ channel.name }}"
+                        class="{{ table_ui.action_classes(destructive=true) }} w-full justify-start">
+                    <i data-lucide="trash-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Delete Channel
+                </button>
             {% endif %}
         </div>
         <footer class="flex justify-end border-t border-outline-subtle px-5 py-3">
@@ -92,3 +82,17 @@
         </footer>
     </section>
 </dialog>
+{# Keep the hidden POST form outside the closed native dialog so delegated
+   destructive confirmation can submit reliably with HTMX and CSRF. #}
+{% if not channel.delete_blocked %}
+    <form method="post" action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
+          hx-post="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
+          hx-target="#notification-channels-workspace" hx-select="#notification-channels-workspace"
+          hx-swap="outerHTML" hx-push-url="false" hx-indicator="#notification-channel-loading"
+          hx-disabled-elt="button[type='submit']" class="hidden">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ channel_return_fields() }}
+        <button type="submit" tabindex="-1" aria-hidden="true"
+                id="notification-channel-delete-submit-{{ channel.id }}">Confirm Delete</button>
+    </form>
+{% endif %}
