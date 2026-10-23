@@ -116,6 +116,7 @@ from app.kubernetes.tenant.release_handoff_approval import (
     prepare_release_handoff_plan_committed,
     restart_expired_native_release_handoff_plan_committed,
 )
+from app.kubernetes.tenant.release_review_notifications import notify_release_handoff_review_recorded
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
     release_verified_native_tenant_committed,
@@ -1078,6 +1079,7 @@ def approve_tenant_release_handoff_route(tenant_id: str):
             detail='Provider read-back and a separately admitted transfer executor are still required.',
             metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
         )
+        notify_release_handoff_review_recorded(tenant_id=tenant_id, approval=result)
     return _tenant_section_redirect('registry')
 
 

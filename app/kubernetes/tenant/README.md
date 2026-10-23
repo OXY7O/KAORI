@@ -1074,3 +1074,28 @@ Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 Capsule UAT is capability-conditional and must record the exact compatible Capsule evidence when available. Fixture-only Capsule state is not acceptance evidence.
 
 Promotion to `main` is outside this issue. Accepted Tenant work remains in `kaori/staging` until the governed release/promotion flow.
+
+## Release independent-review decision receipts (Dev Container review #2867)
+
+After a valid independent Tenant Release acknowledgment is committed, the existing
+Notification Deck **Assigned Work** receives one unread outcome receipt for the
+original plan requester and one for the actual reviewer. Both link to the same
+Tenant Management → Release Governance → Approval & Handoff step. The existing
+committed Work Inbox projection continues to show the acting reviewer's
+**Approved** status and other eligible reviewers' **Resolved by another
+reviewer** status, without sending receipt fanout to all possible reviewers.
+
+The approval AuditEvent, plan SHA-256 and two-operator/fingerprint preflight
+checks remain authoritative. A receipt is an informational **independent review
+recorded**, not external successor acceptance, provider mutation, verified
+read-back or permission to Release. Notification writes are attempted only after
+approval commit; a failure is logged and isolated by recipient so it does not
+undo the governance decision. No email/provider delivery or automatic Release
+is implied by an Inbox receipt.
+
+Local UAT follow-up: have A prepare a plan, B independently acknowledge it, and
+verify exactly one unread per-user decision receipt in Assigned Work with a
+working deep-link. A blocked/replayed approval must produce no new receipts;
+a third eligible reviewer must see the previous request resolved, not a second
+approval. Verify mobile, dark mode and permission scope. This increment remains
+pending Dev Container verification and official CI/CD admission remains HOLD.
