@@ -7,9 +7,11 @@ cross-domain execution safety #2906; approved historical Data Lifecycle Final Lo
 
 This is the **single all-domain UAT checklist**, extending the focused AuditEvent
 (`docs/operations/audit-event-data-lifecycle-devcontainer-uat.md`) and Notification
-Delivery (#2847/#2850) security/retention gates. It does **not** claim that any
-scenario has been executed, passed, or accepted. Previously accepted Access
-Activity Audit / Notification Channels UI does not imply Data Lifecycle acceptance.
+Delivery (#2847/#2850) security/retention gates. **Retention Policies UI was
+operator-accepted on 2026-10-24**, subject to the final Execution Boundary
+Guide correction. That acceptance is limited to page design and navigation:
+none of the PostgreSQL, Celery, Archive Storage, checksum, cleanup, or
+negative security cases below is marked PASS without execution evidence.
 
 ## 1. Current domain inventory and authority
 
@@ -290,6 +292,43 @@ category, icons, focus, light/dark contrasts and right-panel adaptive
 height; other domain grids must keep their existing behavior.
 Record actual browser viewport and SHA before marking DL-E2E-11 PASS.
 
+### Retention Policies shared UI final design audit (#2961)
+
+**Human UI acceptance (2026-10-24)** covers the shared Retention Policies
+page across all nine registered domains, including Tenant Audit Evidence.
+It does **not** grant source-security admission, archived record lookup,
+destructive cleanup or worker/storage end-to-end acceptance.
+
+Source-led design review found and corrected these final deviations:
+- **Execution Boundary** footer uses the canonical title-adjacent Violet
+  `ⓘ Guide` variant rather than the legacy icon-only `?`. The
+  permission-scoped Jobs & Executions link stays an independent action;
+- a single shared card grid sizes by **coverage count**, not domain name:
+  one card spans full width, two are side-by-side, three use three columns
+  at XL, and four form 2 × 2. On mobile each category remains accessible;
+- all nine continue to use the same shared policy Hero, responsive
+  navigation, metric cards, Lifecycle Coverage, Storage Boundary,
+  policy inputs, loading/feedback, CSRF-protected actions and Retention
+  Policies storage/history navigation. Domain-only fields are shown only
+  when relevant to source capability (e.g. Analytics serve window,
+  Generated Report artifacts, Job Executions workload settings).
+
+To close **DL-E2E-11** as an executable Visual QA scenario, check browser
+focus, hover, Escape and touch for the Execution Boundary Guide, the
+1/2/3/4-card arrangements on narrow/wide viewports, light/dark contrast,
+HTMX domain switching with Back/Forward, and permission-scoped actions.
+Source-based contract and operator UI acceptance do not themselves
+establish that those exact browser events were executed.
+
+**Operational admission remains independent:** Notification Delivery
+#2868/#2869/#2870 have unfinished durable identity/aggregates/cleanup;
+AuditEvent #2891/#2892 lacks complete source-level privacy, retention
+and compaction authorization. Keep their archive-only hot evidence and
+security constraints intact. Complete all applicable per-domain
+Preview, canonical JobExecution, archive checksum, source-safe cleanup,
+RBAC-negative and recovery tests before declaring end-to-end lifecycle
+finished. Official CI/CD gates remain HOLD.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
@@ -323,15 +362,15 @@ runtime evidence. If a scenario is intentionally denied, PASS means
 
 | Domain | Preview | Archive + checksum | Negative safety / RBAC | UI / human acceptance |
 | --- | --- | --- | --- | --- |
-| `operational_activity` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `job_execution` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `operational_activity` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `job_execution` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
 | `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-24 |
-| `generated_report` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `generated_report` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
 | `alert_incident` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-23 |
-| `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `notification_delivery` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `audit_event` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `notification_delivery` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `audit_event` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
 
 The audit-only contracts of `notification_delivery` / `audit_event`
 mean that rejected destructive operations are expected **PASS** on
