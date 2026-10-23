@@ -630,7 +630,7 @@ click handlers, this specific drawer opts into
 `side_drawer.render(..., delegate_clicks=true)`. The shared drawer retains
 its original `@click.stop` default elsewhere. Do not use custom, duplicated
 dialog-open JavaScript or weaken focus management.
-After cancellation, focus returns to the opener in the drawer. Existing
+After cancellation, focus returns to the opener in the drawer. The shared destructive confirmation stops Escape propagation so cancellation cannot dismiss the underlying drawer. Existing
 focus/keyboard/HTMX, mobile, light/dark and authorized negative-scenario
 UAT are mandatory before acceptance.
 
