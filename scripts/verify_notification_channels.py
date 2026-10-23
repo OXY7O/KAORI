@@ -87,7 +87,7 @@ def main() -> int:
         and delivery_template.index('workspace_tabs.render_navigation') < delivery_template.index('page_hero.shell_classes()')
         and "hx_target='#notification-channels-workspace'" in delivery_template
         and "hx_select='#notification-channels-workspace'" in delivery_template
-        and delivery_template.count('section_intro.render(') == 2
+        and delivery_template.count('section_intro.render(') == 3
         and "('overview', 'Overview', 'layout-dashboard', none," in delivery_template
         and "('channels', 'Channels', 'send', none," in delivery_template
         and "('delivery', 'Delivery Activity', 'history', none," in delivery_template
@@ -260,10 +260,11 @@ def main() -> int:
         and "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
         and "'overview': notification_overview_metrics() if include_overview else None" in service
         and "include_overview=active_tab == 'overview'" in routes,
-        'compact notification overview evidence preview': 'aria-label="Notification operational snapshot"' in template
-        and 'grid items-start gap-4 lg:grid-cols-5' in template
-        and 'lg:col-span-2' in template
-        and 'lg:col-span-3' in template
+        'unified notification snapshot outside-card section intro': "section_intro.render('Operational Snapshot'," in template
+        and 'notification-snapshot-heading' in template
+        and 'Channel readiness, committed delivery outcomes, and recent delivery activity.' in template
+        and 'grid min-w-0 lg:grid-cols-5' in template
+        and 'lg:border-b-0 lg:border-r' in template
         and 'aria-label="Recent committed delivery attempts"' in template
         and 'title="{{ delivery.event_label }}"' in template
         and 'title="{{ delivery.channel_name }}"' in template
