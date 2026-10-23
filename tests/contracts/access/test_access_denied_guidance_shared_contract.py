@@ -1,4 +1,4 @@
-"""Access Denied guidance explains a safe reason and administrator escalation (#2962)."""
+"""Access Denied uses one role-aware and actionable KAORI recovery panel (#2962)."""
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_403_preserves_access_boundary_and_existing_navigation() -> None:
+def test_403_preserves_hero_role_context_and_existing_safe_navigation() -> None:
     page = read("app/templates/errors/403.html")
     Environment().parse(page)
 
@@ -29,59 +29,61 @@ def test_403_preserves_access_boundary_and_existing_navigation() -> None:
     assert "Requested Access" in page
 
 
-def test_403_explains_reason_without_claiming_unknown_permission_details() -> None:
+def test_recovery_panel_has_one_shared_surface_and_clear_visual_hierarchy() -> None:
+    page = read("app/templates/errors/403.html")
+    shared = read("app/templates/analytics/components/_analysis_surfaces.html")
+    Environment().parse(page)
+
+    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in page
+    assert page.count("analysis_surface.guidance_card_classes()") == 1
+    assert "data-kaori-access-resolution-guidance" in page
+    assert 'aria-labelledby="access-resolution-title"' in page
+    assert 'id="access-resolution-title"' in page
+    assert "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" in page
+    assert "lg:border-l lg:border-t-0" in page
+    assert "bg-surface-hover" in page
+    assert "bg-surface-card" in page
+    assert "sm:text-2xl" in page
+    assert "text-sm leading-6" in page
+    assert "analysis_surface.role_icon_classes('brand', size='large')" in page
+    assert "analysis_surface.role_icon_classes('insight', size='large')" in page
+    assert "macro guidance_card_classes" in shared
+    assert "macro role_icon_classes" in shared
+
+    # The previous compact Analytics interpretation table is not an access workflow.
+    assert "analysis_surface.interpretation_grid_classes()" not in page
+    assert "analysis_surface.interpretation_callout(" not in page
+    assert "analysis_surface.snapshot_header_classes()" not in page
+    assert "operational_callout.render(" not in page
+
+
+def test_denial_reason_is_state_aware_without_exposing_policy_internals() -> None:
     page = read("app/templates/errors/403.html")
 
-    assert "Why You Can't Access This Page" in page
-    assert "'Access Reason'" in page
-    assert "'No Active Role' if role_unavailable else 'Permission Not Granted'" in page
-    assert "'Your KAORI account has no active role." in page
-    assert "'Your current access (' ~ role_label ~ ') does not permit this page or action.'" in page
-    assert "KAORI restricts pages and actions using server-side permissions." in page
-
-    # Explain role unavailable separately; don't invent specific RBAC permission codes.
+    assert "'No Active Role' if role_unavailable else 'Permission Required'" in page
+    assert "Your account has no active KAORI role." in page
+    assert "The permission required for this page or action is not included" in page
+    assert 'aria-label="Current KAORI role"' in page
+    assert "{{ role_label }}" in page
     assert "permission_key" not in page
     assert "permission_name" not in page
     assert "has_permission(" not in page
 
 
-def test_403_explains_where_and_how_to_request_help() -> None:
+def test_contact_and_steps_are_actionable_but_do_not_fabricate_a_support_channel() -> None:
     page = read("app/templates/errors/403.html")
 
-    assert "'Who To Contact'" in page
-    assert "'KAORI Access Administrator'" in page
-    assert "internal IT helpdesk" in page
+    assert "Contact your access administrator" in page
+    assert "KAORI Access Administrator or internal IT helpdesk" in page
     assert "Access → Users" in page
-    assert "Share your KAORI username, the page URL, and what you need to do." in page
+    assert 'aria-label="Access review steps"' in page
+    assert "Share your KAORI username, page URL, and required action." in page
     assert "Never share your password." in page
     assert "View My Account" in page
-    assert 'href="{{ url_for(\'settings.account\') }}"' in page
+    assert "this does not submit an access request." in page
     assert "action_button.classes('secondary')" in page
-    assert "Request Access" not in page  # No fake request form or unimplemented action.
-
-
-def test_guidance_remains_one_shared_analytics_surface() -> None:
-    page = read("app/templates/errors/403.html")
-    shared = read("app/templates/analytics/components/_analysis_surfaces.html")
-    standard = read("docs/design/components/ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md")
-
-    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in page
-    assert '{% import "components/action_button.html" as action_button %}' in page
-    assert page.count("analysis_surface.guidance_card_classes()") == 1
-    assert page.count("analysis_surface.snapshot_header_classes()") == 1
-    assert page.count("analysis_surface.interpretation_grid_classes()") == 1
-    assert page.count("analysis_surface.interpretation_callout(") == 2
-    assert page.count("analysis_surface.boundary_zone_classes(") == 1
-    assert 'aria-labelledby="access-guidance-title"' in page
-    assert 'id="access-guidance-title"' in page
-    assert "role='evidence'" in page
-    assert "role='brand'" in page
-    assert "macro interpretation_callout" in shared
-    assert "macro boundary_zone_classes" in shared
-    assert "lg:grid-cols-2" in shared
-    assert "Cross-domain unified access guidance" in standard
-
-    assert "operational_callout.render(" not in page
-    assert "lg:grid-cols-2" not in page  # Shared grid owns responsive columns.
+    assert 'href="{{ url_for(\'settings.account\') }}"' in page
+    assert "Request Access</a>" not in page
+    assert "mailto:" not in page
     assert "<script" not in page
     assert "form method=" not in page
