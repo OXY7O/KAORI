@@ -100,6 +100,10 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
     )
 
     mutation = sys.modules['app.kubernetes.governance.tls_certificates.mutation']
+    class TLSSecretIdentityError(ValueError):
+        pass
+
+    mutation.TLSSecretIdentityError = TLSSecretIdentityError
     mutation.patch_tls_secret = lambda record, cert, key: None
     mutation.read_uploaded_pair = lambda files: (b'certificate', b'private-key')
 
@@ -403,3 +407,23 @@ def test_tls_preview_rejects_failed_secret_collection_with_collected_ingress(
     assert len(result['targets']) == 1
     assert result['targets'][0]['status'] == 'blocked'
     assert 'Not Reported' in result['targets'][0]['message']
+
+
+def test_single_tls_identity_rejection_reports_safe_resync_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    record = _record()
+    updates.db.session.get = lambda model, identifier: (
+        record if model is updates.TLSCertificateInventory else _collected_state()
+    )
+
+    def reject_identity(target, cert, key):
+        raise updates.TLSSecretIdentityError('TLS Secret identity evidence is missing. Synchronize TLS inventory.')
+
+    monkeypatch.setattr(updates, 'patch_tls_secret', reject_identity)
+    result = updates.apply_certificate_update(record.id, {})
+    assert result['status'] == 'failed'
+    assert result['provider_updated'] is False
+    assert 'Synchronize TLS inventory' in result['message']
+    assert updates._test_session.added[0].message == result['message']
