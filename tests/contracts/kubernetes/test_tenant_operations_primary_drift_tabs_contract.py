@@ -285,7 +285,7 @@ def test_capsule_drift_info_tip_and_reconciliation_decision_cards() -> None:
         assert "table_label.metadata_label('Commit Only', icon='file-check-2')" in source
         assert 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2' in source
         assert source.count('flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover') == 2
-        assert 'Write committed KAORI quota via Capsule after admission and read-back checks.' in source
+        assert 'Reapply KAORI quota via Capsule after validation.' in source
         assert 'Commit verified provider quota as KAORI intent. No provider write.' in source
         # Separate scoped POST actions are still protected by the original gate and CSRF.
         assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
