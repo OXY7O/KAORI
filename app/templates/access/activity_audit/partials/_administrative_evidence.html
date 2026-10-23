@@ -15,7 +15,6 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Administrative Source Evidence</h2>
-                        {{ table_label.result_count(administrative_evidence.pagination.total_items) }}
                         {{ info_tip.render(
                             'activity-audit-administrative-source-info',
                             'Administrative Source Evidence',
@@ -25,8 +24,10 @@
                                 'The actor reference is a source foreign key, not an immutable actor snapshot.',
                                 'Open Job needs a committed hot job and permission. Archive browsing lists bundles only; it does not verify an individual job match.'
                             ],
-                            placement='right'
+                            placement='right',
+                            variant='guide'
                         ) }}
+                        {{ table_label.result_count(administrative_evidence.pagination.total_items) }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">
                         Review committed administrative actions by source, outcome and recorded time.

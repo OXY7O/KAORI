@@ -25,6 +25,8 @@ TITLE_GUIDE_TEMPLATES = (
     'storage/object_storage/inventory/systems/partials/_table_card.html',
     'storage/object_storage/inventory/buckets/partials/_table_card.html',
     'artifact_registry/partials/_inventory_workspace.html',
+    'access/activity_audit/partials/_activity_table_card.html',
+    'access/activity_audit/partials/_administrative_evidence.html',
     'access/identity_providers/form.html',
     'access/identity_providers/partials/_sso_configuration.html',
     'access/identity_providers/partials/_ldap_configuration.html',

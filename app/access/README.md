@@ -369,11 +369,20 @@ route must not make it an unscoped read.
 
 ## Activity Audit register source hover info (#2885, 2026-10-23)
 
+The approved title-level standard is `docs/design/components/INFO_TIP.md`
+and `docs/design/components/TABLE_AND_LABEL.md`, reaffirmed in design
+audit #2416. Before implementing header hover guidance, compare the
+current standard *and at least one merged title-level consumer*; require
+the existing `tests/contracts/design/test_info_tip_guide_rollout_contract.py`
+to include this title-level consumer. Do not infer the correct variant
+from the shared macro's default or a single local precedent.
+
 Functional **Access → Activity Audit UAT is operator-approved**; the
 follow-up enhances only the two register headers. Activity Register and
-Administrative Source Evidence each use the existing icon-only
-`components/info_tip.html::render` anchored help next to the existing
-title/result-count pair. One tooltip describes Notification-backed hot
+Administrative Source Evidence each use the existing title-level
+`components/info_tip.html::render(..., variant='guide')` Violet Guide
+directly next to the owning title, before the result-count badge.
+An icon-only question-mark is reserved for genuinely field/row-level help. One tooltip describes Notification-backed hot
 activity with immutable actor snapshots and separately owned Data
 Lifecycle archive artifacts; the other describes source-permissioned hot
 `AuditEvent` records from Automatic Jobs/Tenant Inventory Sync, actor FK

@@ -490,15 +490,16 @@ def test_activity_audit_registers_use_shared_accessible_source_hover_info() -> N
     for fragment in (activity, administrative):
         assert '{% import "components/info_tip.html" as info_tip %}' in fragment
         assert fragment.count('info_tip.render(') == 1
-        assert 'variant=\'guide\'' not in fragment
+        assert fragment.count("variant='guide'") == 1
+        # Title-level context must be a Guide; default icon remains for fields only.
     activity_header = activity.split('</header>', 1)[0]
     admin_header = administrative.split('</header>', 1)[0]
     assert activity_header.index('>Activity Register</h2>') < activity_header.index(
-        'table_label.result_count(pagination.total)'
-    ) < activity_header.index("'activity-audit-register-source-info'")
+        "'activity-audit-register-source-info'"
+    ) < activity_header.index('table_label.result_count(pagination.total)')
     assert admin_header.index('>Administrative Source Evidence</h2>') < admin_header.index(
-        'table_label.result_count(administrative_evidence.pagination.total_items)'
-    ) < admin_header.index("'activity-audit-administrative-source-info'")
+        "'activity-audit-administrative-source-info'"
+    ) < admin_header.index('table_label.result_count(administrative_evidence.pagination.total_items)')
 
     assert 'Activity Register Evidence' in activity
     assert 'Hot committed Notification-backed operational activity' in activity
