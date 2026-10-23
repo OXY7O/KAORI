@@ -40,6 +40,7 @@ def _alert(*, asset='42', state='active', severity='critical'):
         ([None], 'blocked'),
         ({'alerts': []}, 'blocked'),
         ([_alert()] * 101, 'blocked'),
+        ([_alert(state='weird'), _alert(asset='43')], 'blocked'),
     ],
 )
 def test_disallowed_samples_fail_closed_without_counts(payload, status):
@@ -149,4 +150,16 @@ def test_unsafe_binding_sample_never_qualifies_or_leaks(monkeypatch, bad_payload
     else:
         assert binding.validation_evidence['vault_alert_sample']['status'] == 'incomplete'
     assert 'sensitive' not in str(result) + str(binding.validation_evidence)
-    assert all(query[0] != 'silences' for query in calls) if result['status'] == 'blocked' else True
+    if result['status'] == 'blocked':
+        assert all(query[0] != 'silences' for query in calls)
+
+
+def test_foreign_identity_takes_precedence_over_incomplete_row(monkeypatch):
+    queries = _setup(monkeypatch, [_alert(state='unknown'), _alert(asset='99')])
+    binding = _binding()
+    result = binding_validation.validate_binding(
+        instance=SimpleNamespace(integration_instance_id=12), binding=binding, commit=False,
+    )
+    assert result['status'] == 'blocked'
+    assert binding.validation_evidence is None
+    assert not any(name == 'silences' for name, _filters in queries)

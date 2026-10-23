@@ -48,13 +48,18 @@ def qualify_vault_alert_sample(*, asset_key: str, payload: object) -> dict[str, 
     if not payload:
         return _result('unobserved')
 
-    counts = {field: 0 for field in _COUNT_FIELDS}
+    # Identity is checked across the *entire* returned population first.
+    # An incomplete first row must never hide a later foreign-scope alert.
     for alert in payload:
         if not isinstance(alert, dict):
             return _result('blocked')
         labels = alert.get('labels')
         if not isinstance(labels, dict) or labels.get('vault_instance') != asset_key:
             return _result('blocked')
+
+    counts = {field: 0 for field in _COUNT_FIELDS}
+    for alert in payload:
+        labels = alert['labels']
         status = alert.get('status')
         state = status.get('state') if isinstance(status, dict) else None
         severity = labels.get('severity')

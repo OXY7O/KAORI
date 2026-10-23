@@ -54,7 +54,10 @@ def validate_binding(
             return _persist_blocked(
                 binding,
                 profile_key=profile.profile_key,
-                message='Vault Alert Source binding is missing an eligible canonical instance or exact identity selector.',
+                message=(
+                    'Vault Alert Source binding is missing an eligible canonical '
+                    'instance or exact identity selector.'
+                ),
                 commit=commit,
             )
 
@@ -88,7 +91,11 @@ def validate_binding(
         missing_required = tuple(
             capability for capability in profile.required_capabilities if capability not in available_capabilities
         )
-        if binding.asset_type == 'vault_instance' and vault_sample is not None and vault_sample['status'] == 'incomplete':
+        if (
+            binding.asset_type == 'vault_instance'
+            and vault_sample is not None
+            and vault_sample['status'] == 'incomplete'
+        ):
             binding.validation_status = 'degraded'
             binding.validation_message = 'Vault Alert Source sample cannot qualify alert status/severity evidence.'
         elif binding.asset_type != 'global' and not alerts:
@@ -141,7 +148,11 @@ def validate_binding(
             vault_sample['identity_observed'] if binding.asset_type == 'vault_instance' and vault_sample is not None
             else bool(alerts) if binding.asset_type != 'global' else True
         ),
-        **({'vault_alert_sample': vault_sample} if binding.asset_type == 'vault_instance' and vault_sample is not None else {}),
+        **(
+            {'vault_alert_sample': vault_sample}
+            if binding.asset_type == 'vault_instance' and vault_sample is not None
+            else {}
+        ),
     }
     binding.last_validated_at = datetime.now(UTC)
     if commit:
