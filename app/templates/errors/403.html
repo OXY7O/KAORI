@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% block title %}Access Denied{% endblock title %}
 {% block dashboard_content %}
     {% set assigned_role = current_user.role_record if current_user.is_authenticated else none %}
@@ -39,26 +40,25 @@
                 </aside>
             </div>
         </section>
-        <section class="grid gap-4 lg:grid-cols-2"
-                 aria-label="Access resolution guidance">
-            <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="user-cog" class="h-5 w-5"></i></span>
-                    <div>
-                        <h2 class="text-sm font-semibold text-content-primary">Access Administrator Action</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review the account in User Management and assign an active role with the required operational responsibility.</p>
-                    </div>
-                </div>
-            </article>
-            <article class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-5 text-kaori-primary shadow-sm">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                    <div>
-                        <h2 class="text-sm font-semibold">Security Boundary</h2>
-                        <p class="mt-1 text-sm leading-6">Navigation visibility is a usability layer. Server-side permission checks remain authoritative.</p>
-                    </div>
-                </div>
-            </article>
+        <section class="grid items-stretch gap-3 lg:grid-cols-2"
+                 aria-label="Access resolution guidance"
+                 data-kaori-access-resolution-guidance>
+            {{ operational_callout.render(
+                'Access Administrator Action',
+                'Ask an administrator to review your role and permissions.',
+                icon='user-cog',
+                tone='info',
+                variant='neutral',
+                extra_classes='h-full'
+            ) }}
+            {{ operational_callout.render(
+                'Security Boundary',
+                'Navigation is guidance; server-side permissions enforce access.',
+                icon='shield-check',
+                tone='info',
+                variant='neutral',
+                extra_classes='h-full'
+            ) }}
         </section>
     </div>
 {% endblock dashboard_content %}
