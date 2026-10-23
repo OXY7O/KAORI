@@ -107,10 +107,10 @@ projection. Namespace and Node ORM fetches therefore use a deterministic
 `max_nodes` SQL window, with independent exact committed-generation SQL counts
 for omitted-type reporting. Namespace selector bootstrap projects DISTINCT scalar
 cluster/namespace values rather than full Namespace ORM records. Deeper graph
-modes intentionally retain full relationship candidate loading until a separate
-relation-preserving bounded strategy can be verified for Service selectors,
-Ingress, Pod configuration references, and PVC/PV links. Do not apply an
-unconditional SQL LIMIT to those relationship-sensitive paths.
+modes reuse current-generation, type-specific SQL candidate windows, a
+relationship-safe parent budget, and scalar selector/reference qualification
+before ORM projection. Do not apply an unconditional SQL LIMIT to a
+relationship-sensitive source without preserving graph/omission equivalence.
 
 
 ## Bounded relationship candidates (Depth 2 / 3 / Full)
