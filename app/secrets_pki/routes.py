@@ -70,3 +70,18 @@ def certificate_analytics() -> ResponseReturnValue:
         'secrets_pki/analytics/certificates.html',
         pki_validity=build_stored_pki_validity_posture(),
     )
+
+
+@secrets_pki_bp.get('/lifecycle')
+@permission_required('secrets_pki.view')
+def lifecycle() -> ResponseReturnValue:
+    """Capability-level, cross-domain committed evidence without Secret identity reads."""
+    return render_template(
+        'secrets_pki/lifecycle.html',
+        kv2_version_posture=build_kv2_version_posture(),
+        pki_validity=build_stored_pki_validity_posture(),
+        delivery_overlap=build_certificate_delivery_overlap(
+            authorized_to_view_kubernetes_tls=current_user.has_permission('tls_certificates.view'),
+        ),
+        can_view_analytics=current_user.has_permission('analytics.view'),
+    )

@@ -225,3 +225,22 @@ specific drill-down depends on #724/#2688.
 Focused tests extend
 `tests/integrations/test_vault_pki_validity_posture.py`. Existing quality
 gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.
+
+## Lifecycle & Assurance workspace (HV-07 #2761 — review implementation)
+
+- `GET /secrets-pki/lifecycle` is capability-level, provider-neutral and requires
+  `secrets_pki.view`. Its server-side route reuses bounded committed KV v2
+  lifecycle, opted-in public PKI validity and Kubernetes TLS candidate overlap
+  read models. The sidebar entry uses the existing Infrastructure Secrets & PKI
+  workspace registry, not a Vault-specific navigation root.
+- KPI cards only render numeric values after the respective source-qualified
+  complete/current generation. `observed_empty` is a valid KV2 zero; blocked,
+  stale and partial statuses show text, never invented zero counts.
+- Correlation requires separate `tls_certificates.view` and never reveals
+  certificate identities, paths, names or provider secrets. Fingerprint overlap
+  is **not** Vault-to-controller delivery proof, workload adoption, certificate
+  trust, rotation or endpoint serving.
+- Existing `analytics.view` controls the canonical PKI Expiration Analytics
+  deep link; the page itself is not a historical Analytics workspace.
+- Human DevContainer light/dark/responsive Visual QA, exact-SHA backend tests,
+  Developer Check, Full Admission and source-specific UAT are **pending**.
