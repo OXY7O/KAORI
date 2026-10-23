@@ -46,29 +46,42 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert 'credential_payload' not in overview
 
 
-def test_notification_overview_uses_compact_accessible_read_only_preview() -> None:
+def test_notification_overview_uses_one_card_below_shared_section_intro() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
         "{% elif active_tab == 'channels' %}", 1,
     )[0]
+    snapshot = overview.split(
+        '<section class="space-y-4" aria-labelledby="notification-snapshot-heading">', 1,
+    )[1].split(
+        '<section class="space-y-4" aria-labelledby="notification-contract-heading">', 1,
+    )[0]
 
-    assert 'aria-label="Notification operational snapshot"' in overview
-    assert 'grid items-start gap-4 lg:grid-cols-5' in overview
-    assert 'lg:col-span-2' in overview and 'lg:col-span-3' in overview
-    assert 'space-y-4 lg:col-span-2' in overview
-    assert 'aria-label="Recent committed delivery attempts"' in overview
-    assert 'grid-cols-[minmax(0,1fr)_auto]' in overview
-    assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in overview
-    assert '{% if payload.overview.recent %}' in overview
-    assert 'title="{{ delivery.event_label }}"' in overview
-    assert 'title="{{ delivery.channel_name }}"' in overview
-    assert "delivery.created_at|user_datetime('Unknown time')" in overview
-    assert 'Delivery outcome:' in overview
-    assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in overview
-    assert 'Showing up to 5 committed records.' in overview
-    assert 'No Delivery Records Yet' in overview
-    assert 'hx-push-url="true"' in overview
-    assert overview.count('hx-target="#notification-channels-workspace"') >= 2
+    assert "section_intro.render('Operational Snapshot'," in snapshot
+    assert 'notification-snapshot-heading' in snapshot
+    assert 'Channel readiness, committed delivery outcomes, and recent delivery activity.' in snapshot
+    assert snapshot.index("section_intro.render('Operational Snapshot',") < snapshot.index(
+        'integration_ui.section_shell_classes()'
+    )
+    assert snapshot.count('integration_ui.section_shell_classes()') == 1
+    assert 'grid min-w-0 lg:grid-cols-5' in snapshot
+    assert 'lg:col-span-2' in snapshot and 'lg:col-span-3' in snapshot
+    assert 'lg:border-b-0 lg:border-r' in snapshot
+    assert snapshot.count('notification_subsection(') == 3
+    assert 'notification_section(' not in snapshot
+    assert 'aria-label="Recent committed delivery attempts"' in snapshot
+    assert 'grid-cols-[minmax(0,1fr)_auto]' in snapshot
+    assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in snapshot
+    assert '{% if payload.overview.recent %}' in snapshot
+    assert 'title="{{ delivery.event_label }}"' in snapshot
+    assert 'title="{{ delivery.channel_name }}"' in snapshot
+    assert "delivery.created_at|user_datetime('Unknown time')" in snapshot
+    assert 'Delivery outcome:' in snapshot
+    assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in snapshot
+    assert 'Showing up to 5 committed records.' in snapshot
+    assert 'No Delivery Records Yet' in snapshot
+    assert 'hx-push-url="true"' in snapshot
+    assert snapshot.count('hx-target="#notification-channels-workspace"') == 1
 
 
 def test_notification_lifecycle_modal_header_footer_use_shared_kaori_contract() -> None:
@@ -109,7 +122,7 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert "hx_target='#notification-channels-workspace'" in page
     assert "hx_select='#notification-channels-workspace'" in page
     assert page.index('workspace_tabs.render_navigation') < page.index('page_hero.shell_classes()')
-    assert page.count('section_intro.render(') == 2
+    assert page.count('section_intro.render(') == 3
     assert "('overview', 'Overview', 'layout-dashboard', none," in page
     assert "('channels', 'Channels', 'send', none," in page
     assert "('delivery', 'Delivery Activity', 'history', none," in page
