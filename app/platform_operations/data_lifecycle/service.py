@@ -13,6 +13,7 @@ from app.platform_operations.data_lifecycle.retention.policy_service import get_
 from app.platform_operations.data_lifecycle.retention.service import get_archive_download_path, verify_archive_artifact
 from app.platform_operations.data_lifecycle.retention.tasks import run_domain_retention_task
 from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import record_operational_activity
 
 
@@ -84,6 +85,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             settings=settings,
         )
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_policy_updated',
             status='success',
@@ -99,6 +101,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
         db.session.rollback()
         current_app.logger.exception('Could not update data lifecycle policy.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_policy_update_failed',
             status='error',
@@ -115,6 +118,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
     normalized_mode = str(mode or '').strip().lower()
     if normalized_mode not in {'archive_only', 'archive_and_cleanup'}:
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_rejected',
             status='error',
@@ -130,6 +134,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
         domain = get_archive_domain(domain_name)
         if cleanup and not getattr(domain, 'cleanup_supported', True):
             return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 user_id=user_id,
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
@@ -154,6 +159,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 )
             )
             return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 user_id=user_id,
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
@@ -195,6 +201,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
             max_attempts=2,
         )
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_requested',
             status='info',
@@ -217,12 +224,16 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 'job_execution_id': job.id,
                 'celery_task_id': job.celery_task_id,
                 'created': created,
+                # Foreground acknowledgment is a toast; the canonical job
+                # already appears in Notification Deck → Active Work.
+                'feedback_delivery': 'toast',
             },
         )
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception('Could not queue data lifecycle execution.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_queue_failed',
             status='error',
@@ -243,6 +254,7 @@ def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]
     try:
         result = verify_archive_artifact(archive_id)
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_archive_verified',
             status='success',
@@ -250,12 +262,13 @@ def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]
             message='KAORI verified the archive data and manifest checksums.',
             detail='The archive remains available according to its domain archive-retention policy.',
             action_url=url_for('platform_operations.data_lifecycle.index', tab='history'),
-            metadata=result,
+            metadata={**result, 'feedback_delivery': 'toast'},
         )
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception('Could not verify lifecycle archive.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_archive_verification_failed',
             status='error',
@@ -263,7 +276,11 @@ def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]
             message=f'The archive could not be verified because of {type(exc).__name__}.',
             detail='No hot record was modified.',
             action_url=url_for('platform_operations.data_lifecycle.index', tab='history'),
-            metadata={'archive_id': archive_id, 'error_type': type(exc).__name__},
+            metadata={
+                'archive_id': archive_id,
+                'error_type': type(exc).__name__,
+                'feedback_delivery': 'toast',
+            },
         )
 
 
