@@ -71,6 +71,39 @@
                 {% elif active_tab == 'allocation-drift' %}
                     <div class="space-y-4" id="tenant-drift-allocation">
                         {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
+                        {# Shared allocation is a distinct Capsule authority, not another Namespace quota. #}
+                        <section class="{{ table_ui.block_classes() }}"
+                                 aria-labelledby="capsule-allocation-scope-guide-title"
+                                 data-capsule-allocation-scope-guide>
+                            <div class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-3 lg:gap-6">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                                        <i data-lucide="layers-3" class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h3 id="capsule-allocation-scope-guide-title"
+                                            class="{{ table_ui.block_title_classes() }}">Allocation Scope Guide</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                                            Two Capsule authorities; Sync observes drift, and recovery needs an explicit decision.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="grid min-w-0 gap-4 sm:grid-cols-2 lg:col-span-2 lg:gap-6">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">Tenant Resource Quotas</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            Tenant CR defines quota intent. Capsule reconciles generated Namespace ResourceQuota.
+                                        </p>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">Shared Allocation</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            GlobalResourceQuota governs shared Tenant allocation separately from Namespace quota.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                         {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
                     </div>
                 {% elif active_tab == 'operational-reconcile' %}

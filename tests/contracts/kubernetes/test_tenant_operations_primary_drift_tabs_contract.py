@@ -208,3 +208,43 @@ def test_capsule_drift_provider_lineage_jinja_compiles_and_renders() -> None:
         record = SimpleNamespace(name='kaori-capsule-uat-01', public_id='intent-uat-01')
         result = Environment(autoescape=True).from_string(expression).render(record=record)
         assert expected in result
+
+
+def test_capsule_allocation_scope_guide_between_registries_and_wide_modals() -> None:
+    """#2931 DevContainer UX follow-up: contextual bridge and readable evidence modal."""
+    from jinja2 import Environment
+
+    page = read('app/templates/kubernetes/tenant/operations.html')
+    primary = '{% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}'
+    shared = '{% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}'
+    assert primary in page and shared in page
+    scope = page.split(primary, 1)[1].split(shared, 1)[0]
+    assert 'data-capsule-allocation-scope-guide' in scope
+    assert '{{ table_ui.block_classes() }}' in scope
+    assert '{{ table_ui.block_icon_classes() }}' in scope
+    assert '{{ table_ui.block_title_classes() }}' in scope
+    assert 'Allocation Scope Guide' in scope
+    assert 'Tenant Resource Quotas' in scope
+    assert 'Shared Allocation' in scope
+    assert 'Capsule reconciles generated Namespace ResourceQuota' in scope
+    assert 'GlobalResourceQuota governs shared Tenant allocation' in scope
+    assert 'recovery needs an explicit decision' in scope
+    # Read-only guidance is not a third reconciliation registry.
+    assert '<table' not in scope
+    assert 'method="post"' not in scope
+    assert 'data-kaori-native-dialog' not in scope
+    Environment(autoescape=True).parse(page)
+
+    for name in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):
+        source = read('app/templates/kubernetes/tenant/partials/' + name)
+        Environment(autoescape=True).parse(source)
+        assert 'max-w-5xl overflow-hidden rounded-2xl' in source
+        assert 'max-w-3xl overflow-hidden rounded-2xl' not in source
+        assert 'mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3' in source
+        assert 'mt-3 grid gap-4 lg:grid-cols-2' in source
+        assert source.count('data-kaori-native-dialog') == 1
+        assert source.count('<form method="post"') == 2
+        assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+        assert 'data-kaori-dialog-close' in source
+        assert 'Provider Evidence' in source
+        assert 'Reconciliation Decision' in source

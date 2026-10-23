@@ -1092,3 +1092,29 @@ fail-closed blocked actions. User-visible and governance-sensitive changes
 remain **human acceptance pending**. Runtime pytest, formatter, visual QA,
 official Developer Check, Full Admission and promotion beyond the temporary
 holding branch remain gated separately.
+
+### Allocation Drift contextual bridge and modal density (#2931 DevContainer feedback)
+
+The approved primary `Allocation Drift` Operations tab shows two distinct
+Capsule registries. Between them, a compact read-only **Allocation Scope Guide**
+reuses the existing KAORI table block/icon/typography primitives: Tenant
+`spec.resourceQuotas` is authoritative for Capsule-generated Namespace
+ResourceQuota, while Capsule `GlobalResourceQuota` governs Tenant-level shared
+allocation separately. Tenant Sync records divergence only; Reapply or Accept
+remains an explicit, user-triggered decision. The guide is a semantic bridge,
+not a new drift queue, source-of-truth record, metrics widget or navigation.
+
+The two existing `View More` native evidence dialogs use a wider bounded
+`max-w-5xl` desktop workspace (previously `max-w-3xl`) and progressive
+1/2/3-column evidence-summary and stacked-to-two-column decision layouts.
+Fixed modal header/footer, individually scrollable body, same full provider
+identity/UID/resourceVersion and all quota deltas, native keyboard/focus
+contract, light/dark tokens and unchanged guarded CSRF POST actions are retained.
+At mobile widths the viewport margins remain controlling.
+
+Visual acceptance remains pending for 1024/1280+ desktops, 360/390 mobile,
+light/dark, long timestamps and verbose decision descriptions, plus 0/1
+populated registries and keyboard review. This extension changes
+**presentation only**: no new provider requests, mutation path, filter
+semantics, data model or background sync behavior; Full Admission remains
+HOLD until explicitly authorized.
