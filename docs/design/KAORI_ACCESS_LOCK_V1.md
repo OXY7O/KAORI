@@ -59,3 +59,24 @@ Activity Audit administrative presentation uses existing framed workspace naviga
 
 - **User Detail UAT-1(6) (#2265):** Identity, Authentication and Authorization left-hand resource-sheet headings use the existing shared `inventory_section` badge below description on xl desktop (near title at smaller widths), bound respectively to identity-source label, credential owner and effective KAORI access status/tone. Do not invent static trust/permission status, change the fact grid, provider authority, lifecycle or mutation gates. Firefox L13 and responsive human UAT pending.
 - **User Edit copy UAT-1(6) (#2253):** local password-hash/reset ownership remains in the canonical user identity read model; the credential boundary explanation stays informative (roughly two laptop lines), while the narrow violet Current Identity Source caption uses a separate one-line-friendly local label. Related User Registry summary/boundary and editable administrative steps 01–02 use balanced two-line copy. This does not change upstream provider authority, RBAC, password-reset service, lifecycle or URLs. No forced nowrap or clipping; actual Firefox Lenovo L13 line count and human acceptance pending.
+
+## Activity Audit — Shared Register Hover Guidance (#2885, 2026-10-23)
+
+The operator accepts Activity Audit functional UAT, with a bounded
+follow-up for read-only hover help on **Activity Register** and
+**Administrative Source Evidence**. Extend the existing section-card
+title/count flex row with one canonical icon-style
+`components/info_tip.html::render` trigger after the result-count badge.
+Unique tooltip IDs, keyboard/focus/touch access, native shared Info Tip
+portal and responsive viewport clamp are required. Do **not** introduce
+a page-local tooltip implementation or shift approved header actions.
+
+Activity Register guidance qualifies committed *Notification-backed hot*
+operational and audit-only evidence and immutable actor snapshots.
+Administrative guidance qualifies separate authorized hot `AuditEvent`
+source projections, actor FK non-snapshot behavior, and Source-owned/Job
+links; Archive History is **bundle-level**, not a per-job match claim.
+Framed tabs, scoped result counts, read-only modal, source permissions,
+GET/HTMX filters and archive ownership are unchanged. Visual QA for
+hover/focus, screen-reader trigger naming, mobile, zoom and light/dark
+remains a separate DevContainer acceptance gate.
