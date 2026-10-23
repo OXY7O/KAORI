@@ -7,8 +7,8 @@ Missing alerts, unobserved samples and failed snapshots NEVER prove recovery.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import re
+from datetime import datetime
 from typing import Any
 
 from app.intelligence.alert_signals.vault_source import (
