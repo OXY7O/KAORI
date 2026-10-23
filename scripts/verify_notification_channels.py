@@ -131,7 +131,9 @@ def main() -> int:
         and "lead=false" in delivery_template
         and "not receipt or readership by a person." in delivery_template
         and "sending a notification does not create an audit event." in delivery_template,
-        'confirmed HTMX channel actions': "data-destructive-modal-open" in template
+        'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_actions_dialog
+        and 'data-kaori-dialog-transition' in channel_actions_dialog
+        and 'hx-post="{{ url_for(' in channel_actions_dialog
         and "destructive_confirmation_modal.render(" in template
         and "data-destructive-submit-button-id=" in template
         and "data-destructive-modal-confirm" in confirmation
