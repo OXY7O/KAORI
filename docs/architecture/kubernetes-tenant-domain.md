@@ -1953,3 +1953,32 @@ and blocked alternatives, optional Capsule paths, long exact SHA/UID/RV,
 keyboard disclosure/focus, light/dark and responsive breakpoints. Jinja parse,
 focused Tenant contract tests, and the existing lint/quality checks remain
 required; official staging admission and provider mutation remain HOLD.
+
+## Release Step 3 flat workflow sheet — Dev Container review (2026-10-23)
+
+Follow-up human visual feedback for #2401 rejected repeated bordered cards in
+the acknowledged Native Release view. The existing reviewed Jinja implementation
+is flattened without introducing a new UI component, workflow state, provider
+request, RBAC permission or transaction. Approval Expired remains the single
+semantic warning. The recorded review state, planned successor/change record,
+and full Plan SHA-256 form an unboxed summary strip separated by a rule.
+
+The accepted-plan workspace retains its two peer sections. Handoff Actions
+uses divider-separated committed evidence rows (unverified external reference
+and independently verified Platform Admin authority); External Handoff &
+Read-Back uses plain informational text with a single non-authorizing recovery
+deep-link when prerequisites expire. Evidence Boundaries and historic Native
+Dry-Run retain their keyboard-accessible native disclosures with thin dividers
+instead of nested panels. High-impact forms and required confirmations remain
+distinct where needed for operational safety. Violet semantic status badges,
+light/dark design tokens and responsive wrapping remain authoritative.
+
+This is a **presentation-only** change: all original POST endpoints, HTMX
+targets, CSRF forms, permission predicates, dry-run, immutable plan SHA,
+external successor consent, provider read-back and Released gates remain
+unchanged. Source-level structural checks cover original Jinja controls,
+23 forms/CSRF/HTMX POST and 8 disclosure pairs. Human Dev Container visual QA
+must still verify expired/acknowledged/pending and blocked states, native/Capsule
+branches, long identifiers, small screens, keyboard and light/dark mode before
+acceptance. Official Developer Check, Full Admission, staging/main admission,
+deployment and release remain on HOLD.
