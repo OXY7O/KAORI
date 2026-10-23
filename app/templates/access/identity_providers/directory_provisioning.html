@@ -155,9 +155,9 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                    <div class="grid gap-4 border-t border-outline-subtle pt-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+                                    <div class="grid gap-x-3 gap-y-2 border-t border-outline-subtle pt-4 sm:grid-cols-[minmax(0,1fr)_auto]"
                                          aria-label="KAORI access assignment">
-                                        <div class="min-w-0">
+                                        <div class="min-w-0 sm:col-start-1 sm:row-start-1">
                                             <label for="role-{{ loop.index }}"
                                                    class="mb-1.5 block text-xs font-semibold text-content-secondary">Assigned Role</label>
                                             <select id="role-{{ loop.index }}"
@@ -168,16 +168,16 @@
                                                     <option value="{{ value }}">{{ label }}</option>
                                                 {% endfor %}
                                             </select>
-                                            <label class="mt-2 inline-flex min-h-8 cursor-pointer items-center gap-2 text-xs font-medium text-content-secondary">
-                                                <input type="checkbox"
-                                                       name="is_active"
-                                                       checked
-                                                       class="rounded border-outline-strong text-kaori-primary focus:ring-outline-focus">
-                                                Active after provisioning
-                                            </label>
                                         </div>
+                                        <label class="inline-flex min-h-8 cursor-pointer items-center gap-2 text-xs font-medium text-content-secondary sm:col-start-1 sm:row-start-2">
+                                            <input type="checkbox"
+                                                   name="is_active"
+                                                   checked
+                                                   class="rounded border-outline-strong text-kaori-primary focus:ring-outline-focus">
+                                            Active after provisioning
+                                        </label>
                                         <button type="submit"
-                                                class="{{ action_button.classes('primary') }} w-full sm:w-auto">
+                                                class="{{ action_button.classes('primary') }} w-full sm:col-start-2 sm:row-start-1 sm:w-auto sm:self-end">
                                             <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>
                                             Provision
                                         </button>
@@ -216,13 +216,6 @@
                         </div>
                     </div>
                 </section>
-                <div class="flex justify-start">
-                    <a href="{{ url_for('users.index') }}"
-                       class="{{ action_button.classes('secondary') }}">
-                        <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Back to Users
-                    </a>
-                </div>
             </main>
             <aside class="{{ form_context.rail_classes() }}" aria-label="Directory provisioning guidance">
                 {% set provisioning_flow_steps = [
@@ -232,7 +225,7 @@
                     ('Provision', 'KAORI links the identity; the directory retains credentials.')
                 ] %}
                 {{ info_flow.render('How Directory Provisioning Works',
-                                'Follow the controlled admin workflow for directory-backed access.',
+                                'Provision directory-backed access in four steps.',
                                 provisioning_flow_steps,
                                 icon='workflow',
                                 note='KAORI projects access; the directory owns credentials.',
@@ -245,7 +238,7 @@
                     ('Identity', 'No username or email conflict with an existing user.')
                 ] %}
                 {{ context_guidance.render('Before Searching',
-                                'Check prerequisites when a directory search cannot proceed.',
+                                'Check prerequisites before searching.',
                                 before_searching_steps,
                                 icon='list-checks',
                                 open_by_default=false) }}
