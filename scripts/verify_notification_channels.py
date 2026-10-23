@@ -132,8 +132,9 @@ def main() -> int:
         and "not receipt or readership by a person." in delivery_template
         and "sending a notification does not create an audit event." in delivery_template,
         'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_actions_dialog
-        and 'data-kaori-dialog-transition' in channel_actions_dialog
-        and channel_actions_dialog.index('</dialog>') < channel_actions_dialog.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
+        and 'x-teleport="body"' in channel_actions_dialog
+        and '@click.outside=' in channel_actions_dialog
+        and channel_actions_dialog.index('</template>') < channel_actions_dialog.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
         and 'hx-post="{{ url_for(' in channel_actions_dialog
         and "destructive_confirmation_modal.render(" in template
         and "data-destructive-submit-button-id=" in template
@@ -163,7 +164,7 @@ def main() -> int:
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 5
         and 'colspan="5"' in channels_template
         and 'View policy' not in channels_template
-        and 'data-dialog-target="notification-channel-actions-{{ channel.id }}"' in channels_template
+        and 'aria-controls="notification-channel-actions-{{ channel.id }}"' in channels_template
         and 'detailChannel = {{ channel.id }}' in channels_template
         and '_channel_details_drawer.html' in channels_template
         and '_channel_actions_dialog.html' in channels_template
@@ -190,7 +191,7 @@ def main() -> int:
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
         and 'data-destructive-modal-open' in channel_actions_dialog,
         'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_actions_dialog
-        and 'bg-status-warning-soft' in channel_actions_dialog
+        and 'hover:bg-status-warning-soft' in channel_actions_dialog
         and 'Channel already disabled' in channel_delete_blockers_dialog
         and 'both dependency counts are zero' in channel_delete_blockers_dialog
         and "table_label.status_label('Locked', 'warning'" in channel_delete_blockers_dialog
@@ -224,11 +225,23 @@ def main() -> int:
         and 'Stops future channel delivery.' in channel_retire,
         'summary inspect act channel UX': channels_template.count('scope="col"') == 5
         and 'Details' in channels_template and 'More' in channels_template
-        and 'data-kaori-dialog-transition' in channel_actions_dialog
+        and 'x-teleport="body"' in channel_actions_dialog
+        and 'View More' in channels_template
         and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_actions_dialog
         and 'hx-target="#notification-channels-workspace"' in channel_actions_dialog
         and 'detailChannel === ' in channel_details_drawer
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template,
+        'KAORI View More dropdown': 'View More' in channels_template
+        and '@click.stop="openActionMenu({{ channel.id }}, $el)"' in channels_template
+        and ':aria-expanded="(actionMenuId === {{ channel.id }}).toString()"' in channels_template
+        and '@scroll.capture="actionMenuId = null"' in channels_template
+        and 'getBoundingClientRect()' in channels_template
+        and 'x-teleport="body"' in channel_actions_dialog
+        and 'x-show="actionMenuId === {{ channel.id }}"' in channel_actions_dialog
+        and '@click.outside=' in channel_actions_dialog
+        and '@keydown.escape.stop.prevent=' in channel_actions_dialog
+        and 'data-kaori-native-dialog' not in channel_actions_dialog
+        and 'data-kaori-dialog-open' in channel_actions_dialog,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
