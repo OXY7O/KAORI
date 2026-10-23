@@ -6,6 +6,14 @@
 {% block title %}Lifecycle &amp; Assurance · Secrets &amp; PKI · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="secrets-pki-lifecycle" class="min-w-0 space-y-6">
+        <nav class="flex flex-wrap gap-3" aria-label="Secrets and PKI lifecycle workspaces">
+            <a href="{{ url_for('secrets_pki.leases') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Leases</a>
+            <a href="{{ url_for('secrets_pki.consumers') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Consumers</a>
+            <a href="{{ url_for('secrets_pki.governance') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Governance</a>
+        </nav>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
