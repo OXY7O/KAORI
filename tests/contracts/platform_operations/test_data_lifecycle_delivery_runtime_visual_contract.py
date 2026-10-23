@@ -44,7 +44,8 @@ def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns()
     ui = read(UI)
     presentation = read(PRESENTATION)
     assert 'sm:grid-cols-2' in ui
-    assert "selected.name not in ('alert_incident', 'runtime_observation')" in ui
+    assert "lifecycle.coverage|length == 3" in ui
+    assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
     assert 'xl:grid-cols-3' in ui  # Other eligible domains preserve existing layout.
     assert 'class="h-full rounded-lg border border-outline-subtle' in ui
     assert '{% for item in lifecycle.coverage %}' in ui
