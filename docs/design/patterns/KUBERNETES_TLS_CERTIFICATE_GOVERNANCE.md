@@ -332,6 +332,27 @@ This reduces ORM materialization but is **not** a benchmark PASS. Verify
 bounded per-batch memory, PostgreSQL query plan/latency and transactional
 no-prune failure paths in Dev Container before official admission.
 
+## TLS sync JobExecution selection at fleet scale (#1327)
+
+For a selected cluster, PostgreSQL JSONB target containment filters
+canonical `JobExecution.payload_json.targets[].cluster_id` in SQL **before**
+limiting the job history, so 100+ unrelated cluster jobs cannot conceal
+that cluster's latest terminal outcome or its zero-certificate success.
+A job labelled `all_clusters` is not automatically proof that any one
+cluster was targeted; the recorded target list is authoritative.
+
+Active-job presentation uses one ordered, target-qualified SQL query rather
+than loading all fleet-active JobExecution ORM rows. Historical
+zero-certificate fallback queries only clusters missing both certificate-row
+and admitted collection-state evidence; one SQL-selected successful job is
+used per such cluster, with partially successful jobs rejected if the
+specific cluster appears in the failed-target evidence. Fleet summaries
+remain bounded and preserve source-specific failure exceptions.
+
+PostgreSQL JSONB predicates require DB-backed EXPLAIN, realistic history
+volume and Dev Container regression before official admission; no new job
+table/schema or provider-side lookup is introduced.
+
 ## Provenance-safe TLS collection freshness (#1327)
 
 `TLSCertificateCollectionState.updated_at` means the latest collection attempt;
