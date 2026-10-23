@@ -80,7 +80,9 @@ after archive-only processing. Archive serialization stores only record
 identity, nullable actor FK and sanitized target/action/summary/timestamp.
 It intentionally omits free-form metadata, IP, user agent and any fabricated
 immutable actor snapshot; such minimally redacted bundles **are not
-sufficient evidence for hot cleanup**. For this interim security admission, the domain, aggregate counts, Preview,
+sufficient evidence for hot cleanup**.
+
+For this interim security admission, the domain, aggregate counts, Preview,
 Archive History entries and mutation calls are restricted to an authorized
 **Local Database Super Admin**; ordinary lifecycle readers/managers cannot
 bypass source-level permissions. Export/download of the bundles remains
