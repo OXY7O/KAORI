@@ -6,7 +6,8 @@ from time import monotonic
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import current_app
+from flask import abort, current_app
+from flask_login import current_user
 from sqlalchemy import case, func
 
 from app.artifact_storage.service import StorageProfile, build_storage_profile
@@ -50,6 +51,15 @@ _ARCHIVE_STORAGE_OPTIONS = ('local', 's3')
 _STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
 
+def _can_govern_audit_event() -> bool:
+    """Temporary strict boundary until source-specific archive RBAC is admitted."""
+    return bool(
+        getattr(current_user, 'is_authenticated', False)
+        and getattr(current_user, 'is_super_admin', False)
+        and getattr(current_user, 'auth_source', None) == 'database'
+    )
+
+
 def build_domain_retention_context(
     domain_name: str,
     *,
@@ -59,6 +69,8 @@ def build_domain_retention_context(
     policy: RetentionPolicy | None = None,
     stored_policy: DataLifecyclePolicy | None = None,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not _can_govern_audit_event():
+        abort(403, description='AuditEvent source governance access is not admitted.')
     domain = get_archive_domain(domain_name)
     effective_policy = policy or domain.build_policy()
     stored = stored_policy if stored_policy is not None else get_policy(domain.name)
@@ -136,7 +148,14 @@ def build_data_lifecycle_context(
     feedback: dict[str, Any] | None = None,
     poll_once: bool = False,
 ) -> dict[str, Any]:
-    supported = tuple(sorted(DOMAIN_FACTORIES))
+    allowed_audit_event = _can_govern_audit_event()
+    supported = tuple(sorted(
+        name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event
+    ))
+    if selected_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent source governance access is not admitted.')
+    if archive_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent archive history access is not admitted.')
     selected = selected_domain if selected_domain in supported else supported[0]
     active = active_tab if active_tab in {'policies', 'history', 'storage'} else 'policies'
     stored_map = {
@@ -223,6 +242,7 @@ def build_data_lifecycle_context(
             operation_mode=history_filters['operation_mode'],
             storage_backend=history_filters['storage_backend'],
             search=history_filters['search'],
+            exclude_domains=() if allowed_audit_event else ('audit_event',),
         )
         total = int(history_pagination.total or 0)
         context.update(
