@@ -480,9 +480,9 @@ Channel (shared title/provider+destination), Readiness (posture and
 enabled/archived), Routing (minimum severity and counts of domains/allowed
 uses), Last Delivery (committed outcome and timestamp), and Actions.
 The normal table row exposes at most **two** controls: **Details** and,
-only for authorized active channels, **More**. Do not put Edit/Test/Retire/
-Locked/Delete, complete event lists, Test Delivery evidence, or dependency
-records directly in the row.
+only for authorized active channels, **View More**. Do not put Edit/Test/
+Retire/Locked/Delete, complete event lists, Test Delivery evidence, or
+dependency records directly in the row.
 
 **Details** uses the canonical `components/side_drawer.html` and its
 focus-contained Alpine controller. The drawer shows independently committed
@@ -491,23 +491,44 @@ capabilities, record/schedule counts, lifecycle status and (when archived)
 retirement operator/time/reason. No credentials or provider live calls.
 Archived rows expose Details only, never a mutation affordance.
 
-**More** opens a compact native action sheet outside the horizontally
-scrollable table wrapper. It delegates to existing permissioned Edit,
-CSRF-protected Test, native Retire and Locked dependency dialogs, or
-existing destructive Delete confirmation. Native modal transitions use
-`data-kaori-dialog-transition`; no browser `confirm()` or custom JS.
-The archive/current state and existing URL/HTMX filters, loading, Toast,
-pagination and default Rows=5 retain their owners.
+**View More** opens an anchored, compact dropdown using the existing KAORI
+navbar Alpine open/outside/Escape and elevated-surface pattern. Render the
+dropdown via `x-teleport="body"` to avoid the table's horizontal scroll
+clipping it. Place it near its row trigger, adjust upward by available
+viewport space, and close on outside click, Escape, scroll or resize.
+Keep trigger `aria-expanded`/`aria-controls`, keyboard focus and
+operator-scope checks. The dropdown delegates Edit, CSRF-protected Test,
+native Retire and Locked dialogs, or destructive Delete confirmation; it
+is **not** a modal and must not add an overlay or header/footer chrome.
+Only those confirmation/explanation workflows remain native dialogs.
+No browser `confirm()` or additional custom JS component. Existing URL/
+HTMX filters, loading, Toast, pagination and default Rows=5 stay unchanged.
 
 This replaces the older Channel Inventory six-column and 2×2 action-grid
 recommendations while preserving historical change traceability. Do not
 alter notification delivery, evidence retention, RBAC, or lifecycle
 authority merely to simplify the UI.
 
-### Destructive confirmation from the More action sheet (#2774)
+### Destructive confirmation from View More (#2774, #2787)
 
-The eligible Delete button in the More native action dialog triggers the
-existing shared destructive confirmation. Its CSRF-protected hidden POST
-form must stay **outside** that native dialog; closing the action sheet
-must not make the eventual confirmed submit target inert or inaccessible.
+The eligible Delete item in the teleported dropdown triggers KAORI's existing
+destructive confirmation. Its CSRF-protected POST form remains **outside**
+the dropdown and outside the table scroll wrapper, so confirmation can
+submit once without a clipped/hidden modal submit dependency. When the
+destructive confirmation or a native lifecycle dialog is open, suppress
+outside-click dropdown dismissal to preserve focus restoration on Cancel.
 Server-side dependency denial remains authoritative.
+
+## Notification Channel View More Dropdown (#2787, 2026-10-23)
+
+This user-approved refinement supersedes #2774's centered native More
+action sheet, which created unnecessary modal chrome for a short action list.
+The current row label is **View More** with chevron-down. The menu uses the
+same elevated/rounded surface and borderless-hover action treatment as the
+existing navbar Quick Actions/User Menu. It is teleported beyond horizontal
+table clipping and anchored to the clicked row button via viewport geometry.
+The only native dialogs are actual lifecycle explanations/confirmations,
+including Retire, Locked, and Delete confirmation. The Details inspection
+drawer is unchanged and Archived channels remain read-only. Keep keyboard
+Tab/Escape, outside-click and scroll/resize closure, semantic labels,
+permission boundaries, HTMX feedback and delivery audit intact.

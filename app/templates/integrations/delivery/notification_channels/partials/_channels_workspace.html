@@ -16,7 +16,30 @@
     <input type="hidden" name="channel_lifecycle" value="{{ payload.channel_lifecycle }}">
 {%- endmacro %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
-<div x-data="{ provider: '{{ selected_provider }}', guideProvider: '{{ selected_provider or 'telegram' }}', detailChannel: null }"
+<div x-data="{
+         provider: '{{ selected_provider }}',
+         guideProvider: '{{ selected_provider or 'telegram' }}',
+         detailChannel: null,
+         actionMenuId: null,
+         actionMenuStyle: {},
+         openActionMenu(id, trigger) {
+             if (this.actionMenuId === id) { this.actionMenuId = null; return }
+             const rect = trigger.getBoundingClientRect()
+             const width = 224
+             const menuHeight = 214
+             const gap = 8
+             const top = rect.bottom + menuHeight + gap <= window.innerHeight
+                 ? rect.bottom + gap : Math.max(gap, rect.top - menuHeight - gap)
+             const left = Math.max(gap, Math.min(rect.right - width, window.innerWidth - width - gap))
+             this.actionMenuStyle = { top: top + 'px', left: left + 'px', width: width + 'px' }
+             this.actionMenuId = id
+             this.$nextTick(() => document.getElementById('notification-channel-actions-' + id)
+                 ?.querySelector('a[href], button:not([disabled])')?.focus())
+         }
+     }"
+     @scroll.capture="actionMenuId = null"
+     @scroll.window="actionMenuId = null"
+     @resize.window="actionMenuId = null"
      class="space-y-5">
     <section class="{{ integration_ui.section_shell_classes() }}">
         <header class="flex flex-col gap-4 border-b border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
@@ -208,11 +231,11 @@
                 <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[29%]">Channel</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Readiness</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Routing</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Channel</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Routing</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Last Delivery</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[16%]">Actions</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[25%]">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -252,14 +275,16 @@
                                     </button>
                                     {% if channel.lifecycle_state == 'active' and can_manage %}
                                         <button type="button"
-                                                data-kaori-dialog-open
-                                                data-dialog-target="notification-channel-actions-{{ channel.id }}"
-                                                aria-haspopup="dialog"
+                                                id="notification-channel-view-more-{{ channel.id }}"
+                                                @click.stop="openActionMenu({{ channel.id }}, $el)"
+                                                @keydown.escape.stop.prevent="actionMenuId = null"
+                                                aria-haspopup="true"
+                                                :aria-expanded="(actionMenuId === {{ channel.id }}).toString()"
                                                 aria-controls="notification-channel-actions-{{ channel.id }}"
-                                                aria-label="More actions for {{ channel.name }}"
+                                                aria-label="View more actions for {{ channel.name }}"
                                                 class="{{ table_ui.action_classes() }}">
-                                            <i data-lucide="ellipsis" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            More
+                                            View More
+                                            <i data-lucide="chevron-down" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         </button>
                                     {% endif %}
                                 </div>
@@ -281,7 +306,7 @@
                 </tbody>
             </table>
         </div>
-        {# Inspection and action surfaces live outside the horizontally scrollable table. #}
+        {# Detail drawers and teleported View More dropdowns stay outside table overflow. #}
         {% for channel in payload.channels %}
             {% include 'integrations/delivery/notification_channels/partials/_channel_details_drawer.html' %}
             {% if channel.lifecycle_state == 'active' and can_manage %}
