@@ -16,7 +16,7 @@ The canonical suite is `tests/access/authentication/`.
 
 - Local success is authoritative.
 - An existing local identity with a wrong password does not fall through to LDAP.
-- Unknown local identity may continue to enabled LDAP providers.
+- Unknown local identity or an existing externally provisioned LDAP account may continue to enabled, linked LDAP providers; the presence of its KAORI projection row does not grant local password authority.
 - Database unavailability stops external lookup.
 - LDAP provider unavailability is preserved after all external attempts.
 
