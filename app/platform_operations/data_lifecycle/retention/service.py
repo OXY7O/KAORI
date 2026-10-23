@@ -79,6 +79,8 @@ def run_retention_archive(
     # This opt-in capability defaults to True for existing admitted domains.
     if cleanup and not getattr(domain, 'cleanup_supported', True):
         raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
+    if domain.name == 'audit_event' and trigger_type == 'scheduled':
+        raise RuntimeError('Scheduled AuditEvent archival is not admitted pending retention governance.')
     if not policy.enabled:
         raise RuntimeError(f'Retention is disabled for {domain.name}.')
 
@@ -317,6 +319,8 @@ def purge_expired_archives(
     retention_days: int,
     dry_run: bool = False,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not dry_run:
+        raise RuntimeError('AuditEvent archive-object purge is not admitted pending retention governance.')
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
     candidate_query = ArchiveArtifact.query.filter(
         ArchiveArtifact.domain == domain_name,
