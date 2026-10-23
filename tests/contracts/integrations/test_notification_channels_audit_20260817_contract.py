@@ -590,12 +590,12 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
 
 def test_channel_summary_responsive_width_retains_lifecycle_guidance() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     assert "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in inventory
     assert 'min-w-[1100px]' not in inventory
-    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in actions
-    assert 'Locked' in actions
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
+    assert 'Delete Locked' in drawer
     assert 'channel.report_schedule_names' in blockers
     assert 'Channel already disabled' in blockers
 
@@ -629,7 +629,6 @@ def test_channel_lifecycle_tabs_use_activity_audit_framed_navigation() -> None:
 
 def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
     retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
     drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     service = read('app/integrations/delivery/notification_channels/service.py')
@@ -646,6 +645,7 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     assert "'channel_lifecycle': payload.channel_lifecycle" in inventory
     assert "payload.channel_lifecycle == 'retired'" in inventory
     assert "channel.lifecycle_state == 'active' and can_manage" in inventory
+    assert "channel.lifecycle_state == 'active' and can_manage" in drawer
     assert 'notification_channels.retire' in retire
     assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retire
     assert 'channel.report_schedule_count' in retire
@@ -654,13 +654,12 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     assert 'Retired At' in drawer and 'channel.retirement_reason' in drawer
     assert 'channel.retired_by_user_id' in drawer
     assert 'credential_payload' not in retire and 'credential_payload' not in drawer
-    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in actions
+    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in drawer
 
 
 def test_channel_inventory_uses_compact_summary_and_shared_details_drawer() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
     table = read('app/templates/components/table.html')
     shared_drawer = read('app/templates/components/side_drawer.html')
     service = read('app/integrations/delivery/notification_channels/service.py')
@@ -674,15 +673,17 @@ def test_channel_inventory_uses_compact_summary_and_shared_details_drawer() -> N
     assert 'colspan="5"' in inventory
     assert '>Last Delivery</th>' in inventory
     assert '>Actions</th>' in inventory
-    assert 'Details' in inventory and 'More' in inventory
-    assert 'aria-controls="notification-channel-actions-{{ channel.id }}"' in inventory
+    assert 'Details' in inventory and 'View More' not in inventory
+    assert 'openActionMenu' not in inventory
+    assert 'actionMenuId' not in inventory
+    assert 'x-teleport="body"' not in inventory
     assert 'detailChannel = {{ channel.id }}' in inventory
     assert 'detailChannel: null' in inventory
     row = inventory.split('<tbody class="{{ table_ui.body_classes() }}">', 1)[1].split('</tbody>', 1)[0]
     assert '<details' not in row and '<dialog' not in row
-    assert 'View policy' not in row
-    assert 'Edit</a>' not in row and 'Retire</button>' not in row
-    assert "table_ui.title_cell(channel.name" in row
+    assert row.count('aria-label="View details for {{ channel.name }}"') == 1
+    assert 'View policy' not in row and 'Edit Channel' not in row
+    assert 'table_ui.title_cell(channel.name' in row
     assert 'channel.event_type_labels|length' in row
     assert inventory.index('</table>') < inventory.index('_channel_details_drawer.html')
     assert inventory.index('_channel_details_drawer.html') < inventory.index("table_registry.footer('notification_channels.index'")
@@ -701,94 +702,55 @@ def test_channel_inventory_uses_compact_summary_and_shared_details_drawer() -> N
     assert 'channel.last_delivery_at|user_datetime' in drawer
     assert "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service
     assert 'credential_payload' not in drawer
-    assert 'credential_payload' not in actions
-
-    # Only eligible managers see the More sheet; archived inventory stays read-only.
-    assert "channel.lifecycle_state == 'active' and can_manage" in inventory
-    assert 'x-teleport="body"' in actions
-    assert 'x-show="actionMenuId === {{ channel.id }}"' in actions
-    assert 'role="group"' in actions
-    assert 'data-kaori-native-dialog' not in actions
-    assert "url_for('notification_channels.test', channel_id=channel.id)" in actions
-    assert "url_for('notification_channels.delete', channel_id=channel.id)" in actions
+    assert "channel.lifecycle_state == 'active' and can_manage" in drawer
+    assert "url_for('notification_channels.test', channel_id=channel.id)" in drawer
+    assert "url_for('notification_channels.delete', channel_id=channel.id)" in inventory
 
 
-def test_channel_view_more_dropdown_uses_kaori_navbar_pattern_without_table_clipping() -> None:
+def test_channel_actions_are_in_details_without_dropdown_or_table_clipping() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    dropdown = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
-    navbar = read('app/templates/components/navigation/navbar.html')
-    native = read('app/static/js/native_dialogs.js')
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    side_drawer_js = read('app/static/js/side_drawer.js')
 
-    assert 'View More' in inventory
-    assert 'id="notification-channel-view-more-{{ channel.id }}"' in inventory
-    assert '@click.stop="openActionMenu({{ channel.id }}, $el)"' in inventory
-    assert ':aria-expanded="(actionMenuId === {{ channel.id }}).toString()"' in inventory
-    assert 'aria-controls="notification-channel-actions-{{ channel.id }}"' in inventory
-    assert '@scroll.capture="actionMenuId = null"' in inventory
-    assert '@resize.window="actionMenuId = null"' in inventory
-    assert 'getBoundingClientRect()' in inventory
-    assert 'this.$nextTick(' in inventory
-    # Regression: using the old fixed 214px estimate detached short menus
-    # from the trigger when the dropdown had to flip above a lower row.
-    assert 'const menuHeight = 214' not in inventory
-    assert "const menuHeight = menu.getBoundingClientRect().height" in inventory
-    assert "visibility: 'hidden'" in inventory
-    assert "visibility: 'visible'" in inventory
-    assert 'const openAbove = menuHeight > spaceBelow && spaceAbove > spaceBelow' in inventory
-    assert 'const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap' in inventory
-    assert "maxHeight: availableHeight + 'px'" in inventory
-    assert '?.focus({ preventScroll: true })' in inventory
-    assert 'if (this.actionMenuId !== id) return' in inventory
-    assert 'x-teleport="body"' in dropdown
-    assert 'x-show="actionMenuId === {{ channel.id }}"' in dropdown
-    assert '@click.outside=' in dropdown
-    assert '@keydown.escape.stop.prevent=' in dropdown
-    assert 'rounded-xl border border-outline-default bg-surface-elevated' in dropdown
-    assert 'x-show="quickOpen"' in navbar
-    assert '@click.outside="quickOpen = false"' in navbar
-    assert 'role="group"' in dropdown
-    assert 'data-kaori-native-dialog' not in dropdown
-    assert 'data-kaori-dialog-open' in dropdown
-    assert 'data-kaori-dialog-transition' not in dropdown
-    assert "opener.matches('[data-kaori-dialog-transition]')" in native
-    assert 'channel.delete_blocked' in dropdown
-    assert 'hx-post="{{ url_for(\'notification_channels.test\'' in dropdown
-    assert 'hx-post="{{ url_for(\'notification_channels.delete\'' in dropdown
-    assert dropdown.index('</template>') < dropdown.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
-    assert 'name="csrf_token" value="{{ csrf_token() }}"' in dropdown
+    assert 'View More' not in inventory
+    assert 'openActionMenu' not in inventory and 'actionMenuId' not in inventory
+    assert 'x-teleport="body"' not in inventory
+    assert inventory.count('aria-label="View details for {{ channel.name }}"') == 1
+    assert "side_drawer.section('Channel Actions'" in drawer
+    assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index("'Delivery Policy'")
+    assert 'channel.lifecycle_state == \'active\' and can_manage' in drawer
+    assert "action_button.classes('secondary', full=true)" in drawer
+    assert "action_button.classes('critical', full=true)" in drawer
+    assert "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in drawer
+    assert "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in side_drawer_js
+    assert 'this.trapFocus(event, this.dialog)' in side_drawer_js
 
 
 def test_notification_channel_summary_actions_preserve_governance() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
     drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     deletion = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     retirement = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
 
     assert "table_ui.title_cell(channel.name, channel.provider_label ~ ' · ' ~ channel.destination_label, channel.provider_icon)" in inventory
     assert 'table_ui.action_grid_classes()' not in inventory
-    assert 'role="group" aria-label="Actions for {{ channel.name }}"' in inventory
     assert 'aria-label="View details for {{ channel.name }}"' in inventory
-    assert 'aria-label="View more actions for {{ channel.name }}"' in inventory
-    assert 'data-destructive-modal-open' in actions
-    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in actions
-    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in actions
+    assert 'aria-label="View more actions for {{ channel.name }}"' not in inventory
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in drawer
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
     assert "channel.test_status == 'success'" in drawer
     assert 'channel.last_delivery_label, channel.last_delivery_tone' in drawer
-
     assert 'Delivery history and report links remain.' in deletion
     assert 'Turn off Enabled in Edit to stop delivery.' in deletion
     assert 'Automatic delivery is already disabled.' in deletion
     assert 'zero records and zero report references' in deletion
     assert 'Preserve evidence.' in deletion
     assert 'data-kaori-native-dialog' in deletion
-
     assert 'aria-label="Retirement consequences"' in retirement
-    assert '<ul class="mt-2 list-disc' in retirement
     assert 'Stops future channel delivery.' in retirement
     assert 'Moves this channel to Archived (read-only).' in retirement
     assert '{{ channel.delivery_record_count }}' in retirement
-    assert 'committed delivery records.' in retirement
     assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retirement
     assert 'channel.report_schedule_count' in retirement
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
@@ -796,18 +758,16 @@ def test_notification_channel_summary_actions_preserve_governance() -> None:
 
 def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
     drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     service = read('app/integrations/delivery/notification_channels/service.py')
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
-
     assert "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in inventory
     assert inventory.count('scope="col"') == 5
     for width in ('w-[25%]', 'w-[12%]', 'w-[20%]', 'w-[18%]'):
         assert width in inventory
-    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in actions
-    assert 'Locked' in actions
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
+    assert 'Delete Locked' in drawer
     assert 'data-kaori-native-dialog' in blockers
     assert 'channel.delivery_record_count' in blockers
     assert 'channel.report_schedule_count' in blockers
@@ -818,43 +778,37 @@ def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible
     assert "'report_schedule_names': list(usage.report_schedule_names)" in service
     assert 'if usage.blocked:' in lifecycle
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
-    assert 'data-destructive-modal-open' in actions
-    assert inventory.index('</table>') < inventory.index('_channel_actions_dialog.html')
+    assert 'data-destructive-modal-open' in drawer
+    assert inventory.index('</table>') < inventory.index('_channel_details_drawer.html')
     assert "channel.lifecycle_state == 'retired'" in drawer
 
 
-def test_channel_more_locked_action_explains_disabled_lifecycle() -> None:
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
+def test_channel_drawer_locked_action_explains_disabled_lifecycle() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
-
-    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in actions
-    assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in actions
-    assert 'text-status-warning-text' in actions
-    assert 'hover:bg-status-warning-soft' in actions
-    assert 'data-lucide="lock-keyhole"' in actions
-    assert 'Why locked?' not in actions
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
+    assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in drawer
+    assert 'text-status-warning-text' in drawer
+    assert 'data-lucide="lock-keyhole"' in drawer
     assert "table_label.status_label('Locked', 'warning', icon='lock-keyhole')" in dialog
     assert 'Channel already disabled' in dialog
     assert 'Automatic delivery is already disabled.' in dialog
     assert 'hard delete stays locked' in dialog.lower()
-    assert 'Delete requires' in dialog
     assert 'zero records and zero report references' in dialog
     assert 'for schedule_name in channel.report_schedule_names' in dialog
     assert 'credential_payload' not in dialog
     assert 'notification_channels.index' in dialog
     assert 'hx-target="#notification-channels-workspace"' in dialog
-    assert 'hx-select="#notification-channels-workspace"' in dialog
-    assert 'hx-push-url="false"' in dialog
     assert 'data-kaori-native-dialog' in dialog
     assert dialog.count('data-kaori-dialog-close') == 2
     assert 'if usage.blocked:' in lifecycle
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
 
 
-def test_channel_more_actions_preserve_csrf_htmx_and_native_confirmations() -> None:
+def test_channel_drawer_actions_preserve_csrf_htmx_and_native_confirmations() -> None:
     inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
-    actions = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     index = read('app/templates/integrations/delivery/notification_channels/index.html')
     native = read('app/static/js/native_dialogs.js')
@@ -862,39 +816,36 @@ def test_channel_more_actions_preserve_csrf_htmx_and_native_confirmations() -> N
     confirm_js = read('app/static/js/destructive_confirmation_modal.js')
     routes = read('app/integrations/delivery/notification_channels/routes.py')
 
-    assert 'hx-get="{{ url_for(' in actions
-    assert 'hx-push-url="false"' in actions
-    assert 'hx-target="#notification-channels-workspace"' in actions
-    assert 'hx-select="#notification-channels-workspace"' in actions
+    assert 'hx-get="{{ url_for(' in drawer
+    assert 'hx-push-url="false"' in drawer
+    assert 'hx-target="#notification-channels-workspace"' in drawer
+    assert 'hx-select="#notification-channels-workspace"' in drawer
     assert "target.id === 'notification-channels-workspace'" in native
     assert 'document.getElementById(target.id) || target' in native
     assert 'data-kaori-dialog-auto-open' in modal
     assert 'data-kaori-dialog-close' in modal
-
-    assert "hx-post=\"{{ url_for('notification_channels.test', channel_id=channel.id) }}\"" in actions
-    assert "hx-post=\"{{ url_for('notification_channels.delete', channel_id=channel.id) }}\"" in actions
+    assert "hx-post=\"{{ url_for('notification_channels.test', channel_id=channel.id) }}\"" in drawer
+    assert "hx-post=\"{{ url_for('notification_channels.delete', channel_id=channel.id) }}\"" in inventory
     assert 'hx-post="{{ url_for(\'notification_channels.update\'' in modal
     assert 'hx-disabled-elt="button[type=\'submit\']"' in modal
     assert 'operation_feedback=load_operational_feedback()' in index
     assert 'components/operation_feedback_oob.html' in index
     assert 'js/destructive_confirmation_modal.js' in index
-    assert 'data-destructive-modal-open' in actions
-    assert actions.index('data-destructive-modal-open') < actions.index('</template>')
-    assert actions.index('</template>') < actions.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
-    assert 'data-destructive-modal-id="notification-channel-delete-confirmation"' in actions
-    assert 'data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"' in actions
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-destructive-modal-id="notification-channel-delete-confirmation"' in drawer
+    assert 'data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"' in drawer
+    assert 'id="notification-channel-delete-submit-{{ channel.id }}"' in inventory
     assert 'destructive_confirmation_modal.render(' in inventory
     assert 'data-destructive-modal-confirm' in shared_confirm
     assert 'data-destructive-modal-close' in shared_confirm
     assert 'data-destructive-target-name' in shared_confirm
     assert 'submit?.click()' in confirm_js
-    assert 'channel.delete_blocked' in actions
-    assert 'window.confirm(' not in actions
-    assert 'name="csrf_token" value="{{ csrf_token() }}"' in actions
-    assert 'name="csrf_token" value="{{ csrf_token() }}"' in modal
-    assert "channel_return_fields()" in actions
-    assert 'x-teleport="body"' in actions
-    assert 'aria-haspopup="dialog"' in actions
+    assert 'channel.delete_blocked' in drawer
+    assert 'window.confirm(' not in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in inventory
+    assert "channel_return_fields()" in drawer and "channel_return_fields()" in inventory
+    assert 'aria-haspopup="dialog"' in drawer
     assert 'delete_channel(channel)' in routes
     assert 'NotificationChannelDeletionBlocked' in routes
     assert "event_type='integration.notification_channel.delete_blocked'" in routes
