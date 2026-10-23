@@ -29,12 +29,8 @@ def read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
     )
 
 
-def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
-    cluster = db.session.get(Cluster, record.cluster_id)
-    if cluster is None:
-        raise ValueError('Cluster record no longer exists.')
-
-    api = build_kubernetes_client(cluster).core_api()
+def _verify_tls_secret_preconditions(api: Any, record: Any) -> str:
+    """Read live Kubernetes identity, retaining only safe resource metadata."""
     live_secret = api.read_namespaced_secret(
         name=record.secret_name,
         namespace=record.namespace,
@@ -62,6 +58,30 @@ def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
         raise TLSSecretIdentityError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
     if not resource_version:
         raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
+    return resource_version
+
+
+def preflight_tls_secret(record: Any) -> str:
+    """Admit one immutable live target without sending provider PATCH."""
+    cluster = db.session.get(Cluster, record.cluster_id)
+    if cluster is None:
+        raise ValueError('Cluster record no longer exists.')
+    return _verify_tls_secret_preconditions(build_kubernetes_client(cluster).core_api(), record)
+
+
+def patch_tls_secret(
+    record: Any,
+    cert_bytes: bytes,
+    key_bytes: bytes,
+    *,
+    prevalidated_resource_version: str | None = None,
+) -> str:
+    cluster = db.session.get(Cluster, record.cluster_id)
+    if cluster is None:
+        raise ValueError('Cluster record no longer exists.')
+
+    api = build_kubernetes_client(cluster).core_api()
+    resource_version = prevalidated_resource_version or _verify_tls_secret_preconditions(api, record)
 
     encoded_data = {
         TLS_CRT_KEY: base64.b64encode(cert_bytes).decode('ascii'),
