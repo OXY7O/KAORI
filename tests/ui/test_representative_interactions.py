@@ -690,3 +690,71 @@ def test_representative_filter_pagination_and_form_controls(
             search_control.press_sequentially('browser')
         expect(page.locator('#notification-center-search')).to_be_visible()
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
+
+
+def test_settings_account_profile_activity_credentials_visual_qa(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Read-only Account visual evidence across the KAORI canonical viewport/theme matrix."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    _login(page, kaori_authenticated_base_url)
+
+    account_path = '/settings/account'
+    response = page.goto(f'{kaori_authenticated_base_url}{account_path}?tab=profile', wait_until='networkidle')
+    assert response is not None and response.ok
+
+    workspaces = {
+        'profile': '[data-account-profile-workspace="full-width"]',
+        'activity': '[data-authentication-activity-layout="full-width"]',
+        'credentials': '[data-credential-workspace-layout="natural-columns"]',
+    }
+    for theme in ('light', 'dark'):
+        _load_persisted_visual_theme(page, theme)
+        for tab, selector in workspaces.items():
+            scenario = f'settings-account-{tab}-{theme}'
+            with _browser_evidence(page, scenario, viewport_name):
+                # Full GET first, then real shared HTMX navigation for the two other tabs.
+                if tab == 'profile':
+                    response = page.goto(
+                        f'{kaori_authenticated_base_url}{account_path}?tab=profile',
+                        wait_until='networkidle',
+                    )
+                    assert response is not None and response.ok
+                else:
+                    page.locator(f'#account-authentication-page a[href*="tab={tab}"]').first.click()
+                    expect(page).to_have_url(re.compile(rf'/settings/account\\?tab={tab}(?:&|$)'))
+                expect(page.locator('#account-authentication-page')).to_be_visible()
+                workspace = page.locator(selector)
+                expect(workspace).to_be_visible()
+                expect(page.locator('#account-settings-loading')).to_have_attribute('role', 'status')
+                expect(page.locator('#account-settings-loading')).to_have_attribute('aria-live', 'polite')
+                assert page.locator('#account-settings-loading').get_attribute('class')
+                assert 'sr-only' in (page.locator('#account-settings-loading').get_attribute('class') or '')
+
+                if tab == 'activity':
+                    expect(page.get_by_role('heading', name='No Authentication Activity Recorded')).to_be_visible()
+                    expect(page.locator('[data-authentication-summary="compact-strip"]')).to_be_visible()
+                elif tab == 'credentials':
+                    expect(page.locator('input[name="current_password"]')).to_have_count(1)
+                    expect(page.locator('input[name="new_password"]')).to_have_count(1)
+                    # Do not submit or modify real credentials from a visual suite.
+                else:
+                    expect(page.get_by_role('heading', name='Account Profile & Access')).to_be_visible()
+
+                assert_document_fits_viewport(page)
+                assert_primary_actions_visible(page)
+                assert_locator_within_document_width(page, workspace, label=f'Account {tab}')
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='PASS',
+                        surface='Settings Account',
+                        viewport=viewport_name,
+                        theme=theme,
+                        component=tab,
+                        invariant='Responsive layout, shared tabs, accessible pending status',
+                        evidence=f'{scenario}-{viewport_name}.png',
+                    )
+                )
