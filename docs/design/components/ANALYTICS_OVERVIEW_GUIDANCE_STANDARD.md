@@ -52,44 +52,21 @@ Canonical composition:
 </div>
 ```
 
-## Cross-domain unified access guidance
+## Cross-domain Access Denied recovery surface
 
-The Access Denied (403) view consumes the **presentation-only** Analytics guidance primitives. Use one neutral `guidance_card_classes()` outer surface, one `snapshot_header_classes()` header, and one `interpretation_grid_classes()` with two `interpretation_callout(..., role=...)` regions. A compact `boundary_zone_classes()` footer may contain safe account-navigation and escalation instructions. The page owns authorization-specific wording and role state; shared presentation macros must not implement security policy.
+The **Access Denied (403)** screen reuses Analytics' **presentation primitives** but is **not** an Analytics interpretation table. The final recovery composition under issue #2962 is an intentional exception to the generic `interpretation_grid_classes()` pattern.
 
-The **reason** must distinguish an absent/inactive KAORI role from a general denied page/action; never invent an unknown permission key or imply a particular resource-level denial. The **next step** must name a real destination: the KAORI Access Administrator (or internal IT helpdesk) responsible for role/permission review in **Access → Users**. If KAORI has no live access-request feature or known helpdesk link, do not render a fake “Request Access” action. A `View My Account` link may point to `settings.account` but must be labeled as an account view, **not** a ticket submission or direct support channel.
+- Use **one** `guidance_card_classes()` outer surface, without nested cards or a separate header/footer strip.
+- Inside, compose two **unequal** responsive areas with a subtle single divider: reason and active role on the left; administrator escalation and next steps on the right. Use `bg-surface-hover` (neutral) for the reason area and `bg-surface-card` for the help area. The responsive split stacks naturally on phones.
+- Use the existing `role_icon_classes(..., size='large')` for visual anchors. Denial headline is `text-xl` / `sm:text-2xl`, and explanation / steps are `text-sm leading-6`, not compressed `text-xs` interpretation copy. Do not present denial as a Critical infrastructure incident or tint the entire outer surface.
+- The reason must distinguish an **absent/inactive role** from a **general permission denial**, using server-provided `role_unavailable` and `role_label`. Do not guess the specific missing permission, resource policy, or whether the directory is unavailable.
+- The escalation destination is **KAORI Access Administrator** or internal IT helpdesk; administrators review roles and permissions in **Access → Users**. The denied Viewer should not receive an action link to restricted administration pages.
+- Ask the user to share only KAORI username, page URL and required action. Explicitly warn never to share a password or bind credential.
+- The optional `View My Account` action goes to `settings.account` and **does not submit a request**. Do not invent a mailto, helpdesk ticket form, email address or configured support URL unless it exists in KAORI and is verified.
 
-```jinja
-{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+The screen owns its human-readable cause, call to action and permissions context. The Analytics macros own only shared surface and icon appearance; **server-side RBAC and Activity Audit stay authoritative**. Keep one semantic `h2` for the reason and an `h3` for the help destination. Use the existing `action_button.classes('secondary')` for non-mutating account navigation.
 
-<section class="{{ analysis_surface.guidance_card_classes() }}"
-         aria-labelledby="access-guidance-title">
-    <header class="{{ analysis_surface.snapshot_header_classes() }}">
-        <h2 id="access-guidance-title">Why You Can't Access This Page</h2>
-    </header>
-    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout(
-            'Access Reason',
-            'No Active Role' if role_unavailable else 'Permission Not Granted',
-            reason_description,
-            icon='lock-keyhole', role='evidence'
-        ) }}
-        {{ analysis_surface.interpretation_callout(
-            'Who To Contact',
-            'KAORI Access Administrator',
-            'Contact your KAORI access administrator or internal IT helpdesk. They can review role assignments in Access → Users.',
-            icon='user-round-cog', role='brand'
-        ) }}
-    </div>
-    <div class="{{ analysis_surface.boundary_zone_classes() }}">
-        <p>Share your KAORI username, the page URL, and the action you need; never share your password.</p>
-    </div>
-</section>
-```
-
-- The layout is **one surface**, not separate cards. Shared role colors stay on icons/eyebrows, not on large backgrounds.
-- Put the reason before instructions and keep the administrator route explicit; do not create a link to restricted Access → Users for the denied viewer.
-- Keep account links accurate, accessible, and keyboard focusable. Do not claim an access request was submitted.
-- Do not disclose internal RBAC policy identifiers or any credentials. Server-side authorization and audit remain authoritative.
+Do not introduce a new generic guidance component for this 403-specific recovery layout. If the same pattern becomes a recurring family, first inspect approved shared design examples and extract a component through normal KAORI governance.
 
 ## Role selection
 
