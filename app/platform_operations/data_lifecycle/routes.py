@@ -112,7 +112,11 @@ def run() -> ResponseReturnValue:
 @bp.post('/archives/<archive_id>/verify')
 @permission_required('platform_operations.manage_data_lifecycle')
 def verify(archive_id: str) -> ResponseReturnValue:
-    context = _context(feedback=verify_lifecycle_archive(archive_id=archive_id, user_id=current_user.id))
+    try:
+        feedback = verify_lifecycle_archive(archive_id=archive_id, user_id=current_user.id)
+    except PermissionError:
+        abort(403, description='AuditEvent source verification access is not admitted.')
+    context = _context(feedback=feedback)
     context['active_tab'] = 'history'
     return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
 
