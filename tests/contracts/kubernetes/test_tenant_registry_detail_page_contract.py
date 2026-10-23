@@ -296,7 +296,7 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'name="change_reference"' in prepare
     for route, expected_layout in (
         ('tenant.accept_native_successor_handoff_route', 'w-full mt-3 space-y-3'),
-        ('tenant.execute_native_release_handoff_route', 'lg:w-3/5'),
+        ('tenant.execute_native_release_handoff_route', 'data-release-native-execution-panel'),
         ('tenant.finalize_verified_native_release_route', 'max-w-4xl'),
         ('tenant.finalize_verified_capsule_release_route', 'max-w-2xl'),
     ):
@@ -1336,8 +1336,8 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
         'confirm_native_handoff_readback',
     ):
         assert f'name="{required_field}"' in approval
-    assert 'Partial failure requires recovery.' in approval
-    assert 'No successor token or private key is required.' in approval
+    assert 'failures require recovery.' in approval
+    assert 'no successor credentials are needed.' in approval
     assert 'historical Dry-Run Passed receipt may be expired' in approval
 
     release = final.split('tenant.finalize_verified_native_release_route', 1)[1]
@@ -1513,6 +1513,41 @@ def test_expired_native_restart_action_has_compact_readonly_evidence_and_require
     assert 'native_cycle.restart_required' in expired
     assert 'row.release_handoff_plan.requested_by == current_user.id' in expired
     assert 'native_cycle.restart_blocked_by_readback' in expired
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+
+
+def test_native_execution_uses_full_width_governed_action_strip() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    execution = next(
+        form
+        for form in re.findall(r'<form\b.*?</form>', approval, flags=re.DOTALL)
+        if 'data-release-native-execution-panel' in form
+    )
+    Environment().parse(detail)
+
+    assert 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' in approval
+    assert 'border-y border-outline-subtle bg-kaori-soft/20' in approval
+    assert 'lg:w-3/5' not in execution
+    assert 'Native Provider Handoff' in execution
+    assert 'KAORI rechecks kubeconfig access; no successor credentials are needed.' in execution
+    assert 'I authorize this exact handoff.' in execution
+    assert 'CPU, memory, quotas and workloads stay unchanged; failures require recovery.' in execution
+    assert 'name="confirm_native_handoff_execution"' in execution
+    assert 'value="transfer"' in execution
+    assert 'required' in execution
+    assert 'lg:justify-self-end' in execution
+    assert 'Execute Native Handoff' in execution
+    assert 'Resume Verified Native Handoff' in execution
+    assert 'name="plan_sha256"' in execution
+    assert 'name="csrf_token"' in execution
+    assert 'hx-post=' in execution
+    assert 'Read-back: {{ handoff_readback.observed_count }} resources.' in approval
+    assert 'External acceptance and Release remain unverified.' in approval
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23

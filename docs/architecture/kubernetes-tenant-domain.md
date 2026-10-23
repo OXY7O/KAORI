@@ -2133,3 +2133,29 @@ Official Developer Check, Full Admission and staging/main remain HOLD.
 ## Expired Native restart semantic info strip — 2026-10-23
 
 Screenshot feedback for #1091 shortens the zero-transfer read-back note and presents it with existing KAORI semantic info colors, without promoting evidence to approval. The note explicitly says the committed read-back **reports** zero transferred objects, while restart still rechecks UID/resourceVersion, ownership and dependencies; there is no automatic clearance. In its compact UI copy, `UID/version` represents the exact UID/resourceVersion verification already enforced by provider authority. The note is visual guidance only; original requester, required checkbox, SHA-bound POST/CSRF, recovery blocks and provider checks remain unchanged. Local browser Visual QA for themes, narrow width and accessibility remains PENDING. Official admission remains HOLD.
+
+## Native Step 3 full-width execution action strip — Dev Container UAT
+
+Human screenshot feedback for #2401 identified a visually unbalanced
+execute form occupying only three-fifths of the workspace, leaving a large
+empty right column below the accepted Handoff Actions and Read-Back peers.
+With the existing KAORI design tokens, the Native Provider Handoff POST
+now spans the complete content width as a subtle Violet-soft action strip.
+The provider preflight copy and bounded operator confirmation sit together
+on the left; the execution CTA aligns to the right on desktop and stacks
+naturally on narrow devices. No extra nested bordered card was added.
+
+The explicit required checkbox still acknowledges the exact plan handoff,
+unchanged CPU, memory, quotas and workloads, and recovery after failure.
+Provider verification is unchanged: KAORI rechecks scoped kubeconfig
+identity and permission against the external authoritative provider.
+The status strip below reports the observed count but explicitly states
+external acceptance and Release remain unverified. A successful dry-run
+or recorded review never substitutes for provider transfer evidence.
+
+This is presentation-only: the exact form POST URL, plan SHA-256 binding,
+CSRF/HTMX, original RBAC, independent reviewer, accepted-provider scope,
+execution/recovery controls and finalization remain unchanged. Visual QA
+is pending for eligible and blocked states, responsive breakpoints,
+light/dark, keyboard confirmation and actual negative provider tests.
+Official Developer Check, Full Admission and staging/main remain HOLD.
