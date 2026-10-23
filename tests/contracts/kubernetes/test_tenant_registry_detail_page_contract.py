@@ -426,9 +426,9 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'mt-4 border-t border-outline-subtle py-3' in approval
     assert '<summary class="cursor-pointer text-xs font-semibold text-content-primary' in approval
     # Actions and evidence must be peer surfaces, not stacked bordered cards.
-    assert 'items-start gap-x-8 gap-y-5 lg:grid-cols-2' in approval
+    assert 'items-start gap-x-7 gap-y-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in approval
     assert 'Handoff Actions' in approval
-    assert 'Complete governed actions only when eligible.' in approval
+    assert 'Governed actions, when eligible.' in approval
     assert 'class="w-full mt-3 space-y-3"' in approval
     assert 'class="w-full mt-3 space-y-3 border-t border-outline-subtle pt-3"' in approval
     assert 'aria-label="Independent Platform Admin required"' in approval
@@ -1308,13 +1308,13 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
 
     # Content hierarchy: concise status rows, unstretched peers, aligned actions.
-    assert 'items-start gap-x-8 gap-y-5 lg:grid-cols-2' in approval
+    assert 'items-start gap-x-7 gap-y-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
     assert 'flex min-w-0 flex-col gap-1 border-b border-outline-subtle py-3' in approval
-    assert 'Kubeconfig identity and scoped access verified.' in approval
-    assert 'provider ownership remains unchanged.' in approval
-    assert 'lg:flex-row lg:items-center lg:justify-between' in approval
+    assert 'Kubeconfig access verified; provider transfer remains separate.' in approval
+    assert 'provider ownership unchanged.' in approval
+    assert 'flex-col gap-3 border-y border-outline-subtle py-3 sm:flex-row' in approval
     assert 'data-tenant-native-dry-run-evidence' in approval
     assert 'name="confirm_native_handoff_dry_run"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
@@ -1384,7 +1384,7 @@ def test_native_dry_run_compact_resource_rows_and_copy_reuse_shared_behavior() -
     assert "filename='js/clipboard.js'" in read('app/templates/layouts/app.html')
 
     # Labels are concise but preserve approval, ownership and freshness boundaries.
-    assert 'Kubeconfig identity and scoped access verified. Provider transfer remains separate.' in approval
+    assert 'Kubeconfig access verified; provider transfer remains separate.' in approval
     assert 'Inspect ownership only after external handoff. This action never transfers provider resources.' in approval
     assert 'Old evidence is invalid.' in approval
     assert 'SelfSubjectReview and SelfSubjectAccessReview. Provider transfer remains separate.' not in approval
@@ -1431,6 +1431,50 @@ def test_native_platform_admin_consent_is_violet_clear_and_only_authorizes_recor
     assert 'readback_status.approval_expired' in approval
     assert 'readback_status.external_reference_current' in approval
     assert 'readback_status.external_readback_prerequisites_current' in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+
+
+
+def test_accepted_native_handoff_uses_compact_nonmutating_workspace_rows() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    right = approval.split('data-release-accepted-handoff-evidence', 1)[1].split(
+        '{% if tenant.provider_key == \'capsule\' %}', 1
+    )[0]
+    preview = approval.split('tenant.dry_run_native_release_handoff_route', 1)[1].split('</form>', 1)[0]
+    Environment().parse(detail)
+
+    # Right column has extra space for one-line desktop copy; mobile remains free to wrap.
+    assert 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in approval
+    assert 'Reference only; successor consent unverified and provider ownership unchanged.' in approval
+    assert 'Kubeconfig access verified; provider transfer remains separate.' in approval
+    assert 'Inspect external ownership; no transfer occurs here.' in right
+    assert 'mt-3 w-full space-y-2 border-t border-outline-subtle pt-3' in right
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated/35 p-3 sm:p-4' not in right
+    assert 'After external transfer only; KAORI uses its governed Native Handoff executor.' in right
+    assert 'External handoff complete; inspect markers only. No consent, writes or Release.' in right
+    assert 'name="confirm_native_handoff_readback"' in right
+    assert 'Inspect External Handoff' in right
+
+    # The preview is a thin action strip, not an extra nested callout card.
+    assert 'border-y border-outline-subtle py-3 sm:flex-row' in approval
+    assert 'Server-side dry-run only; provider metadata, quotas and limits stay unchanged.' in approval
+    assert 'name="confirm_native_handoff_dry_run"' in preview
+    assert 'value="approved"' in preview
+    assert 'required' in preview
+    assert 'Preview Native Transfer' in preview
+    assert 'rounded-xl border border-outline-subtle bg-surface-elevated/35 p-4 sm:p-5' not in preview
+
+    # The change remains presentational; the same three provider pathways remain governed.
+    assert 'tenant.inspect_native_external_handoff_route' in approval
+    assert 'tenant.execute_native_release_handoff_route' in approval
+    assert 'tenant.dry_run_native_release_handoff_route' in approval
+    assert 'external_readback_prerequisites_current' in approval
+    assert 'provider ownership unchanged.' in approval
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
