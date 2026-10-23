@@ -31,7 +31,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
 | HV-11 #2595 / #2778 | Review candidate: one population-level qualified PKI public expiry-pressure Intelligence rule; per-asset rules remain unimplemented | Not Tested |
-| HV-12 #2596 | Vault-enriched AlertCase investigation | Not Implemented |
+| HV-12 #2596 / #2786 | Review candidate: bounded sanitized Alertmanager binding-validation sample only; AlertCase investigation, case lifecycle and routing not implemented | Not Tested |
 | HV-13 #2597 / #2678 | Base permission catalog and fail-closed internal read contract; canonical #724 policy evaluator still absent | Not Tested |
 | HV-14 #2598 | Role-aware Welcome entry | Not Tested |
 | HV-15 #2599 | Canonical Reports definitions | Not Implemented |
