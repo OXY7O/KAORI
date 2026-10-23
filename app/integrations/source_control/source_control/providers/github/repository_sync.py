@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.integrations.source_control.source_control.providers.github.default_branch import (
@@ -71,7 +71,7 @@ def synchronize_installation(
     # Each branch observation is independently authoritative and best-effort.
     # Exact SHA collection never backdates or revokes an exhaustive repository
     # grant scan. Bound calls to avoid external API storms on large tenants.
-    target_ids = list(session.scalars(
+    authorized = (
         select(SourceRepository.id)
         .join(SourceRepositoryGrant, SourceRepositoryGrant.repository_id == SourceRepository.id)
         .where(
@@ -80,9 +80,13 @@ def synchronize_installation(
             SourceRepositoryGrant.valid_until.is_(None),
             SourceRepository.default_branch.is_not(None),
         )
-        .order_by(SourceRepository.id)
-        .limit(21),
-    ))
+    )
+    # Count every eligible ref, not just the 20-item API budget. Otherwise
+    # a 200-repository organization would report only one evidence gap.
+    eligible_count = int(session.scalar(
+        select(func.count()).select_from(authorized.subquery())
+    ) or 0)
+    target_ids = list(session.scalars(authorized.order_by(SourceRepository.id).limit(20)))
     committed_revisions = 0
     revision_failures = 0
     for repository_id in target_ids[:20]:
@@ -104,5 +108,5 @@ def synchronize_installation(
         observed_count=count,
         committed_revisions=committed_revisions,
         revision_failures=revision_failures,
-        unchecked_revisions=max(len(target_ids) - 20, 0),
+        unchecked_revisions=max(eligible_count - len(target_ids), 0),
     )

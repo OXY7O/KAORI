@@ -24,6 +24,8 @@ class FakeSession:
         self.rollbacks += 1
     def scalars(self, _statement):
         return []
+    def scalar(self, _statement):
+        return 0
 
 
 def test_success_uses_single_generation_and_commit(monkeypatch):
@@ -124,3 +126,44 @@ def test_unexpected_publish_db_error_rolls_back_and_preserves_prior_snapshot(mon
         repository_sync.synchronize_installation(session, _installation())
     assert session.rollbacks == 1
     assert calls == ['mark-degraded']
+
+
+
+def test_revision_gap_counts_all_unchecked_repositories(monkeypatch):
+    session = FakeSession()
+    session.scalar = lambda _: 225
+    session.scalars = lambda _: range(1, 21)
+    lease = RepositoryGeneration(installation_id=9, generation=8)
+    monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
+    monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
+    monkeypatch.setattr(repository_sync, 'publish_generation', lambda *_: 225)
+    monkeypatch.setattr(
+        repository_sync, 'collect_default_branch_revision',
+        lambda *_args, **_kwargs: SimpleNamespace(commit_sha='a' * 40),
+    )
+    monkeypatch.setattr(repository_sync, 'publish_default_branch_revision', lambda *_args, **_kwargs: True)
+    result = repository_sync.synchronize_installation(session, _installation())
+    assert result.committed_revisions == 20
+    assert result.unchecked_revisions == 205
+    assert result.revision_failures == 0
+
+
+def test_branch_collect_failure_remains_partial_not_repository_rollback(monkeypatch):
+    session = FakeSession()
+    session.scalar = lambda _: 3
+    session.scalars = lambda _: [1, 2, 3]
+    lease = RepositoryGeneration(installation_id=9, generation=9)
+    monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
+    monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
+    monkeypatch.setattr(repository_sync, 'publish_generation', lambda *_: 3)
+    def branch(_session, *, installation, repository_id):
+        if repository_id == 2:
+            raise GitHubProviderError('branch missing')
+        return SimpleNamespace(commit_sha='b' * 40)
+    monkeypatch.setattr(repository_sync, 'collect_default_branch_revision', branch)
+    monkeypatch.setattr(repository_sync, 'publish_default_branch_revision', lambda *_args, **_kwargs: True)
+    result = repository_sync.synchronize_installation(session, _installation())
+    assert result.committed_revisions == 2
+    assert result.revision_failures == 1
+    assert result.observed_count == 3
+    assert session.rollbacks == 1

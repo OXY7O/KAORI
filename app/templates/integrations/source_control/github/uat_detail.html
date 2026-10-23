@@ -4,6 +4,9 @@
 {% block title %}GitHub Repository Inventory · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
     {% call page_hero.intro("git-branch", "GitHub Installation UAT", "shield-check") %}
         <h1 class="{{ page_hero.title_classes() }}">{{ canonical.name }}</h1>
         <p class="{{ page_hero.description_classes() }} mt-2">
@@ -14,7 +17,10 @@
             {{ installation.repository_scope|title }} grants ·
             Connection {{ canonical.readiness_status|replace('_', ' ')|title }}
         </p>
-    {% endcall %}
+                {% endcall %}
+            </div>
+        </div>
+    </section>
     {% set feedback_map = {
         "validation_queued": "Full Validation requested through canonical JobExecution.",
         "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
