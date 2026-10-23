@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import json
 import re
-from urllib.parse import quote
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable, Mapping
+from urllib.parse import quote
 
 import requests
 

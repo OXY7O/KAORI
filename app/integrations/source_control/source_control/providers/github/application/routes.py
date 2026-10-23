@@ -14,16 +14,10 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.extensions.limiter import limiter
-from app.models.source_control import SourceInstallation
-from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
-from app.integrations.source_control.source_control.providers.github.webhook_inbox import (
-    claim_verified_delivery,
-)
-from app.access.rbac.decorators import permission_required
 from app.integrations.provider_matrix import provider_kind
-from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionForm,
 )
@@ -32,6 +26,12 @@ from app.integrations.source_control.source_control.providers.github.registratio
     test_connection,
 )
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
+from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
+from app.integrations.source_control.source_control.providers.github.webhook_inbox import (
+    claim_verified_delivery,
+)
+from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
+from app.models.source_control import SourceInstallation
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,

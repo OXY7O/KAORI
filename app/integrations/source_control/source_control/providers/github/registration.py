@@ -12,13 +12,13 @@ from dataclasses import dataclass, field
 
 from app.extensions.db import db
 from app.integrations.provider_matrix import provider_kind
-from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.integrations.source_control.source_control.providers.github.auth import _positive_provider_id
 from app.integrations.source_control.source_control.providers.github.transport import (
     GitHubAppClient,
     GitHubProviderError,
     InstallationReadiness,
 )
+from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.integration import IntegrationInstance
 from app.models.source_control import GitHubAppCredential, SourceAccount, SourceInstallation
 

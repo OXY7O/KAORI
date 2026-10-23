@@ -6,13 +6,11 @@ mutate provider, reveal credentials in kwargs or create a second scheduler.
 
 from __future__ import annotations
 
-from flask import current_app
-
+from app.extensions.db import db
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
-from app.extensions.db import db
-from app.models.user import User
 from app.models.source_control import SourceInstallation
+from app.models.user import User
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
