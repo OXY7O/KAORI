@@ -62,11 +62,22 @@ Activity Audit administrative presentation uses existing framed workspace naviga
 
 ## Activity Audit — Shared Register Hover Guidance (#2885, 2026-10-23)
 
+Explicit authority for this title-level placement is
+`docs/design/components/INFO_TIP.md` and
+`docs/design/components/TABLE_AND_LABEL.md` (Guide next to title);
+the previous Access-specific wording prescribing icon-only help was
+incorrect and is superseded. Add these consumers to the existing Guide
+design regression list to prevent repeating the error.
+
 The operator accepts Activity Audit functional UAT, with a bounded
 follow-up for read-only hover help on **Activity Register** and
 **Administrative Source Evidence**. Extend the existing section-card
-title/count flex row with one canonical icon-style
-`components/info_tip.html::render` trigger after the result-count badge.
+title/count flex row with one canonical compact Violet
+`components/info_tip.html::render(..., variant='guide')` title-level
+trigger **directly after each owning heading and before result-count**.
+The tiny icon-only `circle-help` variant is field/row guidance only.
+This corrects the former title-level UAT conformance error (#2885), not
+the established global Info Tip standard from #1680/#2416.
 Unique tooltip IDs, keyboard/focus/touch access, native shared Info Tip
 portal and responsive viewport clamp are required. Do **not** introduce
 a page-local tooltip implementation or shift approved header actions.
