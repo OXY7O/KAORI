@@ -412,6 +412,6 @@ source-specific retention/privacy/legal-hold and RBAC authority (#2891).
 Until that admission, the domain, aggregate counts, Preview and archive history
 are **Local Database Super Admin-only**, and mutations enforce the same
 boundary independent of UI; even Super Admin cannot download these bundles.
-followed by verified compaction (#2892). Archive History is artifact-level,
+Verified compaction remains a separate workstream (#2892). Archive History is artifact-level,
 not a verified lookup for the selected administrative event or a missing
 JobExecution. Do not infer immutable actor identity from AuditEvent FK.
