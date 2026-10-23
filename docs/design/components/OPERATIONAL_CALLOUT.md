@@ -40,29 +40,8 @@ Use for compact interpretation cards such as Critical, Warning, Info, Normal, or
 
 Page templates must not copy the semantic class bundle inline. Standard compact labels remain borderless and continue to use `table_label.html`.
 
-## Access-denied guidance (reusable neutral variant)
+## Access-denied guidance ownership
 
-The **Access Denied / Access Role Unavailable** view reuses the **existing** neutral callout rather than introducing a page-specific security card. Use the same component for similar role-review actions and authorization boundaries; the page owns the content and responsive column placement, while the component owns border, surface, icon, typography and accessible optional action.
+For **Access Denied / Access Role Unavailable**, the approved design is **one** neutral guidance surface with two interpretation areas, not two independent callout cards. It reuses the already-approved Analytics presentation primitives from `analytics/components/_analysis_surfaces.html` (see `ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md`) for the single shell, header, internal divider and brand/insight guidance roles.
 
-```jinja
-{% import "components/operational_callout.html" as operational_callout %}
-
-<section class="grid items-stretch gap-3 lg:grid-cols-2"
-         aria-label="Access resolution guidance">
-    {{ operational_callout.render(
-        'Access Administrator Action',
-        'Ask an administrator to review your role and permissions.',
-        icon='user-cog', tone='info', variant='neutral', extra_classes='h-full'
-    ) }}
-    {{ operational_callout.render(
-        'Security Boundary',
-        'Navigation is guidance; server-side permissions enforce access.',
-        icon='shield-check', tone='info', variant='neutral', extra_classes='h-full'
-    ) }}
-</section>
-```
-
-- Use matching **neutral** surfaces for adjacent information and action guidance. A tinted semantic callout is reserved for an actual operational status/severity, not a generic 403 permission boundary.
-- Keep meaningful icon/title text, natural wrapping, a single-column mobile layout and equal-height desktop cards.
-- Rendered guidance is not an authorization gate: server-side RBAC/route protection and audit remain authoritative. Do not present an administrator-only action as something a denied Viewer can perform.
-
+Continue to use `operational_callout.render` for standalone informational or semantic notices in operational views. Do not introduce page-local style bundles or a second wrapper just to simulate the unified Analytics presentation. Server-side permission checks remain authoritative.
