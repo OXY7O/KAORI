@@ -12,7 +12,7 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `alert_incident`: closed Alert Operations case evidence (timeline, notification delivery, postmortem) with compacted hot case index preserved for History.
 - `tenant_audit_evidence`: committed normalized Tenant/Kubernetes audit correlation evidence; the Kubernetes API audit provider remains authoritative for raw event logs.
 
-The registered adapter catalog currently contains **seven** managed domains. The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
+The registered adapter catalog now contains **eight** managed domains after the paused, archive-only Notification Delivery extension (historical seven-domain catalog before #2848). The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
 
 Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
