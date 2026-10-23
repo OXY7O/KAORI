@@ -376,7 +376,7 @@ def _domain_description(name: str) -> str:
         'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
         'notification_delivery': 'Provider-neutral outbound delivery evidence; archive-only safety admission.',
-        'audit_event': 'Separate source-owned administrative AuditEvent evidence; manual archive-only.',
+        'audit_event': 'Source-owned administrative AuditEvent evidence; manual Archive Only.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -524,8 +524,8 @@ def _domain_coverage_note(name: str) -> str | None:
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
         'notification_delivery': 'Archive-only and paused by default. Hot records remain authoritative for deduplication, channel dependencies and all-time metrics; schedule and cleanup not yet admitted.',
         'audit_event': (
-            'Paused, manual archive-only. AuditEvent is separate from Activity Register, '
-            'JobExecution and Tenant Audit Evidence. Source-specific retention/RBAC review is pending.'
+            'Manual Archive Only; paused by default. Separate from Activity Register, '
+            'Jobs and Tenant Audit Evidence. Retention/RBAC review pending.'
         ),
     }.get(name)
 
