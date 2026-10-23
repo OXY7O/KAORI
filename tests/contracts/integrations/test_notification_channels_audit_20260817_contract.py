@@ -39,7 +39,9 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert "NotificationChannel.query.filter_by(lifecycle_state='retired').count()" in service
     assert "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
     assert ".limit(5)" in service
-    assert "'overview': notification_overview_metrics()" in service
+    assert "'overview': notification_overview_metrics() if include_overview else None" in service
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    assert "include_overview=active_tab == 'overview'" in routes
     assert "'ownership': 'Consumers emit governed events; Notification Channels delivers.'" in service
     assert 'credential_payload' not in overview
 
