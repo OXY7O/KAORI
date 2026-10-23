@@ -109,16 +109,22 @@ def evaluate_exact_vault_scope(
             )
             .enable_eagerloads(False)
             .order_by(ScopeAccessPolicy.id.asc())
-            .limit(_MAX_MATCHING_POLICIES)
+            .limit(_MAX_MATCHING_POLICIES + 1)
         )
         if lock_for_read:
             query = query.with_for_update(of=ScopeAccessPolicy)
         candidates = query.all()
+        if len(candidates) > _MAX_MATCHING_POLICIES:
+            return ScopeAdmission('deny', 'ambiguous_scope')
+        approved_matches: list[tuple[ScopeAccessPolicy, ScopeAccessPolicyRevision, datetime]] = []
         for policy in candidates:
-            current = ScopeAccessPolicyRevision.query.filter(
+            revisions = ScopeAccessPolicyRevision.query.filter(
                 ScopeAccessPolicyRevision.policy_id == policy.id,
                 ScopeAccessPolicyRevision.revision_number == policy.current_revision,
-            ).first()
+            )
+            if lock_for_read:
+                revisions = revisions.with_for_update(of=ScopeAccessPolicyRevision)
+            current = revisions.first()
             if (
                 current is None or current.lifecycle_status != 'active'
                 or current.approved_by_user_id is None
@@ -130,16 +136,18 @@ def evaluate_exact_vault_scope(
             approved = _timestamp(current.approved_at)
             if (
                 starts is None or ends is None or approved is None
-                or starts > instant or instant >= ends
-                or approved > instant
+                or starts > instant or instant >= ends or approved > instant
             ):
                 continue
+            approved_matches.append((policy, current, ends))
+            if len(approved_matches) > 1:
+                return ScopeAdmission('deny', 'ambiguous_scope')
+        if len(approved_matches) == 1:
+            policy, current, ends = approved_matches[0]
             return ScopeAdmission(
                 'allow', 'exact_approved_grant',
-                actor_id=actor_user_id,
-                instance_id=instance_id,
-                policy_ref=policy.id,
-                revision=current.revision_number,
+                actor_id=actor_user_id, instance_id=instance_id,
+                policy_ref=policy.id, revision=current.revision_number,
                 expires_at=ends,
             )
         return ScopeAdmission('deny', 'scope_grant_required')
