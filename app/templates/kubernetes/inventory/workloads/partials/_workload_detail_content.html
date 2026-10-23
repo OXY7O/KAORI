@@ -12,11 +12,13 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
-        {% call detail.workspace_header(detail_description, 'boxes') %}
+        {% call detail.workspace_header(detail_description, 'boxes',
+            context_items=[
+                {'label': workload.type, 'icon': 'boxes'},
+                {'label': workload.namespace, 'icon': 'folder-tree'}
+            ], compact=true) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(workload.name) }}
-                {{ table_label.metadata_label(workload.type) }}
-                {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
+                {{ detail.inventory_title(workload.name, compact=true) }}
                 {{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}
             {% endcall %}
         {% endcall %}

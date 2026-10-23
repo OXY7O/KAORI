@@ -13,11 +13,13 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, placement, container, storage, and configuration evidence from the committed snapshot." %}
-        {% call detail.workspace_header(detail_description, 'package') %}
+        {% call detail.workspace_header(detail_description, 'package',
+            context_items=[
+                {'label': pod.owner_type or 'Standalone', 'icon': 'git-branch'},
+                {'label': pod.namespace, 'icon': 'folder-tree'}
+            ], compact=true) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(pod.name) }}
-                {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
-                {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
+                {{ detail.inventory_title(pod.name, compact=true) }}
                 {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
             {% endcall %}
         {% endcall %}

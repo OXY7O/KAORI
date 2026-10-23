@@ -13,7 +13,6 @@
 {% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('unknown' if node.ready_condition == 'Unknown' or node.scheduling_display == 'Not Reported' else 'normal')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 {% set environment_display = node.cluster_environment|environment_name(empty='Not Specified') %}
-{% set status_dot_classes = 'bg-status-normal' if node_status_tone == 'normal' else ('bg-status-critical' if node_status_tone == 'critical' else 'bg-status-unknown') %}
 {% if node.taints|length == 1 %}
     {% set taint_count_label = "1 Taint" %}
 {% else %}
@@ -26,32 +25,16 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Identity, runtime, network, capacity, and scheduling evidence from the committed Node snapshot." %}
-        {% call detail.workspace_header(detail_description, 'server') %}
-            <div class="min-w-0">
-                {% call detail.header_identity_row() %}
-                    {{ detail.inventory_title(node.node_name) }}
-                {% endcall %}
-                <div class="mt-2 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-sm leading-5">
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Cluster</span>
-                        <span class="min-w-0 break-words font-medium text-content-primary [overflow-wrap:anywhere]">{{ node.cluster_name }}</span>
-                    </span>
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Role</span>
-                        <span class="font-medium text-content-primary">{{ node.role_display }}</span>
-                    </span>
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Environment</span>
-                        <span class="font-medium text-content-primary">{{ environment_display }}</span>
-                    </span>
-                    <span class="inline-flex items-center gap-2">
-                        <span class="text-content-muted">Status</span>
-                        <span class="h-1.5 w-1.5 rounded-full {{ status_dot_classes }}"
-                              aria-hidden="true"></span>
-                        <span class="font-medium text-content-primary">{{ node.status_display }}</span>
-                    </span>
-                </div>
-            </div>
+        {% call detail.workspace_header(detail_description, 'server',
+            context_items=[
+                {'label': node.cluster_name, 'icon': 'building-2'},
+                {'label': node.role_display, 'icon': 'server'},
+                {'label': environment_display, 'icon': 'layers-3'}
+            ], compact=true) %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(node.node_name, compact=true) }}
+                {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.inspector_summary_strip([
                 {'label': 'Readiness', 'value': node.status_display, 'supporting': 'Node condition', 'icon': 'shield-check', 'tone': node_status_tone},

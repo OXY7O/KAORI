@@ -71,11 +71,12 @@ def test_node_v10_header_and_technical_values_are_read_only() -> None:
     header = node.split('detail.inspector_summary_strip(', 1)[0]
 
     assert 'detail.header_identity_row()' in header
-    assert '>Cluster<' in header
-    assert '>Role<' in header
-    assert '>Environment<' in header
-    assert '>Status<' in header
-    assert 'status_dot_classes' in header
+    assert 'context_items=' in header
+    assert "'label': node.cluster_name" in header
+    assert "'label': node.role_display" in header
+    assert "'label': environment_display" in header
+    assert 'status_indicator_label(node.status_display, node_status_tone' in header
+    assert 'status_dot_classes' not in header
     assert 'clipboard' not in header
     assert 'copyable=true' not in header.lower()
     assert 'copyable=true' not in node
