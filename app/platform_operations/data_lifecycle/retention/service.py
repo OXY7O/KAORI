@@ -22,7 +22,6 @@ from app.artifact_storage.service import (
     resolve_app_path,
 )
 from app.extensions.db import db
-from app.models.user import User
 from app.models.archive import (
     ARCHIVE_STATUS_ARCHIVING,
     ARCHIVE_STATUS_CLEANING,
@@ -35,6 +34,7 @@ from app.models.archive import (
     ARCHIVE_STATUS_VERIFYING,
     ArchiveArtifact,
 )
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention import archive_support
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.lock import retention_lock
