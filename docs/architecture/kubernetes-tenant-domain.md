@@ -2013,3 +2013,31 @@ separation, approval freshness, HTMX/CSRF, provider mutation, or Release
 finalization. Dev Container Visual QA is required in both themes and
 responsive breakpoints, historical/current/expired, long UID, error,
 copy, and keyboard cases. Official admission and deployment remain HOLD.
+
+## Native Release Platform Admin consent and concise prerequisites — 2026-10-23
+
+Follow-up to #2401 preserves the approved Native Release Governance Step 3
+workflow but reduces overlong instructions: expired approval still requires
+the **original requester** to restart with a new plan SHA and independent
+review; stale evidence is invalid. An external successor reference alone
+does not prove consent. KAORI still checks provider identity and scoped
+authority with its existing Kubernetes X.509 connection before recording
+explicit Platform Admin consent; no separate successor credentials are
+collected.
+
+The native acceptance confirmation now uses a single compact Violet-soft
+surface with a left accent and visible focus-within state, consistent with
+the existing KAORI semantic tokens and without another surrounding card.
+"Platform Admin Consent" is an action prompt, not an Approved/Released
+status badge. The existing **required** checkbox and immutable plan SHA
+remain bound to the same POST, verified provider scope and RBAC; a checked
+box is explicit authorization for this one governed consent submission,
+not a completed provider transfer or license to change Kubernetes
+resource values. No new workflow, JS, provider calls or data state.
+
+Dev Container Visual QA must cover keyboard checkbox/focus, checked/
+unchecked validation, mobile and light/dark modes, expired/stale and
+ready-to-consent conditions, long identifiers, and confirmation that
+the independent review, provider handoff and Release remain separate.
+Runtime tests, official Developer Check/Full Admission and staging
+promotion remain HOLD pending explicit human authorization.
