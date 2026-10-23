@@ -1073,7 +1073,7 @@
                                                        aria-hidden="true"></i>
                                                     <span>Independent review recorded. External owner acceptance, provider handoff and verified read-back remain outstanding.</span>
                                                 </p>
-                                                <div class="grid min-w-0 items-start gap-x-8 gap-y-5 lg:grid-cols-2"
+                                                <div class="grid min-w-0 items-start gap-x-7 gap-y-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
                                                      data-release-accepted-handoff-workspace>
                                                     <div class="min-w-0 space-y-3 {{ 'lg:col-span-1 lg:border-r lg:border-outline-subtle lg:pr-6' if tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') else 'lg:col-span-2' }}"
                                                          data-release-accepted-handoff-actions>
@@ -1083,7 +1083,7 @@
                                                                aria-hidden="true"></i>
                                                             <div class="min-w-0">
                                                                 <h5 class="text-sm font-semibold text-content-primary">Handoff Actions</h5>
-                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Complete governed actions only when eligible.</p>
+                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Governed actions, when eligible.</p>
                                                             </div>
                                                         </div>
                                                         {% set successor_claim = row.release_successor_claim %}
@@ -1098,7 +1098,7 @@
                                                                 <div class="min-w-0 flex-1">
                                                                     <p class="break-all font-mono text-xs font-semibold leading-5 text-content-primary">{{ successor_claim.successor_reference }}</p>
                                                                     <p class="mt-0.5 text-xs leading-5 text-content-secondary">
-                                                                        External reference is not an additional approval. Successor consent is unverified; provider ownership remains unchanged.
+                                                                        Reference only; successor consent unverified and provider ownership unchanged.
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -1159,7 +1159,7 @@
                                                                     <div>{{ table_label.status_label('Platform Admin Approved', 'success') }}</div>
                                                                     <div class="min-w-0">
                                                                         <p class="font-medium text-content-primary">{{ native_acceptance.provider_username }} · {{ native_acceptance.scope_count }} scoped objects</p>
-                                                                        <p class="mt-1">Kubeconfig identity and scoped access verified. Provider transfer remains separate.</p>
+                                                                        <p class="mt-1">Kubeconfig access verified; provider transfer remains separate.</p>
                                                                     </div>
                                                                 </div>
                                                             {% elif row.release_handoff_preparation_state == 'acknowledged'
@@ -1266,7 +1266,7 @@
                                                                    aria-hidden="true"></i>
                                                                 <h5 class="text-sm font-semibold text-content-primary">External Handoff &amp; Read-Back</h5>
                                                             </div>
-                                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Inspect external ownership evidence without initiating a transfer.</p>
+                                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Inspect external ownership; no transfer occurs here.</p>
                                                             {% set readback_status = row.native_release_readiness %}
                                                             {% if readback_status.external_readback_prerequisites_current %}
                                                                 <form method="post"
@@ -1277,7 +1277,7 @@
                                                                       hx-swap="outerHTML show:none focus-scroll:false"
                                                                       hx-indicator="#tenant-management-loading"
                                                                       hx-disabled-elt="find button[type='submit']"
-                                                                      class="mt-4 w-full space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated/35 p-3 sm:p-4">
+                                                                      class="mt-3 w-full space-y-2 border-t border-outline-subtle pt-3">
                                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                                     <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                                                     <input type="hidden" name="tenant_detail_section" value="release">
@@ -1291,14 +1291,14 @@
                                                                            name="plan_sha256"
                                                                            value="{{ handoff_plan.plan_sha256 }}">
                                                                     <p class="text-xs font-semibold text-content-primary">External operator handoff — inspection only</p>
-                                                                    <p class="text-xs leading-5 text-content-muted">Use only after a separate external operator changed provider ownership. For KAORI-controlled transfer, use the governed Native Handoff executor instead.</p>
-                                                                    <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
+                                                                    <p class="text-xs leading-5 text-content-muted">After external transfer only; KAORI uses its governed Native Handoff executor.</p>
+                                                                    <label class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
                                                                         <input type="checkbox"
                                                                                name="confirm_native_handoff_readback"
                                                                                value="inspect"
                                                                                required
                                                                                class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                                                        <span>An external operator already completed the ownership handoff. Inspect Kubernetes markers without modifying resources; this does not verify successor consent or authorize Release.</span>
+                                                                        <span>External handoff complete; inspect markers only. No consent, writes or Release.</span>
                                                                     </label>
                                                                     <button type="submit"
                                                                             class="inline-flex min-h-9 w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
@@ -1598,7 +1598,7 @@
                                                           hx-swap="outerHTML show:none focus-scroll:false"
                                                           hx-indicator="#tenant-management-loading"
                                                           hx-disabled-elt="find button[type='submit']"
-                                                          class="mt-4 flex w-full flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated/35 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+                                                          class="mt-4 flex w-full flex-col gap-3 border-y border-outline-subtle py-3 sm:flex-row sm:items-center sm:justify-between">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                         <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                                         <input type="hidden" name="tenant_detail_section" value="release">
@@ -1611,13 +1611,13 @@
                                                         <input type="hidden"
                                                                name="plan_sha256"
                                                                value="{{ handoff_plan.plan_sha256 }}">
-                                                        <label class="flex min-w-0 items-start gap-2 text-sm leading-6 text-content-secondary lg:max-w-3xl">
+                                                        <label class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
                                                             <input type="checkbox"
                                                                    name="confirm_native_handoff_dry_run"
                                                                    value="approved"
                                                                    required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                                            <span>Preview with Kubernetes server-side dry-run. No provider metadata, quota or limit values are persisted.</span>
+                                                            <span>Server-side dry-run only; provider metadata, quotas and limits stay unchanged.</span>
                                                         </label>
                                                         <button type="submit"
                                                                 class="inline-flex min-h-9 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
