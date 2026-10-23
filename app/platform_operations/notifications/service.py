@@ -385,6 +385,7 @@ def stage_operational_activity(
     action_label: str = 'View details',
     action_icon: str = 'arrow-up-right',
     metadata: dict[str, Any] | None = None,
+    delivery_policy: OperationalDeliveryPolicy | str = OperationalDeliveryPolicy.PERSISTENT,
 ) -> dict[str, Any]:
     """Stage high-risk administrative evidence in the caller's transaction.
 
@@ -400,6 +401,7 @@ def stage_operational_activity(
     )
     actor = resolve_operational_actor(metadata=metadata)
     evidence = NotificationPersistenceEvidence(metadata=metadata, actor=actor)
+    policy = OperationalDeliveryPolicy.normalize(delivery_policy)
     persist_notification(
         user_id=user_id,
         event_type=event_type,
@@ -409,7 +411,7 @@ def stage_operational_activity(
         detail=detail,
         action_url=action_url,
         evidence=evidence,
-        deck_visible=True,
+        deck_visible=policy.deck_visible(status),
         commit=False,
     )
     return build_operational_feedback(
@@ -422,8 +424,8 @@ def stage_operational_activity(
             action_label=action_label,
             action_icon=action_icon,
             activity_audit_saved=True,
-            notification_deck_visible=True,
-            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
+            notification_deck_visible=policy.deck_visible(status),
+            delivery_policy=policy,
             delivery=_feedback_delivery(
                 event_type=event_type,
                 status=status,

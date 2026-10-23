@@ -30,6 +30,8 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_namespace_policy,
 )
 from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest, User
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import stage_operational_activity
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {
@@ -121,6 +123,7 @@ class RevealedSecretValue:
     revealed_at: datetime
     expires_in_seconds: int
     metadata: dict[str, Any]
+    audit_feedback: dict[str, Any] | None = None
 
 
 def _now() -> datetime:
@@ -726,7 +729,7 @@ def _decode_secret_value(encoded_value: str) -> tuple[str, str]:
     return decoded, 'utf-8'
 
 
-def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue:
+def reveal_secret_value(request_id: str, *, user_id: int, audit_action_url: str | None = None) -> RevealedSecretValue:
     record = get_reveal_request_for_user(
         request_id,
         user_id=user_id,
@@ -780,9 +783,51 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     revealed_at = _now()
     record.status = 'revealed'
     record.revealed_at = revealed_at
-    db.session.commit()
-
     window_seconds = int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15))
+    safe_metadata = {
+        'reveal_request_id': record.id,
+        'configuration_inventory_id': record.configuration_inventory_id,
+        'cluster_id': cluster.id,
+        'cluster_name': cluster.name,
+        'namespace': record.namespace,
+        'secret_name': record.secret_name,
+        'secret_type': record.secret_type,
+        'key_name': record.key_name,
+        'policy': record.policy,
+        'ticket_reference': record.ticket_reference,
+        'reason': record.reason,
+        'requester_user_id': record.requester_user_id,
+        'approver_user_id': record.approver_user_id,
+        'secret_value_recorded': False,
+        'secret_value_hash_recorded': False,
+        'feedback_delivery': 'toast',
+        'operation_domain': 'kubernetes_secrets',
+    }
+    try:
+        # This evidence and the one-time consumption share ONE commit.
+        # A failed Activity Audit cannot produce a successful Secret response.
+        audit_feedback = stage_operational_activity(
+            user_id=user_id,
+            event_type='kubernetes_secret_revealed',
+            status='success',
+            title='Secret value revealed',
+            message=(
+                f'{record.key_name} was revealed once for {window_seconds} seconds. '
+                'The value was not stored by KAORI.'
+            ),
+            action_url=audit_action_url,
+            action_label='Open Protected Secret Reveal',
+            action_icon='key',
+            metadata=safe_metadata,
+            delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+        )
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        raise ValueError(
+            'Mandatory Activity Audit could not be committed. The Secret value was not returned.'
+        ) from exc
+
     return RevealedSecretValue(
         request_id=record.id,
         key_name=record.key_name,
@@ -790,21 +835,6 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
         encoding=encoding,
         revealed_at=revealed_at,
         expires_in_seconds=window_seconds,
-        metadata={
-            'reveal_request_id': record.id,
-            'configuration_inventory_id': record.configuration_inventory_id,
-            'cluster_id': cluster.id,
-            'cluster_name': cluster.name,
-            'namespace': record.namespace,
-            'secret_name': record.secret_name,
-            'secret_type': record.secret_type,
-            'key_name': record.key_name,
-            'policy': record.policy,
-            'ticket_reference': record.ticket_reference,
-            'reason': record.reason,
-            'requester_user_id': record.requester_user_id,
-            'approver_user_id': record.approver_user_id,
-            'secret_value_recorded': False,
-            'secret_value_hash_recorded': False,
-        },
+        metadata=safe_metadata,
+        audit_feedback=audit_feedback,
     )

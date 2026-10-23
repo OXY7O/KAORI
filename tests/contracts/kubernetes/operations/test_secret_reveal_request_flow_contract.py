@@ -197,3 +197,28 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert "if len(linked_request_id) > 80:" in routes
     assert 'return redirect(return_url)' in routes
     assert '**Requester decision deep links:**' in docs
+
+
+def test_one_time_reveal_consumption_is_commit_coupled_to_activity_evidence() -> None:
+    source = read('app/kubernetes/operations/secrets/reveal_service.py')
+    routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    activity = read('app/platform_operations/notifications/service.py')
+
+    consume = source.split('def reveal_secret_value(request_id:', 1)[1]
+    assert 'lock_for_update=True' in consume
+    assert "record.status = 'revealed'" in consume
+    assert 'audit_feedback = stage_operational_activity(' in consume
+    assert "event_type='kubernetes_secret_revealed'" in consume
+    assert 'delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY' in consume
+    assert consume.index('audit_feedback = stage_operational_activity(') < consume.index('db.session.commit()')
+    assert 'except Exception as exc:' in consume
+    assert 'db.session.rollback()' in consume
+    assert 'audit_feedback=audit_feedback' in consume
+    reveal_route = routes.split('def reveal_secret_value(request_id:', 1)[1]
+    assert 'audit_action_url=url_for(' in reveal_route
+    assert 'feedback = result.audit_feedback' in reveal_route
+    assert "_record_secret_activity(\n            event_type='kubernetes_secret_revealed'" not in reveal_route
+    staged = activity.split('def stage_operational_activity(', 1)[1]
+    assert 'commit=False' in staged
+    assert 'policy = OperationalDeliveryPolicy.normalize(delivery_policy)' in staged
+    assert 'deck_visible=policy.deck_visible(status)' in staged
