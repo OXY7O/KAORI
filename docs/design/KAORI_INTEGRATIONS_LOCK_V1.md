@@ -576,12 +576,16 @@ provider credential boundaries remain unchanged.
 ## Notification Channels — Compact Operational Snapshot UAT refinement (#2809, 2026-10-23)
 
 The existing committed-state Overview remains authoritative as documented in #2800. Present
-Channel Readiness and all-time Delivery Outcomes as two compact stacked cards in
-a narrower dashboard column and Recent Delivery as an aligned activity preview alongside
-them at desktop widths; stack all three cards at small viewports. Use existing
-`notification_section`, shared palette icons, compact status labels and action
-classes, Violet surface/border tokens, and responsive Tailwind utilities. Do not
-create new app-wide components for this page-only arrangement.
+**one combined Violet operational card**, introduced by the canonical
+`section_intro.render('Operational Snapshot', ...)` **outside and above the card**,
+matching the "Delivery Contract & Ownership" hierarchy. Inside that single shared
+`integration_ui.section_shell_classes()` surface, Channel Readiness and all-time
+Delivery Outcomes share the left column; Recent Delivery uses the wider right column.
+Use internal dividers rather than nested card shells. At small viewports the two
+columns stack with a horizontal separator, and at desktop use a full-height vertical
+divider. Inner section headers use `notification_subsection` with existing icons,
+status labels and action classes, Violet tokens, and responsive Tailwind utilities.
+Do not create a new UI macro or page-local CSS/JS to achieve this layout.
 
 Each of up to five recent attempts shows **event**, **channel**, **operator-local
 time** and committed **outcome**, with long identities truncated visually but
