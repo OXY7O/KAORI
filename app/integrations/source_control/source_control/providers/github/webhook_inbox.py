@@ -46,7 +46,11 @@ def _eligible_installation(installation: SourceInstallation) -> str:
         or canonical.adapter_key != 'github_rest_v3'
         or not canonical.enabled
         or canonical.lifecycle_status != 'active'
+        or installation.integration_instance_id != canonical.id
+        or installation.account_id is None
+        or installation.account is None
         or app is None
+        or installation.github_app_credential_id != app.id
         or not app.enabled
         or app.host_key != 'github.com'
         or installation.provider_key != 'github'
