@@ -67,3 +67,20 @@ and https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-delive
 - `readiness.py` assesses per-capability permission coverage, separately from repository collection. Observed access cannot yield Ready until real worker/inventory/UAT admission.
 - `adapter.py` implements unregistered candidate operations for Test Connection, Full Validation and lightweight Runtime Refresh, retaining only sanitized canonical `IntegrationInstance` metadata. There is no job/worker registration or exposed routes yet.
 - No new provider-specific UI components exist. When introduced, the provider must reuse KAORI shared Integrations Hero/cards/tables, HTMX, pagination 5, feedback, accessibility and RBAC.
+
+## Durable webhook staging (non-operational candidate)
+
+The migration `20261023_sc_webhook_delivery` adds a **transactional, unique
+(installation ID, GitHub delivery UUID)** replay ledger with SHA-256 payload
+digest, bounded source hints, received timestamp and processing status.
+`webhook_inbox.claim_verified_delivery` authenticates raw bytes using the
+App-level protected secret and checks canonical integration/installation
+eligibility, then stages an idempotent database record. A repeated delivery
+with changed payload is explicitly rejected. The caller must COMMIT before
+a separate, scope-qualified reconciliation job is admitted.
+
+No route or worker is wired, no raw payload is retained, no repository fact is
+accepted as provider evidence, and no event is sent to Notification Channels.
+Webhook ingress is disabled while the GitHub provider is `planned`; SC-03
+must implement the follow-up authoritative refresh and committed provider
+state, including all/selected repository grant coverage.

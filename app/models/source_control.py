@@ -228,3 +228,33 @@ class SourceReferenceTransition(db.Model):
 
     reference: Mapped[SourceReference] = relationship('SourceReference')
     target_revision: Mapped[SourceRevision | None] = relationship('SourceRevision')
+
+class SourceWebhookDelivery(db.Model):
+    """Trusted transport dedup only; never committed GitHub workflow evidence.
+
+    An authenticated delivery is eligible for a separate, authorized provider
+    reconciliation job. Raw webhook bodies and short-lived tokens are not kept.
+    """
+
+    __tablename__ = 'source_control_webhook_deliveries'
+    __table_args__ = (
+        UniqueConstraint('installation_id', 'delivery_id', name='uq_sc_webhook_installation_delivery'),
+        Index('ix_sc_webhook_processing', 'processing_state', 'received_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    installation_id: Mapped[int] = mapped_column(
+        ForeignKey('source_control_installations.id', ondelete='RESTRICT'), nullable=False
+    )
+    delivery_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False, default='')
+    repository_native_id_hint: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    processing_state: Mapped[str] = mapped_column(String(30), nullable=False, default='received')
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    installation: Mapped[SourceInstallation] = relationship('SourceInstallation')

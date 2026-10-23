@@ -93,6 +93,7 @@ from app.models.source_control import (
     SourceRepository,
     SourceRepositoryGrant,
     SourceRevision,
+    SourceWebhookDelivery,
 )
 from app.models.tenant import (
     Tenant,
