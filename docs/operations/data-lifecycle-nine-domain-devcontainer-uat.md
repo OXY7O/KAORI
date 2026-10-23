@@ -298,7 +298,7 @@ runtime evidence. If a scenario is intentionally denied, PASS means
 | `operational_activity` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `job_execution` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-24 |
 | `generated_report` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `alert_incident` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-23 |
 | `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
@@ -309,6 +309,11 @@ The audit-only contracts of `notification_delivery` / `audit_event`
 mean that rejected destructive operations are expected **PASS** on
 negative tests. Mark actual hot cleanup/cold purge as **NOT ADMITTED**,
 not a runtime failure in the accepted Archive Only scope.
+
+The Analytics Snapshots policy UI/actions were accepted by the operator on
+2026-10-24 (#2935 completed). Its three separate runtime evidence columns
+remain NOT RUN here because raw infrastructure execution evidence was not
+supplied to this ledger; acceptance does not transfer to AuditEvent.
 
 The Alert Incidents UI/actions operator review was accepted on 2026-10-23
 (#2923 and #2929 completed); the three separate runtime evidence columns
