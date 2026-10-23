@@ -75,3 +75,24 @@ def test_actions_use_shared_button_variants_and_preserve_permission_gates() -> N
     assert "inline-flex min-h-9" not in detail
     assert "bg-kaori-primary px-3" not in detail
     assert "disabled:cursor-not-allowed" in shared
+
+
+
+def test_provider_detail_keeps_copy_compact_and_removes_repeated_field_rules() -> None:
+    """Keep only section boundaries; leave individual facts clean and legible."""
+    detail = read("app/templates/access/identity_providers/partials/_provider_detail.html")
+    shared = read("app/templates/components/details/_detail_content.html")
+
+    Environment().parse(detail)
+    assert "description='Adapter identity and connection.'" in detail
+    assert "description='Identity projection and KAORI access.'" in detail
+    assert "Registered adapter identity and credential reference" not in detail
+    assert "The external directory owns credentials; KAORI governs account projection" not in detail
+
+    # The global shared inventory row keeps its dividers for other consumers.
+    # Identity Provider is a compact density override limited to its two fact grids.
+    assert detail.count("[&>div]:border-0 [&>div]:py-1.5") == 2
+    assert detail.count("gap-y-1 sm:grid-cols-2") == 2
+    assert "border-b border-outline-subtle py-2.5" in shared
+    assert "detail_ui.inventory_section(" in detail
+    assert "data-kaori-idp-detail-actions" in detail
