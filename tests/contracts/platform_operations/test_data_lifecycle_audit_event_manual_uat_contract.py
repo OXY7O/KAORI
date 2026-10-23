@@ -5,7 +5,7 @@ AuditEvent rows, storage, scheduling, archive download or cleanup.
 """
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from flask import Flask
@@ -113,6 +113,50 @@ def test_explicit_enable_manual_archive_then_disable_preserves_safe_policy_and_f
         )
         assert blocked_again['status'] == 'warning'
         assert queue.call_count == 1
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_policy_context_resolves_saved_manual_enable_state_without_scheduler(enabled: bool) -> None:
+    from app.platform_operations.data_lifecycle.retention.presentation import build_domain_retention_context
+
+    app = Flask(__name__)
+    domain = SimpleNamespace(
+        name='audit_event', source_model='audit_events',
+        build_policy=lambda: _policy(enabled=enabled),
+    )
+    stored = SimpleNamespace(
+        enabled=enabled, schedule_enabled=True, operation_mode='archive_and_cleanup',
+    )
+    jobs = MagicMock()
+    jobs.query.filter.return_value.count.return_value = 0
+    with (
+        app.app_context(),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.presentation._can_govern_audit_event',
+            return_value=True,
+        ),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.presentation.get_archive_domain',
+            return_value=domain,
+        ),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.presentation._build_archive_posture',
+            return_value={'active_count': 0},
+        ),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.presentation._cached_status',
+            return_value={'queue_ready': True, 'label': 'Online'},
+        ),
+        patch('app.platform_operations.data_lifecycle.retention.presentation.JobExecution', jobs),
+    ):
+        context = build_domain_retention_context(
+            'audit_event', policy=_policy(enabled=enabled), stored_policy=stored,
+        )
+    assert context['enabled'] is enabled
+    assert context['operation_mode'] == 'archive_only'
+    assert context['schedule_enabled'] is False
+    assert context['active_lifecycle_jobs'] == 0
+    assert context['domain'] == 'audit_event'
 
 
 def test_cleanup_request_is_rejected_before_dispatch_even_when_enabled() -> None:
