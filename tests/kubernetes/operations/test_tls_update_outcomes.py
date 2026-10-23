@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
