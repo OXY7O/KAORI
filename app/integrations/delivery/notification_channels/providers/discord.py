@@ -84,7 +84,12 @@ def send_discord_message(
             raw = response.read(8192) if status == 200 else b''
     except HTTPError as exc:
         if exc.code == 429:
-            return DeliveryResult(False, 'Discord webhook rate limited the delivery (HTTP 429).', retry_after_seconds=parse_retry_after(exc.headers.get('Retry-After') if exc.headers else None))
+            delay = parse_retry_after(exc.headers.get('Retry-After') if exc.headers else None)
+            return DeliveryResult(
+                False,
+                'Discord webhook rate limited the delivery (HTTP 429).',
+                retry_after_seconds=delay,
+            )
         return DeliveryResult(False, f'Discord webhook rejected delivery with HTTP {exc.code}.')
     except (URLError, TimeoutError, OSError, ValueError):
         return DeliveryResult(False, 'Discord webhook is unreachable or TLS verification failed.')
