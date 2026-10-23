@@ -257,6 +257,7 @@ def paginate_archives(
     operation_mode: str = 'all',
     storage_backend: str = 'all',
     search: str = '',
+    exclude_domains: tuple[str, ...] = (),
 ):
     normalized_page = max(int(page or 1), 1)
     normalized_per_page = int(per_page or 5)
@@ -264,6 +265,8 @@ def paginate_archives(
         normalized_per_page = 5
 
     query = ArchiveArtifact.query
+    if exclude_domains:
+        query = query.filter(ArchiveArtifact.domain.notin_(exclude_domains))
     if domain_name:
         query = query.filter(ArchiveArtifact.domain == domain_name)
 
