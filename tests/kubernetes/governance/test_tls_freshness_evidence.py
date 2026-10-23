@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from app.kubernetes.governance.tls_certificates.sync_state import _collection_freshness, _successful_job_evidence_times
+from app.kubernetes.governance.tls_certificates.sync_state import (
+    _collection_freshness,
+    _successful_job_evidence_times,
+    tls_sync_evidence_is_current,
+    tls_sync_stale_after,
+)
 
 
 def state(secret='collected', ingress='collected', at=None):
@@ -111,3 +116,14 @@ def test_last_successful_empty_inventory_requires_target_specific_job_evidence()
             assert at is None
         assert stale is True
         assert exceptions is True
+
+
+def test_tls_rotation_evidence_window_rejects_missing_future_and_stale_timestamps():
+    now = datetime(2026, 10, 23, tzinfo=UTC)
+    window = tls_sync_stale_after(360)
+    assert window == timedelta(minutes=450)
+    assert tls_sync_evidence_is_current(now - window, stale_after=window, now=now)
+    assert tls_sync_evidence_is_current(now - timedelta(minutes=1), stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(None, stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(now + timedelta(seconds=1), stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(now - window - timedelta(seconds=1), stale_after=window, now=now)
