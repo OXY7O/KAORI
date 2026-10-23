@@ -4,12 +4,18 @@
 {% block title %}GitHub App UAT · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
     {% call page_hero.intro("git-branch", "Source Control", "shield-check") %}
         <h1 class="{{ page_hero.title_classes() }}">GitHub App · UAT Workspace</h1>
         <p class="{{ page_hero.description_classes() }} mt-2">
             Review installation-specific validation and committed repository evidence.
         </p>
-    {% endcall %}
+                {% endcall %}
+            </div>
+        </div>
+    </section>
     <section class="{{ ui.section_shell_classes() }}">
         {{ ui.section_header("shield-check", "Authorized GitHub App Installations", "Restricted Dev Container UAT · local super-admin only") }}
         <div class="divide-y divide-outline-subtle">
