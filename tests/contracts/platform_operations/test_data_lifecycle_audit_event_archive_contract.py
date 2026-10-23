@@ -83,7 +83,8 @@ def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event(
     assert "'cleanup_not_admitted'" in admission
     assert "if domain_name in {'notification_delivery', 'audit_event'}:" in presentation
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
-    assert "data-lifecycle-audit-event-safety" in ui
+    assert "data-lifecycle-audit-event-policy-guide" in ui
+    assert "data-lifecycle-audit-event-safety" not in ui
     assert "if domain_name in {'audit_event', 'notification_delivery'}:" in worker
     assert "'scheduling_not_admitted'" in worker
     assert "'archive_purge'] = {'status': 'not_admitted'" in worker
