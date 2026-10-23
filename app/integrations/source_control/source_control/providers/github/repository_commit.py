@@ -250,8 +250,9 @@ def record_generation_failure(
     installation: SourceInstallation,
     lease: RepositoryGeneration,
 ) -> bool:
-    """Do not touch prior grants/counts when pagination or auth failed."""
-    _admitted(installation)
+    """Preserve last committed evidence even when App access was revoked mid-scan."""
+    if installation.id is None or lease.installation_id != installation.id:
+        return False
     state = session.get(
         SourceRepositoryCollectionState, installation.id, with_for_update=True
     )

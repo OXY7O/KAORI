@@ -50,10 +50,10 @@ def synchronize_installation(
         raise
     try:
         count = publish_generation(session, installation, generation, evidence)
-    except RepositoryGenerationError:
+    except Exception:
         session.rollback()
-        # A newer reservation or collection always wins. Never mark its
-        # collection state as failed from this stale worker attempt.
+        # A newer reservation or collection always wins. Only the still-owned
+        # pending generation can be marked degraded; committed rows stay intact.
         record_generation_failure(session, installation, generation)
         raise
     return CollectionOutcome(
