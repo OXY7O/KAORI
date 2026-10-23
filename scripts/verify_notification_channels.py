@@ -258,7 +258,8 @@ def main() -> int:
         and 'No Delivery Records Yet' in template
         and "NotificationChannel.query.filter_by(lifecycle_state='retired').count()" in service
         and "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
-        and "'overview': notification_overview_metrics()" in service,
+        and "'overview': notification_overview_metrics() if include_overview else None" in service
+        and "include_overview=active_tab == 'overview'" in routes,
         'lifecycle modal header/footer parity': '{% import "components/action_button.html" as action_button %}' in channel_delete_blockers_dialog
         and '{% import "components/action_button.html" as action_button %}' in channel_retire
         and 'aria-label="Notification Channel Lifecycle Actions"' in channel_delete_blockers_dialog
