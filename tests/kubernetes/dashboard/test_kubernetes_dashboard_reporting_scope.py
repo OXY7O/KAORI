@@ -14,6 +14,15 @@ class _Column:
     def __eq__(self, value: object):
         return ('eq', self.name, value)
 
+    def __ne__(self, value: object):
+        return ('ne', self.name, value)
+
+    def in_(self, values):
+        return ('in', self.name, tuple(values))
+
+    def is_not(self, value: object):
+        return ('is_not', self.name, value)
+
     def desc(self):
         return ('desc', self.name)
 
@@ -35,11 +44,20 @@ class _Query:
         return _Query(self.rows, self.predicates, self.order, value)
 
     def _scoped(self):
-        rows = [
-            item
-            for item in self.rows
-            if all(getattr(item, name) == value for operator, name, value in self.predicates if operator == 'eq')
-        ]
+        def matches(item, predicate):
+            operator, name, value = predicate
+            actual = getattr(item, name)
+            if operator == 'eq':
+                return actual == value
+            if operator == 'ne':
+                return actual != value
+            if operator == 'in':
+                return actual in value
+            if operator == 'is_not':
+                return actual is not value
+            raise AssertionError(f'Unsupported test predicate: {operator}')
+
+        rows = [item for item in self.rows if all(matches(item, p) for p in self.predicates)]
         if self.order:
             assert all(direction == 'desc' for direction, _name in self.order)
             rows.sort(key=lambda item: tuple(getattr(item, name) for _direction, name in self.order), reverse=True)
@@ -63,6 +81,8 @@ def _model(rows, *, scope: bool = True, timestamp: bool = False):
     if timestamp:
         values['created_at'] = _Column('created_at')
         values['id'] = _Column('id')
+        values['status'] = _Column('status')
+        values['file_path'] = _Column('file_path')
     return SimpleNamespace(**values)
 
 
@@ -75,6 +95,7 @@ def test_kubernetes_reporting_excludes_foreign_domains_and_preserves_recency(mon
             cluster_id='cluster-a',
             created_at=datetime(2026, 10, 10, tzinfo=UTC),
             status='ready',
+            file_path='/retained/artifact.pdf',
         ),
         SimpleNamespace(
             id=2,
@@ -116,6 +137,7 @@ def test_kubernetes_reporting_excludes_foreign_domains_and_preserves_recency(mon
 
     fleet = reporting.build_reporting_snapshot(None)
     assert fleet.generated_reports == 3
+    assert fleet.artifact_records == 3
     assert fleet.templates == 1
     assert fleet.schedules == 2
     assert [item.title for item in fleet.latest_reports] == [
@@ -126,6 +148,7 @@ def test_kubernetes_reporting_excludes_foreign_domains_and_preserves_recency(mon
 
     selected = reporting.build_reporting_snapshot('cluster-a')
     assert selected.generated_reports == 2
+    assert selected.artifact_records == 2
     assert selected.templates == 1
     assert selected.schedules == 1
     assert [item.title for item in selected.latest_reports] == [
@@ -142,6 +165,12 @@ def test_data_freshness_report_artifact_count_uses_kubernetes_scope(monkeypatch)
         'count_kubernetes_reports',
         lambda cluster_id: calls.append(cluster_id) or 2,
     )
+    artifact_calls = []
+    monkeypatch.setattr(
+        service,
+        'count_kubernetes_artifact_records',
+        lambda cluster_id: artifact_calls.append(cluster_id) or 1,
+    )
     monkeypatch.setattr(service, '_latest_inventory_sync', lambda _scope: None)
     monkeypatch.setattr(
         service,
@@ -153,6 +182,26 @@ def test_data_freshness_report_artifact_count_uses_kubernetes_scope(monkeypatch)
     service._populate_data_freshness(dashboard, selected_cluster_id=None, selected=None)
 
     assert calls == [None]
+    assert artifact_calls == [None]
     report_tile = next(item for item in dashboard.data_freshness if item.label == 'Report Artifacts')
     assert report_tile.value == '1 retained artifact record'
     assert report_tile.status == 'Recorded'
+
+
+def test_artifact_records_require_retained_reference_and_completed_lifecycle(monkeypatch) -> None:
+    rows = [
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='requested', file_path='/a.pdf'),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='queued', file_path='/b.pdf'),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='failed', file_path='/c.pdf'),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='ready', file_path=None),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='ready', file_path=''),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='a', status='ready', file_path='/valid.pdf'),
+        SimpleNamespace(report_domain='kubernetes', cluster_id='b', status='archived', file_path='/archived.pdf'),
+        SimpleNamespace(report_domain='object_storage', cluster_id='a', status='ready', file_path='/foreign.pdf'),
+    ]
+    monkeypatch.setattr(reporting, 'Report', _model(rows, timestamp=True))
+
+    assert reporting.count_kubernetes_reports(None) == 7
+    assert reporting.count_kubernetes_artifact_records(None) == 2
+    assert reporting.count_kubernetes_artifact_records('a') == 1
+    assert reporting.count_kubernetes_artifact_records('b') == 1
