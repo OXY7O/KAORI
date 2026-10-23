@@ -5,6 +5,11 @@ from functools import wraps
 from typing import Any, cast
 
 from flask import flash, redirect, render_template, request, url_for
+from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.extensions.db import db
+from app.models.cluster import Cluster, ClusterStatus
 
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 
@@ -63,3 +68,49 @@ def validate_then_apply[ResultT](
     if prepare_apply is not None:
         prepare_apply()
     return apply()
+
+
+def get_operations_cluster_posture() -> dict[str, Any]:
+    """Summarize persisted cluster connection checks, never a live readiness probe.
+
+    A 'connected' row is only previously committed validation evidence; every
+    mutation workflow must still revalidate its selected live Kubernetes target.
+    """
+    try:
+        total, reported = db.session.execute(
+            select(
+                func.count(Cluster.id),
+                func.count(Cluster.id).filter(
+                    Cluster.status == ClusterStatus.CONNECTED.value,
+                    Cluster.last_check.is_not(None),
+                ),
+            )
+        ).one()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return {
+            'connection_label': 'Readiness Unavailable',
+            'needs_attention': True,
+            'status_title': 'Cluster Readiness Unavailable',
+            'status_detail': 'Stored connection evidence cannot be loaded. Validate the integration before operating.',
+        }
+
+    total = int(total)
+    reported = int(reported)
+    remaining = total - reported
+    if remaining == 0:
+        return {
+            'connection_label': f'{reported} Reported Connected',
+            'needs_attention': False,
+            'status_title': '',
+            'status_detail': '',
+        }
+    return {
+        'connection_label': f'{reported} of {total} Reported Connected',
+        'needs_attention': True,
+        'status_title': 'Cluster Validation Required' if reported == 0 else 'Partial Cluster Validation',
+        'status_detail': (
+            f'{remaining} registered cluster(s) lack a successful committed connection check. '
+            'Review their integration validation; each operation still verifies its live target.'
+        ),
+    }
