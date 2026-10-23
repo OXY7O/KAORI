@@ -366,6 +366,17 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'data-release-handoff-approval' in approval
     assert 'One active plan per Tenant.' in approval
     assert 'requester and independent reviewer must be different' in approval
+    # Section-title guidance reuses canonical popover; never hide required gating text.
+    header = approval.split('</header>', 1)[0]
+    assert header.count("info_tip.render('tenant-release-approval-handoff-help'") == 1
+    assert "'Independent Approval and Handoff'" in header
+    assert "variant='guide'" in header
+    assert "placement='left'" in header
+    assert 'The requester and reviewer must be different authorized operators.' in header
+    assert 'External acceptance, provider read-back and Release require separate evidence.' in header
+    assert header.index('Independent Approval and Handoff</h4>') < header.index(
+        "info_tip.render('tenant-release-approval-handoff-help'"
+    )
 
     # An acknowledged plan is locked without inventing approval or provider transfer.
     assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
@@ -421,7 +432,8 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'class="w-full mt-3 space-y-3"' in approval
     assert 'class="w-full mt-3 space-y-3 border-t border-outline-subtle pt-3"' in approval
     assert 'aria-label="Independent Platform Admin required"' in approval
-    assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in approval
+    assert 'Another authorized Platform Admin must verify and accept.' in approval
+    assert 'References and dry-runs prove neither consent nor transfer.' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
     assert 'mt-4 flex min-w-0 items-start gap-2.5 py-2' in approval
     assert 'External Handoff &amp; Read-Back' in approval
@@ -447,6 +459,8 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'Independent review recorded. External owner acceptance' in approval
     assert re.search(r'role="status"\s+aria-label="External successor evidence"', approval)
     assert 'successor_claim.plan_sha256 == handoff_plan.plan_sha256' in approval
+    assert 'Record for external verification only; this does not prove acceptance or authorize transfer.' in approval
+    assert 'name="confirm_successor_reference"' in approval
     assert 'External Reference Unverified' in approval
     assert '<span class="text-xs font-semibold text-content-primary">External Reference</span>' in approval
     assert '{{ successor_claim.successor_reference }}' in approval
@@ -1392,12 +1406,13 @@ def test_native_platform_admin_consent_is_violet_clear_and_only_authorizes_recor
 
     # The confirmation is tinted, legible, responsive and explicitly not a successful transfer.
     assert 'data-tenant-platform-admin-consent' in form
-    assert 'border-brand-outline/60' in form
-    assert 'border-l-kaori-primary bg-kaori-soft/50' in form
+    assert 'border-outline-subtle bg-kaori-soft/35' in form
+    assert 'border-l-kaori-primary' not in form
+    assert 'border-l-[3px]' not in form
     assert 'focus-within:ring-2 focus-within:ring-outline-focus' in form
     assert 'Platform Admin Consent' in form
-    assert 'this independently reviewed plan SHA and exact resources' in form
-    assert 'Kubernetes resource values must remain unchanged.' in form
+    assert 'I authorize handoff for this plan SHA and exact scope; values stay unchanged.' in form
+    assert 'mt-0.5 block text-xs leading-5 text-content-secondary' in form
     assert 'name="confirm_successor_acceptance"' in form
     assert re.search(r'name="confirm_successor_acceptance"\s+type="checkbox"\s+value="accept"\s+required', form)
     assert 'tenant.accept_native_successor_handoff_route' in form
