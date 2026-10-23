@@ -181,12 +181,12 @@
                         Default Operation
                         <select class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
                                 name="operation_mode">
-                            {% if selected.name != 'notification_delivery' %}
+                            {% if selected.name not in ('notification_delivery', 'audit_event') %}
                                 <option value="archive_and_cleanup"
                                         {% if selected.operation_mode == 'archive_and_cleanup' %}selected{% endif %}>Archive Then Cleanup</option>
                             {% endif %}
                             <option value="archive_only"
-                                    {% if selected.name == 'notification_delivery' or selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option>
+                                    {% if selected.name in ('notification_delivery', 'audit_event') or selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option>
                         </select>
                     </label>
                 </div>
@@ -321,7 +321,7 @@
                                    {% if selected.enabled %}checked{% endif %}>
                             Policy enabled
                         </label>
-                        {% if selected.name != 'notification_delivery' %}
+                        {% if selected.name not in ('notification_delivery', 'audit_event') %}
                             <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
                                 <input type="checkbox"
                                        name="schedule_enabled"
@@ -345,6 +345,14 @@
                 Archive Only: delivery deduplication, retry protection, channel dependencies and all-time
                 counts still rely on hot evidence. Cleanup remains blocked until the governed
                 safety migration is admitted. Archived bundles are artifact-level, not a per-record search.
+            </p>
+        {% endif %}
+        {% if selected.name == 'audit_event' %}
+            <p class="rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs text-content-secondary">
+                Archive Only: administrative AuditEvent evidence stays in PostgreSQL. Manual archives contain
+                a redacted summary, not unrestricted source metadata. Scheduled cleanup, historical record
+                lookup, archive download, and archive-object purge are not admitted until source-specific
+                permissions and retention governance are approved.
             </p>
         {% endif %}
         {% if not selected.enabled %}
@@ -377,7 +385,7 @@
                     <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
                             {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
-                {% if selected.name != 'notification_delivery' %}
+                {% if selected.name not in ('notification_delivery', 'audit_event') %}
                 <form method="post"
                       action="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
