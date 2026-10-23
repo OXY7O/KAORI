@@ -666,7 +666,7 @@ Tenant Sync remains observation-only. GlobalResourceQuota resourceVersion change
 `GlobalResourceQuota` and `Tenant.spec.resourceQuotas` cutover paths
 use the approved Allocation Change visual grammar: an explicit target/profile
 selection, side-by-side **Observed Current / Proposed Governed** quota
-contracts, six supported quota dimensions (CPU/Memory Requests and Limits,
+contracts, six headline quota dimensions (CPU/Memory Requests and Limits,
 Pods, logical storage) and a compact factual **Change Highlights** count.
 The Tenant CR workspace continues to present *two separate* governed forms:
 Adopted → KAORI Managed and Managed Allocation Change. The read-only table
@@ -681,6 +681,30 @@ selected versioned profile; blank selection shows the same dash placeholder
 as Current. A minimum header height is a presentation aid only, never a
 data constraint or evidence substitute. The Native adopted-cutover footer
 uses shorter fail-closed text without changing admission or read-back.
+
+**Complete Capsule Tenant CR quota comparison (#2980; DevContainer UAT):**
+The six headline dimensions are *not* the entire authoritative quota contract.
+The Capsule Tenant CR adopted-cutover and managed-change comparisons now both
+reuse `components/view_more_content.html` as a collapsed, read-only
+**Technical Details** disclosure containing a single four-row
+Current (observed/committed) versus Proposed (versioned Resource Profile)
+table for `persistentvolumeclaims`, `services`, `configmaps`, and
+`secrets`. The underlying quota authority supports all **ten**
+ResourceQuota dimensions. A Managed toggle left unset is **Unbounded**,
+not zero; selection changes refresh both the headline grid and the
+technical rows without another provider read.
+
+**Change Highlights** compares all ten quota keys, never hardcodes six,
+reports a total count and at most three concise current → proposed deltas
+with a `+N more` indication. Only safe, understood Kubernetes numeric
+quantity forms are compared across equivalent units; unknown strings remain
+conservatively different, and bounded/unbounded transitions always remain
+visible. This is read-only preflight, not a capacity-admission result;
+backend approval, provider authority, ownership mask, API resourceVersion,
+mutation and verified read-back contracts are unchanged. No PVC LimitRange
+min/max or Container Defaults are claimed as Capsule Tenant quota-managed
+through this disclosure. Desktop/mobile, keyboard, light/dark and values
+removed by Managed toggles require human Visual QA before acceptance.
 
 These surfaces are **visually consistent, not functionally interchangeable**:
 GRQ ownership, applicable/non-applicable authority mismatch, source count
