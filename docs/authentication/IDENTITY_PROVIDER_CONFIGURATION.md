@@ -137,7 +137,8 @@ KAORI_LDAP_BIND_PASSWORD
 
 | Symptom                                    | Check                                                                                                                                                  |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Provider validation reports missing secret | Confirm the exact environment-variable name and restart the KAORI container after adding it.                                                           |
+| Provider validation reports missing secret | Confirm the exact environment-variable name is loaded into the **running KAORI web process**. For VS Code F5, restart Flask Debug (not the Dev Container) after editing the ignored `.env` file. |
+| `LDAP connection could not be opened.` | Check the current KAORI adapter version first: older builds treated the `None` return from `ldap3.Connection.open()` as a failure even when `connection.closed` was `False` (#2917). On an updated build, verify actual container routing, DNS, CA trust and server logs; do not disable TLS verification. |
 | TLS validation fails                       | Confirm container CA trust, certificate chain, certificate hostname, port, and selected TLS mode.                                                      |
 | Service bind fails                         | Confirm Bind DN syntax, password, account state, and directory authentication policy.                                                                  |
 | Search returns no users                    | Confirm Base DN, search filter, mapped attributes, and service-account read permissions.                                                               |
