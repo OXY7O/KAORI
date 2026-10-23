@@ -26,10 +26,16 @@ def test_committed_sql_candidate_counts_cover_independent_types() -> None:
     assert 'NamespaceInventory.namespace == model.namespace' in repo
 
 
-def test_complex_dependency_scopes_preserve_nonbounded_candidates() -> None:
+def test_scoped_storage_uses_relation_safe_sql_bounds_and_complex_fallbacks_remain() -> None:
     repo = source('app/kubernetes/inventory/topology/repository.py')
-    assert 'max_nodes=family_budget if not namespace else None' in repo
+    assert 'max_nodes=family_budget,' in repo
     assert "max_nodes=family_budget if selection.scope in {'all', 'compute'} else None" in repo
     assert "selection.scope == 'networking' and selection.include_pods" in repo
     assert 'query.filter(referenced_pod.exists())' in repo
+    assert 'filter_current_generation(' in repo
+    assert 'db.session.query(referenced_claim.id), referenced_claim' in repo
+    assert 'referenced_claim.cluster_id == StorageInventory.cluster_id' in repo
+    assert "referenced_claim.storage_type == 'PersistentVolumeClaim'" in repo
+    assert "func.trim(referenced_claim.details['volume_name'].as_string()) == StorageInventory.name" in repo
+    assert 'volumes = volumes.filter(committed_claims.exists())' in repo
     assert '_storage_for_namespace(items, namespace)' in repo
