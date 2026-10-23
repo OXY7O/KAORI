@@ -17,6 +17,27 @@ The registered adapter catalog now contains **nine** managed domains after pause
 
 Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
+## Execution and pending-source retention admission (#2906)
+
+All nine registered adapters use one persisted, enabled `DataLifecyclePolicy`
+as a mandatory execution precondition **inside the engine**, not merely in
+the web queue controller. Read-only Preview does not create a policy.
+CLI/direct task calls cannot silently fall back to adapter defaults.
+
+`notification_delivery` and `audit_event` are strictly paused/manual
+Archive Only domains. Both reject scheduled dispatch, destructive cleanup,
+and cold archive-object purge even after a manual Archive Only run. For
+Notification Delivery, a direct CLI run is an explicit manual operation
+only when the saved policy is enabled, unscheduled and `archive_only`;
+Delivery's hot journal, deduplication, channel dependencies and all-time
+metrics stay authoritative until #2868/#2869/#2870 are admitted. AuditEvent
+retains the **stricter** active Local Database Super Admin/worker requester
+requirements #2891, and never allows CLI run without a requester.
+
+These are execution constraints, not an approval of source retention,
+recovery, legal holds, scheduled execution or data deletion. Do not mistake
+verified archive history for verified individual-record lookup or restore.
+
 ## Safety invariants
 
 1. Cleanup never starts until data and manifest artifacts are uploaded and independently verified by size and SHA-256 checksum.

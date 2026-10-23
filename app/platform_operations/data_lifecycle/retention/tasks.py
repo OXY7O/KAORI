@@ -61,8 +61,9 @@ def run_domain_retention_task(
             celery_task_id=self.request.id,
         )
         policy = get_archive_domain(domain_name).build_policy()
-        if domain_name == 'audit_event':
-            # No archive purge until security retention/legal-hold policy is admitted.
+        if domain_name in {'audit_event', 'notification_delivery'}:
+            # Never purge cold AuditEvent or Delivery evidence before source
+            # retention, legal holds and durable dependencies are admitted.
             result['archive_purge'] = {'status': 'not_admitted', 'failed_count': 0}
         else:
             result['archive_purge'] = purge_expired_archives(
@@ -159,7 +160,7 @@ def run_scheduled_retention_task(self) -> dict[str, Any]:
 
     results: dict[str, Any] = {}
     for domain_name in configured_domains:
-        if domain_name == 'audit_event':
+        if domain_name in {'audit_event', 'notification_delivery'}:
             results[domain_name] = {'status': 'scheduling_not_admitted'}
             continue
         try:

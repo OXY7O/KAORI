@@ -84,7 +84,7 @@ def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event(
     assert "if domain_name in {'notification_delivery', 'audit_event'}:" in presentation
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert 'Archive Only: administrative AuditEvent evidence stays in PostgreSQL' in ui
-    assert "if domain_name == 'audit_event':" in worker
+    assert "if domain_name in {'audit_event', 'notification_delivery'}:" in worker
     assert "'scheduling_not_admitted'" in worker
     assert "'archive_purge'] = {'status': 'not_admitted'" in worker
     assert "if domain_name == 'audit_event' and not dry_run:" in engine

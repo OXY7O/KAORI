@@ -114,13 +114,28 @@ def run_retention_archive(
     # This opt-in capability defaults to True for existing admitted domains.
     if cleanup and not getattr(domain, 'cleanup_supported', True):
         raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
+    # Queue admission is not sufficient: CLI and direct task calls share the
+    # engine. Never infer authorization from an adapter's fallback defaults.
+    stored_policy = get_policy(domain.name)
+    if stored_policy is None:
+        raise RuntimeError(f'A persisted retention policy is required for {domain.name}.')
+    if not stored_policy.enabled or not policy.enabled:
+        raise RuntimeError(f'Retention is disabled for {domain.name}.')
+
     if domain.name == 'audit_event':
         _require_audit_event_manual_admission(
             trigger_type=trigger_type,
             triggered_by_user_id=triggered_by_user_id,
         )
-    if not policy.enabled:
-        raise RuntimeError(f'Retention is disabled for {domain.name}.')
+    if domain.name == 'notification_delivery':
+        # Durable identity, historical outcomes and archival authority are
+        # pending #2868/#2869/#2870: no unattended or destructive lifecycle.
+        if (
+            trigger_type not in {'manual', 'cli'}
+            or stored_policy.schedule_enabled
+            or stored_policy.operation_mode != 'archive_only'
+        ):
+            raise RuntimeError('Notification Delivery permits manual Archive Only, without scheduling.')
 
     with retention_lock(domain.name):
         boundary = domain.inspect_boundary(policy)
@@ -362,6 +377,8 @@ def purge_expired_archives(
 ) -> dict[str, Any]:
     if domain_name == 'audit_event' and not dry_run:
         raise RuntimeError('AuditEvent archive-object purge is not admitted pending retention governance.')
+    if domain_name == 'notification_delivery' and not dry_run:
+        raise RuntimeError('Notification Delivery archive purge is blocked pending durable evidence governance.')
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
     candidate_query = ArchiveArtifact.query.filter(
         ArchiveArtifact.domain == domain_name,
