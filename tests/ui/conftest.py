@@ -248,6 +248,8 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
         patch('app.access.authentication.routes._record_result', return_value=None),
+        # Deterministic Account view: no live audit/history DB query.
+        patch('app.settings.routes.recent_authentication_events', return_value=[]),
         patch.object(login_manager, '_user_callback', lambda _user_id: user),
         patch(
             'app.bootstrap.presentation.get_navigation_notification_context',
