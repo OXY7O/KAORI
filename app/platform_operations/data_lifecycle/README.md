@@ -39,12 +39,20 @@ Only registered archive adapters are displayed. Retention Policies remain previe
 The approved 4:8 desktop **Master–Detail** workspace keeps its server-owned
 policy panel. The nine-domain left navigation is now a compact Data Domains
 selector with persistent search/header, source status labels, hot/archive
-summaries and a scrollable **list only** on `xl` screens. The capped
-`min(65dvh, 36rem)` list height avoids stretching the sidebar to the
-variable-length right-hand policy form. It does not create a fixed-height
-policy panel or a global page scroll trap.
+summaries and a scrollable **list only** on `xl` screens. The `xl` grid
+stretches its two 4:8 columns to equal height. The right-hand policy remains
+the naturally sized master for the grid row; the left sidebar uses an
+inset, absolutely positioned flex shell to **avoid contributing its nine
+domain rows to intrinsic row height**. The middle list fills the available
+height and scrolls internally, with a small desktop minimum height for
+short policy forms. This does not introduce a fixed-height right panel,
+independent page scrollbar or extra placeholder cards. Header/search and
+the compact Execution Boundary footer stay outside the scrolling list.
 
-On smaller screens, a disclosure reveals the full domain list, with ordinary
+The selected row is locally aligned inside the list on initial rendering
+and browser Back/Forward, without programmatically scrolling the document.
+On smaller screens, the navigator reverts to natural height and a
+disclosure reveals the full domain list, with ordinary
 href links retained for no-JavaScript navigation. Selecting a domain keeps
 the existing URL-pushing HTMX detail swap, active Violet selection, and
 read-only RBAC. A no-match search produces an accessible empty state.

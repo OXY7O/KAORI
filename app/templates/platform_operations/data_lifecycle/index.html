@@ -51,7 +51,7 @@
                 {% elif lifecycle.active_tab == 'storage' %}
                     {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
                 {% else %}
-                    <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
+                    <div class="grid gap-6 xl:grid-cols-12 xl:items-stretch"
                          x-data="{
                              activeDomain: '{{ lifecycle.selected_domain }}',
                              domainSearch: '',
@@ -62,11 +62,28 @@
                                  const query = this.domainSearch.trim().toLowerCase();
                                  return Array.from(list.querySelectorAll('[data-domain-search]'))
                                      .filter(item => item.dataset.domainSearch.includes(query)).length;
+                             },
+                             ensureActiveVisible() {
+                                 this.$nextTick(() => {
+                                     const list = this.$refs.domainList;
+                                     if (!list || list.scrollHeight <= list.clientHeight) return;
+                                     const active = Array.from(list.querySelectorAll('[data-domain-id]'))
+                                         .find(item => item.dataset.domainId === this.activeDomain);
+                                     if (!active) return;
+                                     const viewport = list.getBoundingClientRect();
+                                     const item = active.getBoundingClientRect();
+                                     if (item.top < viewport.top) list.scrollTop += item.top - viewport.top;
+                                     else if (item.bottom > viewport.bottom) {
+                                         list.scrollTop += item.bottom - viewport.bottom;
+                                     }
+                                 });
                              }
-                         }">
-                        <aside class="min-w-0 xl:col-span-4"
+                         }"
+                         x-init="ensureActiveVisible()"
+                         @popstate.window="activeDomain = new URLSearchParams(window.location.search).get('domain') || '{{ lifecycle.selected_domain }}'; ensureActiveVisible()">
+                        <aside class="min-w-0 xl:relative xl:col-span-4 xl:min-h-[25rem]"
                                aria-label="Data Lifecycle domain navigation">
-                            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:absolute xl:inset-0 xl:flex xl:flex-col">
                                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle p-3 sm:p-4">
                                     <div class="min-w-0">
                                         <h2 id="data-lifecycle-domains-title"
@@ -87,7 +104,7 @@
                                 </header>
                                 <div id="data-lifecycle-domain-picker"
                                      x-show="domainPickerOpen"
-                                     class="xl:!block">
+                                     class="xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col">
                                     <div class="border-b border-outline-subtle p-3 sm:p-4">
                                         <label for="data-lifecycle-domain-search"
                                                class="text-xs font-semibold text-content-secondary">Search Data Domains</label>
@@ -105,12 +122,14 @@
                                             <span x-text="visibleDomainCount">{{ lifecycle.domains|length }}</span> domains shown
                                         </p>
                                     </div>
-                                    <nav aria-labelledby="data-lifecycle-domains-title">
+                                    <nav aria-labelledby="data-lifecycle-domains-title"
+                                         class="xl:min-h-0 xl:flex-1 xl:overflow-hidden">
                                         <div x-ref="domainList"
-                                             class="space-y-1.5 p-2 sm:p-3 xl:max-h-[min(65dvh,36rem)] xl:overflow-y-auto xl:overscroll-contain"
+                                             class="space-y-1.5 p-2 sm:p-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain"
                                              aria-label="Registered lifecycle domains">
                                             {% for domain in lifecycle.domains %}
                                                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=domain.name) }}"
+                                                   data-domain-id="{{ domain.name }}"
                                                    data-domain-search="{{ (domain.label ~ ' ' ~ domain.description ~ ' ' ~ domain.name)|lower }}"
                                                    x-show="!domainSearch || $el.dataset.domainSearch.includes(domainSearch.trim().toLowerCase())"
                                                    hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=domain.name) }}"
@@ -149,7 +168,7 @@
                                             </div>
                                         </div>
                                     </nav>
-                                    <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:px-4">
+                                    <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:px-4 xl:shrink-0">
                                         <div class="flex items-center gap-1">
                                             <i data-lucide="list-checks"
                                                class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"

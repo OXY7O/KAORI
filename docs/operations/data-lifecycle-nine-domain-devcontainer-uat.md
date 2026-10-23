@@ -127,14 +127,21 @@ After loading the current holding commit, exercise all **nine** domain rows
 in Retention Policies alongside DL-E2E-11, without changing actual policy
 or archive evidence:
 
-- Desktop at and above `xl`: 4:8 master/detail, search and registered count
-  remain visible, only the domain list scrolls up to
-  `min(65dvh, 36rem)`, and the Execution Boundary footer stays outside
-  the inner scroll; the right policy panel is not height-locked.
+- Desktop at and above `xl`: 4:8 master/detail **equal-height columns**
+  under a variable right-hand policy height (compare Job Executions, Generated
+  Reports and shorter domains). No large blank space below the left panel.
+  Header, search and registered count stay at the top; only the domain list
+  fills and scrolls through the remaining height, with Execution Boundary
+  anchored at the bottom. The right policy panel is never height-locked and
+  the left domain list must not determine the grid row's intrinsic height.
+  For shorter policies, the sidebar retains a usable minimum height.
+  Scrolling the list must not unexpectedly scroll the outer document.
 - Select first/middle/last domain by pointer, keyboard Tab/Enter and in
   scrolled state: active Violet highlight, `aria-current`, status, URL
   `?tab=policies&domain=...`, and right-hand policy agree; no stale
   selection after browser Back or Save Policy full HTMX refresh.
+  After browser Back/Forward, active row must be visible inside the domain
+  list while page scroll position and filter behavior remain predictable.
 - Search by visible label, source/description, and technical domain ID;
   confirm matches, zero-match empty state, no unauthorized source disclosure,
   and correct focus/scroll after clearing search.
