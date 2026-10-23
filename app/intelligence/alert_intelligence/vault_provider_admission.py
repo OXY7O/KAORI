@@ -7,14 +7,13 @@ read-only candidate planner and source identity remain authoritative.
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime
+from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
-    _CASE_PREFIX,
     _MAX_CASES,
     _PROFILE,
     build_vault_provider_case_plan,

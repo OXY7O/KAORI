@@ -13,7 +13,8 @@ from app.models.alert_ops import AlertCase, AlertCaseEvent
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.audit import AuditEvent
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.models.rbac import Role
+from app.models.identity import ExternalIdentityLink, IdentityProvider
+from app.models.rbac import Permission, Role, RolePermission
 from app.models.user import User
 
 AT = datetime(2026, 10, 23, 5, tzinfo=UTC)
@@ -32,7 +33,11 @@ def store():
     with app.app_context():
         tables = [
             Role.__table__,
+            Permission.__table__,
+            RolePermission.__table__,
             User.__table__,
+            IdentityProvider.__table__,
+            ExternalIdentityLink.__table__,
             IntegrationInstance.__table__,
             IntegrationBinding.__table__,
             AlertSignalSnapshot.__table__,
@@ -276,6 +281,18 @@ def test_db_error_rolls_back_full_case_batch(scope, monkeypatch):
     assert AlertCase.query.count() == 0
     assert AlertCaseEvent.query.count() == 0
     assert AuditEvent.query.count() == 0
+
+
+def test_wrong_key_source_suppress_or_closed_record_never_promotes(scope):
+    vault, source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    assert _admit(binding, actor)['created'] == 1
+    case = AlertCase.query.one()
+    case.workflow_state = 'closed'
+    db.session.commit()
+    assert _admit(binding, actor)['created'] == 0
+    assert AlertCase.query.one().workflow_state == 'closed'
+    assert AuditEvent.query.count() == 1
 
 
 def test_no_http_celery_provider_io_or_delivery_activation():
