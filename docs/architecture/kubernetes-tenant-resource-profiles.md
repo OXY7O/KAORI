@@ -1068,7 +1068,7 @@ under the approved Tenant Operations **Allocation Drift** first-level tab
   with their exact server-side capability, stale-evidence and read-back gates.
   The registry and modal GET do not execute either operation.
 
-The table no longer forces a 1450px minimum; a bounded 880px minimum allows
+The table no longer forces a 1450px minimum; a bounded 840px minimum allows
 **table-only** horizontal scrolling on mobile, without page-level overflow.
 Shared `table_ui` text/action primitives, statuses, canonical 5-row
 pagination (options 5/10/25/50), compact zero-data state and existing
