@@ -819,7 +819,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'readback_status.dry_run_passed' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
-    assert 'The original requester must restart with a new SHA' in approval
+    assert 'Original requester must restart with a new SHA and independent review.' in approval
     assert "tenant_release_step_urls['finalize']" in approval
     assert 'View recovery steps' in approval
     assert 'A historical Dry-Run Passed receipt' not in approval
@@ -1298,10 +1298,10 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
     assert 'flex min-w-0 flex-col gap-1 border-b border-outline-subtle py-3' in approval
-    assert 'Kubeconfig and scoped access verified through' in approval
+    assert 'Kubeconfig identity and scoped access verified.' in approval
     assert 'provider ownership remains unchanged.' in approval
     assert 'lg:flex-row lg:items-center lg:justify-between' in approval
-    assert 'mt-4 border-y border-outline-subtle py-3' in approval
+    assert 'data-tenant-native-dry-run-evidence' in approval
     assert 'name="confirm_native_handoff_dry_run"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
 
@@ -1336,3 +1336,44 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
     Environment().parse(detail)
+
+def test_native_dry_run_compact_resource_rows_and_copy_reuse_shared_behavior() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    evidence = approval.split('{% set dry_run = row.release_native_handoff_dry_run %}', 1)[1].split(
+        "{% elif row.release_handoff_preparation_state == 'pending'", 1
+    )[0]
+    Environment().parse(detail)
+
+    # Historical preview remains a disclosure and never authorizes a Release.
+    assert 'data-tenant-native-dry-run-evidence' in evidence
+    assert 'group-open:rotate-180' in evidence
+    assert "dry_run.plan_sha256 == handoff_plan.plan_sha256" in evidence
+    assert 'not row.native_release_readiness.dry_run_passed' in evidence
+    assert 'Historical / Not Current' in evidence
+    assert 'Provider mutation: none. Release is still blocked.' in evidence
+    assert 'dry_run.expected_component_count' in evidence
+    assert 'dry_run.errors' in evidence
+    assert 'role="status"' in evidence
+
+    # Responsive exact-kind/name and full UID rows; clipboard is globally shared.
+    assert 'sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]' in evidence
+    assert '{{ component.kind }}/{{ component.name }}' in evidence
+    assert '{{ component.uid }}' in evidence
+    assert evidence.count('data-kaori-copy-root') == 1
+    assert evidence.count('data-kaori-copy-source') == 1
+    assert evidence.count('data-kaori-copy-button') == 1
+    assert 'data-kaori-copy-label' in evidence
+    assert 'aria-live="polite"' in evidence
+    assert "filename='js/clipboard.js'" in read('app/templates/layouts/app.html')
+
+    # Labels are concise but preserve approval, ownership and freshness boundaries.
+    assert 'Kubeconfig identity and scoped access verified. Provider transfer remains separate.' in approval
+    assert 'Inspect ownership only after external handoff. This action never transfers provider resources.' in approval
+    assert 'Prior references and dry-run cannot be reused.' in approval
+    assert 'SelfSubjectReview and SelfSubjectAccessReview. Provider transfer remains separate.' not in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23

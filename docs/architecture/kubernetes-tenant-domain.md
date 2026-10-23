@@ -1982,3 +1982,34 @@ must still verify expired/acknowledged/pending and blocked states, native/Capsul
 branches, long identifiers, small screens, keyboard and light/dark mode before
 acceptance. Official Developer Check, Full Admission, staging/main admission,
 deployment and release remain on HOLD.
+
+## Native Release Step 3 evidence row refinement — 2026-10-23
+
+The follow-up #2401 visual feedback requires shorter copy in the Platform Admin
+Approved, External Handoff & Read-Back, and Approval Expired sections, and a
+more readable expanded Native Dry-Run evidence register.
+
+The accepted-plan preview remains a read-only, non-mutating server dry-run
+receipt; it is never provider ownership transfer. Its native accessible
+disclosure separates Native Dry-Run, the committed outcome, and a neutral
+`Historical / Not Current` marker, derived exclusively from
+`native_release_readiness.dry_run_passed`. The original plan SHA correlation,
+component coverage, exact Kubernetes Kind/Name, and untruncated UID are
+preserved. Resource identities are displayed as responsive two-column rows
+with thin dividers and selectable identifiers. Each UID reuses the existing
+KAORI clipboard handler (`app/static/js/clipboard.js`) using
+`data-kaori-copy-root`, `data-kaori-copy-source`, and
+`data-kaori-copy-button`. There is no new JavaScript or provider request.
+
+Dry-run errors remain visible if present, while a missing error list
+does not create an empty error container. The UI still states
+`Provider mutation: none. Release is still blocked.` An expired plan
+still requires original-requester restart with a new SHA and independent
+review; previous references and dry-runs may not be reused. Shorter
+copy does not change SelfSubjectReview/SelfSubjectAccessReview checks.
+
+No changes to the external engine, Native/Capsule authority, reviewer
+separation, approval freshness, HTMX/CSRF, provider mutation, or Release
+finalization. Dev Container Visual QA is required in both themes and
+responsive breakpoints, historical/current/expired, long UID, error,
+copy, and keyboard cases. Official admission and deployment remain HOLD.
