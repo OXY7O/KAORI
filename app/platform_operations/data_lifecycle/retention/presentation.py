@@ -373,10 +373,10 @@ def _domain_description(name: str) -> str:
         'runtime_observation': 'Kubernetes, Object Storage, Metrics Source, and Alertmanager runtime evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
-        'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
+        'alert_incident': 'Closed alert cases, operator evidence, delivery, and postmortems.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
         'notification_delivery': 'Provider-neutral outbound delivery evidence; archive-only safety admission.',
-        'audit_event': 'Source-owned administrative AuditEvent evidence; manual Archive Only.',
+        'audit_event': 'Source-owned AuditEvent evidence; manual Archive Only.',
     }.get(name, 'KAORI operational data domain.')
 
 
