@@ -435,12 +435,18 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'file-clock',
                 'label': 'Administrative Source Evidence',
-                'description': 'Committed hot AuditEvent records, including allowlisted Automatic Job and Tenant Inventory Sync sources.',
+                'description': (
+                    'Committed hot AuditEvent records, including allowlisted Automatic Job '
+                    'and Tenant Inventory Sync sources.'
+                ),
             },
             {
                 'icon': 'shield-check',
                 'label': 'Source Permission Boundary',
-                'description': 'Other AuditEvent producers remain independently authoritative; archive export is held for security review.',
+                'description': (
+                    'Other AuditEvent producers remain authoritative; archive export is held '
+                    'for security review.'
+                ),
             },
         ),
         'notification_delivery': (
