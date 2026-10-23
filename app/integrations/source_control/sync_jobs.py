@@ -6,7 +6,12 @@ mutate provider, reveal credentials in kwargs or create a second scheduler.
 
 from __future__ import annotations
 
+from flask import current_app
+
 from app.integrations.provider_matrix import provider_kind
+from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
+from app.extensions.db import db
+from app.models.user import User
 from app.models.source_control import SourceInstallation
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
@@ -86,7 +91,13 @@ def enqueue_source_repository_sync(
         raise NoEligibleSourceControlTargets(
             'Manual Source Control job dispatch requires resource-scoped admission (#724).'
         )
-    if trigger_type not in {'scheduled', 'on_demand', 'recovery'}:
+    if trigger_type == 'uat':
+        if not uat_enabled() or requested_by_user_id is None:
+            raise NoEligibleSourceControlTargets('Explicit Source Control UAT admission is required.')
+        actor = db.session.get(User, requested_by_user_id)
+        if not local_super_admin(actor) or installation_record_id is None:
+            raise NoEligibleSourceControlTargets('UAT refresh requires a scoped local administrator.')
+    if trigger_type not in {'scheduled', 'on_demand', 'recovery', 'uat'}:
         raise ValueError('Unsupported Source Control inventory trigger.')
     if trigger_type in {'on_demand', 'recovery'} and requested_by_user_id is not None:
         raise NoEligibleSourceControlTargets(
