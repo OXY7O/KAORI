@@ -78,13 +78,13 @@ def upgrade() -> None:
             name='uq_secrets_pki_inventory_scope',
         ),
     )
-    op.create_index('ix_secrets_pki_inventory_collection_states_integration_instance_id',
+    op.create_index('ix_spki_inventory_state_instance',
                     'secrets_pki_inventory_collection_states', ['integration_instance_id'])
 
 
 def downgrade() -> None:
     op.drop_column('vault_instances', 'kv2_mounts')
-    op.drop_index('ix_secrets_pki_inventory_collection_states_integration_instance_id',
+    op.drop_index('ix_spki_inventory_state_instance',
                   table_name='secrets_pki_inventory_collection_states')
     op.drop_table('secrets_pki_inventory_collection_states')
     op.drop_index('ix_secrets_pki_secret_versions_representation_id', table_name='secrets_pki_secret_versions')

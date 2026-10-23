@@ -105,12 +105,13 @@ class SecretInventoryCollectionState(db.Model):
             'integration_instance_id', 'provider_namespace', 'mount',
             name='uq_secrets_pki_inventory_scope',
         ),
+        Index('ix_spki_inventory_state_instance', 'integration_instance_id'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        nullable=False,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)
