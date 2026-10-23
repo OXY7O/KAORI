@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
-    parse_approved_pki_mounts,
+    MAX_ISSUERS, parse_approved_pki_mounts,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_pki import PKIIssuerCollectionState
 from app.models.vault import VaultInstance
+from app.secrets_pki.pki_collection_freshness import qualified_committed_pki_count
 
 MAX_VAULT_SOURCES = 25
 MAX_PKI_SCOPES = 100
 
 
-def pki_public_readiness(*, instance: VaultInstance | None = None) -> dict[str, Any]:
+def pki_public_readiness(
+    *, instance: VaultInstance | None = None, now: datetime | None = None,
+) -> dict[str, Any]:
     """Bound all queries and show missing/stale sources as unknown, not zero."""
+    instant = now or datetime.now(UTC)
     if instance is None:
         sources = (
             VaultInstance.query.join(VaultInstance.integration_instance)
@@ -35,7 +39,14 @@ def pki_public_readiness(*, instance: VaultInstance | None = None) -> dict[str, 
         sources = [instance]
     if len(sources) > MAX_VAULT_SOURCES:
         return _result('blocked', 'Source Limit Exceeded')
-    any_unvalidated = any(row.integration_instance.readiness_status != 'ready' for row in sources)
+    any_unvalidated = any(
+        row.integration_instance.readiness_status != 'ready'
+        or not row.integration_instance.enabled
+        or row.integration_instance.lifecycle_status != 'active'
+        or row.integration_instance.integration_type != 'secrets_pki'
+        or row.integration_instance.provider_key != 'vault'
+        for row in sources
+    )
 
     try:
         scopes = {
@@ -60,24 +71,32 @@ def pki_public_readiness(*, instance: VaultInstance | None = None) -> dict[str, 
         item for item in rows
         if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes
     ]
-    committed = [item for item in selected if item.last_committed_at is not None]
-    timestamps: list[datetime] = [
-        item.last_committed_at for item in committed if item.last_committed_at is not None
+    counts = [
+        qualified_committed_pki_count(
+            item, instant=instant,
+            count_field='observed_issuer_count', max_count=MAX_ISSUERS,
+        )
+        for item in selected
     ]
-    count = sum(int(item.observed_issuer_count or 0) for item in committed) if committed else None
-    if not committed:
-        state, label = ('blocked', 'PKI Provider Validation Required') if any_unvalidated else ('not_collected', 'Public PKI Not Collected')
+    if not selected:
+        state, label = (
+            ('blocked', 'PKI Provider Validation Required') if any_unvalidated
+            else ('not_collected', 'Public PKI Not Collected')
+        )
     elif any_unvalidated:
         state, label = 'stale', 'Vault PKI Provider Validation Required'
-    elif any(item.status in {'failed', 'stale'} for item in selected):
-        state, label = 'stale', 'Stale Public PKI Evidence'
-    elif len(committed) < len(scopes):
+    elif len(selected) != len(scopes):
         state, label = 'partial', 'Partial Public PKI Coverage'
+    elif any(count is None for count in counts):
+        state, label = 'stale', 'Stale or Incomplete Public PKI Evidence'
     else:
         state, label = 'committed', 'Committed Public PKI Evidence'
+    qualified = state == 'committed'
     return _result(
-        state, label, approved_mounts=len(scopes), committed_mounts=len(committed),
-        observed_issuers=count, last_committed_at=max(timestamps) if timestamps else None,
+        state, label, approved_mounts=len(scopes),
+        committed_mounts=len(selected) if qualified else None,
+        observed_issuers=sum(value for value in counts if value is not None) if qualified else None,
+        last_committed_at=max(item.last_committed_at for item in selected) if qualified else None,
     )
 
 
@@ -92,5 +111,5 @@ def _result(
         'committed_mounts': committed_mounts,
         'observed_issuers': observed_issuers,
         'last_committed_at': last_committed_at,
-        'has_evidence': committed_mounts is not None and committed_mounts > 0,
+        'has_evidence': state == 'committed',
     }

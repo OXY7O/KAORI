@@ -275,3 +275,31 @@ PASS/FAIL per source; all presently Not Tested.
   `python -m pytest -q tests/integrations/test_secrets_pki_operational_evidence_workspaces.py`
   plus Ruff/djlint/Pyright and relevant Vault regressions, record exact SHA.
   Human UAT acceptance is still Not Tested, not PASS.
+
+
+## HV-03/HV-07 #2841 — PKI summary freshness UAT (Not Tested)
+
+At exact testing SHA, exercise issuer and stored public certificate pages
+with two approved PKI mounts and committed `ready` collection generations.
+Exercise a valid complete zero with both mounts ready, then each negative:
+one uncollected, old commit (24h boundary), old observation with fresh
+commit, future timestamp, failed/stale retained previous commit, missing
+count, over-bound count, inactive provider and unapproved scope. Verify
+**no current numeric counts** appear for partial/stale/failed outcomes.
+Do not compare to live Vault PKI operations on GET. Capture only sanitized
+timestamps, source statuses and test run logs.
+
+~~~
+python -m ruff check app/secrets_pki/pki_collection_freshness.py \
+  app/secrets_pki/pki_presentation.py \
+  app/secrets_pki/pki_stored_presentation.py \
+  tests/integrations/test_vault_pki_readiness_freshness.py
+python -m pytest -q \
+  tests/integrations/test_vault_pki_readiness_freshness.py \
+  tests/integrations/test_vault_pki_committed_inventory.py \
+  tests/integrations/test_vault_stored_certificates_committed.py \
+  tests/integrations/test_vault_pki_validity_posture.py
+~~~
+
+All above remain NOT RUN in this GitHub-only source session and cannot
+substitute for real Vault/worker/PostgreSQL UAT and human acceptance.

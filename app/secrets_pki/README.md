@@ -322,3 +322,23 @@ or RBAC expansion. This fills navigation/read-only UAT surface **but
 does not implement** an authoritative Lease history dataset, Secret to
 consumer materialization, verified rotation cutover or privileged Vault
 operation. Status for these remains Not Implemented / Not Tested.
+
+
+## HV-03/HV-07 #2841 — Strict PKI committed freshness
+
+PKI issuer and stored public certificate readiness now require that **each**
+approved source mount has an exactly matched current collection state, status
+`ready`, a bounded integer observation count, and mutually coherent
+`last_observed_at` and `last_committed_at` timestamps within 24 hours
+of the query. Failed/stale/partial/missing, future timestamp, unapproved
+source or count over the source's bounded maximum returns non-committed
+posture, with numerical counts and commit time suppressed.
+This matches the stricter existing public PKI validity projection.
+A previous valid commit retained after worker failure is historical
+evidence only and never promoted back to live readiness.
+
+No provider API is used in page reads; no certificate identifiers,
+subject/SAN/serial, Vault mount name/path, PEM or private key are exposed.
+Execute `tests/integrations/test_vault_pki_readiness_freshness.py`
+and existing PKI committed tests on DevContainer PostgreSQL. Real provider
+UAT and human acceptance remain Not Tested.
