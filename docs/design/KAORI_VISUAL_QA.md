@@ -59,6 +59,7 @@ The first executable deterministic catalog is intentionally bounded to stable re
 
 - Welcome;
 - Settings / General;
+- Settings / Account (stable test-owned local identity and empty activity sample);
 - Notification Center.
 
 Expansion must add stable fixture authority before promoting another route from runtime-dependent to deterministic.
@@ -275,3 +276,22 @@ A human UAT rejection becomes a new executable contract when the acceptance inte
 9. Obtain staging integration evidence and human UAT before promotion.
 
 Never regenerate baselines merely to make a failing test green.
+
+### Settings Account UAT expansion (#2880)
+
+`settings.account` is a deterministic *test-owned* browser surface. The
+existing Playwright suite checks Account Profile, Recent Authentication
+Activity empty state and Credential Management across the six canonical
+viewports and light/dark, with shared responsive geometry, HTMX tab
+navigation, screenshots/traces and accessible nonvisual pending status.
+It uses a mocked local account and empty authentication activity rather
+than a live provider or database audit. It **never submits passwords** or
+changes session state. Evidence is captured under the existing
+`tmp/ci-artifacts/test-output/ui-browser` directory.
+
+Account does **not** receive new unchecked screenshot SHA baselines.
+Current baseline manifest only locks the twelve reviewed Welcome theme/
+viewport screenshots. Promote an Account baseline only after explicit
+review on a pinned browser/runtime/asset version using the governed
+baseline-update procedure. Source admission alone is not Visual QA PASS;
+all browser assertions and human inspection remain independently required.
