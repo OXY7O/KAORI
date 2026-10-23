@@ -219,7 +219,7 @@ def main() -> int:
         and "channel.test_status == 'success'" in channel_details_drawer
         and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
-        and 'Never erase delivery evidence.' in channel_delete_blockers_dialog
+        and 'Preserve evidence.' in channel_delete_blockers_dialog
         and 'aria-label="Retirement consequences"' in channel_retire
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
