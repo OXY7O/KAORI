@@ -70,10 +70,13 @@ def test_secrets_pki_workspace_follows_canonical_sidebar_navigation():
     assert [(item.key, item.endpoint) for item in workspace.capabilities] == [
         ('overview', 'secrets_pki.overview'),
         ('inventory', 'secrets_pki.inventory'),
+        ('lifecycle', 'secrets_pki.lifecycle'),
     ]
     assert all(item.permissions == ('secrets_pki.view',) for item in workspace.capabilities)
     assert _workspace_key('secrets_pki.overview') == 'secrets_pki'
     assert _workspace_key('secrets_pki.inventory') == 'secrets_pki'
+    assert _workspace_key('secrets_pki.lifecycle') == 'secrets_pki'
+    assert _active_capability_key('secrets_pki', 'secrets_pki.lifecycle') == 'lifecycle'
     assert _active_capability_key('secrets_pki', 'secrets_pki.inventory') == 'inventory'
 
 

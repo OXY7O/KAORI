@@ -189,6 +189,10 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
             WorkspaceCapabilityDefinition(
                 'inventory', 'Inventory', 'boxes', 'secrets_pki.inventory', ('secrets_pki.view',)
             ),
+            WorkspaceCapabilityDefinition(
+                'lifecycle', 'Lifecycle & Assurance', 'shield-check',
+                'secrets_pki.lifecycle', ('secrets_pki.view',)
+            ),
         ),
     ),
     WorkspaceDefinition(
