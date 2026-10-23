@@ -51,7 +51,7 @@ def test_storage_template_parses_and_uses_shared_semantic_labels() -> None:
     assert "table_label.status_label('Verified evidence' if storage_verified" in source
     assert "'Verification pending' if storage_pending else 'Needs attention'" in source
     assert 'class="border-t border-outline-subtle pt-3"' in source
-    assert "bg-surface-subtle" in source
+    assert 'xl:divide-x xl:divide-outline-subtle' in source
     assert 'Transport reachable only; write/read/checksum verification awaits an archive execution.' in source
     assert 'The local target is writable; archive integrity evidence is still pending.' in source
     assert 'Storage Interpretation' in source
