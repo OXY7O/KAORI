@@ -42,6 +42,7 @@ from app.intelligence.recommendation_builders import (
     build_workload_resource_governance_findings as _build_workload_resource_governance_findings_impl,
 )
 from app.intelligence.registry_recommendations import build_registry_recommendation_findings
+from app.intelligence.secrets_pki_recommendations import build_secrets_pki_recommendation_findings
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
@@ -299,6 +300,8 @@ def _build_recommendation_findings(
         collect('Object Storage', build_object_storage_recommendation_findings)
     if any(key.startswith('registry.') for key in rules):
         collect('Artifact Registry', build_registry_recommendation_findings)
+    if any(key.startswith('secrets_pki.') for key in rules):
+        collect('Secrets & PKI', build_secrets_pki_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 

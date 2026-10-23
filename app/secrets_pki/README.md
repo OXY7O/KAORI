@@ -244,3 +244,20 @@ gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.
   deep link; the page itself is not a historical Analytics workspace.
 - Human DevContainer light/dark/responsive Visual QA, exact-SHA backend tests,
   Developer Check, Full Admission and source-specific UAT are **pending**.
+
+## Bounded Central Intelligence expiry pressure (#2778 / HV-11)
+
+Central Intelligence reuses the qualified current-generation public stored PKI
+certificate validity aggregate for one **capability-wide** Recommendation.
+Severity is P1 if any expired, P2 if none expired but expiry within 7 days,
+or P3 if only the 8–30-day window is affected. This does not identify the
+affected source, Secret or certificate: an authorized operator must investigate
+the provider directly before remediation. No Vault HTTP, Secret path, public
+fingerprint, certificate serial, private material, provider ID or new engine.
+
+Only status `ready` and internally consistent complete counts can emit a
+finding. Missing/stale/partial/disabled evidence does not imply a safe zero,
+a resolved alert or collection success. There is no automatic AlertCase,
+outbound notification, Accepted Risk policy override or per-asset assessment.
+The other HV-11 rules remain unimplemented. Source code alone is not DevContainer
+UAT acceptance; follow `VAULT_INTEGRATED_UAT.md` on exact tested SHA.
