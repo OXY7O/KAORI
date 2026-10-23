@@ -2195,3 +2195,7 @@ themes, readiness vs expired/blocked branches, checkbox keyboard
 focus, long plan SHA, provider rejection and finalization safety.
 Official Developer Check, Full Admission, staging/main admission and
 release remain HOLD.
+
+## Verified handoff next-action copy — Dev Container review (2026-10-23)
+
+The Step 4 Next Required Action summary now reads `Handoff verified. Complete checks before authorized Release.` This is presentation-only; the committed provider handoff and fresh admission evidence remain separate from the guarded Release POST. No provider verification, permissions, data model, or other action path changes. Browser Visual QA and local runtime tests remain PENDING; official CI/CD admission remains HOLD.
