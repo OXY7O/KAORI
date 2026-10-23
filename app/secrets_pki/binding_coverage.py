@@ -127,7 +127,7 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
         posture: dict[str, Any] = {
             'basis': 'Committed binding validation is independent of Vault API, history and AlertCases',
         }
-        for family, (profile, name) in _FAMILIES.items():
+        for family, (_profile, name) in _FAMILIES.items():
             bound = groups[family]
             qualified = set()
             for identity, assessments in bound.items():
