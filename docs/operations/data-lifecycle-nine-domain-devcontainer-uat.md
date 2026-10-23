@@ -175,6 +175,35 @@ When queue readiness is false or unknown, **do not** show the readiness
 claim. Run this alongside DL-E2E-11 as a **visual-only** scenario; it
 does not authorize cleanup or change existing retention/retry behavior.
 
+### Alert Incidents operator actions, Info Tip and notification routing (#2929)
+
+Run only with approved disposable synthetic PostgreSQL and Archive Storage
+and a ready maintenance worker. Verify the exact tested holding SHA and
+capture evidence of each action's HTTP/HTMX response, toast status,
+Notification Deck visibility, Activity Audit event, canonical JobExecution
+and archive evidence. Do not trigger real production cleanup.
+
+| Action / case | Immediate feedback | Persistent evidence and behavior | UAT |
+| --- | --- | --- | --- |
+| Alert Incidents Policy Info Tip Guide | Accessible anchored Guide on pointer/keyboard/touch | Closed-only case scope, timeline/delivery/postmortem, archive verification, searchable index and journal ownership | NOT RUN |
+| Preview | Read-only selected-boundary inline content; no success toast | No JobExecution or Notification row; full page on ordinary GET, partial on HTMX | NOT RUN |
+| Save Policy success | Success operational toast | Updated policy + Activity Audit; no routine Notification Deck row | NOT RUN |
+| Save Policy invalid/failure | Error toast | Failed attempt Activity Audit and actionable Deck error if persistence succeeds; no policy partial commit | NOT RUN |
+| Archive Only accepted | Info operational toast immediately | One canonical maintenance JobExecution in Active Work; Activity Audit, no duplicate queued Deck Notification | NOT RUN |
+| Archive & Cleanup accepted on authorized synthetic domain | Info operational toast immediately | Same canonical job; cleanup only after verified archive and admissible source state | NOT RUN |
+| Paused policy / unsupported destructive mode / dispatch failure | Warning/error toast | Actionable Deck notification and Activity Audit; no unauthorized job or deletion | NOT RUN |
+| Archive verification success/failure | Success/error toast | Committed verification result/attempt, failed integrity stays blocked; failure is Deck-visible | NOT RUN |
+| Browser fallback and duplicate submit | Full workspace without HTMX; disabled submit during HTMX request | CSRF/RBAC preserved; no repeated queue mutation while one submission is pending | NOT RUN |
+
+At page level, the Incident Timeline copy reads "Case lifecycle evidence
+from initial detection through final closure." Failure Recovery reads
+"Cleanup blocked; transient failures retry once, then need manual retry."
+Toast, Notification Deck and Activity Audit are *distinct* delivery surfaces;
+their presence must match this table rather than appearing all at once for
+every successful action. Verify keyboard and light/dark behavior of the
+shared KAORI Guide. Keep DL-E2E-03, -05, -07, -10, -11 and -14/-15
+source-specific safety checks independent of this visual/feedback UAT.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
