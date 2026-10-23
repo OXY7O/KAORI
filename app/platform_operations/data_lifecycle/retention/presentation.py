@@ -523,7 +523,10 @@ def _domain_coverage_note(name: str) -> str | None:
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
         'notification_delivery': 'Archive-only and paused by default. Hot records remain authoritative for deduplication, channel dependencies and all-time metrics; schedule and cleanup not yet admitted.',
-        'audit_event': 'Paused, manual archive-only. AuditEvent remains a separate source from Activity Register, JobExecution and Tenant Audit Evidence. Source-specific permission and retention policy review is pending.',
+        'audit_event': (
+            'Paused, manual archive-only. AuditEvent is separate from Activity Register, '
+            'JobExecution and Tenant Audit Evidence. Source-specific retention/RBAC review is pending.'
+        ),
     }.get(name)
 
 
@@ -537,7 +540,10 @@ def _domain_exclusion_note(name: str) -> str | None:
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
         'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
-        'audit_event': 'Raw metadata, IP address, user-agent, actor reconstruction, bundle downloads, automated schedules, hot cleanup and per-record historical lookup are not admitted.',
+        'audit_event': (
+            'Raw metadata, IP/user agent, actor reconstruction, bundle downloads, '
+            'scheduling, cleanup and individual historical lookup are not admitted.'
+        ),
     }.get(name)
 
 
