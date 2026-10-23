@@ -283,7 +283,7 @@ def _policy_execution_settings(
     policy: RetentionPolicy,
     stored: DataLifecyclePolicy | None,
 ) -> tuple[bool, int, int, str]:
-    if domain_name == 'notification_delivery':
+    if domain_name in {'notification_delivery', 'audit_event'}:
         # Manual archive-only admission; no scheduled or destructive mode yet.
         return (False, default_schedule_hour(domain_name), default_schedule_minute(domain_name), 'archive_only')
     if stored is not None:
@@ -328,6 +328,7 @@ def _domain_label(name: str) -> str:
         'alert_incident': 'Alert Incidents',
         'tenant_audit_evidence': 'Tenant Audit Evidence',
         'notification_delivery': 'Notification Delivery',
+        'audit_event': 'Administrative Audit Events', 
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -341,6 +342,7 @@ def _domain_icon(name: str) -> str:
         'alert_incident': 'siren',
         'tenant_audit_evidence': 'shield-check',
         'notification_delivery': 'send',
+        'audit_event': 'file-clock',
     }.get(name, 'database')
 
 
@@ -354,6 +356,7 @@ def _domain_description(name: str) -> str:
         'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
         'notification_delivery': 'Provider-neutral outbound delivery evidence; archive-only safety admission.',
+        'audit_event': 'Separate source-owned administrative AuditEvent evidence; manual archive-only.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -428,6 +431,18 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'description': 'Required or completed postmortem context and action-item evidence remain part of the case record.',
             },
         ),
+        'audit_event': (
+            {
+                'icon': 'file-clock',
+                'label': 'Administrative Source Evidence',
+                'description': 'Committed hot AuditEvent records, including allowlisted Automatic Job and Tenant Inventory Sync sources.',
+            },
+            {
+                'icon': 'shield-check',
+                'label': 'Source Permission Boundary',
+                'description': 'Other AuditEvent producers remain independently authoritative; archive export is held for security review.',
+            },
+        ),
         'notification_delivery': (
             {
                 'icon': 'send',
@@ -482,6 +497,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
         'notification_delivery': 'Archive-only and paused by default. Hot records remain authoritative for deduplication, channel dependencies and all-time metrics; schedule and cleanup not yet admitted.',
+        'audit_event': 'Paused, manual archive-only. AuditEvent remains a separate source from Activity Register, JobExecution and Tenant Audit Evidence. Source-specific permission and retention policy review is pending.',
     }.get(name)
 
 
@@ -495,6 +511,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
         'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
+        'audit_event': 'Raw metadata, IP address, user-agent, actor reconstruction, bundle downloads, automated schedules, hot cleanup and per-record historical lookup are not admitted.',
     }.get(name)
 
 
