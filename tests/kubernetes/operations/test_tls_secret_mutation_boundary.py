@@ -248,3 +248,35 @@ def test_tls_patch_requires_qualified_uid_on_both_sides(
         )
     assert calls == []
     assert live.data is None
+
+
+def test_bulk_preflight_qualifies_uid_without_patching_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mutation = load_mutation(monkeypatch)
+    mutation.db.session.get = lambda model, cluster_id: SimpleNamespace(id=cluster_id)
+    live = SimpleNamespace(
+        type='kubernetes.io/tls',
+        metadata=SimpleNamespace(
+            resource_version='801', uid='12345678-1234-4234-8234-123456789abc'
+        ),
+        data={'tls.key': 'private'}, string_data=None,
+    )
+    calls: list[object] = []
+    api = SimpleNamespace(
+        read_namespaced_secret=lambda **kwargs: live,
+        patch_namespaced_secret=lambda **kwargs: calls.append(kwargs),
+    )
+    monkeypatch.setattr(
+        mutation, 'build_kubernetes_client',
+        lambda cluster: SimpleNamespace(core_api=lambda: api),
+    )
+    version = mutation.preflight_tls_secret(
+        SimpleNamespace(
+            cluster_id='cluster-1', namespace='default', secret_name='api-tls',
+            secret_uid='12345678-1234-4234-8234-123456789abc',
+        )
+    )
+    assert version == '801'
+    assert calls == []
+    assert live.data is None
