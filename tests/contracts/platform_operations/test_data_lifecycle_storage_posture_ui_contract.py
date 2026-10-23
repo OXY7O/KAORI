@@ -121,11 +121,23 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
     steps = source.split('id="archive-safety-boundary-title"', 1)[1].split(
         '</section>', 1,
     )[0]
-    assert '<ol class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">' in steps
-    assert '<li class="min-w-0">' in steps
+    assert (
+        '<ol class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 '
+        'xl:gap-0 xl:divide-x xl:divide-outline-subtle">'
+    ) in steps
+    assert '<li class="min-w-0 xl:px-4 xl:first:pl-0 xl:last:pr-0">' in steps
     assert '</ol>' in steps
     assert 'rounded-lg border' not in steps
     assert 'Cleanup (if admitted)' in steps
+    assert 'xl:divide-x' in steps
+    assert 'xl:divide-outline-subtle' in steps
+    assert 'divide-y' not in steps
+    assert "rounded-lg border" not in steps
+    assert (
+        'Up to {{ lifecycle.purge_batch_size }} expired artifacts '
+        'per admitted run; failures retry safely.'
+    ) in source
+    assert 'partial failures remain retryable.' not in source
 
     interpretation = source.split('aria-label="Storage interpretation"', 1)[0].splitlines()[-2]
     assert 'border-t border-outline-subtle pt-3' in interpretation
