@@ -232,3 +232,29 @@ def test_authorized_route_projects_safe_sample(monkeypatch):
         result = routes.overview.__wrapped__()
     assert result['alert_source_sample']['observed_rows'] == 2
     assert result['can_view_intelligence'] is True
+
+
+def test_mixed_unobserved_and_qualified_requires_complete_source_population(store):
+    first, second, source = _instance(), _instance(), _instance('alert_source')
+    _binding(source, first)
+    _binding(source, second, sample=_sample(status='unobserved'))
+    output = _result()
+    assert output['status'] == 'partial'
+    assert output['observed_rows'] is None
+    assert output['last_validated_at'] is None
+
+
+def test_view_reuses_canonical_dashboard_without_per_alert_detail():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    content = (root / 'app/templates/secrets_pki/overview.html').read_text(encoding='utf-8')
+    assert "dashboard_workspace.controller(active_tab, 'secrets-pki-overview')" in content
+    assert "if can_view_intelligence and alert_source_sample" in content
+    assert "alert_source_sample.status == 'qualified'" in content
+    assert 'metric_card.render' in content
+    assert 'alert_source_sample.firing' in content
+    assert 'Last validated Alertmanager sample only' in content
+    assert 'alert_source_sample.selector_json' not in content
+    assert 'alert_source_sample.labels' not in content
+    assert 'alert_source_sample.fingerprint' not in content

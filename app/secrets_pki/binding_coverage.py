@@ -318,8 +318,10 @@ def build_vault_alert_source_sample_summary(*, now: datetime | None = None) -> d
             return _alert_sample_result(
                 'partial' if 'qualified' in statuses or 'unobserved' in statuses else 'needs_validation'
             )
-        counts = {key: sum(item[1][key] for item in snapshots if item[1]) for key in _ALERT_SAMPLE_COUNTS}
-        checked_at = min(item[2] for item in snapshots if item[2] is not None)
+        qualified_counts = [row for _status, row, _checked in snapshots if row is not None]
+        validated_times = [checked for _status, _row, checked in snapshots if checked is not None]
+        counts = {key: sum(row[key] for row in qualified_counts) for key in _ALERT_SAMPLE_COUNTS}
+        checked_at = min(validated_times)
         return _alert_sample_result('qualified', counts=counts, last_validated_at=checked_at)
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return _alert_sample_result('unavailable')
