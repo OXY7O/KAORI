@@ -1,21 +1,21 @@
 GENERATED_REPORT_LABEL = 'Generated Reports'
 GENERATED_REPORT_ICON = 'file-archive'
-GENERATED_REPORT_DESCRIPTION = 'Generated report metadata and retained PDF, XLSX, or CSV artifact evidence.'
+GENERATED_REPORT_DESCRIPTION = 'Report metadata and retained PDF, XLSX, or CSV evidence.'
 GENERATED_REPORT_COVERAGE = (
     {
         'icon': 'table-2',
         'label': 'Generated Registry',
-        'description': 'Terminal Ready, Failed, and Archived report records after their status-specific hot-retention window.',
+        'description': 'Ready, Failed, and Archived reports past their status-specific hot retention.',
     },
     {
         'icon': 'file-check-2',
         'label': 'Artifact Evidence',
-        'description': 'Ready and Archived PDF, XLSX, and CSV files are copied and checksum-verified before cleanup.',
+        'description': 'Ready/Archived PDF, XLSX, and CSV files are copied and checksum-verified before cleanup.',
     },
     {
         'icon': 'hard-drive-download',
         'label': 'Report Storage',
-        'description': 'Source artifacts remain untouched until the lifecycle archive and supplemental evidence verify successfully.',
+        'description': 'Source files remain until archive and supplemental evidence verify.',
     },
 )
 GENERATED_REPORT_COVERAGE_NOTE = (
