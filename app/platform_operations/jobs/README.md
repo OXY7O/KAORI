@@ -40,6 +40,11 @@ Do not move collectors, report builders, analytics processors, or retention adap
 
 ## Registered Jobs
 
+### Source Control repository sync (SC-03 candidate)
+
+`source_control.repository.sync` reuses the `inventory` worker and the standard database-backed `JobPolicy` / `JobExecution` lifecycle. The policy is disabled by default; manual execution is blocked pending #724 resource-scoped authorization. Only admitted GitHub App installations with Ready validation can be scanned. At most 25 installation IDs, never tokens, cross the queue boundary. Signed webhook delivery is retained in a separate committed inbox; its after-commit handoff links the canonical JobExecution without claiming the delivery completed. No webhook ingress endpoint is enabled by this increment.
+
+
 The first registered definition is `kubernetes.inventory.sync`:
 
 - queue: `inventory`

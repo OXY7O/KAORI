@@ -121,6 +121,8 @@ class SourceRepository(db.Model):
     )
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     full_name: Mapped[str | None] = mapped_column(String(600), nullable=True)
+    default_branch: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    visibility: Mapped[str | None] = mapped_column(String(16), nullable=True)
     archived: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     provider_presence: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
     last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -256,5 +258,42 @@ class SourceWebhookDelivery(db.Model):
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    dispatched_job_execution_id: Mapped[int | None] = mapped_column(
+        ForeignKey('job_executions.id', ondelete='SET NULL'), nullable=True
+    )
+
+    installation: Mapped[SourceInstallation] = relationship('SourceInstallation')
+
+
+class SourceRepositoryCollectionState(db.Model):
+    """Installation-scoped generation fencing and committed coverage evidence.
+
+    The next generation is allocated before provider reads; publishing requires
+    an exact matching pending generation under a DB row lock. Older scanners
+    are never allowed to overwrite newer grants or observation times.
+    """
+
+    __tablename__ = 'source_control_repository_collection_states'
+    __table_args__ = (
+        CheckConstraint('next_generation >= committed_generation',
+                        name='ck_sc_collection_generation_order'),
+        Index('ix_sc_collection_status', 'status', 'last_committed_at'),
+    )
+
+    installation_id: Mapped[int] = mapped_column(
+        ForeignKey('source_control_installations.id', ondelete='RESTRICT'),
+        primary_key=True,
+    )
+    next_generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pending_generation: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    committed_generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    repository_scope: Mapped[str] = mapped_column(String(16), nullable=False, default='unknown')
+    coverage: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
+    observed_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_committed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     installation: Mapped[SourceInstallation] = relationship('SourceInstallation')

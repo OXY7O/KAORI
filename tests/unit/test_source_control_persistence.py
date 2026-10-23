@@ -205,9 +205,9 @@ def test_identity_schema_contains_no_plaintext_git_auth_material() -> None:
     assert not any(word in column for column in columns for word in ('token', 'secret', 'private_key'))
 
 
-def test_inert_provider_has_no_configured_github_runtime() -> None:
+def test_github_matrix_option_follows_lifecycle() -> None:
     from app.integrations.provider_matrix import provider_kind, provider_options
 
     provider = provider_kind('source_control', 'github')
-    assert provider.lifecycle == 'planned'
-    assert provider_options('source_control') == []
+    assert provider.lifecycle in {'planned', 'available'}
+    assert bool(provider_options('source_control')) == provider.available

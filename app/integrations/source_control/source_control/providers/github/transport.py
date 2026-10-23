@@ -11,6 +11,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable, Mapping
+from urllib.parse import quote
 
 import requests
 
@@ -24,6 +25,13 @@ _API_VERSION = '2026-03-10'
 _MAX_RESPONSE_BYTES = 262_144
 _READ_INSTALLATION = re.compile(r'^/app/installations/[1-9][0-9]*$')
 _TOKEN_INSTALLATION = re.compile(r'^/app/installations/[1-9][0-9]*/access_tokens$')
+_REPOSITORY_PAGE = re.compile(r'^/installation/repositories\?per_page=20&page=[1-9][0-9]{0,3}$')
+_REPOSITORY_DETAIL = re.compile(r'^/repos/[A-Za-z0-9-]{1,39}/[A-Za-z0-9_.-]{1,100}$')
+_BRANCH_DETAIL = re.compile(
+    r'^/repos/[A-Za-z0-9-]{1,39}/[A-Za-z0-9_.-]{1,100}/branches/'
+    r'(?:[A-Za-z0-9_.-]|%2F|%2B){1,765}$'
+)
+_REF_NAME = re.compile(r'[A-Za-z0-9._/+-]{1,255}')
 _READ_PERMISSIONS = frozenset({
     'metadata', 'contents', 'pull_requests', 'actions', 'checks',
     'deployments', 'issues', 'administration',
@@ -80,6 +88,9 @@ def _safe_json_request(
         (method == 'GET' and _READ_INSTALLATION.fullmatch(path) is not None)
         or (method == 'POST' and _TOKEN_INSTALLATION.fullmatch(path) is not None)
         or (method == 'GET' and path == '/installation/repositories?per_page=1')
+        or (method == 'GET' and _REPOSITORY_PAGE.fullmatch(path) is not None)
+        or (method == 'GET' and _REPOSITORY_DETAIL.fullmatch(path) is not None)
+        or (method == 'GET' and _BRANCH_DETAIL.fullmatch(path) is not None)
     )
     if not allowed:
         raise GitHubProviderError('Unsupported GitHub provider API request.')
@@ -210,6 +221,65 @@ class GitHubAppClient:
             token=token, expires_at=expiration, permissions=requested,
             repository_selection=selection,
         )
+
+    def repository_page(self, token: InstallationToken, page: int) -> dict[str, Any]:
+        """Read one bounded, installation-authorized repository metadata page."""
+        if isinstance(page, bool) or not isinstance(page, int) or not 1 <= page <= 9999:
+            raise GitHubProviderError('GitHub installation repository page is invalid.')
+        if token.expires_at.astimezone(UTC) <= datetime.now(UTC) + timedelta(seconds=90):
+            raise GitHubProviderError('GitHub installation token cannot complete a repository page.')
+        status, result = self._request(
+            'GET', f'/installation/repositories?per_page=20&page={page}',
+            bearer=token.token,
+        )
+        if status != 200:
+            raise GitHubProviderError('GitHub repository page was not authorized.')
+        return result
+
+    def default_branch_tip(
+        self, token: InstallationToken, owner_login: str, repo_name: str,
+        branch_name: str, native_repository_id: str,
+    ) -> str:
+        """Resolve exact SHA, proving mutable owner/name and default ref still map to the native ID."""
+        repository_path = f'/repos/{owner_login}/{repo_name}'
+        if (
+            _REPOSITORY_DETAIL.fullmatch(repository_path) is None
+            or _REF_NAME.fullmatch(branch_name) is None
+            or branch_name.startswith('/') or branch_name.endswith('/')
+            or '..' in branch_name or '//' in branch_name
+            or any(part in {'.', '..'} or part.endswith('.lock')
+                   for part in branch_name.split('/'))
+        ):
+            raise GitHubProviderError('GitHub branch identity cannot be safely resolved.')
+        native = _id(native_repository_id)
+        branch_path = f'{repository_path}/branches/{quote(branch_name, safe="")}'
+        if _BRANCH_DETAIL.fullmatch(branch_path) is None:
+            raise GitHubProviderError('GitHub branch identity exceeds supported URL bounds.')
+        if token.expires_at.astimezone(UTC) <= datetime.now(UTC) + timedelta(seconds=90):
+            raise GitHubProviderError('GitHub installation token is expired for branch collection.')
+
+        def verify_repository() -> None:
+            status, record = self._request('GET', repository_path, bearer=token.token)
+            owner = record.get('owner')
+            if (
+                status != 200 or record.get('id') != native
+                or not isinstance(owner, dict) or owner.get('login') != owner_login
+                or record.get('name') != repo_name
+                or record.get('default_branch') != branch_name
+            ):
+                raise GitHubProviderError('GitHub native repository identity or default branch changed.')
+
+        verify_repository()
+        status, branch = self._request('GET', branch_path, bearer=token.token)
+        commit = branch.get('commit')
+        sha = commit.get('sha') if isinstance(commit, dict) else None
+        if (
+            status != 200 or branch.get('name') != branch_name
+            or not isinstance(sha, str) or re.fullmatch(r'[0-9a-fA-F]{40}', sha) is None
+        ):
+            raise GitHubProviderError('GitHub exact branch revision is unavailable.')
+        verify_repository()
+        return sha.lower()
 
     def validate_installation(
         self, installation_id: str | int, expected_account_id: str | int

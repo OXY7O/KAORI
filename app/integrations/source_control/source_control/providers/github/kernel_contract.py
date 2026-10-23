@@ -60,7 +60,9 @@ integration_module = IntegrationModule(
     ),
     compatibility_profiles=('github-app-readiness-v1',),
     runtime_label='Source Control',
-    navigation_endpoint_prefixes=('integrations.source_control',),
+    navigation_endpoint_prefixes=(
+        'integrations.source_control', 'github_source.', 'github_source_uat.',
+    ),
 )
 
 provider_implementation = IntegrationImplementation(
