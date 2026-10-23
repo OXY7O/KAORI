@@ -192,3 +192,30 @@ implicit cross-tenant authorization. Later HV-12 work requires separate
 governed committed source snapshots, case ownership and access controls.
 Focused tests: `tests/integrations/test_vault_alert_source_qualification.py`.
 Exact-SHA local and provider DevContainer UAT remain required.
+
+## HV-12 committed validation sample summary (#2791)
+
+The provider-neutral Secrets & PKI Operational Dashboard > Signals & Actions
+projects last validated, committed **Vault Alert Source** sample totals.
+Both `secrets_pki.view` (route authority) and `intelligence.view` are
+required to read/display those totals; without the latter, the read model is
+not called. No path/name/serial, raw alert or source identity is rendered.
+
+The projection is bounded to 25 active Vault identities and 100 enabled
+Alert Source bindings, requires one and only one binding per Vault,
+exact canonical `vault_instance` selector, active Alertmanager integration,
+`vault-alerts-v1` profile and a ready validation no older than 24 hours.
+The validation snapshot must be `qualified` with internally consistent,
+nonnegative totals, at most 100 observed rows per source. Only the **fully
+qualified population** produces counts, never a partial or stale subset.
+An empty accepted source sample is `unobserved`, not zero. Duplicate,
+foreign, incorrect-profile, stale or malformed source evidence produces
+blocked/partial/needs-validation/unavailable as appropriate with unknown counts.
+
+The displayed validation time is the **earliest** validated timestamp across
+the fully qualified population. This is neither live Alertmanager status
+nor current firing, a canonical AlertCase, source recovery, Vault API health
+or delivery/notification success. Normal operational GET does not contact
+Vault/Alertmanager. Tests:
+`tests/integrations/test_vault_alert_source_sample_summary.py`.
+Exact-SHA DevContainer and human UAT remain pending.

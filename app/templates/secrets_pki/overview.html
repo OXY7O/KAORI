@@ -136,8 +136,54 @@
                                     AlertCase, escalation, recovery or notification delivery.
                                 </p>
                             </div>
+                            {% if can_view_intelligence and alert_source_sample %}
+                                <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-subtle p-3"
+                                     role="status">
+                                    <p class="text-sm font-semibold text-content-primary">
+                                        {{ alert_source_sample.label }}
+                                    </p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        Last validated Alertmanager sample only, not current firing,
+                                        AlertCase lifecycle, recovery or notification delivery.
+                                        {% if alert_source_sample.last_validated_at %}
+                                            Earliest included validation:
+                                            {{ alert_source_sample.last_validated_at|user_datetime }}.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% if alert_source_sample.status == 'qualified' %}
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                        {{ metric_card.render('Sampled Alerts',
+                                            alert_source_sample.observed_rows,
+                                            'Rows observed at source binding validation.',
+                                            'bell', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Firing in Sample',
+                                            alert_source_sample.firing,
+                                            'Active rows at the last validation, not live cases.',
+                                            'bell-ring', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Suppressed in Sample',
+                                            alert_source_sample.suppressed,
+                                            'Alertmanager suppressed rows at validation.',
+                                            'bell-off', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Unprocessed in Sample',
+                                            alert_source_sample.unprocessed,
+                                            'Unprocessed rows at validation.',
+                                            'clock', source_label='Alert Source Validation') }}
+                                    </div>
+                                    <p class="mt-2 text-xs text-content-secondary">
+                                        Severity at validation: {{ alert_source_sample.critical }} critical,
+                                        {{ alert_source_sample.warning }} warning,
+                                        {{ alert_source_sample.info }} info. Counts cover only qualified bindings.
+                                    </p>
+                                {% else %}
+                                    <p class="mt-2 text-xs text-content-secondary">
+                                        Qualified alert counts are unavailable. Missing or partial evidence
+                                        is not proof of no Vault incidents.
+                                    </p>
+                                {% endif %}
+                            {% endif %}
                             <p class="mt-3 text-sm text-content-secondary">
-                                Central Intelligence and AlertCase evidence have not been qualified for Vault.
+                                Vault AlertCase lifecycle and notification delivery remain unqualified.
                                 Missing alert evidence does not imply that Vault or its consumers are healthy.
                             </p>
                             {% if can_view_intelligence %}
