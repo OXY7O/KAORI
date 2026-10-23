@@ -266,6 +266,30 @@ actual PostgreSQL, Celery, Archive Storage, negative RBAC, or operator UAT.
 
 Verify the permanent policy page shows a compact paused/enabled/active state, with no duplicated guidance banners or irrelevant schedule controls. The Info Tip remains accessible and the manual Archive Only action respects saved policy state. Use the existing nine-domain and AuditEvent-specific UAT cases for actual backend, notification, checksum and permission evidence.
 
+### Notification Delivery boundary and Runtime coverage Visual QA (#2959)
+
+For **Notification Delivery**, confirm a single compact inline notice
+below Save Policy (not a second tall alert card): Violet **Archive Only**,
+normal-text hot deduplication/retries/dependencies/lifetime semantics,
+and warning-colored **Cleanup blocked**, with artifact-level-only search
+limitations. Text can wrap naturally below desktop widths without
+horizontal overflow or inaccessible truncation. Confirm no schedule
+hour/minute inputs, **Execution Mode: Manual Archive Only**, and no
+Archive & Cleanup action; the control state must agree with the saved
+policy and back-end. With disposable evidence, run Preview and Archive
+Only; verify Info toast and canonical JobExecution, checksum/manifest,
+preserved hot rows, no duplicate successful queued Deck item. A rejected
+schedule/cleanup/expired purge attempt must fail closed. Source
+dependencies #2868/#2869/#2870 remain NOT ADMITTED.
+
+For **Runtime Observations**, inspect Kubernetes, Metrics Source,
+Alertmanager and Object Storage · MinIO coverage cards in a 2 × 2
+responsive grid at tablet/desktop widths and one column on mobile.
+Confirm equal card height, concise descriptions, no missing provider
+category, icons, focus, light/dark contrasts and right-panel adaptive
+height; other domain grids must keep their existing behavior.
+Record actual browser viewport and SHA before marking DL-E2E-11 PASS.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected

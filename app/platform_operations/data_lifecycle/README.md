@@ -180,6 +180,36 @@ The operator panel uses the shared KAORI policy components and one compact statu
 
 The status row deliberately has no redundant Guide: it shows committed state and the next action. Source-owned retention and archive restrictions remain accessible through the canonical title-adjacent KAORI Guide on the Administrative Audit Events Policy header. Do not add contextual popovers to the status row.
 
+## Notification Delivery and Runtime Observations visual composition (#2959)
+
+Notification Delivery's manual Archive Only operator panel uses **one**
+semantic, responsive inline notice instead of a three-line advisory card.
+It distinguishes the active **Archive Only** posture in KAORI Violet,
+hot-source deduplication/retry/channel/lifetime evidence in regular muted
+text and **Cleanup blocked** in the existing warning text token. The
+inline notice naturally wraps on narrow screens and does not introduce a
+second status card, custom toast or hover control. Delivery policy controls
+now correctly show **Execution Mode: Manual Archive Only** and omit the
+nonfunctional schedule hour/minute configuration, as already enforced by
+the shared policy service and worker.
+
+Runtime Observations uses the existing coverage card component but lays
+out its four provider categories as **2 × 2** at `sm` and wider, a single
+column on narrow mobile. Kubernetes, Metrics Source, Alertmanager and
+Object Storage · MinIO remain distinct, provider-owned data sources.
+Cards use existing Violet icons, subtle borders, even heights and shorter
+source descriptions. Other domain coverage grids are not changed.
+
+**Admission boundary:** Notification Delivery archive-only is already
+implemented, but hot cleanup and archive-object purge are not admitted:
+#2868 durable identity is not yet operationally cut over, #2869 aggregates
+and channel dependency ownership remain open, and #2870 verified compaction
+depends on both. Keep the hot journal authoritative and archived bundles
+artifact-level; source contracts and browser UAT cannot authorize purge.
+Operator testing must separately verify Policy/Preview/Archive Only,
+committed JobExecution, archive checksum, canonical toast/Deck behavior
+and negative scheduling/cleanup routes. Official promotion remains HOLD.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
