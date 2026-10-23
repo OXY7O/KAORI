@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "capsule-tenant-quota-drift" %}
 {% set loading_id = "capsule-tenant-quota-drift-loading" %}
@@ -9,7 +10,7 @@
     'ops_capsule_tenant_quota_search': capsule_tenant_quota_filters.search
 } %}
 <section id="{{ registry_id }}"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}"
          aria-label="Capsule Tenant Quota Drift">
     {% set header_actions %}
         {% if capsule_tenant_quota_filters.tenant_id or capsule_tenant_quota_filters.search %}
@@ -24,6 +25,19 @@
             ) }}
         {% endif %}
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render(
+            'capsule-tenant-quota-drift-guide',
+            'Capsule Tenant Quota Drift',
+            'Tenant.spec.resourceQuotas is Capsule-authoritative. Sync compares the committed KAORI allocation with the observed Tenant quota.',
+            [
+                'The Capsule Tenant CR governs generated Namespace ResourceQuota.',
+                'Drift is observed, not automatically reconciled. Reapply or Accept requires an explicit operator decision.'
+            ],
+            placement='right',
+            variant='guide'
+        ) }}
+    {% endset %}
     {{ table_ui.inventory_block_header('shield-alert',
         'Capsule Tenant Quota Drift',
         'Compare committed Tenant quota intent with Capsule observations; reconciliation requires an explicit decision.',
@@ -32,6 +46,7 @@
         none,
         none,
         header_actions=header_actions,
+        title_extra=title_info,
         result_count=capsule_tenant_quota_drift_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form('tenant.operations',
@@ -234,14 +249,30 @@
                                         <section aria-label="Reconciliation decision" class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                             <h3 class="text-sm font-semibold text-content-primary">Reconciliation Decision</h3>
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">Choose one explicit decision. Sync and viewing never mutate the provider.</p>
-                                            <dl class="mt-3 grid gap-4 lg:grid-cols-2">
-                                                <div class="min-w-0">
-                                                    <dt class="text-sm font-medium text-content-primary">Reapply Intent</dt>
-                                                    <dd class="mt-1 text-xs leading-5 text-content-muted">Write the committed KAORI quota through the admitted Capsule authority after capacity and read-back checks.</dd>
+                                            <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <div class="flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover p-3.5 sm:p-4">
+                                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                                        <dt class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                                                            <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                            Reapply Intent
+                                                        </dt>
+                                                        {{ table_label.metadata_label('Provider Write', icon='server-cog') }}
+                                                    </div>
+                                                    <dd class="text-xs leading-5 text-content-secondary">
+                                                        Write committed KAORI quota via Capsule after admission and read-back checks.
+                                                    </dd>
                                                 </div>
-                                                <div class="min-w-0">
-                                                    <dt class="text-sm font-medium text-content-primary">Accept Provider</dt>
-                                                    <dd class="mt-1 text-xs leading-5 text-content-muted">Commit the verified provider quota as the new KAORI intent without a provider write.</dd>
+                                                <div class="flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover p-3.5 sm:p-4">
+                                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                                        <dt class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                                                            <i data-lucide="check-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                            Accept Provider
+                                                        </dt>
+                                                        {{ table_label.metadata_label('Commit Only', icon='file-check-2') }}
+                                                    </div>
+                                                    <dd class="text-xs leading-5 text-content-secondary">
+                                                        Commit verified provider quota as KAORI intent. No provider write.
+                                                    </dd>
                                                 </div>
                                             </dl>
                                         </section>
