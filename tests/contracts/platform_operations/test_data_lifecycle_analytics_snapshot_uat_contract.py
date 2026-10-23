@@ -174,6 +174,31 @@ def test_disabled_analytics_policy_does_not_queue_job_and_warns_in_deck() -> Non
     assert feedback['delivery_policy'].deck_visible('warning') is True
 
 
+def test_failed_analytics_archive_dispatch_emits_error_toast_and_deck() -> None:
+    app = Flask(__name__)
+    app.config['RETENTION_CELERY_QUEUE'] = 'maintenance'
+    domain = SimpleNamespace(
+        name='analytics_snapshot', cleanup_supported=True,
+        build_policy=lambda: _fake_policy(enabled=True),
+    )
+    with (
+        app.app_context(),
+        patch(f'{SERVICE}.get_archive_domain', return_value=domain),
+        patch(f'{SERVICE}.get_policy', return_value=SimpleNamespace(enabled=True)),
+        patch(f'{SERVICE}.enqueue_canonical_job', side_effect=RuntimeError('synthetic dispatch failed')),
+        patch(f'{SERVICE}.db.session.rollback') as rollback,
+        patch(f'{SERVICE}.record_operational_activity', side_effect=lambda **kw: kw),
+        patch(f'{SERVICE}.url_for', return_value='/test/lifecycle'),
+    ):
+        feedback = queue_lifecycle_execution(
+            domain_name='analytics_snapshot', mode='archive_only', user_id=7,
+        )
+    rollback.assert_called_once()
+    assert feedback['status'] == 'error'
+    assert feedback['event_type'] == 'data_lifecycle_execution_queue_failed'
+    assert feedback['delivery_policy'].deck_visible('error') is True
+
+
 def test_analytics_policy_save_is_committed_through_standard_feedback() -> None:
     domain = SimpleNamespace(
         name='analytics_snapshot', cleanup_supported=True,
