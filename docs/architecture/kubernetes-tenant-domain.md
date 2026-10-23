@@ -2271,3 +2271,34 @@ request or mutation is introduced.
 Human Dev Container Visual QA should check desktop/mobile wrapping,
 light/dark contrast and hover/focus/touch tooltip behavior. Runtime
 Jinja/pytest and official CI/CD admission remain HOLD.
+
+## Native residual recovery balanced assessment / plan workspace — 2026-10-23
+
+Screenshot-led #1132 review identified excessive blank space to the right
+of a capped Prepare Recovery Plan form within a full-width outer card.
+The pending-plan state now composes **Assessment Actions** and **Prepare
+Recovery Plan** in one shared, responsive two-column surface rather than
+two stacked bordered subcards. On desktop the assessment column has
+45% of track weight and the form 55%; on narrow viewports they stack.
+The two existing actions (navigate to fresh Discovery and explicit
+read-only provider residue assessment) stack as separate rows on the
+left. The input, required no-mutation confirmation and primary
+`Prepare Recovery Plan` POST fill the right track. This eliminates
+the arbitrary form max-width, aligns both workflows and reduces visual
+nesting without inventing a new UI component or combined authorization.
+
+The four governance-stage descriptions are shorter and explicitly
+remain stage descriptions, not proof of completed recovery. The
+Discovery-first callout remains visible above the shared workspace.
+The assessment and preparation forms still use separate existing
+routes, CSRF, HTMX loading/disabled state, current-user permissions,
+change-reference length checks and required explicit preparation
+confirmation. The later independent SHA approval, conditional label-only
+PATCH, verified read-back and fresh Discovery/Re-adopt remain separate
+stages. Committed state remains the ordinary UI authority.
+
+Source contracts guard balanced section structure, responsive layout,
+no extra forms, original safety attributes and separate action routes.
+Browser Visual QA must verify long change references, desktop/mobile,
+light/dark, keyboard and negative assessment/approval states. Runtime
+tests and official Developer Check/Full Admission remain HOLD.
