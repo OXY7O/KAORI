@@ -559,6 +559,15 @@ Review one main page at a time using this sequence:
 
 ## 20. Pull Request Checklist
 
+- [ ] Checked the **current component-specific design contract**, current
+      Design Lock and an approved merged reference consumer before choosing
+      a shared macro variant, placement, or copy (do not rely on macro defaults).
+      In particular: title-level hover guidance uses the **Violet Guide**
+      `info_tip.render(..., variant='guide')` immediately after the title;
+      icon-only help is reserved for field-/row-specific content
+      (`components/INFO_TIP.md`, `components/TABLE_AND_LABEL.md`).
+      Existing Guide rollout regression inventory must include new
+      title-level consumers.
 - [ ] Existing shared components were reused.
 - [ ] No copied hero, pagination, table, label, or right-rail classes were introduced.
 - [ ] Font roles match the hierarchy.
