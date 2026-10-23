@@ -40,6 +40,7 @@ from app.kubernetes.dashboard.sections import (
     build_kpis,
     build_recommendations,
     build_reporting_snapshot,
+    count_kubernetes_artifact_records,
     count_kubernetes_reports,
     build_top_consumers_snapshot,
 )
@@ -329,7 +330,10 @@ def _populate_data_freshness(
     metrics_results = (capacity_result, top_result, forecast_result)
     has_metrics_source_data = any(result is not None and result.available for result in metrics_results)
     has_alertmanager_data = alerts_result is not None and alerts_result.available
-    reporting_snapshot = ReportingSnapshot(generated_reports=count_kubernetes_reports(selected_cluster_id))
+    reporting_snapshot = ReportingSnapshot(
+        generated_reports=count_kubernetes_reports(selected_cluster_id),
+        artifact_records=count_kubernetes_artifact_records(selected_cluster_id),
+    )
     dashboard.data_freshness = build_data_freshness(
         latest_inventory_sync=latest_sync,
         has_metrics_source_data=has_metrics_source_data,

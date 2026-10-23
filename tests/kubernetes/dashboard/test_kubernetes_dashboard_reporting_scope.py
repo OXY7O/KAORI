@@ -154,5 +154,5 @@ def test_data_freshness_report_artifact_count_uses_kubernetes_scope(monkeypatch)
 
     assert calls == [None]
     report_tile = next(item for item in dashboard.data_freshness if item.label == 'Report Artifacts')
-    assert report_tile.value == '2 generated reports'
-    assert report_tile.status == 'Available'
+    assert report_tile.value == '1 retained artifact record'
+    assert report_tile.status == 'Recorded'
