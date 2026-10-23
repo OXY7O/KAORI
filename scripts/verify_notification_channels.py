@@ -230,6 +230,11 @@ def main() -> int:
         and 'hx-target="#notification-channels-workspace"' in channel_details_drawer
         and 'detailChannel === ' in channel_details_drawer
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template,
+        'delegated dialog ownership within Details': 'delegate_clicks=true' in channel_details_drawer
+        and 'delegate_clicks=false' in shared_side_drawer
+        and '{% if not delegate_clicks %}@click.stop{% endif %}' in shared_side_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and 'data-destructive-modal-open' in channel_details_drawer,
         'Details replaces View More': 'View More' not in channels_template
         and 'openActionMenu' not in channels_template
         and 'actionMenuId' not in channels_template
