@@ -76,6 +76,9 @@ def test_mobile_disclosure_has_readable_no_js_fallback() -> None:
 def test_execution_boundary_uses_canonical_guide_and_permission_scoped_jobs_link() -> None:
     source = read()
     assert "info_tip.render('data-lifecycle-execution-boundary'," in source
+    guide = source.split("info_tip.render('data-lifecycle-execution-boundary',", 1)[1].split('}}', 1)[0]
+    assert "variant='guide'" in guide
+    assert "placement='right'" in guide
     assert 'Lifecycle policy and archive evidence stay in Data Lifecycle.' in source
     assert 'Execution Boundary' in source
     assert "{% if current_user.has_permission('jobs.view') %}" in source
