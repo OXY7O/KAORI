@@ -80,7 +80,9 @@ TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS
 TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS
 ```
 
-Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still valid and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still inside the expiry window and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+
+**Policy disposition for #1326 review:** the existing approved Valid / Renewal / Critical classification is **expiry-window posture**, not a claim that the certificate is presently active, trusted or accepted by clients. `not_before` is an independently displayed committed source fact (Valid From); a future value may prevent current TLS use even while expiry-window posture reports Valid. Existing status taxonomy and SQL/Python classifiers remain unchanged. The Registry Guide and TLS Detail explain this explicitly. A future change to classify Not Yet Valid must first receive separate taxonomy/policy approval and update both SQL and Python projection atomically.
 
 Validity labels:
 
