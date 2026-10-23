@@ -66,6 +66,12 @@ def store():
         binding = IntegrationBinding(
             integration_instance_id=source.id, asset_type='vault_instance',
             asset_key=str(vault.id), enabled=True,
+            validation_profile='vault-alerts-v1',
+            selector_json={
+                'matchers': [
+                    {'label': 'vault_instance', 'operator': '=', 'value': str(vault.id)},
+                ],
+            },
         )
         db.session.add(binding)
         db.session.commit()
@@ -117,6 +123,7 @@ def _case(ids, *, vault_id=None, key=None, foreign=False):
         alert_name='SHOULD-NOT-RENDER-RAW-ALERT',
         severity='warning', source_state='firing', workflow_state='open',
         routing_state='suppressed',
+        routing_override_reason='policy_ineligible',
         labels_json={},
         evidence_json={
             'correlation_profile': 'vault-alert-hmac-v1',
@@ -304,3 +311,16 @@ def test_reuse_violet_components_no_provider_case_mutations_in_templates():
     for forbidden in ('apply_case_mutation', 'resume_routing', 'source_ref',
                       'evidence_json', 'case.case_key', 'case.labels_json'):
         assert forbidden not in list_html + detail_html
+
+
+def test_foreign_alertmanager_binding_profile_and_routing_fail_closed(store):
+    _app, ids = store
+    case = _case(ids)
+    binding = db.session.get(IntegrationBinding, ids.binding)
+    binding.validation_profile = 'unsafe-profile'
+    db.session.commit()
+    assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'
+    binding.validation_profile = 'vault-alerts-v1'
+    case.routing_override_reason = None
+    db.session.commit()
+    assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'

@@ -16,7 +16,7 @@ from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import _CASE_KEY_RE, _PROFILE
 from app.models.alert_ops import AlertCase
-from app.models.integration import IntegrationBinding
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.notifications.service import stage_operational_activity
 
 _MAX_CASES = 100
@@ -86,6 +86,7 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         or case.source_type != 'provider_alert'
         or case.asset_key != str(instance_id)
         or case.routing_state != 'suppressed'
+        or case.routing_override_reason != 'policy_ineligible'
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key
@@ -100,11 +101,21 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
     if type(binding_id) is not int or type(source_id) is not int:
         return False
     binding = db.session.get(IntegrationBinding, binding_id)
+    source = db.session.get(IntegrationInstance, source_id)
     return bool(
         binding is not None
+        and source is not None
+        and source.integration_type == 'alert_source'
+        and source.provider_key == 'alertmanager'
         and binding.integration_instance_id == source_id
         and binding.asset_type == 'vault_instance'
         and binding.asset_key == str(instance_id)
+        and binding.validation_profile == 'vault-alerts-v1'
+        and binding.selector_json == {
+            'matchers': [
+                {'label': 'vault_instance', 'operator': '=', 'value': str(instance_id)},
+            ],
+        }
     )
 
 
