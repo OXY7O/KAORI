@@ -262,6 +262,10 @@ commit; the synthetic contract
 covers the toggles and safety boundaries but **does not** substitute for
 actual PostgreSQL, Celery, Archive Storage, negative RBAC, or operator UAT.
 
+### AuditEvent operational layout (#2943)
+
+Verify the permanent policy page shows a compact paused/enabled/active state, with no duplicated guidance banners or irrelevant schedule controls. The Info Tip remains accessible and the manual Archive Only action respects saved policy state. Use the existing nine-domain and AuditEvent-specific UAT cases for actual backend, notification, checksum and permission evidence.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
