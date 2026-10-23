@@ -134,7 +134,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
         domain = get_archive_domain(domain_name)
         if cleanup and not getattr(domain, 'cleanup_supported', True):
             return record_operational_activity(
-            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 user_id=user_id,
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
@@ -159,7 +159,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 )
             )
             return record_operational_activity(
-            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 user_id=user_id,
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
