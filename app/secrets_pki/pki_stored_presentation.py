@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
@@ -11,13 +11,17 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_stored_certificates import PKIStoredCertificateCollectionState
 from app.models.vault import VaultInstance
+from app.secrets_pki.pki_collection_freshness import qualified_committed_pki_count
 
 MAX_VAULT_SOURCES = 25
 MAX_PKI_SCOPES = 100
 
 
-def stored_pki_certificate_readiness(*, instance: VaultInstance | None = None) -> dict[str, Any]:
+def stored_pki_certificate_readiness(
+    *, instance: VaultInstance | None = None, now: datetime | None = None,
+) -> dict[str, Any]:
     """Counts are scoped to successful LIST /certs, never entire issued population."""
+    instant = now or datetime.now(UTC)
     if instance is None:
         sources = (
             VaultInstance.query.join(VaultInstance.integration_instance)
@@ -59,28 +63,40 @@ def stored_pki_certificate_readiness(*, instance: VaultInstance | None = None) -
         item for item in state_rows
         if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes
     ]
-    committed = [item for item in matching if item.last_committed_at is not None]
-    last: list[datetime] = [
-        row.last_committed_at for row in committed if row.last_committed_at is not None
+    counts = [
+        qualified_committed_pki_count(
+            item, instant=instant,
+            count_field='observed_stored_certificate_count', max_count=64,
+        )
+        for item in matching
     ]
-    count = sum(int(row.observed_stored_certificate_count or 0) for row in committed) if committed else None
-    unvalidated = any(source.integration_instance.readiness_status != 'ready' for source in sources)
-    if not committed:
+    unvalidated = any(
+        source.integration_instance.readiness_status != 'ready'
+        or not source.integration_instance.enabled
+        or source.integration_instance.lifecycle_status != 'active'
+        or source.integration_instance.integration_type != 'secrets_pki'
+        or source.integration_instance.provider_key != 'vault'
+        for source in sources
+    )
+    if not matching:
         state, label = (
             ('blocked', 'Vault Validation Required') if unvalidated
-            else ('blocked', 'Stored Certificate Collection Failed')
-            if any(item.status == 'failed' for item in matching)
             else ('not_collected', 'Stored Certificates Not Collected')
         )
-    elif unvalidated or any(row.status in {'failed', 'stale'} for row in matching):
-        state, label = 'stale', 'Stale Stored Certificate Evidence'
-    elif len(committed) < len(scopes):
+    elif unvalidated:
+        state, label = 'stale', 'Vault Validation Required'
+    elif len(matching) != len(scopes):
         state, label = 'partial', 'Partial Stored Certificate Coverage'
+    elif any(count is None for count in counts):
+        state, label = 'stale', 'Stale or Incomplete Stored Certificate Evidence'
     else:
         state, label = 'committed', 'Committed Stored Certificate Evidence'
+    qualified = state == 'committed'
     return _result(
-        state, label, approved_mounts=len(scopes), committed_mounts=len(committed),
-        observed_certificates=count, last_committed_at=max(last) if last else None,
+        state, label, approved_mounts=len(scopes),
+        committed_mounts=len(matching) if qualified else None,
+        observed_certificates=sum(value for value in counts if value is not None) if qualified else None,
+        last_committed_at=max(item.last_committed_at for item in matching) if qualified else None,
     )
 
 
