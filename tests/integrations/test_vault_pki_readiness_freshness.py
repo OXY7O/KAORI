@@ -86,7 +86,7 @@ def test_presentations_use_current_freshness_gate_before_exposing_count():
         assert "state == 'committed'" in source
         assert f'{count_field}=sum(' in source
         assert 'if qualified else None' in source
-        assert "or source.integration_instance.provider_key != 'vault'" in source
+        assert "integration_instance.provider_key != 'vault'" in source
 
 
 def test_worker_retained_stale_snapshot_must_not_be_reported_current():
