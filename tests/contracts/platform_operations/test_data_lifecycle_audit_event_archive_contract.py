@@ -66,7 +66,8 @@ def test_audit_event_archive_adapter_is_preview_first_paused_and_never_deletes_h
     assert 'db.session.commit()' not in s
     assert 'AuditEvent.query.delete(' not in s
     assert "if cleanup and not getattr(domain, 'cleanup_supported', True):" in engine
-    assert "if domain.name == 'audit_event' and trigger_type == 'scheduled':" in engine
+    assert "if domain.name == 'audit_event':" in engine
+    assert '_require_audit_event_manual_admission(' in engine
 
 
 def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event() -> None:
@@ -212,3 +213,115 @@ def test_audit_event_source_security_matrix_remains_incomplete_and_export_fail_c
 
 
 
+
+def test_audit_event_engine_rechecks_authorization_before_lock_or_archive_write() -> None:
+    from app.platform_operations.data_lifecycle.retention.service import run_retention_archive
+
+    domain = SimpleNamespace(
+        name='audit_event',
+        cleanup_supported=False,
+        build_policy=lambda: SimpleNamespace(enabled=True),
+    )
+    with (
+        patch(
+            'app.platform_operations.data_lifecycle.retention.service.get_archive_domain',
+            return_value=domain,
+        ),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.service._require_audit_event_manual_admission',
+            side_effect=PermissionError('revoked'),
+        ) as admission,
+        patch('app.platform_operations.data_lifecycle.retention.service.retention_lock') as lock,
+    ):
+        with pytest.raises(PermissionError, match='revoked'):
+            run_retention_archive(
+                domain_name='audit_event',
+                trigger_type='manual',
+                cleanup=False,
+                triggered_by_user_id=27,
+            )
+        admission.assert_called_once_with(trigger_type='manual', triggered_by_user_id=27)
+        lock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ('trigger', 'requester_id', 'policy_enabled', 'operation_mode', 'scheduled', 'active', 'admin', 'source'),
+    [
+        ('cli', None, True, 'archive_only', False, True, True, 'database'),
+        ('scheduled', 27, True, 'archive_only', False, True, True, 'database'),
+        ('manual', None, True, 'archive_only', False, True, True, 'database'),
+        ('manual', 27, False, 'archive_only', False, True, True, 'database'),
+        ('manual', 27, True, 'archive_and_cleanup', False, True, True, 'database'),
+        ('manual', 27, True, 'archive_only', True, True, True, 'database'),
+        ('manual', 27, True, 'archive_only', False, False, True, 'database'),
+        ('manual', 27, True, 'archive_only', False, True, False, 'database'),
+        ('manual', 27, True, 'archive_only', False, True, True, 'ldap'),
+    ],
+)
+def test_audit_event_worker_denies_unapproved_trigger_policy_and_revoked_requester(
+    trigger: str,
+    requester_id: int | None,
+    policy_enabled: bool,
+    operation_mode: str,
+    scheduled: bool,
+    active: bool,
+    admin: bool,
+    source: str,
+) -> None:
+    from app.platform_operations.data_lifecycle.retention.service import _require_audit_event_manual_admission
+
+    stored = SimpleNamespace(
+        enabled=policy_enabled, operation_mode=operation_mode, schedule_enabled=scheduled,
+    )
+    user = SimpleNamespace(is_active=active, is_super_admin=admin, auth_source=source)
+    with (
+        patch('app.platform_operations.data_lifecycle.retention.service.get_policy', return_value=stored),
+        patch('app.platform_operations.data_lifecycle.retention.service.db.session.get', return_value=user),
+    ):
+        with pytest.raises(PermissionError):
+            _require_audit_event_manual_admission(
+                trigger_type=trigger,
+                triggered_by_user_id=requester_id,
+            )
+
+
+def test_audit_event_worker_admits_only_active_local_admin_with_saved_manual_policy() -> None:
+    from app.platform_operations.data_lifecycle.retention.service import _require_audit_event_manual_admission
+
+    policy = SimpleNamespace(
+        enabled=True, operation_mode='archive_only', schedule_enabled=False,
+    )
+    requester = SimpleNamespace(is_active=True, is_super_admin=True, auth_source='database')
+    with (
+        patch('app.platform_operations.data_lifecycle.retention.service.get_policy', return_value=policy),
+        patch('app.platform_operations.data_lifecycle.retention.service.db.session.get', return_value=requester),
+    ):
+        assert _require_audit_event_manual_admission(
+            trigger_type='manual', triggered_by_user_id=27,
+        ) is None
+
+
+def test_audit_event_worker_missing_policy_or_deleted_requester_fails_closed() -> None:
+    from app.platform_operations.data_lifecycle.retention.service import _require_audit_event_manual_admission
+
+    valid_policy = SimpleNamespace(
+        enabled=True, operation_mode='archive_only', schedule_enabled=False,
+    )
+    with (
+        patch('app.platform_operations.data_lifecycle.retention.service.get_policy', return_value=None),
+        patch('app.platform_operations.data_lifecycle.retention.service.db.session.get') as lookup,
+    ):
+        with pytest.raises(PermissionError, match='persisted'):
+            _require_audit_event_manual_admission(
+                trigger_type='manual', triggered_by_user_id=27,
+            )
+        lookup.assert_not_called()
+
+    with (
+        patch('app.platform_operations.data_lifecycle.retention.service.get_policy', return_value=valid_policy),
+        patch('app.platform_operations.data_lifecycle.retention.service.db.session.get', return_value=None),
+    ):
+        with pytest.raises(PermissionError, match='active'):
+            _require_audit_event_manual_admission(
+                trigger_type='manual', triggered_by_user_id=27,
+            )
