@@ -562,11 +562,15 @@ def _operations_drift_context() -> dict[str, Any]:
     context = get_capsule_shared_allocation_context(
         drift_page=request.args.get('ops_capsule_shared_page', 1, type=int) or 1,
         drift_per_page=request.args.get('ops_capsule_shared_per_page', 5, type=int) or 5,
+        drift_tenant_id=str(request.args.get('ops_capsule_shared_tenant_id') or ''),
+        drift_search=str(request.args.get('ops_capsule_shared_search') or ''),
     )
     context.update(
         get_capsule_tenant_quota_context(
             drift_page=request.args.get('ops_capsule_tenant_quota_page', 1, type=int) or 1,
             drift_per_page=request.args.get('ops_capsule_tenant_quota_per_page', 5, type=int) or 5,
+            drift_tenant_id=str(request.args.get('ops_capsule_tenant_quota_tenant_id') or ''),
+            drift_search=str(request.args.get('ops_capsule_tenant_quota_search') or ''),
         )
     )
     context.update(
