@@ -154,7 +154,7 @@ def main() -> int:
         and 'Locked' in channels_template
         and 'channel.delete_blocked' in channels_template,
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 6
-        and "channel.event_type_labels[0]" in channels_template
+        and "channel.event_type_labels[0]" not in channels_template
         and '<details' not in channels_template
         and 'data-dialog-target="notification-channel-policy-{{ channel.id }}"' in channels_template
         and "table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses'" in channels_template
@@ -176,10 +176,10 @@ def main() -> int:
         and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
         'balanced policy and discoverable deletion': 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in channel_policy_dialog
         and 'grid items-start gap-3 md:grid-cols-2' not in channel_policy_dialog
-        and "table_ui.table_classes('min-w-[1100px]')" in channels_template
+        and "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels_template
         and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels_template
         and 'Locked' in channels_template
-        and 'flex flex-wrap justify-end gap-1.5' in channels_template
+        and 'table_ui.action_grid_classes()' in channels_template
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
@@ -201,6 +201,16 @@ def main() -> int:
         and "NotificationChannel.query.filter_by(lifecycle_state=lifecycle)" in service
         and "'channel_lifecycle': normalized_lifecycle" in service
         and 'Retirement Evidence' in read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html'),
+        'compact notification lifecycle copy and row anatomy': 'table_ui.title_cell(channel.name' in channels_template
+        and 'table_ui.action_grid_classes()' in channels_template
+        and 'divide-y divide-outline-subtle' in channels_template
+        and "channel.test_status == 'success'" in channels_template
+        and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
+        and 'both dependency counts are zero' in channel_delete_blockers_dialog
+        and 'Never erase delivery evidence.' in channel_delete_blockers_dialog
+        and 'aria-label="Retirement consequences"' in channel_retire
+        and 'Moves this channel to Archived (read-only).' in channel_retire
+        and 'Stops future channel delivery.' in channel_retire,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
