@@ -3,6 +3,8 @@
 Authority: HV-09 #2593; architecture #714; resource scope #724; workstreams HV-01–HV-15.
 This document is a test protocol, **not** executed evidence or human acceptance.
 
+For the ordered operator workflow, use [VAULT_DEVCONTAINER_UAT.md](VAULT_DEVCONTAINER_UAT.md) (#2843).
+
 ## Exact-SHA evidence requirements
 
 Record the tested Git SHA, DevContainer/target source version, Vault instance
@@ -32,7 +34,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
 | HV-11 #2595 / #2778 | Review candidate: one population-level qualified PKI public expiry-pressure Intelligence rule; per-asset rules remain unimplemented | Not Tested |
 | HV-12 #2596 / #2786 / #2791 / #2798 / #2802 / #2807 / #2813 / #2817 / #2821 | Review candidate: manual Alert Source worker, committed correlation, opt-in admission now requires approved exact-instance scope and normalized role, read-only case workspace rejects unsupported resolved; provider mutation/routing/notifications disabled | Not Tested |
-| HV-13 #2597 / #2678 | Base permission catalog and fail-closed internal read contract; canonical #724 policy evaluator still absent | Not Tested |
+| HV-13 #2597 / #2678 / #2826 / #2817 / #2821 | Canonical #724 exact mount and instance evaluators exist; audited Registry and provider AlertCase read routes are review candidates; detail/export and full scope approval UAT remain pending | Not Tested |
 | HV-14 #2598 | Role-aware Welcome entry | Not Tested |
 | HV-15 #2599 | Canonical Reports definitions | Not Implemented |
 
@@ -94,9 +96,9 @@ workflow evidence as Not Tested; do not manufacture green status.
 | ESO | Actual supported CRD Ready/refresh/sync-version behavior and separate current TLS UID; never infer Vault delivery |
 | Rotation/Lease | Version increment is not verified cutover; elapsed known Lease expiry is not revocation |
 | Metrics/Alerts | Prometheus/Thanos label binding, historical retention, HA ambiguity, foreign Alert Source labels denied |
-| Scope/RBAC | Internal read contract deny/wrong-actor/expired-grant tests; canonical persisted #724 scope evaluator not implemented; prohibit enabling per-Secret HTTP/HTMX/Detail/search/export before resource-policy enforcement; sensitive path/ID filtering |
+| Scope/RBAC | Persisted #724 mount/instance evaluators with approved revisions now protect the audited metadata-only Registry and provider-case reads; verify wrong actor/expired/ambiguous grants, audit rollback, direct URL; per-Secret Detail/search/export remains prohibited without separately admitted policies |
 | UI/Audit | Violet light/dark/responsive/loading/empty/error, JobExecution outcome, safe audit and Welcome visibility |
-| Future feature | Analytics, Intelligence, AlertCases, Reports and mutation pilot remain blocked until implemented and accepted |
+| Future feature | Current PKI Analytics and qualified AlertCase read surfaces exist but remain Not Tested. Historical MetricsConsumer Analytics, provider case routing, executable Vault Reports and privileged operation pilot remain unavailable |
 
 Operator retains source/job IDs as sanitized evidence. Record genuine FAIL
 as a finding in the owning remediation issue; never bypass protections or

@@ -342,3 +342,11 @@ subject/SAN/serial, Vault mount name/path, PEM or private key are exposed.
 Execute `tests/integrations/test_vault_pki_readiness_freshness.py`
 and existing PKI committed tests on DevContainer PostgreSQL. Real provider
 UAT and human acceptance remain Not Tested.
+
+## HV-09 #2843 one-pass DevContainer UAT operator runbook
+
+Follow `VAULT_DEVCONTAINER_UAT.md` for exact-SHA setup, registered
+manual collection jobs, routes, source/role negative tests and evidence
+recording. Current read-only workspace coverage does not mean HV-04/05
+provider datasets, HV-08 privileged operation, HV-15 executable Reports
+or real DevContainer/human acceptance are complete.
