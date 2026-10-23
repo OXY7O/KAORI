@@ -29,6 +29,7 @@ WORK_INBOX_EVENT_TYPES = frozenset(
         'rule_exception_assigned',
         'rule_exception_expiring',
         'rule_exception_revoked',
+        'kubernetes_tenant_release_handoff_review_recorded',
     }
 )
 ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)
