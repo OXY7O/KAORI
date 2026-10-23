@@ -79,6 +79,41 @@ record its exact command. The broader `pyright`, `djlint`,
 `prettier` and Visual QA gates apply where relevant and are not
 silently replaced by these focused checks.
 
+### Blocking DevContainer HTTP 500 recovery (#2967)
+
+**Finding: FAIL (code defect)** — at 2026-10-23 22:54 the operator's
+`GET /platform-operations/data-lifecycle/?tab=policies&domain=audit_event`
+returned HTTP 500 with `TemplateSyntaxError` at
+`partials/_domain_workspace.html:387`. The shared template's Notification
+Delivery conditional incorrectly closed with `{% endif %>` rather than
+`{% endif %}`. This is a Jinja source defect, not an archive storage,
+worker or database failure. All nine Retention Policies domain routes
+share the affected partial, so the already recorded **UI acceptance does
+not override this new regression**. Mark **BLOCKED / FAIL** until operator
+runs the exact fixed holding commit in DevContainer and confirms HTTP 200.
+
+Execute:
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+git status --short
+python -m pytest -q \
+  tests/contracts/platform_operations/test_data_lifecycle_jinja_syntax_contract.py \
+  tests/contracts/platform_operations/test_data_lifecycle_nine_domain_policy_design_contract.py
+```
+
+Open each domain using the existing Retention Policies navigator or
+request the full-page GET URL for the nine registered domain slugs;
+verify HTTP 200, correct selected policy and status, Preview and Save
+without side effects from navigation, plus HTMX domain switching.
+Then resume **Wave A: Archive History and Archive Storage read-only UAT**
+before any policy mutation, archive, Verify or negative-test fixtures.
+Do not classify any affected page PASS from source or Jinja syntax tests
+alone. Record exact SHA and server/browser HTTP results.
+
 ## 3. Common end-to-end workflow for **each** domain
 
 Use the existing three workspaces, not a second lifecycle UI.
