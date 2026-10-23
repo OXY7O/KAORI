@@ -664,8 +664,12 @@ source-link filters, pagination, activity-audit separation and HTMX behavior
 remain unchanged. The section introduction now identifies verified archive
 bundles as owned by Platform Operations → Data Lifecycle. The shared Delivery
 Records header offers **Retention Policy** only to operators authorized for
-`platform_operations.view_data_lifecycle`, linking to the existing
-`notification_delivery` policy workspace. Clear Filters stays in the same
+`platform_operations.view_data_lifecycle`, linking directly to the existing
+`notification_delivery` policy workspace through the **canonical registered**
+`platform_operations.data_lifecycle.index` endpoint. Do not link using the bare
+`data_lifecycle.index` (not registered), and do not use the legacy redirect
+`settings.data_lifecycle.index` for new navigation. Keep a route-resolution
+regression test so template rendering cannot reintroduce a Flask BuildError. Clear Filters stays in the same
 shared header action slot.
 
 Archive History currently exposes **verified artifact bundles only**, not
