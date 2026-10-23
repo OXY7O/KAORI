@@ -114,6 +114,26 @@ before any policy mutation, archive, Verify or negative-test fixtures.
 Do not classify any affected page PASS from source or Jinja syntax tests
 alone. Record exact SHA and server/browser HTTP results.
 
+### Archive History Verify browser fallback (#2972)
+
+The current UAT source audit found a functional progressive-enhancement
+defect: the Verify POST returned the History partial for ordinary non-HTMX
+requests. The handler now returns the targeted History fragment **only**
+when `HX-Request: true`; otherwise it returns the full Data Lifecycle
+page with the History tab selected. Preserve existing archive filters,
+current page, rows-per-page, CSRF, permission and toast/Activity Audit
+feedback. The change does not re-run verification, modify archive
+checksums or extend download permissions.
+
+**Wave A (read-only)**: confirm History GET, filter, paging and empty
+states without requesting Verify on operational artifacts. During
+**Wave C** with approved disposable archive artifacts, test Verify in
+both HTMX and ordinary form modes, check that the selected History tab,
+filter/search/page state and feedback remain correct, and that a denied
+AuditEvent/source authorization still returns 403. Source contracts in
+`tests/contracts/platform_operations/test_data_lifecycle_history_verify_browser_contract.py`
+are not substitutes for actual browser/worker/Archive Storage evidence.
+
 ## 3. Common end-to-end workflow for **each** domain
 
 Use the existing three workspaces, not a second lifecycle UI.
