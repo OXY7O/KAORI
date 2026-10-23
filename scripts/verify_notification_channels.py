@@ -253,6 +253,14 @@ def main() -> int:
         and 'data-kaori-dialog-open' in channel_details_drawer
         and 'data-destructive-modal-open' in channel_details_drawer
         and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in shared_side_drawer_js,
+        'notification delivery hot/archive ownership': 'Review hot committed attempts and retry evidence.' in delivery_template
+        and 'archive history is artifact-level.' in delivery_template
+        and "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery_template
+        and "url_for('data_lifecycle.index', tab='policies', domain='notification_delivery')" in delivery_template
+        and 'aria-label="Open Notification Delivery retention policy in Data Lifecycle"' in delivery_template
+        and 'header_actions=delivery_clear_action' in delivery_template
+        and "table_registry.filter_form('notification_channels.index'" in delivery_template
+        and "table_registry.footer('notification_channels.index'" in delivery_template,
         'committed notification overview': "'Delivery Overview'," in template
         and "'Channel Readiness'," in template
         and "'Delivery Outcomes'," in template
