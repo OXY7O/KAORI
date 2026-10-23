@@ -480,6 +480,12 @@ def dispatch_alert_notification(
             if delivery.status == 'sent':
                 stats['duplicate'] += 1
                 continue
+            if (
+                delivery.next_retry_at is not None
+                and delivery.next_retry_at > datetime.now(UTC)
+            ):
+                stats['skipped'] += 1
+                continue
             if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
                 stats['skipped'] += 1
                 continue
@@ -658,6 +664,21 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                     }
                 )
                 continue
+            if (
+                delivery.next_retry_at is not None
+                and delivery.next_retry_at > datetime.now(UTC)
+            ):
+                stats['skipped'] += 1
+                stats['results'].append(
+                    {
+                        'channel_id': channel.id,
+                        'channel': channel.name,
+                        'provider': _provider_label(channel.provider_key),
+                        'status': 'skipped',
+                        'message': 'Provider retry deadline has not elapsed.',
+                    }
+                )
+                continue
             if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
                 stats['skipped'] += 1
                 stats['results'].append(
@@ -795,6 +816,7 @@ def _begin_delivery_attempt(
         delivery.payload_json = payload
     delivery.status = 'queued'
     delivery.error_message = None
+    delivery.next_retry_at = None
     delivery.attempt_count += 1
     delivery.updated_at = datetime.now(UTC)
     db.session.commit()
@@ -811,11 +833,19 @@ def _record_delivery_outcome(
         delivery.status = 'sent'
         delivery.sent_at = attempted_at
         delivery.provider_message_id = result.provider_message_id
+        delivery.next_retry_at = None
         channel.last_delivery_status = 'success'
         channel.last_delivery_at = attempted_at
     else:
         delivery.status = 'failed'
         delivery.error_message = result.message[:1000]
+        # Provider rate limits may require a longer cool-down than KAORI's
+        # global minimum; other failures retain legacy updated_at backoff.
+        delay = result.retry_after_seconds
+        delivery.next_retry_at = (
+            attempted_at + timedelta(seconds=max(notification_delivery_retry_delay_seconds(), delay))
+            if delay is not None else None
+        )
         channel.last_delivery_status = 'failed'
     db.session.commit()
 
@@ -834,6 +864,10 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
             NotificationDelivery.query.filter(
                 NotificationDelivery.status.in_(('failed', 'queued')),
                 NotificationDelivery.updated_at <= cutoff,
+                or_(
+                    NotificationDelivery.next_retry_at.is_(None),
+                    NotificationDelivery.next_retry_at <= datetime.now(UTC),
+                ),
                 or_(
                     NotificationDelivery.attempt_count < max_attempts,
                     NotificationDelivery.status == 'queued',
