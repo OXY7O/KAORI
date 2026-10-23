@@ -135,3 +135,17 @@ No extra schema migration is required for refs: this increment reuses SC-01 Sour
 **Dev Container checks still required (not executed):** `python scripts/verify_migration_graph.py`, `python scripts/verify_definition_registry.py`, `ruff`, `djlint`, `pyright`, focused `pytest` for `test_source_control_repository_registered_job.py`, `test_source_control_repository_worker_contract.py`, `test_source_control_github_webhook_handoff.py`, plus PostgreSQL migration upgrade/downgrade, worker preflight, negative RBAC test and visual light/dark/responsive review.
 
 **Release boundary:** SC-01 #2740 → SC-02 #2741 → SC-03 #2742 are stacked Draft PRs. No source provider activation, official CI/CD admission, holding/staging/main merge, real live GitHub App UAT or human acceptance is implied by these commits.
+
+### SC-03 — Signed ingress and JobExecution completion recovery (candidate)
+
+SC-03 now includes **two independent, default-off admission switches**:
+
+- `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false`: `/integrations/source-control/github/webhook` responds **404** before reading the body or querying an installation. The Source Control provider matrix must also be admitted before the endpoint accepts a POST. Rate limiting is applied; the 256 KiB raw-body bound, JSON content type, authenticated HMAC-SHA256, UUID replay key and exact installation scope are enforced before a delivery is committed. A successful request returns **202** only for committed transport receipt, **not** reconciliation completion. The route never dispatches a job or trusts payload repository metadata.
+- `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`: no Source Control webhook maintenance beat entry is added while disabled; its Celery task is registered only on the existing `maintenance` queue. An explicitly enabled task still declines processing if GitHub is `planned`.
+
+`webhook_recovery.recover_webhook_inbox` examines up to 25 eligible committed delivery rows per pass, respecting due retry/backoff and only polling queued jobs once their canonical JobExecution is terminal or missing. Failed preclaim verification gets bounded retry then `requires_review`; abandoned `dispatching` becomes `dispatch_uncertain` and is **not automatically resent**. A broker/persistence exception of unknown dispatch acceptance also becomes `dispatch_uncertain`, not optimistic re-enqueue.
+
+`webhook_completion.reconcile_delivery_completion` checks canonical Source Control `JobExecution` job type, operation, integration and **exact installation scope** before recording `reconciled_success`, `reconciled_partial`, `reconciled_failure` or `reconciled_canceled`. An active job stays `queued` in the transport ledger. Missing, expired or cross-installation execution becomes `requires_review`. These labels describe transport-to-job correlation, not raw webhook proof of GitHub data.
+
+Remaining admission requirements: actual execution of existing `ruff`, `pytest`, `pyright`, `djlint` and `verify_*`, PostgreSQL migration upgrade/downgrade, real HMAC/replay/rate-limit and two-App/installation isolation tests, Celery worker restart/registration, dispatch crash recovery, #724 resource-scoped Inventory UI policy, Visual QA and human acceptance. **Do not enable either switch in Dev Container or staging without an explicit UAT plan and approval.** Official CI/CD and merges remain HOLD.
+
