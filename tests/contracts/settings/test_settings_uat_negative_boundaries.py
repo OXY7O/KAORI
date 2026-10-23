@@ -38,7 +38,7 @@ def test_general_rejects_privileged_reference_tabs_without_system_view(requested
     with (
         app.test_request_context(f'/settings/general?tab={requested}'),
         patch('app.settings.routes.current_user') as current_user,
-        patch('app.settings.routes.render_template', return_value='isolated settings'),
+        patch('app.settings.routes.render_template', return_value='isolated settings') as render,
         patch('app.settings.routes.build_system_information') as system_information,
         patch('app.settings.routes.format_user_datetime', return_value='isolated clock'),
     ):
@@ -46,6 +46,9 @@ def test_general_rejects_privileged_reference_tabs_without_system_view(requested
         response = general.__wrapped__()  # Exercise the actual route logic without Flask-Login.
         assert response.status_code == 200
         assert b'isolated settings' in response.get_data()
+        assert render.call_args.kwargs['active_tab'] == 'time-locale'
+        assert render.call_args.kwargs['can_view_system_information'] is False
+        assert render.call_args.kwargs['compatibility_registry'] is None
         system_information.assert_not_called()
         user.has_permission.assert_called_with('system.view')
 
