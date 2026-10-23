@@ -843,6 +843,7 @@ def test_channel_drawer_actions_preserve_csrf_htmx_and_native_confirmations() ->
     assert 'data-destructive-modal-close' in shared_confirm
     assert 'data-destructive-target-name' in shared_confirm
     assert 'submit?.click()' in confirm_js
+    assert 'event.stopPropagation()' in confirm_js
     assert 'channel.delete_blocked' in drawer
     assert 'window.confirm(' not in drawer
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
