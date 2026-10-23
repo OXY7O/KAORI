@@ -527,6 +527,13 @@ The current row label is **View More** with chevron-down. The menu uses the
 same elevated/rounded surface and borderless-hover action treatment as the
 existing navbar Quick Actions/User Menu. It is teleported beyond horizontal
 table clipping and anchored to the clicked row button via viewport geometry.
+The dropdown's actual rendered height must be measured **after Alpine
+visibility/teleport initialization**. Never use a hardcoded estimated height
+to flip it, because that leaves a large gap above a lower-row trigger.
+Position with an 8px trigger gap on either side, constrain available viewport
+height for short screens, and suppress the pre-measurement flash. Focus the
+first action with `preventScroll` so focusing a teleported item cannot
+trigger an unwanted scroll-close event.
 The only native dialogs are actual lifecycle explanations/confirmations,
 including Retire, Locked, and Delete confirmation. The Details inspection
 drawer is unchanged and Archived channels remain read-only. Keep keyboard

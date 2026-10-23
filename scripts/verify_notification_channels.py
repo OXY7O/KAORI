@@ -236,6 +236,12 @@ def main() -> int:
         and ':aria-expanded="(actionMenuId === {{ channel.id }}).toString()"' in channels_template
         and '@scroll.capture="actionMenuId = null"' in channels_template
         and 'getBoundingClientRect()' in channels_template
+        and 'const menuHeight = 214' not in channels_template
+        and 'const menuHeight = menu.getBoundingClientRect().height' in channels_template
+        and 'const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap' in channels_template
+        and "maxHeight: availableHeight + 'px'" in channels_template
+        and "visibility: 'hidden'" in channels_template
+        and "?.focus({ preventScroll: true })" in channels_template
         and 'x-teleport="body"' in channel_actions_dialog
         and 'x-show="actionMenuId === {{ channel.id }}"' in channel_actions_dialog
         and '@click.outside=' in channel_actions_dialog

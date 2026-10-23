@@ -25,16 +25,30 @@
          openActionMenu(id, trigger) {
              if (this.actionMenuId === id) { this.actionMenuId = null; return }
              const rect = trigger.getBoundingClientRect()
-             const width = 224
-             const menuHeight = 214
              const gap = 8
-             const top = rect.bottom + menuHeight + gap <= window.innerHeight
-                 ? rect.bottom + gap : Math.max(gap, rect.top - menuHeight - gap)
+             const width = Math.min(224, Math.max(0, window.innerWidth - gap * 2))
              const left = Math.max(gap, Math.min(rect.right - width, window.innerWidth - width - gap))
-             this.actionMenuStyle = { top: top + 'px', left: left + 'px', width: width + 'px' }
+             // Keep the teleported menu invisible until its real dimensions can be measured.
+             this.actionMenuStyle = { top: gap + 'px', left: left + 'px', width: width + 'px', visibility: 'hidden' }
              this.actionMenuId = id
-             this.$nextTick(() => document.getElementById('notification-channel-actions-' + id)
-                 ?.querySelector('a[href], button:not([disabled])')?.focus())
+             this.$nextTick(() => {
+                 if (this.actionMenuId !== id) return
+                 const menu = document.getElementById('notification-channel-actions-' + id)
+                 if (!menu) return
+                 const menuHeight = menu.getBoundingClientRect().height
+                 const spaceBelow = Math.max(0, window.innerHeight - rect.bottom - gap * 2)
+                 const spaceAbove = Math.max(0, rect.top - gap * 2)
+                 const openAbove = menuHeight > spaceBelow && spaceAbove > spaceBelow
+                 const availableHeight = openAbove ? spaceAbove : spaceBelow
+                 const visibleHeight = Math.min(menuHeight, availableHeight)
+                 const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap
+                 const top = Math.max(gap, Math.min(desiredTop, window.innerHeight - visibleHeight - gap))
+                 this.actionMenuStyle = {
+                     top: top + 'px', left: left + 'px', width: width + 'px',
+                     maxHeight: availableHeight + 'px', visibility: 'visible'
+                 }
+                 menu.querySelector('a[href], button:not([disabled])')?.focus({ preventScroll: true })
+             })
          }
      }"
      @scroll.capture="actionMenuId = null"
