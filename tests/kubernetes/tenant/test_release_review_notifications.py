@@ -46,7 +46,11 @@ def test_failed_requester_receipt_does_not_prevent_reviewer_receipt(monkeypatch)
 
     monkeypatch.setattr(receipts, 'url_for', lambda *args, **kwargs: '/tenants/t-1/manage')
     monkeypatch.setattr(receipts, 'create_notification', deliver)
-    monkeypatch.setattr(receipts, 'db', SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append(True))))
+    monkeypatch.setattr(
+        receipts,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append(True))),
+    )
 
     with Flask(__name__).app_context():
         receipts.notify_release_handoff_review_recorded(tenant_id='t-1', approval=_approval())
