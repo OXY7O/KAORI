@@ -186,9 +186,8 @@ def test_audit_event_post_domain_rejects_non_super_admin_before_queueing() -> No
         ):
             assert _mutation_domain() == 'audit_event'
 
-def test_audit_event_source_security_matrix_remains_incomplete_and_export_fail_closed()
 
- -> None:
+def test_audit_event_source_security_matrix_remains_incomplete_and_export_fail_closed() -> None:
     matrix = read('docs/architecture/audit-event-producer-security-retention-matrix.md')
     index = read('docs/architecture/README.md')
     uat = read('docs/operations/audit-event-data-lifecycle-devcontainer-uat.md')
