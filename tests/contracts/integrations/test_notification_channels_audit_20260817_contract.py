@@ -769,7 +769,7 @@ def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible
     assert "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in inventory
     assert inventory.count('scope="col"') == 5
     table_header = inventory.split('<thead', 1)[1].split('</thead>', 1)[0]
-    widths = [int(value) for value in re.findall(r'w-\\[(\\d+)%\\]', table_header)]
+    widths = [int(value) for value in re.findall(r'w-\[(\d+)%\]', table_header)]
     assert widths == [30, 14, 23, 20, 13]
     assert sum(widths) == 100
     assert 'header_cell_classes(action=true)' in table_header
