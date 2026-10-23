@@ -1,0 +1,75 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% block title %}GitHub Repository Inventory · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div class="kaori-integration-semantic space-y-6">
+    {% call page_hero.intro("git-branch", "GitHub Installation UAT", "shield-check") %}
+        <h1 class="{{ page_hero.title_classes() }}">{{ canonical.name }}</h1>
+        <p class="{{ page_hero.description_classes() }} mt-2">
+            Repository inventory from committed KAORI evidence. GitHub permissions remain authoritative.
+        </p>
+        <p class="mt-2 text-xs text-content-muted">
+            App installation #{{ installation.native_installation_id }} ·
+            {{ installation.repository_scope|title }} grants ·
+            Connection {{ canonical.readiness_status|replace('_', ' ')|title }}
+        </p>
+    {% endcall %}
+    {% set feedback_map = {
+        "validation_queued": "Full Validation requested through canonical JobExecution.",
+        "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
+        "sync_queued": "Repository reconciliation requested through canonical JobExecution.",
+        "sync_blocked": "Repository sync blocked. Full Validation, worker readiness and scoped UAT admission are required."
+    } %}
+    {% if feedback in feedback_map %}
+        <p role="status" class="rounded-lg border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
+            {{ feedback_map[feedback] }}
+        </p>
+    {% endif %}
+    <section class="{{ ui.section_shell_classes() }}">
+        {{ ui.section_header("shield-check", "Connection Validation", "Test provider readiness before reconciling source evidence") }}
+        <div class="flex flex-wrap items-center gap-3 p-5 sm:p-6">
+            <form method="post" action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}">
+                {{ action_form.hidden_tag() }}
+                <button type="submit" class="rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                    Full Validation
+                </button>
+            </form>
+            <form method="post" action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
+                {{ action_form.hidden_tag() }}
+                <button type="submit"
+                        {% if canonical.readiness_status != 'ready' %}disabled{% endif %}
+                        class="rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                    Sync Repositories
+                </button>
+            </form>
+            <span class="text-xs text-content-muted">All actions require scoped local-super-admin UAT admission.</span>
+        </div>
+    </section>
+    <section class="{{ ui.section_shell_classes() }}">
+        {{ ui.section_header("database", "Repository Inventory", "Committed grants, exact default-branch SHA and collection freshness") }}
+        {% include "integrations/source_control/github/_inventory_table.html" %}
+    </section>
+    <section class="{{ ui.section_shell_classes() }}">
+        {{ ui.section_header("history", "Recent Jobs", "Canonical JobExecution state, not webhook receipt status") }}
+        <div class="divide-y divide-outline-subtle">
+            {% for job in jobs %}
+                <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <div class="min-w-0">
+                        <p class="font-semibold text-content-primary">{{ job.operation|replace('_', ' ')|title }}</p>
+                        <p class="text-xs text-content-muted">#{{ job.id }} · {{ job.created_at }} · {{ job.queue_name }}</p>
+                    </div>
+                    <span class="text-xs font-semibold text-content-secondary">{{ job.status|replace('_', ' ')|title }}</span>
+                </div>
+            {% else %}
+                <p class="p-5 text-sm text-content-muted">No JobExecution evidence yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+    <a class="inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline"
+       href="{{ url_for('github_source_uat.index') }}">
+        <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+        Back to installations
+    </a>
+</div>
+{% endblock dashboard_content %}
