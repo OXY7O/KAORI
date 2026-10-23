@@ -133,11 +133,11 @@ def main() -> int:
         and "sending a notification does not create an audit event." in delivery_template,
         'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_details_drawer
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
-        and '@click.outside=' in channel_details_drawer
-        and channel_details_drawer.index('</template>') < channel_details_drawer.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and channels_template.index('</table>') < channels_template.index('id="notification-channel-delete-submit-{{ channel.id }}"')
         and 'hx-post="{{ url_for(' in channel_details_drawer
         and "destructive_confirmation_modal.render(" in template
-        and "data-destructive-submit-button-id=" in template
+        and "data-destructive-submit-button-id=" in channel_details_drawer
         and "data-destructive-modal-confirm" in confirmation
         and "submit?.click()" in confirmation_script
         and 'hx-target="#notification-channels-workspace"' in template
