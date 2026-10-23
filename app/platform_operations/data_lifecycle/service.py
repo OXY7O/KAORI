@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app, url_for
 
 from app.extensions.db import db
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.policy_service import get_policy, update_policy
 from app.platform_operations.data_lifecycle.retention.service import get_archive_download_path, verify_archive_artifact
@@ -21,7 +22,16 @@ def _int_value(values: Mapping[str, Any], name: str, default: int) -> int:
         return default
 
 
+def _check_audit_event_governance(domain_name: str, user_id: int) -> None:
+    if domain_name != 'audit_event':
+        return
+    user = db.session.get(User, user_id)
+    if user is None or not user.is_super_admin or user.auth_source != 'database':
+        raise PermissionError('AuditEvent lifecycle requires authorized local Super Admin.')
+
+
 def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     domain = get_archive_domain(domain_name)
     fallback = domain.build_policy()
     try:
@@ -100,6 +110,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
 
 
 def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     normalized_mode = str(mode or '').strip().lower()
     if normalized_mode not in {'archive_only', 'archive_and_cleanup'}:
         return record_operational_activity(
