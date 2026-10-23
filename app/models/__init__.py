@@ -85,6 +85,7 @@ from app.models.secrets_pki import (
 from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
 from app.models.secrets_pki_stored_certificates import PKIStoredCertificateCollectionState, PKIStoredCertificateObservation
 from app.models.source_control import (
+    GitHubAppCredential,
     SourceAccount,
     SourceInstallation,
     SourceReference,
@@ -149,6 +150,7 @@ from app.models.tenant_policy import (
 from app.models.user import User
 
 __all__ = [
+    'GitHubAppCredential',
     'SourceAccount',
     'SourceInstallation',
     'SourceReference',

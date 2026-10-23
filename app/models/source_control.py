@@ -13,6 +13,7 @@ from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, In
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
+from app.security.credentials import EncryptedText
 
 
 def _utcnow() -> datetime:
@@ -37,6 +38,29 @@ class SourceAccount(db.Model):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
 
+
+class GitHubAppCredential(db.Model):
+    """Shared App-level encrypted credential; never normalized source inventory."""
+
+    __tablename__ = 'source_control_github_app_credentials'
+    __table_args__ = (
+        UniqueConstraint('host_key', 'native_app_id', name='uq_sc_github_app_credential'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    host_key: Mapped[str] = mapped_column(String(255), nullable=False, default='github.com')
+    native_app_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    private_key_pem: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
+    webhook_secret: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+    def __repr__(self) -> str:
+        return f'<GitHubAppCredential id={self.id} status=protected>'
+
 class SourceInstallation(db.Model):
     """One canonical IntegrationInstance connects to one explicit App grant."""
 
@@ -60,12 +84,17 @@ class SourceInstallation(db.Model):
     account_id: Mapped[int | None] = mapped_column(
         ForeignKey('source_control_accounts.id', ondelete='RESTRICT'), nullable=True
     )
+    github_app_credential_id: Mapped[int | None] = mapped_column(
+        ForeignKey('source_control_github_app_credentials.id', ondelete='RESTRICT'), nullable=True
+    )
     repository_scope: Mapped[str] = mapped_column(String(16), nullable=False, default='unknown')
     grant_status: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
     last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
     account: Mapped[SourceAccount | None] = relationship('SourceAccount')
+    integration_instance: Mapped['IntegrationInstance'] = relationship('IntegrationInstance')
+    github_app_credential: Mapped[GitHubAppCredential | None] = relationship('GitHubAppCredential')
     grants: Mapped[list[SourceRepositoryGrant]] = relationship(
         'SourceRepositoryGrant', back_populates='installation',
         order_by='SourceRepositoryGrant.valid_from.desc()',
