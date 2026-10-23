@@ -82,6 +82,24 @@ def index() -> ResponseReturnValue:
     return _index_response()
 
 
+@alert_intelligence_bp.get('/vault-cases')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+def vault_cases() -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_case_workspace import vault_cases_response
+
+    return vault_cases_response()
+
+
+@alert_intelligence_bp.get('/vault-cases/<string:public_id>/details')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+def vault_case_details(public_id: str) -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_case_workspace import vault_case_details_response
+
+    return vault_case_details_response(public_id)
+
+
 @alert_intelligence_bp.get('/cases/<string:public_id>/details')
 @permission_required('intelligence.view')
 def case_details(public_id: str) -> ResponseReturnValue:

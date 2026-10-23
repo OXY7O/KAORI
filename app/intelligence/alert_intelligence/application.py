@@ -31,6 +31,9 @@ def apply_case_mutation(
     case = get_case(public_id)
     if case is None:
         return None
+    # Vault provider-origin cases have no approved mutation route/policy.
+    if case.domain == 'secrets_pki' and case.source_type == 'provider_alert':
+        return None
     try:
         operation(case)
         db.session.commit()

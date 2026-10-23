@@ -145,3 +145,87 @@ def evaluate_exact_vault_scope(
         return ScopeAdmission('deny', 'scope_grant_required')
     except (SQLAlchemyError, ValueError, TypeError, AttributeError):
         return ScopeAdmission('unavailable', 'policy_evidence_unavailable')
+
+
+
+def evaluate_exact_vault_instance_case_scope(
+    *,
+    actor_user_id: int,
+    instance_id: int,
+    now: datetime | None = None,
+) -> ScopeAdmission:
+    """Authorize exact instance-level case access, never inherited mount access.
+
+    An allowed decision is only a precondition: the caller must audit and
+    commit a sensitive read before projecting any case row.
+    """
+    if type(actor_user_id) is not int or actor_user_id < 1 or type(instance_id) is not int or instance_id < 1:
+        return ScopeAdmission('deny', 'invalid_scope')
+    instant = _timestamp(now or datetime.now(UTC))
+    if instant is None:
+        return ScopeAdmission('deny', 'invalid_time')
+    try:
+        actor = db.session.get(User, actor_user_id)
+        if (
+            actor is None or not actor.is_active or actor.role_record is None
+            or not actor.role_record.is_active
+            or not {'secrets_pki.view', 'intelligence.view'}.issubset(
+                actor.role_record.permission_keys()
+            )
+        ):
+            return ScopeAdmission('deny', 'permission_required')
+        source = db.session.get(IntegrationInstance, instance_id)
+        if (
+            source is None or source.integration_type != 'secrets_pki'
+            or source.provider_key != 'vault' or not source.enabled
+            or source.lifecycle_status != 'active'
+        ):
+            return ScopeAdmission('deny', 'source_unqualified')
+        policies = (
+            ScopeAccessPolicy.query.filter(
+                ScopeAccessPolicy.principal_user_id == actor_user_id,
+                ScopeAccessPolicy.permission_key == 'secrets_pki.view',
+                ScopeAccessPolicy.integration_instance_id == instance_id,
+                ScopeAccessPolicy.scope_level == 'instance',
+                ScopeAccessPolicy.provider_namespace.is_(None),
+                ScopeAccessPolicy.mount.is_(None),
+            )
+            .enable_eagerloads(False)
+            .order_by(ScopeAccessPolicy.id.asc())
+            .limit(_MAX_MATCHING_POLICIES + 1)
+            .with_for_update(of=ScopeAccessPolicy)
+            .all()
+        )
+        if len(policies) > _MAX_MATCHING_POLICIES:
+            return ScopeAdmission('deny', 'ambiguous_scope')
+        approved: list[tuple[ScopeAccessPolicy, ScopeAccessPolicyRevision, datetime]] = []
+        for policy in policies:
+            revision = ScopeAccessPolicyRevision.query.filter(
+                ScopeAccessPolicyRevision.policy_id == policy.id,
+                ScopeAccessPolicyRevision.revision_number == policy.current_revision,
+            ).with_for_update(of=ScopeAccessPolicyRevision).first()
+            if (
+                revision is None or revision.lifecycle_status != 'active'
+                or revision.approved_by_user_id is None
+                or revision.approved_by_user_id == revision.requested_by_user_id
+            ):
+                continue
+            start = _timestamp(revision.effective_from)
+            end = _timestamp(revision.effective_until)
+            approval = _timestamp(revision.approved_at)
+            if (
+                start is None or end is None or approval is None
+                or start > instant or instant >= end or approval > instant
+            ):
+                continue
+            approved.append((policy, revision, end))
+        if len(approved) != 1:
+            return ScopeAdmission('deny', 'ambiguous_scope' if approved else 'scope_grant_required')
+        policy, revision, end = approved[0]
+        return ScopeAdmission(
+            'allow', 'exact_approved_instance_grant',
+            actor_id=actor_user_id, instance_id=instance_id,
+            policy_ref=policy.id, revision=revision.revision_number, expires_at=end,
+        )
+    except (SQLAlchemyError, TypeError, ValueError, AttributeError):
+        return ScopeAdmission('unavailable', 'policy_evidence_unavailable')
