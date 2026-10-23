@@ -29,15 +29,15 @@ def test_audit_event_policy_uses_canonical_components_and_accessible_guide() -> 
 
 def test_manual_only_domain_hides_misleading_schedule_controls_and_auto_mode() -> None:
     ui = read(WORKSPACE)
-    assert "{% if selected.name != 'audit_event' %}" in ui
+    assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
     assert 'name="schedule_hour"' in ui
     assert 'name="schedule_minute"' in ui
-    assert "{{ 'Execution Mode' if selected.name == 'audit_event' else 'Automatic Run' }}" in ui
+    assert "{{ 'Execution Mode' if selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run' }}" in ui
     assert 'Manual Archive Only. Enable and save the policy before starting a job.' in ui
     assert 'Archive retries once; manual retry if needed. Hot records remain.' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert "selected.name in ('notification_delivery', 'audit_event')" in ui
-    assert "selected.name == 'audit_event' else 'Manual archive-only" in ui
+    assert "Manual Archive Only · No schedule" in ui
 
 
 def test_compact_status_is_single_state_dependent_element_not_trial_banner() -> None:
