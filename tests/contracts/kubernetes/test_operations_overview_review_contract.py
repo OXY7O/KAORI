@@ -84,3 +84,19 @@ def test_operations_overview_supporting_copy_is_compact_and_responsive() -> None
     assert 'truncate' not in overview
     assert "current_user.has_permission('kubernetes_configmaps.view')" in overview
     assert "current_user.has_permission('kubernetes_secrets.view')" in overview
+
+
+def test_operations_catalog_headings_use_canonical_title_guide() -> None:
+    shared = read('app/templates/components/operational_workflow_catalog.html')
+    assert 'components/info_tip.html' in shared
+    assert "variant='guide'" in shared
+    assert 'info_id and info_title' in shared
+
+    for domain, title, guide_id in (
+        ('configmaps', 'Choose a ConfigMap Operation', 'configmap-operation-catalog-guide'),
+        ('secrets', 'Choose a Secret Operation', 'secret-operation-catalog-guide'),
+    ):
+        page = read(f'app/templates/kubernetes/operations/{domain}/index.html')
+        assert title in page
+        assert f"info_id='{guide_id}'" in page
+        assert 'info_items=[' in page

@@ -41,7 +41,15 @@
         <div id="configmap-workflows">
             {% call workflow_catalog.render(
                 'Choose a ConfigMap Operation',
-                'Each workflow owns its live target, validation, impact, and audit boundary.'
+                'Each workflow owns its live target, validation, impact, and audit boundary.',
+                info_id='configmap-operation-catalog-guide',
+                info_title='ConfigMap Operation Guide',
+                info_text='Choose an authorized operation against the selected live Kubernetes resource.',
+                info_items=[
+                    'Create validates a new configuration without overwriting an existing object.',
+                    'Update reviews the current resource and applies a validated merge or replacement.',
+                    'Delete requires live target review, preflight validation, and exact-name confirmation.'
+                ]
                 ) %}
                 {{ workflow_card.render('Create ConfigMap',
                                 'Create text or binary configuration without overwriting an existing object.',
