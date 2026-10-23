@@ -547,6 +547,7 @@ The **Overview** workspace summarizes the capabilities that exist in the
 all six supported transport-adapter/provider cards. Provider discovery,
 configuration, and setup guides remain with Channels.
 
+Only evaluate the read-only aggregate when the **Overview** tab is open; Channels/Delivery Activity operations must not query this unused summary.
 Read **committed KAORI state** for four KPI cards: active channel identities
 (excluding retired), active enabled+successfully-tested eligible channels,
 retired/archived identities, and all-time committed delivery records.
