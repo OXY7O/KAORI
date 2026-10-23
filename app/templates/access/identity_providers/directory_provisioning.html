@@ -2,6 +2,8 @@
 {% block title %}Directory Provisioning{% endblock title %}
 {% block dashboard_content %}
     {% import "components/page_hero.html" as page_hero %}
+    {% import "components/info_tip.html" as info_tip %}
+    {% import "components/action_button.html" as action_button %}
     {% import "components/info_flow.html" as info_flow %}
     {% import "components/table_primitives.html" as surface_ui %}
     {% set directory_provider_count = search_form.provider_id.choices|length %}
@@ -9,7 +11,7 @@
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
+                <div class="{{ page_hero.content_classes() }} xl:col-span-12">
                     {% call page_hero.intro('network', 'Identity Administration', 'contact-round') %}
                         <h1 class="{{ page_hero.title_classes() }}">Directory Provisioning</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
@@ -20,31 +22,20 @@
                             {{ page_hero.meta_label('shield-check', 'Administrative Provisioning') }}
                             {{ page_hero.meta_label('key-round', 'Credentials Remain External') }}
                         </div>
-                    {% endcall %}
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Directory Boundary</p>
-                            <p class="mt-1 text-sm font-semibold text-brand-foreground">Provider Configuration Controls Discovery</p>
-                            <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">
-                                Only enabled directory providers are available. Bind credentials remain environment-managed and user passwords never enter this workflow.
-                            </p>
-                        </div>
-                        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Directory provisioning navigation">
                             <a href="{{ url_for('identity_providers.index') }}"
-                               class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="settings-2" class="h-4 w-4"></i>
+                               class="{{ page_hero.primary_action_classes() }}">
+                                <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                                 Providers
                             </a>
                             <a href="{{ url_for('users.index') }}"
-                               class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                               class="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                                 Back to Users
                             </a>
                         </div>
-                    </div>
-                </aside>
+                    {% endcall %}
+                </div>
             </div>
         </section>
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
@@ -57,6 +48,12 @@
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-base font-semibold text-content-primary">Directory Identity Search</h2>
+                                {{ info_tip.render('directory-identity-search-guide',
+                                                'Directory Identity Search',
+                                                'Search a single enabled directory provider before assigning KAORI access.',
+                                                ['Provider: only enabled directory sources appear in the selector.', 'Search: use at least two characters from the username, email, or display name.'],
+                                                variant='guide',
+                                                placement='right') }}
                                 <span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">Step 1</span>
                             </div>
                             <p class="mt-1 text-xs leading-5 text-content-muted">
@@ -71,9 +68,6 @@
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.provider_id.label.text }}</span>
                             {{ search_form.provider_id(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled',
                                                         disabled=not has_directory_providers) }}
-                            <span class="mt-1.5 block text-xs leading-5 text-content-muted">
-                                {{ 'Only enabled directory providers are listed.' if has_directory_providers else 'No Enabled Directory Provider is currently available.' }}
-                            </span>
                         </label>
                         <label class="block min-w-0">
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.query.label.text }}</span>
@@ -92,10 +86,13 @@
                             </div>
                             {% if search_form.query.errors %}
                                 <span class="mt-1.5 block text-xs font-medium text-status-critical-text">{{ search_form.query.errors|join(", ") }}</span>
-                            {% else %}
-                                <span class="mt-1.5 block text-xs leading-5 text-content-muted">Enter at least two characters to search the directory.</span>
                             {% endif %}
                         </label>
+                        {% if not has_directory_providers %}
+                            <p class="text-sm font-medium text-status-warning-text lg:col-span-2" role="status">
+                                No enabled directory provider. Configure one before searching.
+                            </p>
+                        {% endif %}
                     </form>
                 </section>
                 <section class="{{ surface_ui.block_classes() }}">
