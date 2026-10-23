@@ -10,12 +10,12 @@ GENERATED_REPORT_COVERAGE = (
     {
         'icon': 'file-check-2',
         'label': 'Artifact Evidence',
-        'description': 'Ready/Archived PDF, XLSX, and CSV files are copied and checksum-verified before cleanup.',
+        'description': 'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.',
     },
     {
         'icon': 'hard-drive-download',
         'label': 'Report Storage',
-        'description': 'Source files remain until archive and supplemental evidence verify.',
+        'description': 'Source files stay intact until archive and supplements pass verification.',
     },
 )
 GENERATED_REPORT_COVERAGE_NOTE = (
