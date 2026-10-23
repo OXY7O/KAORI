@@ -61,3 +61,26 @@ def test_proof_reuses_signed_10_minute_integrations_registration_pattern() -> No
     assert 'REGISTRATION_PROOF_MAX_AGE_SECONDS = 600' in reference
     assert "'fingerprint': _form_fingerprint(form)" in proof
     assert 'connection_test_proof' not in proof
+
+
+def test_save_always_targets_create_or_edit_after_test_render_roundtrip() -> None:
+    """The Test Connection endpoint renders the form again, never owns Save."""
+    routes = read('app/access/identity_providers/routes.py')
+    template = read('app/templates/access/identity_providers/form.html')
+    parsed = Environment().parse(template)
+    assert parsed is not None
+    assert '<form method="post"' in template
+    save_url = (
+        "url_for('identity_providers.edit', provider_id=provider.id) "
+        "if provider else url_for('identity_providers.create')"
+    )
+    assert template.count(save_url) == 2, 'form action and Save formaction must both target persistence'
+    test_url = (
+        "url_for('identity_providers.test_configuration', provider_id=provider.id) "
+        "if provider else url_for('identity_providers.test_configuration')"
+    )
+    assert template.count(test_url) == 1, 'only Test Connection may submit to the test endpoint'
+    assert routes.index("return redirect(url_for('identity_providers.index'))", routes.index('def create(')) > routes.index(
+        'create_identity_provider(configuration_from_form(form))', routes.index('def create(')
+    )
+    assert "registration_proof=registration_proof" in routes
