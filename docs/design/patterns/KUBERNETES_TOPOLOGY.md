@@ -123,9 +123,14 @@ budgets matching the fair group-selection algorithm. Namespace-specific Node
 placement uses committed SQL EXISTS rather than loading all Pods. All/Compute
 Pod scopes use bounded query prefixes; Networking/Configuration/Storage Pod
 scopes retain complete candidates because their selection depends on labels and
-JSON references. Namespace-selected PVC/PV bindings retain complete scoped
-candidates. Parent-heavy graph scopes preserve the previous safe full load and
-truncation path until equivalent bounded relationship closure is proven. No
+JSON references. Namespace-selected PVC/PV projections now use a
+current-generation correlated SQL EXISTS on the PVC's referenced volume name
+(same cluster, selected namespace) to prefilter PV candidates. Claims and
+matching Volumes are then independently SQL-counted and limited, preserving
+complete visible graph prefixes and exact omitted-by-type totals without
+loading every eligible Storage ORM record. Parent-heavy graph scopes and
+selector-sensitive Networking candidates still use safe full-load fallbacks
+until equivalent bounded relationship closure is proven. No
 live Kubernetes API calls are permitted in read operations.
 
 
