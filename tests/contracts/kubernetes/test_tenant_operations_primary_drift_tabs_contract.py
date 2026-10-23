@@ -76,3 +76,49 @@ def test_each_registry_keeps_primary_tab_through_pagination_filter_and_clear() -
         if tab == 'operational-reconcile':
             assert f'name="tab" value="{tab}"' in source
             assert f"query_params={{'tab': '{tab}'}}" in source
+
+
+def test_capsule_tenant_quota_drift_populated_compact_geometry_keeps_governed_actions() -> None:
+    """Real Capsule UAT #2925: readable drift + full authority, without a 1450px desktop table."""
+    source = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_drift.html')
+    from jinja2 import Environment
+
+    Environment().parse(source)
+    assert "min-w-[840px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed'" in source
+    assert 'min-w-[1450px]' not in source
+    assert source.count('<th scope="col"') == 3
+    for header in ('Tenant / Authority', 'Allocation Drift', 'Actions'):
+        assert header in source
+    assert 'colspan="3"' in source
+    assert 'overflow-x-auto' in source
+    assert "table_ui.title_cell(tenant.name" in source
+    assert "table_label.special_label('Capsule Tenant Resource Quotas'" in source
+    assert "table_label.special_label('Drifted'" in source
+
+    # Provider evidence is exact, not discarded or clipped to fit the list.
+    assert '<details class="group mt-2 min-w-0">' in source
+    assert 'Provider Evidence' in source
+    assert '<summary class="inline-flex cursor-pointer' in source
+    assert 'focus-visible:ring-2' in source
+    assert 'source.get("name")' in source
+    assert 'source.get("uid")' in source
+    assert 'source.get("resource_version")' in source
+    assert 'break-all font-mono' in source
+    assert "drift.get('differences')" in source
+    assert 'difference.kaori_value' in source
+    assert 'difference.provider_value' in source
+    assert "state.get('blocked_reason')" in source
+    assert "table_label.special_label('Control Unavailable'" in source
+
+    # The two independent mutation controls keep their original permissions,
+    # per-form CSRF tokens, exact route identities and server-side gates.
+    assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
+    assert "url_for('tenant.reapply_capsule_tenant_quota_route'" in source
+    assert "url_for('tenant.accept_capsule_tenant_provider_state_route'" in source
+    assert source.count('<form method="post"') == 2
+    assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    assert 'Reapply KAORI Intent' in source
+    assert 'Accept Provider State' in source
+    assert "registry_ui.footer('tenant.operations'" in source
+    assert "'tab': 'allocation-drift'" in source
+    assert 'components/states/_empty_state.html' in source
