@@ -5,6 +5,7 @@ from typing import Any
 from flask import url_for
 
 from app.models.user import User
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import record_operational_activity
 
 
@@ -18,6 +19,7 @@ def identity_provider_feedback(
     provider_id: int | None = None,
     provider_key: str | None = None,
     queue_feedback: bool = True,
+    delivery_policy: OperationalDeliveryPolicy | str = OperationalDeliveryPolicy.PERSISTENT,
 ) -> dict[str, Any]:
     metadata: dict[str, Any] = {
         'module': 'identity_providers',
@@ -39,4 +41,5 @@ def identity_provider_feedback(
         action_icon='fingerprint',
         metadata=metadata,
         queue_feedback=queue_feedback,
+        delivery_policy=delivery_policy,
     )
