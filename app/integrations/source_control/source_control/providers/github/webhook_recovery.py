@@ -7,7 +7,9 @@ cannot mutate inventory directly. Unknown dispatch outcomes never retry.
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.integrations.provider_matrix import provider_kind
@@ -18,9 +20,10 @@ from app.integrations.source_control.source_control.providers.github.webhook_han
     dispatch_committed_delivery,
     flag_abandoned_dispatch,
 )
+from app.models.job import JobExecution
 from app.models.source_control import SourceWebhookDelivery
+from app.platform_operations.jobs.constants import TERMINAL_JOB_STATUSES
 
-_REVISIT = ('queued', 'dispatching', 'received', 'retry_pending')
 
 
 def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int | str]:
@@ -38,16 +41,41 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
             'reconciled': 0, 'uncertain': 0, 'failed': 0,
         }
 
+    now = datetime.now(UTC)
     ids = list(session.scalars(
         select(SourceWebhookDelivery.id)
-        .where(SourceWebhookDelivery.processing_state.in_(_REVISIT))
+        .outerjoin(
+            JobExecution,
+            SourceWebhookDelivery.dispatched_job_execution_id == JobExecution.id,
+        )
+        .where(or_(
+            SourceWebhookDelivery.processing_state == 'received',
+            and_(
+                SourceWebhookDelivery.processing_state == 'retry_pending',
+                or_(
+                    SourceWebhookDelivery.last_attempt_at.is_(None),
+                    SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=5),
+                ),
+            ),
+            and_(
+                SourceWebhookDelivery.processing_state == 'dispatching',
+                SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=20),
+            ),
+            and_(
+                SourceWebhookDelivery.processing_state == 'queued',
+                or_(
+                    JobExecution.id.is_(None),
+                    JobExecution.status.in_(TERMINAL_JOB_STATUSES),
+                ),
+            ),
+        ))
         .order_by(SourceWebhookDelivery.received_at, SourceWebhookDelivery.id)
         .limit(limit),
     ))
-    results = {
-        'status': 'processed', 'examined': len(ids), 'queued': 0,
-        'reconciled': 0, 'uncertain': 0, 'failed': 0,
-    }
+    queued = 0
+    reconciled = 0
+    uncertain = 0
+    failed = 0
     for delivery_id in ids:
         try:
             row = session.get(SourceWebhookDelivery, delivery_id)
@@ -55,17 +83,21 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
                 continue
             if row.processing_state == 'queued':
                 state = reconcile_delivery_completion(session, delivery_record_id=delivery_id)
-                results['reconciled'] += int(state.startswith('reconciled_'))
+                reconciled += int(state.startswith('reconciled_'))
             elif row.processing_state == 'dispatching':
-                results['uncertain'] += int(
+                uncertain += int(
                     flag_abandoned_dispatch(session, delivery_record_id=delivery_id)
                 )
             elif row.processing_state in {'received', 'retry_pending'}:
                 outcome = dispatch_committed_delivery(session, delivery_record_id=delivery_id)
-                results['queued'] += int(outcome.state == 'queued')
+                queued += int(outcome.state == 'queued')
         except Exception:
             # Do not log raw provider/broker exceptions: some may contain
             # installation tokens, endpoint URLs or webhook credentials.
             session.rollback()
-            results['failed'] += 1
-    return results
+            failed += 1
+    return {
+        'status': 'processed', 'examined': len(ids),
+        'queued': queued, 'reconciled': reconciled,
+        'uncertain': uncertain, 'failed': failed,
+    }
