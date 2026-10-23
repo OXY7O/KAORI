@@ -321,12 +321,16 @@
                                    {% if selected.enabled %}checked{% endif %}>
                             Policy enabled
                         </label>
-                        <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
-                            <input type="checkbox"
-                                   name="schedule_enabled"
-                                   {% if selected.schedule_enabled %}checked{% endif %}>
-                            Scheduled execution
-                        </label>
+                        {% if selected.name != 'notification_delivery' %}
+                            <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                                <input type="checkbox"
+                                       name="schedule_enabled"
+                                       {% if selected.schedule_enabled %}checked{% endif %}>
+                                Scheduled execution
+                            </label>
+                        {% else %}
+                            <span class="text-xs leading-5 text-content-muted">Manual archive-only · scheduling not admitted</span>
+                        {% endif %}
                     </div>
                     {% if can_manage %}
                         <button class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
