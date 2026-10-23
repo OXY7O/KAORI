@@ -572,3 +572,24 @@ CSRF and confirmation. The short copy must not imply that disabling
 unlocks hard delete: hard delete requires zero delivery records and zero
 report schedule references. Activity Audit, no-restore lifecycle, and
 provider credential boundaries remain unchanged.
+
+## Notification Channels — Compact Operational Snapshot UAT refinement (#2809, 2026-10-23)
+
+The existing committed-state Overview remains authoritative as documented in #2800. Present
+Channel Readiness and all-time Delivery Outcomes as two compact stacked cards in
+a narrower dashboard column and Recent Delivery as an aligned activity preview alongside
+them at desktop widths; stack all three cards at small viewports. Use existing
+`notification_section`, shared palette icons, compact status labels and action
+classes, Violet surface/border tokens, and responsive Tailwind utilities. Do not
+create new app-wide components for this page-only arrangement.
+
+Each of up to five recent attempts shows **event**, **channel**, **operator-local
+time** and committed **outcome**, with long identities truncated visually but
+available in title attributes. The empty state remains explicit and the link
+to Delivery Activity retains regular GET navigation plus full HTMX swap and URL
+history. Readiness populations may overlap and must not be visualized as
+exclusive slices. Unknown delivery outcomes must not silently disappear from
+the separate all-time total. No synthetic health percentage, provider live
+query, new endpoint, transport behavior, credential display, or evidence
+mutation is permitted. DevContainer/browser light/dark, narrow viewport and
+keyboard UAT is required before operator acceptance.

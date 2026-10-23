@@ -260,6 +260,16 @@ def main() -> int:
         and "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
         and "'overview': notification_overview_metrics() if include_overview else None" in service
         and "include_overview=active_tab == 'overview'" in routes,
+        'compact notification overview evidence preview': 'aria-label="Notification operational snapshot"' in template
+        and 'grid items-start gap-4 lg:grid-cols-5' in template
+        and 'lg:col-span-2' in template
+        and 'lg:col-span-3' in template
+        and 'aria-label="Recent committed delivery attempts"' in template
+        and 'title="{{ delivery.event_label }}"' in template
+        and 'title="{{ delivery.channel_name }}"' in template
+        and 'Delivery outcome:' in template
+        and 'Showing up to 5 committed records.' in template
+        and 'Provider acceptance does not prove human receipt.' in template,
         'lifecycle modal header/footer parity': '{% import "components/action_button.html" as action_button %}' in channel_delete_blockers_dialog
         and '{% import "components/action_button.html" as action_button %}' in channel_retire
         and 'aria-label="Notification Channel Lifecycle Actions"' in channel_delete_blockers_dialog
