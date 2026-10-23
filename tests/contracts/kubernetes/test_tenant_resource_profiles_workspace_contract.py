@@ -264,7 +264,7 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     assert 'data-kaori-dialog-close' in footer
     assert 'type="button"' in footer
     assert 'class="{{ table_ui.action_classes() }}"' in footer
-    assert re.search(r'>\\s*Close\\s*</button>', footer)
+    assert re.search(r'>\s*Close\s*</button>', footer)
     assert dialog.count('data-kaori-dialog-close') == 2
     assert 'hx-post' not in dialog
     assert '<form' not in dialog
