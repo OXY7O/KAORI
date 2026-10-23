@@ -9,9 +9,10 @@ from flask import Flask
 from werkzeug.exceptions import NotFound
 
 from app.extensions.db import db
+from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
-from app.models.rbac import Permission, Role
-from app.models.scope_access import ScopeAccessPolicy
+from app.models.rbac import Permission, Role, RolePermission
+from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 from app.secrets_pki import scoped_registry_web as web
 from app.secrets_pki.scoped_registry import ScopedSecretPage, ScopedSecretRow
@@ -30,9 +31,13 @@ def scope_db():
         tables = [
             Role.__table__,
             Permission.__table__,
+            RolePermission.__table__,
             User.__table__,
+            IdentityProvider.__table__,
+            ExternalIdentityLink.__table__,
             IntegrationInstance.__table__,
             ScopeAccessPolicy.__table__,
+            ScopeAccessPolicyRevision.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         role = Role(name='test_viewer', display_name='Registry Viewer', is_active=True)
