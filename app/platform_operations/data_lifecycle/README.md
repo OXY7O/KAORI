@@ -174,6 +174,10 @@ and archive object purge remain denied until separate authority #2892.
 Archive Only provides only a minimal, bounded redacted projection, not
 a complete source-level audit export.
 
+## Administrative Audit Events policy layout (#2943)
+
+The operator panel uses the shared KAORI policy components and one compact status row for paused, enabled or active manual archiving. The schedule controls are not shown for this manual-only domain. Source access, retention and archival permissions remain governed by #2891, and compaction plus historical lookup remain blocked by #2892. The default policy is unchanged. No test-environment wording is shown to operators.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
