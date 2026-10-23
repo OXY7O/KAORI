@@ -106,3 +106,28 @@ def test_compact_guidance_keeps_external_credentials_authoritative() -> None:
     assert 'Authentication Boundary' not in source
     assert 'Credential Owner' not in source
     assert 'KAORI Stores' not in source
+
+
+def test_provision_button_matches_role_input_baseline_and_mobile_order() -> None:
+    source = read(TEMPLATE)
+    # One grid: role select + aligned Provision button in the first row,
+    # Active-after-provisioning remains below the selector on desktop.
+    assert 'aria-label="KAORI access assignment"' in source
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in source
+    assert 'sm:col-start-1 sm:row-start-1' in source
+    assert 'sm:col-start-2 sm:row-start-1 sm:w-auto sm:self-end' in source
+    assert 'sm:col-start-1 sm:row-start-2' in source
+    role_pos = source.index('name="role_id"')
+    active_pos = source.index('name="is_active"')
+    provision_pos = source.index('>Provision', active_pos)
+    assert role_pos < active_pos < provision_pos
+    assert 'Back to Users' not in source
+    assert "url_for('users.index')" not in source
+
+
+def test_right_rail_descriptions_are_short_and_clear() -> None:
+    source = read(TEMPLATE)
+    assert 'Provision directory-backed access in four steps.' in source
+    assert 'Check prerequisites before searching.' in source
+    assert 'Follow the controlled admin workflow for directory-backed access.' not in source
+    assert 'Check prerequisites when a directory search cannot proceed.' not in source
