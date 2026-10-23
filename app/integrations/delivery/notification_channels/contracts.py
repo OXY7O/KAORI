@@ -18,6 +18,7 @@ class DeliveryResult:
     success: bool
     message: str
     provider_message_id: str | None = None
+    retry_after_seconds: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
