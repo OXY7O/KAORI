@@ -625,6 +625,11 @@ scroll**, tied to the existing confirmation modal's stable
 A nested native or destructive confirmation temporarily owns focus; the
 shared side-drawer focus trap must not steal Tab while such a confirmation
 is active, and Escape within it must not close the underlying drawer.
+Since native and destructive confirmation openers use document-delegated
+click handlers, this specific drawer opts into
+`side_drawer.render(..., delegate_clicks=true)`. The shared drawer retains
+its original `@click.stop` default elsewhere. Do not use custom, duplicated
+dialog-open JavaScript or weaken focus management.
 After cancellation, focus returns to the opener in the drawer. Existing
 focus/keyboard/HTMX, mobile, light/dark and authorized negative-scenario
 UAT are mandatory before acceptance.
