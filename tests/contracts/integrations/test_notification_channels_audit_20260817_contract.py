@@ -55,7 +55,7 @@ def test_delivery_activity_declares_hot_scope_and_authorized_lifecycle_handoff()
     assert 'archive bundles are governed separately in Data Lifecycle.' in delivery
     assert 'Hot committed attempts and source evidence; archive history is artifact-level.' in delivery
     assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery
-    assert "url_for('data_lifecycle.index', tab='policies', domain='notification_delivery')" in delivery
+    assert "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='notification_delivery')" in delivery
     assert 'aria-label="Open Notification Delivery retention policy in Data Lifecycle"' in delivery
     assert "header_actions=delivery_clear_action" in delivery
     assert "table_registry.clear_filters_link('notification_channels.index'" in delivery
@@ -64,6 +64,30 @@ def test_delivery_activity_declares_hot_scope_and_authorized_lifecycle_handoff()
     assert 'payload.delivery_pagination.allowed_per_page' in delivery
     assert 'per_record_archive' not in delivery
     assert "url_for('data_lifecycle.download'" not in delivery
+
+
+
+def test_retention_policy_url_resolves_canonical_registered_blueprint() -> None:
+    """Catch Jinja url_for BuildError before browser UAT."""
+    from flask import Flask, url_for
+
+    from app.platform_operations import bp as platform_operations_bp
+
+    registration = read('app/platform_operations/__init__.py')
+    assert "bp.register_blueprint(data_lifecycle_bp, url_prefix='/data-lifecycle')" in registration
+
+    app = Flask(__name__)
+    app.register_blueprint(platform_operations_bp)
+    with app.test_request_context():
+        target = url_for(
+            'platform_operations.data_lifecycle.index',
+            tab='policies',
+            domain='notification_delivery',
+        )
+    assert target.startswith('/platform-operations/data-lifecycle/')
+    assert 'tab=policies' in target
+    assert 'domain=notification_delivery' in target
+
 
 
 def test_notification_overview_uses_one_card_below_shared_section_intro() -> None:
