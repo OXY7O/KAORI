@@ -47,7 +47,7 @@ from app.models.lifecycle import DataLifecyclePolicy
 from app.models.metrics_source import MetricsSource
 from app.models.minio import MinioInstance
 from app.models.notification import Notification
-from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.models.notification_channel import NotificationChannel, NotificationDelivery, NotificationDeliveryIdentity
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
@@ -250,6 +250,7 @@ __all__ = [
     'Notification',
     'NotificationChannel',
     'NotificationDelivery',
+    'NotificationDeliveryIdentity',
     'TLSCertificateCollectionState',
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',
