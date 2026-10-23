@@ -23,6 +23,7 @@ from app.integrations.source_control.source_control.providers.github.webhook_inb
 )
 from app.access.rbac.decorators import permission_required
 from app.integrations.provider_matrix import provider_kind
+from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionForm,
 )
@@ -77,6 +78,7 @@ def index() -> ResponseReturnValue:
     return _respond(
         'integrations/source_control/github/index.html',
         available=available, registered=registered, ready=ready,
+        uat_workspace_enabled=uat_enabled() and local_super_admin(current_user),
         notification_context=_notification(),
     )
 
