@@ -54,6 +54,7 @@ def _last_successful_cluster_job(base_query, cluster_id: str) -> JobExecution | 
     )
     return (
         base_query.filter(_cluster_job_scope(cluster_id))
+        .filter(JobExecution.completed_at.is_not(None))
         .filter(
             or_(
                 JobExecution.status == 'succeeded',
