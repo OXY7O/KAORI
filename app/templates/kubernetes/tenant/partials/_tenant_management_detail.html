@@ -2700,6 +2700,16 @@
                                class="h-4 w-4 shrink-0 text-kaori-primary"
                                aria-hidden="true"></i>
                             Platform Admin Handback &amp; Re-adopt
+                            {{ info_tip.render('tenant-native-platform-handback-guide',
+                                               'Platform Admin Handback & Re-adopt',
+                                               'Authorized Platform Admin handback verifies provider ownership and relinquishes KAORI governance metadata on exact Released resources.',
+                                               [
+                                               'Registered Kubernetes X.509 verifies identity and scoped get/patch access.',
+                                               'Names, specs, CPU, memory and quotas remain unchanged; partial results require recovery.',
+                                               'Fresh Discovery and explicit Review Adoption are separate from handback.'
+                                               ],
+                                               placement='left',
+                                               variant='guide') }}
                         </span>
                         <span class="mt-1 block break-words text-sm leading-6 text-content-secondary">Authorized Platform Admin handback is required before re-adoption.</span>
                     </span>

@@ -2225,3 +2225,31 @@ Dev Container Visual QA must cover unchecked/checked confirmation,
 desktop/mobile, light/dark, keyboard focus, blocked provider identity,
 partial/verified handback receipts and residual cleanup transitions.
 Runtime pytest/Jinja rendering and official CI/CD admission remain HOLD.
+
+## Native residual recovery compact form and Handback Guide — 2026-10-23
+
+Under existing #1132, the Prepare Recovery Plan area is left-aligned and
+width-limited with shared responsive utility classes rather than a long
+full-width change-reference field. The existing change reference remains
+required (3–120 characters) and the independent operator confirmation
+remains required. The confirmation continues to attest to a fresh
+provider assessment and zero Kubernetes mutation. The POST/HTMX target,
+CSRF, current user and subsequent independent plan approval are unchanged.
+
+The recovery stages now use shorter explanations for independent approval
+and conditional label-only PATCH + verified provider read-back. Discovery
+is still the first option: eligible Namespace generations use ordinary
+Review Adoption; historical Resource Profile residue requires a separate
+assessment, change reference and independent governance.
+
+The Native Platform Admin Handback & Re-adopt summary now has the existing
+`components/info_tip.html` title Guide, explaining provider identity,
+unchanged resource values, guarded metadata handback and the independent
+future Discovery/Adoption process. The shared Info Tip controller already
+prevents clicking an Info Tip inside a `<summary>` from toggling its
+disclosure. This help is non-authorizing and never replaces mandatory
+checkboxes, audits or provider evidence.
+
+Visual QA requires light/dark, keyboard and touch Guide behavior, small
+viewports, long change references, and verified/blocked recovery states.
+Official CI/CD admission remains HOLD.
