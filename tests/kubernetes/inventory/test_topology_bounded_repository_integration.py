@@ -383,6 +383,10 @@ def test_parent_heavy_depth_full_counts_resources_without_orm_materialization(re
             updated_at=now,
             kubernetes_connection=None,
         )
+        # The isolated fixture has no Kubernetes connection model table.
+        # Use the same provider-free display Cluster for both graph builders.
+        bounded.clusters = [display_cluster]
+        bounded.cluster_by_id = {cluster.id: display_cluster}
         full = load_topology_records(
             clusters=[display_cluster],
             latest_inventory={cluster.id: snapshot},
