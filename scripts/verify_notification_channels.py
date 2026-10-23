@@ -223,9 +223,9 @@ def main() -> int:
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
         'summary inspect act channel UX': channels_template.count('scope="col"') == 5
-        and 'Details' in channels_template and 'More' in channels_template
-        and 'x-teleport="body"' in channel_details_drawer
-        and 'View More' in channels_template
+        and 'Details' in channels_template and 'View More' not in channels_template
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and 'openActionMenu' not in channels_template
         and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_details_drawer
         and 'hx-target="#notification-channels-workspace"' in channel_details_drawer
         and 'detailChannel === ' in channel_details_drawer
