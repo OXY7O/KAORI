@@ -735,7 +735,7 @@ def test_channel_more_actions_preserve_csrf_htmx_and_native_confirmations() -> N
     assert 'js/destructive_confirmation_modal.js' in index
     assert 'data-destructive-modal-open' in actions
     assert actions.index('data-destructive-modal-open') < actions.index('</dialog>')
-    assert actions.index('</dialog>') < actions.index('id="notification-channel-delete-submit-{{ channel.id }}"')
+    assert actions.index('</dialog>') < actions.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
     assert 'data-destructive-modal-id="notification-channel-delete-confirmation"' in actions
     assert 'data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"' in actions
     assert 'destructive_confirmation_modal.render(' in inventory
