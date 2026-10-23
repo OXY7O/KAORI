@@ -69,9 +69,9 @@
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{% if selected.name == 'audit_event' %}Source-owned records covered by manual, non-destructive archival.{% else %}Records covered by this retention, archive, and cleanup policy.{% endif %}</p>
                 </div>
             </header>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 and selected.name != 'alert_incident' %}xl:grid-cols-3{% endif %}">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 and selected.name not in ('alert_incident', 'runtime_observation') %}xl:grid-cols-3{% endif %}">
                 {% for item in lifecycle.coverage %}
-                    <article class="rounded-lg border border-outline-subtle bg-surface-subtle p-3.5">
+                    <article class="h-full rounded-lg border border-outline-subtle bg-surface-subtle p-3.5">
                         <div class="flex items-start gap-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
@@ -375,12 +375,16 @@
             </fieldset>
         </form>
         {% if selected.name == 'notification_delivery' %}
-            <p class="rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs text-content-secondary">
-                Archive Only: delivery deduplication, retry protection, channel dependencies and all-time
-                counts still rely on hot evidence. Cleanup remains blocked until the governed
-                safety migration is admitted. Archived bundles are artifact-level, not a per-record search.
+            <p class="rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5 text-xs leading-5 text-content-secondary"
+               role="note">
+                <span class="font-semibold text-kaori-primary dark:text-kaori-accent">Archive Only</span>
+                <span class="mx-1 text-content-muted" aria-hidden="true">·</span>
+                Hot delivery records retain deduplication, retries, dependencies and lifetime counts.
+                <span class="ml-1 font-semibold text-status-warning-text">Cleanup blocked</span>
+                <span class="mx-1 text-content-muted" aria-hidden="true">·</span>
+                No per-record archive search.
             </p>
-        {% endif %}
+        {% endif %>
         {% if selected.name == 'audit_event' %}
             <div class="flex flex-wrap items-center gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5"
                  role="status">
