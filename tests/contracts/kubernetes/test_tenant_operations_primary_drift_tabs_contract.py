@@ -180,3 +180,31 @@ def test_capsule_drift_filters_are_committed_and_independently_paginated() -> No
         source = read('app/templates/kubernetes/tenant/partials/' + template)
         assert 'build_client(' not in source
         assert 'requests.get(' not in source
+
+
+def test_capsule_drift_provider_lineage_jinja_compiles_and_renders() -> None:
+    """#2931 UAT: guard against invalid, unquoted Tenant lineage in evidence modal."""
+    from types import SimpleNamespace
+
+    from jinja2 import Environment
+
+    tenant_source = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_drift.html')
+    shared_source = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_drift.html')
+
+    # Parsing complete templates is mandatory: balanced HTML/Jinja directives
+    # alone did not detect the original TemplateSyntaxError in DevContainer.
+    for source in (tenant_source, shared_source):
+        Environment(autoescape=True).parse(source)
+        assert 'data-kaori-native-dialog' in source
+        assert 'Provider Evidence' in source
+
+    expected_expressions = (
+        (tenant_source, "{{ 'Tenant · ' ~ record.name }}", 'kaori-capsule-uat-01'),
+        (shared_source, "{{ 'Intent ' ~ record.public_id }}", 'intent-uat-01'),
+    )
+    for source, expression, expected in expected_expressions:
+        assert expression in source
+        assert "{{ Tenant · ' ~ record.name }}" not in source
+        record = SimpleNamespace(name='kaori-capsule-uat-01', public_id='intent-uat-01')
+        result = Environment(autoescape=True).from_string(expression).render(record=record)
+        assert expected in result

@@ -215,7 +215,7 @@
                                                     <dd class="mt-1 break-words font-mono text-xs text-content-primary">{{ source.get('resource_version') or 'Unknown' }}</dd>
                                                 </div>
                                             </dl>
-                                            <p class="mt-3 break-words border-t border-outline-subtle pt-3 text-xs text-content-muted">{{ Tenant · ' ~ record.name }}</p>
+                                            <p class="mt-3 break-words border-t border-outline-subtle pt-3 text-xs text-content-muted">{{ 'Tenant · ' ~ record.name }}</p>
                                         </section>
                                         {% if drift.get('external_constraints') or drift.get('blocked_reasons') or state.get('blocked_reason') %}
                                             <section aria-label="Reconciliation constraints" class="rounded-xl border border-outline-subtle bg-surface-card p-4">
