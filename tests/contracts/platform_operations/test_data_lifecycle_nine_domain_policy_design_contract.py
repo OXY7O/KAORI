@@ -85,7 +85,8 @@ def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() 
         assert section in ui
     assert '{% for item in lifecycle.coverage %}' in ui
     assert 'class="h-full rounded-lg border border-outline-subtle bg-surface-subtle p-3.5"' in ui
-    assert 'sm:grid-cols-2 {% if lifecycle.coverage|length == 3 %}xl:grid-cols-3{% endif %}' in ui
+    assert '{% if lifecycle.coverage|length > 1 %}sm:grid-cols-2{% endif %}' in ui
+    assert '{% if lifecycle.coverage|length == 3 %}xl:grid-cols-3{% endif %}' in ui
     assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
     assert 'hx-indicator="#data-lifecycle-policy-loading"' in ui
     assert "components/operation_feedback_oob.html" in ui
@@ -111,13 +112,14 @@ def test_buttons_share_permission_csrf_while_manual_domains_keep_correct_capabil
 
 def test_all_nine_policies_have_correct_card_count_driven_responsive_grid() -> None:
     ui = WORKSPACE.read_text(encoding='utf-8')
-    assert 'sm:grid-cols-2' in ui
-    assert 'lifecycle.coverage|length == 3' in ui
-    assert 'xl:grid-cols-3' in ui
+    start = ui.index('<div class="grid gap-3 p-4 ')
+    end = ui.index('">', start)
+    grid = Environment().from_string(ui[start:end + 2])
     for domain, count in EXPECTED_COVERAGE_COUNTS.items():
-        # 1/2: natural mobile and sm responsive; 3: three cards at xl;
-        # 4: remain 2 x 2 even if another source registers four.
-        columns = 3 if count == 3 else (2 if count > 1 else 1)
-        assert columns in (1, 2, 3), domain
+        rendered = grid.render(lifecycle={'coverage': [{}] * count})
+        assert ('sm:grid-cols-2' in rendered) is (count > 1), domain
+        assert ('xl:grid-cols-3' in rendered) is (count == 3), domain
+    # One item takes full width; two remain side-by-side; all four-item
+    # domains reuse the same 2 x 2 grid without a domain-name exception.
     assert "selected.name != 'alert_incident'" not in ui
     assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
