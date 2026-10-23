@@ -11,7 +11,7 @@
                 {{ detail_ui.inventory_row('Adapter', row.definition.adapter_key|replace('_', ' ') |title) }}
                 {{ detail_ui.inventory_row('Family', row.definition.family.value|title) }}
                 {{ detail_ui.inventory_row('Endpoint', row.connection, break_all=true) }}
-                {{ detail_ui.inventory_row('Secret Reference', row.credential_reference, break_all=true) }}
+                {{ detail_ui.inventory_row('Credential Reference', row.credential_reference, break_all=true) }}
             </div>
         {% endcall %}
         {% call detail_ui.inventory_section('Identity & Access', 'contact-round',
