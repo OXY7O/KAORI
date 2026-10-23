@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from sqlalchemy import func, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
+
+from app.extensions.db import db
 
 from app.common.inventory_generation import filter_current_generation
 from app.kubernetes.inventory.topology.contracts import TopologyRecords, TopologySelection
@@ -122,7 +124,7 @@ def load_topology_records(
             cluster_ids,
             namespace,
             selection,
-            max_nodes=family_budget if not namespace else None,
+            max_nodes=family_budget,
             totals=source_totals,
         ),
         pods=pods,
@@ -344,14 +346,27 @@ def _load_storage(
     if max_nodes is None:
         items = query.order_by(*ordering).all()
         return _storage_for_namespace(items, namespace) if namespace else items
-    # Claim and Volume have separate graph budgets; StorageClass is not a
-    # topology graph node. Scoped PVC/PV bindings preserve legacy loading.
+
+    # Both kinds have independent graph budgets and exact committed counts.
+    # For a selected namespace, only PVs referenced by its PVCs are eligible.
+    # Correlate in SQL so a bounded prefix never discards a late valid binding.
     claims = _visible_namespace_query(
         query.filter(StorageInventory.storage_type == 'PersistentVolumeClaim'),
         StorageInventory,
         cluster_ids,
     )
     volumes = query.filter(StorageInventory.storage_type == 'PersistentVolume')
+    if namespace:
+        referenced_claim = aliased(StorageInventory)
+        committed_claims = filter_current_generation(
+            db.session.query(referenced_claim.id), referenced_claim
+        ).filter(
+            referenced_claim.cluster_id == StorageInventory.cluster_id,
+            referenced_claim.namespace == namespace,
+            referenced_claim.storage_type == 'PersistentVolumeClaim',
+            func.trim(referenced_claim.details['volume_name'].as_string()) == StorageInventory.name,
+        )
+        volumes = volumes.filter(committed_claims.exists())
     return [
         *_materialize_family(claims.order_by(*ordering), kind='pvc', max_nodes=max_nodes, totals=totals),
         *_materialize_family(volumes.order_by(*ordering), kind='pv', max_nodes=max_nodes, totals=totals),

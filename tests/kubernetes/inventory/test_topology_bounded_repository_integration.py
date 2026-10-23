@@ -185,9 +185,9 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
             max_nodes=350,
         )
         assert len(scoped.nodes) == 1
-        assert len(scoped.storage_items) == 710
-        assert 'pvc' not in scoped.source_totals
-        assert 'pv' not in scoped.source_totals
+        assert len(scoped.storage_items) == 700
+        assert scoped.source_totals['pvc'] == 355
+        assert scoped.source_totals['pv'] == 355
 
         # Graph parity, not merely an ORM row-count contract: the candidate
         # budget must preserve all rendered nodes, edges and omission evidence.
