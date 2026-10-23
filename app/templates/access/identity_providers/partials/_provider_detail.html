@@ -1,5 +1,5 @@
 {% import "components/details/_detail_content.html" as detail_ui %}
-{% import "components/action_button.html" as action_button %}
+{% import "components/table.html" as table_ui %}
 <div class="p-3 sm:p-4" data-kaori-idp-expanded-detail>
     {% call detail_ui.resource_sheet() %}
         {% call detail_ui.inventory_section('Provider & Connection', 'plug-zap',
@@ -36,21 +36,21 @@
                     <form method="post"
                           action="{{ url_for('identity_providers.validate', provider_id=provider.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="{{ action_button.classes('secondary') }}">
-                            <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             Validate
                         </button>
                     </form>
                     <a href="{{ url_for('identity_providers.edit', provider_id=provider.id) }}"
-                       class="{{ action_button.classes('primary') }}">
-                        <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         Edit Provider
                     </a>
                 {% endif %}
                 {% if row.definition.family.value == 'directory' and current_user.has_permission('identity_providers.provision') %}
                     <a href="{{ url_for('identity_providers.directory_provisioning') }}"
-                       class="{{ action_button.classes('secondary') }}">
-                        <i data-lucide="contact-round" class="h-4 w-4" aria-hidden="true"></i>
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="contact-round" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         Provision
                     </a>
                 {% endif %}
