@@ -290,6 +290,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert "'Committed storage evidence'" in object_reporting
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
+    assert 'Choose the report and narrowest applicable scope for accurate results.' in reporting_workspace
+    assert 'Preserve the generated artifact and supporting audit evidence for traceability.' in reporting_workspace
     assert 'Committed capacity, usage, headroom, and response path.' in object_capacity
     assert "'Worker Data'" in object_service
     assert "'Worker Data Required'" not in object_service
