@@ -78,3 +78,23 @@ def test_owner_and_coverage_are_truthful() -> None:
     assert "'notification_delivery': 'send'" in presentation
     assert 'Hot records remain authoritative for deduplication' in presentation
     assert 'per-record archive search' in presentation
+
+
+def test_notification_identity_schema_stays_inert_until_rollout_is_admitted() -> None:
+    model = read('app/models/notification_channel.py')
+    migration = read('migrations/versions/20261023_notification_delivery_identity.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/notification_delivery.py')
+    assert 'class NotificationDeliveryIdentity(db.Model):' in model
+    assert "UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_identity_event')" in model
+    assert "ondelete='RESTRICT'" in model
+    assert "down_revision = '20261023_notify_retry_after'" in migration
+    assert "UniqueConstraint('source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id')" in model
+    assert "name='uq_notification_delivery_identities_source_delivery_id'" in migration
+    assert "op.create_table(" in migration
+    assert "'notification_delivery_identities'" in migration
+    model_exports = read('app/models/__init__.py')
+    assert 'NotificationDeliveryIdentity' in model_exports
+    assert 'NotificationDeliveryIdentity' not in service
+    assert 'cleanup_supported = False' in adapter
+
