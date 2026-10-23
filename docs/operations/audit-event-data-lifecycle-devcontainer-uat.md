@@ -47,7 +47,8 @@ migration is introduced by this workstream.
 | AE-LC-05 | Invoke Archive Only on synthetic eligible rows with approved Archive Storage | Verified JSONL.GZ/manifest, retained PostgreSQL rows, immutable source event ID; no metadata, IP, UA or credential | NOT RUN |
 | AE-LC-06 | Attempt Archive & Cleanup via direct request / worker / adapter | DENY before DB deletion; no cleanup job | NOT RUN |
 | AE-LC-07 | Attempt scheduling, including manually configured domain | DENY; no unattended archive JobExecution | NOT RUN |
-| AE-LC-08 | Attempt archive Data/Manifest download with lifecycle export permission | HTTP 403; browser does not offer links pending per-source RBAC #2891 | NOT RUN |
+| AE-LC-08 | Local Super Admin with lifecycle export permission downloads AuditEvent Data/Manifest | HTTP 403; browser does not offer links pending per-source RBAC #2891 | NOT RUN |
+| AE-LC-08a | Non-superadmin lifecycle viewer/manager opens Policies, Preview or Archive History | AuditEvent domain/counts hidden; direct selected-domain and mutation requests 403, without policy/job creation | NOT RUN |
 | AE-LC-09 | Try purge of AuditEvent archive artifacts through worker/service/CLI | DENY; no object deletion even after archive-retention cutoff | NOT RUN |
 | AE-LC-10 | Verify archive checksum, missing/corrupted object, partial storage | Integrity failure surfaced, no false downloaded/cleanup-complete evidence | NOT RUN |
 | AE-LC-11 | Unauthorized jobs / tenant user in Administrative Evidence | Existing source tabs hidden/403, no cross-source record disclosure | NOT RUN |
