@@ -94,6 +94,24 @@ def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event(
     assert "abort(403, description='Source-specific archive export has not been admitted.')" in routes
 
 
+
+def test_disabled_audit_event_policy_explains_manual_safe_uat_without_enabling_cleanup() -> None:
+    ui = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+    service = read('app/platform_operations/data_lifecycle/service.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/audit_event.py')
+    assert "if selected.name == 'audit_event'" in ui
+    assert 'AuditEvent archive policy paused by default.' in ui
+    assert 'Preview remains read-only.' in ui
+    assert 'Policy enabled and Save Policy, then run Archive Only manually.' in ui
+    assert 'Saving does not start a job; scheduling, hot cleanup, archive download, and purge stay blocked.' in ui
+    assert 'name="enabled"' in ui
+    assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
+    assert "'archive_only'" in service
+    assert "cleanup_supported = False" in adapter
+    assert "enabled=False" in adapter
+
+
+
 def test_audit_events_are_not_conflated_with_notifications_or_tenant_audit_evidence() -> None:
     source = read('app/access/activity_audit/administrative_sources.py')
     policy = read('app/platform_operations/data_lifecycle/retention/presentation.py')

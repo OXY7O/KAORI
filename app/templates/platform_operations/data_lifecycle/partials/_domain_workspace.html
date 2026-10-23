@@ -357,7 +357,14 @@
         {% endif %}
         {% if not selected.enabled %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary">
-                <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
+                {% if selected.name == 'audit_event' %}
+                    <span class="font-semibold text-status-warning-text">AuditEvent archive policy paused by default.</span>
+                    Preview remains read-only. For approved disposable UAT evidence, an authorized Local Database Super Admin
+                    can select Policy enabled and Save Policy, then run Archive Only manually.
+                    Saving does not start a job; scheduling, hot cleanup, archive download, and purge stay blocked.
+                {% else %}
+                    <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
+                {% endif %}
             </div>
         {% elif lifecycle.active_lifecycle_jobs %}
             <div class="rounded-lg border border-outline-default bg-surface-subtle p-3 text-xs leading-5 text-content-secondary">
