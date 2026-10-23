@@ -25,10 +25,14 @@ def _finalize_result(result: AuthResult) -> AuthResult:
 def authenticate(username: str, password: str) -> AuthResult:
     registry = build_credential_provider_registry()
     local_result = registry.local.authenticate(username=username, password=password)
+    # A provisioned directory user has a KAORI User row but no local password.
+    # The Local Database probe must not claim that external identity; only
+    # Local Database identities retain authority over a failed local login.
+    local_user = local_result.user
     if (
         local_result.success
-        or local_result.user is not None
         or local_result.reason in {'user_inactive', 'database_unavailable'}
+        or (local_user is not None and local_user.auth_source == 'database')
     ):
         return _finalize_result(local_result)
 
