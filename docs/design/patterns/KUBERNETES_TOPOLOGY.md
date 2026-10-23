@@ -107,39 +107,44 @@ projection. Namespace and Node ORM fetches therefore use a deterministic
 `max_nodes` SQL window, with independent exact committed-generation SQL counts
 for omitted-type reporting. Namespace selector bootstrap projects DISTINCT scalar
 cluster/namespace values rather than full Namespace ORM records. Deeper graph
-modes intentionally retain full relationship candidate loading until a separate
-relation-preserving bounded strategy can be verified for Service selectors,
-Ingress, Pod configuration references, and PVC/PV links. Do not apply an
-unconditional SQL LIMIT to those relationship-sensitive paths.
+modes reuse current-generation, type-specific SQL candidate windows, a
+relationship-safe parent budget, and scalar selector/reference qualification
+before ORM projection. Do not apply an unconditional SQL LIMIT to a
+relationship-sensitive source without preserving graph/omission equivalence.
 
 
 ## Bounded relationship candidates (Depth 2 / 3 / Full)
 
-When the complete Cluster + Namespace parent cohort fits within 350 graph nodes,
-repository queries retain deterministic type-specific prefixes with exact SQL
-counts for omitted-by-type evidence. Namespace-backed types must have a latest
-committed Namespace parent. ConfigMap/Secret and PVC/PV candidates have separate
-budgets matching the fair group-selection algorithm. Namespace-specific Node
-placement uses committed SQL EXISTS rather than loading all Pods. All/Compute
-Pod scopes use bounded query prefixes; Networking/Configuration/Storage Pod
-scopes retain complete candidates because their selection depends on labels and
-JSON references. Namespace-selected PVC/PV projections now use a
-current-generation correlated SQL EXISTS on the PVC's referenced volume name
-(same cluster, selected namespace) to prefilter PV candidates. Claims and
-matching Volumes are then independently SQL-counted and limited, preserving
-complete visible graph prefixes and exact omitted-by-type totals without
-loading every eligible Storage ORM record. Parent-heavy graph scopes and
-selector-sensitive Networking candidates still use safe full-load fallbacks
-until equivalent bounded relationship closure is proven. No
-live Kubernetes API calls are permitted in read operations.
+Graph parent rows (Cluster + current Namespace) always consume the visible
+350-node budget before resources. For deep scopes, Namespaces are SQL-counted
+and only the available parent-prefix is materialized. If parents fill the
+budget, resource families receive a zero-row ORM budget but still report
+exact eligible committed-generation SQL totals, preserving omitted-by-type
+evidence. If parents fit, families use stable type-specific SQL prefixes and
+independent exact counts, including ConfigMap/Secret and PVC/PV quotas.
+Namespace-backed nodes require a current committed Namespace parent.
+Namespace-specific Node placement uses correlated committed SQL EXISTS.
 
+All/Compute Pods use bounded type prefixes. Configuration and Storage Pods
+are first filtered in SQL using the presence of committed JSON references;
+they then use the same deterministic bounded ORM/count path. Deep Networking
+Pod relevance requires **all** current Service selectors, including selectors
+from Services beyond the visible prefix. The repository streams selector
+scalar rows in batches, retains distinct nonempty selectors by
+cluster/namespace, scans only committed Pod ID/labels scalars to count the
+matching cohort, and materializes at most the graph-budget matching Pod
+records. Rendered Service ORM rows themselves use bounded SQL prefixes.
+The selector index scales with the number of distinct selector maps and its
+high-cardinality performance must still be measured; it is not a bounded
+selector-index memory guarantee or proof of a latency target.
 
-Deep Networking Pod visibility also depends on **all** committed Service
-selectors; for Networking Depth 3/Full, Service ORM selection deliberately
-remains complete. The graph still applies its ordinary bounded visible-node
-budget afterward, but no selector may be discarded before determining which
-Pods are relevant. Benchmark and verify this fallback before any later SQL
-selector pushdown optimization.
+Namespace-scoped PVC/PV queries retain the earlier current-generation
+correlated SQL EXISTS on the PVC's referenced volume name (same cluster and
+selected namespace). Claims and matching volumes are SQL-counted and
+independently limited. Preserve deterministic visible nodes/edges, complete
+Service selector semantics, precise omission counts, cache authority and the
+committed-state read boundary. No provider API calls, new graph components or
+unconditional LIMIT across relationship-sensitive sets.
 
 ## Reusable topology presentation primitives
 

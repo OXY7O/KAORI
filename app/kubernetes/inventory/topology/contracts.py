@@ -48,6 +48,7 @@ class TopologyRecords:
     storage_items: list[Any]
     pods: list[Any]
     source_totals: dict[str, int] = field(default_factory=dict)
+    service_selectors: dict[tuple[str, str], list[dict[str, str]]] | None = None
 
 
 @dataclass(frozen=True, slots=True)

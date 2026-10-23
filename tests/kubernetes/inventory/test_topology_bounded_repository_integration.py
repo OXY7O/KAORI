@@ -170,12 +170,18 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
             selection=TopologySelection.from_filters(scope='networking', depth='3'),
             max_nodes=350,
         )
-        # All selectors remain available for deep Networking Pod relevance.
-        assert len(networking.services) == 355
-        assert 'service' not in networking.source_totals
-        assert len(networking.pods) == 355
-        assert 'pod' not in networking.source_totals
-        assert any(service.selector.get('app') == 'late' for service in networking.services)
+        # A late selector and late matching Pod remain relevant even though
+        # only deterministic bounded Service ORM candidates are materialized.
+        assert len(networking.services) == 350
+        assert networking.source_totals['service'] == 355
+        assert len(networking.pods) == 1
+        assert networking.pods[0].pod_name == 'resource-0354'
+        assert networking.source_totals['pod'] == 1
+        assert any(
+            selector.get('app') == 'late'
+            for selectors in networking.service_selectors.values()
+            for selector in selectors
+        )
 
         scoped = load_topology_records(
             clusters=[cluster],
@@ -326,3 +332,117 @@ def test_namespace_pv_candidates_are_scoped_and_bounded_in_sql(repository_app) -
             ('PersistentVolume', 'volume-a'),
         ]
         assert {row.name for row in unbounded} == {'claim-a', 'claim-z', 'volume-a', 'volume-z'}
+
+
+def test_parent_heavy_depth_full_counts_resources_without_orm_materialization(repository_app) -> None:
+    now = datetime.now(UTC)
+    with repository_app.app_context():
+        cluster = Cluster(id='many-namespaces', name='Many', environment='production', status='connected')
+        snapshot = ClusterInventory(cluster_id=cluster.id, collected_at=now)
+        db.session.add_all([cluster, snapshot])
+        for index in range(360):
+            namespace = f'ns-{index:04d}'
+            db.session.add(
+                NamespaceInventory(cluster_id=cluster.id, namespace=namespace, collected_at=now)
+            )
+            db.session.add(
+                WorkloadInventory(
+                    cluster_id=cluster.id,
+                    namespace=namespace,
+                    name=f'deployment-{index:04d}',
+                    workload_type='Deployment',
+                    collected_at=now,
+                )
+            )
+        db.session.commit()
+
+        selection = TopologySelection.from_filters(scope='all', depth='full')
+        bounded = load_topology_records(
+            clusters=[cluster],
+            latest_inventory={cluster.id: snapshot},
+            namespace='',
+            selection=selection,
+            max_nodes=350,
+        )
+        assert len(bounded.namespaces) == 349
+        assert bounded.source_totals['namespace'] == 360
+        assert bounded.workloads == []
+        assert bounded.source_totals['workload'] == 360
+
+        from types import SimpleNamespace
+
+        from app.kubernetes.inventory.topology import node_builder
+        from app.kubernetes.inventory.topology.graph_builder import TopologyGraphBuilder
+
+        display_cluster = SimpleNamespace(
+            id=cluster.id,
+            name=cluster.name,
+            status=cluster.status,
+            environment=cluster.environment,
+            node_count=0,
+            updated_at=now,
+            kubernetes_connection=None,
+        )
+        full = load_topology_records(
+            clusters=[display_cluster],
+            latest_inventory={cluster.id: snapshot},
+            namespace='',
+            selection=selection,
+            max_nodes=None,
+        )
+        # The ordinary URL endpoints are not registered by the isolated DB fixture.
+        original_url_for = node_builder.url_for
+        node_builder.url_for = lambda endpoint, **kwargs: f'/{endpoint}'
+        try:
+            args = dict(
+                filters={'cluster_id': cluster.id, 'namespace': '', 'scope': 'all', 'depth': 'full'},
+                scope_label='All Resources',
+                depth_label='Full',
+            )
+            left = TopologyGraphBuilder(bounded, selection, max_nodes=350).build(**args)
+            right = TopologyGraphBuilder(full, selection, max_nodes=350).build(**args)
+        finally:
+            node_builder.url_for = original_url_for
+
+        assert [x['data']['id'] for x in left['nodes']] == [x['data']['id'] for x in right['nodes']]
+        assert left['edges'] == right['edges']
+        assert left['summary'] == right['summary']
+        assert left['summary']['omitted_by_type']['namespace'] == 11
+        assert left['summary']['omitted_by_type']['workload'] == 360
+
+
+def test_dependency_pod_candidates_filter_references_before_orm_limit(repository_app) -> None:
+    now = datetime.now(UTC)
+    with repository_app.app_context():
+        cluster = Cluster(id='references', name='Refs', environment='production', status='connected')
+        snapshot = ClusterInventory(cluster_id=cluster.id, collected_at=now)
+        db.session.add_all(
+            [cluster, snapshot, NamespaceInventory(cluster_id=cluster.id, namespace='app', collected_at=now)]
+        )
+        for index in range(4):
+            db.session.add(
+                PodInventory(
+                    cluster_id=cluster.id,
+                    namespace='app',
+                    pod_name=f'pod-{index}',
+                    configuration_references=[{'name': 'cfg'}] if index in (1, 3) else [],
+                    persistent_volume_claims=['claim'] if index in (2, 3) else [],
+                    collected_at=now,
+                )
+            )
+        db.session.commit()
+
+        for scope, expected in (
+            ('configuration', ['pod-1', 'pod-3']),
+            ('storage', ['pod-2', 'pod-3']),
+        ):
+            selection = TopologySelection.from_filters(scope=scope, depth='full')
+            limited = load_topology_records(
+                clusters=[cluster],
+                latest_inventory={cluster.id: snapshot},
+                namespace='app',
+                selection=selection,
+                max_nodes=3,
+            )
+            assert [pod.pod_name for pod in limited.pods] == expected[:3]
+            assert limited.source_totals['pod'] == 2

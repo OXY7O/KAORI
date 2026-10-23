@@ -9,10 +9,11 @@ def source(path: str) -> str:
 
 def test_deeper_topology_bounds_only_when_every_parent_fits() -> None:
     repo = source('app/kubernetes/inventory/topology/repository.py')
-    assert 'len(clusters) + len(namespaces) <= max_nodes' in repo
-    assert "source_totals['namespace'] = len(namespaces)" in repo
-    assert 'family_budget = None' in repo
-    assert "max_nodes=family_budget if selection.scope in {'all', 'compute'} else None" in repo
+    assert 'max(max_nodes - len(clusters), 0)' in repo
+    assert "parent_total = source_totals.get('namespace', len(namespaces))" in repo
+    assert 'len(clusters) + parent_total >= max_nodes' in repo
+    assert 'family_budget = 0' in repo
+    assert 'max_nodes=family_budget,' in repo
 
 
 def test_committed_sql_candidate_counts_cover_independent_types() -> None:
@@ -26,13 +27,15 @@ def test_committed_sql_candidate_counts_cover_independent_types() -> None:
     assert 'NamespaceInventory.namespace == model.namespace' in repo
 
 
-def test_scoped_storage_uses_relation_safe_sql_bounds_and_complex_fallbacks_remain() -> None:
+def test_scoped_storage_and_streamed_dependency_candidates_preserve_relation_counts() -> None:
     repo = source('app/kubernetes/inventory/topology/repository.py')
     assert 'max_nodes=family_budget,' in repo
-    assert "max_nodes=family_budget if selection.scope in {'all', 'compute'} else None" in repo
-    assert "selection.scope == 'networking' and selection.include_pods" in repo
+    assert '_load_service_selector_index(cluster_ids, namespace)' in repo
+    assert 'yield_per(256)' in repo
+    assert 'totals[\'pod\'] = matching_total' in repo
+    assert 'func.json_array_length(PodInventory.configuration_references) > 0' in repo
+    assert 'func.json_array_length(PodInventory.persistent_volume_claims) > 0' in repo
     assert 'query.filter(referenced_pod.exists())' in repo
-    assert 'filter_current_generation(' in repo
     assert 'db.session.query(referenced_claim.id), referenced_claim' in repo
     assert 'referenced_claim.cluster_id == StorageInventory.cluster_id' in repo
     assert "referenced_claim.storage_type == 'PersistentVolumeClaim'" in repo
