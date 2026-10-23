@@ -122,7 +122,7 @@ read-only pages:
 | `/secrets-pki/consumers` | **Not Materialized** confirmed consumers/cutover; gated public TLS overlap only |
 | `/secrets-pki/governance` | Independent collection and Metrics/Alert binding qualification |
 | `/secrets-pki/analytics/certificates` | Additional `analytics.view` required, current generation only |
-| `/intelligence/alerts/vault-cases` | Provider-origin case read page requires `intelligence.view` plus `secrets_pki.view` and exact approved **instance** grant; query parameter `instance_id` |
+| `/intelligence/alert-intelligence/vault-cases` | Provider-origin case read page requires `intelligence.view` plus `secrets_pki.view` and exact approved **instance** grant; query parameter `instance_id` |
 
 For Registry, the opaque ScopeAccessPolicy UUID must come from an
 approved and effective exact mount-level grant owned by the test actor.
