@@ -15,6 +15,7 @@ from app.models.audit import AuditEvent
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 
 AT = datetime(2026, 10, 23, 5, tzinfo=UTC)
@@ -39,6 +40,8 @@ def store():
             IdentityProvider.__table__,
             ExternalIdentityLink.__table__,
             IntegrationInstance.__table__,
+            ScopeAccessPolicy.__table__,
+            ScopeAccessPolicyRevision.__table__,
             IntegrationBinding.__table__,
             AlertSignalSnapshot.__table__,
             AlertCase.__table__,
@@ -46,6 +49,22 @@ def store():
             AuditEvent.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
+        role = Role(name='vault_alert_admission_operator', display_name='Vault Case Operator')
+        keys = (
+            'intelligence.decisions.create', 'intelligence.view',
+            'secrets_pki.sync', 'secrets_pki.view',
+        )
+        permissions = [
+            Permission(key=key, module=key.split('.')[0], action=key.split('.')[-1])
+            for key in keys
+        ]
+        db.session.add_all([role, *permissions])
+        db.session.flush()
+        db.session.add_all([
+            RolePermission(role_id=role.id, permission_id=permission.id)
+            for permission in permissions
+        ])
+        db.session.commit()
         try:
             yield
         finally:
@@ -58,7 +77,11 @@ def _actor(*, approved=True):
         username=f'actor-{User.query.count()}',
         email=f'actor-{User.query.count()}@example.invalid',
         auth_source='database',
-        is_super_admin=approved,
+        is_super_admin=False,
+        role_id=(
+            Role.query.filter_by(name='vault_alert_admission_operator').one().id
+            if approved else None
+        ),
         account_is_active=True,
     )
     db.session.add(actor)
@@ -122,11 +145,43 @@ def _admit(binding, actor, *, at=AT):
     )
 
 
+
+
+def _grant(vault, actor, *, level='instance', state='active', target_id=None, until=None):
+    requester = _actor(approved=False)
+    approver = _actor(approved=False)
+    policy = ScopeAccessPolicy(
+        principal_user_id=actor.id,
+        permission_key='secrets_pki.view',
+        integration_instance_id=target_id or vault.id,
+        scope_level=level,
+        provider_namespace='' if level == 'vault_mount' else None,
+        mount='kv' if level == 'vault_mount' else None,
+        current_revision=1,
+    )
+    db.session.add(policy)
+    db.session.flush()
+    db.session.add(ScopeAccessPolicyRevision(
+        policy_id=policy.id,
+        revision_number=1,
+        lifecycle_status=state,
+        effective_from=AT - timedelta(minutes=30),
+        effective_until=until or (AT + timedelta(hours=1)),
+        requested_by_user_id=requester.id,
+        approved_by_user_id=approver.id if state == 'active' else None,
+        approved_at=AT - timedelta(minutes=10) if state == 'active' else None,
+        change_reason='operational_access',
+    ))
+    db.session.commit()
+    return policy
+
+
 @pytest.fixture
 def scope(store, monkeypatch):
     vault, source, binding = _source()
     actor = _actor()
     db.session.commit()
+    _grant(vault, actor)
     monkeypatch.setenv('KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED', 'true')
     return vault, source, binding, actor
 
@@ -309,3 +364,86 @@ def test_no_http_celery_provider_io_or_delivery_activation():
     assert 'mark_case_source_resolved(' not in code
     assert 'firing_routes(' not in code
     assert '@bp.' not in code
+
+
+def test_operator_with_global_role_but_no_instance_grant_cannot_admit(scope):
+    vault, _source, binding, _approved = scope
+    _commit(binding, [_alert(vault.id)])
+    other_actor = _actor()
+    db.session.commit()
+    assert _admit(binding, other_actor)['status'] == 'forbidden'
+    assert AlertCase.query.count() == 0
+    assert AlertCaseEvent.query.count() == 0
+    assert AuditEvent.query.count() == 0
+
+
+def test_superadmin_shortcut_cannot_bypass_role_or_grant(scope):
+    vault, _source, binding, _approved = scope
+    _commit(binding, [_alert(vault.id)])
+    superadmin = _actor(approved=False)
+    superadmin.is_super_admin = True
+    db.session.commit()
+    _grant(vault, superadmin)
+    assert _admit(binding, superadmin)['status'] == 'forbidden'
+    assert AlertCase.query.count() == 0
+
+
+@pytest.mark.parametrize('scenario', ['mount_only', 'revoked', 'expired', 'foreign_source'])
+def test_invalid_or_foreign_instance_grant_denies_all_case_writes(scope, scenario):
+    vault, _source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    policy = ScopeAccessPolicy.query.filter_by(principal_user_id=actor.id).one()
+    current = ScopeAccessPolicyRevision.query.filter_by(policy_id=policy.id).one()
+    if scenario == 'mount_only':
+        policy.scope_level = 'vault_mount'
+        policy.provider_namespace = ''
+        policy.mount = 'kv'
+    elif scenario == 'revoked':
+        current.lifecycle_status = 'revoked'
+    elif scenario == 'expired':
+        current.effective_until = AT - timedelta(minutes=1)
+    else:
+        foreign = IntegrationInstance(
+            integration_type='secrets_pki', provider_key='vault', adapter_key='test',
+            name='Foreign Vault', enabled=True, lifecycle_status='active',
+        )
+        db.session.add(foreign)
+        db.session.flush()
+        policy.integration_instance_id = foreign.id
+    db.session.commit()
+    assert _admit(binding, actor)['status'] == 'forbidden'
+    assert AlertCase.query.count() == 0
+    assert AlertCaseEvent.query.count() == 0
+    assert AuditEvent.query.count() == 0
+
+
+def test_missing_normalized_mutation_permission_blocks_write_even_with_grant(scope):
+    vault, _source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    role = actor.role_record
+    removed = next(
+        edge for edge in RolePermission.query.filter_by(role_id=role.id).all()
+        if edge.permission.key == 'secrets_pki.sync'
+    )
+    db.session.delete(removed)
+    db.session.commit()
+    db.session.expire_all()
+    assert _admit(binding, actor)['status'] == 'forbidden'
+    assert AlertCase.query.count() == 0
+
+
+def test_ambiguous_parallel_instance_grants_block_case_creation(scope):
+    vault, _source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    _grant(vault, actor)
+    assert _admit(binding, actor)['status'] == 'forbidden'
+    assert AlertCase.query.count() == 0
+
+
+def test_unapproved_source_denial_never_creates_case_even_if_snapshot_fresh(scope):
+    vault, _source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    binding.enabled = False
+    db.session.commit()
+    assert _admit(binding, actor)['created'] == 0
+    assert AlertCase.query.count() == 0

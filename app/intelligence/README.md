@@ -238,3 +238,23 @@ The opt-in admission contract #2813 remains disconnected from HTTP and
 workers. Source failure or absence is not resolved/healthy evidence.
 Human Visual QA and scoped Postgres/DevContainer UAT are still required.
 Focused tests: `tests/intelligence/test_vault_provider_case_workspace.py`.
+
+
+### HV-12 exact-instance write scope and recovery projection hardening (#2821)
+
+The opt-in internal `admit_vault_provider_cases` writer requires the existing
+#724 **exact approved instance-level** `ScopeAccessPolicy` in addition to
+all four capabilities in an active normalized role:
+`intelligence.decisions.create`, `intelligence.view`,
+`secrets_pki.sync`, `secrets_pki.view`. The approved `secrets_pki.view`
+scope constrains the specific Vault instance; it does **not** imply the
+additional global sync/decision capabilities. Roleless Super Admin and
+mount-only grants cannot bypass the resource-scope gate. The grant is checked
+while the same source binding remains transaction-locked; any denied,
+unavailable, expired or ambiguous policy fails closed before case writes.
+
+Vault provider cases created by this contract have source state `firing`.
+The read-only scoped workspace rejects rows claiming `resolved`, since
+HV-12 has no source-qualified recovery/closure transition. Missing
+observations remain unknown, never resolved. Real PostgreSQL race tests
+and operator/denied-scope UAT remain mandatory and Not Tested.

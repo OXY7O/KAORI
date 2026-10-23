@@ -71,7 +71,7 @@ def _safe_case(case: AlertCase) -> dict[str, object]:
         'public_id': case.public_id,
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
-        'source_state': case.source_state if case.source_state in {'firing', 'unknown', 'resolved'} else 'unknown',
+        'source_state': case.source_state if case.source_state == 'firing' else 'unknown',
         'workflow_state': case.workflow_state,
         'first_seen_at': case.first_seen_at,
         'last_seen_at': case.last_seen_at,
@@ -87,6 +87,9 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         or case.asset_key != str(instance_id)
         or case.routing_state != 'suppressed'
         or case.routing_override_reason != 'policy_ineligible'
+        # HV-12 cannot establish provider resolution or verified recovery.
+        # Reject rather than render a tampered "resolved" source state.
+        or case.source_state != 'firing'
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key

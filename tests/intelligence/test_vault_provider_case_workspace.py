@@ -348,3 +348,17 @@ def test_case_audit_must_commit_after_case_query_not_before():
     assert 'db.session.commit()' not in section
     page = code.split('def vault_cases_response(', 1)[1].split('def vault_case_details_response(', 1)[0]
     assert page.index('_read_cases(') < page.index('db.session.commit()')
+
+
+def test_unverified_resolved_vault_case_blocks_list_and_direct_detail(store, monkeypatch):
+    app, ids = store
+    case = _case(ids)
+    case.source_state = 'resolved'
+    db.session.commit()
+    assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'
+    _grant(ids)
+    monkeypatch.setattr(workspace, 'current_user', SimpleNamespace(id=ids.actor))
+    monkeypatch.setattr(workspace, 'stage_operational_activity', lambda **_kw: None)
+    with app.test_request_context(f'/vault-cases/{case.public_id}/details?instance_id={ids.vault}'):
+        with pytest.raises(NotFound):
+            workspace.vault_case_details_response(case.public_id)
