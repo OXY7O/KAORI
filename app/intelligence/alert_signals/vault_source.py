@@ -13,8 +13,6 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy.exc import SQLAlchemyError
-
 from app.extensions.db import db
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -37,6 +35,19 @@ class _UnsafeSource(ValueError):
 def _utc(value: datetime | None) -> datetime | None:
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         return None
+    return value.astimezone(UTC)
+
+
+def _persisted_utc(value: datetime | None) -> datetime | None:
+    """SQLite fixtures may round-trip a UTC timestamp without timezone.
+
+    PostgreSQL preserves timezone in production. Treat legacy/SQLite database
+    timestamps as UTC, never do this for untrusted source timestamps.
+    """
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
 
 
@@ -78,7 +89,7 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
         or matchers[0] != {'label': 'vault_instance', 'operator': '=', 'value': binding.asset_key}
     ):
         return None
-    checked = _utc(binding.last_validated_at)
+    checked = _persisted_utc(binding.last_validated_at)
     if checked is None or not timedelta(0) <= now - checked <= _VALIDATION_AGE:
         return None
     evidence = binding.validation_evidence
@@ -197,7 +208,7 @@ def commit_vault_alert_observations(
         domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
     ).first()
     if snapshot is not None and snapshot.generated_at is not None:
-        previous = _utc(snapshot.generated_at)
+        previous = _persisted_utc(snapshot.generated_at)
         if previous is not None and observed <= previous:
             return {'state': 'replayed', 'observed_rows': None}
     try:
@@ -261,8 +272,8 @@ def read_vault_alert_observations(
     ).first()
     if snapshot is None or snapshot.status != 'ready':
         return {'state': 'unavailable', 'entries': None}
-    created = _utc(snapshot.generated_at)
-    expires = _utc(snapshot.expires_at)
+    created = _persisted_utc(snapshot.generated_at)
+    expires = _persisted_utc(snapshot.expires_at)
     if (
         created is None or expires is None or not created <= instant <= expires
         or expires - created != _TTL
@@ -283,18 +294,31 @@ def read_vault_alert_observations(
         return {'state': 'unobserved', 'entries': None} if not entries else {
             'state': 'unavailable', 'entries': None,
         }
-    if not entries or any(
-        not isinstance(entry, dict)
-        or set(entry) != {'handle', 'source_state', 'severity', 'starts_at'}
-        or not isinstance(entry['handle'], str)
-        or _HANDLE.fullmatch(entry['handle']) is None
-        or entry['source_state'] not in _STATES.values()
-        or entry['severity'] not in _SEVERITIES
-        or not isinstance(entry['starts_at'], str)
-        for entry in entries
-    ):
+    if not entries:
         return {'state': 'unavailable', 'entries': None}
-    handles = [entry['handle'] for entry in entries]
+    handles: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {
+            'handle', 'source_state', 'severity', 'starts_at',
+        }:
+            return {'state': 'unavailable', 'entries': None}
+        handle, state, severity, started = (
+            entry['handle'], entry['source_state'], entry['severity'], entry['starts_at'],
+        )
+        if (
+            not isinstance(handle, str) or _HANDLE.fullmatch(handle) is None
+            or not isinstance(state, str) or state not in _STATES.values()
+            or not isinstance(severity, str) or severity not in _SEVERITIES
+            or not isinstance(started, str) or len(started) > 64
+        ):
+            return {'state': 'unavailable', 'entries': None}
+        try:
+            started_at = _start_at(started, now=created)
+        except _UnsafeSource:
+            return {'state': 'unavailable', 'entries': None}
+        if started_at > instant + timedelta(minutes=5):
+            return {'state': 'unavailable', 'entries': None}
+        handles.append(handle)
     if len(handles) != len(set(handles)):
         return {'state': 'unavailable', 'entries': None}
     return {'state': 'fresh', 'entries': [dict(entry) for entry in entries]}
