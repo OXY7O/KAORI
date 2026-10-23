@@ -120,6 +120,17 @@ The Generated Reports table remains a hot operational registry. Data Lifecycle o
 
 Lifecycle domains do not configure independent archive buckets. Hot source storage remains domain-owned (for example, Runtime Observations live in PostgreSQL table `integration_runtime_observations`), while every domain writes verified cold evidence to the shared **Archive Storage** profile. Runtime Observations archive structured provider-neutral evidence as JSONL.GZ + manifest JSON and do not carry supplemental binary artifacts. Generated Reports are the exception at the payload level: their PDF/XLSX/CSV files are copied as supplemental evidence into the same shared archive target. The Retention Policies workspace exposes this boundary without probing the backend; readiness and verification stay demand-loaded in **Archive Storage**.
 
+## Notification Delivery ledger schema-only extension (#2868)
+
+A candidate durable identity schema can reserve `(channel_id,event_key)`
+without copying secrets or transport replay data. The model/migration is
+**inert by default**: no writer, backfill, dispatch behavior, archive lookup
+or cleanup enablement is introduced. The hot `NotificationDelivery` unique
+key is still authoritative. Apply the versioned migration only in the
+approved DevContainer migrator context, then validate schema and PostgreSQL
+behavior before designing an atomic dual-write rollout. See
+`docs/architecture/notification-delivery-lifecycle-safety.md`.
+
 ## Notification Delivery — archive-only safety admission (#2848)
 
 `notification_delivery` is a separate provider-neutral archive domain for
