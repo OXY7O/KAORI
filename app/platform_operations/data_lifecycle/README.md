@@ -68,14 +68,18 @@ verified/ready profile can show the success evidence tone. Inaccessible
 or incomplete targets display warning. The UI must not imply that a
 healthy worker or an accepted TCP connection is archive verification.
 
-Archive Target Contract and Execution Contract use balanced 6:6
-responsive columns. The execution details share compact 2-column
-cards at `sm` and wider; all provider/location/endpoint/bucket/queue,
-dispatcher/retry/purge-limit/worker-isolation fields remain accessible.
-The archive-first flow is still four steps, but cleanup is explicitly
+Archive Target Contract and Execution Contract remain the **only two
+outlined content panels**, balanced 6:6 on desktop. Target attributes
+retain compact key/value rows; execution details use an unboxed
+two-column text layout with subtle separators. Four KPI metrics share
+one borderless segmented strip. The four-step Archive-First process
+uses an ordered, unboxed stepper; Storage Interpretation is a slim
+border-top evidence line with the same semantic status label.
+All provider/location/endpoint/bucket/queue, dispatcher/retry/purge
+limit/worker isolation fields remain visible. Cleanup remains
 **conditional on source-specific admission** (particularly Notification
-Delivery #2868–#2870 and AuditEvent #2891/#2892). This change is
-presentation-only and does not alter lifecycle/storage provider behavior.
+Delivery #2868–#2870 and AuditEvent #2891/#2892). Presentation changes
+do not alter provider, worker, archive integrity or security behavior.
 
 ## Workspace contract
 
