@@ -2039,7 +2039,7 @@ def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() 
     assert 'Unbounded means this profile does not govern the dimension' in source
     assert 'Preview only · Not admission approval.' in source
     assert 'ResourceQuota Dimension' in source
-    assert 'Current · Committed' in source
+    assert 'Current · Baseline' in source
     assert 'Proposed · Profile' in source
 
     for key in (
