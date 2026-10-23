@@ -631,6 +631,17 @@ def test_channel_view_more_dropdown_uses_kaori_navbar_pattern_without_table_clip
     assert '@resize.window="actionMenuId = null"' in inventory
     assert 'getBoundingClientRect()' in inventory
     assert 'this.$nextTick(' in inventory
+    # Regression: using the old fixed 214px estimate detached short menus
+    # from the trigger when the dropdown had to flip above a lower row.
+    assert 'const menuHeight = 214' not in inventory
+    assert "const menuHeight = menu.getBoundingClientRect().height" in inventory
+    assert "visibility: 'hidden'" in inventory
+    assert "visibility: 'visible'" in inventory
+    assert 'const openAbove = menuHeight > spaceBelow && spaceAbove > spaceBelow' in inventory
+    assert 'const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap' in inventory
+    assert "maxHeight: availableHeight + 'px'" in inventory
+    assert '?.focus({ preventScroll: true })' in inventory
+    assert 'if (this.actionMenuId !== id) return' in inventory
     assert 'x-teleport="body"' in dropdown
     assert 'x-show="actionMenuId === {{ channel.id }}"' in dropdown
     assert '@click.outside=' in dropdown
