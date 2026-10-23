@@ -1118,3 +1118,36 @@ populated registries and keyboard review. This extension changes
 **presentation only**: no new provider requests, mutation path, filter
 semantics, data model or background sync behavior; Full Admission remains
 HOLD until explicitly authorized.
+
+### Capsule Drift title guides and reconciliation choices (#2931 UAT follow-up)
+
+Both primary Allocation Drift registries — Capsule Tenant Quota Drift and
+Capsule Shared Allocation Drift — expose a single title-adjacent **Guide**
+via the approved `components/info_tip.html::render(..., variant='guide')`
+and `table_ui.inventory_block_header(..., title_extra=title_info)`. The
+registry section opts into `table_ui.block_classes(allow_overflow=true)`
+while retaining a dedicated horizontally scrollable table. The Guide describes
+the authority boundary and read-only observation versus explicitly governed
+recovery; it does not hide status, safety errors, required controls or row
+evidence. This is the canonical shared hover/focus/click/touch popover with
+viewport clamping, **not** the legacy custom tooltip.
+
+Inside each existing native `View More` modal, the Reconciliation Decision
+explanation is now presented as two low-elevation peer choice cards:
+**Reapply Intent** (`Provider Write`) writes the committed KAORI quota through
+the admitted Capsule authority after provider/capacity verification;
+**Accept Provider** (`Commit Only`) commits verified provider quota as KAORI
+intent without writing the provider. The choices are explanation-only;
+the original explicit, separately CSRF-guarded POST actions remain in the
+modal footer, behind the unchanged permissions, capability and provider
+read-back gates. Badge geometry reuses the canonical table metadata label;
+icons and surfaces reuse existing KAORI Violet/light/dark tokens. Card layout
+is two columns at supported desktop widths and stacked on narrow screens.
+
+No new component family, provider request, policy, mutation, route, migration
+or operational state was introduced. Focused Tenant Operations contract tests
+assert both complete Jinja templates parse, the Guide placement, choice
+presentation and unchanged guarded actions. DevContainer Visual QA must cover
+Guide hover/keyboard/touch, overlay position and dismissal, modal keyboard
+interaction, desktop/mobile and light/dark, including Control Unavailable
+and multi-dimension drift. Human UAT and official admission remain separate.
