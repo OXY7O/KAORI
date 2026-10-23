@@ -60,6 +60,7 @@ def test_retry_schedule_contract_and_legacy_semantics() -> None:
     assert "down_revision = '20261023_sc_webhook_job_link'" in migration
     assert 'delivery.next_retry_at = None' in svc
     assert 'NotificationDelivery.next_retry_at <= datetime.now(UTC)' in svc
-    assert 'delivery.next_retry_at > datetime.now(UTC)' in svc
+    assert 'if _provider_retry_not_due(delivery):' in svc
+    assert 'due.replace(tzinfo=UTC) if due.tzinfo is None else due.astimezone(UTC)' in svc
     assert 'max(notification_delivery_retry_delay_seconds(), delay)' in svc
     assert 'with_for_update(skip_locked=True)' in svc
