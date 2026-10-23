@@ -17,6 +17,16 @@ def count_kubernetes_reports(selected_cluster_id: str | None) -> int:
     return int(_kubernetes_report_query(selected_cluster_id).count())
 
 
+def count_kubernetes_artifact_records(selected_cluster_id: str | None) -> int:
+    """Count retained artifact references, not verified storage availability."""
+    return int(
+        _kubernetes_report_query(selected_cluster_id)
+        .filter(Report.status.in_(('ready', 'archived')))
+        .filter(Report.file_path.is_not(None), Report.file_path != '')
+        .count()
+    )
+
+
 def build_reporting_snapshot(selected_cluster_id: str | None) -> ReportingSnapshot:
     reports = (
         _kubernetes_report_query(selected_cluster_id)
@@ -43,6 +53,7 @@ def build_reporting_snapshot(selected_cluster_id: str | None) -> ReportingSnapsh
 
     return ReportingSnapshot(
         generated_reports=count_kubernetes_reports(selected_cluster_id),
+        artifact_records=count_kubernetes_artifact_records(selected_cluster_id),
         templates=ReportTemplate.query.filter(ReportTemplate.report_domain == 'kubernetes').count(),
         schedules=schedules_query.count(),
         latest_reports=latest,

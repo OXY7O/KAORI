@@ -126,6 +126,8 @@ Every projected alert row uses one presentation shape: `title`, `description`, `
 
 `Recent Report Activity` is a bounded dashboard preview of generated report artifacts. Kubernetes and Object Storage query and render at most **four** latest generated report records. The Reports workspace remains authoritative for full report history, filtering, scheduling, and retained-artifact review; dashboard summaries must not add local pagination.
 
+- **Kubernetes Report Artifacts evidence (#2782):** the Reporting Summary's report-request count is distinct from the Data Freshness artifact reference count. Only Kubernetes-domain `ready` or `archived` Report records with nonempty `file_path` qualify as *recorded artifact references*, not as proven reachable downloads. The tile uses neutral/informational `Recorded` (not `Available`); queued/failed/requested-only records show `Not Ready`, while no report records show `Not Generated`. Actual artifact accessibility remains authoritative in the Reports Storage/Generated workspaces; do not call storage or a provider at dashboard request time.
+
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.

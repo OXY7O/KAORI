@@ -185,6 +185,7 @@ class ReportItem:
 @dataclass(slots=True)
 class ReportingSnapshot:
     generated_reports: int = 0
+    artifact_records: int = 0
     templates: int = 0
     schedules: int = 0
     latest_reports: list[ReportItem] = field(default_factory=list)
