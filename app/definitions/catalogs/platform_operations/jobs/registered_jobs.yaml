@@ -125,6 +125,32 @@ jobs:
   safety_summary: Only ready Vault instances with explicitly approved KV v2 mounts are eligible. Provider errors retain committed history.
   execution_summary: Collect metadata-only Secret versions through canonical inventory workers, without reading values.
   recent_execution_summary: Latest committed Secrets & PKI metadata reconciliations.
+- key: secrets_pki.vault_alerts.observe
+  name: Vault Alert Source Observation
+  domain: Secrets & PKI
+  description: Commit bounded, source-qualified Alertmanager observations without creating AlertCases.
+  icon: bell-ring
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_vault_alert_observation
+  operation: observe_vault_alert_source
+  scope_type: secrets_pki_alert_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations
+  context_builder_path: app.intelligence.alert_signals.vault_jobs:build_vault_alert_job_context
+  configuration_template: platform_operations/jobs/configuration/definitions/vault_alert_observation.html
+  default_enabled: false
+  schedule_supported: false
+  manual_execution_supported: true
+  default_interval_minutes: 5
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: Manual-only, with exact Vault binding validation and worker-held HMAC key. No AlertCases or routing.
+  execution_summary: Observe approved Vault Alertmanager bindings on demand; expired and failed source evidence is unknown.
+  recent_execution_summary: Latest manually authorized Vault Alert Source observations.
 - key: secrets_pki.pki.sync
   name: Secrets & PKI Public Issuer Sync
   domain: Secrets & PKI

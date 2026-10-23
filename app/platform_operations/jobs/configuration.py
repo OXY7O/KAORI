@@ -69,6 +69,14 @@ def _execution_presentation(definition: JobDefinition, selected_context: dict[st
             'execution_scope_label': 'All Eligible Clusters',
             'execution_scope_detail': f'{selected_context.get("eligible_cluster_count", 0)} eligible cluster bindings',
         },
+        'secrets_pki.vault_alerts.observe': {
+            'manual_action_label': 'Observe Vault Alerts',
+            'manual_action_icon': 'bell-ring',
+            'execution_scope_label': 'Qualified Vault Alert Sources',
+            'execution_scope_detail': (
+                f'{selected_context.get("eligible_target_count", 0)} eligible Alert Source bindings'
+            ),
+        },
         'object_storage.inventory.sync': {
             'manual_action_label': 'Sync Object Storage Inventory',
             'manual_action_icon': 'database-zap',

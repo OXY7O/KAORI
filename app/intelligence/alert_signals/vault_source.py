@@ -226,7 +226,8 @@ def commit_vault_alert_observations(
             db.session.add(snapshot)
         snapshot.status = 'failed'
         snapshot.payload_json = None
-        snapshot.generated_at = None
+        # Preserve a monotonic generation fence after failed observation.
+        snapshot.generated_at = observed
         snapshot.expires_at = None
         snapshot.last_attempt_at = observed
         snapshot.last_error = 'Vault Alert Source evidence rejected by qualification contract.'
@@ -254,6 +255,44 @@ def commit_vault_alert_observations(
         'state': normalized['status'],
         'observed_rows': len(normalized['entries']) if normalized['entries'] else None,
     }
+
+
+def fail_vault_alert_observations(
+    *,
+    binding_id: int,
+    observed_at: datetime | None = None,
+) -> bool:
+    """Invalidate a previously ready source after a trusted provider read fails.
+
+    A failure only marks committed evidence unavailable. It never resolves
+    prior alerts or writes the provider exception/response to persistence.
+    """
+    instant = _utc(observed_at or datetime.now(UTC))
+    if instant is None:
+        return False
+    eligible = _validated_binding(binding_id, now=instant)
+    if eligible is None:
+        return False
+    binding, _source = eligible
+    snapshot = AlertSignalSnapshot.query.filter_by(
+        domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+    ).first()
+    if snapshot is None:
+        snapshot = AlertSignalSnapshot(
+            domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+        )
+        db.session.add(snapshot)
+    previous = _persisted_utc(snapshot.generated_at)
+    if previous is not None and instant < previous:
+        return False
+    snapshot.status = 'failed'
+    snapshot.payload_json = None
+    snapshot.generated_at = instant
+    snapshot.expires_at = None
+    snapshot.last_attempt_at = instant
+    snapshot.last_error = 'Vault Alert Source observation unavailable.'
+    db.session.commit()
+    return True
 
 
 def read_vault_alert_observations(

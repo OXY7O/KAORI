@@ -381,6 +381,7 @@ class Config:
             },
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
             'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
+            'app.intelligence.alert_signals.tasks.observe_vault_alert_source': {'queue': 'inventory'},
             'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,
