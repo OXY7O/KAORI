@@ -302,7 +302,7 @@ a labeled evidence cell **does not combine their statuses or timestamps**.
 Long event policies must not be rendered as a single unbounded
 comma-delimited paragraph in normal monitoring view. Following the
 operator-approved redesign #2721, the default row shows an allowed-use
-count, a single truncated event preview, and **View policy**. The former
+count and **View policy** only. The preview is intentionally omitted for row density. The former
 inline `details/summary` expansion is retired because it changes the
 height of all neighboring table cells. An accessible, shared-pattern KAORI
 native dialog lives **outside the table's horizontal scroll wrapper** and
@@ -454,3 +454,20 @@ native Retire confirmation with mandatory bounded reason; active Report
 Schedule references disable the confirmation until resolved. Backend
 authorization, transaction and audit remain authoritative. Retiring
 redirects to archived view via the existing HTMX workspace contract.
+
+## Notification Channel Compact Row and Lifecycle Copy (#2760, 2026-10-23)
+
+Approved Channel Inventory anatomy: shared `title_cell` for channel identity
+(provider/destination in one truncatable supporting line), Readiness,
+severity/domain, **Allowed Uses count + View policy** (no redundant inline
+preview), a compact `Last Test` / `Last Delivery` evidence stack based on
+committed timestamps/status, and the shared `action_grid_classes()` for
+Edit, Test, Retire, Locked/Delete in a stable 2×2 right-aligned grid.
+Archived rows stay read-only. Preserve existing six-column responsive
+width, loading/filter/Rows/pagination and native dialogs.
+
+Deletion Protection uses three concise statements for dependencies,
+Disable guidance and the zero-evidence/zero-schedule hard-delete rule.
+Terminal Retire confirmation uses a three-item semantic list: delivery
+stops, channel becomes Archived/read-only, committed evidence is retained.
+Do not soften server-side deletion/retirement governance to simplify copy.
