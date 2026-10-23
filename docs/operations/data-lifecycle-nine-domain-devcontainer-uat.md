@@ -152,6 +152,37 @@ AuditEvent/source authorization still returns 403. Source contracts in
 `tests/contracts/platform_operations/test_data_lifecycle_history_verify_browser_contract.py`
 are not substitutes for actual browser/worker/Archive Storage evidence.
 
+### Archive Storage evidence and responsive design UAT (#2977)
+
+After the read-only Archive History check, open `?tab=storage` and
+record the exact holding SHA. Confirm:
+
+- **Reachable** S3 endpoint with **Awaiting Evidence** uses info—not
+  green success—semantics in the header and Storage Interpretation.
+  The page must clearly say this proves transport only, not
+  write/read/checksum; no verification timestamp is invented.
+- **Verified** S3 archive evidence matching the configured storage
+  profile may show success only when the retained verified artifact
+  timestamp exists. For a local writable `Ready` directory without
+  checksums, status remains informational. Unavailable/incomplete
+  states must show warning and truthful provider error details.
+- Top four cards retain Storage Readiness, Worker Readiness,
+  Last Verified and Archive Format. Check independent maintenance
+  worker and dispatcher labels against the actual DevContainer.
+- Two main panels balance at 6:6 on large screens; execution details
+  form compact paired items at tablet/desktop and stack on mobile.
+  Confirm no clipped location/bucket/endpoint or loss of fields
+  in light/dark, long endpoint or narrow widths.
+- Four-step Archive-First Safety Boundary remains visible; the
+  final cleanup stage is shown as **if admitted** and its action
+  still requires an independently authorized source. Do not
+  run purge or hot cleanup for restricted domains.
+
+Record browser screenshot and **observed** storage/worker state.
+Source/Jinja contract checks are not proof of actual Archive Storage
+read/write/checksum or successful worker execution. Do not mark
+DL-E2E storage admission PASS until evidence is available.
+
 ## 3. Common end-to-end workflow for **each** domain
 
 Use the existing three workspaces, not a second lifecycle UI.
