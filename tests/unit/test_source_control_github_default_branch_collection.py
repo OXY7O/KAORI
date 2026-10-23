@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -115,16 +116,22 @@ def test_revoked_grant_is_denied_before_live_call(authorized, monkeypatch):
 
 def test_other_installation_and_unknown_repo_are_denied(authorized, monkeypatch):
     session, installation, repo, _grant = authorized
-    installation.id += 500
+    other = SimpleNamespace(
+        id=installation.id + 500,
+        host_key=installation.host_key,
+        account=installation.account,
+        native_installation_id=installation.native_installation_id,
+        repository_scope=installation.repository_scope,
+    )
     monkeypatch.setattr(
         default_branch, 'build_client_for_installation',
         lambda _: pytest.fail('unproven repository must not contact GitHub'),
     )
     with pytest.raises(GitHubProviderError):
         default_branch.collect_default_branch_revision(
-            session, installation=installation, repository_id=repo.id,
+            session, installation=other, repository_id=repo.id,
         )
     with pytest.raises(GitHubProviderError):
         default_branch.collect_default_branch_revision(
-            session, installation=installation, repository_id=99999,
+            session, installation=other, repository_id=99999,
         )
