@@ -57,8 +57,8 @@ authorize official deployment gates.
 
 ## Archive Storage evidence-first UI composition (#2977)
 
-The Archive Storage workspace uses the shared KAORI header, four KPI
-cards and semantic status labels. **Reachable** means only that the web
+The Archive Storage workspace uses the shared KAORI header, one
+segmented four-metric strip and semantic status labels. **Reachable** means only that the web
 container can reach the configured S3 endpoint; **Ready** may indicate a
 writable local directory. Neither proves verified data/manifest
 checksums. The status label and Storage Interpretation use an
