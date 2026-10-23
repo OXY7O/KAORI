@@ -25,7 +25,11 @@ from app.kubernetes.governance.tls_certificates.constants import (
     TLS_COVERAGE_PARTIAL,
     TLS_COVERAGE_UNCOVERED,
 )
-from app.kubernetes.governance.tls_certificates.mutation import patch_tls_secret, read_uploaded_pair
+from app.kubernetes.governance.tls_certificates.mutation import (
+    TLSSecretIdentityError,
+    patch_tls_secret,
+    read_uploaded_pair,
+)
 from app.kubernetes.governance.tls_certificates.sync_state import (
     tls_sync_evidence_is_current,
     tls_sync_stale_after,
@@ -259,8 +263,15 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
 
     try:
         patch_tls_secret(record, cert_bytes, key_bytes)
-    except Exception:
-        current_app.logger.exception('Kubernetes TLS Secret mutation failed.')
+    except Exception as exc:
+        identity_rejected = isinstance(exc, TLSSecretIdentityError)
+        if identity_rejected:
+            current_app.logger.warning('TLS Secret rotation rejected due to stale target identity.')
+        else:
+            current_app.logger.exception('Kubernetes TLS Secret mutation failed.')
+        safe_message = (
+            str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
+        )
         failure_event_saved = _persist_failure_event(
             _new_tls_update_event(
                 TLSUpdateEventSpec(
@@ -272,7 +283,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
                     old_not_after=old_not_after,
                     new_not_after=parsed.not_after,
                     status='failed',
-                    message='The Kubernetes TLS Secret could not be updated.',
+                    message=safe_message,
                     actor_user_id=actor_user_id,
                 )
             )
@@ -280,8 +291,12 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         return {
             'status': 'failed',
             'message': (
-                'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
-                'access permissions, and uploaded certificate pair, then retry.'
+                safe_message
+                if identity_rejected
+                else (
+                    'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
+                    'access permissions, and uploaded certificate pair, then retry.'
+                )
             ),
             'provider_updated': False,
             'persistence_confirmed': failure_event_saved,
@@ -402,11 +417,22 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         old_not_after = target.not_after
         try:
             patch_tls_secret(target, cert_bytes, key_bytes)
-        except Exception:
-            current_app.logger.exception(
-                'Bulk Kubernetes TLS Secret mutation failed for %s/%s.',
-                target.namespace,
-                target.secret_name,
+        except Exception as exc:
+            identity_rejected = isinstance(exc, TLSSecretIdentityError)
+            if identity_rejected:
+                current_app.logger.warning(
+                    'Bulk TLS rotation rejected due to stale target identity for %s/%s.',
+                    target.namespace,
+                    target.secret_name,
+                )
+            else:
+                current_app.logger.exception(
+                    'Bulk Kubernetes TLS Secret mutation failed for %s/%s.',
+                    target.namespace,
+                    target.secret_name,
+                )
+            safe_message = (
+                str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
             )
             db.session.add(
                 _new_tls_update_event(
@@ -419,7 +445,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                         old_not_after=old_not_after,
                         new_not_after=parsed.not_after,
                         status='failed',
-                        message='The Kubernetes TLS Secret could not be updated.',
+                        message=safe_message,
                         actor_user_id=actor_user_id,
                         bulk_job_id=bulk_job_id,
                     )
@@ -429,7 +455,11 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                 {
                     'target': target_view,
                     'status': 'failed',
-                    'message': ('Kubernetes update failed. Review the cluster connection and access permissions.'),
+                    'message': (
+                        safe_message
+                        if identity_rejected
+                        else 'Kubernetes update failed. Review the cluster connection and access permissions.'
+                    ),
                     'provider_updated': False,
                     'persistence_confirmed': True,
                 }
