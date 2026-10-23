@@ -61,13 +61,13 @@ def test_registration_rejects_bad_names_before_network(name, monkeypatch):
 
 @pytest.mark.parametrize('permission,status', [
     (('metadata',), 'validation_required'),
-    (('metadata', 'contents', 'pull_requests', 'actions', 'checks', 'deployments'), 'validation_required'),
+    (('metadata', 'contents'), 'ready'),
+    (('metadata', 'contents', 'pull_requests', 'actions', 'checks', 'deployments'), 'ready'),
     (('contents',), 'blocked'),
 ])
-def test_permission_coverage_never_fabricates_ready(permission, status):
+def test_permission_coverage_separates_connection_readiness_from_inventory(permission, status):
     assessment = readiness.assess_installation_readiness(_evidence(perms=permission))
     assert assessment.status == status
-    assert 'ready' not in assessment.status
     assert assessment.capability_states['repository_inventory'] == (
         'permission_verified' if 'metadata' in permission else 'permission_unavailable'
     )
@@ -115,3 +115,12 @@ def test_registration_is_blocked_while_provider_is_only_planned(monkeypatch):
     monkeypatch.setattr(registration, 'test_connection', reject_network)
     with pytest.raises(GitHubProviderError, match='admission is pending'):
         registration.save_tested_connection(_input())
+
+
+def test_ready_connection_does_not_claim_committed_repository_coverage():
+    assessment = readiness.assess_installation_readiness(
+        _evidence(perms=('metadata', 'contents'), scope='selected')
+    )
+    assert assessment.status == 'ready'
+    assert assessment.coverage_hint == 'selected_repositories'
+    assert assessment.capability_states['workflow_runs'] == 'permission_unavailable'

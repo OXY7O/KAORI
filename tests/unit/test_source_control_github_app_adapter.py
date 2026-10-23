@@ -56,12 +56,12 @@ def test_test_connection_does_not_persist_or_claim_ready(monkeypatch, frozen_db)
     assert 'token' not in repr(result).lower()
 
 
-def test_full_validation_records_partial_scope_without_ready(monkeypatch, frozen_db):
+def test_full_validation_marks_connection_ready_but_not_other_capabilities(monkeypatch, frozen_db):
     instance = _instance()
     monkeypatch.setattr(adapter, 'probe_installation', lambda i: _evidence())
     result = adapter.runtime_adapter.execute('runtime.validate', instance)
     assert result['connected'] is True
-    assert result['readiness_status'] == 'validation_required'
+    assert result['readiness_status'] == 'ready'
     assert result['capabilities']['source_revision'] == 'permission_verified'
     assert result['capabilities']['workflow_runs'] == 'permission_unavailable'
     assert instance.integration_instance.metadata_json['github_validation']['grant_count_hint'] == 3
@@ -111,6 +111,6 @@ def test_adapter_not_registered_or_advertised_available():
     kernel = (root / 'app/integrations/kernel/registry.py').read_text()
     source = (root / 'app/integrations/source_control/source_control/providers/github/__init__.py').read_text()
     matrix = (root / 'app/definitions/catalogs/integrations/provider_matrix.yaml').read_text()
-    assert 'app.integrations.source_control.source_control.providers.github' not in kernel
+    assert "if provider_kind('source_control', 'github').available:" in kernel
     assert 'registry.register(' not in source
     assert 'lifecycle: planned' in matrix.split('- key: source_control')[-1]

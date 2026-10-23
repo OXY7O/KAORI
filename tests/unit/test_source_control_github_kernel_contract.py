@@ -31,10 +31,11 @@ def test_planned_github_is_not_registered_from_descriptor_import():
     assert tuple(registry.all()) == registered_before
 
 
-def test_provider_wiring_is_not_in_core_builtin_loader():
+def test_provider_wiring_is_explicit_and_admission_gated():
     repo_root = Path(__file__).resolve().parents[2]
     core = (repo_root / 'app/integrations/kernel/registry.py').read_text()
-    assert 'app.integrations.source_control.source_control.providers.github' not in core
+    assert "if provider_kind('source_control', 'github').available:" in core
+    assert 'register_after_admission()' in core
 
 
 def test_failure_recorder_sanitizes_provider_exception():
