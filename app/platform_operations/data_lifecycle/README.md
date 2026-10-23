@@ -34,6 +34,17 @@ The ownership-cutover migration renames the former `settings.*_data_lifecycle` p
 Retention days define eligibility only. Automatic execution requires an enabled persisted policy, its schedule to be enabled, and the global `DATA_LIFECYCLE_SCHEDULER_ENABLED` dispatcher gate to be on. Celery Beat checks due lifecycle policies every 15 minutes and dispatches due domains through the canonical `maintenance` execution path. The UI exposes the dispatcher gate explicitly and suppresses a misleading next-run timestamp while it is disabled. Transient connectivity failures retry once automatically; exhausted or non-retryable failures keep cleanup blocked and require operator review/manual retry. A later scheduled window can dispatch a new run. Production already deploys a dedicated `maintenance-worker`, so a separate retention worker is unnecessary while `RETENTION_CELERY_QUEUE=maintenance`.
 
 
+## Engine-level execution admission (#2906)
+
+All registered adapters require an **explicit persisted enabled policy** at
+execution time, including direct CLI and Celery worker paths; UI Preview is
+still non-mutating. The `audit_event` and `notification_delivery` domains
+remain manual Archive Only, unscheduled, without hot cleanup or cold-archive
+purge. Delivery remains coupled to source-owned deduplication and historical
+outcome dependencies (#2847/#2850); AuditEvent remains under producer/RBAC
+security gate (#2891). No consumer may infer a per-record historical reader
+or authorize object deletion from the presence of a verified bundle.
+
 ## Archive purge safety
 
 Expired cold archives are purged in a bounded batch (`ARCHIVE_PURGE_BATCH_SIZE`, default 250). If object deletion only partially succeeds, the registry row becomes `purge_failed`; the UI no longer advertises the archive as downloadable, the canonical lifecycle JobExecution is marked partially succeeded, and a later lifecycle run may retry the idempotent deletion.
