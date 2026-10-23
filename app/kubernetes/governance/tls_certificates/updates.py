@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from flask import current_app
@@ -26,6 +26,11 @@ from app.kubernetes.governance.tls_certificates.constants import (
     TLS_COVERAGE_UNCOVERED,
 )
 from app.kubernetes.governance.tls_certificates.mutation import patch_tls_secret, read_uploaded_pair
+from app.kubernetes.governance.tls_certificates.sync_state import (
+    tls_sync_evidence_is_current,
+    tls_sync_stale_after,
+)
+from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 from app.models import (
     TLSCertificateCollectionState,
     TLSCertificateInventory,
@@ -143,11 +148,28 @@ def _persist_failure_event(event: TLSCertificateUpdateEvent) -> bool:
         return False
 
 
-def _coverage_blocker(record: TLSCertificateInventory, parsed: Any) -> str | None:
-    """Require complete committed Ingress mapping and SAN coverage before PATCH."""
+def _coverage_evidence_window() -> timedelta:
+    policy = get_or_create_job_policy('governance.tls_certificates.sync')
+    return tls_sync_stale_after(policy.interval_minutes)
+
+
+def _coverage_blocker(
+    record: TLSCertificateInventory, parsed: Any, *, stale_after: timedelta
+) -> str | None:
+    """Require complete, current committed Ingress mapping before PATCH."""
     state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
-    if state is None or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED:
+    if (
+        state is None
+        or state.secret_collection_status != TLS_COLLECTION_COLLECTED
+        or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED
+    ):
         return 'Ingress host coverage is Not Reported. Synchronize TLS evidence before rotating this Secret.'
+    now = datetime.now(UTC)
+    if not (
+        tls_sync_evidence_is_current(state.collected_at, stale_after=stale_after, now=now)
+        and tls_sync_evidence_is_current(record.collected_at, stale_after=stale_after, now=now)
+    ):
+        return 'Ingress coverage evidence is stale or unavailable. Synchronize TLS inventory before rotation.'
     uncovered = find_uncovered_hosts(record.ingress_hosts or [], parsed)
     if uncovered:
         return 'Certificate SAN does not cover mapped Ingress hosts: ' + ', '.join(sorted(uncovered))
@@ -169,13 +191,14 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
         targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(requested_ids)).all()
 
     if validation.parsed_certificate and targets:
+        stale_after = _coverage_evidence_window()
         for target in targets:
             target_view = _target_view(target)
             uncovered_hosts = find_uncovered_hosts(
                 target.ingress_hosts or [],
                 validation.parsed_certificate,
             )
-            blocker = _coverage_blocker(target, validation.parsed_certificate)
+            blocker = _coverage_blocker(target, validation.parsed_certificate, stale_after=stale_after)
             status = 'blocked' if blocker else 'ready'
             message = blocker or 'Ready to update.'
             target_previews.append(
@@ -223,7 +246,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         }
 
     parsed = validation.parsed_certificate
-    coverage_blocker = _coverage_blocker(record, parsed)
+    coverage_blocker = _coverage_blocker(record, parsed, stale_after=_coverage_evidence_window())
     if coverage_blocker:
         return {
             'status': 'failed',
@@ -359,10 +382,11 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
 
     parsed = validation.parsed_certificate
     # Admit the entire selected group before the first provider write.
+    stale_after = _coverage_evidence_window()
     coverage_blockers = [
         f'{target.cluster_id}/{target.namespace}/{target.secret_name}: {blocker}'
         for target in targets
-        if (blocker := _coverage_blocker(target, parsed))
+        if (blocker := _coverage_blocker(target, parsed, stale_after=stale_after))
     ]
     if coverage_blockers:
         return _bulk_failure_result(
