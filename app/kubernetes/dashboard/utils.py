@@ -146,7 +146,7 @@ def forecast_insight(payload: dict[str, Any]) -> str:
     try:
         return (
             f'{label} has the highest {horizon_days}-day utilization projection at {float(percent):.0f}%. '
-            'Review projected demand against worker capacity and available headroom.'
+            'Review demand against worker capacity and headroom.'
         )
     except (TypeError, ValueError):
         return 'Forecast snapshot loaded from analytics forecast service.'

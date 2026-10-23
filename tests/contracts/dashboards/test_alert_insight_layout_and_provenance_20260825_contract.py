@@ -44,7 +44,7 @@ def test_dashboard_alert_response_footer_reports_data_owner_not_internal_promoti
     for token in (
         'operational_callout.render(',
         "source_title='Alert Data Source'",
-        "source_description='KAORI Alert Intelligence · Active AlertCase records.'",
+        "source_description='KAORI Alert Intelligence · Active AlertCase records and operational insights.'",
         "icon='brain-circuit'",
         "tone='info'",
         "variant='semantic'",
