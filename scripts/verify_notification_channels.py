@@ -140,6 +140,7 @@ def main() -> int:
         and "data-destructive-submit-button-id=" in channel_details_drawer
         and "data-destructive-modal-confirm" in confirmation
         and "submit?.click()" in confirmation_script
+        and 'event.stopPropagation()' in confirmation_script
         and 'hx-target="#notification-channels-workspace"' in template
         and 'hx-select="#notification-channels-workspace"' in template
         and 'hx-get="{{ url_for(' in template
