@@ -17,7 +17,7 @@ def test_registry_uses_shared_compact_accessible_view_more_action() -> None:
 
     Environment().parse(registry)
     assert "expandable.toggle_button('identity-providers'" in registry
-    assert "open_label='View More', close_label='View Less', compact=true" in registry
+    assert "open_label='View More', close_label='View Less', compact=true, table_action=true" in registry
     assert "expandable.static_detail_row(detail_row_id, detail_target_id, 6)" in registry
     assert "data-detail-toggle" in shared
     assert 'aria-expanded="false"' in shared
@@ -55,14 +55,21 @@ def test_expanded_detail_reuses_unified_resource_sheet_instead_of_four_cards() -
     assert "row.state.label" not in detail
 
 
-def test_actions_use_shared_button_variants_and_preserve_permission_gates() -> None:
+def test_actions_match_activity_audit_table_buttons_and_preserve_permission_gates() -> None:
     detail = read("app/templates/access/identity_providers/partials/_provider_detail.html")
-    shared = read("app/templates/components/action_button.html")
+    shared = read("app/templates/components/table_primitives.html")
+    activity = read("app/templates/access/activity_audit/partials/_administrative_evidence.html")
+    disclosure = read("app/templates/components/details/_expandable_row.html")
 
     Environment().parse(detail)
-    assert '{% import "components/action_button.html" as action_button %}' in detail
-    assert "action_button.classes('secondary')" in detail
-    assert "action_button.classes('primary')" in detail
+    Environment().parse(disclosure)
+    assert '{% import "components/table.html" as table_ui %}' in detail
+    assert detail.count("table_ui.action_classes()") == 3
+    assert "action_button.classes(" not in detail
+    assert "table_ui.action_classes()" in activity
+    assert "table_primitives.action_classes()" in disclosure
+    assert "table_action=false" in disclosure
+    assert "table_action=true" in read("app/templates/access/identity_providers/partials/_registry.html")
     assert "data-kaori-idp-detail-actions" in detail
     assert "url_for('identity_providers.validate', provider_id=provider.id)" in detail
     assert 'name="csrf_token"' in detail
@@ -74,7 +81,9 @@ def test_actions_use_shared_button_variants_and_preserve_permission_gates() -> N
     assert "Read-only provider details" in detail
     assert "inline-flex min-h-9" not in detail
     assert "bg-kaori-primary px-3" not in detail
-    assert "disabled:cursor-not-allowed" in shared
+    assert "min-h-8 px-2.5" in shared
+    assert "border-outline-default bg-surface-card text-content-secondary" in shared
+    assert detail.count('class="h-3.5 w-3.5"') == 3
 
 
 
