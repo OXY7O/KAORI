@@ -192,7 +192,12 @@ def main() -> int:
         and 'table_label.status_label(\'Locked\', \'warning\'' in channel_delete_blockers_dialog
         and 'Automatic delivery is already disabled.' in channel_delete_blockers_dialog
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle,
-        'retired channel lifecycle UI': 'aria-label="Channel lifecycle views"' in channels_template
+        'retired channel lifecycle UI': 'framed_tabs.render_navigation(' in channels_template
+        and "aria_label='Channel lifecycle views'" in channels_template
+        and "hx_target='#notification-channel-registry'" in channels_template
+        and "hx_select='#notification-channel-registry'" in channels_template
+        and 'hx-indicator="#notification-channel-loading"' in channels_template
+        and 'data-kaori-tab-variant="framed-workspace-v2-server"' in read('app/templates/components/framed_workspace_tabs.html')
         and "'channel_lifecycle': payload.channel_lifecycle" in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
         and 'name="retirement_reason" required minlength="8" maxlength="500"' in channel_retire
