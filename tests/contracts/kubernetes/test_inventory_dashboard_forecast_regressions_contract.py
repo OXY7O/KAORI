@@ -45,12 +45,12 @@ def test_dashboard_operator_guidance_copy_is_compact_and_source_aware() -> None:
 
     assert 'Review demand against worker capacity and headroom.' in forecast
     assert 'CPU/memory consumer rows lack request or limit context.' in consumers
-    assert 'Usage-only bars remain muted to avoid misleading risk signals.' in consumers
+    assert 'Usage-only bars stay muted to avoid false risk signals.' in consumers
     for description in (
         'Verify the cluster, committed snapshot freshness, and alert-source evidence before acting.',
         'Assess severity and blast radius, identify affected workloads or namespaces, and assign an owner.',
         'Correlate labels with committed metrics, changes, dependencies, '
-        'and related signals to validate the suspected cause.',
+        'and signals to validate the suspected cause.',
         'Record decisions, actions, verification results, and follow-up evidence for auditability.',
     ):
         assert description in response
