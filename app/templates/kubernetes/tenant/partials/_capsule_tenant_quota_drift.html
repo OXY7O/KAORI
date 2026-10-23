@@ -10,16 +10,15 @@
         'capsule-tenant-quota-drift-loading',
         'Refreshing Capsule Tenant Quota Drift') }}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[840px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant resource quota drift and reconciliation actions.</caption>
             {% if capsule_tenant_quota_drifted %}
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Authority / Source</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[35%]">Allocation Drift</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[36%]">Tenant / Authority</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[36%]">Allocation Drift</th>
                         <th scope="col"
-                            class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
+                            class="{{ table_ui.header_cell_classes(action=true) }} w-[28%]">Actions</th>
                     </tr>
                 </thead>
             {% endif %}
@@ -32,29 +31,45 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(tenant.name, 'Capsule Tenant quota allocation', 'shield-alert') }}
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                               title="Scope {{ drift.get('observed_scope') or governance.get('scope') or 'Tenant' }}">
-                                Scope {{ drift.get("observed_scope") or governance.get('scope') or 'Tenant' }}
+                            <p class="mt-1 break-words text-xs text-content-muted">
+                                Scope {{ drift.get("observed_scope") or governance.get("scope") or 'Tenant' }}
                             </p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            {{ table_label.special_label('Capsule Tenant Resource Quotas', 'info', 'shield-check') }}
-                            <p class="mt-2 text-xs text-content-muted min-w-0 max-w-full truncate"
-                               title="{{ source.get('kind') |default('Tenant', true) }}/{{ source.get('name') |default(tenant.provider_reference, true) }} · {{ source.get('api_version') |default('Unknown API', true) }}">
-                                {{ source.get("kind") |default('Tenant', true) }}/{{ source.get("name") |default(tenant.provider_reference, true) }}
+                            <div class="mt-2">{{ table_label.special_label('Capsule Tenant Resource Quotas', 'info', 'shield-check') }}</div>
+                            <p class="mt-1 text-xs text-content-muted">
+                                {{ source.get("kind") |default('Tenant', true) }}
                                 · {{ source.get("api_version") |default('Unknown API', true) }}
                             </p>
-                            <p class="mt-1 max-w-[360px] break-all text-xs leading-5 text-content-muted">
-                                UID {{ source.get("uid") |default('Unknown', true) }}
-                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
-                            </p>
+                            <details class="group mt-2 min-w-0">
+                                <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded text-xs font-medium text-kaori-primary-dark hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus dark:text-kaori-accent">
+                                    Provider Evidence
+                                    <i data-lucide="chevron-down"
+                                       class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                                       aria-hidden="true"></i>
+                                </summary>
+                                <dl class="mt-2 space-y-2 text-xs leading-5 text-content-muted">
+                                    <div class="min-w-0">
+                                        <dt class="font-medium text-content-secondary">Provider Resource</dt>
+                                        <dd class="mt-0.5 break-words">
+                                            {{ source.get("kind") |default('Tenant', true) }}/{{ source.get("name") |default(tenant.provider_reference, true) }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <dt class="font-medium text-content-secondary">UID</dt>
+                                        <dd class="mt-0.5 break-all font-mono">{{ source.get("uid") |default('Unknown', true) }}</dd>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <dt class="font-medium text-content-secondary">Resource Version</dt>
+                                        <dd class="mt-0.5 break-all font-mono">{{ source.get("resource_version") |default('Unknown', true) }}</dd>
+                                    </div>
+                                </dl>
+                            </details>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
                             {% if drift.get('differences') %}
                                 <div class="mt-2 space-y-1.5">
                                     {% for difference in drift.get('differences', [])[:4] %}
-                                        <p class="text-xs leading-5 text-content-secondary">
+                                        <p class="break-words text-xs leading-5 text-content-secondary">
                                             <span class="font-semibold text-content-primary">{{ difference.dimension }}</span>
                                             · KAORI {{ difference.kaori_value }}
                                             → Provider {{ difference.provider_value }}
@@ -90,11 +105,11 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             {% if can_manage and state.get('reapply_supported') and state.get('accept_supported') %}
-                                <div class="flex flex-col items-end gap-2">
+                                <div class="ml-auto flex w-full max-w-[210px] flex-col gap-2">
                                     <form method="post"
                                           action="{{ url_for('tenant.reapply_capsule_tenant_quota_route', tenant_id=tenant.id) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                                        <button type="submit" class="{{ table_ui.action_classes() }} w-full">
                                             <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
                                             Reapply KAORI Intent
                                         </button>
@@ -102,7 +117,7 @@
                                     <form method="post"
                                           action="{{ url_for('tenant.accept_capsule_tenant_provider_state_route', tenant_id=tenant.id) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                                        <button type="submit" class="{{ table_ui.action_classes() }} w-full">
                                             <i data-lucide="check-check" class="h-4 w-4" aria-hidden="true"></i>
                                             Accept Provider State
                                         </button>
@@ -119,7 +134,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="4" class="p-0">
+                        <td colspan="3" class="p-0">
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Capsule Tenant Quota Drift" %}
                             {% set empty_state_description = "No governed Capsule Tenant.spec.resourceQuotas currently differs from committed KAORI intent." %}
