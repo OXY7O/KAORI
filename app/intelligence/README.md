@@ -204,3 +204,37 @@ workspace visibility, case mutation routes, scoped RBAC for per-source
 access, routing policy and recovery/closure semantics are still gated
 workstreams, and must be authorized and UAT-proven before this internal
 entrypoint is connected to an operator action.
+
+## HV-12 instance-scoped read-only provider AlertCase workspace (#2817)
+
+Central Alert Intelligence has a **separate read-only Vault Provider Cases**
+view that reuses the existing Violet Hero/table/blocked-state components.
+The existing recommendation-only workspace and mutation endpoints remain
+unchanged for recommendation cases. Generic AlertCase mutation operations
+explicitly refuse `secrets_pki/provider_alert` case IDs, even when guessed.
+
+The scoped Vault view requires **both** `intelligence.view` and
+`secrets_pki.view` in an active normalized KAORI role, plus an **approved
+active exact-instance `ScopeAccessPolicy` revision** for the same actor,
+Vault integration ID and `secrets_pki.view`. Neither a super-admin role
+shortcut, a mount-only grant, ownership nor a related source implies the
+instance case grant. More than one approved matching instance grant is
+ambiguous and denies. Revoked, expired, pending, foreign, unavailable or
+inactive-instance policies deny without existence disclosure.
+
+Only an explicitly supplied canonical Vault instance ID can be viewed.
+The server locks the existing scope policy/revision, reads qualifying
+case records, and commits generic Activity Audit evidence in the same
+transaction before rendering. Audit persistence failure denies case access. Audit failure denies the read. The query is capped at 100 records,
+uses existing pagination default five, and rejects any unqualified case
+rather than silently showing a partial trusted population. Case details
+re-evaluate the policy and exact asset before revealing safe, generic
+committed fields. No fleet fallback or Secret path/fingerprint/labels/
+annotations/HMAC-key/provenance material appears in the HTML.
+
+**No provider-origin AlertCase lifecycle writes, routing, notification
+activation, direct provider GET or Secret inventory read is added.**
+The opt-in admission contract #2813 remains disconnected from HTTP and
+workers. Source failure or absence is not resolved/healthy evidence.
+Human Visual QA and scoped Postgres/DevContainer UAT are still required.
+Focused tests: `tests/intelligence/test_vault_provider_case_workspace.py`.

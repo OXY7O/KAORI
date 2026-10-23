@@ -102,6 +102,18 @@
             {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
         </div>
     </div>
+    {% if current_user.has_permission('secrets_pki.view') %}
+        <div class="border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
+            <a class="{{ table_ui.action_classes() }}"
+               href="{{ url_for('alert_intelligence.vault_cases') }}">
+                <i data-lucide="key-round" class="h-4 w-4"></i>
+                Vault Provider Cases
+            </a>
+            <p class="mt-2 text-xs text-content-muted">
+                Exact approved Vault instance scope required. Read-only; no case routing or delivery.
+            </p>
+        </div>
+    {% endif %}
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
         {% if payload.scope_invalid %}
