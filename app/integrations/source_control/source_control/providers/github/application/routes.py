@@ -115,7 +115,10 @@ def new_connection() -> ResponseReturnValue:
                 )
                 return redirect(url_for('github_source.index'))
         except (GitHubProviderError, ValueError, CredentialEncryptionError):
-            message = 'GitHub App connection could not be verified. Review App identity, installation scope and credentials.'
+            message = (
+                'GitHub App connection could not be verified. '
+                'Review App identity, installation scope and credentials.'
+            )
         except SQLAlchemyError:
             message = 'GitHub App connection could not be saved. Review integration configuration.'
         finally:
