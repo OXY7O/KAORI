@@ -258,6 +258,9 @@ class SourceWebhookDelivery(db.Model):
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    dispatched_job_execution_id: Mapped[int | None] = mapped_column(
+        ForeignKey('job_executions.id', ondelete='SET NULL'), nullable=True
+    )
 
     installation: Mapped[SourceInstallation] = relationship('SourceInstallation')
 
