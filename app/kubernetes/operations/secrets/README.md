@@ -104,6 +104,8 @@ The one-time consumption path serializes the `SecretRevealRequest` row with a Po
 - One active request is allowed per requester, cluster, namespace, Secret, and key.
 - Approval-required requests enforce separation of duties.
 
+**Lifecycle expiry and approver scale:** The requester registry is read-only: an expired Pending/Approved request is presented and filtered as Expired using its committed expiry timestamp without mutating a global set of request rows on GET. Approval and one-time reveal still recheck wall-clock expiry and fail closed; request creation never treats an expired record as active. Persisted historical statuses may retain their last transition until a separately governed lifecycle reconciliation occurs; effective status is authoritative for user-facing eligibility. Approver recipients are selected by current active user and active role/permission SQL eligibility, plus database-origin super-admin authority, before loading recipient identities; no full active-user permission sweep.
+
 **My Reveal Requests registry (read-only navigation):** The requester-facing history uses the
 canonical KAORI table with default five rows, shared pagination, and SQL-backed search,
 status and newest/oldest ordering. Search matches the current requester's Secret name,

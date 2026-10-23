@@ -337,3 +337,21 @@ def test_requester_active_work_requires_current_approved_owned_unexpired_state(m
         result = approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42)
         assert result['ready_count'] == expected
         assert len(result['items']) == expected
+
+
+def test_secret_reveal_effective_status_preserves_read_only_expiry() -> None:
+    from app.models.secret_reveal import SecretRevealRequest
+
+    record = SecretRevealRequest()
+    record.status = 'approved'
+    record.expires_at = datetime.now(UTC) - timedelta(seconds=5)
+    assert record.effective_status == 'expired'
+    assert record.status == 'approved'  # no mutation on read
+    record.expires_at = datetime.now(UTC) + timedelta(minutes=5)
+    assert record.effective_status == 'approved'
+    record.status = 'revealed'
+    record.expires_at = datetime.now(UTC) - timedelta(hours=1)
+    assert record.effective_status == 'revealed'
+    record.status = 'pending'
+    record.expires_at = (datetime.now(UTC) - timedelta(minutes=1)).replace(tzinfo=None)
+    assert record.effective_status == 'expired'  # SQLite naive datetime

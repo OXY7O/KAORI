@@ -216,3 +216,27 @@ def test_pending_decision_editor_preserves_security_and_prevents_poll_loss() -> 
     assert "if decision not in {'approve', 'deny'}:" in routes
     assert 'secret_value' not in template
 
+
+
+def test_reveal_history_read_does_not_expire_globally_or_load_all_approvers() -> None:
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    model = read('app/models/secret_reveal.py')
+    table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    assert '_expire_stale_requests()' not in service
+    assert 'effective_status = case(' in service
+    assert 'my_query = my_query.filter(effective_status == state_filter)' in service
+    assert "SecretRevealRequest.expires_at > now" in service
+    assert 'item.effective_status' in table
+    assert 'linked_request.effective_status' in table
+    assert 'def effective_status(self) -> str:' in model
+    assert 'return \'expired\' if deadline <=' in model
+
+    approvers = service.split('def get_secret_reveal_approvers(', 1)[1]
+    approvers = approvers.split('\ndef rollback_secret_reveal_transaction(', 1)[0]
+    assert 'Permission.key ==' in approvers
+    assert 'Role.is_active.is_(True)' in approvers
+    assert 'User.role_id.in_(authorized_roles)' in approvers
+    assert 'User.account_is_active.is_(True)' in approvers
+    assert 'User.deleted_at.is_(None)' in approvers
+    assert "User.auth_source == 'database'" in approvers
+    assert 'user.has_permission(' not in approvers

@@ -83,7 +83,7 @@ def test_verify_session_action_focuses_password_after_htmx_table_replacement() -
     js = read('app/static/js/secret_reveal_workspace.js')
     browser = read('tests/ui/test_browser_smoke.py')
 
-    assert "item.status == 'approved'" in table
+    assert "item.effective_status == 'approved'" in table
     assert '{% elif can_reveal %}' in table
     assert 'data-reveal-step-up-trigger' in table
     assert "reveal_view='mine', _anchor='reveal-session-step-up'" in table
@@ -186,7 +186,7 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert 'Request Approved · Ready for Reveal' in table
     assert 'Show All Requests' in table
     assert 'Request Not Available' in table
-    assert 'linked_request.status' in table
+    assert 'linked_request.effective_status' in table
     assert 'data-reveal-once-action' in table
     assert 'hx-target="#reveal-value-output"' in table
     assert 'name="csrf_token"' in table
