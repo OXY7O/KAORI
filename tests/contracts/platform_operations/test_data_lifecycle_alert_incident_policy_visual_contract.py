@@ -30,7 +30,8 @@ def test_alert_incidents_coverage_is_two_by_two_without_changing_other_domains()
     coverage = source.split('<h3 class="text-base font-semibold leading-6 text-content-primary">', 1)[1]
     coverage = coverage.split('Lifecycle Coverage</h3>', 1)[1].split('{% endfor %}', 1)[0]
     assert 'sm:grid-cols-2' in coverage
-    assert "lifecycle.coverage|length >= 3 and selected.name != 'alert_incident'" in coverage
+    assert "lifecycle.coverage|length == 3" in coverage
+    assert "selected.name != 'alert_incident'" not in coverage
     assert 'xl:grid-cols-3' in coverage
     assert '{% for item in lifecycle.coverage %}' in coverage
     assert '{{ item.icon }}' in coverage
