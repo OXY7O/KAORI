@@ -126,6 +126,42 @@ def expiration() -> ResponseReturnValue:
     )
 
 
+@secrets_pki_bp.get('/leases')
+@permission_required('secrets_pki.view')
+def leases() -> ResponseReturnValue:
+    from app.secrets_pki.operational_evidence_workspaces import build_operational_evidence_workspace
+
+    return render_template(
+        'secrets_pki/operational_evidence_workspace.html',
+        **build_operational_evidence_workspace(kind='leases'),
+    )
+
+
+@secrets_pki_bp.get('/consumers')
+@permission_required('secrets_pki.view')
+def consumers() -> ResponseReturnValue:
+    from app.secrets_pki.operational_evidence_workspaces import build_operational_evidence_workspace
+
+    return render_template(
+        'secrets_pki/operational_evidence_workspace.html',
+        **build_operational_evidence_workspace(
+            kind='consumers',
+            can_view_kubernetes_tls=current_user.has_permission('tls_certificates.view'),
+        ),
+    )
+
+
+@secrets_pki_bp.get('/governance')
+@permission_required('secrets_pki.view')
+def governance() -> ResponseReturnValue:
+    from app.secrets_pki.operational_evidence_workspaces import build_operational_evidence_workspace
+
+    return render_template(
+        'secrets_pki/operational_evidence_workspace.html',
+        **build_operational_evidence_workspace(kind='governance'),
+    )
+
+
 @secrets_pki_bp.get('/lifecycle')
 @permission_required('secrets_pki.view')
 def lifecycle() -> ResponseReturnValue:

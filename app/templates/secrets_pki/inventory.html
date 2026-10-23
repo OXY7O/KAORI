@@ -138,6 +138,18 @@
                    href="{{ url_for('secrets_pki.expiration') }}">Expiration</a>
             </nav>
         {% endcall %}
+        {% call section_card.render('Lease, Consumer & Governance Workspaces',
+            'Explore committed evidence and explicit gaps without inferring Lease or consumer state.',
+            'shield-check') %}
+            <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Lifecycle evidence workspaces">
+                <a href="{{ url_for('secrets_pki.leases') }}"
+                   class="text-sm font-semibold text-kaori-primary hover:underline">Leases</a>
+                <a href="{{ url_for('secrets_pki.consumers') }}"
+                   class="text-sm font-semibold text-kaori-primary hover:underline">Consumers</a>
+                <a href="{{ url_for('secrets_pki.governance') }}"
+                   class="text-sm font-semibold text-kaori-primary hover:underline">Governance</a>
+            </nav>
+        {% endcall %}
         {{ section_intro.render(
             'Additional Evidence Domains',
             'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
