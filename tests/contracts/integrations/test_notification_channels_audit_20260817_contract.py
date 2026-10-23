@@ -46,6 +46,31 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert 'credential_payload' not in overview
 
 
+def test_notification_overview_uses_compact_accessible_read_only_preview() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'channels' %}", 1,
+    )[0]
+
+    assert 'aria-label="Notification operational snapshot"' in overview
+    assert 'grid items-start gap-4 lg:grid-cols-5' in overview
+    assert 'lg:col-span-2' in overview and 'lg:col-span-3' in overview
+    assert 'space-y-4 lg:col-span-2' in overview
+    assert 'aria-label="Recent committed delivery attempts"' in overview
+    assert 'grid-cols-[minmax(0,1fr)_auto]' in overview
+    assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in overview
+    assert '{% if payload.overview.recent %}' in overview
+    assert 'title="{{ delivery.event_label }}"' in overview
+    assert 'title="{{ delivery.channel_name }}"' in overview
+    assert "delivery.created_at|user_datetime('Unknown time')" in overview
+    assert 'Delivery outcome:' in overview
+    assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in overview
+    assert 'Showing up to 5 committed records.' in overview
+    assert 'No Delivery Records Yet' in overview
+    assert 'hx-push-url="true"' in overview
+    assert overview.count('hx-target="#notification-channels-workspace"') >= 2
+
+
 def test_notification_lifecycle_modal_header_footer_use_shared_kaori_contract() -> None:
     deletion = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     retirement = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
