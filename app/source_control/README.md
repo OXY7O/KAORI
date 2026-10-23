@@ -120,3 +120,18 @@ pytest -q --tb=short tests/unit/test_source_control_github_default_branch.py tes
 ```
 
 No extra schema migration is required for refs: this increment reuses SC-01 SourceRevision, SourceReference and SourceReferenceTransition. Keep existing migration graph, ruff, pyright, pytest and Visual QA gates.
+
+### SC-03 — Registered JobExecution and signed-webhook post-commit handoff (candidate)
+
+- `source_control.repository.sync` is in KAORI's existing registered Jobs catalog. It uses the current `inventory` queue, `JobPolicy`, `JobExecution`, progress/cancel/recovery facilities, and shared Jobs Configuration UI. Its initial policy is **disabled**, and manual dispatch is blocked until #724 resource-scoped authorization is admitted.
+- Only an approved `source_control` provider, enabled canonical GitHub App installation, matching account/credential, and a `Ready` Full Validation result can produce targets. Workloads are capped at 25 installation IDs. The worker rechecks eligibility before each metadata-only provider scan; no PEM, token or raw webhook enters task args or job payload.
+- The existing `CELERY.imports` and `task_routes` declare the worker on `inventory`. The canonical dispatcher requires a live worker advertising the exact task before enqueueing; nothing is dispatched by importing this module or defining the job.
+- Authenticated webhook transport is first staged and committed in the existing delivery ledger. `webhook_handoff.dispatch_committed_delivery` then claims it in a transaction and commits the claim **before** requesting an installation-scoped canonical job. On success, `dispatched_job_execution_id` links the queued JobExecution, not an invented source event or completed sync.
+- A failure before accepted dispatch becomes bounded `retry_pending` / `requires_review`; a possible post-enqueue persistence failure or abandoned claim becomes `dispatch_uncertain` for review, **not an automatic duplicate job**. The preexisting current installation grant is still checked; a targeted webhook hint only triggers an independently authorized installation-wide refresh.
+- Webhook ingestion and outbox consumption are **not exposed as public routes** or scheduled yet. The handoff helper alone is not operational end-to-end webhook delivery. Completion status must be reconciled from canonical JobExecution, and the separately authorized ingress/consumer lifecycle must be admitted before enabling it.
+- Migration `20261023_sc_webhook_job_link` extends the existing webhook ledger with an optional FK to `job_executions`. It follows `20261023_sc_repo_collection`; no data is seeded and no worker runs during upgrade.
+- A mid-scan revoked installation, API outage, failed DB publication, canceled job or invalid generation must not erase the last committed repository scope. The failure marker is written only for the still-owned pending generation.
+
+**Dev Container checks still required (not executed):** `python scripts/verify_migration_graph.py`, `python scripts/verify_definition_registry.py`, `ruff`, `djlint`, `pyright`, focused `pytest` for `test_source_control_repository_registered_job.py`, `test_source_control_repository_worker_contract.py`, `test_source_control_github_webhook_handoff.py`, plus PostgreSQL migration upgrade/downgrade, worker preflight, negative RBAC test and visual light/dark/responsive review.
+
+**Release boundary:** SC-01 #2740 → SC-02 #2741 → SC-03 #2742 are stacked Draft PRs. No source provider activation, official CI/CD admission, holding/staging/main merge, real live GitHub App UAT or human acceptance is implied by these commits.
