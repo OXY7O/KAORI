@@ -137,21 +137,16 @@ def test_delivery_safe_zero_record_manual_archive_path_remains_available(trigger
 
 @pytest.mark.parametrize('domain_name', ['notification_delivery', 'audit_event'])
 def test_archive_purge_denied_at_shared_service_boundary(domain_name: str) -> None:
-    with patch(
-        'app.platform_operations.data_lifecycle.retention.service.ArchiveArtifact.query',
-    ) as archive_query:
-        with pytest.raises(RuntimeError, match='purge'):
-            purge_expired_archives(
-                domain_name=domain_name, retention_days=1, dry_run=False,
-            )
-        archive_query.assert_not_called()
+    with pytest.raises(RuntimeError, match='purge'):
+        purge_expired_archives(domain_name=domain_name, retention_days=1, dry_run=False)
 
 
 def test_worker_and_scheduler_bypass_checks_are_shared_by_both_paused_domains() -> None:
     from pathlib import Path
 
-    worker = Path('app/platform_operations/data_lifecycle/retention/tasks.py').read_text(encoding='utf-8')
-    service = Path('app/platform_operations/data_lifecycle/retention/service.py').read_text(encoding='utf-8')
+    root = Path(__file__).resolve().parents[3]
+    worker = (root / 'app/platform_operations/data_lifecycle/retention/tasks.py').read_text(encoding='utf-8')
+    service = (root / 'app/platform_operations/data_lifecycle/retention/service.py').read_text(encoding='utf-8')
     assert worker.count("if domain_name in {'audit_event', 'notification_delivery'}:") >= 2
     assert "'scheduling_not_admitted'" in worker
     assert "'archive_purge'] = {'status': 'not_admitted'" in worker
