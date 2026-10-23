@@ -88,7 +88,7 @@ def _require_audit_event_manual_admission(
     ):
         raise PermissionError('AuditEvent requires a persisted, enabled, unscheduled Archive Only policy.')
 
-    requester = db.session.get(User, triggered_by_user_id)
+    requester = db.session.get(User, triggered_by_user_id, populate_existing=True)
     if (
         requester is None
         or not requester.is_active
