@@ -156,6 +156,25 @@ Record actual viewport/browser, screenshot, selected domain, filtered
 result and UAT PASS/FAIL against an **exact commit SHA**; source contracts
 alone cannot count as Visual QA acceptance.
 
+### Alert Incidents Policy coverage and visual rhythm (#2923)
+
+On **Alert Incidents Policy**, verify the nested policy border is thin
+and neutral/subtle rather than appearing as two adjacent Violet outlines.
+Lifecycle Coverage must contain exactly four source-owned cards arranged
+**2 × 2** on tablet/desktop (`sm`+): Closed Alert Cases, Incident
+Timeline, Notification Delivery and Postmortem Evidence. On mobile,
+preserve natural single-column stacking and legible text. Confirm no
+excess empty third-column space; adjacent metrics and Storage Boundary
+remain unchanged. Check light/dark and compare a domain with three
+coverage sources to ensure its existing responsive grid is preserved.
+
+Confirm Failure Recovery says "Cleanup stays blocked; transient failures
+retry once, then need manual retry." and that an online ready maintenance
+worker displays "Queue maintenance · Online and ready for lifecycle jobs."
+When queue readiness is false or unknown, **do not** show the readiness
+claim. Run this alongside DL-E2E-11 as a **visual-only** scenario; it
+does not authorize cleanup or change existing retention/retry behavior.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
