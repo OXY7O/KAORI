@@ -177,3 +177,30 @@ The existing Alert Intelligence user-facing workspace remains explicitly
 recommendation-scoped; no provider-origin cases are projected to it.
 Activation requires separate #724 authorization, governed policy, source
 recovery validation and real DevContainer/human UAT.
+
+## Internal Vault provider AlertCase admission (#2813)
+
+The internal writer `app/intelligence/alert_intelligence/vault_provider_admission.py`
+reuses **canonical** `AlertCase`, `AlertCaseEvent` and `AuditEvent`,
+rather than introducing a separate case system. It is **not called by any
+route, scheduled task or worker** and requires explicit
+`KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true` opt-in at runtime,
+an active operator identity with both Intelligence decision/view and
+Secrets & PKI sync/view permissions, and a fresh exact Vault source.
+With the flag absent, it returns disabled and does not write cases.
+
+On PostgreSQL, same-source work is serialized by row locks on the binding
+and `AlertSignalSnapshot`; the candidate plan is recomputed inside the
+transaction. Only at most ten new firing cases can be inserted per call;
+previously admitted exact firing cases may be refreshed once per new source
+generation. Every case is routing-suppressed and has a generic name,
+opaque handle, canonical scope IDs and allowlisted provenance only.
+Other source states, old closed cases, failures and missing occurrences
+are never resolved, closed or reopened. Writes append sanitized case
+timeline and audit entries, with no notification delivery.
+
+**This is not provider-case feature activation.** Alert Intelligence
+workspace visibility, case mutation routes, scoped RBAC for per-source
+access, routing policy and recovery/closure semantics are still gated
+workstreams, and must be authorized and UAT-proven before this internal
+entrypoint is connected to an operator action.
