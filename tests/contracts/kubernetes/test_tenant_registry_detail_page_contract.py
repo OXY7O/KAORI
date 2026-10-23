@@ -1372,8 +1372,50 @@ def test_native_dry_run_compact_resource_rows_and_copy_reuse_shared_behavior() -
     # Labels are concise but preserve approval, ownership and freshness boundaries.
     assert 'Kubeconfig identity and scoped access verified. Provider transfer remains separate.' in approval
     assert 'Inspect ownership only after external handoff. This action never transfers provider resources.' in approval
-    assert 'Prior references and dry-run cannot be reused.' in approval
+    assert 'Old evidence is invalid.' in approval
     assert 'SelfSubjectReview and SelfSubjectAccessReview. Provider transfer remains separate.' not in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+
+
+def test_native_platform_admin_consent_is_violet_clear_and_only_authorizes_recorded_scope() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    form = next(
+        form for form in re.findall(r'<form\b.*?</form>', approval, flags=re.DOTALL)
+        if 'tenant.accept_native_successor_handoff_route' in form
+    )
+    Environment().parse(detail)
+
+    # The confirmation is tinted, legible, responsive and explicitly not a successful transfer.
+    assert 'data-tenant-platform-admin-consent' in form
+    assert 'border-brand-outline/60' in form
+    assert 'border-l-kaori-primary bg-kaori-soft/50' in form
+    assert 'focus-within:ring-2 focus-within:ring-outline-focus' in form
+    assert 'Platform Admin Consent' in form
+    assert 'this independently reviewed plan SHA and exact resources' in form
+    assert 'Kubernetes resource values must remain unchanged.' in form
+    assert 'name="confirm_successor_acceptance"' in form
+    assert re.search(r'name="confirm_successor_acceptance"\s+type="checkbox"\s+value="accept"\s+required', form)
+    assert 'tenant.accept_native_successor_handoff_route' in form
+    assert 'name="plan_sha256"' in form
+    assert 'name="csrf_token"' in form
+    assert 'hx-post=' in form
+
+    # Separate provider verification, acceptance, and Release remain authoritative.
+    assert 'recording Platform Admin consent' in form
+    assert 'registered Kubernetes X.509 connection' in form
+    assert 'No separate successor credentials are required.' in form
+    assert 'Successor reference missing or expired.' in approval
+    assert 'A reference does not prove successor acceptance.' in approval
+    assert 'Approval expired. Original requester must restart with a new SHA' in approval
+    assert 'Old evidence is invalid.' in approval
+    assert 'readback_status.approval_expired' in approval
+    assert 'readback_status.external_reference_current' in approval
+    assert 'readback_status.external_readback_prerequisites_current' in approval
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
