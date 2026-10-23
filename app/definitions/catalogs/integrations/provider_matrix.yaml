@@ -131,3 +131,12 @@ integration_types:
     adapter_key: vault_http_v1
     lifecycle: planned
     protocol: vault_http_v1
+
+- key: source_control
+  domain_key: source_control
+  providers:
+  - key: github
+    label: GitHub
+    adapter_key: github_rest_v3
+    lifecycle: available
+    protocol: github_rest_v3

@@ -31,6 +31,12 @@ domains:
   icon: key-round
   workspace_endpoint: integrations.secrets_management
   order: 50
+- key: source_control
+  label: Source Control
+  description: Connect GitHub as the first Source Control provider; govern repository inventory, source revision evidence and delivery correlation.
+  icon: git-branch
+  workspace_endpoint: integrations.source_control
+  order: 60
 capabilities:
 - key: container_orchestrator
   domain_key: orchestration
@@ -83,6 +89,12 @@ capabilities:
   order: 10
   asset_types:
   - vault_instance
+- key: source_control
+  domain_key: source_control
+  label: Source Control
+  description: Repository and source-revision identity, delivery provenance, and provider readiness.
+  order: 10
+  asset_types: []
 consumer_assets:
 - asset_type: kubernetes_cluster
   label: Kubernetes Cluster

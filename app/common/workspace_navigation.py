@@ -269,7 +269,18 @@ def _workspace_key(endpoint: str) -> str | None:
     if endpoint.startswith(('jobs.', 'platform_operations.')):
         return 'operations_center'
     if endpoint.startswith(
-        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'harbor.', 'vault.', 'cluster.')
+        (
+            'integrations.',
+            'notification_channels.',
+            'metrics.',
+            'alertmanager.',
+            'minio.',
+            'harbor.',
+            'vault.',
+            'cluster.',
+            'github_source.',
+            'github_source_uat.',
+        )
     ):
         return 'integrations'
     if endpoint.startswith(('access.', 'users.', 'identity_providers.')):
@@ -288,6 +299,7 @@ _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'integrations.orchestration': 'orchestration',
         'integrations.registry': 'registry',
         'integrations.secrets_management': 'secrets_management',
+        'integrations.source_control': 'source_control',
     },
 }
 
@@ -349,6 +361,8 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('minio.', 'storage'),
         ('harbor.', 'registry'),
         ('vault.', 'secrets_management'),
+        ('github_source.', 'source_control'),
+        ('github_source_uat.', 'source_control'),
         ('cluster.', 'orchestration'),
         ('integrations.kubernetes', 'orchestration'),
     ),

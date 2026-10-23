@@ -45,6 +45,10 @@
     stats.bindings
     )
 ] %}
+{# Source Control repository lineage is not an asset Consumer Binding. Do not show an inapplicable tab. #}
+{% if domain.key == 'source_control' %}
+    {% set workspace_tabs = [workspace_tabs[0]] %}
+{% endif %}
 {% set domain_guidance_title = none %}
 {% set domain_guidance_text = none %}
 {% set domain_guidance_items = none %}
@@ -76,6 +80,13 @@
         "Harbor is the first qualified Registry provider under shared contracts.",
         "Future providers extend those contracts without provider-specific domain navigation."
     ] %}
+{% elif domain.key == 'source_control' %}
+    {% set domain_guidance_title = "Source Control Provider and Evidence Authority" %}
+    {% set domain_guidance_text = "GitHub remains authoritative for repositories, source revisions, pull requests, workflow runs and releases. KAORI uses committed source evidence for correlation and governance; a listed planned provider is not a usable connection." %}
+    {% set domain_guidance_items = [
+        "The GitHub App provider is planned until installation scope, credential isolation and readiness are qualified.",
+        "Repository IDs, immutable revisions and application ownership remain distinct; consumer bindings must not be inferred from names."
+    ] %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
          id="domain-workspace"
@@ -88,7 +99,9 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
                     <div class="mt-0.5 flex items-center gap-1.5">
                         <h2 id="domain-workspace-title"
-                            class="text-base font-semibold text-content-primary">Registry and Consumer Bindings</h2>
+                            class="text-base font-semibold text-content-primary">
+                            {{ 'Provider Registry' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}
+                        </h2>
                         {% if domain_guidance_title %}
                             {{ info_tip.render('integration-' ~ domain.key ~ '-workspace-guidance',
                                                         domain_guidance_title,
@@ -98,9 +111,25 @@
                                                         variant='guide') }}
                         {% endif %}
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {{ ('GitHub is the first Source Control provider. Open its workspace to register a GitHub App installation.' if integration_types else 'Review the Source Control provider boundary; GitHub App onboarding remains planned until validated.') if domain.key == 'source_control' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}
+                    </p>
                 </div>
             </div>
+            {% if domain.key == 'source_control' %}
+                <div class="flex flex-wrap items-center gap-2 lg:justify-end"
+                     aria-label="Source Control provider: GitHub">
+                    <span class="inline-flex h-9 items-center gap-2 text-xs font-medium text-content-muted">
+                        <i data-lucide="git-branch" class="h-4 w-4" aria-hidden="true"></i>
+                        GitHub · First Provider
+                    </span>
+                    <a href="{{ url_for('github_source.index') }}"
+                       class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                        <i data-lucide="git-branch" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        GitHub · Open Provider
+                    </a>
+                </div>
+            {% endif %}
             {% if integration_types %}
                 <div class="flex flex-wrap items-center gap-2 lg:justify-end"
                      aria-label="{{ domain.label }} integration type workspaces">

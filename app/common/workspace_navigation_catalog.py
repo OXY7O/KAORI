@@ -361,6 +361,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 ('integrations.manage',),
             ),
             WorkspaceCapabilityDefinition(
+                'source_control',
+                'Source Control',
+                'git-branch',
+                'integrations.source_control',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
                 'send',

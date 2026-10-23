@@ -499,3 +499,28 @@ jobs:
     freshness_minutes: 120
     stale_grace_minutes: 4320
   legacy_module: forecast_refresh
+- key: source_control.repository.sync
+  name: Source Control Repository Sync
+  domain: Source Control
+  description: Reconcile committed GitHub App installation repositories and access grants.
+  icon: git-branch
+  queue_name: inventory
+  workload_class: standard
+  job_type: source_control_repository_inventory
+  operation: sync_source_control_repositories
+  scope_type: source_control_installation_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: integrations.manage
+  dispatcher_path: app.integrations.source_control.job_adapter:dispatch_source_repositories
+  context_builder_path: app.integrations.source_control.job_adapter:build_source_repositories_context
+  configuration_template: platform_operations/jobs/configuration/definitions/source_control_repository_sync.html
+  default_enabled: false
+  manual_execution_supported: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: A fully admitted GitHub App with explicit installation grants is required. Incomplete scans retain committed history; scheduling is off by default.
+  execution_summary: Collect authorized GitHub repositories and commits only from installation-scoped metadata; preserve access-loss history.
+  recent_execution_summary: Latest canonical Source Control repository reconciliation executions.

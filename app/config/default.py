@@ -93,6 +93,14 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     schedule.update(build_notification_beat_schedule())
     schedule.update(build_alert_signal_beat_schedule())
+    if _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False):
+        schedule['source-control-signed-delivery-recovery'] = {
+            'task': 'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries',
+            'schedule': crontab(minute='*/5'),
+            'options': {
+                'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+            },
+        }
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.platform_operations.jobs.tasks.reconcile_stale_jobs',
@@ -312,6 +320,8 @@ class Config:
     JOB_MAX_ACTIVE_PER_USER = _env_int('JOB_MAX_ACTIVE_PER_USER', 5)
     JOB_MAX_HEAVY_PER_USER = _env_int('JOB_MAX_HEAVY_PER_USER', 1)
     JOB_MAX_ACTIVE_PER_RESOURCE = _env_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
+    SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED', False)
+    SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False)
     JOB_QUEUED_STALE_SECONDS = _env_int('JOB_QUEUED_STALE_SECONDS', 1800)
     JOB_RUNNING_STALE_SECONDS = _env_int('JOB_RUNNING_STALE_SECONDS', 7200)
 
@@ -344,6 +354,8 @@ class Config:
             'app.storage.object_storage.inventory.tasks',
             'app.artifact_registry.tasks',
             'app.integrations.secrets_management.secrets_pki.tasks',
+            'app.integrations.source_control.tasks',
+            'app.integrations.source_control.webhook_maintenance',
             'app.artifact_registry.security.tasks',
             'app.artifact_registry.governance_tasks',
             'app.artifact_registry.correlation_tasks',
@@ -381,6 +393,10 @@ class Config:
             },
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
             'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
+            'app.integrations.source_control.tasks.sync_source_repositories': {'queue': 'inventory'},
+            'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
             'app.intelligence.alert_signals.tasks.observe_vault_alert_source': {'queue': 'inventory'},
             'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
