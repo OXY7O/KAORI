@@ -101,6 +101,7 @@ or staging/production operation is authorized.
 | AE-LC-13 | Execute `flask archive-retention run --domain audit_event --archive-only` after enabling only the disposable synthetic UAT policy | DENY before archive creation: CLI has no authenticated Local Database Super Admin requester | NOT RUN |
 | AE-LC-14 | Worker request with missing user, inactive/deleted user, LDAP or revoked Super Admin | DENY at execution time, including jobs queued before revocation; no new archive artifact | NOT RUN |
 | AE-LC-15 | Worker request with saved policy disabled, schedule enabled, or operation mode changed after queue | DENY at execution time even if the initial queue request succeeded; no archive artifact | NOT RUN |
+| AE-LC-16 | Non-Local-Super-Admin lifecycle manager POSTs direct Verify to known AuditEvent archive UUID | HTTP 403 before archive storage I/O or integrity-status change | NOT RUN |
 
 Inspect actual rendered UI and storage only with **approved disposable
 test evidence**. Do not inject actual private user data, secrets, session
@@ -127,7 +128,7 @@ authority is accepted, followed by #2892 cleanup/index admission.
 
 ## Execution-time admission evidence after #2891 worker hardening
 
-For AE-LC-13 through AE-LC-15, capture the exact holding commit and
+For AE-LC-13 through AE-LC-16, capture the exact holding commit and
 job/requester identity, relevant persisted policy flags, the rejection
 type, and **absence of a newly created** `archive_artifacts` row.
 A source-only unit test does not prove the task was rejected in a real
