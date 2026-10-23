@@ -2041,3 +2041,36 @@ ready-to-consent conditions, long identifiers, and confirmation that
 the independent review, provider handoff and Release remain separate.
 Runtime tests, official Developer Check/Full Admission and staging
 promotion remain HOLD pending explicit human authorization.
+
+## Release independent approval Guide and compact consent — 2026-10-23
+
+Step 3 of Native Tenant Release reuses the canonical `components/info_tip.html`
+title-level `variant='guide'` immediately beside **Independent Approval
+and Handoff**, not an independent help button. The shared Info Tip controller
+handles pointer hover, keyboard focus and touch; the Guide describes the
+distinct requester/reviewer, immutable plan SHA, Platform Admin consent,
+external successor acceptance, provider handoff/read-back and Release gates.
+Mandatory evidence, expired warnings and explicit acknowledgement remain
+visible independently of the popover.
+
+The source-authoritative external-reference recording checkbox now states
+that a reference is for external verification only and does not prove
+acceptance or authorize transfer. The original requester still cannot
+self-approve or substitute references/dry-runs for independent authorized
+Platform Admin verification and acceptance.
+
+Platform Admin consent keeps its single `required` checkbox, form CSRF,
+HTMX POST, plan SHA and exact-scope governance. The prior strong Violet
+left border is removed; the same neutral-border Violet-soft background
+retains accessible focus-within feedback without depicting approval as
+already completed. Its abbreviated attestation is one visual line when
+the desktop column permits and wraps naturally on narrow viewports.
+`I authorize handoff for this plan SHA and exact scope; values stay unchanged.`
+is a confirmation of a bounded decision, not provider execution.
+
+This presentation-only work changes neither Kubernetes X.509/RBAC checks,
+independent reviewer requirements, provider-owned state, SHA binding,
+Dry-Run, provider mutation or Release gating. It needs Dev Container
+Visual QA in light/dark, narrow/wide and keyboard/touch paths, including
+long names, stale evidence and false/true confirmation. All official
+Developer Check / Full Admission / promotion gates stay HOLD.
