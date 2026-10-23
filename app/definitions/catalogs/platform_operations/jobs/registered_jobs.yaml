@@ -128,7 +128,8 @@ jobs:
 - key: secrets_pki.vault_alerts.observe
   name: Vault Alert Source Observation
   domain: Secrets & PKI
-  description: Commit bounded, source-qualified Alertmanager observations without creating AlertCases.
+  description: >-
+    Commit bounded, source-qualified Alertmanager observations without creating AlertCases.
   icon: bell-ring
   queue_name: inventory
   workload_class: standard
@@ -148,8 +149,10 @@ jobs:
   default_interval_minutes: 5
   minimum_interval_minutes: 5
   maximum_interval_minutes: 1440
-  safety_summary: Manual-only, with exact Vault binding validation and worker-held HMAC key. No AlertCases or routing.
-  execution_summary: Observe approved Vault Alertmanager bindings on demand; expired and failed source evidence is unknown.
+  safety_summary: >-
+    Manual-only, with exact Vault binding validation and worker-held HMAC key. No AlertCases or routing.
+  execution_summary: >-
+    Observe approved Vault Alertmanager bindings on demand; expired and failed source evidence is unknown.
   recent_execution_summary: Latest manually authorized Vault Alert Source observations.
 - key: secrets_pki.pki.sync
   name: Secrets & PKI Public Issuer Sync
