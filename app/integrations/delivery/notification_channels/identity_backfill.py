@@ -63,7 +63,7 @@ def reconcile_delivery_identity_batch(
         raise ValueError('Backfill cursor must be inside the captured source fence.')
     if apply and (db.session.new or db.session.dirty or db.session.deleted):
         raise RuntimeError('Identity backfill requires a clean isolated database session.')
-    if apply and db.session.bind is not None and db.session.bind.dialect.name != 'postgresql':
+    if apply and db.session.get_bind().dialect.name != 'postgresql':
         raise RuntimeError('Identity backfill mutations require PostgreSQL.')
 
     rows = (
@@ -131,7 +131,7 @@ def reconcile_delivery_identity_batch(
         ]
         try:
             statement = insert(NotificationDeliveryIdentity).values(values)
-            db.session.execute(
+            result = db.session.execute(
                 statement.on_conflict_do_nothing(
                     index_elements=('channel_id', 'event_key'),
                 ),
@@ -155,7 +155,7 @@ def reconcile_delivery_identity_batch(
                 ):
                     raise RuntimeError('Concurrent identity conflict; rolling back backfill page.')
             db.session.commit()
-            inserted = len(missing_rows)
+            inserted = int(result.rowcount)
         except Exception:
             db.session.rollback()
             raise
