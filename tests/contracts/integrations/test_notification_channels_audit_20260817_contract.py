@@ -9,6 +9,65 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def test_notification_overview_summarizes_committed_workspaces_not_provider_catalog() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'channels' %}", 1,
+    )[0]
+    assert "'Delivery Providers'," not in overview
+    assert "for provider in payload.providers" not in overview
+    assert "'Delivery Overview'," in overview
+    assert "'Channel Readiness'," in overview
+    assert "'Delivery Outcomes'," in overview
+    assert "'Recent Delivery'," in overview
+    assert "payload.summary.total" in overview
+    assert "payload.summary.eligible" in overview
+    assert "payload.overview.archived" in overview
+    assert "payload.overview.delivery_total" in overview
+    assert "payload.overview.outcomes[key]" in overview
+    assert "for delivery in payload.overview.recent" in overview
+    assert "No Delivery Records Yet" in overview
+    assert "Committed · all time" in overview
+    assert "Committed delivery attempts · all time." in overview
+    assert "Provider acceptance does not prove human receipt." in overview
+    assert "tab='channels'" in overview and "tab='delivery'" in overview
+    assert 'hx-target="#notification-channels-workspace"' in overview
+    assert 'hx-select="#notification-channels-workspace"' in overview
+    assert "def notification_overview_metrics() -> dict[str, Any]:" in service
+    assert "NotificationChannel.query.filter_by(lifecycle_state='retired').count()" in service
+    assert "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
+    assert ".limit(5)" in service
+    assert "'overview': notification_overview_metrics() if include_overview else None" in service
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    assert "include_overview=active_tab == 'overview'" in routes
+    assert "'ownership': 'Consumers emit governed events; Notification Channels delivers.'" in service
+    assert 'credential_payload' not in overview
+
+
+def test_notification_lifecycle_modal_header_footer_use_shared_kaori_contract() -> None:
+    deletion = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    retirement = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
+    for modal in (deletion, retirement):
+        assert '{% import "components/action_button.html" as action_button %}' in modal
+        assert 'data-kaori-native-dialog' in modal
+        assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl' in modal
+        assert 'text-xl font-semibold leading-7 text-content-primary' in modal
+        assert 'data-kaori-dialog-close' in modal
+        assert 'border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6' in modal
+        assert 'border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6' in modal
+        assert "action_button.classes('secondary')" in modal
+        assert "action_button.classes('primary')" in modal
+        assert 'aria-label="Notification Channel Lifecycle Actions"' in modal
+    assert 'Delivery history and report links remain.' in deletion
+    assert 'Delete requires <strong>zero records and zero report references</strong>.' in deletion
+    assert 'Retirement is permanent' in retirement
+    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retirement
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
+    assert 'channel.report_schedule_count' in retirement
+
+
 def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     routes = read('app/integrations/delivery/notification_channels/routes.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
@@ -59,7 +118,7 @@ def test_notification_setup_summaries_and_ownership_remain_concise() -> None:
     assert 'The Workflow trigger configured for Anyone authentication' in providers
     assert (
         "'ownership': 'Consumers emit governed events; "
-        "Notification Channels handles provider delivery.'"
+        "Notification Channels delivers.'"
     ) in service
 
 
@@ -679,11 +738,11 @@ def test_notification_channel_summary_actions_preserve_governance() -> None:
     assert "channel.test_status == 'success'" in drawer
     assert 'channel.last_delivery_label, channel.last_delivery_tone' in drawer
 
-    assert 'KAORI retains delivery history and report references.' in deletion
+    assert 'Delivery history and report links remain.' in deletion
     assert 'Turn off Enabled in Edit to stop delivery.' in deletion
     assert 'Automatic delivery is already disabled.' in deletion
-    assert 'both dependency counts are zero' in deletion
-    assert 'Never erase delivery evidence.' in deletion
+    assert 'zero records and zero report references' in deletion
+    assert 'Preserve evidence.' in deletion
     assert 'data-kaori-native-dialog' in deletion
 
     assert 'aria-label="Retirement consequences"' in retirement
@@ -741,8 +800,8 @@ def test_channel_more_locked_action_explains_disabled_lifecycle() -> None:
     assert 'Channel already disabled' in dialog
     assert 'Automatic delivery is already disabled.' in dialog
     assert 'hard delete stays locked' in dialog.lower()
-    assert 'Delete unlocks only when' in dialog
-    assert 'both dependency counts are zero' in dialog
+    assert 'Delete requires' in dialog
+    assert 'zero records and zero report references' in dialog
     assert 'for schedule_name in channel.report_schedule_names' in dialog
     assert 'credential_payload' not in dialog
     assert 'notification_channels.index' in dialog

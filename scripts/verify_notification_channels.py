@@ -193,7 +193,7 @@ def main() -> int:
         'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_actions_dialog
         and 'hover:bg-status-warning-soft' in channel_actions_dialog
         and 'Channel already disabled' in channel_delete_blockers_dialog
-        and 'both dependency counts are zero' in channel_delete_blockers_dialog
+        and 'zero records and zero report references' in channel_delete_blockers_dialog
         and "table_label.status_label('Locked', 'warning'" in channel_delete_blockers_dialog
         and 'Automatic delivery is already disabled.' in channel_delete_blockers_dialog
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle,
@@ -218,8 +218,8 @@ def main() -> int:
         and 'data-kaori-native-dialog' in channel_actions_dialog
         and "channel.test_status == 'success'" in channel_details_drawer
         and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
-        and 'both dependency counts are zero' in channel_delete_blockers_dialog
-        and 'Never erase delivery evidence.' in channel_delete_blockers_dialog
+        and 'zero records and zero report references' in channel_delete_blockers_dialog
+        and 'Preserve evidence.' in channel_delete_blockers_dialog
         and 'aria-label="Retirement consequences"' in channel_retire
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
@@ -248,6 +248,26 @@ def main() -> int:
         and '@keydown.escape.stop.prevent=' in channel_actions_dialog
         and 'data-kaori-native-dialog' not in channel_actions_dialog
         and 'data-kaori-dialog-open' in channel_actions_dialog,
+        'committed notification overview': "'Delivery Overview'," in template
+        and "'Channel Readiness'," in template
+        and "'Delivery Outcomes'," in template
+        and "'Recent Delivery'," in template
+        and 'payload.overview.delivery_total' in template
+        and 'payload.overview.outcomes[key]' in template
+        and 'payload.overview.recent' in template
+        and 'No Delivery Records Yet' in template
+        and "NotificationChannel.query.filter_by(lifecycle_state='retired').count()" in service
+        and "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
+        and "'overview': notification_overview_metrics() if include_overview else None" in service
+        and "include_overview=active_tab == 'overview'" in routes,
+        'lifecycle modal header/footer parity': '{% import "components/action_button.html" as action_button %}' in channel_delete_blockers_dialog
+        and '{% import "components/action_button.html" as action_button %}' in channel_retire
+        and 'aria-label="Notification Channel Lifecycle Actions"' in channel_delete_blockers_dialog
+        and 'aria-label="Notification Channel Lifecycle Actions"' in channel_retire
+        and "action_button.classes('secondary')" in channel_retire
+        and "action_button.classes('primary')" in channel_retire
+        and "action_button.classes('secondary')" in channel_delete_blockers_dialog
+        and "action_button.classes('primary')" in channel_delete_blockers_dialog,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle

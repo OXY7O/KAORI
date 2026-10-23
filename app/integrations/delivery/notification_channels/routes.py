@@ -49,6 +49,7 @@ def index() -> ResponseReturnValue:
         channel_provider=request.args.get('channel_provider', ''),
         channel_state=request.args.get('channel_state', ''),
         channel_lifecycle=request.args.get('channel_lifecycle', 'active'),
+        include_overview=active_tab == 'overview',
         delivery_pagination=DeliveryPagination(
             page=request.args.get('delivery_page', default=1, type=int),
             per_page=request.args.get('delivery_per_page', default=5, type=int),

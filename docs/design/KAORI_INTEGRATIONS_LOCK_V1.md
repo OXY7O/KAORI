@@ -539,3 +539,36 @@ including Retire, Locked, and Delete confirmation. The Details inspection
 drawer is unchanged and Archived channels remain read-only. Keep keyboard
 Tab/Escape, outside-click and scroll/resize closure, semantic labels,
 permission boundaries, HTMX feedback and delivery audit intact.
+
+## Notification Channels — Committed Overview and Lifecycle Modal Parity (#2800, 2026-10-23)
+
+The **Overview** workspace summarizes the capabilities that exist in the
+**Channels** and **Delivery Activity** workspaces. It does **not** repeat
+all six supported transport-adapter/provider cards. Provider discovery,
+configuration, and setup guides remain with Channels.
+
+Only evaluate the read-only aggregate when the **Overview** tab is open; Channels/Delivery Activity operations must not query this unused summary.
+Read **committed KAORI state** for four KPI cards: active channel identities
+(excluding retired), active enabled+successfully-tested eligible channels,
+retired/archived identities, and all-time committed delivery records.
+**Channel Readiness** includes enabled, operational, and attention-required
+active channels, while **Delivery Outcomes** groups all-time committed
+`sent`, `failed`, `queued`, and `skipped` records; unknown statuses
+still count toward the committed total. **Recent Delivery** shows only the
+latest five committed event/channel/outcome records, with a zero-record
+empty state. Statuses show their time scope and link to the authoritative
+Channels and Delivery Activity tabs. Provider acceptance never means human
+receipt. No provider live requests, new mutation path, or inferred
+time-window SLI is introduced.
+
+The **Deletion Protected** and **Retire Channel** lifecycle modals follow
+the same three-part KAORI header established by Channel Configuration:
+semantic icon surface, contextual title/description, and close action.
+Their footers share `components/action_button.html` primary/secondary
+styles, surface/border, and spacing. The deletion modal retains protected
+delivery/schedule counts and condition-aware Edit action. Retire keeps
+required reason (8–500 characters), server-enforced schedule blockers,
+CSRF and confirmation. The short copy must not imply that disabling
+unlocks hard delete: hard delete requires zero delivery records and zero
+report schedule references. Activity Audit, no-restore lifecycle, and
+provider credential boundaries remain unchanged.

@@ -185,6 +185,47 @@ def notification_channel_summary() -> dict[str, Any]:
     }
 
 
+def notification_overview_metrics() -> dict[str, Any]:
+    """Summarize committed channel lifecycle and delivery evidence, never live providers."""
+    archived = NotificationChannel.query.filter_by(lifecycle_state='retired').count()
+    outcome_rows = (
+        db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))
+        .group_by(NotificationDelivery.status)
+        .all()
+    )
+    outcomes = {str(status): int(count) for status, count in outcome_rows}
+    for status in ('sent', 'failed', 'queued', 'skipped'):
+        outcomes.setdefault(status, 0)
+    recent = (
+        NotificationDelivery.query
+        .order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
+        .limit(5)
+        .all()
+    )
+    return {
+        'archived': int(archived),
+        'delivery_total': sum(outcomes.values()),
+        'outcomes': outcomes,
+        'recent': [
+            {
+                'id': delivery.id,
+                'channel_name': delivery.channel.name,
+                'event_label': event_type_label(delivery.event_type),
+                'status_label': {
+                    'sent': 'Delivered', 'failed': 'Failed',
+                    'queued': 'Queued', 'skipped': 'Skipped',
+                }.get(delivery.status, 'Unknown'),
+                'status_tone': {
+                    'sent': 'normal', 'failed': 'warning',
+                    'queued': 'info', 'skipped': 'unknown',
+                }.get(delivery.status, 'unknown'),
+                'created_at': delivery.created_at,
+            }
+            for delivery in recent
+        ],
+    }
+
+
 def get_notification_channels_payload(
     *,
     channel_page: int = 1,
@@ -193,6 +234,7 @@ def get_notification_channels_payload(
     channel_provider: str = '',
     channel_state: str = '',
     channel_lifecycle: str = 'active',
+    include_overview: bool = False,
     delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
     delivery_provider: str = '',
@@ -266,6 +308,7 @@ def get_notification_channels_payload(
     ]
     return {
         'summary': summary,
+        'overview': notification_overview_metrics() if include_overview else None,
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
@@ -313,7 +356,7 @@ def get_notification_channels_payload(
                 + ('recovery worker enabled' if notification_delivery_recovery_enabled() else 'recovery worker off')
             ),
             'deduplication': 'Per channel and emitted event identity',
-            'ownership': 'Consumers emit governed events; Notification Channels handles provider delivery.',
+            'ownership': 'Consumers emit governed events; Notification Channels delivers.',
         },
     }
 

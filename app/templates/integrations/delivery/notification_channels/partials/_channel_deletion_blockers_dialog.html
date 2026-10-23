@@ -1,4 +1,5 @@
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 <dialog id="notification-channel-delete-blockers-{{ channel.id }}"
         data-kaori-native-dialog
@@ -6,10 +7,10 @@
         aria-describedby="notification-channel-delete-blockers-description-{{ channel.id }}"
         class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
     <section class="flex max-h-[calc(100dvh-1.5rem)] min-h-0 flex-col overflow-hidden">
-        <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-5 sm:px-6">
+        <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-status-warning-soft text-status-warning-text" aria-hidden="true">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-warning-soft text-status-warning-text" aria-hidden="true">
                         <i data-lucide="shield-alert" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
@@ -17,14 +18,14 @@
                         <div class="mt-1 flex flex-wrap items-center gap-2">
                             <h2 id="notification-channel-delete-blockers-title-{{ channel.id }}"
                                 tabindex="-1" autofocus
-                                class="text-lg font-semibold leading-7 text-content-primary">Deletion Protected</h2>
+                                class="text-xl font-semibold leading-7 text-content-primary">Deletion Protected</h2>
                             {{ table_label.status_label('Locked', 'warning', icon='lock-keyhole') }}
                         </div>
                         <p id="notification-channel-delete-blockers-description-{{ channel.id }}"
                            class="mt-1 break-words text-sm leading-5 text-content-secondary">{{ channel.name }}</p>
                     </div>
                 </div>
-                <button type="button" data-kaori-dialog-close class="{{ table_ui.action_classes() }}"
+                <button type="button" data-kaori-dialog-close class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                         aria-label="Close deletion dependencies for {{ channel.name }}">
                     <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                 </button>
@@ -35,7 +36,7 @@
             <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
                 <p class="text-sm font-semibold leading-5 text-status-warning-text">Hard delete is unavailable</p>
                 <p class="mt-1.5 text-xs leading-5 text-content-secondary">
-                    KAORI retains delivery history and report references. Disabling stops delivery, not these dependencies.
+                    Delivery history and report links remain. Disabling stops sends, not retention.
                 </p>
             </div>
 
@@ -96,12 +97,12 @@
                 {% endif %}
             </section>
             <p class="text-xs leading-5 text-content-muted">
-                Delete unlocks only when <strong>both dependency counts are zero</strong>. Never erase delivery evidence.
+                Delete requires <strong>zero records and zero report references</strong>. Preserve evidence.
             </p>
         </div>
 
-        <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
-            <button type="button" data-kaori-dialog-close class="{{ table_ui.action_classes() }}">Close</button>
+        <footer class="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6" aria-label="Notification Channel Lifecycle Actions">
+            <button type="button" data-kaori-dialog-close class="{{ action_button.classes('secondary') }}">Close</button>
             {% if channel.enabled %}
                 <a href="{{ url_for('notification_channels.index',
                             tab='channels', edit=channel.id, configure=1,
@@ -122,7 +123,7 @@
                    hx-swap="outerHTML"
                    hx-push-url="false"
                    hx-indicator="#notification-channel-loading"
-                   class="{{ table_ui.action_classes() }}">
+                   class="{{ action_button.classes('primary') }}">
                     <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>
                     Edit Channel
                 </a>
