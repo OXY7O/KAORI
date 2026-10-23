@@ -270,3 +270,147 @@ def test_incomplete_tls_collection_keeps_last_known_good_inventory(governance_re
         state = db.session.get(TLSCertificateCollectionState, cluster.id)
         assert state.secret_collection_status == 'collection_failed'
         assert state.collected_at is None
+
+
+def test_tls_reconciliation_is_bounded_and_prunes_only_successful_generation(
+    governance_repository_app, monkeypatch,
+) -> None:
+    from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
+
+    old = datetime.now(UTC) - timedelta(days=4)
+    with governance_repository_app.app_context():
+        first = Cluster(id='reconcile-a', name='Reconcile A', environment='production', status='connected')
+        other = Cluster(id='reconcile-b', name='Reconcile B', environment='production', status='connected')
+        db.session.add_all([first, other])
+        db.session.flush()
+        db.session.add_all(
+            [
+                TLSCertificateInventory(
+                    cluster_id=first.id,
+                    namespace='default',
+                    secret_name=f'cert-{index:04d}',
+                    status='healthy',
+                    coverage_state='not_reported',
+                    collected_at=old,
+                )
+                for index in range(230)
+            ]
+        )
+        db.session.add(
+            TLSCertificateInventory(
+                cluster_id=other.id,
+                namespace='default',
+                secret_name='must-not-prune',
+                status='healthy',
+                coverage_state='not_reported',
+                collected_at=old,
+            )
+        )
+        db.session.commit()
+        preserved = {
+            record.secret_name: record.id
+            for record in TLSCertificateInventory.query.filter_by(cluster_id=first.id).all()
+        }
+        payloads = [
+            {
+                'namespace': 'default',
+                'secret_name': f'cert-{index:04d}',
+                'status': 'healthy',
+                'coverage_state': 'not_reported',
+                'collected_at': old,
+            }
+            for index in range(110, 270)
+        ]
+        monkeypatch.setattr(
+            service, 'collect_tls_certificate_batch',
+            lambda cluster, **kwargs: TLSCollectionBatch(
+                records=payloads,
+                evidence=TLSCollectionEvidence(
+                    secret_collection_status='collected',
+                    ingress_mapping_status='collected',
+                ),
+            ),
+        )
+        result = service.sync_tls_certificates_for_cluster(first)
+        assert result.fatal_error is None
+        assert result.collected_count == 160
+        actual = TLSCertificateInventory.query.filter_by(cluster_id=first.id).all()
+        assert len(actual) == 160
+        assert {item.secret_name for item in actual} == {row['secret_name'] for row in payloads}
+        assert all(row.collected_at.replace(tzinfo=UTC) > old for row in actual)
+        assert all(row.id == preserved[row.secret_name] for row in actual if row.secret_name in preserved)
+        assert TLSCertificateInventory.query.filter_by(cluster_id=other.id).count() == 1
+
+
+def test_tls_reconciliation_zero_records_prunes_only_selected_cluster(governance_repository_app, monkeypatch) -> None:
+    from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
+
+    with governance_repository_app.app_context():
+        first = Cluster(id='empty-a', name='Empty A', environment='production', status='connected')
+        other = Cluster(id='empty-b', name='Empty B', environment='production', status='connected')
+        db.session.add_all([first, other])
+        db.session.flush()
+        for cluster in (first, other):
+            db.session.add(
+                TLSCertificateInventory(
+                    cluster_id=cluster.id,
+                    namespace='default',
+                    secret_name='old',
+                    status='healthy',
+                    coverage_state='not_reported',
+                )
+            )
+        db.session.commit()
+        monkeypatch.setattr(
+            service, 'collect_tls_certificate_batch',
+            lambda cluster, **kwargs: TLSCollectionBatch(
+                records=[],
+                evidence=TLSCollectionEvidence(
+                    secret_collection_status='collected',
+                    ingress_mapping_status='collected',
+                ),
+            ),
+        )
+        result = service.sync_tls_certificates_for_cluster(first)
+        assert result.collected_count == 0
+        assert TLSCertificateInventory.query.filter_by(cluster_id=first.id).count() == 0
+        assert TLSCertificateInventory.query.filter_by(cluster_id=other.id).count() == 1
+
+
+def test_tls_duplicate_identity_aborts_reconciliation_without_pruning(
+    governance_repository_app, monkeypatch,
+) -> None:
+    from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
+
+    with governance_repository_app.app_context():
+        cluster = Cluster(id='duplicate-scope', name='Duplicate', environment='production', status='connected')
+        db.session.add(cluster)
+        db.session.add(
+            TLSCertificateInventory(
+                cluster_id=cluster.id,
+                namespace='default',
+                secret_name='last-good',
+                status='healthy',
+                coverage_state='not_reported',
+            )
+        )
+        db.session.commit()
+        record = {
+            'namespace': 'default', 'secret_name': 'same',
+            'status': 'healthy', 'coverage_state': 'not_reported',
+        }
+        monkeypatch.setattr(
+            service, 'collect_tls_certificate_batch',
+            lambda cluster, **kwargs: TLSCollectionBatch(
+                records=[dict(record), dict(record)],
+                evidence=TLSCollectionEvidence(
+                    secret_collection_status='collected',
+                    ingress_mapping_status='collected',
+                ),
+            ),
+        )
+        with pytest.raises(ValueError, match='duplicate Secret identities'):
+            service.sync_tls_certificates_for_cluster(cluster)
+        assert [row.secret_name for row in TLSCertificateInventory.query.filter_by(cluster_id=cluster.id).all()] == [
+            'last-good'
+        ]
