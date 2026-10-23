@@ -116,7 +116,7 @@ def test_notification_setup_summaries_and_ownership_remain_concise() -> None:
     assert 'The Workflow trigger configured for Anyone authentication' in providers
     assert (
         "'ownership': 'Consumers emit governed events; "
-        "Notification Channels handles provider delivery.'"
+        "Notification Channels delivers.'"
     ) in service
 
 
