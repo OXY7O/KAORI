@@ -8,7 +8,8 @@ HV-01–HV-15 issues; approved DevContainer PostgreSQL procedure
 ## Admission boundary
 
 Target only `kaori/review/staging-uat` for temporary, local-first,
-read-only UAT. The branch also aggregates unrelated work; do not promote
+read-only UAT.
+**Official CI/CD admission: HOLD.** The branch also aggregates unrelated work; do not promote
 this full branch to official staging/main. Never dispatch official
 Developer Check / Full Admission workflows without explicit authority.
 
