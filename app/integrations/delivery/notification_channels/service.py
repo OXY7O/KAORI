@@ -234,6 +234,7 @@ def get_notification_channels_payload(
     channel_provider: str = '',
     channel_state: str = '',
     channel_lifecycle: str = 'active',
+    include_overview: bool = False,
     delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
     delivery_provider: str = '',
@@ -307,7 +308,7 @@ def get_notification_channels_payload(
     ]
     return {
         'summary': summary,
-        'overview': notification_overview_metrics(),
+        'overview': notification_overview_metrics() if include_overview else None,
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
