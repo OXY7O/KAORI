@@ -22,6 +22,8 @@ class FakeSession:
         self.rollbacks = 0
     def rollback(self):
         self.rollbacks += 1
+    def scalars(self, _statement):
+        return []
 
 
 def test_success_uses_single_generation_and_commit(monkeypatch):

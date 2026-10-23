@@ -53,6 +53,8 @@ def sync_source_repositories_task(
     successes = 0
     failures = 0
     repositories = 0
+    revisions = 0
+    revision_gaps = 0
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
@@ -67,6 +69,8 @@ def sync_source_repositories_task(
                 result = synchronize_installation(db.session, installation)
                 successes += 1
                 repositories += int(result.observed_count or 0)
+                revisions += int(result.committed_revisions)
+                revision_gaps += int(result.revision_failures + result.unchecked_revisions)
             except JobCancellationRequested:
                 db.session.rollback()
                 raise
@@ -91,10 +95,15 @@ def sync_source_repositories_task(
                 stage='Committing Repository Scope', target='Source Control',
             )
         result = {
-            'status': 'failed' if failures and not successes else ('partial' if failures else 'success'),
+            'status': (
+                'failed' if failures and not successes
+                else 'partial' if failures or revision_gaps else 'success'
+            ),
             'synced_installations': successes,
             'failed_installations': failures,
             'observed_repositories': repositories,
+            'observed_default_branch_shas': revisions,
+            'revision_evidence_gaps': revision_gaps,
         }
         if failures and not successes:
             context.fail(
@@ -104,7 +113,7 @@ def sync_source_repositories_task(
         else:
             context.succeed(
                 result_summary=result, result_type='source_control_repository_inventory',
-                partial=bool(failures),
+                partial=bool(failures or revision_gaps),
             )
         return result
     except JobCancellationRequested:
