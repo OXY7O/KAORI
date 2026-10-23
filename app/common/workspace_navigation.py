@@ -287,6 +287,7 @@ _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'integrations.storage': 'storage',
         'integrations.orchestration': 'orchestration',
         'integrations.registry': 'registry',
+        'integrations.secrets_management': 'secrets_management',
     },
 }
 
@@ -347,6 +348,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('alertmanager.', 'observability'),
         ('minio.', 'storage'),
         ('harbor.', 'registry'),
+        ('vault.', 'secrets_management'),
         ('cluster.', 'orchestration'),
         ('integrations.kubernetes', 'orchestration'),
     ),

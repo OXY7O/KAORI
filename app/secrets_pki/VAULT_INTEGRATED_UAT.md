@@ -35,7 +35,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-11 #2595 / #2778 | Review candidate: one population-level qualified PKI public expiry-pressure Intelligence rule; per-asset rules remain unimplemented | Not Tested |
 | HV-12 #2596 / #2786 / #2791 / #2798 / #2802 / #2807 / #2813 / #2817 / #2821 | Review candidate: manual Alert Source worker, committed correlation, opt-in admission now requires approved exact-instance scope and normalized role, read-only case workspace rejects unsupported resolved; provider mutation/routing/notifications disabled | Not Tested |
 | HV-13 #2597 / #2678 / #2826 / #2817 / #2821 | Canonical #724 exact mount and instance evaluators exist; audited Registry and provider AlertCase read routes are review candidates; detail/export and full scope approval UAT remain pending | Not Tested |
-| HV-14 #2598 | Role-aware Welcome entry | Not Tested |
+| HV-14 #2598 / #2855 | Role-aware Welcome entry plus Secrets Management Integration sidebar entry and Vault active-state wiring; live navigation/RBAC UAT pending | Not Tested |
 | HV-15 #2599 | Canonical Reports definitions | Not Implemented |
 
 ## DevContainer and PostgreSQL
@@ -305,3 +305,27 @@ python -m pytest -q \
 
 All above remain NOT RUN in this GitHub-only source session and cannot
 substitute for real Vault/worker/PostgreSQL UAT and human acceptance.
+
+
+## HV-14 #2855 — Secrets Management Integration navigation (Not Tested)
+
+Using a DevContainer actor with `integrations.manage`, open the
+**Integrations** sidebar. The existing domain list must now include
+**Secrets Management** exactly once, linking to
+`/integrations/secrets-management`. Opening that page or any
+`vault.*` route for registration, detail, edit or validation must
+highlight the same sidebar child. No top-level Vault-specific menu
+or duplicate UI component is created.
+
+Switch to an actor without `integrations.manage`: the navigation
+entry must be absent and direct domain/provider requests denied.
+An actor having only `secrets_pki.view` must not gain provider
+registration rights. Conversely, `integrations.manage` by itself
+must not authorize operational Secret Registry or Vault AlertCase
+resource reads; those require their independent scoped grants.
+
+Verify keyboard/mobile expanded and collapsed sidebar, Violet dark/light,
+breadcrumb domain ownership and link accessibility. Run
+`tests/contracts/integrations/test_vault_sidebar_navigation.py`
+at the exact SHA and record PASS/FAIL/Not Tested. The unexecuted
+GitHub-only implementation remains NOT TESTED until your UAT.
