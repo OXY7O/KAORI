@@ -118,6 +118,33 @@ This is a presentation and feedback-delivery boundary only. Storage,
 retention thresholds, schedule admission, cleanup and retry semantics
 are unchanged. Browser/worker/Deck runtime UAT remains required.
 
+## Analytics Snapshots Policy UAT (#2935)
+
+Analytics Snapshots reuse the shared Retention Policies master-detail
+workspace, authenticated Save Policy/Preview/manual Archive Only/Archive &
+Cleanup routes, canonical maintenance `JobExecution` and Data Lifecycle
+Archive History/Archive Storage. **Serve Window Protection** describes a
+necessary two-part eligibility condition: pending or still-serveable
+materializations remain hot; stale grace and hot retention must both have
+elapsed before archive eligibility. The underlying v1.3 frozen-cutoff
+calculation remains authoritative (do not reinterpret the shorter UI
+sentence as independent authority for cleanup).
+
+Existing shared operational feedback remains unchanged: policy save success
+is a foreground success toast plus Activity Audit, read-only Preview is
+inline with no notification, accepted manual archive dispatch is an info
+toast and canonical Active Work job without a duplicate queued Deck row,
+and actionable warning/error conditions appear in toast and Notification
+Deck with audit attempt evidence. A no-eligible-record preview is not
+automatically a failure.
+
+Synthetic unit contracts check pending/current/stale-serveable exclusions,
+expiration/retention cutoff, and **rechecking each row before cleanup**
+so refreshed materializations are not deleted. Complete runtime UAT on
+approved disposable PostgreSQL, worker and archive storage, including
+checksum, notification surface and human acceptance, is tracked under #2907
+and #2935. No schedule, source Analytics, or provider logic changed.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
