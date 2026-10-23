@@ -108,7 +108,10 @@ def test_shared_inventory_renderers_ignore_legacy_copy_flags() -> None:
         assert 'data-lucide="copy"' not in body, macro
 
     # Retain the signature for existing callers without re-enabling Inventory clipboard.
-    assert "macro inventory_technical_row(label, value='-', break_all=false, nowrap=false, class_name='', copyable=false)" in source
+    assert (
+        "macro inventory_technical_row(label, value='-', break_all=false, "
+        "nowrap=false, class_name='', copyable=false)"
+    ) in source
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     module = env.get_template('components/details/_detail_content.html').module
