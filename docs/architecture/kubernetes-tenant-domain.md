@@ -2159,3 +2159,7 @@ execution/recovery controls and finalization remain unchanged. Visual QA
 is pending for eligible and blocked states, responsive breakpoints,
 light/dark, keyboard confirmation and actual negative provider tests.
 Official Developer Check, Full Admission and staging/main remain HOLD.
+
+## Independent reviewer eligibility Info state — Dev Container review (2026-10-23)
+
+The Step 3 pending-plan notice for a different authorized reviewer uses the existing KAORI semantic Info surface rather than an unaccented neutral border. Concise visible copy states reviewer eligibility (Tenant and Integrations Manage), plan SHA and provider evidence review. This is **available to review**, not an approval or Release state. When committed dependency evidence blocks the reviewer, the existing warning branch remains warning-colored and unchanged. The independent requester-versus-reviewer condition, required checkbox, active-plan fingerprint and authority gates remain exactly as before. No new UI component or provider call is introduced. Responsive wrap, light/dark contrast and actual approval/blocked provider behaviors require Dev Container human Visual QA; official CI/CD remains HOLD.
