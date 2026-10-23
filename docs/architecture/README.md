@@ -16,6 +16,7 @@ Read the references in this order:
 10. `artifact-registry-alert-analytics-contract.md`: Registry Alert Source reuse, materialized alert evidence, and fast Analytics delivery boundary.
 11. `analytics-materialization-extension-standard.md`: reusable cross-domain Analytics source, dataset, collector/worker, committed snapshot, and loading contract for future integrations.
 12. `notification-delivery-lifecycle-safety.md`: notification source-ledger dedup identity, archive/aggregate parity, safe compaction gates and failure-injection UAT.
+13. `audit-event-producer-security-retention-matrix.md`: partial verified AuditEvent writer inventory, privacy/permission boundaries, unapproved retention decisions and fail-closed export/cleanup conditions.
 
 Domain-specific rules live beside complex code in `app/<domain>/README.md`. General architecture rules belong here, while product direction belongs in `docs/product`, to avoid duplicated and drifting documentation.
 
