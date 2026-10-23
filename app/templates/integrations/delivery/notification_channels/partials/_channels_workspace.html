@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/table.html" as table_block %}
 {% import "components/section_intro.html" as section_intro %}
@@ -107,20 +108,20 @@
             'Read-only retired destinations and committed delivery history.' if payload.channel_lifecycle == 'retired' else 'Manage saved destinations, validation readiness and permitted automatic delivery.',
             'notification-configured-channels-heading') }}
         <section id="notification-channel-registry"
-                 class="{{ integration_ui.section_shell_classes() }}">
-        <nav class="flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5"
-             aria-label="Channel lifecycle views">
-            {% for view_id, view_label, view_icon in [('active', 'Active', 'radio-tower'), ('retired', 'Archived', 'archive')] %}
-                {% set view_url = url_for('notification_channels.index', tab='channels', channel_lifecycle=view_id, channel_page=1, channel_per_page=payload.channel_pagination.per_page) %}
-                <a href="{{ view_url }}" hx-get="{{ view_url }}"
-                   hx-target="#notification-channel-registry" hx-select="#notification-channel-registry"
-                   hx-swap="outerHTML" hx-indicator="#notification-channel-loading" hx-push-url="true"
-                   aria-current="{{ 'page' if payload.channel_lifecycle == view_id else 'false' }}"
-                   class="inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-colors {{ 'bg-kaori-soft text-kaori-primary' if payload.channel_lifecycle == view_id else 'text-content-secondary hover:bg-surface-elevated' }}">
-                    <i data-lucide="{{ view_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>{{ view_label }}
-                </a>
-            {% endfor %}
-        </nav>
+                 class="{{ integration_ui.section_shell_classes() }}"
+                 hx-indicator="#notification-channel-loading">
+        {% set channel_lifecycle_tabs = [
+            ('active', 'Active', 'radio-tower', url_for('notification_channels.index', tab='channels', channel_lifecycle='active', channel_page=1, channel_per_page=payload.channel_pagination.per_page)),
+            ('retired', 'Archived', 'archive', url_for('notification_channels.index', tab='channels', channel_lifecycle='retired', channel_page=1, channel_per_page=payload.channel_pagination.per_page))
+        ] %}
+        {{ framed_tabs.render_navigation(
+            channel_lifecycle_tabs,
+            payload.channel_lifecycle,
+            prefix='notification-channel-lifecycle',
+            aria_label='Channel lifecycle views',
+            hx_target='#notification-channel-registry',
+            hx_select='#notification-channel-registry'
+        ) }}
         {% set channel_clear_action = none %}
         {% if payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state %}
             {% set channel_clear_action %}
