@@ -168,21 +168,21 @@
                                             </dl>
                                             {% if differences %}
                                                 <div class="mt-4 overflow-x-auto rounded-lg border border-outline-subtle">
-                                                    <table class="w-full text-left text-sm">
+                                                    <table class="{{ table_ui.table_classes('!table-fixed') }}">
                                                         <caption class="sr-only">All committed allocation dimension differences</caption>
-                                                        <thead class="border-b border-outline-subtle bg-surface-hover text-xs text-content-muted">
+                                                        <thead class="{{ table_ui.head_classes() }}">
                                                             <tr>
-                                                                <th scope="col" class="px-3 py-2">Dimension</th>
-                                                                <th scope="col" class="px-3 py-2">KAORI Intent</th>
-                                                                <th scope="col" class="px-3 py-2">Provider Observed</th>
+                                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Dimension</th>
+                                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">KAORI Intent</th>
+                                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider Observed</th>
                                                             </tr>
                                                         </thead>
-                                                        <tbody class="divide-y divide-outline-subtle">
+                                                        <tbody class="{{ table_ui.body_classes() }}">
                                                             {% for difference in differences %}
                                                                 <tr>
-                                                                    <td class="break-words px-3 py-2 font-medium text-content-primary">{{ difference.dimension }}</td>
-                                                                    <td class="break-words px-3 py-2">{{ difference.kaori_value }}</td>
-                                                                    <td class="break-words px-3 py-2">{{ difference.provider_value }}</td>
+                                                                    <td class="{{ table_ui.cell_classes() }} break-words font-medium text-content-primary">{{ difference.dimension }}</td>
+                                                                    <td class="{{ table_ui.cell_classes() }} break-words">{{ difference.kaori_value }}</td>
+                                                                    <td class="{{ table_ui.cell_classes() }} break-words">{{ difference.provider_value }}</td>
                                                                 </tr>
                                                             {% endfor %}
                                                         </tbody>
