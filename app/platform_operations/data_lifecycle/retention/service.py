@@ -34,9 +34,11 @@ from app.models.archive import (
     ARCHIVE_STATUS_VERIFYING,
     ArchiveArtifact,
 )
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention import archive_support
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.lock import retention_lock
+from app.platform_operations.data_lifecycle.retention.policy_service import get_policy
 from app.platform_operations.data_lifecycle.retention.types import (
     ArchiveBoundary,
     ArchiveSupplement,
@@ -65,6 +67,39 @@ def preview_retention(domain_name: str) -> dict[str, Any]:
     }
 
 
+def _require_audit_event_manual_admission(
+    *,
+    trigger_type: str,
+    triggered_by_user_id: int | None,
+) -> None:
+    """Recheck the persisted policy and caller identity at execution time.
+
+    A queued job is not authorization: its requester may have lost privileges,
+    and direct CLI/task/service calls must not bypass source governance.
+    This interim contract allows only explicitly authorized manual archives.
+    """
+    if trigger_type != 'manual' or triggered_by_user_id is None:
+        raise PermissionError('AuditEvent archival requires an authorized manual requester.')
+
+    stored = get_policy('audit_event')
+    if (
+        stored is None
+        or not stored.enabled
+        or stored.operation_mode != 'archive_only'
+        or stored.schedule_enabled
+    ):
+        raise PermissionError('AuditEvent requires a persisted, enabled, unscheduled Archive Only policy.')
+
+    requester = db.session.get(User, triggered_by_user_id, populate_existing=True)
+    if (
+        requester is None
+        or not requester.is_active
+        or not requester.is_super_admin
+        or requester.auth_source != 'database'
+    ):
+        raise PermissionError('AuditEvent requester must remain an active Local Database Super Admin.')
+
+
 def run_retention_archive(
     *,
     domain_name: str,
@@ -79,8 +114,11 @@ def run_retention_archive(
     # This opt-in capability defaults to True for existing admitted domains.
     if cleanup and not getattr(domain, 'cleanup_supported', True):
         raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
-    if domain.name == 'audit_event' and trigger_type == 'scheduled':
-        raise RuntimeError('Scheduled AuditEvent archival is not admitted pending retention governance.')
+    if domain.name == 'audit_event':
+        _require_audit_event_manual_admission(
+            trigger_type=trigger_type,
+            triggered_by_user_id=triggered_by_user_id,
+        )
     if not policy.enabled:
         raise RuntimeError(f'Retention is disabled for {domain.name}.')
 

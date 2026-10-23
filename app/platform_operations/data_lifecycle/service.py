@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app, url_for
 
 from app.extensions.db import db
+from app.models.archive import ArchiveArtifact
 from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.policy_service import get_policy, update_policy
@@ -25,8 +26,8 @@ def _int_value(values: Mapping[str, Any], name: str, default: int) -> int:
 def _check_audit_event_governance(domain_name: str, user_id: int) -> None:
     if domain_name != 'audit_event':
         return
-    user = db.session.get(User, user_id)
-    if user is None or not user.is_super_admin or user.auth_source != 'database':
+    user = db.session.get(User, user_id, populate_existing=True)
+    if user is None or not user.is_active or not user.is_super_admin or user.auth_source != 'database':
         raise PermissionError('AuditEvent lifecycle requires authorized local Super Admin.')
 
 
@@ -234,6 +235,11 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
 
 
 def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]:
+    artifact = db.session.get(ArchiveArtifact, archive_id)
+    if artifact is not None:
+        # Verify can mutate archive integrity/status metadata. Source authorization
+        # must precede verification, even when a caller knows an unlisted UUID.
+        _check_audit_event_governance(artifact.domain, user_id)
     try:
         result = verify_archive_artifact(archive_id)
         return record_operational_activity(
