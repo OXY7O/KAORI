@@ -194,7 +194,8 @@ def test_channel_deletion_preserves_delivery_evidence_and_schedule_references() 
     assert 'except NotificationChannelDeletionBlocked as exc:' in routes
     assert "event_type='integration.notification_channel.delete_blocked'" in routes
     assert 'channel.delete_blocked' in channels_workspace
-    assert 'channel.delete_reason' in channels_workspace
+    blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    assert 'channel.delete_reason' in blockers
 
 
 def test_notification_channel_feedback_separates_toast_deck_and_activity_audit() -> None:
