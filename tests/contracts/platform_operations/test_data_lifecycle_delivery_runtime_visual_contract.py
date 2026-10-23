@@ -36,6 +36,8 @@ def test_delivery_notice_is_one_accessible_inline_row_with_violet_and_warning_em
     assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
     assert "selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run'" in ui
     assert 'Manual Archive Only · No schedule' in ui
+    assert "selected.name in ('notification_delivery', 'audit_event')" in ui
+    assert 'Source-owned records covered by manual, non-destructive archival.' in ui
     assert 'name="mode" value="archive_only"' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
 
