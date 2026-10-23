@@ -468,7 +468,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.has_historical_series is True
     assert snapshot.insight == (
         'Memory has the highest 60-day utilization projection at 92%. '
-        'Review projected demand against worker capacity and available headroom.'
+        'Review demand against worker capacity and headroom.'
     )
 
 
