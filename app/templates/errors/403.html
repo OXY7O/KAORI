@@ -31,7 +31,7 @@
                             {{ page_hero.context_metric('shield-user', 'Assigned Role', role_label, 'Current KAORI authorization profile', value_classes='text-sm font-semibold leading-5') }}
                             {{ page_hero.context_metric('shield-alert', 'Requested Access', 'Blocked', 'Permission boundary remains active', value_classes='text-sm font-semibold leading-5') }}
                         </div>
-                        <div class="{{ page_hero.context_actions_classes() }}">
+                        <div class="{{ page_hero.context_actions_classes(columns=1) }}">
                             <a href="{{ url_for('welcome.index') }}"
                                class="{{ page_hero.context_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
 

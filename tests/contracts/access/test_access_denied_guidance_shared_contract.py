@@ -21,6 +21,7 @@ def test_403_preserves_access_boundary_and_existing_navigation() -> None:
     assert "not assigned_role.is_active" in page
     assert "page_hero.shell_classes()" in page
     assert "page_hero.context_panel_classes()" in page
+    assert "page_hero.context_actions_classes(columns=1)" in page
     assert "page_hero.context_metric(" in page
     assert "url_for('welcome.index')" in page
     assert "url_for('settings.account')" in page
