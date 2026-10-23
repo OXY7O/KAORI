@@ -349,3 +349,37 @@ confirmed source-resolved semantics or automatic source polling. These must
 be a separately owned child issue after #724 authorization and real
 Alertmanager/DevContainer UAT.
 Focused tests: `tests/intelligence/test_vault_provider_case_plan.py`.
+
+## HV-12 default-disabled provider AlertCase admission (#2813)
+
+Central Alert Intelligence includes an internal `admit_vault_provider_cases`
+command which **has no route, no scheduled job, and no producer invocation**.
+It is disabled unless trusted runtime configuration explicitly sets
+`KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true`. Never enable this
+in production before approved #724 scope controls, provider UAT and
+human acceptance. Changing this env var alone does not schedule a job.
+
+The command requires an active persistent actor granted
+`intelligence.decisions.create`, `intelligence.view`,
+`secrets_pki.sync`, and `secrets_pki.view` simultaneously. Admission
+takes an exclusive PostgreSQL row lock on the exact source binding and
+committed signal generation and recomputes the HV-12 candidate plan under
+that transaction. At most ten new cases can be admitted per command, or
+the entire operation is blocked without a partial insert.
+
+Only `create_candidate` and `refresh_candidate` permit writes; case
+identities are HMAC-scoped. All provider-origin cases remain
+`routing_state=suppressed`, `routing_override_reason=policy_ineligible`,
+and never deliver notifications. Evidence contains only the canonical
+binding/source IDs and the fixed correlation profile; no raw fingerprint,
+alert labels/annotations, path, summary, URL or secrets are persisted.
+Audit and case timeline events contain only allowlisted generic metadata.
+Repeated reads of one source generation are idempotent. Missing, stale,
+unobserved, suppressed, unknown, closed and absent source occurrences
+**never** trigger case resolution, reopening or closure.
+
+No change to the existing recommendation-scoped Alert Intelligence workspace
+is included; operator access to provider-origin cases remains **unapproved**
+pending separate source-scoped RBAC/route/HTML workstream. This command is
+for contract testing and controlled review only, not production activation.
+Tests: `tests/intelligence/test_vault_provider_case_admission.py`.
