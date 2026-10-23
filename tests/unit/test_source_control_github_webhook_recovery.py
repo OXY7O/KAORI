@@ -15,6 +15,13 @@ class StubSession:
     def __init__(self, rows):
         self.rows = {row.id: row for row in rows}
         self.rollbacks = 0
+        self.commits = 0
+
+    def execute(self, _statement):
+        return SimpleNamespace(scalar_one_or_none=lambda: next(iter(self.rows.values()), None))
+
+    def commit(self):
+        self.commits += 1
 
     def scalars(self, _statement):
         return list(self.rows)
@@ -144,3 +151,37 @@ def test_no_external_route_or_raw_credentials_in_recovery():
     assert 'SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED' in worker
     assert 'log.exception' not in src
     assert 'apply_async(' not in src
+
+
+
+def test_preclaim_failures_backoff_then_require_operator_review(admitted):
+    from datetime import UTC, datetime, timedelta
+
+    row = _delivery(1, 'received')
+    row.attempt_count = 0
+    row.last_attempt_at = None
+    session = StubSession([row])
+    start = datetime.now(UTC)
+    for attempt in range(1, 4):
+        webhook_recovery._record_preclaim_failure(
+            session, delivery_id=1, now=start + timedelta(minutes=attempt * 5),
+        )
+        assert row.attempt_count == attempt
+        assert row.processing_state == (
+            'requires_review' if attempt == 3 else 'retry_pending'
+        )
+    assert session.commits == 3
+
+
+def test_preclaim_failure_never_reopens_uncertain_dispatch(admitted):
+    from datetime import UTC, datetime
+
+    row = _delivery(1, 'dispatch_uncertain')
+    row.attempt_count = 1
+    row.last_attempt_at = datetime.now(UTC)
+    session = StubSession([row])
+    webhook_recovery._record_preclaim_failure(
+        session, delivery_id=1, now=datetime.now(UTC),
+    )
+    assert row.processing_state == 'dispatch_uncertain'
+    assert session.commits == 0
