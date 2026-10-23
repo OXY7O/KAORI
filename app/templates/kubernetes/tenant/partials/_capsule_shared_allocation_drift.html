@@ -59,7 +59,7 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[880px] !table-fixed' if capsule_shared_drift_intents else '!table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[840px] !table-fixed' if capsule_shared_drift_intents else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant shared GlobalResourceQuota allocation drift.</caption>
             {% if capsule_shared_drift_intents %}
                 <thead class="{{ table_ui.head_classes() }}">
