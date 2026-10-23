@@ -231,23 +231,15 @@ def main() -> int:
         and 'hx-target="#notification-channels-workspace"' in channel_details_drawer
         and 'detailChannel === ' in channel_details_drawer
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template,
-        'KAORI View More dropdown': 'View More' in channels_template
-        and '@click.stop="openActionMenu({{ channel.id }}, $el)"' in channels_template
-        and ':aria-expanded="(actionMenuId === {{ channel.id }}).toString()"' in channels_template
-        and '@scroll.capture="actionMenuId = null"' in channels_template
-        and 'getBoundingClientRect()' in channels_template
-        and 'const menuHeight = 214' not in channels_template
-        and 'const menuHeight = menu.getBoundingClientRect().height' in channels_template
-        and 'const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap' in channels_template
-        and "maxHeight: availableHeight + 'px'" in channels_template
-        and "visibility: 'hidden'" in channels_template
-        and "?.focus({ preventScroll: true })" in channels_template
-        and 'x-teleport="body"' in channel_details_drawer
-        and 'x-show="actionMenuId === {{ channel.id }}"' in channel_details_drawer
-        and '@click.outside=' in channel_details_drawer
-        and '@keydown.escape.stop.prevent=' in channel_details_drawer
-        and 'data-kaori-native-dialog' not in channel_details_drawer
-        and 'data-kaori-dialog-open' in channel_details_drawer,
+        'Details replaces View More': 'View More' not in channels_template
+        and 'openActionMenu' not in channels_template
+        and 'actionMenuId' not in channels_template
+        and 'x-teleport="body"' not in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and 'data-destructive-modal-open' in channel_details_drawer
+        and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in shared_side_drawer_js,
         'committed notification overview': "'Delivery Overview'," in template
         and "'Channel Readiness'," in template
         and "'Delivery Outcomes'," in template
