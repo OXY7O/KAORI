@@ -198,6 +198,9 @@ def detail(instance_id: int) -> ResponseReturnValue:
         public_pki_readiness=pki_public_readiness(instance=instance),
         stored_cert_readiness=stored_pki_certificate_readiness(instance=instance),
         runtime_history=history, runtime_history_pagination=history_pagination,
+        can_view_secrets_pki=current_user.has_permission('secrets_pki.view'),
+        can_view_cert_analytics=(current_user.has_permission('secrets_pki.view')
+                                 and current_user.has_permission('analytics.view')),
         notification_context=_notification(),
     )
 
