@@ -34,6 +34,10 @@ def _mutation_domain() -> str:
     value = str(request.form.get('domain') or '').strip().lower().replace('-', '_')
     if value not in DOMAIN_FACTORIES:
         abort(400, description='A registered Data Lifecycle domain is required.')
+    if value == 'audit_event' and not (
+        current_user.is_super_admin and current_user.auth_source == 'database'
+    ):
+        abort(403, description='AuditEvent source governance access is not admitted.')
     return value
 
 
