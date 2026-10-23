@@ -1,8 +1,8 @@
-"""Fail-closed, unpublished Secret registry read model.
+"""Fail-closed committed Secret registry read model.
 
-A trusted #724 resource scope evaluator must supply the exact actor and
-source decision. RBAC is checked independently. Do not expose an HTTP route
-until that evaluator is implemented and tested end-to-end.
+The exact actor/source #724 evaluator and mandatory Activity Audit are
+enforced by read_governed_scoped_secret_registry. Public read-only HTTP
+callers must use that governed entrypoint and never fabricate decisions.
 """
 
 from __future__ import annotations
@@ -138,7 +138,7 @@ def read_scoped_secret_registry(
 ) -> ScopedSecretPage:
     """Query only safe SQL columns after exact actor+source policy admission.
 
-    This function has no HTTP caller until #724 evaluator/route admission.
+    Only the governed, audited wrapper may be called from operational HTTP.
     A view permission or knowing an integration ID is never enough.
     """
     instant = _time(now or datetime.now(UTC))
@@ -245,7 +245,7 @@ def read_governed_scoped_secret_registry(
 
     The policy row is locked from admission through bounded source read and
     audit commit, so a concurrent revocation cannot become visible during
-    this protected transaction. No HTTP or worker publishes this function.
+    this protected transaction. The scoped read-only HTTP Registry uses it.
     """
     from app.access.scope_policy import evaluate_exact_vault_scope
     from app.platform_operations.notifications.service import stage_operational_activity

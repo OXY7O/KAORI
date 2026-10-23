@@ -26,7 +26,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-04 #2588 / #2674 | KV v2 version lifecycle aggregate; rotation contract only | Not Tested |
 | HV-05 #2589 / #2666 | Fingerprint/Ingress/UID/ESO reconciliation *candidates* only | Not Tested |
 | HV-06 #2590 / #2697 | Metrics/Alert Source bindings; bounded recent-hour Vault query-range qualification | Not Tested |
-| HV-07 #2591 / #2678 / #2683 / #2761 | Committed Overview/Inventory, new Lifecycle & Assurance capability navigation/read model, unpublished scoped Registry, PKI validity aggregate; sensitive Detail and other workspaces not implemented | Not Tested |
+| HV-07 #2591 / #2678 / #2683 / #2761 / #2826 | Review candidate: committed Overview/Inventory/Lifecycle, exact mount-grant audited KV v2 Registry page, PKI validity aggregate; sensitive Detail, other workspaces and live Vault UAT pending | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
@@ -214,3 +214,23 @@ For every scenario, capture actual method, expected/actual behavior,
 PASS/FAIL/Not Tested, exact SHA, test ID/job reference and sanitized
 screenshot or logs. Record genuine FAIL in bounded remediation issues;
 do not silently mark skipped tests as PASS.
+
+
+## HV-07 #2826 scoped registry end-to-end UAT — Not Tested
+
+1. Initialize reviewed DevContainer PostgreSQL schema and one approved Vault
+   KV v2 mount with a committed current-generation safe metadata collection.
+2. Record the exact SHA and actor permission matrix. Create an approved
+   exact mount-level scope policy/revision in Access governance (not in Vault).
+3. Open `/secrets-pki/registry`, enter canonical Vault instance ID and
+   opaque policy UUID, confirm five-item pagination and mandatory Activity
+   Audit before metadata appears. Verify real path/name/value never appears
+   in URL, HTML, logs, audit or exported browser data.
+4. Verify no-grant, wrong actor/source, instance-only grant, revoked,
+   expired, ambiguous grants, disabled/unready source, 403 from Vault,
+   incomplete/stale generation and audit-store failures all fail closed.
+5. Exercise a fully collected **empty** mount separately; only there is a
+   qualified zero acceptable. Verify manual inventory job/reconciliation.
+6. Run existing Ruff, pytest, pyright, djlint and light/dark/responsive,
+   keyboard and screen-reader Visual QA, capture sanitized evidence.
+   Maintain NOT TESTED until executed; no official workflows without approval.
