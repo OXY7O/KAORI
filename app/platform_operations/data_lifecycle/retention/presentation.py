@@ -370,12 +370,12 @@ def _domain_description(name: str) -> str:
     return {
         'operational_activity': 'Activity Audit and persistent user notifications.',
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
-        'runtime_observation': 'Kubernetes, Object Storage, Metrics Source, and Alertmanager runtime evidence.',
+        'runtime_observation': 'Kubernetes, Object Storage, Metrics Source and Alertmanager evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
         'alert_incident': 'Closed alert cases, operator evidence, delivery, and postmortems.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
-        'notification_delivery': 'Provider-neutral outbound delivery evidence; archive-only safety admission.',
+        'notification_delivery': 'Provider-neutral delivery evidence; manual Archive Only.',
         'audit_event': 'Source-owned AuditEvent evidence; manual Archive Only.',
     }.get(name, 'KAORI operational data domain.')
 
@@ -410,22 +410,22 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'boxes',
                 'label': 'Kubernetes',
-                'description': 'Recent Runtime Observations for Kubernetes integration targets.',
+                'description': 'Recent Kubernetes runtime observations.',
             },
             {
                 'icon': 'gauge',
                 'label': 'Metrics Source',
-                'description': 'Recent runtime observations for registered Metrics Sources.',
+                'description': 'Recent Metrics Source observations.',
             },
             {
                 'icon': 'bell-ring',
                 'label': 'Alertmanager',
-                'description': 'Recent Runtime Observations for Alertmanager integration targets.',
+                'description': 'Recent Alertmanager runtime observations.',
             },
             {
                 'icon': 'database',
                 'label': 'Object Storage · MinIO',
-                'description': 'Recent Runtime Observations for managed MinIO Object Storage integration targets.',
+                'description': 'Recent MinIO storage observations.',
             },
         ),
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE,
@@ -522,7 +522,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
-        'notification_delivery': 'Archive-only and paused by default. Hot records remain authoritative for deduplication, channel dependencies and all-time metrics; schedule and cleanup not yet admitted.',
+        'notification_delivery': 'Manual Archive Only; paused by default. Hot records retain deduplication, channel dependencies and lifetime counts; scheduling and cleanup blocked.',
         'audit_event': (
             'Manual Archive Only. Separate from Activity Register, Jobs and Tenant Audit Evidence; '
             'retention and access restricted.'
