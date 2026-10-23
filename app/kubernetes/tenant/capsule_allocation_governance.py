@@ -770,6 +770,8 @@ def get_capsule_shared_allocation_context(
     *,
     drift_page: int = 1,
     drift_per_page: int = 5,
+    drift_tenant_id: str = '',
+    drift_search: str = '',
 ) -> dict[str, Any]:
     tenants = (
         Tenant.query.filter(
@@ -794,6 +796,19 @@ def get_capsule_shared_allocation_context(
         if (intent.reconciliation_evidence_json or {}).get('allocation_governance_scope') == _SHARED_SCOPE
     ]
     drifted = [intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value]
+    normalized_tenant_id = str(drift_tenant_id or '').strip()
+    normalized_search = str(drift_search or '').strip()[:160]
+    if normalized_tenant_id:
+        drifted = [intent for intent in drifted if str(intent.tenant_id) == normalized_tenant_id]
+    if normalized_search:
+        needle = normalized_search.casefold()
+        drifted = [
+            intent
+            for intent in drifted
+            if needle in str(intent.tenant.name or '').casefold()
+            or needle in str(intent.public_id or '').casefold()
+            or needle in str(intent.resource_name or '').casefold()
+        ]
     visible_drifted, drift_pagination = paginate_sequence(
         drifted,
         page=drift_page,
@@ -805,6 +820,7 @@ def get_capsule_shared_allocation_context(
         'capsule_shared_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_shared_intents': governed,
         'capsule_shared_drift_intents': visible_drifted,
+        'capsule_shared_drift_filters': {'tenant_id': normalized_tenant_id, 'search': normalized_search},
         'capsule_shared_drift_pagination': drift_pagination,
         'capsule_shared_drift_state': {
             str(intent.id): build_capsule_shared_drift_action_state(intent) for intent in visible_drifted
