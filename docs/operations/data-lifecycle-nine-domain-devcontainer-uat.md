@@ -121,6 +121,34 @@ Use the existing three workspaces, not a second lifecycle UI.
    expected synthetic record/object counts. Record exact tests, failures,
    blockers and human acceptance or rejection for each domain.
 
+### Retention Policies domain navigator Visual QA (#2915)
+
+After loading the current holding commit, exercise all **nine** domain rows
+in Retention Policies alongside DL-E2E-11, without changing actual policy
+or archive evidence:
+
+- Desktop at and above `xl`: 4:8 master/detail, search and registered count
+  remain visible, only the domain list scrolls up to
+  `min(65dvh, 36rem)`, and the Execution Boundary footer stays outside
+  the inner scroll; the right policy panel is not height-locked.
+- Select first/middle/last domain by pointer, keyboard Tab/Enter and in
+  scrolled state: active Violet highlight, `aria-current`, status, URL
+  `?tab=policies&domain=...`, and right-hand policy agree; no stale
+  selection after browser Back or Save Policy full HTMX refresh.
+- Search by visible label, source/description, and technical domain ID;
+  confirm matches, zero-match empty state, no unauthorized source disclosure,
+  and correct focus/scroll after clearing search.
+- Under `xl`: Choose Domain disclosure opens and closes accessibly with
+  `aria-expanded`; selecting a domain closes the picker, browser
+  navigation works without JavaScript, and no nested mobile scroll traps.
+- Light/dark, narrow width, long domain labels, wrapping status badges,
+  readable Hot/Archive metadata, visible keyboard focus, accessible
+  KAORI Info Tip, and Jobs & Executions link only for `jobs.view`.
+
+Record actual viewport/browser, screenshot, selected domain, filtered
+result and UAT PASS/FAIL against an **exact commit SHA**; source contracts
+alone cannot count as Visual QA acceptance.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
