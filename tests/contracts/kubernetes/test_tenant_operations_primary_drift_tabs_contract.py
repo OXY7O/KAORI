@@ -241,10 +241,45 @@ def test_capsule_allocation_scope_guide_between_registries_and_wide_modals() -> 
         assert 'max-w-5xl overflow-hidden rounded-2xl' in source
         assert 'max-w-3xl overflow-hidden rounded-2xl' not in source
         assert 'mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3' in source
-        assert 'mt-3 grid gap-4 lg:grid-cols-2' in source
+        assert 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2' in source
         assert source.count('data-kaori-native-dialog') == 1
         assert source.count('<form method="post"') == 2
         assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
         assert 'data-kaori-dialog-close' in source
         assert 'Provider Evidence' in source
         assert 'Reconciliation Decision' in source
+
+
+def test_capsule_drift_info_tip_and_reconciliation_decision_cards() -> None:
+    """#2931: title-adjacent canonical Guide + independent explicit choices, in both dialogs."""
+    from jinja2 import Environment
+
+    expected = (
+        ('_capsule_tenant_quota_drift.html', 'capsule-tenant-quota-drift-guide'),
+        ('_capsule_shared_allocation_drift.html', 'capsule-shared-allocation-drift-guide'),
+    )
+    for name, info_id in expected:
+        source = read('app/templates/kubernetes/tenant/partials/' + name)
+        Environment(autoescape=True).parse(source)
+        assert '{% import "components/info_tip.html" as info_tip %}' in source
+        assert 'table_ui.block_classes(allow_overflow=true)' in source
+        assert '{% set title_info %}' in source
+        assert "info_tip.render(" in source
+        assert info_id in source
+        assert "variant='guide'" in source
+        assert "title_extra=title_info" in source
+        assert "result_count=" in source
+        assert source.index("title_extra=title_info") < source.index("result_count=")
+        assert 'data-kaori-native-dialog' in source
+        assert "table_label.metadata_label('Provider Write', icon='server-cog')" in source
+        assert "table_label.metadata_label('Commit Only', icon='file-check-2')" in source
+        assert 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2' in source
+        assert source.count('flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover') == 2
+        assert 'Write committed KAORI quota via Capsule after admission and read-back checks.' in source
+        assert 'Commit verified provider quota as KAORI intent. No provider write.' in source
+        # Separate scoped POST actions are still protected by the original gate and CSRF.
+        assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
+        assert source.count('<form method="post"') == 2
+        assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+        assert 'data-kaori-dialog-close' in source
+        assert "table_ui.action_classes()" in source
