@@ -1,7 +1,8 @@
 """Source Control persisted native identities; GitHub remains the source authority.
 
-#559 and SC-01 #2740. These tables hold source identities and grant
-relationships, NOT Git repositories, code, App private keys, or OAuth tokens.
+#559, SC-01 #2740 and SC-02 #2741. Identity tables hold provider facts and
+grants, NOT repositories/code/OAuth tokens. GitHub App PEM and webhook secret
+reside only in the dedicated EncryptedText credential table.
 The IntegrationInstance remains the canonical connection lifecycle record.
 """
 
@@ -38,7 +39,6 @@ class SourceAccount(db.Model):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
 
-
 class GitHubAppCredential(db.Model):
     """Shared App-level encrypted credential; never normalized source inventory."""
 
@@ -60,6 +60,7 @@ class GitHubAppCredential(db.Model):
 
     def __repr__(self) -> str:
         return f'<GitHubAppCredential id={self.id} status=protected>'
+
 
 class SourceInstallation(db.Model):
     """One canonical IntegrationInstance connects to one explicit App grant."""

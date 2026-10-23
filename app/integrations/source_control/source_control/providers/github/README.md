@@ -6,17 +6,17 @@ implementation [#2741](https://github.com/OXY7O/KAORI/issues/2741).
 Depends on SC-01 [#2740](https://github.com/OXY7O/KAORI/issues/2740).
 
 This **first transport increment** is intentionally NOT a registered/available
-GitHub provider. The canonical provider matrix remains \`planned\`; the normal
+GitHub provider. The canonical provider matrix remains `planned`; the normal
 Integrations workspace reuses shared KAORI UI and has no connect/test buttons
 until the complete secure registration/validation/JobExecution lifecycle is
 admitted.
 
 ## Security and authority boundary
 
-- GitHub.com is the only qualified origin (\`https://api.github.com\`). GHES
+- GitHub.com is the only qualified origin (`https://api.github.com`). GHES
   remains a future explicit profile. No arbitrary user-provided GitHub URL.
 - App JSON Web Tokens are signed RS256 with the already-installed
-  \`cryptography\` package; installation tokens are minted with **explicit
+  `cryptography` package; installation tokens are minted with **explicit
   read-only permission downscoping** and retained only in-process.
 - The App private key is supplied only by the canonical encrypted credential
   boundary when SC-02 wiring is admitted. Never serialize a JWT, installation
@@ -26,10 +26,10 @@ admitted.
   disallows redirects, bounds the response body, uses safe errors and only
   calls the trusted GitHub.com REST API.
 - App identity, installation grant, native account and repository selection
-  are distinguished. \`validate_installation\` requires a verified App/installation/
+  are distinguished. `validate_installation` requires a verified App/installation/
   account match and performs a *single* metadata-only repository-listing probe.
   It is **not** a complete inventory generation.
-- \`webhook.verify_webhook\` verifies GitHub's SHA256 signature with constant-time
+- `webhook.verify_webhook` verifies GitHub's SHA256 signature with constant-time
   comparison over the original bytes and checks the expected installation ID.
   It returns only a bounded transport envelope. **It does not create provider
   events, save raw webhook payload, accept GitHub source facts, deduplicate
@@ -43,7 +43,7 @@ admitted.
 ## Subsequent work within #2741
 
 - Add protected App-config credential storage/reference model by reusing
-  \`app/security/credentials.py\` (not GitHub OAuth SSO); preserve a single App
+  `app/security/credentials.py` (not GitHub OAuth SSO); preserve a single App
   configuration across multiple installation grants and independent revocation.
 - Implement canonical IntegrationModule/IntegrationImplementation registration,
   implementation records, Test Connection / Full Validation / Runtime Refresh
