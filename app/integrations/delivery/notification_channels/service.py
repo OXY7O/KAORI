@@ -480,10 +480,7 @@ def dispatch_alert_notification(
             if delivery.status == 'sent':
                 stats['duplicate'] += 1
                 continue
-            if (
-                delivery.next_retry_at is not None
-                and delivery.next_retry_at > datetime.now(UTC)
-            ):
+            if _provider_retry_not_due(delivery):
                 stats['skipped'] += 1
                 continue
             if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
@@ -664,10 +661,7 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                     }
                 )
                 continue
-            if (
-                delivery.next_retry_at is not None
-                and delivery.next_retry_at > datetime.now(UTC)
-            ):
+            if _provider_retry_not_due(delivery):
                 stats['skipped'] += 1
                 stats['results'].append(
                     {
@@ -804,6 +798,15 @@ def _replay_message(delivery: NotificationDelivery, channel: NotificationChannel
         )
     except (CredentialEncryptionError, ValueError, KeyError, TypeError):
         return None
+
+
+def _provider_retry_not_due(delivery: NotificationDelivery) -> bool:
+    """Honor persisted due time; tolerate naïve datetimes from SQLite fixtures."""
+    due = delivery.next_retry_at
+    if due is None:
+        return False
+    normalized = due.replace(tzinfo=UTC) if due.tzinfo is None else due.astimezone(UTC)
+    return normalized > datetime.now(UTC)
 
 
 def _begin_delivery_attempt(
