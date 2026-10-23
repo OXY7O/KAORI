@@ -766,11 +766,49 @@ def test_channel_actions_are_in_details_without_dropdown_or_table_clipping() -> 
     assert "side_drawer.section('Channel Actions'" in drawer
     assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index("'Delivery Policy'")
     assert 'channel.lifecycle_state == \'active\' and can_manage' in drawer
-    assert "action_button.classes('secondary', full=true)" in drawer
+    assert "action_button.classes('soft', full=true)" in drawer
+    assert "action_button.classes('warning', full=true)" in drawer
+    assert "action_button.classes('locked-info', full=true)" in drawer
     assert "action_button.classes('critical', full=true)" in drawer
     assert "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in drawer
     assert "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in side_drawer_js
     assert 'this.trapFocus(event, this.dialog)' in side_drawer_js
+
+
+def test_channel_action_buttons_follow_shared_kaori_semantic_variants() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    shared = read('app/templates/components/action_button.html')
+
+    actions = drawer.split("side_drawer.section('Channel Actions'", 1)[1].split(
+        '{% endcall %}', 1,
+    )[0]
+
+    # Equal-width buttons and spacing, without an extra visual lifecycle subheading.
+    assert actions.count('class="grid gap-2.5 sm:grid-cols-2"') == 1
+    assert 'class="grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Channel lifecycle actions"' in actions
+    assert 'border-t border-outline-subtle pt-3' in actions
+    assert '>Lifecycle Actions</p>' not in actions
+    assert actions.count("action_button.classes('soft', full=true)") == 2
+    assert actions.count("action_button.classes('warning', full=true)") == 1
+    assert actions.count("action_button.classes('locked-info', full=true)") == 1
+    assert actions.count("action_button.classes('critical', full=true)") == 1
+
+    # A locked deletion opens the dependency explanation; it is NOT a disabled submit.
+    locked = actions.split('{% if channel.delete_blocked %}', 1)[1].split('{% else %}', 1)[0]
+    assert 'type="button" data-kaori-dialog-open' in locked
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in locked
+    assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in locked
+    assert 'disabled' not in locked and 'data-destructive-modal-open' not in locked
+    delete = actions.split('{% else %}', 1)[1]
+    assert 'data-destructive-modal-open' in delete
+
+    for variant in ('soft', 'warning', 'locked-info'):
+        assert f"variant == '{variant}'" in shared
+    for token in (
+        'h-10', 'focus-visible:ring-2', 'disabled:cursor-not-allowed',
+        'bg-kaori-soft', 'bg-status-warning-soft', 'bg-status-disabled-soft',
+    ):
+        assert token in shared
 
 
 def test_notification_channel_summary_actions_preserve_governance() -> None:
@@ -841,7 +879,8 @@ def test_channel_drawer_locked_action_explains_disabled_lifecycle() -> None:
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
     assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
     assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in drawer
-    assert 'text-status-warning-text' in drawer
+    assert "action_button.classes('locked-info', full=true)" in drawer
+    assert 'title="View deletion dependencies for {{ channel.name }}"' in drawer
     assert 'data-lucide="lock-keyhole"' in drawer
     assert "table_label.status_label('Locked', 'warning', icon='lock-keyhole')" in dialog
     assert 'Channel already disabled' in dialog

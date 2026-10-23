@@ -33,6 +33,7 @@ def main() -> int:
     channel_details_drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
     shared_side_drawer_js = read('app/static/js/side_drawer.js')
     shared_side_drawer = read('app/templates/components/side_drawer.html')
+    shared_action_button = read('app/templates/components/action_button.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
@@ -244,6 +245,20 @@ def main() -> int:
         and '{% if not delegate_clicks %}@click.stop{% endif %}' in shared_side_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
         and 'data-destructive-modal-open' in channel_details_drawer,
+        'semantically styled drawer actions without lifecycle subheading': "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and channel_details_drawer.count("action_button.classes('soft', full=true)") == 2
+        and "action_button.classes('warning', full=true)" in channel_details_drawer
+        and "action_button.classes('locked-info', full=true)" in channel_details_drawer
+        and "action_button.classes('critical', full=true)" in channel_details_drawer
+        and '>Lifecycle Actions</p>' not in channel_details_drawer
+        and 'aria-label="Channel lifecycle actions"' in channel_details_drawer
+        and 'title="View deletion dependencies for {{ channel.name }}"' in channel_details_drawer
+        and "variant == 'soft'" in shared_action_button
+        and "variant == 'warning'" in shared_action_button
+        and "variant == 'locked-info'" in shared_action_button
+        and 'bg-status-disabled-soft' in shared_action_button
+        and 'bg-status-warning-soft' in shared_action_button
+        and 'bg-kaori-soft' in shared_action_button,
         'Details replaces View More': 'View More' not in channels_template
         and 'openActionMenu' not in channels_template
         and 'actionMenuId' not in channels_template

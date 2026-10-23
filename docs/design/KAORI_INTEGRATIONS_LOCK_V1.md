@@ -679,3 +679,28 @@ with no hot deletion. Current all-time Delivery Outcomes remain hot committed
 SQL outcomes and have not been retroactively converted into archive-inclusive
 aggregates. Cleanup and source-linked archive browsing remain deferred to
 the governed safety boundary #2850. No provider or permission changes.
+
+## Notification Channel Details — Semantic Action Hierarchy (#2860, 2026-10-23)
+
+The human-reviewed `Channel Actions` Details drawer keeps two symmetric
+action rows using shared 40px `action_button.classes()` variants:
+`soft` for Edit Channel / Test Delivery, `warning` for Retire Channel,
+and `locked-info` for **Delete Locked** when referenced delivery evidence
+or report schedules block deletion. The last control is intentionally
+visually muted **but remains interactive**: it opens the existing native
+dependency explanation and must not claim to be a disabled submission.
+Only actual eligible **Delete Channel** uses the existing `critical`
+variant and governed destructive confirmation.
+
+The visible `Lifecycle Actions` subtitle is removed to reduce redundant
+labels. Retain an internal divider and accessible lifecycle action group,
+without changing the independent `Lifecycle & Governance` evidence
+section or any lifecycle modal header/footer. Use the existing shared
+button variants, Violet/status tokens and responsive equal-width grid;
+no one-off utility pile, page CSS/JS or new global component.
+
+This refinement does **not** modify `integrations.manage` / active-only
+visibility, archived read-only behavior, Edit GET + HTMX, Test CSRF POST,
+Retire reason/confirmation, deletion dependency guard, or focus ownership.
+DevContainer light/dark, narrow/desktop, keyboard and modal UAT required
+before acceptance.

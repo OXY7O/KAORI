@@ -287,3 +287,26 @@ existing default `action_classes()` continues to own 32px row utilities,
 and the global 40px `action_button.classes` primary/secondary contract is
 unchanged. This is a bounded compact utility exception, not a global
 relaxation of dark-mode primary-action contrast.
+
+## Shared operational action button variants (Channel Details UAT, #2860)
+
+The global 40px `components/action_button.html::classes(variant, full)`
+is the single owner of full-width drawer action geometry, spacing, focus,
+hover, disabled states and semantic treatment. It now supports reusable
+`soft` (low-emphasis operational Edit / Test, Violet token family),
+`warning` (cautionary Retire, semantic warning tokens) and
+`locked-info` (muted governance/dependency inspection, disabled-state
+*appearance* only), in addition to established `primary`, `secondary`
+and `critical`. This extends shared variants without changing existing
+default variants or introducing local CSS/JS. Use the same 40px/rounded-lg
+geometry for adjacent drawer actions and maintain sufficient text contrast
+in both themes.
+
+**Important:** `locked-info` is an *active informational launcher*. It
+must have an explicit accessible action label/target, focus ring and
+working click/keyboard activation to open dependency evidence. Never add
+`disabled` / `aria-disabled=true` when its governed explanation is
+available. Actual destructive Delete is always `critical` and gated by
+existing confirmation and server-side dependency checks. Do not apply
+these drawer variants to dense table row utilities: those remain owned
+by `table_ui.action_classes()`.
