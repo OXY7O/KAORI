@@ -72,6 +72,21 @@ def _successful_job_evidence_times(
     return evidence
 
 
+def tls_sync_stale_after(interval_minutes: int | None) -> timedelta:
+    """Match the TLS sync posture evidence window for mutation admission."""
+    minutes = max(int(interval_minutes or 360), 1)
+    return timedelta(minutes=minutes + min(max(minutes // 4, 15), 180))
+
+
+def tls_sync_evidence_is_current(
+    observed_at: datetime | None, *, stale_after: timedelta, now: datetime
+) -> bool:
+    """Missing, future, or aged committed evidence cannot authorize rotation."""
+    at = _as_utc(observed_at)
+    checked_at = _as_utc(now)
+    return at is not None and checked_at is not None and at <= checked_at and checked_at - at <= stale_after
+
+
 def _collection_freshness(
     *,
     cluster_ids: list[str],
@@ -125,7 +140,7 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     recent_jobs = base_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(100).all()
     latest_job = _first_relevant(recent_jobs, cluster_id)
     interval_minutes = max(int(policy.interval_minutes or 360), 1)
-    stale_after = timedelta(minutes=interval_minutes + min(max(interval_minutes // 4, 15), 180))
+    stale_after = tls_sync_stale_after(interval_minutes)
     scoped_ids = [str(cluster_id)] if cluster_id else [str(row[0]) for row in db.session.query(Cluster.id).all()]
     states = (
         {
