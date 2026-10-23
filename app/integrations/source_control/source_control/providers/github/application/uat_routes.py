@@ -26,7 +26,7 @@ from app.integrations.source_control.sync_jobs import (
 )
 from app.integrations.source_control.uat_access import require_uat_access
 from app.models.job import JobExecution
-from app.models.source_control import SourceInstallation
+from app.models.source_control import SourceInstallation, SourceWebhookDelivery
 
 github_uat_bp = Blueprint(
     'github_source_uat', __name__, url_prefix='/integrations/source-control/github/uat',
@@ -95,7 +95,10 @@ def detail(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/uat_detail.html',
         **_inventory_context(installation),
-        canonical=canonical, jobs=jobs, action_form=FlaskForm(),
+        canonical=canonical, jobs=jobs, deliveries=(
+            SourceWebhookDelivery.query.filter_by(installation_id=installation.id)
+            .order_by(SourceWebhookDelivery.received_at.desc()).limit(5).all()
+        ), action_form=FlaskForm(),
         feedback=request.args.get('feedback', ''),
     )
 

@@ -14,6 +14,14 @@
         </p>
                 {% endcall %}
             </div>
+            {{ page_hero.context_card(
+                "Source Control UAT", "Admission", "Installation Workspace",
+                "Restricted", "warning",
+                [("plug", "Connections", installations|length),
+                 ("shield-check", "Access", "Local Admin")],
+                "Register Connection", url_for("github_source.new_connection"),
+                action_icon="plus"
+            ) }}
         </div>
     </section>
     <section class="{{ ui.section_shell_classes() }}">
