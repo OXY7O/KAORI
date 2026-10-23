@@ -216,7 +216,7 @@ def test_interface_distinguishes_paused_and_manual_archive_ready_with_no_other_a
     )
     assert "'audit_event': 'Source-owned administrative AuditEvent evidence; manual Archive Only.'" in source
     assert 'Manual Archive Only. Separate from Activity Register' in source
-    assert 'Source-level retention and access controls remain restricted.' in source
+    assert 'retention and access restricted.' in source
 
 
 def test_preview_remains_read_only_and_archive_download_bypass_stays_blocked() -> None:

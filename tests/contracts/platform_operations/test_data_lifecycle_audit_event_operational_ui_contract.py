@@ -34,7 +34,7 @@ def test_manual_only_domain_hides_misleading_schedule_controls_and_auto_mode() -
     assert 'name="schedule_minute"' in ui
     assert "{{ 'Execution Mode' if selected.name == 'audit_event' else 'Automatic Run' }}" in ui
     assert 'Manual Archive Only. Enable and save the policy before starting a job.' in ui
-    assert 'Archive failures retry once, then require manual retry.' in ui
+    assert 'Archive failures retry once; retry manually if needed. Hot records remain.' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert "selected.name in ('notification_delivery', 'audit_event')" in ui
     assert "selected.name == 'audit_event' else 'Manual archive-only" in ui
@@ -54,6 +54,12 @@ def test_compact_status_is_single_state_dependent_element_not_trial_banner() -> 
     assert 'Original audit events remain in PostgreSQL.' in audit
     assert 'Another run is unavailable until completion.' in audit
     assert 'data-lifecycle-audit-event-safety' in audit
+    # Status help is a title-adjacent canonical Guide, not a detached '?' icon.
+    before_details = audit.split('<span class="min-w-0 flex-1', 1)[0]
+    assert "info_tip.render('data-lifecycle-audit-event-safety'," in before_details
+    assert "variant='guide'" in before_details
+    assert 'flex-wrap items-center gap-2' in before_details
+    assert audit.count("info_tip.render('data-lifecycle-audit-event-safety',") == 1
     assert 'approved synthetic evidence' not in ui
     assert 'Disable the policy after UAT' not in ui
     assert 'disposable UAT evidence' not in ui
@@ -91,7 +97,7 @@ def test_archive_only_source_retains_hot_data_and_sensitive_operations_blocked()
     assert '_require_audit_event_manual_admission(' in engine
     assert "if domain_name == 'audit_event' and not dry_run:" in engine
     assert "if artifact.domain == 'audit_event':" in engine
-    assert 'Source-level retention and access controls remain restricted.' in read(
+    assert 'retention and access restricted.' in read(
         'app/platform_operations/data_lifecycle/retention/presentation.py',
     )
     assert 'Scheduling and hot cleanup are disabled for this source.' in ui

@@ -170,6 +170,10 @@ archive verification **must be tested separately**, not inferred from
 contract source or a preview count. Collect screenshot, redacted audit
 event, worker output and explicit operator acceptance for each step.
 
+## Status Guide and concise wording (#2947)
+
+Verify the compact AuditEvent status shows the canonical Violet info + Guide directly beside its status title, not a detached right-aligned question-mark icon. Compare paused, enabled and active states with hover, keyboard, touch, Escape and responsive light/dark. Confirm the shortened Coverage and Failure Recovery text retains the restricted retention and non-destructive evidence semantics.
+
 ## Permanent policy workspace visual checks (#2943)
 
 Confirm the shared KAORI layout displays a single status row: Policy paused, Manual Archive Only enabled, or Archive in progress. The AuditEvent policy must not present schedule-time controls or test-only instructions. Check Info Tip access, Save, Preview and manual Archive Only, along with canonical job and operational notifications. Source cleanup, export, object purge and scheduling remain restricted. Operator acceptance still requires runtime evidence.
