@@ -36,6 +36,41 @@ These are operator commands, **not executed by the GitHub-source authoring
 session**. Do not run against production data or Storage. No Alembic
 migration is introduced by this workstream.
 
+## Why the policy appears Disabled
+
+**Expected security state, not a missing adapter.** The registered
+`audit_event` domain starts paused and ordinary GET/Preview does not
+create a persisted policy row. Retention values shown (365 hot / 3650
+archive, batch 250) are proposals, not approved records-destruction rules.
+
+On an **approved disposable DevContainer with synthetic AuditEvent rows
+and a verified test Archive Storage target**, the authorized Local
+Database Super Admin can test manual Archive Only:
+
+1. Open `Platform Operations → Data Lifecycle → Retention Policies` and
+   select **Administrative Audit Events**.
+2. Run **Preview** while policy is Disabled and record the count/cutoff.
+   Preview is read-only and may legitimately show 0 eligible records.
+3. Confirm the active database, archive destination and source identity
+   contain no production or sensitive personal information. If not
+   approved, **stop at Preview**.
+4. Under policy settings, leave `Default Operation = Archive Only`;
+   select **Policy enabled** and click **Save Policy**. This saves a
+   persisted policy; it does **not** run an archive or enable scheduling.
+5. Re-run Preview, then invoke **Archive Only** manually against approved
+   synthetic eligible rows. Check the canonical JobExecution status,
+   verified archive manifest/checksum, and that hot `audit_events`
+   remain present unchanged. Do not treat an archive artifact listing
+   as proof of individual-record search or export permission.
+6. Re-disable **Policy enabled**, then **Save Policy** after UAT, and
+   verify archive execution is blocked while Preview remains available.
+
+Scheduled execution, Archive & Cleanup, archive bundle export/download
+and object purge remain **denied in source and server-side admission**,
+even while the manual policy is enabled. This procedure does not approve
+365/3650 days as a legal retention mandate, and no live producer/worker
+or staging/production operation is authorized.
+
 ## Browser and security UAT matrix
 
 | ID | Scenario | Expected | Status |
