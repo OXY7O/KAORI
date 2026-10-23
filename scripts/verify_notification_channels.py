@@ -132,7 +132,7 @@ def main() -> int:
         and "not receipt or readership by a person." in delivery_template
         and "sending a notification does not create an audit event." in delivery_template,
         'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_details_drawer
-        and 'x-teleport="body"' in channel_details_drawer
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and '@click.outside=' in channel_details_drawer
         and channel_details_drawer.index('</template>') < channel_details_drawer.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
         and 'hx-post="{{ url_for(' in channel_details_drawer
