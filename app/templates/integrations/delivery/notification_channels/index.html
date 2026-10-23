@@ -281,13 +281,12 @@
                         </dl>
                     {% endcall %}
                     {{ section_intro.render('Delivery Journal',
-                            'Review committed attempts, provider outcomes and retry evidence.',
+                            'Review hot committed attempts and retry evidence. Verified archive bundles are governed separately in Data Lifecycle.',
                             'notification-delivery-heading') }}
                     <section class="{{ table_ui.block_classes() }}" aria-labelledby="notification-delivery-heading">
                         <div id="notification-delivery-registry">
-                            {% set delivery_clear_action = none %}
-                            {% if payload.delivery_filters_active %}
-                                {% set delivery_clear_action %}
+                            {% set delivery_clear_action %}
+                                {% if payload.delivery_filters_active %}
                                     {{ table_registry.clear_filters_link('notification_channels.index',
                                         'notification-delivery-registry',
                                         'notification-delivery-loading',
@@ -298,11 +297,19 @@
                                         page_param='delivery_page',
                                         per_page_param='delivery_per_page',
                                         lead=false) }}
-                                {% endset %}
-                            {% endif %}
+                                {% endif %}
+                                {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                                    <a href="{{ url_for('data_lifecycle.index', tab='policies', domain='notification_delivery') }}"
+                                       class="{{ table_ui.action_classes() }}"
+                                       aria-label="Open Notification Delivery retention policy in Data Lifecycle">
+                                        <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        Retention Policy
+                                    </a>
+                                {% endif %}
+                            {% endset %}
                             {{ table_block.inventory_block_header(
                                 'history', 'Delivery Records',
-                                'Committed provider attempts, statuses and source evidence.',
+                                'Hot committed attempts and source evidence; archive history is artifact-level.',
                                 'notification-delivery-loading',
                                 'Loading notification delivery activity',
                                 none,
