@@ -60,3 +60,18 @@ def test_provider_test_events_are_audit_owned_and_deck_on_failure_only() -> None
     feedback = source('app/platform_operations/notifications/feedback.py')
     assert 'DECK_ON_FAILURE' in feedback
     assert "return status in {'warning', 'error'}" in feedback
+
+
+def test_flask_debug_profiles_load_ignored_local_dotenv_without_container_recreate() -> None:
+    import json
+
+    launch = json.loads(source('.vscode/launch.json'))
+    profiles = {item['name']: item for item in launch['configurations']}
+    for name in ('KAORI: Flask Debug', 'KAORI: Flask Auto Reload'):
+        profile = profiles[name]
+        assert profile['envFile'] == '${workspaceFolder}/.env'
+        assert profile['request'] == 'launch'
+        assert profile['module'] == 'flask'
+    gitignore = source('.gitignore')
+    assert '\n.env\n' in gitignore
+    assert '\n/secrets/\n' in gitignore
