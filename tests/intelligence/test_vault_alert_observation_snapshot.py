@@ -323,11 +323,12 @@ def test_corrupt_or_foreign_source_provenance_cannot_be_read(accepted_source):
     vault, source, binding = accepted_source
     _commit(binding.id, [_alert(vault.id)])
     row = AlertSignalSnapshot.query.one()
+    baseline = dict(row.payload_json)
     for fake in (
-        {**row.payload_json, 'source_integration_id': source.id + 100},
-        {**row.payload_json, 'source_binding_id': True},
-        {**row.payload_json, 'schema_version': True},
-        {**row.payload_json, 'status': ['qualified']},
+        {**baseline, 'source_integration_id': source.id + 100},
+        {**baseline, 'source_binding_id': True},
+        {**baseline, 'schema_version': True},
+        {**baseline, 'status': ['qualified']},
     ):
         row.payload_json = fake
         db.session.commit()
