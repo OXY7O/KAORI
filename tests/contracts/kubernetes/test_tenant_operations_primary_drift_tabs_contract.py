@@ -121,9 +121,8 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
         assert filters + '.tenant_id' in source
         assert filters + '.search' in source
         assert "name=\"tab\" value=\"allocation-drift\"" in source
-        assert "min-w-[880px] !table-fixed' if " + rows + " else '!table-fixed'" in source
+        assert "min-w-[840px] !table-fixed' if " + rows + " else '!table-fixed'" in source
         assert 'min-w-[1450px]' not in source
-        assert 'min-w-[840px]' not in source
         for header in ('Tenant', 'Provider / Authority', 'Status', 'Allocation Difference', 'Details'):
             assert '>' + header + '</th>' in source
         assert 'colspan="5"' in source
