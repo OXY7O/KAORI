@@ -6,12 +6,12 @@ registration, webhook ingress, or 'Ready' state is introduced here.
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 from dataclasses import dataclass, field
 
-from sqlalchemy.exc import SQLAlchemyError
-
 from app.extensions.db import db
+from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.integrations.source_control.source_control.providers.github.auth import _positive_provider_id
 from app.integrations.source_control.source_control.providers.github.transport import (
     GitHubAppClient,
@@ -20,7 +20,6 @@ from app.integrations.source_control.source_control.providers.github.transport i
 )
 from app.models.integration import IntegrationInstance
 from app.models.source_control import GitHubAppCredential, SourceAccount, SourceInstallation
-from app.security.credentials import CredentialEncryptionError
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,12 +55,35 @@ def _validate_name(name: str) -> str:
     return value
 
 
+def _validate_configuration(values: GitHubConnectionInput) -> None:
+    if values.environment not in {value for value, _label in ENVIRONMENTS}:
+        raise ValueError('GitHub integration environment must use the approved KAORI taxonomy.')
+    if values.description is not None and len(values.description) > 2000:
+        raise ValueError('GitHub integration description is too long.')
+    if (
+        not isinstance(values.private_key_pem, str)
+        or len(values.private_key_pem) > 20_000
+        or not values.private_key_pem.startswith('-----BEGIN ')
+        or not isinstance(values.webhook_secret, str)
+        or not 16 <= len(values.webhook_secret) <= 4096
+        or any(ord(char) < 32 or ord(char) == 127 for char in values.webhook_secret)
+    ):
+        raise GitHubProviderError('GitHub App signing credential or webhook secret is invalid.')
+
+
+def _same_secret(left: str, right: str) -> bool:
+    """Compare secret material safely even when the webhook secret contains Unicode."""
+    return hmac.compare_digest(
+        hashlib.sha256(left.encode('utf-8')).digest(),
+        hashlib.sha256(right.encode('utf-8')).digest(),
+    )
+
+
 def test_connection(values: GitHubConnectionInput) -> InstallationReadiness:
     """Read-only live probe. Never persists a credential, token or readiness."""
     app_id, installation_id, account_id = _verified_ids(values)
     _validate_name(values.name)
-    if not values.private_key_pem or not values.webhook_secret:
-        raise GitHubProviderError('GitHub App signing credential and webhook secret are required.')
+    _validate_configuration(values)
     return GitHubAppClient(
         app_id=app_id, private_key_pem=values.private_key_pem
     ).validate_installation(installation_id, account_id)
@@ -75,10 +97,7 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
     No hidden propagation of GitHub App PEM through Celery/job arguments.
     """
     name = _validate_name(values.name)
-    if len(str(values.environment or '').strip()) > 40:
-        raise ValueError('GitHub integration environment is invalid.')
-    if values.description is not None and len(values.description) > 2000:
-        raise ValueError('GitHub integration description is too long.')
+    _validate_configuration(values)
     app_id, installation_id, account_id = _verified_ids(values)
     observed = test_connection(values)
     if (
@@ -109,8 +128,8 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         if app_credential is not None:
             if (
                 not app_credential.enabled
-                or not hmac.compare_digest(app_credential.private_key_pem, values.private_key_pem)
-                or not hmac.compare_digest(app_credential.webhook_secret, values.webhook_secret)
+                or not _same_secret(app_credential.private_key_pem, values.private_key_pem)
+                or not _same_secret(app_credential.webhook_secret, values.webhook_secret)
             ):
                 raise GitHubProviderError(
                     'GitHub App credential differs from the existing protected registration.'
@@ -162,9 +181,6 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         )
         db.session.add(installation)
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError):
-        db.session.rollback()
-        raise
     except Exception:
         db.session.rollback()
         raise

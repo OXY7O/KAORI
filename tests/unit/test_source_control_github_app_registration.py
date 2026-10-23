@@ -8,14 +8,17 @@ from types import SimpleNamespace
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import registration, readiness
-from app.integrations.source_control.source_control.providers.github.transport import InstallationReadiness
+from app.integrations.source_control.source_control.providers.github.transport import (
+    GitHubProviderError,
+    InstallationReadiness,
+)
 
 
 def _input(**changes):
     base = dict(
         name='GitHub Prod', environment='production', description='Source provider',
         app_id='12', installation_id='23', account_id='34',
-        private_key_pem='PEM test only', webhook_secret='test-only-secret',
+        private_key_pem='-----BEGIN PRIVATE KEY----- TEST', webhook_secret='test-only-secret',
     )
     return registration.GitHubConnectionInput(**{**base, **changes})
 
@@ -30,7 +33,7 @@ def _evidence(perms=('metadata',), scope='selected'):
 
 def test_registration_secrets_are_omitted_from_repr():
     obj = _input()
-    assert 'PEM test only' not in repr(obj)
+    assert '-----BEGIN PRIVATE KEY----- TEST' not in repr(obj)
     assert 'test-only-secret' not in repr(obj)
 
 
@@ -46,7 +49,7 @@ def test_live_test_uses_only_scoped_provider(monkeypatch):
 
     monkeypatch.setattr(registration, 'GitHubAppClient', Stub)
     assert registration.test_connection(_input()).installation_id == 23
-    assert observed == [('12', 'PEM test only'), ('23', '34')]
+    assert observed == [('12', '-----BEGIN PRIVATE KEY----- TEST'), ('23', '34')]
 
 
 @pytest.mark.parametrize('name', ['', 'x', 'A' * 161, 'title\nforged'])
@@ -88,3 +91,20 @@ def test_repository_count_does_not_imply_inventory_complete():
     assessment = readiness.assess_installation_readiness(_evidence(perms=('metadata',)))
     assert assessment.status != 'ready'
     assert assessment.capability_states['source_revision'] == 'permission_unavailable'
+
+
+@pytest.mark.parametrize('environment', ['', 'prod', 'DEV', 'production '])
+def test_environment_uses_approved_kaori_taxonomy(environment):
+    with pytest.raises(ValueError, match='taxonomy'):
+        registration.test_connection(_input(environment=environment))
+
+
+@pytest.mark.parametrize('webhook_secret', ['', 'too-short', 'with\nnewline'])
+def test_webhook_secret_requires_safe_length_and_characters(webhook_secret):
+    with pytest.raises(GitHubProviderError):
+        registration.test_connection(_input(webhook_secret=webhook_secret))
+
+
+def test_secret_digest_comparison_handles_unicode_without_exposing_value():
+    assert registration._same_secret('unicode-\u2603', 'unicode-\u2603')
+    assert not registration._same_secret('unicode-\u2603', 'unicode-\u2602')
