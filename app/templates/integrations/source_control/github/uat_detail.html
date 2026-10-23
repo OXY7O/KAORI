@@ -19,6 +19,15 @@
         </p>
                 {% endcall %}
             </div>
+            {{ page_hero.context_card(
+                "GitHub App installation", "Source Control", canonical.name,
+                canonical.readiness_status|replace('_', ' ')|title,
+                "normal" if canonical.readiness_status == "ready" else "warning",
+                [("database", "Coverage", inventory.coverage|replace('_', ' ')|title),
+                 ("git-branch", "Granted Repositories", inventory.total if inventory.total is not none else "Unknown")],
+                "Installations", url_for("github_source_uat.index"),
+                action_icon="arrow-left"
+            ) }}
         </div>
     </section>
     {% set feedback_map = {
