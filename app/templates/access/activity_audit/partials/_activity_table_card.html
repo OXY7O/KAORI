@@ -12,7 +12,6 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Activity Register</h2>
-                        {{ table_label.result_count(pagination.total) }}
                         {{ info_tip.render(
                             'activity-audit-register-source-info',
                             'Activity Register Evidence',
@@ -22,8 +21,10 @@
                                 'Filters and result counts apply to this register only, not every administrative source.',
                                 'Older verified evidence is governed by Data Lifecycle archive artifacts; this register is not an archived-record search.'
                             ],
-                            placement='right'
+                            placement='right',
+                            variant='guide'
                         ) }}
+                        {{ table_label.result_count(pagination.total) }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Filter system-wide evidence by category, outcome, actor, and hot-record time range.</p>
                 </div>
