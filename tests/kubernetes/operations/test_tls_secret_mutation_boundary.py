@@ -187,6 +187,7 @@ def test_tls_patch_rejects_live_type_drift_before_mutation(monkeypatch: pytest.M
         )
     assert calls == []
 
+
 def test_tls_patch_rejects_recreated_secret_uid_before_dry_run(monkeypatch: pytest.MonkeyPatch) -> None:
     mutation = load_mutation(monkeypatch)
     mutation.db.session.get = lambda model, cluster_id: SimpleNamespace(id=cluster_id)
