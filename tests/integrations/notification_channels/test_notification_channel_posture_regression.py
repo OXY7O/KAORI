@@ -11,6 +11,12 @@ class Query:
     def __init__(self, channels: list[SimpleNamespace]) -> None:
         self.channels = channels
 
+    def filter_by(self, **criteria: object) -> Query:
+        return Query([
+            item for item in self.channels
+            if all(getattr(item, key, None) == value for key, value in criteria.items())
+        ])
+
     def order_by(self, *_args: object) -> Query:
         return self
 
@@ -19,7 +25,8 @@ class Query:
 
 
 def channel(
-    *, enabled: bool = True, configured: bool = True, test_status: str = 'success', last_delivery_status: str = 'never'
+    *, enabled: bool = True, configured: bool = True, test_status: str = 'success',
+    last_delivery_status: str = 'never', lifecycle_state: str = 'active',
 ) -> SimpleNamespace:
     return SimpleNamespace(
         id=1,
@@ -28,6 +35,7 @@ def channel(
         test_status=test_status,
         last_delivery_status=last_delivery_status,
         provider_key='telegram',
+        lifecycle_state=lifecycle_state,
     )
 
 
@@ -44,6 +52,8 @@ def channel(
         ([channel(last_delivery_status='success'), channel(test_status='failed')], 'Validation Failed', 'warning'),
         ([channel(last_delivery_status='success'), channel(configured=False)], 'Validation Required', 'warning'),
         ([channel(last_delivery_status='success'), channel(last_delivery_status='failed')], 'Degraded', 'warning'),
+        ([channel(lifecycle_state='retired', last_delivery_status='success')], 'Not Configured', 'unknown'),
+        ([channel(), channel(lifecycle_state='retired', test_status='failed')], 'Ready', 'info'),
     ],
 )
 def test_notification_overview_aggregate_never_masks_unhealthy_channel(
@@ -59,7 +69,7 @@ def test_notification_overview_aggregate_never_masks_unhealthy_channel(
     )
     result = service.notification_channel_summary()
     assert (result['label'], result['tone']) == (label, tone)
-    assert result['total'] == len(channels)
+    assert result['total'] == sum(item.lifecycle_state == 'active' for item in channels)
 
 
 @pytest.mark.parametrize(
