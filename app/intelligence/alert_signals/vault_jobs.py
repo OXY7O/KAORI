@@ -251,7 +251,8 @@ def run_vault_alert_observation_job(
     if (
         job is None or job.celery_task_id != task_id or job.job_type != JOB_TYPE
         or job.operation != OPERATION or job.scope_type != 'secrets_pki_alert_fleet'
-        or job.scope_key != 'all' or job.status not in ACTIVE_JOB_STATUSES
+        or job.scope_key != 'all' or job.status not in {'queued', 'retrying'}
+        or job.integration_type != 'secrets_pki'
     ):
         return {'status': 'blocked', 'observed_sources': 0, 'failed_sources': 0}
     ctx = JobExecutionContext(task_id, job_execution_id)
@@ -263,7 +264,8 @@ def run_vault_alert_observation_job(
         or binding_ids != build_vault_alert_observation_targets()
     ):
         ctx.fail('Vault Alert Source target admission changed.', error_code='invalid_source_scope')
-        return {'status': 'failed', 'observed_sources': 0, 'failed_sources': len(binding_ids)}
+        failed_count = len(binding_ids) if isinstance(binding_ids, list) else 0
+        return {'status': 'failed', 'observed_sources': 0, 'failed_sources': failed_count}
     key = _worker_key()
     if key is None:
         ctx.fail('Vault alert correlation secret is unavailable.', error_code='correlation_key_unavailable')
