@@ -207,31 +207,19 @@
                 <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Channel</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Readiness</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Routing Policy</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Channel</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Routing Policy</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Allowed Uses</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Delivery Evidence</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[16%]">Actions</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Delivery Evidence</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for channel in payload.channels %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                          aria-hidden="true">
-                                        <i data-lucide="{{ channel.provider_icon }}" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="max-w-[220px] truncate text-sm font-semibold leading-5 text-content-primary"
-                                           title="{{ channel.name }}">{{ channel.name }}</p>
-                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ channel.provider_label }}</p>
-                                        <p class="mt-0.5 max-w-[220px] truncate text-xs leading-5 text-content-secondary"
-                                           title="{{ channel.destination_label }}">{{ channel.destination_label }}</p>
-                                    </div>
-                                </div>
+                                {{ table_ui.title_cell(channel.name, channel.provider_label ~ ' · ' ~ channel.destination_label, channel.provider_icon) }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="space-y-1.5">
@@ -245,48 +233,42 @@
                                    title="{{ channel.domain_labels|join(', ') }}">{{ channel.domain_labels|join(', ') if channel.domain_labels else 'No domains selected' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <div class="min-w-0 space-y-2">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        {{ table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks') }}
-                                        <button type="button"
-                                                data-kaori-dialog-open
-                                                data-dialog-target="notification-channel-policy-{{ channel.id }}"
-                                                aria-haspopup="dialog"
-                                                aria-controls="notification-channel-policy-{{ channel.id }}"
-                                                aria-label="View allowed uses and routing policy for {{ channel.name }}"
-                                                class="{{ table_ui.action_classes() }}">
-                                            View policy
-                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        </button>
-                                    </div>
-                                    <p class="max-w-[225px] truncate text-xs leading-5 text-content-muted"
-                                       title="{{ channel.event_type_labels[0] if channel.event_type_labels else 'No allowed events' }}">
-                                        {{ channel.event_type_labels[0] if channel.event_type_labels else 'No allowed events' }}
-                                    </p>
+                                <div class="flex min-w-0 flex-col items-start gap-1.5">
+                                    {{ table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks') }}
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="notification-channel-policy-{{ channel.id }}"
+                                            aria-haspopup="dialog"
+                                            aria-controls="notification-channel-policy-{{ channel.id }}"
+                                            aria-label="View allowed uses and routing policy for {{ channel.name }}"
+                                            class="{{ table_ui.action_classes() }}">
+                                        View policy
+                                        <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    </button>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {% set test_tone = 'normal' if channel.test_status == 'success' else ('warning' if channel.test_status == 'failed' else 'unknown') %}
-                                <dl class="min-w-0 space-y-2">
-                                    <div class="space-y-0.5">
-                                        <div class="flex items-center justify-between gap-2">
+                                <dl class="min-w-0 divide-y divide-outline-subtle">
+                                    <div class="flex min-w-0 items-center justify-between gap-2 pb-2">
+                                        <div class="min-w-0">
                                             <dt class="text-xs font-medium leading-5 text-content-secondary">Last Test</dt>
-                                            <dd>{{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required'), test_tone, size='compact') }}</dd>
+                                            <dd class="truncate text-xs leading-5 tabular-nums text-content-muted"
+                                                title="{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}">
+                                                {{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}
+                                            </dd>
                                         </div>
-                                        <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
-                                           title="{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}">
-                                            {{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}
-                                        </p>
+                                        <div class="shrink-0">{{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required'), test_tone, size='compact') }}</div>
                                     </div>
-                                    <div class="border-t border-outline-subtle pt-1.5">
-                                        <div class="flex items-center justify-between gap-2">
+                                    <div class="flex min-w-0 items-center justify-between gap-2 pt-2">
+                                        <div class="min-w-0">
                                             <dt class="text-xs font-medium leading-5 text-content-secondary">Last Delivery</dt>
-                                            <dd>{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</dd>
+                                            <dd class="truncate text-xs leading-5 tabular-nums text-content-muted"
+                                                title="{{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}">
+                                                {{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}
+                                            </dd>
                                         </div>
-                                        <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
-                                           title="{{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}">
-                                            {{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}
-                                        </p>
+                                        <div class="shrink-0">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</div>
                                     </div>
                                 </dl>
                             </td>
@@ -297,7 +279,7 @@
                                         <p class="text-xs text-content-muted">{{ channel.retired_at|user_datetime('Date unavailable') if channel.retired_at else 'Date unavailable' }}</p>
                                     </div>
                                 {% elif can_manage %}
-                                    <div class="flex flex-wrap justify-end gap-1.5">
+                                    <div class="{{ table_ui.action_grid_classes() }}" role="group" aria-label="Actions for {{ channel.name }}">
                                         <a href="{{ url_for('notification_channels.index',
                                                     tab='channels', edit=channel.id, configure=1,
                                                     channel_search=payload.channel_filters.search,
@@ -317,8 +299,8 @@
                                            hx-swap="outerHTML"
                                            hx-indicator="#notification-channel-loading"
                                            hx-push-url="false"
-                                           class="{{ table_ui.action_classes() }}">Edit</a>
-                                        <form method="post"
+                                           class="{{ table_ui.action_classes() }} w-full">Edit</a>
+                                        <form method="post" class="min-w-0"
                                               action="{{ url_for('notification_channels.test', channel_id=channel.id) }}"
                                               hx-post="{{ url_for('notification_channels.test', channel_id=channel.id) }}"
                                               hx-target="#notification-channels-workspace"
@@ -329,14 +311,14 @@
                                               hx-disabled-elt="button[type='submit']">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             {{ channel_return_fields() }}
-                                            <button type="submit" class="{{ table_ui.action_classes() }}">Test</button>
+                                            <button type="submit" class="{{ table_ui.action_classes() }} w-full">Test</button>
                                         </form>
                                         <button type="button"
                                                 data-kaori-dialog-open
                                                 data-dialog-target="notification-channel-retire-{{ channel.id }}"
                                                 aria-haspopup="dialog"
                                                 aria-controls="notification-channel-retire-{{ channel.id }}"
-                                                class="{{ table_ui.action_classes() }}">
+                                                class="{{ table_ui.action_classes() }} w-full">
                                             Retire
                                         </button>
                                         {% if channel.delete_blocked %}
@@ -347,12 +329,12 @@
                                                     aria-controls="notification-channel-delete-blockers-{{ channel.id }}"
                                                     aria-label="Locked: view deletion dependencies for {{ channel.name }}"
                                                     title="Locked — inspect retained delivery evidence and report dependencies"
-                                                    class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2.5 text-xs font-semibold text-status-warning-text transition-colors hover:border-status-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-warning">
+                                                    class="inline-flex min-h-8 w-full items-center justify-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2.5 text-xs font-semibold text-status-warning-text transition-colors hover:border-status-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-warning">
                                                 <i data-lucide="lock-keyhole" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
                                                 Locked
                                             </button>
                                         {% else %}
-                                            <form method="post"
+                                            <form method="post" class="min-w-0"
                                                   action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
                                                   hx-post="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
                                                   hx-target="#notification-channels-workspace"
@@ -376,7 +358,7 @@
                                                         data-destructive-modal-id="notification-channel-delete-confirmation"
                                                         data-destructive-target="{{ channel.name }}"
                                                         data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"
-                                                        class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
+                                                        class="{{ table_ui.action_classes(destructive=true) }} w-full">Delete</button>
                                             </form>
                                         {% endif %}
                                     </div>
