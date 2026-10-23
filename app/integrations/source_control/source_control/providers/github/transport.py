@@ -27,7 +27,10 @@ _READ_INSTALLATION = re.compile(r'^/app/installations/[1-9][0-9]*$')
 _TOKEN_INSTALLATION = re.compile(r'^/app/installations/[1-9][0-9]*/access_tokens$')
 _REPOSITORY_PAGE = re.compile(r'^/installation/repositories\?per_page=20&page=[1-9][0-9]{0,3}$')
 _REPOSITORY_DETAIL = re.compile(r'^/repos/[A-Za-z0-9-]{1,39}/[A-Za-z0-9_.-]{1,100}$')
-_BRANCH_DETAIL = re.compile(r'^/repos/[A-Za-z0-9-]{1,39}/[A-Za-z0-9_.-]{1,100}/branches/(?:[A-Za-z0-9_.-]|%2F|%2B){1,765}$')
+_BRANCH_DETAIL = re.compile(
+    r'^/repos/[A-Za-z0-9-]{1,39}/[A-Za-z0-9_.-]{1,100}/branches/'
+    r'(?:[A-Za-z0-9_.-]|%2F|%2B){1,765}$'
+)
 _REF_NAME = re.compile(r'[A-Za-z0-9._/+-]{1,255}')
 _READ_PERMISSIONS = frozenset({
     'metadata', 'contents', 'pull_requests', 'actions', 'checks',
