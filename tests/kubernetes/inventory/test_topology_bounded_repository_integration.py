@@ -7,7 +7,7 @@ from flask import Flask
 
 from app.extensions.db import db
 from app.kubernetes.inventory.topology.contracts import TopologySelection
-from app.kubernetes.inventory.topology.repository import _storage_for_namespace, load_topology_records
+from app.kubernetes.inventory.topology.repository import _load_storage, _storage_for_namespace, load_topology_records
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -273,3 +273,56 @@ def test_namespace_pv_bindings_do_not_cross_cluster_boundaries(repository_app) -
             collected_at=now,
         )
         assert _storage_for_namespace([claim, owned_volume, other_volume], 'app') == [claim, owned_volume]
+
+
+def test_namespace_pv_candidates_are_scoped_and_bounded_in_sql(repository_app) -> None:
+    now = datetime.now(UTC)
+    with repository_app.app_context():
+        db.session.add_all(
+            [
+                Cluster(id='cluster-a', name='A', environment='production', status='connected'),
+                Cluster(id='cluster-b', name='B', environment='production', status='connected'),
+                ClusterInventory(cluster_id='cluster-a', collected_at=now),
+                ClusterInventory(cluster_id='cluster-b', collected_at=now),
+                NamespaceInventory(cluster_id='cluster-a', namespace='app', collected_at=now),
+                NamespaceInventory(cluster_id='cluster-b', namespace='app', collected_at=now),
+            ]
+        )
+        for name, volume in (('claim-a', 'volume-a'), ('claim-z', 'volume-z')):
+            db.session.add(
+                StorageInventory(
+                    cluster_id='cluster-a',
+                    namespace='app',
+                    name=name,
+                    storage_type='PersistentVolumeClaim',
+                    details={'volume_name': volume},
+                    collected_at=now,
+                )
+            )
+        for cluster_id, name in (
+            ('cluster-a', 'volume-a'),
+            ('cluster-a', 'volume-z'),
+            ('cluster-a', 'unreferenced-volume'),
+            ('cluster-b', 'volume-a'),
+        ):
+            db.session.add(
+                StorageInventory(
+                    cluster_id=cluster_id,
+                    name=name,
+                    storage_type='PersistentVolume',
+                    collected_at=now,
+                )
+            )
+        db.session.commit()
+
+        selection = TopologySelection.from_filters(scope='storage', depth='full')
+        totals: dict[str, int] = {}
+        bounded = _load_storage(['cluster-a'], 'app', selection, max_nodes=1, totals=totals)
+        unbounded = _load_storage(['cluster-a'], 'app', selection, max_nodes=None)
+
+        assert totals == {'pvc': 2, 'pv': 2}
+        assert [(row.storage_type, row.name) for row in bounded] == [
+            ('PersistentVolumeClaim', 'claim-a'),
+            ('PersistentVolume', 'volume-a'),
+        ]
+        assert {row.name for row in unbounded} == {'claim-a', 'claim-z', 'volume-a', 'volume-z'}
