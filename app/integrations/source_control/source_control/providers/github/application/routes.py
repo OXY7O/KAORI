@@ -53,8 +53,8 @@ def _notification() -> dict:
 def index() -> ResponseReturnValue:
     """Provider onboarding landing, not a fabricated repository inventory."""
     available = _available()
-    registered = 0
-    ready = 0
+    registered: int | None = None
+    ready: int | None = None
     if available:
         from app.models.integration import IntegrationInstance
 

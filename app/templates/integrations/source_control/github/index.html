@@ -1,36 +1,64 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% block title %}GitHub Source Control · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
-    {{ provider_front.hero("git-branch", "code", "GitHub Source Control",
-        "Govern GitHub App installation access without duplicating source-control evidence.",
-        registered, ready, 0, "Attention" if available else "Not Configured",
-        url_for("github_source.new_connection"),
-        register_label="Review GitHub App Setup") }}
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro("git-branch", "Source Control Integration", "code") %}
+                    <h1 class="{{ page_hero.title_classes() }}">GitHub Source Control</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
+                        Govern GitHub App installations and source identity with committed KAORI evidence.
+                    </p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label("shield-check", "GitHub.com App") }}
+                        {{ page_hero.meta_label("database", "Committed Evidence") }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card(
+                "GitHub App provider posture",
+                "Provider Admission",
+                "GitHub App",
+                "Validation Required" if available else "Planned",
+                "warning",
+                [
+                    ("plug", "Registered", registered if registered is not none else "Not Observed"),
+                    ("badge-check", "Ready", ready if ready is not none else "Not Observed")
+                ],
+                "Review Setup", url_for("github_source.new_connection"),
+                action_icon="settings-2"
+            ) }}
+        </div>
+    </section>
     {% set metrics = [
-        {"label": "Registered Connections", "value": registered, "description": "Canonical GitHub App connections", "icon": "plug"},
-        {"label": "Ready Connections", "value": ready, "description": "Full Validation required", "icon": "shield-check"},
+        {"label": "Registered Connections", "value": registered if registered is not none else "Not Observed", "description": "Canonical GitHub App connections", "icon": "plug"},
+        {"label": "Ready Connections", "value": ready if ready is not none else "Not Observed", "description": "Full Validation required", "icon": "shield-check"},
         {"label": "Repository Inventory", "value": "Not Admitted", "description": "SC-03 committed reconciliation pending", "icon": "database"},
         {"label": "Provider Lifecycle", "value": "Available" if available else "Planned", "description": "Controlled by KAORI provider matrix", "icon": "shield"}
     ] %}
     {{ provider_front.overview("git-branch", "Source Control Provider Overview",
         "A GitHub App installation grants access only to the repositories authorized by GitHub.",
-        metrics, "GitHub App Installation", "App, installation, organization/account and repository are distinct identities.",
-        "Committed Source Evidence", "KAORI will normalize scoped repository and revision observations after SC-03 admission.",
-        "GitHub Remains Authoritative", "GitHub owns permissions, repositories and workflow runs; KAORI correlates committed evidence.") }}
+        metrics, "GitHub App Installation",
+        "App, installation, organization/account and repository are distinct identities.",
+        "Committed Source Evidence",
+        "KAORI will normalize scoped repository and revision observations after SC-03 admission.",
+        "GitHub Remains Authoritative",
+        "GitHub owns permissions, repositories and workflow runs; KAORI correlates committed evidence.") }}
     <section class="{{ integration_ui.section_shell_classes() }} p-5 sm:p-6">
         <h2 class="text-base font-semibold text-content-primary">Onboarding Status</h2>
         {% if not available %}
             <p class="mt-2 text-sm leading-6 text-content-secondary" role="status">
-                GitHub is planned. Review the standard setup form, but credential submission, connection
-                registration and operational refresh remain disabled until provider admission.
+                GitHub is planned. The setup form is available for design review,
+                but credentials, registration and operational refresh remain disabled.
             </p>
         {% else %}
             <p class="mt-2 text-sm leading-6 text-content-secondary">
-                Register an approved GitHub App installation, then run Full Validation.
-                Test Connection alone does not confirm source inventory readiness.
+                Register an approved installation, then run Full Validation.
+                Test Connection alone does not establish committed inventory readiness.
             </p>
         {% endif %}
         <a href="{{ url_for('integrations.source_control') }}"
