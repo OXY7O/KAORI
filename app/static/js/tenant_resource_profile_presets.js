@@ -613,14 +613,15 @@
         })
         const requestedUnsupported = []
         if (profile) {
-            if (Object.values(profile.storage_policy || {}).some((value) => value !== null && value !== '')) {
+            // Match server resource_profile_base_control_state() exactly:
+            // any configured mapping (not only truthy leaf values) is an
+            // unsupported managed control on a Capsule quota-only path.
+            if (Object.keys(profile.storage_policy || {}).length > 0) {
                 requestedUnsupported.push('Per-PVC Policy')
             }
-            const defaults = profile.limits || {}
-            const configuredDefaults = ['default_request', 'default'].some((key) =>
-                Object.values(defaults[key] || {}).some((value) => value !== null && value !== '')
-            )
-            if (configuredDefaults) requestedUnsupported.push('Container Defaults')
+            if (Object.keys(profile.limits || {}).length > 0) {
+                requestedUnsupported.push('Container Defaults')
+            }
         }
         const alert = form.querySelector('[data-tenant-capsule-coverage-alert]')
         if (alert) {
