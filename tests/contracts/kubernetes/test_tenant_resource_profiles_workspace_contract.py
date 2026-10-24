@@ -2028,8 +2028,8 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     start = js.index('const renderCapsuleQuotaPreview = (form, current, proposed) => {')
     end = js.index('const initSharedAllocationForm = (form) => {', start)
     preview = js[start:end]
-    dimension_block = preview.split('const dimensions = [', 1)[1].split('\\n        ]', 1)[0]
-    entries = re.findall(r"^\\s*\\['([^']+)', '([^']+)'\\],?$", dimension_block, re.MULTILINE)
+    dimension_block = preview.split('const dimensions = [', 1)[1].split('        ]', 1)[0]
+    entries = re.findall(r"^\s*\['([^']+)', '([^']+)'\],?$", dimension_block, re.MULTILINE)
     assert [key for key, _label in entries] == [
         'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
         'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
