@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/details/_detail_content.html" as detail %}
+{% import "components/view_more_content.html" as view_more %}
 {% import "components/table_label.html" as table_label %}
 <div class="{{ detail.expanded_workspace_outer_classes() }}"
      data-kaori-detail-variant="job-execution"
@@ -77,60 +78,126 @@
                     {% endif %}
                 </div>
             </section>
-            <div class="grid min-w-0 items-start gap-4 lg:grid-cols-2">
-                {% call detail.detail_card('Execution Context', 'users-round', badge=execution.provider_label, density='compact') %}
-                    {{ detail.detail_row('Requested By', execution.requester) }}
-                    {{ detail.detail_row('Trigger', execution.trigger_label) }}
-                    {{ detail.detail_row('Provider', execution.provider_label) }}
-                    {{ detail.detail_row('Queue', execution.queue_name) }}
-                    {{ detail.detail_row('Scope Type', execution.scope_type) }}
-                    {{ detail.detail_row('Scope', execution.scope) }}
-                    {{ detail.detail_row('Resource Group', execution.resource_group) }}
-                    {{ detail.detail_row('Integration Instance', execution.integration_instance) }}
-                {% endcall %}
-                {% call detail.detail_card('Lifecycle Timeline', 'clock-3', badge=execution.duration, density='compact') %}
-                    {{ detail.detail_row('Queued', execution.queued_at) }}
-                    {{ detail.detail_row('Started', execution.started_at) }}
-                    {{ detail.detail_row('Last Heartbeat', execution.heartbeat_at) }}
-                    {{ detail.detail_row('Cancel Requested', execution.cancel_requested_at) }}
-                    {{ detail.detail_row('Completed', execution.completed_at) }}
-                    {{ detail.detail_row('Last Updated', execution.updated_at) }}
-                    {{ detail.detail_row('Expires', execution.expires_at) }}
-                {% endcall %}
-            </div>
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
-                     aria-labelledby="execution-result-evidence-title">
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3.5">
-                    <div class="min-w-0">
-                        <h4 id="execution-result-evidence-title"
-                            class="text-sm font-semibold text-content-primary">Committed Result Evidence</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Sanitized JobExecution result fields; raw request payloads are never shown.</p>
+            {# One continuous evidence sheet: avoid two parallel label/value walls. #}
+            {% call detail.resource_sheet() %}
+                <section aria-labelledby="execution-context-title"
+                         class="border-b border-outline-subtle px-5 py-5 sm:px-6">
+                    <div class="mb-4 flex min-w-0 items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="users-round" class="h-4 w-4"></i></span>
+                            <h4 id="execution-context-title"
+                                class="text-sm font-semibold text-content-primary">Execution Context</h4>
+                        </div>
+                        {{ table_label.metadata_label(execution.provider_label, none, false, 'detail') }}
+                    </div>
+                    {{ detail.inventory_fact_grid([
+                        ('Requested By', execution.requester),
+                        ('Provider', execution.provider_label),
+                        ('Queue', execution.queue_name),
+                        ('Scope', execution.scope)
+                    ], columns=2) }}
+                </section>
+                <section aria-labelledby="execution-lifecycle-title"
+                         class="border-b border-outline-subtle px-5 py-5 sm:px-6">
+                    <div class="mb-4 flex min-w-0 items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="clock-3" class="h-4 w-4"></i></span>
+                            <h4 id="execution-lifecycle-title"
+                                class="text-sm font-semibold text-content-primary">Lifecycle Timeline</h4>
+                        </div>
+                        {{ table_label.metadata_label(execution.duration, 'clock-3', false, 'detail') }}
+                    </div>
+                    <ol class="grid min-w-0 gap-4 sm:grid-cols-3"
+                        aria-label="Committed execution milestones">
+                        {% for label, value in [
+                            ('Queued', execution.queued_at),
+                            ('Started', execution.started_at),
+                            ('Completed', execution.completed_at)
+                        ] %}
+                            <li class="min-w-0 border-l-2 border-brand-outline pl-3.5">
+                                <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
+                                <p class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+                <section aria-labelledby="execution-result-evidence-title"
+                         class="px-5 py-5 sm:px-6">
+                    <div class="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="list-tree" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 id="execution-result-evidence-title"
+                                    class="text-sm font-semibold text-content-primary">Committed Result Evidence</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Sanitized JobExecution result fields; raw request payloads are never shown.</p>
+                            </div>
+                        </div>
+                        {% if execution.result_summary %}
+                            {{ table_label.metadata_label((execution.result_summary|length) ~ ' Evidence Fields', 'list-tree') }}
+                        {% endif %}
                     </div>
                     {% if execution.result_summary %}
-                        {{ table_label.metadata_label((execution.result_summary|length) ~ ' Evidence Fields', 'list-tree') }}
-                    {% endif %}
-                </header>
-                <div class="px-4 py-4">
-                    {% if execution.result_summary %}
-                        {{ detail.evidence_grid(execution.result_summary, columns=3) }}
+                        {{ detail.inventory_fact_grid(execution.result_summary, columns=2) }}
                         {% if execution.result_summary_remaining %}
                             <p class="mt-3 text-xs leading-5 text-content-muted">{{ execution.result_summary_remaining }} additional result field{{ '' if execution.result_summary_remaining == 1 else 's' }} remain outside the compact operator view.</p>
                         {% endif %}
                     {% else %}
                         {{ detail.empty_evidence('No Result Summary Recorded', 'This execution has no structured result summary in the canonical JobExecution record.', 'clipboard-x') }}
                     {% endif %}
-                </div>
-            </section>
-            {% call detail.detail_card('Technical References', 'fingerprint', density='compact', stretch=false) %}
-                <div class="grid gap-x-8 gap-y-3 lg:grid-cols-2">
-                    {{ detail.technical_row('Execution ID', execution.public_id) }}
-                    {{ detail.technical_row('Celery Task ID', execution.task_id or '-') }}
-                    {{ detail.detail_row('Job Type', execution.job_type) }}
-                    {{ detail.detail_row('Operation', execution.operation_label) }}
-                    {{ detail.detail_row('Priority', execution.priority) }}
-                    {{ detail.detail_row('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts) }}
-                    {{ detail.technical_row('Parent Execution', execution.parent_public_id) }}
-                    {{ detail.technical_row('Result Reference', execution.result_reference) }}
+                </section>
+            {% endcall %}
+            {# Keep secondary committed metadata accessible without overwhelming first read. #}
+            {% call view_more.render(
+                'Additional Execution Evidence',
+                'Expanded ownership, secondary timestamps and technical identifiers.',
+                icon='fingerprint',
+                closed_label='View More',
+                open_label='View Less',
+                dense=true
+            ) %}
+                <div class="space-y-5">
+                    <section aria-labelledby="execution-extended-context-title">
+                        <div id="execution-extended-context-title">
+                            {{ detail.subsection('Extended Execution Context', 'Domain scope and scheduler attribution.') }}
+                        </div>
+                        {{ detail.inventory_fact_grid([
+                                ('Trigger', execution.trigger_label),
+                                ('Scope Type', execution.scope_type),
+                                ('Resource Group', execution.resource_group),
+                                ('Integration Instance', execution.integration_instance)
+                            ], columns=2) }}
+                    </section>
+                    <section class="border-t border-outline-subtle pt-5"
+                             aria-labelledby="execution-extended-lifecycle-title">
+                        <div id="execution-extended-lifecycle-title">
+                            {{ detail.subsection('Additional Lifecycle Evidence', 'Recorded operational timestamps; unavailable values remain explicit.') }}
+                        </div>
+                        {{ detail.inventory_fact_grid([
+                                ('Last Heartbeat', execution.heartbeat_at),
+                                ('Cancel Requested', execution.cancel_requested_at),
+                                ('Last Updated', execution.updated_at),
+                                ('Expires', execution.expires_at)
+                            ], columns=2) }}
+                    </section>
+                    <section class="border-t border-outline-subtle pt-5"
+                             aria-labelledby="execution-technical-references-title">
+                        <div id="execution-technical-references-title">
+                            {{ detail.subsection('Technical References', 'Canonical identifiers for correlating workers, logs and evidence.') }}
+                        </div>
+                        {{ detail.inventory_fact_grid([
+                            ('Execution ID', execution.public_id),
+                            ('Celery Task ID', execution.task_id or '-'),
+                            ('Job Type', execution.job_type),
+                            ('Operation', execution.operation_label),
+                            ('Priority', execution.priority),
+                            ('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts),
+                            ('Parent Execution', execution.parent_public_id),
+                            ('Result Reference', execution.result_reference)
+                        ], columns=2) }}
+                    </section>
                 </div>
             {% endcall %}
         </div>
