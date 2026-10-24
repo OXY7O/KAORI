@@ -701,7 +701,13 @@ def main() -> int:
     for required in ("'step_up': 'Step-up authentication'", "'approval_required': 'Approval required'"):
         if required not in reveal_policy:
             errors.append(f'Protected Reveal policy engine boundary missing: {required}')
-    for required in ("'Step-Up Required'", "'Approval by Policy'", "'Resolve Policy'", "'Verify Identity'", "'Reveal Once'"):
+    for required in (
+        "'Step-Up Required'",
+        "'Approval by Policy'",
+        "'Resolve Policy'",
+        "'Verify Identity'",
+        "'Reveal Once'",
+    ):
         if required not in protected_reveal_page:
             errors.append(f'Protected Reveal request flow boundary missing: {required}')
 
