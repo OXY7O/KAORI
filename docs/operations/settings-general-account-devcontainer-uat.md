@@ -261,8 +261,9 @@ Feature: Read-only compatibility registry and qualification details
 and supplied the Extended-only MinIO screenshot. The live catalog has only
 five products, so no visible second-page control is expected; the independent
 synthetic 12-product projection contract covers pagination. Opening a URL in
-a new browser tab verifies full-document GET fallback, **not** script-disabled
-(no-JavaScript) behavior. The MinIO General Contract summary was subsequently
+a new browser tab established only full-document GET fallback. A subsequent
+**JavaScript-disabled Playwright** run verified real native GET, noscript
+Apply Filters, and Reset across six canonical viewport runs (PASS). The MinIO General Contract summary was subsequently
 shortened under #2241 / PR #3050 to
 `S3 reachability, bucket discovery, and optional object-storage governance.`
 The operator explicitly confirmed that the revised text fits **one line
@@ -312,11 +313,11 @@ keyboard/assistive-technology/offline recovery certification.
 
 | ID | Existing QA ownership | Evidence disposition |
 | --- | --- | --- |
-| SET-GEN-01 | `app/settings/general/actions.py`; `tests/contracts/settings/test_settings_final_lock_contract.py` | Five-step manual positive PASS; invalid IANA / CSRF-negative browser proof pending |
+| SET-GEN-01 | `app/settings/general/actions.py`; `tests/contracts/settings/test_settings_final_lock_contract.py` | Five-step manual positive PASS; isolated invalid IANA and missing-CSRF contracts PASS; raw browser-negative HTTP traces pending |
 | SET-GEN-02 | `app/settings/general/actions.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Five-step manual positive PASS; canonical data/schedule mutation evidence not supplied |
 | SET-GEN-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_rejects_privileged_reference_tabs_without_system_view` and `::test_system_information_never_projects_unrelated_sensitive_configuration` | Five-step authorization/read-only Human PASS; raw HTTP header trace absent |
-| SET-GEN-04 | `tests/contracts/settings/test_compatibility_registry_projection.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Eight-step Human PASS; synthetic pagination contracts available; no-JS disabled mode and post-copy screenshot pending |
-| SET-OPS-01 | `tests/ui/test_representative_interactions.py::test_settings_general_query_tabs_keep_vertical_scroll_closed`; `tests/contracts/settings/test_settings_final_lock_contract.py` | General+Account 12/12 viewport Playwright PASS; broader standalone General manual accessibility/recovery not yet documented |
+| SET-GEN-04 | `tests/contracts/settings/test_compatibility_registry_projection.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Eight-step Human PASS, synthetic pagination coverage and JS-disabled Playwright 6/6 PASS; MinIO one-line visual Human PASS |
+| SET-OPS-01 | `tests/ui/test_representative_interactions.py::test_settings_general_query_tabs_keep_vertical_scroll_closed`; `tests/contracts/settings/test_settings_final_lock_contract.py` | General+Account viewport Playwright 12/12 PASS, General keyboard Tab/Enter Playwright 6/6 PASS; manual offline/AT pending |
 
 These are acceptance **specifications only**. No `.feature` runner, new
 step definitions, alternative test taxonomy or new official CI gate is
