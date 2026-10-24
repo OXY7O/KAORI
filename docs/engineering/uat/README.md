@@ -26,6 +26,8 @@ The [116-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates
 
 **Kubernetes Dashboard acceptance addendum (2026-10-24):** #937 records the operator's explicit **Human UAT APPROVED** decision for Operations Overview, Capacity & Demand, Signals & Actions, Reporting and a successfully downloaded Ready report. Ten `UAT-KDB-*` scenarios separately specify the reusable positive/negative requirements, with `NOT RUN` per-ID attribution pending exact-candidate test mapping. Approval of the dashboard is **not** a claim of negative/visual full-matrix execution or proof that every Ready report is downloadable.
 
+**Kubernetes Inventory human acceptance addendum (2026-10-25):** #733 holds the operator's **Human UAT APPROVED** decision for the scoped Inventory Overview, Topology, Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration workflows. The executed manual Given/When/Then session record is `docs/operations/kubernetes-inventory-devcontainer-uat.md` on temporary `kaori/review/staging-uat`. Existing `UAT-INV-001`–`005` now specify concrete shared table, Full Workspace Modal, configuration key-only, and dense graph behaviors without creating new Scenario IDs or a second runner. **The exact-ID automation execution matrix remains NOT RUN / PENDING**, especially missing/stale snapshots, recreated UIDs, absent topology edges, full responsive/permission/security negatives. The latest focused operator test is **4 pytest PASS, djlint PASS, Prettier WARN** for Topology JS. Human acceptance is recorded separately from official Developer Check, Full Admission and release readiness, all HOLD.
+
 ## Feature index
 
 | Capability | Scenarios | Positive | Negative | Expanded details | Gherkin source |
