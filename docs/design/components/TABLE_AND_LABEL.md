@@ -30,6 +30,12 @@ The shared component provides:
 
 Page templates still own endpoint selection, authorization, data, filters, sorting, HTMX state, and domain-specific content.
 
+### Human-reviewed reference for dense inventory tables — 2026-10-24
+
+**Kubernetes Node Inventory** (`/inventory/nodes`) is an accepted reference for the existing shared **table block**, not a new table variant. It composes `components/table.html` / `table_primitives.html`, shared heading + Info Tip + count badge + actions, content-aware filter controls, semantic status and metadata labels, compact neutral **View Details**, zero-result state, and the default **Rows 5** footer. The same grammar appears in Kubernetes Inventory Overview's bounded cluster comparison table.
+
+In operator UAT, **Role = Worker** together with an unmatched Search Nodes query yielded **0 Results**, with the existing empty state, **Clear Filters** and `Showing 0–0 of 0 Nodes` visible. This confirms the observed filtered-zero presentation, not complete filter combinations, all page sizes or absent-snapshot fallback. Reuse shared components and domain-bound committed data; do not copy Node-specific columns, capacity fields, provider semantics or page-local styling into other tables.
+
 ## 3. Table block header
 
 Use an icon, Title Case title, and a short description.
