@@ -4,13 +4,13 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 106 written acceptance test cases
+## Complete 116 written acceptance test cases
 
-[Review all 106 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 92 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 116 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 102 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **19 `.feature` files containing all 106 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 92 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **20 `.feature` files containing all 116 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 102 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
 
 **2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
 
@@ -92,6 +92,23 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-KCL-002` | Negative | Both | High | Cluster credentials/endpoint/TLS trust are invalid | Clear validation failure; no false Connected/Ready state or leaked credential |
 | `UAT-KCL-003` | Negative | Non-UI | High | Provider is unavailable after committed cluster inventory exists | Read-only committed state remains truthful; live writes fail closed |
 | `UAT-KCL-004` | Negative | Both | High | Restricted user submits cluster configuration mutation | Authorization denial and no external or committed mutation |
+
+### Kubernetes — Operations Dashboard (`UAT-KDB-*`)
+
+**Owning source:** `app/kubernetes/dashboard/`; shared `components/operational_dashboard_workspace.html`, `operational_recommendation_cards.html` and `reporting_dashboard_workspace.html`. **Sources of authority:** #937, #753, #758; operator Human UAT Acceptance on 2026-10-24. **Candidate test owners:** `tests/kubernetes/dashboard/`, `tests/e2e/kubernetes/dashboard/`, `tests/contracts/dashboards/`, `tests/unit/kubernetes/dashboard/`, `tests/ui/`. **Evidence boundary:** completed manual dashboard human acceptance is in #937; individual reusable Scenario IDs below are NOT RUN until a candidate-specific execution mapping exists.
+
+| Scenario ID | Type | Layer | Risk | Given / When | Then: expected observable outcome |
+| --- | --- | --- | --- | --- | --- |
+| `UAT-KDB-001` | Positive | UI | High | Open the dashboard and inspect Hero, scope, source freshness and all eight KPI cards | Hero and KPI identity match the selected cluster with explicit committed source; initial shell avoids live provider calls |
+| `UAT-KDB-002` | Positive | Both | High | Open Operations Overview; compare connectivity KPI with Cluster Health composite severity and health table | Connected/Healthy registration does not hide composite Critical or alert reason; cluster scoped health table defaults to five rows |
+| `UAT-KDB-003` | Positive | Both | Medium | Select Capacity & Demand; verify Data Scope, CPU/Memory/Pods, chart history/projection and source-derived conclusion | Exclude control-plane capacity; show actual worker headroom, projected percentage/horizon, guarded actions and no fabricated series |
+| `UAT-KDB-004` | Positive | UI | High | Select Signals & Actions; compare KPI vs Alerts Summary, review top-five preview and six governance steps | Totals consistent with all selected-scope cases; latest preview at most five; Critical not suppressed; shared response steps/source present |
+| `UAT-KDB-005` | Positive | UI | Medium | Inspect P1/P2 badges and title/description; hover title, activate authorized Intelligence detail link | Shared renderer shows at most five cards with 2-line title and 2-line description, intact source footer and accessible full detail |
+| `UAT-KDB-006` | Positive | Both | High | Open Reporting, verify recent activity, select Open Reports Workspace, locate the Ready Analytics Overview Report and download | Correct scoped report and lifecycle record; at most four recent reports; successful actual download of chosen artifact without claiming all artifacts available |
+| `UAT-KDB-007` | Positive | UI | Medium | Navigate all four tabs, refresh, Back/Forward; inspect full page/card/table/chart and visual baseline at each viewport/theme | One visually active tab, correct panel and URL state, no clipped actions or horizontal overflow, no unreviewed baseline acceptance |
+| `UAT-KDB-008` | Negative | Both | High | Open dependent Dashboard sections and inspect empty/partial/error states, readiness, source and absence of provider queries | Not Collected/Unavailable/Partial replaces false zero or Healthy claims; unrelated committed inventory remains visible; no external mutation |
+| `UAT-KDB-009` | Negative | Both | High | Switch scope A to B/All; request lazy capacity, alerts and reporting with stale or foreign scope ID | No foreign metrics, AlertCases, reports or detail rows; selected scope prerequisite honored; all-cluster reports Kubernetes-only |
+| `UAT-KDB-010` | Negative | Both | High | Request /dashboards/kubernetes/ and lazy section endpoints directly; inspect HTTP, rendered denial and absence of work | No unauthorized content; authz runs before section builders/read, no job or provider mutation or leakage |
 
 ### Kubernetes — Dashboard, Inventory & Topology (`UAT-INV-*`)
 
