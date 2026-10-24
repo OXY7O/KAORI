@@ -483,6 +483,10 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     )
     assert '{{ action.title }}</p>' in recommendations
     assert 'line-clamp-4 text-xs leading-5 text-content-muted' in recommendations
+    # The source class alone is not enough: the served, checked-in CSS must
+    # contain the generated utility so the browser actually limits the title.
+    assert '.line-clamp-3{-webkit-line-clamp:3;' in read('app/static/css/output.css')
+    assert "'.line-clamp-3{-webkit-line-clamp:3;'" in read('scripts/verify_css_build.mjs')
     assert "detail=action.rule_key" in recommendations
     assert '<span class="truncate">{{ action.source }}</span>' in recommendations
 
