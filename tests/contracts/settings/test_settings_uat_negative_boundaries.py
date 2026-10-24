@@ -24,7 +24,9 @@ def _settings_app() -> Flask:
 
 
 @pytest.mark.parametrize('requested', ('system-information', 'compatibility-versions'))
-def test_general_rejects_privileged_reference_tabs_without_system_view(requested: str) -> None:
+def test_general_rejects_privileged_reference_tabs_without_system_view(
+    requested: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     app = _settings_app()
     user = SimpleNamespace(
         timezone_mode='manual',
@@ -35,14 +37,18 @@ def test_general_rejects_privileged_reference_tabs_without_system_view(requested
         has_permission=Mock(return_value=False),
     )
 
+    # Avoid unittest.mock inspecting Flask-Login's LocalProxy before its manager is initialized.
+    monkeypatch.setattr(
+        'app.settings.routes.current_user',
+        SimpleNamespace(_get_current_object=lambda: user),
+    )
+
     with (
         app.test_request_context(f'/settings/general?tab={requested}'),
-        patch('app.settings.routes.current_user') as current_user,
         patch('app.settings.routes.render_template', return_value='isolated settings') as render,
         patch('app.settings.routes.build_system_information') as system_information,
         patch('app.settings.routes.format_user_datetime', return_value='isolated clock'),
     ):
-        current_user._get_current_object.return_value = user
         response = general.__wrapped__()  # Exercise the actual route logic without Flask-Login.
         assert response.status_code == 200
         assert b'isolated settings' in response.get_data()
