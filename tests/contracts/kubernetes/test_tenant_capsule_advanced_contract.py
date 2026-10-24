@@ -147,7 +147,11 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
     assert "form.querySelectorAll('[data-tenant-quota-metric-side]')" in script
     assert "summary.textContent = 'Choose contracts'" in script
     assert 'No quota differences' in script
-    assert 'of 6 quota dimensions differ · Read only' in script
+    assert 'of ${comparisonDimensions.length} quota dimensions differ · Read only' in script
+    assert 'const comparisonDimensions = dimensions' in script
+    assert 'renderCapsuleProfileCoverage(form, proposed)' in script
+    assert 'data-tenant-capsule-coverage-alert' in tenant
+    assert 'data-tenant-capsule-coverage-alert' in shared
     assert 'state ? state.desired_quota || {} : null' in script
     assert "tenantSelect?.addEventListener('change', render)" in script
     assert "profileSelect?.addEventListener('change', render)" in script
