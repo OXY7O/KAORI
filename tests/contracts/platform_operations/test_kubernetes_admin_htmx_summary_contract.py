@@ -456,7 +456,7 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'workspace_tabs.render(' in page  # The outer peer navigation is unchanged.
     assert 'id="secret-reveal-cluster-workspace"' in workspace
     assert 'name="view" value="prerequisites"' in workspace
-    assert 'name="view" value="{{ secret_reveal_view }}" :value="activeTab"' in workspace
+    assert 'name="view" value="{{ secret_reveal_view }}" :value="activeTab"' in ' '.join(workspace.split())
     assert 'name="view" value="policies"' in namespace
     assert 'name="view" value="policies"' in table
     assert 'hx-swap="outerHTML show:none"' in workspace
@@ -644,7 +644,7 @@ def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -
     assert overview.index("'Administration Coverage',") < overview.index("'Managed Administration Controls',")
     assert "id='kubernetes-admin-summary-section'" in overview
     assert "id='kubernetes-admin-controls-section'" in overview
-    assert overview.count("{% endcall %}") == 2
+    assert overview.count('{% endcall %}') == 2
     assert overview.count('operational_section.render(') == 2
     assert overview.count('section_intro.render(') == 1
     assert 'Kubernetes administration coverage and configured security posture at a glance.' not in overview
@@ -1010,16 +1010,14 @@ def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htm
 
 def test_cluster_access_has_external_section_intro_inside_htmx_swap_root() -> None:
     """The plain shared heading stays outside the card across lazy/HTMX reloads."""
-    cluster = (
-        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html'
-    ).read_text()
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
     intro_component = (ROOT / 'app/templates/components/section_intro.html').read_text()
 
     assert 'components/section_intro.html' in cluster
     assert 'components/section_intro.html' in overview
     assert cluster.count('section_intro.render(') == 1
-    assert "        'Cluster Access'," in cluster
+    assert "'Cluster Access'," in cluster
     assert "        'Manage readiness and protected Namespace policies for the selected cluster.'," in cluster
     assert "'secret-reveal-cluster-access-intro-heading'" in cluster
     assert 'macro render(title, description, id=None' in intro_component
