@@ -337,3 +337,26 @@ The **seven exact node IDs** below were checked by reading their source on the n
 **No execution evidence exists yet**: these are GitHub source-written tests only. Exact Dev Container tested SHA, JUnit, screenshots/traces, pytest/Playwright, Ruff, Developer Check and Full Admission are **NOT RUN**. No Gherkin runner, CI gate, visual rebaseline or application behavior change was added. The original source-reviewed numerator **24/98** has not been inflated merely by drafting new tests. After execution, update the mapping and evidence records against exact candidate SHA.
 
 **Integration boundary:** The documentation/catalog branch is based on historic `kaori/staging`, whereas #3012 is based on a more recent held review SHA. Keep branches separate pending operator-authorized reconciliation, before any formal staging PR.
+
+## Kubernetes Dashboard acceptance and source-mapping addendum — 2026-10-24
+
+**Authority:** #1738 written QA catalog under #1725; owning Kubernetes Dashboard #937, approved family #753/#758 and manual screenshot history on #937. The operator explicitly declared **Kubernetes Dashboard UAT APPROVED** on 24 October 2026, following the four-tab reviews and a successful download of the Ready `Analytics Overview Report - Last 30 days`. This is a **human decision**, not newly executed `UAT-KDB-*` machine results.
+
+**Current source reference inspected:** `kaori/review/staging-uat` on 2026-10-24 for `app/kubernetes/dashboard/`, shared reporting/recommendation cards, `tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py`, `tests/unit/kubernetes/dashboard/test_kubernetes_dashboard_domain.py`, `tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py`, and `tests/e2e/kubernetes/dashboard/test_kubernetes_dashboard_smoke.py`. This integration/Dev Container holding branch is **not** the historical staging-based #1738 authoring branch; no same-SHA test suite result has been claimed for this work branch.
+
+| Scenario | Existing evidence or authored candidate | Still needed for per-ID automated acceptance |
+| --- | --- | --- |
+| `UAT-KDB-001` | Authorized shell smoke, eight KPI/scope/fast shell contracts; initial dashboard human screenshot | Exact candidate source+fixture and all signal-source assertions on one run |
+| `UAT-KDB-002` | Human observed registration `1 Healthy` and composite `Critical` due to 1 Critical AlertCase; cluster pagination/source contract | Deterministic AlertCase/registration health precedence fixture, semantic qualifier assertion |
+| `UAT-KDB-003` | Capacity/forecast human screenshot; combined dashboard contracts+Kubernetes unit tests **36 passed** on operator-reported `1cb8bab8` checkpoint; dynamic 49% conclusion in later screenshot | Exact candidate-bound scenario-specific evidence and worker-only fixture read-back |
+| `UAT-KDB-004` | Human observed 16 alerts = 1 Critical + 15 Warning, bounded top-five and governed response; family contract for alerts/steps | Actual AlertCase/source fixture and per-ID browser+server assertions |
+| `UAT-KDB-005` | Human reviewed 5 cards including 2-line title + 2-line description, prior CSS verifier + shared renderer pytest **1 passed, 30 deselected** | Current same-candidate full hover, keyboard and Intelligence detail click-through |
+| `UAT-KDB-006` | Human confirmed one `Ready` Analytics Overview report could be opened/downloaded through Reports Workspace; source `_kubernetes_report_query` limits 4 and scopes domain | Download response/identity, checksum/storage and unauthorized negative cases beyond chosen report |
+| `UAT-KDB-007` | Human 1440×900 light screenshots across four tabs and shared UI tab/visual contracts | Independent six canonical viewport × two-theme execution, URL history, overflow/keyboard evidence |
+| `UAT-KDB-008` | Source contract for no-data alert and bounded dashed empty state | Controlled unavailable/stale source fixtures with actual negative result |
+| `UAT-KDB-009` | Selected-cluster resolution, absent-cluster blocker, Kubernetes-only report domain source | Two-cluster and unauthorized/invalid scope isolation runtime test |
+| `UAT-KDB-010` | Authorization-first index/section characterization source | Authenticated restricted principal direct GET/section 403 proof and no provider effects |
+
+**Execution semantics:** All ten new reusable scenario rows remain `NOT RUN / PENDING` as no test-node-to-Scenario-ID exact-run attestation was presented. This does **not** cancel the operator's explicit whole-dashboard Human Acceptance on #937. Other existing data-lifecycle and report negative tests keep their own owners; do not conflate `UAT-RPT-005` foreign download denial with `UAT-KDB-006` positive report download.
+
+**Boundary:** No Cucumber/Gherkin runner, synthetic provider evidence, new CSS baseline, admission trigger or automatic release-readiness assertion. New issue/branch source updates are docs/specification plus existing documentation contract only, while Developer Check / Full Admission / official staging and main promotions remain HOLD.
