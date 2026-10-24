@@ -55,7 +55,10 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
     _commit_governance as _commit_governance_impl,
 )
 from app.kubernetes.tenant.providers import TenantProviderState
-from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
+from app.kubernetes.tenant.service import (
+    _validate_resource_profile_attachment_controls,
+    _validate_resource_profile_base_controls,
+)
 from app.models.tenant import Tenant, TenantLifecycleStatus
 
 _cluster_client = _provider_cluster_client
@@ -153,6 +156,9 @@ def cutover_capsule_tenant_resource_quota(
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
     profile = _profile(profile_id)
+    # Fail closed before reading/mutating Capsule: this quota-only path
+    # cannot promise Native LimitRange or per-PVC policy writes.
+    _validate_resource_profile_base_controls(profile, tenant)
     _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_tenant_quota_cutover_state(tenant)
     if not state['supported']:
@@ -273,6 +279,9 @@ def change_capsule_tenant_resource_quota(
         raise ValueError('Drifted Capsule Tenant allocation must be reconciled before a new allocation change.')
 
     profile = _profile(profile_id)
+    # Fail closed before reading/mutating Capsule: this quota-only path
+    # cannot promise Native LimitRange or per-PVC policy writes.
+    _validate_resource_profile_base_controls(profile, tenant)
     _validate_resource_profile_attachment_controls(profile, tenant)
     expected_source = governance.get('provider_source')
     expected_source = expected_source if isinstance(expected_source, Mapping) else {}
