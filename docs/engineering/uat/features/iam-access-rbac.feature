@@ -100,3 +100,15 @@ Feature: Access — Users, Roles, Permissions & Identity Providers
     And accessible errors remain visible; no partial entity is created
     And the negative request does not create a misleading success state or an unauthorized committed/provider side effect
 
+  # Layer: Both; risk: High; distinct from UAT-IAM-002 protected mutation denial.
+  # Evidence: actual GET document response status 403, denied UI and safe HTML/response.
+  # Isolation: Disposable Viewer principal; no administrative operation or credential material.
+  @UAT-IAM-007 @negative @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-IAM-007 - Viewer cannot open Access Overview through a direct read request
+    Given an authenticated Viewer without any Access Overview permission
+    When the user directly requests GET "/access/"
+    Then the server responds with HTTP 403
+    And the KAORI Access Denied page explains the permission boundary
+    And guidance identifies the administrator contact path and safe Welcome navigation
+    And protected Access Overview data is not returned
+    And no administrative state is modified
