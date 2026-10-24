@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (106 scenarios)
+# KAORI — Complete Acceptance Case Specifications (116 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 92 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605, while unexercised security and visual coverage remains a separate QA backlog.
+**Maturity:** Original 14 first-wave procedures retained; the other 102 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -386,6 +386,243 @@
 **Isolation / cleanup:** Use disposable scoped identities and sanitized artifacts. Never mutate production providers. If the provider mutation is relevant, run only in a governed sandbox with before/after read-back and cleanup.
 
 **Automation mapping:** Not validated. Inspect assertions under tests/contracts/kubernetes/; tests/kubernetes/; tests/integrations/.; do not infer coverage from filename.
+
+## Kubernetes Operations Dashboard
+
+**Owner:** app/kubernetes/dashboard/; `/dashboards/kubernetes/`.  
+**Shared UI owner:** Operational Dashboard family #753 / #923.  
+**Human evidence:** #937 explicitly APPROVED on 2026-10-24 for four reviewed tabs; not an automatic positive execution result for each scenario.  
+**Automation scope:** Existing Flask/pytest/Playwright; details remain source-reviewed pointers, not a new step runner.
+
+### UAT-KDB-001 — Dashboard shell and eight signals reflect active committed scope
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** An authorized operator, known cluster and committed scoped inventory/metrics/alert snapshots. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Open the dashboard and inspect Hero, scope, source freshness and all eight KPI cards.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-001.
+
+**Expected results:**
+- Hero and KPI identity match the selected cluster with explicit committed source; initial shell avoids live provider calls.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Source owner: app/kubernetes/dashboard/routes.py; candidates: tests/e2e/kubernetes/dashboard/test_kubernetes_dashboard_smoke.py and tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-002 — Cluster connectivity remains distinct from operational alert severity
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Connected Kubernetes X300-like fixture with ready nodes and at least one Critical AlertCase. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Open Operations Overview; compare connectivity KPI with Cluster Health composite severity and health table.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-002.
+
+**Expected results:**
+- Connected/Healthy registration does not hide composite Critical or alert reason; cluster scoped health table defaults to five rows.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: dashboard domain service/cluster health source and tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_kubernetes_cluster_health_uses_canonical_pagination_payload. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-003 — Capacity and forecast present worker-only committed projections
+
+**Type:** Positive · **Layer:** Both · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Selected cluster with worker-only committed capacity metrics and forecast resource/horizon snapshots. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Select Capacity & Demand; verify Data Scope, CPU/Memory/Pods, chart history/projection and source-derived conclusion.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-003.
+
+**Expected results:**
+- Exclude control-plane capacity; show actual worker headroom, projected percentage/horizon, guarded actions and no fabricated series.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/unit/kubernetes/dashboard/test_kubernetes_dashboard_domain.py::test_forecast_conclusion_is_compact_and_uses_committed_summary_values; tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_kubernetes_capacity_decision_notes_and_forecast_helpers. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-004 — Alert totals and controlled response retain source and severity
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Committed selected-cluster AlertCase fixture with Critical/Warning/Info counts and known recent open states. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Select Signals & Actions; compare KPI vs Alerts Summary, review top-five preview and six governance steps.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-004.
+
+**Expected results:**
+- Totals consistent with all selected-scope cases; latest preview at most five; Critical not suppressed; shared response steps/source present.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards and ::test_response_and_reporting_flows_use_current_shared_governance_owners. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-005 — Recommendation previews stay compact with full Intelligence details
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Up to five scoped Intelligence recommendations including a long Kubernetes Tenant identifier. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Inspect P1/P2 badges and title/description; hover title, activate authorized Intelligence detail link.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-005.
+
+**Expected results:**
+- Shared renderer shows at most five cards with 2-line title and 2-line description, intact source footer and accessible full detail.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_operational_dashboard_inner_presentation_is_shared_across_three_consumers; visual 2+2 review issue #3027. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-006 — Kubernetes report activity leads to a downloadable Ready artifact
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Ready Kubernetes-domain report for selected cluster with a permitted stored artifact and valid Reports identity. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Open Reporting, verify recent activity, select Open Reports Workspace, locate the Ready Analytics Overview Report and download.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-006.
+
+**Expected results:**
+- Correct scoped report and lifecycle record; at most four recent reports; successful actual download of chosen artifact without claiming all artifacts available.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: app/kubernetes/dashboard/sections/reporting.py and tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards; operator download confirmation #937. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-007 — Four workspace tabs preserve navigation and responsive themes
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Authenticated candidate with canonical six viewport sizes and saved Violet light/dark themes. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Navigate all four tabs, refresh, Back/Forward; inspect full page/card/table/chart and visual baseline at each viewport/theme.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-007.
+
+**Expected results:**
+- One visually active tab, correct panel and URL state, no clipped actions or horizontal overflow, no unreviewed baseline acceptance.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: shared workspace-tabs contracts, visual QA tests and approved Operational Dashboard family pattern; exact KDB browser mapping not verified. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-008 — Missing or stale evidence cannot fabricate healthy metrics
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Deterministic selected-cluster missing/stale metrics, forecast or AlertCase source fixture with unaffected inventory. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Open dependent Dashboard sections and inspect empty/partial/error states, readiness, source and absence of provider queries.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-008.
+
+**Expected results:**
+- Not Collected/Unavailable/Partial replaces false zero or Healthy claims; unrelated committed inventory remains visible; no external mutation.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py::test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection and ::test_capacity_and_signals_use_one_dashed_empty_state_contract. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-009 — Invalid or switched cluster scope cannot leak foreign evidence
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Two distinct committed cluster identities plus all-cluster summary and unknown/unpermitted identifiers. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Switch scope A to B/All; request lazy capacity, alerts and reporting with stale or foreign scope ID.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-009.
+
+**Expected results:**
+- No foreign metrics, AlertCases, reports or detail rows; selected scope prerequisite honored; all-cluster reports Kubernetes-only.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/unit/kubernetes/dashboard/test_kubernetes_dashboard_domain.py::test_dashboard_selected_cluster_resolution_accepts_only_catalog_ids and tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py::test_authorized_clusterless_section_renders_onboarding_without_data_read. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
+
+### UAT-KDB-010 — Restricted actors cannot bypass Dashboard access or start mutations
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Separate dashboard-level APPROVED on #937, not an individual Scenario-ID verdict
+
+**Preconditions:** Disposable restricted Viewer-like actor denied Kubernetes Dashboard view and separately authorized operator fixture. Record actor permissions, exact SHA, cluster identity, screenshot theme/viewport and originating committed snapshot before interaction.
+
+**Steps:**
+1. Record tested commit SHA, authenticated actor, effective permissions, selected cluster, initial committed source data and readiness.
+2. Request /dashboards/kubernetes/ and lazy section endpoints directly; inspect HTTP, rendered denial and absence of work.
+3. Capture the actual browser/HTTP/DB output, compare scope and source metadata, and inspect expected presentation and permission boundaries.
+4. Restore browser tabs/theme/selection, review the isolated result and link the evidence to UAT-KDB-010.
+
+**Expected results:**
+- No unauthorized content; authz runs before section builders/read, no job or provider mutation or leakage.
+- Dashboard data comes from qualified committed KAORI state with source/provider ownership intact; no new live provider reads or mutation.
+- The full result must be proved on an exact candidate rather than inferred from the 2026-10-24 human screenshots.
+
+**Required evidence:** Candidate source SHA and clean tree, permission/cluster fixture, dashboard screenshots/Playwright trace where UI is relevant, HTTP response/JUnit for automated assertions, committed DB or provider read-back where relevant, actual artifact download for UAT-KDB-006, and separate human approval reference #937.
+
+**Isolation / cleanup:** Test in scoped Dev Container or approved disposable fixtures; no production provider changes, unreviewed CSS baselines, report deletion or external data mutation. Restore selected cluster/theme and remove only disposable artifacts after consent.
+
+**Automation mapping:** Candidates: tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py::test_dashboard_index_requires_permission_before_building_context and ::test_lazy_section_authorization_runs_before_clusterless_blocker. Mapping is preliminary from source inspection on `kaori/review/staging-uat`; no exact Scenario-ID machine run is asserted.
 
 ## Kubernetes — Dashboard, Inventory & Topology
 
