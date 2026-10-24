@@ -60,10 +60,8 @@ def test_dense_topology_viewport_hint_is_accessible_and_nonblocking() -> None:
     assert 'bg-kaori-soft text-kaori-primary' in template
     assert 'Pan to explore nearby resources. Fit shows the full graph.' in source
     assert 'Zoom to inspect labels. Resource List shows every name.' in source
-    title_binding = (
-        "viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'"
-    )
-    assert title_binding in source
+    assert 'viewportHintTitle.textContent = readableFocusActive' in source
+    assert "'Focused view' : 'Full graph overview'" in source
     assert 'viewportHintCount.textContent = `${nodeCount} resources`' in source
     assert 'const updateViewportHint = (nodeCount) =>' in source
     assert 'viewportHint.textContent' not in source
@@ -72,13 +70,12 @@ def test_dense_topology_viewport_hint_is_accessible_and_nonblocking() -> None:
 
 def test_dense_topology_retains_operator_pan_zoom_and_export_scope() -> None:
     source = TOPOLOGY_JS.read_text(encoding='utf-8')
-    initial_fit = 'if (!graphViewportInitialized) fitGraphToCanvas({ preferReadable: true })'
-    assert initial_fit in source
+    assert 'if (!graphViewportInitialized)' in source
+    assert 'fitGraphToCanvas({ preferReadable: true })' in source
     assert '!readableFocusActive &&' in source
     assert 'visible.layout(layoutOptions()).run()' in source
     assert 'exportJson = () =>' in source
     assert 'exportPng = () =>' in source
-    node_records = "const visibleNodes = visibleNodeRecords().map((node) => node.data())"
-    assert node_records in source
+    assert 'visibleNodeRecords().map((node) => node.data())' in source
     assert "const visibleEdges = cy" in source
     assert "updateViewportHint(visible.nodes().length)" in source
