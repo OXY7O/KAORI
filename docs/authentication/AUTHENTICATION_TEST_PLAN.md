@@ -19,6 +19,10 @@ The canonical suite is `tests/access/authentication/`.
 - Unknown local identity or an existing externally provisioned LDAP account may continue to enabled, linked LDAP providers; the presence of its KAORI projection row does not grant local password authority.
 - Database unavailability stops external lookup.
 - LDAP provider unavailability is preserved after all external attempts.
+- Enabled → Disabled external provider transitions atomically advance auth_session_version only for externally owned linked identities; disabling an already disabled provider, ordinary edits and re-enabling do not rotate generations.
+- Old browser and remember cookies fail closed on the next request across app instances; enabling again cannot restore previous generations.
+- Provider disablement does not revoke unrelated providers' user projections or Local Database break-glass users. If the same KAORI external account links multiple provider instances of the same source, its sessions are conservatively revoked upon disabling any linked provider; no credential authority is transferred.
+- A revocation update or provider commit failure rolls back the transaction; the Activity Audit event records a count of linked accounts, not the number of active sessions.
 
 ### Local Database Provider
 
@@ -82,6 +86,7 @@ Test Local Database, LDAP, Google OIDC, and GitHub OAuth with:
 - wrong credential or denied authorization;
 - inactive KAORI projection;
 - disabled provider;
+- provider disabled **while already signed in** (old session rejected on next request; fresh login blocked; re-enable requires new session);
 - missing secret;
 - PostgreSQL unavailable;
 - external endpoint unavailable or TLS failure;
