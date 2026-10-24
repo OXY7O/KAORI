@@ -93,3 +93,139 @@
         <p class="text-xs leading-5 text-content-muted">Read-only comparison. Capacity admission, provider mutation and read-back remain separate governance gates.</p>
     </div>
 {%- endmacro %}
+
+
+{# Capsule owns only the indicated ResourceQuota/GlobalResourceQuota dimensions.
+   LimitRange/per-PVC fields are *not* written by quota cutover; a selected
+   profile requesting them is fail-closed before provider write. #}
+{% macro capsule_sections(authority, advanced_controls={}) -%}
+    <div class="space-y-3" data-tenant-profile-coverage="{{ authority }}">
+        {% for key, label, subtitle, icon, rows in [
+            ('basic', 'Basic Resources', 'Capsule authoritative quota · Requests, limits and pod slots', 'cpu', [
+                ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
+                ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
+                ('Pods', 'pods')
+            ]),
+            ('storage', 'Storage Guardrails', 'Quota storage and claim ceilings; per-PVC policy is separate', 'hard-drive', [
+                ('PVCs', 'persistentvolumeclaims'), ('Total Storage', 'requests.storage')
+            ]),
+            ('objects', 'Object Limits', 'Object ceilings in the authoritative Capsule quota source', 'boxes', [
+                ('Services', 'services'), ('ConfigMaps', 'configmaps'), ('Secrets', 'secrets')
+            ])
+        ] %}
+            {% call view_more_content.render(label, subtitle, icon=icon,
+                aria_label=authority ~ ' ' ~ label ~ ' comparison',
+                compact_action=true, extra_classes='shadow-none',
+                open_by_default=key == 'basic') %}
+                <p class="mb-2 text-xs font-medium text-kaori-primary">
+                    {{ 'Tenant.spec.resourceQuotas' if authority == 'capsule_tenant_resource_quotas' else 'GlobalResourceQuota.spec.quota.hard' }} · Governed with provider admission
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[27rem] text-left text-xs">
+                        <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 font-semibold">Dimension</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">Current · Provider / Committed</th>
+                                <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for name, quota_key in rows %}
+                                <tr class="hover:bg-surface-hover">
+                                    <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }}</th>
+                                    {% for side in ('current', 'proposed') %}
+                                        <td class="break-words px-3 py-2 {{ 'font-semibold text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}"
+                                            data-tenant-quota-metric-side="{{ side }}"
+                                            data-tenant-quota-metric-key="{{ quota_key }}">—</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            {% if key == 'storage' %}
+                                {% for name, field_key in [('Min PVC Size', 'min'), ('Max PVC Size', 'max')] %}
+                                    <tr>
+                                        <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }} · Per-PVC Policy</th>
+                                        <td class="px-3 py-2 text-content-muted">Provider-mirrored · Not governed</td>
+                                        <td class="break-words px-3 py-2 font-semibold text-content-primary"
+                                            data-tenant-capsule-external-source="storage_policy"
+                                            data-tenant-capsule-external-key="{{ field_key }}">—</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endcall %}
+        {% endfor %}
+        {% for group_key, label, subtitle, icon, rows in [
+            ('limits', 'Container Defaults', 'Native LimitRange defaults · Not governed by Capsule quota mutation', 'container', [
+                ('Default CPU Request', 'limits', 'default_request.cpu'),
+                ('Default CPU Limit', 'limits', 'default.cpu'),
+                ('Default Memory Request', 'limits', 'default_request.memory'),
+                ('Default Memory Limit', 'limits', 'default.memory')
+            ])
+        ] %}
+            {% call view_more_content.render(label, subtitle, icon=icon,
+                aria_label=authority ~ ' ' ~ label ~ ' unsupported control comparison',
+                compact_action=true, extra_classes='shadow-none') %}
+                <p class="mb-2 text-xs leading-5 text-content-secondary">
+                    This quota workflow has no admitted write/read-back authority for these controls.
+                    Requested values must use a compatible Native placement; this submission is blocked when configured.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[27rem] text-left text-xs">
+                        <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 font-semibold">Dimension</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">Current · Authority</th>
+                                <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for name, source, field_key in rows %}
+                                <tr>
+                                    <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }}</th>
+                                    <td class="px-3 py-2 text-content-muted">Provider-mirrored · Not governed</td>
+                                    <td class="break-words px-3 py-2 font-semibold text-content-primary"
+                                        data-tenant-capsule-external-source="{{ source }}"
+                                        data-tenant-capsule-external-key="{{ field_key }}">—</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endcall %}
+        {% endfor %}
+        {% call view_more_content.render('Advanced Controls',
+            'Provider-specific attachment capability · independent of quota mutation',
+            icon='shield-check',
+            aria_label=authority ~ ' advanced capability preflight',
+            compact_action=true, extra_classes='shadow-none') %}
+            <p class="mb-2 text-xs leading-5 text-content-secondary">
+                Enabled controls require provider capability admission during attachment;
+                this quota workflow does not itself prove their independent execution.
+            </p>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[27rem] text-left text-xs">
+                    <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                        <tr>
+                            <th scope="col" class="px-3 py-2 font-semibold">Control</th>
+                            <th scope="col" class="px-3 py-2 font-semibold">Placement authority</th>
+                            <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Preflight</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for control_key, contract in advanced_controls.items() %}
+                            <tr>
+                                <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ contract.label }}</th>
+                                <td class="px-3 py-2 text-content-muted">Separate capability gate</td>
+                                <td class="break-words px-3 py-2 font-medium text-content-primary"
+                                    data-tenant-capsule-advanced-preview="{{ control_key }}">—</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endcall %}
+        <p class="text-xs leading-5 text-content-muted">Quota writes remain Capsule-authoritative. Unsupported profile controls fail closed before mutation; read-only preview is not admission.</p>
+    </div>
+{%- endmacro %}

@@ -3,6 +3,7 @@
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
+{% import "kubernetes/tenant/partials/_resource_profile_coverage_comparison.html" as coverage_comparison %}
 <section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="capsule-shared-cutover-heading">
     <header class="flex min-w-0 items-start gap-4 border-b border-outline-subtle px-5 py-4">
@@ -128,6 +129,9 @@
                         </section>
                     {% endfor %}
                 </div>
+                <div class="border-t border-outline-subtle px-4 py-4">
+                    {{ coverage_comparison.capsule_sections('capsule_global_resource_quota', resource_profile_advanced_controls) }}
+                </div>
                 <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
                     <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
                         <i data-lucide="chart-no-axes-column-increasing"
@@ -232,11 +236,15 @@
                 </section>
             {% endif %}
         </div>
-        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p data-tenant-capsule-coverage-alert
+               hidden role="status"
+               class="px-4 py-2 text-xs font-semibold text-status-warning-text"></p>
+            <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="max-w-2xl text-xs leading-5 text-content-muted">
                 Provider identity and resourceVersion are rechecked before mutation. Success requires Capsule read-back.
             </p>
             <button type="submit"
+                        data-tenant-capsule-apply-button
                     {% if not can_manage or not capsule_shared_cutover_supported or not profiles %}disabled aria-disabled="true"{% endif %}
                     class="{{ action_button.classes('primary') }}">
                 <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
