@@ -10,7 +10,8 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
-from flask import Flask, request
+from flask import Flask, jsonify, request
+from flask_login import LoginManager, UserMixin
 from flask_wtf.csrf import generate_csrf
 
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
@@ -348,3 +349,104 @@ def test_browser_timezone_json_client_uses_session_bound_csrf_header() -> None:
     assert "'X-CSRFToken': csrfToken" in client
     assert "credentials: 'same-origin'" in client
     assert 'data-csrf="{{ csrf_token() }}"' in layout
+
+class _SettingsCsrfHttpUser(UserMixin):
+    """Synthetic identity used only by the isolated JSON HTTP boundary tests."""
+
+    id = 'csrf-contract-user'
+
+
+@pytest.mark.parametrize(
+    ('token_kind', 'expected_status', 'expected_result'),
+    [
+        ('missing', 400, 'invalid_csrf'),
+        ('forged', 400, 'invalid_csrf'),
+        ('other_session', 400, 'invalid_csrf'),
+        ('valid', 200, 'updated'),
+    ],
+)
+def test_browser_timezone_json_http_csrf_boundary(
+    token_kind: str, expected_status: int, expected_result: str
+) -> None:
+    """Exercise real Flask routing/login/session/CSRF before mutating test state."""
+    app = _settings_app()
+    app.config['WTF_CSRF_ENABLED'] = True
+    manager = LoginManager()
+    manager.init_app(app)
+    identity = _SettingsCsrfHttpUser()
+    manager.user_loader(lambda identifier: identity if identifier == identity.get_id() else None)
+
+    @app.get('/_settings_contract/csrf')
+    def _test_csrf_token():
+        return jsonify({'csrf_token': generate_csrf()})
+
+    user = SimpleNamespace(id=71, timezone_mode='automatic', timezone='Asia/Jakarta')
+    with app.test_client() as client:
+        with client.session_transaction() as session:
+            session['_user_id'] = identity.get_id()
+            session['_fresh'] = True
+        csrf_response = client.get('/_settings_contract/csrf')
+        assert csrf_response.status_code == 200
+        valid_token = csrf_response.get_json()['csrf_token']
+
+        headers = {}
+        if token_kind == 'forged':
+            headers['X-CSRFToken'] = 'forged-token'
+        elif token_kind == 'other_session':
+            with app.test_client() as other_client:
+                foreign_response = other_client.get('/_settings_contract/csrf')
+                headers['X-CSRFToken'] = foreign_response.get_json()['csrf_token']
+        elif token_kind == 'valid':
+            headers['X-CSRFToken'] = valid_token
+
+        with (
+            patch(
+                'app.settings.routes.current_user',
+                SimpleNamespace(_get_current_object=lambda: user),
+            ),
+            patch('app.settings.general.actions.db.session.commit') as commit,
+        ):
+            response = client.post(
+                '/settings/general/browser-timezone',
+                json={'timezone': 'Asia/Makassar'},
+                headers=headers,
+            )
+
+    assert response.status_code == expected_status
+    payload = response.get_json()
+    assert payload['status'] == expected_result
+    if token_kind == 'valid':
+        assert payload['timezone'] == 'Asia/Makassar'
+        assert user.timezone == 'Asia/Makassar'
+        commit.assert_called_once()
+    else:
+        assert user.timezone == 'Asia/Jakarta'
+        assert set(payload) == {'status'}
+        commit.assert_not_called()
+
+
+def test_browser_timezone_json_http_requires_authenticated_session() -> None:
+    """Unauthenticated HTTP requests cannot reach the preference mutation."""
+    app = _settings_app()
+    app.config['WTF_CSRF_ENABLED'] = True
+    manager = LoginManager()
+    manager.init_app(app)
+    user = SimpleNamespace(id=71, timezone_mode='automatic', timezone='Asia/Jakarta')
+
+    with (
+        app.test_client() as client,
+        patch(
+            'app.settings.routes.current_user',
+            SimpleNamespace(_get_current_object=lambda: user),
+        ),
+        patch('app.settings.general.actions.db.session.commit') as commit,
+    ):
+        response = client.post(
+            '/settings/general/browser-timezone',
+            json={'timezone': 'Asia/Makassar'},
+        )
+
+    assert response.status_code in {302, 401}
+    assert user.timezone == 'Asia/Jakarta'
+    commit.assert_not_called()
+
