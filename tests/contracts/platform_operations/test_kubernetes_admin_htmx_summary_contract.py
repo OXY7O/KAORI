@@ -415,8 +415,9 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert "('prerequisites', 'Cluster Prerequisites'" in workspace
     assert "('policies', 'Namespace Policies', 'boxes', none," in workspace
     assert "('policies', 'Namespace Policies', 'boxes', namespace_summary.total" not in workspace
-    # Only the tab badge is removed. Namespace totals still belong in the table header.
-    assert 'result_count=namespace_summary.total' in namespace
+    # Only the tab badge is removed; the unfiltered total stays explicitly scoped in the header.
+    assert "table_label.metadata_label(namespace_summary.total ~ ' Total Namespaces', icon='list-filter')" in namespace
+    assert 'result_count=namespace_summary.total' not in namespace
     assert "request.values.get('view') == 'policies'" in workspace
     assert "view='prerequisites'" in workspace
     assert "view='policies'" in workspace
@@ -539,7 +540,7 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
     assert table.count('table_ui.action_classes()') >= 3
     assert 'macro action_classes(' in shared
     assert 'header_actions=namespace_policy_header_actions' in section
-    assert 'result_count=namespace_summary.total' in section
+    assert "table_label.metadata_label(namespace_summary.total ~ ' Total Namespaces', icon='list-filter')" in section
     assert 'id="secret-reveal-live-source"' in section
     assert "'secret-reveal-namespace-loading'" in section
     assert 'hx-target="#secret-reveal-namespace-table-content"' in section

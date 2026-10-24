@@ -43,6 +43,7 @@
          x-data='{ "query": {{ (namespace_filters.query or '') | tojson }}, "policy": {{ (namespace_filters.policy or 'all') | tojson }} }'>
     {% set namespace_policy_title_extra %}
         {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
+        {{ table_label.metadata_label(namespace_summary.total ~ ' Total Namespaces', icon='list-filter') }}
         {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
         {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
     {% endset %}
@@ -72,8 +73,7 @@
         'Loading Namespace Policies',
         none,
         header_actions=namespace_policy_header_actions,
-        title_extra=namespace_policy_title_extra,
-        result_count=namespace_summary.total
+        title_extra=namespace_policy_title_extra
     ) }}
     {% if not namespace_source.available %}
         <div class="border-b border-outline-default px-6 py-4">
