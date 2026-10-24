@@ -228,6 +228,10 @@ def test_audit_event_engine_rechecks_authorization_before_lock_or_archive_write(
             return_value=domain,
         ),
         patch(
+            'app.platform_operations.data_lifecycle.retention.service.get_policy',
+            return_value=SimpleNamespace(enabled=True),
+        ) as persisted_policy,
+        patch(
             'app.platform_operations.data_lifecycle.retention.service._require_audit_event_manual_admission',
             side_effect=PermissionError('revoked'),
         ) as admission,
@@ -240,6 +244,7 @@ def test_audit_event_engine_rechecks_authorization_before_lock_or_archive_write(
                 cleanup=False,
                 triggered_by_user_id=27,
             )
+        persisted_policy.assert_called_once_with('audit_event')
         admission.assert_called_once_with(trigger_type='manual', triggered_by_user_id=27)
         lock.assert_not_called()
 
