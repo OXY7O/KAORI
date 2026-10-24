@@ -2,6 +2,7 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
+{% import "kubernetes/tenant/partials/_resource_profile_coverage_comparison.html" as coverage_comparison %}
 <section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="allocation-cutover-heading">
     <header class="flex min-w-0 items-start gap-4 border-b border-outline-subtle px-5 py-4">
@@ -151,6 +152,9 @@
                             </dl>
                         </section>
                     {% endfor %}
+                </div>
+                <div class="border-t border-outline-subtle px-4 py-4" aria-label="Native allocation profile coverage">
+                    {{ coverage_comparison.native_sections(resource_profile_advanced_controls) }}
                 </div>
                 <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3">
                     <div class="flex items-center justify-between gap-2">
