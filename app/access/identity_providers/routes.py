@@ -165,8 +165,9 @@ def edit(provider_id: int):
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
+        revoked_identity_count = 0
         try:
-            update_identity_provider(provider, configuration_from_form(form))
+            _, revoked_identity_count = update_identity_provider(provider, configuration_from_form(form))
         except ProviderIdentityRebindError as exc:
             if form.provider_key.data != provider.provider_key:
                 form.provider_key.errors = [*form.provider_key.errors, str(exc)]
@@ -193,7 +194,12 @@ def edit(provider_id: int):
                 event_type='identity_provider_updated',
                 status='success',
                 title='Identity provider updated',
-                message=f'{provider.display_name} configuration was updated.',
+                message=(
+                    f'{provider.display_name} authentication is disabled. '
+                    f'{revoked_identity_count} linked account session generation(s) invalidated.'
+                    if not provider.enabled
+                    else f'{provider.display_name} configuration was updated.'
+                ),
                 provider_id=provider.id,
                 provider_key=provider.provider_key,
             )

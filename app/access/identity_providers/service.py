@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.identity_provider.catalog import (
@@ -275,18 +275,59 @@ def ensure_provider_identity_continuity(
         )
 
 
+def revoke_disabled_provider_session_generations(provider: IdentityProvider) -> int:
+    """Invalidate existing sessions for the linked, externally owned accounts.
+
+    The set-based update handles multiple browser sessions per linked user with
+    one monotonically increasing credential generation. PostgreSQL commits this
+    mutation atomically with disabling the provider. Re-enabling never restores
+    the prior generation, and Local Database accounts cannot be included.
+    """
+    linked_user_ids = select(ExternalIdentityLink.user_id).where(
+        ExternalIdentityLink.provider_id == provider.id
+    )
+    return int(
+        db.session.query(User)
+        .filter(
+            User.id.in_(linked_user_ids),
+            User.auth_source == provider.provider_key,
+            User.is_super_admin.is_(False),
+            User.deleted_at.is_(None),
+        )
+        .update(
+            {User.auth_session_version: func.greatest(User.auth_session_version, 1) + 1},
+            synchronize_session=False,
+        )
+    )
+
+
 def update_identity_provider(
     provider: IdentityProvider,
     configuration: IdentityProviderConfiguration,
-) -> IdentityProvider:
-    ensure_provider_identity_continuity(provider, configuration)
-    apply_identity_provider_configuration(provider, configuration)
+) -> tuple[IdentityProvider, int]:
+    revoked_identity_count = 0
     try:
+        # Serialize enabled-state transitions on the provider row. A plain
+        # in-memory value loaded before a concurrent update is not authoritative.
+        was_enabled = bool(
+            db.session.execute(
+                select(IdentityProvider.enabled)
+                .where(IdentityProvider.id == provider.id)
+                .with_for_update()
+            ).scalar_one()
+        )
+        # Refresh the previously loaded ORM record after obtaining the lock;
+        # otherwise another request's committed state can remain stale here.
+        db.session.refresh(provider)
+        ensure_provider_identity_continuity(provider, configuration)
+        apply_identity_provider_configuration(provider, configuration)
+        if was_enabled and not provider.enabled:
+            revoked_identity_count = revoke_disabled_provider_session_generations(provider)
         db.session.commit()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, ProviderIdentityRebindError):
         db.session.rollback()
         raise
-    return provider
+    return provider, revoked_identity_count
 
 
 def commit_identity_projection() -> None:
