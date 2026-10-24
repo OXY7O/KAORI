@@ -22,10 +22,17 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     )
     assert 'xl:items-stretch' in template
     assert 'xl:relative xl:col-span-4' in template
-    assert 'xl:max-h-[calc(100vh-12rem)]' in template
+    assert 'xl:max-h-[calc(100vh-12rem)]' not in template
     assert 'xl:absolute xl:inset-0 xl:max-h-none' in template
     assert 'max-h-[28rem]' in template
+    assert 'xl:absolute xl:inset-0 xl:max-h-none' in template
     assert 'shrink-0 border-b border-outline-subtle p-3' in template
+    assert 'footer class="flex shrink-0 flex-wrap items-center' in template
+    assert 'visibleJobCount' in template
+    assert 'x-text="visibleJobCount"' in template
+    assert 'No matching jobs' in template
+    assert 'line-clamp-1 text-xs leading-5' in template
+    assert "variant='guide'" in template
     assert 'aria-label="Registered Jobs"' in template
     assert 'x-ref="jobList"' in template
     assert 'overflow-y-auto overscroll-contain' in template
