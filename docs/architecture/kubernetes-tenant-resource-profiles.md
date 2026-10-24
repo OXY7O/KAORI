@@ -1324,3 +1324,24 @@ and visual/keyboard/responsive/light-dark DevContainer QA plus human
 acceptance before entering official admission. The temporary holding
 `kaori/review/staging-uat` is **not** `kaori/staging`; official CI/CD
 and promotion remain HOLD.
+
+
+### Native Technical Coverage density refinement (#3000)
+
+Native Allocation and Native Cutover continue to call the **same** canonical
+`native_sections` renderer and to preserve all 16 base Resource Profile
+dimension hooks plus advanced placement preflight. Its header now presents a
+compact **five-category coverage strip** (5 Basic, 4 Storage, 3 Object
+Limits, 4 Container Defaults, Advanced capability-gated), followed by the
+existing accessible expandables in a compact style. The shared
+`view_more_content.render` component gained optional `dense=false` so
+other consumers keep their approved defaults. Native Cutover also uses a
+paired observed-baseline → proposed-managed journey to distinguish cutover
+from a managed profile change; the backend takeover, capacity admission and
+read-back authority remain unchanged.
+
+Counts describe **defined profile dimensions**, not the number of actively
+managed dimensions or admission success; individual current/proposed values
+still come from committed evidence and the selected profile. The Technical
+Details preview remains read-only. Browser mobile, desktop, keyboard and
+light/dark UAT is required before acceptance.

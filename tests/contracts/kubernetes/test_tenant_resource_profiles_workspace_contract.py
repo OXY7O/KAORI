@@ -2173,3 +2173,36 @@ def test_capsule_advanced_placement_capability_preflight_is_committed_and_fail_c
     assert 'data-tenant-capsule-advanced-preview="{{ control_key }}"' in read(
         'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
     )
+
+
+def test_native_technical_coverage_compact_summary_and_cutover_journey() -> None:
+    """#3000: both Native views reuse one compact coverage summary/accordion contract."""
+    from jinja2 import Environment
+
+    comparison = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    native = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    expand = read('app/templates/components/view_more_content.html')
+    for source in (comparison, cutover, native, expand):
+        Environment(autoescape=True).parse(source)
+
+    section = comparison.split('{% macro native_sections(', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert 'data-tenant-native-coverage-summary' in section
+    for label, value in [('Basic Resources', '5'), ('Storage Guardrails', '4'),
+                         ('Object Limits', '3'), ('Container Defaults', '4'),
+                         ('Advanced Controls', 'Gated')]:
+        assert f"('{label}', '{value}'" in section
+    assert section.count('dense=true') == 2
+    assert "open_by_default=key == 'basic'" in section
+    assert 'overflow-x-auto rounded-lg border border-outline-subtle' in section
+    assert 'data-tenant-allocation-tech-current="{{ path }}"' in section
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in section
+    assert 'data-tenant-allocation-advanced-proposed="{{ control_key }}"' in section
+    assert 'dense=false' in expand
+    assert "if dense else 'py-3.5'" in expand
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in native
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in cutover
+    assert 'data-tenant-native-cutover-journey' in cutover
+    assert 'Observed Provider Baseline' in cutover
+    assert 'Proposed KAORI Managed Contract' in cutover
+    assert 'Only committed after admitted provider read-back.' in cutover
