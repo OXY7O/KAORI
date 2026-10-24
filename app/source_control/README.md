@@ -1,8 +1,28 @@
-# Source Control — SC-01 foundation
+# Source Control — canonical identities and GitHub UAT candidate
 
 Authority: [#559](https://github.com/OXY7O/KAORI/issues/559), [#958](https://github.com/OXY7O/KAORI/issues/958), implementation [#2740](https://github.com/OXY7O/KAORI/issues/2740).
 
-This initial SC-01 increment reserves the **Source Control** capability in the canonical integration taxonomy, and **GitHub** in the provider matrix as **planned**, not Available. The shared Integrations domain route uses the existing workspace; no provider adapter/instance is registered and no live GitHub access, tokens, inventory or Product UI are claimed.
+## Current review-branch status (2026-10-24)
+
+On **`kaori/review/staging-uat` only**, GitHub is `available` in the provider matrix
+for controlled Dev Container review. SC-01/SC-02/SC-03 have been assembled into
+the temporary holding candidate: encrypted GitHub App registration, canonical
+Full Validation/Runtime Refresh jobs, committed installation-scoped repository
+inventory, bounded exact default-branch SHA evidence, and provider-qualified
+UAT pages under `Integrations → Source Control → GitHub`. This does **not**
+mean official staging/main provider admission, production readiness or Human
+Acceptance. The isolated local-database super-admin boundary still applies
+until #724 resource-scoped authorization is admitted. Signed webhook ingress
+and consumer both remain disabled by default. The authoritative Dev Container
+procedure and actual evidence requirements live in
+[`docs/operations/github-source-control-devcontainer-uat.md`](../../docs/operations/github-source-control-devcontainer-uat.md).
+
+## Historical SC-01 starting point
+
+At the original SC-01 checkpoint, GitHub was **planned** and no provider
+adapter, App credentials, worker collection or operational inventory UI was
+registered. That historical checkpoint does not describe the current review
+holding candidate. The committed SC-01 identity model remains provider-neutral.
 
 `identity.py` defines immutable, host-qualified provider-native keys for App installation, account, repository, exact revision and branch/tag reference. It does **not** represent a GitHub App installation as an account, infer repository access from a name, interpret branch/tag as immutable source, or provide authorization by itself.
 
@@ -47,15 +67,16 @@ authorization or observation evidence.
 **UI contract:** reuse the existing Integration domain page and its shared
 Hero, cards, tables, modals, pagination, HTMX and semantic state components.
 No GitHub-specific page or duplicated Violet styles are introduced by SC-01.
-The provider remains `planned` until qualified SC-02 readiness/UAT.
+At the SC-01-only checkpoint, the provider remained `planned`; the current review holding candidate is a separate UAT-only integration (see above).
 
 
 ## SC-03 — GitHub committed Repository Inventory (#2742, in implementation)
 
-This section is a **candidate on issue-scoped branch**, not an admitted
-capability. It depends on SC-01 #2740 and SC-02 #2741, whose Draft PRs
-remain unmerged. GitHub is still `planned`; no connection, JobExecution
-or repository inventory may be advertised Ready in live UI.
+This section documents the original **SC-03 issue-scoped candidate**.
+SC-01/02 official Draft PRs remain unadmitted; the temporary review holding
+branch now also contains an operational UAT candidate as described above.
+Do not mistake this for staging/main admission, complete GitHub repository
+coverage, a production-ready Source Control provider or Human Acceptance.
 
 - `repository_discovery.py` asks GitHub.com for the installation's exact
   granted repository pages (20 per page, bounded to 200 pages). It verifies
@@ -141,7 +162,7 @@ No extra schema migration is required for refs: this increment reuses SC-01 Sour
 SC-03 now includes **two independent, default-off admission switches**:
 
 - `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false`: `/integrations/source-control/github/webhook` responds **404** before reading the body or querying an installation. The Source Control provider matrix must also be admitted before the endpoint accepts a POST. Rate limiting is applied; the 256 KiB raw-body bound, JSON content type, authenticated HMAC-SHA256, UUID replay key and exact installation scope are enforced before a delivery is committed. A successful request returns **202** only for committed transport receipt, **not** reconciliation completion. The route never dispatches a job or trusts payload repository metadata.
-- `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`: no Source Control webhook maintenance beat entry is added while disabled; its Celery task is registered only on the existing `maintenance` queue. An explicitly enabled task still declines processing if GitHub is `planned`.
+- `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`: no Source Control webhook maintenance beat entry is added while disabled; its Celery task is registered only on the existing `maintenance` queue. An explicitly enabled task still declines processing if the GitHub provider is `planned` on the executing branch; the separate ingress/consumer gates remain mandatory on the UAT holding branch.
 
 `webhook_recovery.recover_webhook_inbox` examines up to 25 eligible committed delivery rows per pass, respecting due retry/backoff and only polling queued jobs once their canonical JobExecution is terminal or missing. Failed preclaim verification gets bounded retry then `requires_review`; abandoned `dispatching` becomes `dispatch_uncertain` and is **not automatically resent**. A broker/persistence exception of unknown dispatch acceptance also becomes `dispatch_uncertain`, not optimistic re-enqueue.
 
