@@ -39,14 +39,22 @@ def test_registry_details_use_shared_modal_without_raw_payload() -> None:
     assert "url_for('jobs.execution_details'" in registry
     assert 'data-resource-detail-header' in detail
     assert 'data-resource-detail-summary' in detail
+    assert 'data-kaori-detail-variant="job-execution"' in detail
+    assert 'data-kaori-detail-variant' in _read('app/static/js/detail_rows.js')
+    assert 'progress_bar.job_progress' in detail
+    assert 'detail.evidence_grid' in detail
+    assert 'execution.error_code' in detail
+    assert 'execution.error_message' in detail
+    assert 'data-resource-detail-header' in detail.split('data-resource-detail-summary', 1)[0]
     assert "@bp.get('/executions/<string:public_id>/details')" in routes
     assert 'present_job_execution_detail(job)' in routes
     for label in (
-        'Execution Identity',
-        'Scope & Ownership',
-        'Lifecycle',
-        'Result & Failure Evidence',
-        'Result Summary',
+        'Execution Snapshot',
+        'Execution Outcome',
+        'Execution Context',
+        'Lifecycle Timeline',
+        'Committed Result Evidence',
+        'Technical References',
     ):
         assert label in detail
     assert 'payload_json' not in detail
@@ -96,3 +104,20 @@ def test_v1_1_templates_parse() -> None:
         'app/templates/platform_operations/jobs/executions/partials/_queue_activity.html',
     ):
         environment.parse(_read(relative))
+
+def test_registry_detail_outcome_first_keeps_success_and_failure_truthful() -> None:
+    detail = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
+    presentation = _read('app/common/job_execution_presentation.py')
+    assert "execution.error_code != '-'" in detail
+    assert "execution.error_message != 'No execution error was recorded.'" in detail
+    assert 'Recorded Error Evidence' in detail
+    assert 'Committed worker state and last recorded progress.' in detail
+    assert 'No Result Summary Recorded' in detail
+    assert 'result_summary_remaining' in detail
+    assert 'Execution ID' in detail
+    assert 'Celery Task ID' in detail
+    assert 'Parent Execution' in detail
+    assert 'Result Reference' in detail
+    assert "'error_message': job.error_message or 'No execution error was recorded.'" in presentation
+    assert 'payload_json' not in detail
+
