@@ -50,7 +50,6 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'hx-target="#job-configuration-workspace"' in template
 
 
-
 def test_catalog_search_preserves_authoritative_job_descriptions() -> None:
     template = (ROOT / 'app/templates/platform_operations/jobs/configuration/_workspace.html').read_text(
         encoding='utf-8'

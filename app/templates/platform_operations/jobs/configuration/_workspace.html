@@ -55,8 +55,7 @@
                                     <div class="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-xs font-medium text-content-muted">
                                         <span class="shrink-0">{{ item.interval_label }}</span>
                                         <span aria-hidden="true">·</span>
-                                        <span class="min-w-0 truncate"
-                                              title="{{ item.queue_name }}">{{ item.queue_name }}</span>
+                                        <span class="min-w-0 truncate" title="{{ item.queue_name }}">{{ item.queue_name }}</span>
                                         <span aria-hidden="true">·</span>
                                         <span class="shrink-0"
                                               id="job-catalog-activity-{{ item.key|replace('.', '-') |replace('/', '-') }}">{{ 'Active' if item.active else 'Idle' }}</span>

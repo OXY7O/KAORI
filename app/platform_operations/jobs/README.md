@@ -92,15 +92,22 @@ Jobs → Configuration uses the existing `_job_overview.html` and
 For Vault/PKI and selected Object Storage Analytics jobs, the visible
 one-line synopsis is **presentation-only**; the existing canonical
 `JobDefinition.description`, `safety_summary`, result evidence,
-and provider-owned policy remain unchanged. A standard KAORI Info Tip
-**Guide** exposes complete safety context to keyboard and pointer users,
+and provider-owned policy remain unchanged. A single canonical KAORI Info Tip **Guide beside the selected job title**
+exposes the complete safety context to keyboard, touch and pointer users,
 including approved mounts, metadata-only collection, HMAC custody,
 PKI coverage limitations and committed snapshot/fail-closed behavior.
+The compact summary footer remains readable without a second Guide button.
+Current Execution process/detail and Registry Analytics safety can use
+single-line responsive previews, but original committed values remain in
+the HTML and complete safety details remain in the title Guide.
 The application must never infer eligibility or success from abbreviated copy.
 
-Vault policy forms continue to use their existing CSRF fields, permissions,
-schedule-enabled controls and interval constraints. The analytics refresh
-and stale-grace inputs likewise preserve their canonical semantics.
+Vault policy forms now reuse consistent Violet icon/toggle/interval cards,
+operator helper text and a scheduler note beside Save Policy. Registry Security
+and Governance policy footers use the same read-only scheduler explanation.
+These are presentation-only changes: existing CSRF fields, permissions,
+schedule-enabled controls and interval constraints remain authoritative.
+Analytics refresh and stale-grace inputs likewise preserve their canonical semantics.
 
 ## Guarded Empty-Inventory Recovery UI
 

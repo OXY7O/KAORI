@@ -14,6 +14,7 @@ from app.platform_operations.jobs.registry import list_job_definitions
 
 _ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded', 'evidence_failed'}
 
+
 def build_job_configuration_attention_summary() -> int:
     """Count persisted policy dispatch attention without creating missing policies."""
     return JobPolicy.query.filter(JobPolicy.last_dispatch_status.in_(_ATTENTION_DISPATCH_STATUSES)).count()
