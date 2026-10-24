@@ -16,7 +16,14 @@ Create a Settings Overview only when at least three independently owned Settings
 - Successful preference and credential mutations use the shared operational toast.
 - User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.
 - Automatic browser-timezone synchronization is intentionally silent because it is background preference convergence, not a user-triggered CRUD action.
-- The authenticated `POST /settings/general/browser-timezone` JSON sync is a separate account-preference mutation. It requires the current session's Flask-WTF CSRF token in `X-CSRFToken` (provided by the shared app layout and `js/user_timezone_sync.js`); missing or invalid tokens return safe HTTP 400 `invalid_csrf` **without** updating `User.timezone`. Successful same-origin automatic sync remains silent, uses valid IANA data, and never changes execution schedules or canonical UTC records. This boundary is independent of the ordinary Time Zone/Regional Format forms' CSRF validation.
+- The authenticated `POST /settings/general/browser-timezone` JSON sync is a separate
+  account-preference mutation. It requires the current session's Flask-WTF CSRF
+  token in `X-CSRFToken` (from the shared app layout and
+  `js/user_timezone_sync.js`). Missing or invalid tokens return HTTP 400
+  `invalid_csrf` **without** changing `User.timezone`. Valid automatic sync
+  remains silent and respects canonical UTC data and operational schedules.
+  This boundary is independent of the Time Zone/Regional Format forms' CSRF
+  validation.
 - User-clicked **Detect Again** reads the browser timezone locally and displays the shared Operational Toast: detected/unchanged result (8-second success) or unavailable result (persistent error). A failed re-detection retains the previous valid browser timezone; all result copy clarifies that no preference was saved. The toast reuses the canonical global stack and lifecycle, including keyboard/a11y semantics; normal page-load detection stays silent.
 - Browser re-detection does not POST, persist Activity Audit evidence, create Notification Deck items, or affect the explicit Save Time Zone action. Saved user preference changes remain auditable through the existing `user_preference` `AUDIT_ONLY` record.
 - Settings must not introduce page-local loading-bar heights or page-local toast implementations.
