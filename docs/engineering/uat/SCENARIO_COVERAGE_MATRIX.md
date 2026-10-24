@@ -2,21 +2,23 @@
 
 **Issue authority:** #1738 catalog, #1726 UI, #1727 non-UI, #1728 execution evidence, #1730 real UAT and human acceptance.
 
-**Checkpoint 2026-10-16:** Written specifications remain unchanged. Nine supplemental IDs plus the #1728 four-scenario pilot manifest were inspected against actual source assertions in their separate #1726/#1727 branches. No integrated exact candidate, machine scenario execution or human UAT acceptance is proven. CI/CD, PR and merge remain on hold.
+**Checkpoint 2026-10-16 (original 91 cases):** Written specifications remain unchanged. Nine supplemental IDs plus the #1728 four-scenario pilot manifest were inspected against actual source assertions in their separate #1726/#1727 branches. No integrated exact candidate, machine scenario execution or human UAT acceptance is proven. CI/CD, PR and merge remain on hold.
+
+**Addendum 2026-10-24:** Six Welcome-owned scenarios (`UAT-WEL-001`–`006`) and one separate IAM Viewer direct-read denial (`UAT-IAM-007`) expand the written catalog to 98. Their links to existing source assertions are preliminary, not complete exact-candidate test-node coverage or machine PASS. Human Welcome acceptance/screenshot observations remain recorded on #746, not retrospectively attributed to these new Gherkin IDs.
 
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **91/91** across 18 Gherkin files and case register |
+| Written case procedures | **98/98** across 19 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/91** (14 first-wave + 9 supplemental + UIX-006; source-only/adjacent included, none prove full UAT) |
-| Scenario IDs without individual assertion-level review | **67/91**; does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **77**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/91**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **87/91 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/91 in this checkpoint** |
-| Human acceptance | **0/91 in this checkpoint** |
+| Scenario IDs with inspected source assertions | **24/98** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **74/98**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **84**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/98**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **94/98 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/98 attributed to this catalog checkpoint** |
+| Human acceptance | **0/98 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -37,6 +39,7 @@
 | `UAT-IAM-004` | Medium | UI | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-IAM-005` | High | Both | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-IAM-006` | Medium | UI | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-IAM-007` | High | Both | [Gherkin](features/iam-access-rbac.feature) | REVIEW-ONLY: Access route any-permission decorator aborts(403) in review source; exact Viewer GET/HTML automated node not mapped; manual HTTP 403 on #746 | NOT RUN / PENDING |
 | `UAT-KCL-001` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-002` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-003` | High | Non-UI | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -106,6 +109,12 @@
 | `UAT-LIF-003` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-LIF-004` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-LIF-005` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-WEL-001` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: authenticated / and /welcome E2E smoke exists; provider-free source contract is partial | NOT RUN / PENDING |
+| `UAT-WEL-002` | High | Both | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: permission-filtered shortcut unit/security tests exist; default Viewer full rendered HTML authorization mapping missing | NOT RUN / PENDING |
+| `UAT-WEL-003` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Welcome catalog tenant-search test exists; exact candidate execution not observed | NOT RUN / PENDING |
+| `UAT-WEL-004` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Escape is covered after tenant search; unmatched query to shared browser empty state not asserted | NOT RUN / PENDING |
+| `UAT-WEL-005` | High | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright canonical Welcome 6-viewport x 2-theme baseline/geometry exists; full-scroll and contrast proof incomplete | NOT RUN / PENDING |
+| `UAT-WEL-006` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: target resolution tests exist; real authorized card click-through and independent route denial mapping incomplete | NOT RUN / PENDING |
 | `UAT-UIX-001` | Medium | UI | [Gherkin](features/uix-shared-ui-ux.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-UIX-002` | High | UI | [Gherkin](features/uix-shared-ui-ux.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-UIX-003` | Medium | UI | [Gherkin](features/uix-shared-ui-ux.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
