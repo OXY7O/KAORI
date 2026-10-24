@@ -1665,47 +1665,45 @@ def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks(
 
 
 def test_allocation_comparison_preserves_all_sixteen_frozen_and_proposed_dimensions() -> None:
+    """Native allocation and adopted cutover use all sixteen governed profile fields."""
+    from jinja2 import Environment
+
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    shared = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
     registry = read('app/kubernetes/tenant/registry_context.py')
+    for source in (template, cutover, shared):
+        Environment(autoescape=True).parse(source)
 
-    headline_dimensions = (
-        ('CPU Requests', 'quota', 'requests.cpu'),
-        ('CPU Limits', 'quota', 'limits.cpu'),
-        ('Memory Requests', 'quota', 'requests.memory'),
-        ('Memory Limits', 'quota', 'limits.memory'),
-        ('Pods', 'quota', 'pods'),
-        ('Total Storage', 'quota', 'requests.storage'),
-    )
-    for label, source, key in headline_dimensions:
-        assert f"('{label}', '{source}', '{key}')" in template
-    assert "('Min PVC Size', 'min')" in template
-    assert "('Max PVC Size', 'max')" in template
-    object_dimensions = (
-        ('PVCs', 'quota', 'persistentvolumeclaims'),
-        ('Services', 'quota', 'services'),
-        ('ConfigMaps', 'quota', 'configmaps'),
-        ('Secrets', 'quota', 'secrets'),
-    )
-    default_dimensions = (
-        ('CPU Request', 'limits', 'default_request.cpu'),
-        ('CPU Limit', 'limits', 'default.cpu'),
-        ('Memory Request', 'limits', 'default_request.memory'),
-        ('Memory Limit', 'limits', 'default.memory'),
-    )
-    for label, source, key in object_dimensions + default_dimensions:
-        assert f"('{label}', '{source}', '{key}')" in template
-
-    assert 'data-tenant-allocation-tech-current="{{ source }}.{{ resource }}"' in template
-    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in template
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in cutover
+    for name, path in (
+        ('CPU Requests', 'quota.requests.cpu'),
+        ('CPU Limits', 'quota.limits.cpu'),
+        ('Memory Requests', 'quota.requests.memory'),
+        ('Memory Limits', 'quota.limits.memory'),
+        ('Pods', 'quota.pods'),
+        ('PVCs', 'quota.persistentvolumeclaims'),
+        ('Total Storage', 'quota.requests.storage'),
+        ('Min PVC Size', 'storage_policy.min'),
+        ('Max PVC Size', 'storage_policy.max'),
+        ('Services', 'quota.services'),
+        ('ConfigMaps', 'quota.configmaps'),
+        ('Secrets', 'quota.secrets'),
+        ('Default CPU Request', 'limits.default_request.cpu'),
+        ('Default CPU Limit', 'limits.default.cpu'),
+        ('Default Memory Request', 'limits.default_request.memory'),
+        ('Default Memory Limit', 'limits.default.memory'),
+    ):
+        assert f"('{name}', '{path}')" in shared
+    assert 'data-tenant-allocation-tech-current="{{ path }}"' in shared
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
     assert 'const current = namespaces[namespaceSelect?.value] || null' in script
     assert "profileSelect?.value === 'adopted_baseline' ? current" in script
     assert 'const after = contractValue(proposed, source, key)' in script
-    assert "return key.split('.').reduce((value, part) => value?.[part], contract.limits)" in script
-    assert 'return contract[source]?.[key] ?? null' in script
-    assert "if (source === 'limits')" in script
-    assert 'boundedQuotaKeys.includes(key)' in script
-    assert "return source === 'storage_policy'" in script
+    assert "'persistentvolumeclaims'" in script
+    assert "'secrets'" in script
     assert "'quota': record.allocation_quota_json or {}" in registry
     assert "'limits': record.allocation_limit_defaults_json or {}" in registry
     assert "'storage_policy': record.allocation_storage_policy_json or {}" in registry
@@ -1713,62 +1711,30 @@ def test_allocation_comparison_preserves_all_sixteen_frozen_and_proposed_dimensi
     assert "'limits': profile.limit_defaults_json or {}" in registry
     assert "'storage_policy': getattr(profile, 'storage_policy_json', {}) or {}" in registry
 
-
-def test_allocation_technical_details_are_one_accessible_switch_not_expandables() -> None:
+def test_allocation_technical_details_use_canonical_accessible_expandables() -> None:
+    """#2985 supersedes obsolete vertical tabs with existing Native disclosure."""
     from jinja2 import Environment
 
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    shared = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
-
-    Environment(autoescape=True).parse(template)
-    shared_tabs = read('app/templates/components/technical_category_tabs.html')
-    assert 'Technical Details' in template
-    assert '{% call technical_category_tabs.tablist() %}' in template
-    assert 'role="tablist"' not in template
-    assert 'role="tablist"' in shared_tabs
-    assert 'aria-label="{{ aria_label }}"' in shared_tabs
-    assert 'data-kaori-tab-variant="technical-category-vertical"' in shared_tabs
-    assert 'role="tabpanel"' in template
-    assert 'data-tenant-allocation-detail-tab="{{ key }}"' in template
-    assert 'data-tenant-allocation-detail-panel="{{ key }}"' in template
-    assert 'data-tenant-allocation-detail-panel="advanced"' in template
-    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
-    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
-    assert "('advanced', 'Advanced Controls', 'shield-check', 'Capability evidence')" in template
-    assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
-    assert "selectDetail('objects')" in script
-    assert "button.setAttribute('aria-selected', String(selected))" in script
-    assert 'button.tabIndex = selected ? 0 : -1' in script
-    assert "button.classList.toggle('border-kaori-primary', selected)" in script
-    assert "button.classList.toggle('bg-kaori-soft', selected)" in script
-    assert "button.classList.toggle('text-kaori-primary', selected)" in script
-    assert "button.classList.toggle('border-transparent', !selected)" in script
-    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
-    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
-    assert "event.key === 'Home'" in script
-    assert "event.key === 'End'" in script
-    assert 'details class=' not in template
-    assert 'data-tenant-allocation-advanced-empty' in template
-    assert 'No configured Advanced Controls in either contract.' in template
-    assert 'max-w-5xl' not in template
-    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
-    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
-    assert 'aria-orientation="vertical"' in shared_tabs
-    assert 'border-kaori-primary bg-kaori-soft text-kaori-primary' in template
-    assert 'table-fixed text-left text-sm' in template
-    assert 'Current · Frozen' in template
-    assert 'Proposed · Profile' in template
-    assert (
-        "aria-label=\"{{ 'Object Limits' if key == 'objects' else 'Container Defaults' }} current and proposed comparison\""
-        in template
-    )
-    assert 'data-tenant-allocation-tech-row' in template
-    assert 'const differs = !!current && !!proposed && classifyChange(beforeValue, afterValue) !== null' in script
-    assert "cell.classList.toggle('text-kaori-primary', differs)" in script
-    assert "cell.classList.toggle('text-content-primary', !differs)" in script
-    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
-    assert 'This preview never approves or applies changes.' in template
-
+    for source in (template, cutover, shared):
+        Environment(autoescape=True).parse(source)
+    assert 'components/view_more_content.html' in shared
+    assert "data-tenant-profile-coverage=\"native_kubernetes\"" in shared
+    for label in ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults', 'Advanced Controls'):
+        assert f"'{label}'" in shared
+    assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in shared
+    assert 'data-tenant-allocation-advanced-empty' in shared
+    assert "data-tenant-allocation-detail-tab" not in template
+    assert "const detailTabs" not in script
+    assert "selectDetail('objects')" not in script
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert "data-tenant-allocation-change-profile" in template
+    assert 'data-tenant-allocation-highlight-count' in template
+    assert 'data-tenant-allocation-highlight-count' in cutover
 
 def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
@@ -1777,7 +1743,7 @@ def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() ->
     page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     service = read('app/kubernetes/tenant/service.py')
 
-    assert 'Capability evaluation is not proof of provider execution or read-back.' in template
+    assert 'Placement capability preflight; not verified provider execution.' in read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
     assert 'This preview never approves or applies changes.' in template
     assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
     assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
@@ -1818,37 +1784,29 @@ def test_allocation_highlights_are_bounded_conservative_and_selection_sensitive(
 
 
 def test_allocation_full_width_technical_workspace_and_readable_comparison() -> None:
+    """#2985 one shared 5-group disclosure serves both Native workspaces."""
     from jinja2 import Environment
 
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    shared = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
-    Environment(autoescape=True).parse(template)
-
-    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
-    shared_tabs = read('app/templates/components/technical_category_tabs.html')
+    for source in (template, cutover, shared):
+        Environment(autoescape=True).parse(source)
     assert 'mx-auto max-w-5xl' not in template
-    assert '{% call technical_category_tabs.tablist() %}' in template
-    assert 'role="tablist"' in shared_tabs
-    assert 'aria-orientation="vertical"' in shared_tabs
-    assert 'data-kaori-technical-category-tabs' in shared_tabs
-    assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
-    assert 'role="tabpanel"' in template
-    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
-    assert 'w-full min-w-[26rem] table-fixed text-left text-sm' in template
-    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
-    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
-    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
-    assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in template
-    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in template
+    assert 'coverage_comparison.native_sections(resource_profile_advanced_controls)' in cutover
+    assert "open_by_default=key == 'basic'" in shared
+    assert "aria_label='Native ' ~ label ~ ' comparison'" in shared
+    assert 'min-w-[27rem]' in shared
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
+    assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in shared
+    assert re.search(r'data-tenant-allocation-highlight-item\\s+hidden', template)
     assert 'border-l-2 border-kaori-primary/20 pl-3' in template
     assert 'data-tenant-allocation-change-namespace' in template
-    assert 'data-tenant-allocation-change-profile' in template
-    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
-    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
     assert 'renderContractPreview(current, proposed)' in script
     assert "cell.classList.toggle('text-kaori-primary', differs)" in script
-    assert 'This preview never approves or applies changes.' in template
-
+    assert 'Read-only comparison. Capacity admission' in shared
 
 def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> None:
     from jinja2 import Environment
@@ -1884,7 +1842,7 @@ def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> Non
     # Icons convey navigation hierarchy only; the governed contract is still
     # read from the same frozen and versioned quota bindings.
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
-    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
     assert "url_for('tenant.change_namespace_allocation_route')" in template
     assert 'name="csrf_token"' in template
     assert 'Preflight &amp; Apply' in template
