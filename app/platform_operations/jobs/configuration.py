@@ -14,6 +14,29 @@ from app.platform_operations.jobs.registry import list_job_definitions
 
 _ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded', 'evidence_failed'}
 
+# Concise Job Configuration catalog copy only; JobDefinition.description stays authoritative.
+_CATALOG_SUMMARIES: dict[str, str] = {
+    'kubernetes.inventory.sync': 'Refresh Kubernetes inventory.',
+    'kubernetes.tenant.sync': 'Refresh Kubernetes Tenant snapshots.',
+    'object_storage.inventory.sync': 'Refresh bucket inventory.',
+    'artifact_registry.inventory.sync': 'Refresh Registry inventory.',
+    'secrets_pki.inventory.sync': 'Sync approved Vault metadata.',
+    'secrets_pki.vault_alerts.observe': 'Observe approved Vault alerts.',
+    'secrets_pki.pki.sync': 'Sync approved public issuers.',
+    'secrets_pki.pki.stored_certs.sync': 'Sync stored public certificates.',
+    'artifact_registry.security.sync': 'Refresh Registry security evidence.',
+    'artifact_registry.governance.sync': 'Refresh Registry governance evidence.',
+    'artifact_registry.runtime_correlation.materialize': 'Correlate Registry images with workloads.',
+    'artifact_registry.analytics.materialize': 'Refresh Registry analytics.',
+    'object_storage.analytics.materialize': 'Refresh storage analytics.',
+    'object_storage.forecast.materialize': 'Refresh storage capacity forecasts.',
+    'reports.schedule.dispatch': 'Dispatch scheduled reports.',
+    'governance.tls_certificates.sync': 'Refresh TLS certificate inventory.',
+    'analytics.materialize': 'Refresh Kubernetes analytics.',
+    'analytics.forecast.materialize': 'Refresh Kubernetes capacity forecasts.',
+    'source_control.repository.sync': 'Sync authorized GitHub repositories.',
+}
+
 
 def build_job_configuration_attention_summary() -> int:
     """Count persisted policy dispatch attention without creating missing policies."""
@@ -43,6 +66,7 @@ def _catalog_row(
         'name': definition.name,
         'domain': definition.domain,
         'description': definition.description,
+        'catalog_summary': _CATALOG_SUMMARIES.get(definition.key, definition.description),
         'icon': definition.icon,
         'queue_name': definition.queue_name,
         'scope_type': definition.scope_type,

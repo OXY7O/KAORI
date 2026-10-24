@@ -32,6 +32,7 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'x-text="visibleJobCount"' in template
     assert 'No matching jobs' in template
     assert 'line-clamp-1 text-xs leading-5' in template
+    assert 'title="{{ item.description }}">{{ item.catalog_summary }}' in template
     assert "variant='guide'" in template
     assert 'aria-label="Registered Jobs"' in template
     assert 'x-ref="jobList"' in template
@@ -41,3 +42,17 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert '@popstate.window=' in template
     assert 'hx-push-url="true"' in template
     assert 'hx-target="#job-configuration-workspace"' in template
+
+def test_registered_job_summaries_are_concise_without_mutating_definitions() -> None:
+    source = (ROOT / 'app/platform_operations/jobs/configuration.py').read_text(encoding='utf-8')
+    catalog = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text(
+        encoding='utf-8'
+    )
+    assert '_CATALOG_SUMMARIES:' in source
+    assert "'description': definition.description" in source
+    assert "'catalog_summary': _CATALOG_SUMMARIES.get(definition.key, definition.description)" in source
+    registered_keys = {line.split(': ', 1)[1] for line in catalog.splitlines() if line.startswith('- key: ')}
+    summaries = source.split('_CATALOG_SUMMARIES:', 1)[1].split('\n}', 1)[0]
+    for key in registered_keys:
+        assert f"'{key}': " in summaries
+    assert len(registered_keys) == 19
