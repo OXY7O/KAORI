@@ -734,6 +734,24 @@ def test_representative_filter_pagination_and_form_controls(
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
 
 
+def _assert_query_tab_strip_has_no_vertical_overflow(
+    page: Page, *, expect_horizontal_scroll: bool
+) -> None:
+    tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
+    expect(tablist).to_be_visible()
+    geometry = tablist.evaluate(
+        '(element) => ({'
+        'clientHeight: element.clientHeight, '
+        'scrollHeight: element.scrollHeight, '
+        'clientWidth: element.clientWidth, '
+        'scrollWidth: element.scrollWidth'
+        '})'
+    )
+    assert geometry['scrollHeight'] <= geometry['clientHeight'], geometry
+    if expect_horizontal_scroll:
+        assert geometry['scrollWidth'] > geometry['clientWidth'], geometry
+
+
 def test_settings_account_profile_activity_credentials_visual_qa(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
@@ -786,6 +804,9 @@ def test_settings_account_profile_activity_credentials_visual_qa(
                 else:
                     expect(page.get_by_role('heading', name='Account Profile & Access')).to_be_visible()
 
+                _assert_query_tab_strip_has_no_vertical_overflow(
+                    page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}
+                )
                 assert_document_fits_viewport(page)
                 assert_primary_actions_visible(page)
                 assert_locator_within_document_width(page, workspace, label=f'Account {tab}')
@@ -800,3 +821,37 @@ def test_settings_account_profile_activity_credentials_visual_qa(
                         evidence=f'{scenario}-{viewport_name}.png',
                     )
                 )
+
+
+def test_settings_general_query_tabs_keep_vertical_scroll_closed(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Shared General tab strip has no phantom y-scrollbar while mobile x-scroll remains."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    _login(page, kaori_authenticated_base_url)
+    route = f'{kaori_authenticated_base_url}/settings/general?tab=time-locale'
+
+    response = page.goto(route, wait_until='networkidle')
+    assert response is not None and response.ok
+    for theme in ('light', 'dark'):
+        _load_persisted_visual_theme(page, theme)
+        response = page.goto(route, wait_until='networkidle')
+        assert response is not None and response.ok
+        with _browser_evidence(page, f'settings-general-query-tabs-{theme}', viewport_name):
+            for tab in ('time-locale', 'regional-format'):
+                if tab == 'regional-format':
+                    page.locator('#general-settings-page a[href*="tab=regional-format"]').first.click()
+                    expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
+
+                current_tab = page.locator(
+                    f'[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab={tab}"]'
+                )
+                expect(current_tab).to_have_attribute('aria-selected', 'true')
+                _assert_query_tab_strip_has_no_vertical_overflow(
+                    page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}
+                )
+
+            assert_document_fits_viewport(page)
