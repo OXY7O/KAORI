@@ -380,8 +380,8 @@ def test_browser_timezone_json_http_csrf_boundary(token_kind: str, expected_stat
         return jsonify({'csrf_token': generate_csrf()})
 
     # Generate the foreign token before opening the primary test client.
-    # Nested preserved test-client contexts can share Flask's request-local g
-    # CSRF cache and incorrectly turn a foreign-session negative into HTTP 200.
+    # Nested preserved test-client contexts may reuse Flask's app-context g
+    # CSRF cache, incorrectly turning a foreign-session negative into HTTP 200.
     foreign_token = None
     if token_kind == 'other_session':
         with app.test_client() as other_client:
