@@ -108,6 +108,7 @@ def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
     assert 'name="confirmation_phrase"' in storage
     assert 'name="confirm_empty_system_id"' in storage
 
+
 def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() -> None:
     overview = _read('app/templates/platform_operations/jobs/configuration/_job_overview.html')
     activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
