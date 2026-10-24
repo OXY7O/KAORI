@@ -350,6 +350,7 @@ def test_browser_timezone_json_client_uses_session_bound_csrf_header() -> None:
     assert "credentials: 'same-origin'" in client
     assert 'data-csrf="{{ csrf_token() }}"' in layout
 
+
 class _SettingsCsrfHttpUser(UserMixin):
     """Synthetic identity used only by the isolated JSON HTTP boundary tests."""
 
@@ -365,9 +366,7 @@ class _SettingsCsrfHttpUser(UserMixin):
         ('valid', 200, 'updated'),
     ],
 )
-def test_browser_timezone_json_http_csrf_boundary(
-    token_kind: str, expected_status: int, expected_result: str
-) -> None:
+def test_browser_timezone_json_http_csrf_boundary(token_kind: str, expected_status: int, expected_result: str) -> None:
     """Exercise real Flask routing/login/session/CSRF before mutating test state."""
     app = _settings_app()
     app.config['WTF_CSRF_ENABLED'] = True
@@ -379,6 +378,16 @@ def test_browser_timezone_json_http_csrf_boundary(
     @app.get('/_settings_contract/csrf')
     def _test_csrf_token():
         return jsonify({'csrf_token': generate_csrf()})
+
+    # Generate the foreign token before opening the primary test client.
+    # Nested preserved test-client contexts may reuse Flask's app-context g
+    # CSRF cache, incorrectly turning a foreign-session negative into HTTP 200.
+    foreign_token = None
+    if token_kind == 'other_session':
+        with app.test_client() as other_client:
+            foreign_response = other_client.get('/_settings_contract/csrf')
+            assert foreign_response.status_code == 200
+            foreign_token = foreign_response.get_json()['csrf_token']
 
     user = SimpleNamespace(id=71, timezone_mode='automatic', timezone='Asia/Jakarta')
     with app.test_client() as client:
@@ -393,9 +402,8 @@ def test_browser_timezone_json_http_csrf_boundary(
         if token_kind == 'forged':
             headers['X-CSRFToken'] = 'forged-token'
         elif token_kind == 'other_session':
-            with app.test_client() as other_client:
-                foreign_response = other_client.get('/_settings_contract/csrf')
-                headers['X-CSRFToken'] = foreign_response.get_json()['csrf_token']
+            assert foreign_token is not None and foreign_token != valid_token
+            headers['X-CSRFToken'] = foreign_token
         elif token_kind == 'valid':
             headers['X-CSRFToken'] = valid_token
 
@@ -450,4 +458,3 @@ def test_browser_timezone_json_http_requires_authenticated_session() -> None:
     assert response.status_code in {302, 401}
     assert user.timezone == 'Asia/Jakarta'
     commit.assert_not_called()
-

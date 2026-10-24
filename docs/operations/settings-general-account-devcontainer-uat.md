@@ -85,8 +85,26 @@ It exercises the actual registered JSON route and login/CSRF gate:
 | Valid signed token from the same session | `200 updated` | Synthetic timezone updated; exactly one mocked commit |
 | No authenticated session | `401` or sign-in redirect `302` | Account timezone unchanged; no DB commit |
 
-**New HTTP regression: NOT RUN** as of this source change. Execute the existing
-focused checks in Dev Container on the updated holding SHA:
+**First execution (operator-provided): FAIL — 23 passed, 1 failed
+in 8.86s.** The only failure was
+`test_browser_timezone_json_http_csrf_boundary[other_session-400-invalid_csrf]`
+returning HTTP `200` instead of `400`. `ruff check` PASS,
+`ruff format --check` requested formatting in this test file, and
+Settings Final Lock verifier PASS (18 templates). No exact local
+`git rev-parse HEAD` was pasted with this run.
+
+**Root-cause review / bounded test correction:** the foreign CSRF token
+was generated inside a nested `app.test_client()` context, potentially
+reusing Flask-WTF's `g` token cache from the primary app context. The
+test now obtains the foreign signed token in a **completed, separate
+test-client context before** opening the primary client, and explicitly
+asserts the tokens are different. This avoids false HTTP 200 caused by
+test-fixture context reuse. All mutations remain mocked; no production
+route or CSRF validation policy changed. Apply the operator-supplied
+Ruff format adjustments for the same test module.
+
+**Corrected HTTP regression: runtime PENDING** until the operator reruns
+the following existing checks in Dev Container on the merged holding SHA:
 
 ```bash
 git rev-parse HEAD
