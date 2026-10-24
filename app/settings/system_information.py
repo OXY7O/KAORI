@@ -17,7 +17,7 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
         'title': 'Operations & Data Lifecycle Control Plane',
         'icon': 'workflow',
-        'description': ('Shared evidence for jobs, lifecycle, delivery and analytics.'),
+        'description': ('Shared evidence for jobs, delivery, and analytics.'),
     },
     {
         'title': 'Release Reliability & Identity Hardening',
@@ -48,7 +48,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
             'Node, Namespace, workload, Pod, Service, Ingress, storage, config, and topology inventory',
             'Validated ConfigMap and Secret create, update, replacement, and delete workflows',
             'Protected one-time Secret Reveal under Platform Operations → Kubernetes Administration',
-            'TLS certificate inventory, governance, bulk rotation, and worker-based automatic synchronization',
+            'TLS inventory, governance, bulk rotation, and worker sync.',
         ),
     },
     {
@@ -58,7 +58,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'features': (
             'Kubernetes dashboard: inventory, capacity, forecast, consumers, alerts, reports',
             'Resource utilization, capacity, storage, workload, forecast, top-consumer, and alert analytics',
-            'Internal content tabs that keep analytics pages compact without removing canonical navigation',
+            'Compact analytics tabs preserve canonical navigation.',
             'Forecast and growth-risk visualization with historical and projected utilization',
             'Recommendation, alert intelligence, anomaly, and operational response guidance',
         ),
