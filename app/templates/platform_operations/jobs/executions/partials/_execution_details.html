@@ -92,10 +92,10 @@
                         {{ table_label.metadata_label(execution.provider_label, none, false, 'detail') }}
                     </div>
                     {{ detail.inventory_fact_grid([
-                        ('Requested By', execution.requester),
-                        ('Provider', execution.provider_label),
-                        ('Queue', execution.queue_name),
-                        ('Scope', execution.scope)
+                                        ('Requested By', execution.requester) ,
+                    ('Provider', execution.provider_label),
+                    ('Queue', execution.queue_name),
+                    ('Scope', execution.scope)
                     ], columns=2) }}
                 </section>
                 <section aria-labelledby="execution-lifecycle-title"
@@ -115,7 +115,7 @@
                             ('Queued', execution.queued_at),
                             ('Started', execution.started_at),
                             ('Completed', execution.completed_at)
-                        ] %}
+                            ] %}
                             <li class="min-w-0 border-l-2 border-brand-outline pl-3.5">
                                 <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
                                 <p class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
@@ -157,18 +157,18 @@
                 closed_label='View More',
                 open_label='View Less',
                 dense=true
-            ) %}
+                ) %}
                 <div class="space-y-5">
                     <section aria-labelledby="execution-extended-context-title">
                         <div id="execution-extended-context-title">
                             {{ detail.subsection('Extended Execution Context', 'Domain scope and scheduler attribution.') }}
                         </div>
                         {{ detail.inventory_fact_grid([
-                                ('Trigger', execution.trigger_label),
-                                ('Scope Type', execution.scope_type),
-                                ('Resource Group', execution.resource_group),
-                                ('Integration Instance', execution.integration_instance)
-                            ], columns=2) }}
+                                                ('Trigger', execution.trigger_label) ,
+                        ('Scope Type', execution.scope_type),
+                        ('Resource Group', execution.resource_group),
+                        ('Integration Instance', execution.integration_instance)
+                        ], columns=2) }}
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="execution-extended-lifecycle-title">
@@ -176,11 +176,11 @@
                             {{ detail.subsection('Additional Lifecycle Evidence', 'Recorded operational timestamps; unavailable values remain explicit.') }}
                         </div>
                         {{ detail.inventory_fact_grid([
-                                ('Last Heartbeat', execution.heartbeat_at),
-                                ('Cancel Requested', execution.cancel_requested_at),
-                                ('Last Updated', execution.updated_at),
-                                ('Expires', execution.expires_at)
-                            ], columns=2) }}
+                                                ('Last Heartbeat', execution.heartbeat_at) ,
+                        ('Cancel Requested', execution.cancel_requested_at),
+                        ('Last Updated', execution.updated_at),
+                        ('Expires', execution.expires_at)
+                        ], columns=2) }}
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="execution-technical-references-title">
@@ -188,14 +188,14 @@
                             {{ detail.subsection('Technical References', 'Canonical identifiers for correlating workers, logs and evidence.') }}
                         </div>
                         {{ detail.inventory_fact_grid([
-                            ('Execution ID', execution.public_id),
-                            ('Celery Task ID', execution.task_id or '-'),
-                            ('Job Type', execution.job_type),
-                            ('Operation', execution.operation_label),
-                            ('Priority', execution.priority),
-                            ('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts),
-                            ('Parent Execution', execution.parent_public_id),
-                            ('Result Reference', execution.result_reference)
+                                                ('Execution ID', execution.public_id) ,
+                        ('Celery Task ID', execution.task_id or '-'),
+                        ('Job Type', execution.job_type),
+                        ('Operation', execution.operation_label),
+                        ('Priority', execution.priority),
+                        ('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts),
+                        ('Parent Execution', execution.parent_public_id),
+                        ('Result Reference', execution.result_reference)
                         ], columns=2) }}
                     </section>
                 </div>
