@@ -588,7 +588,7 @@
         }
     }
 
-        const renderCapsuleProfileCoverage = (form, profile) => {
+        const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {
         const valueFor = (source, key) => {
             if (!profile) return null
             const object = profile[source] || {}
@@ -602,16 +602,26 @@
             cell.textContent = !profile ? '—' : value === null || value === '' ? 'Not configured' : `Not governed · ${value}`
         })
         const advanced = profile?.advanced_controls || {}
-        form.querySelectorAll('[data-tenant-capsule-advanced-preview]').forEach((cell) => {
-            const control = advanced[cell.dataset.tenantCapsuleAdvancedPreview]
-            const requested = control === true || (control && typeof control === 'object' && control.enabled !== false)
-            cell.textContent = !profile
-                ? '—'
-                : requested
-                  ? 'Requested · Capability checked on submit'
-                  : 'Not requested'
-        })
+        const committedEvaluations = readJson('tenant-capsule-advanced-profile-preflight')
+        const evaluation = committedEvaluations?.[tenantId]?.[profileId] || {}
         const requestedUnsupported = []
+        form.querySelectorAll('[data-tenant-capsule-advanced-preview]').forEach((cell) => {
+            const key = cell.dataset.tenantCapsuleAdvancedPreview
+            const control = advanced[key]
+            const requested = control === true || (control && typeof control === 'object' && control.enabled !== false)
+            const preflight = evaluation[key]
+            if (!profile) {
+                cell.textContent = '—'
+            } else if (!requested) {
+                cell.textContent = 'Not requested'
+            } else if (preflight?.state === 'enabled' && preflight.requested === true) {
+                cell.textContent = 'Available · Capability preflight'
+            } else {
+                const reason = preflight?.reason || 'Committed provider capability evidence unavailable.'
+                cell.textContent = `Unavailable · ${reason}`
+                requestedUnsupported.push(preflight?.label || key)
+            }
+        })
         if (profile) {
             // Match server resource_profile_base_control_state() exactly:
             // any configured mapping (not only truthy leaf values) is an
@@ -682,7 +692,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
-            renderCapsuleProfileCoverage(form, proposed)
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -740,7 +750,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
-            renderCapsuleProfileCoverage(form, proposed)
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -778,7 +788,7 @@
                 state ? state.desired_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
-            renderCapsuleProfileCoverage(form, proposed)
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
