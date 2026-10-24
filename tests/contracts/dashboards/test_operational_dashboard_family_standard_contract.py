@@ -473,6 +473,18 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     assert 'rows[:5]' in alerts
     assert 'components/numbered_governance_steps.html' in response
     assert "'Recommended Actions'" in recommendations
+    # Canonical title stays intact in the DOM and tooltip, while long IDs do
+    # not create irregular dashboard card heights across five-column peers.
+    assert 'title="{{ action.title }}"' in recommendations
+    assert (
+        'class="line-clamp-3 break-words text-sm font-semibold leading-5 '
+        'text-content-primary transition-colors group-hover:text-kaori-primary"'
+        in recommendations
+    )
+    assert '{{ action.title }}</p>' in recommendations
+    assert 'line-clamp-4 text-xs leading-5 text-content-muted' in recommendations
+    assert "detail=action.rule_key" in recommendations
+    assert '<span class="truncate">{{ action.source }}</span>' in recommendations
 
     kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     object_hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
