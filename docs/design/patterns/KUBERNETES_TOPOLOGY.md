@@ -65,7 +65,15 @@ Selecting a graph resource uses the existing one-hop neighborhood focus to foreg
 
 ## Compact Hierarchy and Viewport Safety
 
-Hierarchy View retains the existing Cytoscape breadth-first layout, but node spacing adapts to the visible graph: compact at 8 or fewer nodes, intermediate through 35, and the established wide spacing for larger views. Layout fitting uses the visible graph's bounding box including external node labels and a bounded canvas safety margin. Resize only re-fits when visible evidence is clipped by the resized viewport; normal operator pan/zoom remains under the user's control. Dependency View remains independent, preserving its existing COSE geometry. Namespace grouping, list fallback and snapshot read boundary do not change.
+Hierarchy View retains the existing Cytoscape breadth-first layout, with compact node-count-aware spacing (small graphs through 8 resources; moderately dense through 35; larger views). Dependency View retains its existing COSE layout geometry. Both layouts disable Cytoscape's layout-level automatic fitting; KAORI owns final viewport selection after layout settles.
+
+- **Compact scope:** Fit the visible graph and external resource labels in the canvas with bounded safety margins.
+- **Dense scope:** When more than 12 visible resources would require a full-graph zoom below 0.72, initially zoom to 0.82 around the selected node, active Namespace, or Cluster anchor. This is a **focal viewport**, not evidence truncation: all committed nodes and relationships remain in the graph, Resource List, inspector, and exports. Display a neutral accessible hint naming the resource count and explaining pan/zoom plus Fit. Keep Resource List as the accessible complete-identity view.
+- **Fit:** The explicit toolbar button still fits the **entire** visible graph, including external labels and a bounded margin. If this overview requires microscopic labels, an accessible hint distinguishes overview from readable focus and directs the operator to zoom or Resource List. Do not claim every label is readable simultaneously in a dense overview.
+- **Resize and view switches:** A focused graph does not automatically refit because its offscreen nodes are deliberately outside the focal viewport; retain operator pan/zoom. Fit again only when the unfocused visible graph is clipped by an actual viewport resize, and initialize a viewport when switching from an initially hidden Resource List.
+- **Reset/layout/filter/reload:** Apply the readable focal decision to a newly laid-out graph, without changing filters, committed graph evidence, relationship counts, or export content.
+
+The graph's existing pan/zoom and hierarchy collapse interactions remain available. Namespace grouping, list fallback, current committed generation read boundary, truncation warning, and dark-mode surface tokens do not change.
 
 ## Canonical Server Architecture
 
