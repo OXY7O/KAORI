@@ -4,6 +4,8 @@
 
 **Checkpoint 2026-10-16 (original 91 cases):** Written specifications remain unchanged. Nine supplemental IDs plus the #1728 four-scenario pilot manifest were inspected against actual source assertions in their separate #1726/#1727 branches. No integrated exact candidate, machine scenario execution or human UAT acceptance is proven. CI/CD, PR and merge remain on hold.
 
+**#3012 implementation checkpoint (separate branch; NOT RUN):** Four missing assertions for WEL-002/004/006 and IAM-007 now have authored Flask/Playwright test nodes on `kaori/issue-3012-welcome-qa-regressions`. These are not executed, merged or an admission result. Original limited-source-audit numerator 24 remains unchanged pending test-node assertion and runtime review.
+
 **Addendum 2026-10-24:** Six Welcome-owned scenarios (`UAT-WEL-001`–`006`) and one separate IAM Viewer direct-read denial (`UAT-IAM-007`) expand the written catalog to 98. Their links to existing source assertions are preliminary, not complete exact-candidate test-node coverage or machine PASS. Human Welcome acceptance/screenshot observations remain recorded on #746, not retrospectively attributed to these new Gherkin IDs.
 
 ## Coverage accounting
@@ -39,7 +41,7 @@
 | `UAT-IAM-004` | Medium | UI | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-IAM-005` | High | Both | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-IAM-006` | Medium | UI | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-IAM-007` | High | Both | [Gherkin](features/iam-access-rbac.feature) | REVIEW-ONLY: Access route any-permission decorator aborts(403) in review source; exact Viewer GET/HTML automated node not mapped; manual HTTP 403 on #746 | NOT RUN / PENDING |
+| `UAT-IAM-007` | High | Both | [Gherkin](features/iam-access-rbac.feature) | SOURCE AUTHORED / NOT RUN: #3012 `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_direct_access_overview_returns_http_403_and_safe_guidance`; separate review-based branch | NOT RUN / PENDING |
 | `UAT-KCL-001` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-002` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-003` | High | Non-UI | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -110,11 +112,11 @@
 | `UAT-LIF-004` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-LIF-005` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-WEL-001` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: authenticated / and /welcome E2E smoke exists; provider-free source contract is partial | NOT RUN / PENDING |
-| `UAT-WEL-002` | High | Both | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: permission-filtered shortcut unit/security tests exist; default Viewer full rendered HTML authorization mapping missing | NOT RUN / PENDING |
+| `UAT-WEL-002` | High | Both | [Gherkin](features/wel-welcome-workspace-catalog.feature) | SOURCE AUTHORED / NOT RUN: #3012 `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_welcome_html_contains_only_permitted_workspace_cards`; separate review-based branch | NOT RUN / PENDING |
 | `UAT-WEL-003` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Welcome catalog tenant-search test exists; exact candidate execution not observed | NOT RUN / PENDING |
-| `UAT-WEL-004` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Escape is covered after tenant search; unmatched query to shared browser empty state not asserted | NOT RUN / PENDING |
+| `UAT-WEL-004` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | SOURCE AUTHORED / NOT RUN: #3012 extends `test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports` with unmatched empty state and Escape restore | NOT RUN / PENDING |
 | `UAT-WEL-005` | High | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright canonical Welcome 6-viewport x 2-theme baseline/geometry exists; full-scroll and contrast proof incomplete | NOT RUN / PENDING |
-| `UAT-WEL-006` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: target resolution tests exist; real authorized card click-through and independent route denial mapping incomplete | NOT RUN / PENDING |
+| `UAT-WEL-006` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | SOURCE AUTHORED / NOT RUN: #3012 `test_welcome_authorized_workspace_card_navigation_across_canonical_viewports` clicks permitted Settings; broader independently denied destination requires IAM read check | NOT RUN / PENDING |
 | `UAT-UIX-001` | Medium | UI | [Gherkin](features/uix-shared-ui-ux.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-UIX-002` | High | UI | [Gherkin](features/uix-shared-ui-ux.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-UIX-003` | Medium | UI | [Gherkin](features/uix-shared-ui-ux.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
