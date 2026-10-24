@@ -1345,3 +1345,37 @@ managed dimensions or admission success; individual current/proposed values
 still come from committed evidence and the selected profile. The Technical
 Details preview remains read-only. Browser mobile, desktop, keyboard and
 light/dark UAT is required before acceptance.
+
+
+### Capsule Governance authority-scoped sub-navigation (#3001)
+
+The top-level **Capsule Governance** tab now owns a second, deliberately
+bounded `content_tabs.render_links` navigation with three URL-backed,
+mutually exclusive subviews:
+
+- `?view=capsule-governance&capsule_tab=overview` (default) — two
+  scope cards explaining `Tenant.spec.resourceQuotas` and
+  `GlobalResourceQuota`, with committed candidate/managed record counts
+  grounded in the existing provisioning context and authority-specific
+  HTMX links. The overview is **read-only**, not a live provider mutation
+  surface and not a fabricated readiness summary.
+- `capsule_tab=tenant-quota` — Capsule Tenant CR adopted-cutover and
+  managed-change workflow only.
+- `capsule_tab=shared-allocation` — Capsule GlobalResourceQuota
+  shared-allocation workflow only; Namespace-generated ResourceQuota
+  copies remain provider effects, not independently countable budgets.
+
+Invalid subview keys fall back to Overview. A normal `view=capsule-governance`
+link preserves the root tab and opens the overview. Original POST CSRF,
+tenant.manage authorization, committed Resource Profile comparison,
+capability fail-closed, provider admission and read-back remain unchanged.
+Tenant CR writes redirect back to `tenant-quota`; GRQ cutover redirects
+back to `shared-allocation`, including handled failure outcomes.
+Navigation reuses the shared HTMX `namespace-provisioning-workspace`
+replacement, history push and keyboard-friendly content-links pattern.
+The source is committed KAORI state; no live provider calls are added to
+ordinary navigation.
+
+This user-visible information architecture change requires desktop/mobile,
+light/dark and keyboard Visual QA plus human UAT, separately from official
+CI/CD admission. No change to real Kubernetes authority is implied.
