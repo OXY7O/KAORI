@@ -35,7 +35,7 @@ Status: **FINAL LOCKED**
 - Account Profile and Authentication Activity remain full-width.
 - Account Profile shows identity/link state rather than suggesting a live provider validation result; RBAC Role and Super Admin tier remain independent. Last Verified Sign-In records the canonical source and request IP with proxy caveat. Read-only identity and presentation settings retain a separate General Settings edit workflow.
 - Recent Authentication Activity is event-first: a compact, divided inline summary scopes metrics to the latest five committed events, while the existing shared KAORI table remains primary. Conditional failure status, safe generic failure copy and proxy-dependent recorded IP evidence remain authoritative; the footer is a single neutral inline note. Sign-outs display Recorded rather than Sign-In Success without rewriting audit events. No separate mobile controller or decorative metric cards.
-- Credential Management uses natural-height action/context columns.
+- Credential Management uses natural-height action/context columns for both Local Database and external identities. Local accounts retain password form, policy, session rotation and audit semantics; LDAP/SSO use the same Violet guidance hierarchy without local edit/reset controls or invented provider recovery links. Show credential owner only in security context, preserve KAORI-owned role/lifecycle checks, and do not imply KAORI observes provider password resets; its authentication audit is limited to locally observed events.
 - Shared table/status/operational-feedback primitives own reusable semantics.
 - No page-local raw palette, arbitrary text sizes/tracking, `font-extrabold`, inline styles, or inline DOM handlers.
 

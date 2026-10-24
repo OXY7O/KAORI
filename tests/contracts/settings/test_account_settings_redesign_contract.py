@@ -201,6 +201,41 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert 'Session Handling' in context
 
 
+def test_provider_credential_guidance_reuses_local_visual_grammar_without_a_write_action() -> None:
+    credentials = read('app/templates/settings/account/partials/_change_password.html')
+    context = read('app/templates/settings/account/partials/_credential_information.html')
+    external = credentials.split('data-provider-credential-guidance="true"', 1)[1]
+
+    assert 'Provider Password & Recovery' in external
+    assert 'Password changes are managed by your identity provider, not KAORI.' in external
+    assert 'data-provider-credential-boundary="true"' in external
+    assert '{{ identity_context.credential_detail }}' in external
+    assert 'data-provider-password-guidance-panel="true"' in external
+    assert 'rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-4' in external
+    assert 'data-provider-password-guidance-list="true"' in external
+    assert 'sm:grid-cols-2' in external
+    assert 'Use provider recovery' in external
+    assert 'Contact IT support' in external
+    assert 'Sign in again' in external
+    assert 'Keep it private' in external
+    assert 'data-provider-password-safety-note="true"' in external
+    assert 'Password changes and recovery are unavailable in KAORI for this account.' in external
+    assert 'Credential Owner' not in external
+    assert '<form' not in external
+    assert 'data-local-password-action="true"' not in external
+    assert 'type="submit"' not in external
+    assert 'href=' not in external
+    assert 'Provider or IT Support' in context
+    assert 'Managed by KAORI' in context
+    assert 'Request Provider Recovery' in context
+    assert 'Verify With Provider' in context
+    assert 'Sign In to KAORI' in context
+    assert 'KAORI Applies Access' in context
+    assert 'KAORI audits observed sign-ins, not external password resets.' in context
+    provider_flow = context.split("{% else %}\n                    {% set flow_steps = [", 1)[1]
+    assert "'Record Audit Event'" not in provider_flow.split('{% endif %}', 1)[0]
+
+
 def test_credential_workspace_uses_natural_top_aligned_columns() -> None:
     page = read('app/templates/settings/account/partials/_page_content.html')
     credentials = read('app/templates/settings/account/partials/_change_password.html')
