@@ -2057,3 +2057,69 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     assert "highlights.textContent = ''" in preview
     assert 'fetch(' not in preview
     assert '.submit(' not in preview
+
+
+def test_shared_native_capsule_profile_coverage_matches_canonical_contract() -> None:
+    """#2987: the displayed comparison must cover every backend Resource Profile dimension."""
+    import ast
+
+    contracts = ast.parse(read('app/kubernetes/tenant/service_contracts.py'))
+    symbols = {}
+    for stmt in contracts.body:
+        if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id in (
+                    '_PROFILE_QUOTA_FIELDS', '_PROFILE_LIMIT_FIELDS', '_PROFILE_STORAGE_FIELDS'
+                ):
+                    symbols[target.id] = ast.literal_eval(stmt.value)
+
+    quota = set(symbols['_PROFILE_QUOTA_FIELDS'].values())
+    limit_fields = {
+        'limits.' + '.'.join(parts)
+        for parts in symbols['_PROFILE_LIMIT_FIELDS'].values()
+    }
+    storage_fields = {'storage_policy.' + key for key in symbols['_PROFILE_STORAGE_FIELDS'].values()}
+    assert len(quota) == 10 and len(limit_fields) == 4 and len(storage_fields) == 2
+
+    shared = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
+    native = shared.split('{% macro native_sections(', 1)[1].split('{%- endmacro %}', 1)[0]
+    capsule = shared.split('{% macro capsule_sections(', 1)[1].split('{%- endmacro %}', 1)[0]
+    for key in quota:
+        assert f"'quota.{key}'" in native
+        assert f"'{key}'" in capsule
+    for key in limit_fields | storage_fields:
+        assert f"'{key}'" in native
+    for key in ('persistentvolumeclaims', 'services', 'configmaps', 'secrets'):
+        assert f"'{key}'" in capsule
+    assert 'data-tenant-capsule-external-source="storage_policy"' in capsule
+    assert "'limits', 'Container Defaults'" in capsule
+    for label in ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults', 'Advanced Controls'):
+        assert f"'{label}'" in native and f"'{label}'" in capsule
+
+    js = read('app/static/js/tenant_resource_profile_presets.js')
+    for key in quota:
+        assert f"'{key}'" in js
+    for key in ('storage_policy', 'limits', 'advanced_controls'):
+        assert key in js
+
+
+def test_capsule_profile_unsupported_mutation_guard_is_not_just_copy() -> None:
+    """#2986: selectable UI and both provider write entrypoints must fail closed."""
+    js = read('app/static/js/tenant_resource_profile_presets.js')
+    tenant_governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
+    grq_governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
+    controls = read('app/kubernetes/tenant/resource_profile_controls.py')
+    assert 'const renderCapsuleProfileCoverage = (form, profile) => {' in js
+    assert "requestedUnsupported.push('Container Defaults')" in js
+    assert "requestedUnsupported.push('Per-PVC Policy')" in js
+    assert "apply.disabled = blocked" in js
+    assert 'kaoriInitiallyDisabled' in js
+    assert js.count('renderCapsuleProfileCoverage(form, proposed)') == 3
+    assert tenant_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 2
+    assert grq_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 1
+    assert "'capsule': {" in controls
+    assert "'container_defaults': False" in controls
+    assert "'pvc_storage_policy': False" in controls
+    assert '_validate_resource_profile_attachment_controls(profile, tenant)' in tenant_governance
+    assert '_validate_resource_profile_attachment_controls(profile, tenant)' in grq_governance
