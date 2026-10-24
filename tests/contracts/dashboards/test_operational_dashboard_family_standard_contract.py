@@ -273,7 +273,11 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'fleet_metrics_count: int = 0' in freshness
     assert 'fleet_alerts_count: int = 0' in freshness
     assert "'Per Cluster'" not in freshness
-    assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
+    # Report artifacts are committed references, not proof of stored-file accessibility.
+    assert 'has_artifacts = reporting_snapshot.artifact_records > 0' in freshness
+    assert 'has_requests = reporting_snapshot.generated_reports > 0' in freshness
+    assert "status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated')" in freshness
+    assert 'Committed artifact references; storage accessibility is not verified here.' in freshness
     assert 'No immediate scaling required.' in capacity
     assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
     assert (
@@ -372,11 +376,19 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
         assert 'components/operational_alert_response.html' in source
         assert 'components/operational_flow_steps.html' not in source
         assert 'alert_response_steps' in source
-        assert 'before acting on the signal' in source
-        assert 'establish an accountable owner' in source
-        assert 'remains auditable' in source
         for step in ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record'):
             assert f"'{step}'" in source
+
+    # Domain copy may be concise; retain source validation, ownership, and audit evidence.
+    for token in ('snapshot freshness', 'alert-source evidence before acting.', 'assign an owner.', 'auditability.'):
+        assert token in kubernetes_response
+    for token in (
+        'committed snapshot freshness',
+        'before acting on the signal.',
+        'establish an accountable owner.',
+        'remains auditable.',
+    ):
+        assert token in object_response
 
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     for source in (kubernetes_reporting, object_reporting):
@@ -420,7 +432,13 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
     assert 'components/reporting_dashboard_workspace.html' in object_summary
     assert 'reporting.latest_reports[:4]' in reporting_workspace
-    assert 'query_all(Report, selected_cluster_id, limit=4)' in kubernetes_builder
+    # Keep recent Kubernetes reports domain-scoped, selection-scoped, ordered, and bounded.
+    assert "Report.report_domain == 'kubernetes'" in kubernetes_builder
+    assert 'Report.cluster_id == selected_cluster_id' in kubernetes_builder
+    assert '_kubernetes_report_query(selected_cluster_id)' in kubernetes_builder
+    assert '.order_by(Report.created_at.desc(), Report.id.desc())' in kubernetes_builder
+    assert '.limit(4)' in kubernetes_builder
+    assert 'query_all(Report' not in kubernetes_builder
     assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in object_service
 
     for source in (reporting_workspace, kubernetes_builder, object_service):
