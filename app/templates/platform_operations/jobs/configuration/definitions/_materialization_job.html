@@ -22,6 +22,9 @@
     ('timer', 'Automatic Policy', policy.interval_minutes ~ ' Minutes', 'Saved refresh cadence')
 ] %}
 {% set overview_notice = "The last successful snapshot remains available while the worker prepares a newer committed result." %}
+{% if definition.key == 'object_storage.analytics.materialize' %}
+    {% set execution_safety_short = "Analytics evidence commits before pages read it; stale-grace preserves the last usable snapshot." %}
+{% endif %}
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     {% if selected_job.dispatch_attention %}
