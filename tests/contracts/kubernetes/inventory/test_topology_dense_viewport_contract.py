@@ -57,9 +57,11 @@ def test_dense_topology_viewport_hint_is_accessible_and_nonblocking() -> None:
     assert 'aria-live="polite"' in template
     assert 'pointer-events-none absolute' in template
     assert 'border-outline-subtle bg-surface-card' in template
+    assert 'sm:w-80' in template
+    assert 'truncate whitespace-nowrap text-xs' in template
     assert 'bg-kaori-soft text-kaori-primary' in template
-    assert 'Pan to explore nearby resources. Fit shows the full graph.' in source
-    assert 'Zoom to inspect labels. Resource List shows every name.' in source
+    assert 'Pan to explore · Fit for overview.' in source
+    assert 'Zoom for labels · Use Resource List.' in source
     assert 'viewportHintTitle.textContent = readableFocusActive' in source
     assert "'Focused view' : 'Full graph overview'" in source
     assert 'viewportHintCount.textContent = `${nodeCount} resources`' in source
