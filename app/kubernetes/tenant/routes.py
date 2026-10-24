@@ -2366,7 +2366,7 @@ def change_namespace_allocation_route():
                 'operation': 'change_namespace_allocation',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning'))
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
 
 
 @tenant_bp.post('/namespaces')
