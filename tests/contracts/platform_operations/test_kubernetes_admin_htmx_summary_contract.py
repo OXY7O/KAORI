@@ -411,6 +411,10 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
     assert 'Reveal execution rechecks Namespace policy, user authorization, session verification' in verifier
     assert "'Step-Up Required'" in verifier
     assert "'Approval by Policy'" in verifier
+    assert 'Protected Reveal policy engine boundary missing' in verifier
+    assert 'Protected Reveal request guidance must stay neutral and payload-free' in verifier
+    assert 'UPPERCASE_UTILITY.search(source)' in verifier
+    assert 'uppercase tracking-wide' not in cluster
 
 
 def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> None:
