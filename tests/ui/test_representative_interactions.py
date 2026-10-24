@@ -855,3 +855,76 @@ def test_settings_general_query_tabs_keep_vertical_scroll_closed(
                 )
 
             assert_document_fits_viewport(page)
+
+
+
+def test_settings_general_keyboard_tab_and_enter_navigation(
+    configured_page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Confirm standard tab focus progression and Enter activation in General."""
+    page = configured_page
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(
+        f'{kaori_authenticated_base_url}/settings/general?tab=time-locale',
+        wait_until='networkidle',
+    )
+    assert response is not None and response.ok
+    tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
+    time_tab = tablist.locator('a[href*="tab=time-locale"]').first
+    regional_tab = tablist.locator('a[href*="tab=regional-format"]').first
+    expect(time_tab).to_have_attribute('aria-selected', 'true')
+
+    time_tab.focus()
+    expect(time_tab).to_be_focused()
+    page.keyboard.press('Tab')
+    expect(regional_tab).to_be_focused()
+    page.keyboard.press('Enter')
+    expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
+    expect(page.locator(
+        '[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab=regional-format"]'
+    )).to_have_attribute('aria-selected', 'true')
+    expect(page.get_by_role('heading', name='Regional Format')).to_be_visible()
+
+
+def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
+    configured_page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Verify native GET, noscript submit and Reset without HTMX or JS."""
+    page = configured_page
+    _login(page, kaori_authenticated_base_url)
+
+    browser = page.context.browser
+    assert browser is not None
+    # Reuse test-owned authenticated cookie state; do not mutate real accounts.
+    no_js_context = browser.new_context(
+        java_script_enabled=False,
+        storage_state=page.context.storage_state(),
+        viewport={'width': 1280, 'height': 800},
+    )
+    try:
+        no_js_page = no_js_context.new_page()
+        url = f'{kaori_authenticated_base_url}/settings/general?tab=compatibility-versions'
+        initial = no_js_page.goto(url, wait_until='domcontentloaded')
+        assert initial is not None and initial.ok
+        registry = no_js_page.locator('#compatibility-registry')
+        expect(registry).to_be_visible()
+        search = registry.locator('input[name="compatibility_search"]')
+        expect(search).to_be_visible()
+        expect(registry.get_by_role('button', name='Apply Filters')).to_be_visible()
+
+        search.fill('Prometheus')
+        registry.get_by_role('button', name='Apply Filters').click()
+        expect(no_js_page).to_have_url(re.compile(r'compatibility_search=Prometheus(?:&|$)'))
+        expect(no_js_page.locator('#compatibility-registry-results')).to_contain_text('Prometheus')
+        expect(no_js_page.locator('#compatibility-registry-results')).not_to_contain_text('MinIO')
+
+        no_js_page.locator('#compatibility-registry a[href*="tab=compatibility-versions"]').first.click()
+        expect(no_js_page).to_have_url(
+            re.compile(r'/settings/general[?]tab=compatibility-versions(?:&|$)')
+        )
+        expect(no_js_page.locator('#compatibility-registry-results')).to_contain_text('MinIO')
+        expect(search).to_have_value('')
+    finally:
+        no_js_context.close()

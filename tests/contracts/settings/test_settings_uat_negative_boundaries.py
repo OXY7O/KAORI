@@ -12,6 +12,12 @@ from flask import Flask
 
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.settings.account.actions import process_password_change
+from app.settings.general.actions import (
+    save_regional_format_preference,
+    save_timezone_preference,
+    sync_browser_timezone_preference,
+)
+from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.routes import bp, general
 from app.settings.system_information import build_system_information
 
@@ -149,3 +155,121 @@ def test_password_rejections_preserve_credential_and_session_state(
     preserve.assert_not_called()
     assert audit.call_args.kwargs['metadata']['reason_code'] == expected_reason
     assert audit.call_args.kwargs['delivery_policy'] is OperationalDeliveryPolicy.AUDIT_ONLY
+
+
+@pytest.mark.parametrize(
+    ('timezone_mode', 'requested_timezone', 'detected_timezone'),
+    [
+        ('manual', 'Not/A-Timezone', 'Asia/Jakarta'),
+        ('automatic', 'Asia/Jakarta', 'Not/A-Timezone'),
+    ],
+)
+def test_invalid_iana_timezone_submissions_preserve_saved_account_preference(
+    timezone_mode: str, requested_timezone: str, detected_timezone: str
+) -> None:
+    """Reject forged manual select and automatic browser values without mutation."""
+    app = _settings_app()
+    user = SimpleNamespace(
+        id=71,
+        timezone_mode='manual',
+        timezone='Asia/Jakarta',
+    )
+    data = {
+        'timezone_mode': timezone_mode,
+        'timezone': requested_timezone,
+        'browser_timezone': detected_timezone,
+        'submit_timezone': 'Save',
+    }
+    with (
+        app.test_request_context('/settings/general?tab=time-locale', method='POST', data=data),
+        patch('app.settings.general.actions.create_transient_feedback', return_value={'status': 'error'}),
+        patch('app.settings.general.actions.db.session.commit') as commit,
+        patch('app.settings.general.actions.record_operational_activity') as audit,
+    ):
+        form = TimezonePreferenceForm()
+        result = save_timezone_preference(user=user, form=form, is_htmx=True)
+
+    assert result.saved is False
+    assert result.feedback == {'status': 'error'}
+    assert user.timezone_mode == 'manual'
+    assert user.timezone == 'Asia/Jakarta'
+    assert form.errors or form.timezone.errors
+    commit.assert_not_called()
+    audit.assert_not_called()
+
+
+@pytest.mark.parametrize('tab', ('time-locale', 'regional-format'))
+def test_general_preference_forms_reject_missing_csrf_before_any_mutation(tab: str) -> None:
+    """Exercise Flask-WTF's real missing-token validation for either Settings POST."""
+    app = _settings_app()
+    app.config['WTF_CSRF_ENABLED'] = True
+    user = SimpleNamespace(
+        id=72,
+        timezone_mode='manual',
+        timezone='Asia/Jakarta',
+        locale='en-US',
+        date_format='day_month_year',
+        time_format='24h',
+    )
+    data = (
+        {
+            'timezone_mode': 'manual',
+            'timezone': 'Asia/Makassar',
+            'browser_timezone': 'Asia/Makassar',
+            'submit_timezone': 'Save',
+        }
+        if tab == 'time-locale'
+        else {
+            'locale': 'id-ID',
+            'date_format': 'year_month_day',
+            'time_format': '12h',
+            'submit_regional': 'Save',
+        }
+    )
+
+    with (
+        app.test_request_context(f'/settings/general?tab={tab}', method='POST', data=data),
+        patch('app.settings.general.actions.create_transient_feedback', return_value={'status': 'error'}),
+        patch('app.settings.general.actions.db.session.commit') as commit,
+        patch('app.settings.general.actions.record_operational_activity') as audit,
+    ):
+        if tab == 'time-locale':
+            form = TimezonePreferenceForm()
+            result = save_timezone_preference(user=user, form=form, is_htmx=True)
+        else:
+            form = RegionalFormatForm()
+            result = save_regional_format_preference(user=user, form=form, is_htmx=True)
+
+    assert result.saved is False
+    assert form.csrf_token.errors
+    assert user.timezone_mode == 'manual'
+    assert user.timezone == 'Asia/Jakarta'
+    assert (user.locale, user.date_format, user.time_format) == ('en-US', 'day_month_year', '24h')
+    commit.assert_not_called()
+    audit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ('saved_mode', 'detected', 'expected_status'),
+    [
+        ('manual', 'Asia/Makassar', 'ignored'),
+        ('automatic', 'Not/A-Timezone', 'invalid_timezone'),
+        ('automatic', 'Asia/Jakarta', 'unchanged'),
+    ],
+)
+def test_browser_timezone_sync_denies_untrusted_or_unchanged_updates(
+    saved_mode: str, detected: str, expected_status: str
+) -> None:
+    """Do not persist browser-timezone input outside a valid automatic update."""
+    app = _settings_app()
+    user = SimpleNamespace(timezone_mode=saved_mode, timezone='Asia/Jakarta')
+    with (
+        app.test_request_context('/settings/general/browser-timezone', method='POST'),
+        patch('app.settings.general.actions.db.session.commit') as commit,
+    ):
+        status, timezone = sync_browser_timezone_preference(user=user, browser_timezone=detected)
+    assert status == expected_status
+    assert timezone == 'Asia/Jakarta'
+    assert user.timezone == 'Asia/Jakarta'
+    commit.assert_not_called()
+

@@ -63,6 +63,49 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
 | SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for Account only:** navigation/history, HTMX XHR 200, keyboard/focus, light/dark, offline recovery; General/AT-specific coverage not claimed |
 
+## 2026-10-24 — General negative boundary regression workstream
+
+The following tests were added under existing QA issue #2880 **after** the
+positive General acceptance. They test **isolated, nonmutating** negative
+behaviors using Flask request contexts and the existing deterministic UI
+fixture. Their presence in source is not an execution result. Do not promote
+them to PASS without the Dev Container output and candidate SHA.
+
+| Scoped concern | Regression test | Evidence state |
+| --- | --- | --- |
+| Forged manual IANA choice and invalid browser-provided IANA | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_invalid_iana_timezone_submissions_preserve_saved_account_preference` (2 cases) | **NEW — executable verification pending**; both must reject and preserve saved account timezone with no commit/audit |
+| Missing CSRF token on actual Flask-WTF Time Zone and Regional Format forms | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_preference_forms_reject_missing_csrf_before_any_mutation` (2 cases) | **NEW — executable verification pending**; Flask-WTF is tested with CSRF enabled despite the isolated test app's default bypass |
+| Browser timezone sync, manual/invalid/unchanged inputs | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_browser_timezone_sync_denies_untrusted_or_unchanged_updates` (3 cases) | **NEW — executable verification pending**; no save on these branches |
+| True JavaScript-disabled Compatibility GET, filter and Reset | `tests/ui/test_representative_interactions.py::test_settings_compatibility_registry_without_javascript_uses_get_fallback` | **NEW — browser execution pending**; authenticate in existing isolated fixture, then reuse its session cookie in a JS-disabled browser context; no password change or provider mutation |
+| General keyboard Tab and Enter activation | `tests/ui/test_representative_interactions.py::test_settings_general_keyboard_tab_and_enter_navigation` | **NEW — browser execution pending**; focus moves between shared tabs and Enter activates the correct route/selected workspace |
+
+These tests do **not** independently certify persisted scheduler/canonical
+UTC data, an external LDAP permission trace, all assistive technologies,
+or the JSON `/settings/general/browser-timezone` endpoint's cross-origin /
+CSRF threat model. The current Time Zone browser script uses local detection
+and does not send a synchronization request on Detect Again; the dormant
+JSON route must not be confused with the Flask-WTF form-post CSRF contract.
+
+Execute in the existing isolated Dev Container:
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check tests/contracts/settings/test_settings_uat_negative_boundaries.py tests/ui/test_representative_interactions.py
+python -m ruff format --check tests/contracts/settings/test_settings_uat_negative_boundaries.py tests/ui/test_representative_interactions.py
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python -m pytest -q -s -p no:cacheprovider tests/ui/test_representative_interactions.py -k 'settings_compatibility_registry_without_javascript_uses_get_fallback or settings_general_keyboard_tab_and_enter_navigation'
+python scripts/verify_settings_final_lock.py
+```
+
+If the no-JS browser run encounters a fixture/browser setup problem,
+record the actual failure separately instead of substituting full GET
+with JavaScript enabled. For the remaining General-only manual
+accessibility/recovery evidence, use an isolated authenticated account and
+test Tab/Shift+Tab/Enter, focus-visible state, Back/Forward/Refresh and
+Offline/Online recovery on General tabs. Do not change real credentials,
+run provider mutations or upload cookies/tokens.
+
 ## Settings → General — Gherkin acceptance specification
 
 These General Settings scenarios record already accepted browser behavior and
