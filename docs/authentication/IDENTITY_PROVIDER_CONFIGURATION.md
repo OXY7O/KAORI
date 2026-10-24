@@ -23,6 +23,8 @@ Use the same activation sequence for every provider:
 7. Resolve connection, callback, secret, or admission-policy errors.
 8. Enable the provider after the expected authentication flow is confirmed.
 9. Test with a non-administrative identity; confirm login/logout events in **Activity Audit Log**.
+10. To **disable** a provider, retain Local Database break-glass access, then toggle off **Enable provider authentication** and save. KAORI invalidates session generations for externally owned accounts linked to that provider in the same database transaction. Previously signed-in browsers are denied on their **next** request; in-flight responses cannot be recalled. Disabling the provider does not change external directory users.
+11. In **Access → Activity Audit**, review the provider update outcome and **linked-account revocation count**. The count is distinct KAORI user projections, not the number of open sessions. Re-enabling permits a **fresh** login but does not resurrect any old browser/remember cookie. Other provider users and Local Database recovery accounts must remain unaffected.
 
 The 10-minute connection proof is verified again server-side on Create; missing, changed, expired or cross-user proof is rejected without saving. Edit Provider intentionally remains saveable without a fresh registration proof so an administrator can disable or repair a broken integration, matching the canonical Integrations edit exception.
 
