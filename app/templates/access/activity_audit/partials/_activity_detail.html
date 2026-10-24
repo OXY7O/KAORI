@@ -15,7 +15,7 @@
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
                         {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
                     {% endcall %}
-                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ 'Review recorded failure and committed evidence.' if item.failure_summary else item.message }}</p>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ 'Review recorded failure and committed evidence.' if item.status == 'error' and item.failure_summary else item.message }}</p>
                     <div class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
                         {{ table_label.metadata_label(item.category_label, item.category_icon) }}
                     </div>
@@ -41,8 +41,8 @@
                                   aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <h4 id="activity-outcome-heading"
-                                    class="text-sm font-semibold text-content-primary">Failure Summary</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Recorded outcome and evidence to review before further action.</p>
+                                    class="text-sm font-semibold text-content-primary">{{ 'Failure Summary' if item.status == 'error' else 'Attention Summary' }}</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Recorded outcome and available evidence.</p>
                             </div>
                         </div>
                         {% if item.failure_type and item.failure_type != 'Operational Failure' %}
@@ -62,23 +62,27 @@
                         {% endif %}
                         {% if item.failure_context %}
                             <div class="space-y-2">
-                                <h5 class="text-xs font-semibold text-content-secondary">Recorded Failure Context</h5>
+                                <h5 class="text-xs font-semibold text-content-secondary">{{ 'Recorded Failure Context' if item.status == 'error' else 'Recorded Context' }}</h5>
                                 {{ detail_ui.evidence_grid(item.failure_context, columns=3, compact=true) }}
                             </div>
-                        {% else %}
+                        {% elif item.status == 'error' %}
                             <p class="text-xs leading-5 text-content-muted">No separate failure-context fields are available in this Activity Register entry. Review related committed evidence when available.</p>
                         {% endif %}
                         <div class="flex min-w-0 items-start gap-3 border-t border-outline-subtle pt-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <h5 class="text-xs font-semibold text-content-secondary">Next Review Step</h5>
+                                <h5 class="text-xs font-semibold text-content-secondary">{{ 'Next Review Step' if item.status == 'error' else 'Review Guidance' }}</h5>
                                 <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">
-                                    Inspect
-                                    {% if item.failure_context %}the recorded failure context, {% endif %}
-                                    trace references
-                                    {% if item.related_sources %}, and authorized related evidence{% endif %}
-                                    before deciding whether to retry.
+                                    {% if item.status == 'error' %}
+                                        Inspect
+                                        {% if item.failure_context %}the recorded failure context, {% endif %}
+                                        trace references
+                                        {% if item.related_sources %}, and authorized related evidence{% endif %}
+                                        before deciding whether to retry.
+                                    {% else %}
+                                        Review recorded changes and trace references if further verification is needed.
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
