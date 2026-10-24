@@ -145,8 +145,8 @@ def forecast_insight(payload: dict[str, Any]) -> str:
     horizon_days = safe_optional_int(payload.get('horizon_days')) or 90
     try:
         return (
-            f'{label} has the highest {horizon_days}-day utilization projection at {float(percent):.0f}%. '
-            'Review demand against worker capacity and headroom.'
+            f'{horizon_days}-day forecast peak: {label} {float(percent):.0f}%; '
+            'review worker headroom.'
         )
     except (TypeError, ValueError):
         return 'Forecast snapshot loaded from analytics forecast service.'
