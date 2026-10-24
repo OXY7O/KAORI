@@ -87,7 +87,7 @@
                         <th class="{{ table_ui.header_cell_classes() }}">Event</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Source</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Result</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Context</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Context</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -128,7 +128,7 @@
                                     {{ table_label.status_indicator_label('Failed', 'critical') }}
                                 {% endif %}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-56">
+                            <td class="{{ table_ui.cell_classes(action=true) }} min-w-56">
                                 {% if is_logout %}
                                     <p class="text-sm font-semibold text-content-secondary">Session Ended</p>
                                     <p class="mt-0.5 text-xs text-content-muted">User initiated</p>
@@ -140,11 +140,11 @@
                                     <p class="mt-0.5 text-xs text-content-muted">Authentication did not complete</p>
                                 {% endif %}
                                 {% if metadata.get('browser') or metadata.get('device_type') %}
-                                    <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted">
+                                    <p class="mt-1 flex items-center justify-end gap-1.5 text-xs text-content-muted">
                                         <i data-lucide="monitor-smartphone"
                                            class="h-3.5 w-3.5 shrink-0 text-content-disabled"
                                            aria-hidden="true"></i>
-                                        <span>{{ metadata.get("browser") or 'Browser unavailable' }}
+                                        <span class="text-right">{{ metadata.get("browser") or 'Browser unavailable' }}
                                             {% if metadata.get('device_type') %} · {{ metadata.get("device_type") }}{% endif %}
                                         </span>
                                     </p>
