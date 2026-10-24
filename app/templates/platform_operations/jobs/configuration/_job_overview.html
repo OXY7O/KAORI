@@ -45,10 +45,10 @@
             </p>
             {% if overview_notice_short|default('') %}
                 {{ info_tip.render('jobs-overview-safety-' ~ (definition.key|replace('.', '-')),
-                    'Job Safety Evidence',
-                    overview_notice,
-                    placement='right',
-                    variant='guide') }}
+                                'Job Safety Evidence',
+                                overview_notice,
+                                placement='right',
+                                variant='guide') }}
             {% endif %}
         </footer>
     {% endif %}
