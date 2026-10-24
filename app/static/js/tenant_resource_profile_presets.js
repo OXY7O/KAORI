@@ -926,7 +926,13 @@
         }
 
         const applyNamespaceProfile = () => {
-            applyValues(fields, profiles[profileSelect?.value] || null)
+            const profile = profiles[profileSelect?.value] || null
+            applyValues(fields, profile)
+            // Values without a managed Resource Profile dimension should not
+            // render as an unexplained blank quota cell after selection.
+            form.querySelectorAll('[data-tenant-quota-default-card] [data-tenant-value-display]').forEach((cell) => {
+                if (cell.textContent.trim() === '—' && profile) cell.textContent = 'Not managed'
+            })
             renderAdvancedControls()
         }
 
