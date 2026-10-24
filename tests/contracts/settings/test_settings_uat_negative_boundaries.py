@@ -431,6 +431,7 @@ def test_browser_timezone_json_http_requires_authenticated_session() -> None:
     app.config['WTF_CSRF_ENABLED'] = True
     manager = LoginManager()
     manager.init_app(app)
+    manager.user_loader(lambda _identifier: None)
     user = SimpleNamespace(id=71, timezone_mode='automatic', timezone='Asia/Jakarta')
 
     with (
