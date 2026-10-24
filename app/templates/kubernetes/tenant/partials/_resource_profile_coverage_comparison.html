@@ -5,6 +5,27 @@
 
 {% macro native_sections(advanced_controls={}) -%}
     <div class="space-y-3" data-tenant-profile-coverage="native_kubernetes">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             data-tenant-native-coverage-summary
+             aria-label="Resource Profile technical coverage">
+            <div class="grid grid-cols-2 divide-x divide-outline-subtle sm:grid-cols-3 lg:grid-cols-5">
+                {% for title, count, icon in [
+                    ('Basic Resources', '5', 'cpu'),
+                    ('Storage Guardrails', '4', 'hard-drive'),
+                    ('Object Limits', '3', 'boxes'),
+                    ('Container Defaults', '4', 'container'),
+                    ('Advanced Controls', 'Gated', 'shield-check')
+                ] %}
+                    <div class="min-w-0 px-3 py-3">
+                        <div class="flex items-center gap-1.5 text-content-muted">
+                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                            <span class="truncate text-xs">{{ title }}</span>
+                        </div>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ count }}{% if count != 'Gated' %}<span class="ml-1 text-xs font-normal text-content-muted">fields</span>{% endif %}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
         {% for key, label, subtitle, icon, rows in [
             ('basic', 'Basic Resources', 'Native ResourceQuota · Requests, limits, and pod slots', 'cpu', [
                 ('CPU Requests', 'quota.requests.cpu'),
@@ -34,25 +55,26 @@
             {% call view_more_content.render(label, subtitle, icon=icon,
                 aria_label='Native ' ~ label ~ ' comparison',
                 compact_action=true,
-                extra_classes='shadow-none',
+                dense=true,
+                extra_classes='shadow-none [&>summary]:bg-surface-card',
                 open_by_default=key == 'basic') %}
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto rounded-lg border border-outline-subtle">
                     <table class="w-full min-w-[27rem] text-left text-xs"
                            aria-label="Native {{ label }} current and proposed contract">
                         <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
                             <tr>
-                                <th scope="col" class="px-3 py-2 font-semibold">Dimension</th>
-                                <th scope="col" class="px-3 py-2 font-semibold">Current · Frozen</th>
-                                <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Profile</th>
+                                <th scope="col" class="px-3 py-2.5 font-semibold">Dimension</th>
+                                <th scope="col" class="px-3 py-2.5 font-semibold">Current · Frozen</th>
+                                <th scope="col" class="px-3 py-2.5 font-semibold text-kaori-primary">Proposed · Profile</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-outline-subtle">
                             {% for name, path in rows %}
                                 <tr class="hover:bg-surface-hover" data-tenant-allocation-tech-row>
-                                    <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }}</th>
-                                    <td class="break-words px-3 py-2 text-content-muted"
+                                    <th scope="row" class="px-3 py-2.5 font-medium text-content-secondary">{{ name }}</th>
+                                    <td class="break-words px-3 py-2.5 text-content-muted"
                                         data-tenant-allocation-tech-current="{{ path }}">—</td>
-                                    <td class="break-words px-3 py-2 font-semibold text-content-primary"
+                                    <td class="break-words px-3 py-2.5 font-semibold text-content-primary"
                                         data-tenant-allocation-tech-proposed="{{ path }}">—</td>
                                 </tr>
                             {% endfor %}
@@ -64,23 +86,24 @@
         {% call view_more_content.render('Advanced Controls',
             'Placement capability preflight; not verified provider execution.',
             icon='shield-check', aria_label='Native Advanced Controls capability comparison',
-            compact_action=true, extra_classes='shadow-none') %}
+            compact_action=true, dense=true,
+            extra_classes='shadow-none [&>summary]:bg-surface-card') %}
             <div class="overflow-x-auto" data-tenant-allocation-advanced-list>
                 <table class="w-full min-w-[27rem] text-left text-xs" aria-label="Native Advanced Controls preflight">
                     <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
                         <tr>
-                            <th scope="col" class="px-3 py-2 font-semibold">Control</th>
-                            <th scope="col" class="px-3 py-2 font-semibold">Current · Recorded</th>
-                            <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Preflight</th>
+                            <th scope="col" class="px-3 py-2.5 font-semibold">Control</th>
+                            <th scope="col" class="px-3 py-2.5 font-semibold">Current · Recorded</th>
+                            <th scope="col" class="px-3 py-2.5 font-semibold text-kaori-primary">Proposed · Preflight</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-subtle">
                         {% for control_key, contract in advanced_controls.items() %}
                             <tr data-tenant-allocation-advanced-row="{{ control_key }}" hidden>
-                                <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ contract.label }}</th>
-                                <td class="break-words px-3 py-2 text-content-muted"
+                                <th scope="row" class="px-3 py-2.5 font-medium text-content-secondary">{{ contract.label }}</th>
+                                <td class="break-words px-3 py-2.5 text-content-muted"
                                     data-tenant-allocation-advanced-current="{{ control_key }}">—</td>
-                                <td class="break-words px-3 py-2 font-medium text-content-primary"
+                                <td class="break-words px-3 py-2.5 font-medium text-content-primary"
                                     data-tenant-allocation-advanced-proposed="{{ control_key }}">—</td>
                             </tr>
                         {% endfor %}
