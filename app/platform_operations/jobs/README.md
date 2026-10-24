@@ -134,8 +134,11 @@ must declare `data-kaori-detail-variant="job-execution"` so the controller proje
 sections rather than duplicating a second title and leaving the loading placeholder visible.
 
 The outcome-first operator view prioritizes status, real progress, last worker stage and
-conditional recorded error evidence. Execution context, lifecycle timeline, sanitized
-result-summary fields and technical identifiers follow as separate evidence sections.
+conditional recorded error evidence. To avoid dense side-by-side label/value walls, the
+primary content uses one quiet **resource sheet**: four owner/scope facts, three committed
+lifecycle milestones, and a responsive sanitized result-evidence fact grid. Secondary scope
+attributes, timestamps and technical identifiers remain available through the existing,
+keyboard-accessible **View More / View Less** disclosure; they are not discarded.
 An absent result summary is an explicit empty state, not an execution failure.
 Raw job request payloads, deduplication keys and parameter fingerprints are never displayed.
 Scheduler/queue/provider authorities remain unchanged by this presentation contract.
