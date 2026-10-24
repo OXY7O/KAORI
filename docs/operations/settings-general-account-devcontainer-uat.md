@@ -68,16 +68,24 @@ No Account screenshot hashes are manufactured or locked before review.
 The following tests were added under existing QA issue #2880 **after** the
 positive General acceptance. They test **isolated, nonmutating** negative
 behaviors using Flask request contexts and the existing deterministic UI
-fixture. Their presence in source is not an execution result. Do not promote
-them to PASS without the Dev Container output and candidate SHA.
+fixture. The operator ran them on Dev Container SHA
+`a0d412a3c925cbfa92236f21d296357c1bfe3ad4` with
+`M app/static/css/output.css` as the only reported worktree modification.
+The output supports **15/15 focused negative contracts PASS** (7 newly
+parameterized cases and existing cases) in 7.74 s, **12/12 Playwright PASS**
+(6 canonical viewports × 2 new scenarios, 78 deselected) in 33.88 s,
+`ruff check` PASS and Settings Final Lock PASS (18 templates).
+`ruff format --check` failed solely on the two test files' formatting
+and the formatter-only follow-up was committed under #2880; executable
+post-format Ruff check is pending on that later commit.
 
 | Scoped concern | Regression test | Evidence state |
 | --- | --- | --- |
-| Forged manual IANA choice and invalid browser-provided IANA | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_invalid_iana_timezone_submissions_preserve_saved_account_preference` (2 cases) | **NEW — executable verification pending**; both must reject and preserve saved account timezone with no commit/audit |
-| Missing CSRF token on actual Flask-WTF Time Zone and Regional Format forms | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_preference_forms_reject_missing_csrf_before_any_mutation` (2 cases) | **NEW — executable verification pending**; Flask-WTF is tested with CSRF enabled despite the isolated test app's default bypass |
-| Browser timezone sync, manual/invalid/unchanged inputs | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_browser_timezone_sync_denies_untrusted_or_unchanged_updates` (3 cases) | **NEW — executable verification pending**; no save on these branches |
-| True JavaScript-disabled Compatibility GET, filter and Reset | `tests/ui/test_representative_interactions.py::test_settings_compatibility_registry_without_javascript_uses_get_fallback` | **NEW — browser execution pending**; authenticate in existing isolated fixture, then reuse its session cookie in a JS-disabled browser context; no password change or provider mutation |
-| General keyboard Tab and Enter activation | `tests/ui/test_representative_interactions.py::test_settings_general_keyboard_tab_and_enter_navigation` | **NEW — browser execution pending**; focus moves between shared tabs and Enter activates the correct route/selected workspace |
+| Forged manual IANA choice and invalid browser-provided IANA | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_invalid_iana_timezone_submissions_preserve_saved_account_preference` (2 cases) | **Operator pytest PASS**; both rejected without saved timezone mutation or commit/audit |
+| Missing CSRF token on actual Flask-WTF Time Zone and Regional Format forms | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_preference_forms_reject_missing_csrf_before_any_mutation` (2 cases) | **Operator pytest PASS**; CSRF enabled in isolated Flask-WTF form validation; no commit |
+| Browser timezone sync, manual/invalid/unchanged inputs | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_browser_timezone_sync_denies_untrusted_or_unchanged_updates` (3 cases) | **Operator pytest PASS**; ignored/invalid/unchanged branches do not commit |
+| True JavaScript-disabled Compatibility GET, filter and Reset | `tests/ui/test_representative_interactions.py::test_settings_compatibility_registry_without_javascript_uses_get_fallback` | **Operator Playwright PASS** across six viewports; isolated JS-disabled browser using authenticated fixture cookies |
+| General keyboard Tab and Enter activation | `tests/ui/test_representative_interactions.py::test_settings_general_keyboard_tab_and_enter_navigation` | **Operator Playwright PASS** across six viewports; Tab focus and Enter navigation verified |
 
 These tests do **not** independently certify persisted scheduler/canonical
 UTC data, an external LDAP permission trace, all assistive technologies,
@@ -86,7 +94,12 @@ CSRF threat model. The current Time Zone browser script uses local detection
 and does not send a synchronization request on Detect Again; the dormant
 JSON route must not be confused with the Flask-WTF form-post CSRF contract.
 
-Execute in the existing isolated Dev Container:
+The operator-reported results do not constitute a full assistive-technology
+screen-reader assessment, network Offline/Online recovery trace, canonical
+UTC/scheduler datastore proof, or a security review of the separate browser
+timezone JSON endpoint. Retain those evidence boundaries for scoped follow-up.
+
+Recheck the formatter-only follow-up in the existing Dev Container:
 
 ```bash
 git rev-parse HEAD
