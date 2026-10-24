@@ -77,7 +77,7 @@ exploitable cross-site attack in a production browser: JSON preflight,
 origin restrictions and production SameSite cookie settings remain
 separate mitigations. Do not conflate either assessment.
 
-**Scoped fix (new implementation; runtime evidence pending):**
+**Scoped fix (runtime contract evidence PASS; full HTTP threat model still separate):**
 reuse Flask-WTF `validate_csrf(request.headers.get('X-CSRFToken'))`
 before reading JSON or invoking `sync_browser_timezone_preference`.
 Missing/forged tokens return safe HTTP `400`,
@@ -91,10 +91,11 @@ calls, database migration, form UI or operational scheduling changes.
 missing-header and forged-header cases prove HTTP 400 and no mutation;
 valid Flask-WTF session token proves one legitimate committed
 automatic preference sync; client contract verifies shared layout
-token and unchanged same-origin `fetch` header. Execute with Ruff,
-focused pytest and Settings Final Lock in Dev Container before
-marking remediation verified. GitHub source readback alone is **not
-an executable security gate**.
+token and unchanged same-origin `fetch` header. The operator executed
+focused regression and Settings Final Lock at the exact holding SHA
+`3ca2dac2217a54ebfb0b3411be5b10234d79f30c`; results are recorded
+below. These isolated tests verify route logic and commit control, but
+do not replace raw authenticated HTTP/browser threat-model evidence.
 
 ```bash
 git rev-parse HEAD
@@ -105,15 +106,42 @@ python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_u
 python scripts/verify_settings_final_lock.py
 ```
 
-**UAT boundary:** confirm valid automatic browser timezone sync
-still updates a test account when its browser timezone differs from
-stored state, without visible false save/notification or changing
-manual mode. Run isolated authenticated request tests for missing
-and invalid CSRF, **never** attack a live user session. Capture the
-actual tested SHA and redacted HTTP status, not cookies or tokens.
-Previously accepted SET-GEN-01–04/OPS flows remain accepted; this
-security-sensitive mutation requires separate review before any
-official admission. Full Admission, staging/main and release HOLD.
+**UAT boundary:** the operator reported enabling **Automatic Time Zone: OK**
+in the dedicated browser UAT. This is Human PASS for activation of the
+accepted automatic-mode flow; the message did not provide a before/after
+stored timezone, redacted Network POST trace, or no-false-notification
+capture, so exact timezone convergence is **not independently evidenced**.
+Missing/invalid-token mutation rejection and valid-token update **PASS**
+in isolated route-function contract tests; raw authenticated HTTP-negative
+traces are separate. Do not expose user cookies or CSRF tokens. Previously
+accepted SET-GEN-01–04/OPS flows remain unchanged. Full Admission,
+staging/main and release HOLD.
+
+### CSRF remediation — operator verification checkpoint
+
+**Tested holding SHA:** `3ca2dac2217a54ebfb0b3411be5b10234d79f30c`
+(confirmed identical to GitHub holding HEAD during evidence reconciliation).
+`git merge --ff-only origin/kaori/review/staging-uat` reported
+`Already up to date.`; the only reported worktree modification was
+`M app/static/css/output.css`, unrelated to this remediation and
+not changed by these GitHub commits.
+
+| Focused quality check | Operator result |
+| --- | --- |
+| `ruff check` on JSON route and negative contract | **PASS — All checks passed!** |
+| `ruff format --check` on same two files | **PASS — 2 files already formatted** |
+| Focused Settings negative, Final Lock and General contract suites | **PASS — 34 tests in 8.95s** |
+| `verify_settings_final_lock.py` | **PASS — Settings Final Lock v1, 18 templates** |
+| Automatic Time Zone test-account browser check | **Human OK — Automatic mode enabled**; timezone before/after and HTTP mutation trace not supplied |
+
+**Disposition:** issue #3066 CSRF validation implementation has passing
+isolated executable regressions at an exact UAT holding SHA. The accepted
+automatic UI mode remains functional in the operator's reported check.
+A direct authenticated HTTP 400 (missing/forged CSRF), valid signed
+token HTTP 200, browser automatic timezone change confirmation, and
+broader security/DAST/assistive-technology assertions must not be inferred
+from this contract suite. Any additional security-sensitive promotion
+still requires the separately authorized official admission flow.
 
 ## 2026-10-24 — General operational final Human UAT and QA disposition
 
