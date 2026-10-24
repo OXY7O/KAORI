@@ -140,15 +140,23 @@
                                     {% endfor %}
                                 </tr>
                             {% endfor %}
+                            {% if key == 'storage' %}
+                                {% for name, field_key in [('Min PVC Size', 'min'), ('Max PVC Size', 'max')] %}
+                                    <tr>
+                                        <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }} · Per-PVC Policy</th>
+                                        <td class="px-3 py-2 text-content-muted">Provider-mirrored · Not governed</td>
+                                        <td class="break-words px-3 py-2 font-semibold text-content-primary"
+                                            data-tenant-capsule-external-source="storage_policy"
+                                            data-tenant-capsule-external-key="{{ field_key }}">—</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
             {% endcall %}
         {% endfor %}
         {% for group_key, label, subtitle, icon, rows in [
-            ('storage_policy', 'Per-PVC Policy', 'Native per-claim admission policy · Not governed by Capsule quota mutation', 'shield-alert', [
-                ('Min PVC Size', 'storage_policy', 'min'), ('Max PVC Size', 'storage_policy', 'max')
-            ]),
             ('limits', 'Container Defaults', 'Native LimitRange defaults · Not governed by Capsule quota mutation', 'container', [
                 ('Default CPU Request', 'limits', 'default_request.cpu'),
                 ('Default CPU Limit', 'limits', 'default.cpu'),
