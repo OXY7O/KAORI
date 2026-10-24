@@ -29,6 +29,7 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
 from app.kubernetes.tenant.service import (
     _namespace_allocation_values,
     _validate_resource_profile_attachment_controls,
+    _validate_resource_profile_base_controls,
     resource_profile_attachment_controls,
 )
 from app.kubernetes.tenant.validation import validate_profile_spec
@@ -314,6 +315,9 @@ def cutover_capsule_global_quota_allocation(
     if profile is None or not profile.enabled:
         raise ValueError('Selected Resource Profile is unavailable.')
 
+    # GRQ can write shared ResourceQuota ceilings, not Namespace LimitRange
+    # defaults or per-PVC policy. Reject incompatible profile before reads.
+    _validate_resource_profile_base_controls(profile, tenant)
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_shared_allocation_cutover_state(tenant)
     if not state['supported']:
