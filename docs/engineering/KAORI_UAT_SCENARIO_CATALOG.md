@@ -4,13 +4,15 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 91 written acceptance test cases
+## Complete 98 written acceptance test cases
 
-[Review all 91 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 77 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 98 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 84 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **18 `.feature` files containing all 91 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 77 are explicitly tagged `@draft`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **19 `.feature` files containing all 98 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 84 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+
+**2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
 
 ## Reviewer guide — where to inspect and comment
 
@@ -76,6 +78,7 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-IAM-004` | Positive | UI | Medium | Admin filters User Directory/Permission Catalog and clears filters | Canonical default five rows, page one reset, selected row count preserved |
 | `UAT-IAM-005` | Negative | Both | High | Identity Provider is disabled, invalid or unreachable during auth | No fallback that admits an unauthorized identity; error state identifies dependency |
 | `UAT-IAM-006` | Negative | UI | Medium | Role/user modal or validation form receives missing and malformed fields | Actionable inline error; no partial entity creation; focus retained |
+| `UAT-IAM-007` | Negative | Both | High | Viewer directly requests Access Overview using GET /access/ | Server returns 403 with actionable Access Denied guidance, protected data absent |
 
 ### Kubernetes — Cluster Registration & Provider Readiness (`UAT-KCL-*`)
 
@@ -243,6 +246,19 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-LIF-003` | Negative | Both | High | Unapproved/expired reveal request tries to access secret | Fail closed; only authorized one-time disclosure, never routine leakage |
 | `UAT-LIF-004` | Positive | UI | Medium | Kubernetes Admin Overview → Secret Reveal tab and policy forms | HTMX lazy loading, deep links, accessible modal and save feedback work |
 | `UAT-LIF-005` | Negative | Both | High | Lifecycle attempt duplicates during policy update or failure | No duplicate destructive job or false archived/cleaned claim |
+
+### Welcome Workspace Catalog (`UAT-WEL-*`)
+
+**Owning source:** app/welcome/, app/templates/welcome/ and app/templates/components/. **Candidate test owner(s), source-reviewed only:** tests/welcome/; tests/security/welcome/; tests/e2e/welcome/; tests/ui/test_representative_interactions.py. **Shared preconditions:** Authorized test identities with known effective RBAC; deterministic browser, canonical viewports and approved visual signatures. **UAT evidence:** #746 screenshot and HTTP 403 manual records, not Gherkin machine PASS.
+
+| Scenario ID | Type | Layer | Risk | Given / When | Then: expected observable outcome |
+| --- | --- | --- | --- | --- | --- |
+| `UAT-WEL-001` | Positive | UI | Medium | Authenticated user visits both / and /welcome | Canonical Welcome displays role, catalog and shared shell without live provider queries |
+| `UAT-WEL-002` | Positive | Both | High | Super Admin and Viewer open role-filtered Welcome separately | Cards/counts match effective RBAC, forbidden cards absent from Viewer HTML, Settings available |
+| `UAT-WEL-003` | Positive | UI | Medium | Permitted user searches for tenant | Only Tenant Management remains, result count 1, other groups hidden |
+| `UAT-WEL-004` | Negative | UI | Medium | Unmatched workspace search then Escape | Shared zero-result empty state, Escape restores permitted cards and releases input focus |
+| `UAT-WEL-005` | Positive | UI | High | Light/dark Welcome is rendered across canonical responsive viewports | Hero/cards/actions fit with approved visual-baseline checks; no silent rebaseline |
+| `UAT-WEL-006` | Positive | UI | Medium | User clicks an authorized Open Workspace card | Correct destination loads with independent server authorization |
 
 ### Shared Shell, Settings, Visual QA & Accessibility (`UAT-UIX-*`)
 
