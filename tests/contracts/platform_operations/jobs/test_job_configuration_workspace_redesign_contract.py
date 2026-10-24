@@ -78,3 +78,31 @@ def test_registered_job_configuration_templates_use_canonical_platform_operation
     for template_name in template_names:
         assert template_name.startswith('platform_operations/jobs/configuration/definitions/')
         assert (ROOT / 'app/templates' / template_name).is_file(), template_name
+
+def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
+    overview = _read('app/templates/platform_operations/jobs/configuration/_job_overview.html')
+    activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+    inventory = _read('app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html')
+    tenant = _read('app/templates/platform_operations/jobs/configuration/definitions/tenant_sync.html')
+    storage = _read(
+        'app/templates/platform_operations/jobs/configuration/definitions/object_storage_inventory_sync.html'
+    )
+
+    assert 'sm:grid-cols-2 2xl:grid-cols-4' in overview
+    assert "label == 'Next Automatic Run'" in overview
+    assert 'whitespace-nowrap text-xs tabular-nums' in overview
+    assert 'title="{{ value }}"' in overview
+    assert 'title="{{ helper }}"' in overview
+    assert 'xl:truncate' in overview
+    assert 'lg:truncate' in activity
+    assert 'same execution and audit trail' in activity
+    assert 'whitespace-nowrap' in activity
+    for source in (inventory, tenant, storage):
+        assert 'block truncate text-xs leading-5' in source
+        assert 'title=' in source
+    assert 'Guarded Recovery Boundary' in storage
+    assert "variant='guide'" in storage
+    assert 'Mismatch stops recovery safely; no records are deleted.' in storage
+    assert 'recovery fails closed without deleting records.' in storage
+    assert 'name="confirmation_phrase"' in storage
+    assert 'name="confirm_empty_system_id"' in storage
