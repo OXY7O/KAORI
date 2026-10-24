@@ -5,6 +5,7 @@ Negative cases never commit credentials or call external identity providers.
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -299,6 +300,8 @@ def test_browser_timezone_json_post_rejects_missing_or_invalid_csrf(csrf_value: 
         patch('app.settings.routes.sync_browser_timezone_preference') as sync,
         patch('app.settings.general.actions.db.session.commit') as commit,
     ):
+        # A valid server-side CSRF session exists; the header is still absent or forged.
+        generate_csrf()
         response, status = sync_browser_timezone.__wrapped__()
 
     assert status == 400
@@ -339,8 +342,6 @@ def test_browser_timezone_json_post_accepts_valid_session_csrf() -> None:
 
 def test_browser_timezone_json_client_uses_session_bound_csrf_header() -> None:
     """The existing browser script must retain the server-approved header."""
-    from pathlib import Path
-
     root = Path(__file__).resolve().parents[3]
     client = (root / 'app/static/js/user_timezone_sync.js').read_text(encoding='utf-8')
     layout = (root / 'app/templates/layouts/app.html').read_text(encoding='utf-8')
