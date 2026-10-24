@@ -228,6 +228,6 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
         ('cutover_capsule_shared_allocation_route', 'capsule-governance'),
     )
     for endpoint, view in redirects:
-        body = routes.split(f'def {endpoint}(', 1)[1].split('\\n@tenant_bp.', 1)[0]
+        body = routes.split(f'def {endpoint}(', 1)[1].split('@tenant_bp.', 1)[0]
         assert f"return redirect(url_for('tenant.namespace_provisioning', view='{view}'))" in body
     assert "url_for('tenant.namespace_provisioning')" in routes  # Provision default.
