@@ -40,6 +40,14 @@ Do not move collectors, report builders, analytics processors, or retention adap
 
 ## Registered Jobs
 
+The Job Configuration catalog is a **two-row navigation list**:
+each entry shows its icon, job name and current status on the first row,
+with interval, queue and Active/Idle state on the second. The domain and
+description are not repeated in the scroll list; selected-job details
+remain authoritative. Search retains the full `JobDefinition.description`
+and domain/queue terms, while HTMX selection, URL history, independent
+scroll, and pinned result-count/Guide footer are unchanged.
+
 The first registered definition is `kubernetes.inventory.sync`:
 
 - queue: `inventory`
