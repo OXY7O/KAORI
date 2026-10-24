@@ -61,7 +61,40 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-ACC-03 | Credentials Local Database vs external provider | Password field only for local; external owner rejects change | **Human PASS (UI boundary):** local password form; LDAP provider-managed recovery without local form; automatic negative contracts also passed in focused suite |
 | SET-ACC-04 | Incorrect current password, reuse, CSRF, session generation | No secret leakage; rejected no commit; on legitimate success current session remains, others revoked | **Human PASS (credential & session behavior):** both invalid password UI rejections, dedicated local UAT user successful rotation, old session revoked and current session retained, audit/toast; second rejection audit-detail evidence and independent CSRF browser capture remain pending |
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
-| SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for Account only:** navigation/history, HTMX XHR 200, keyboard/focus, light/dark, offline recovery; General/AT-specific coverage not claimed |
+| SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for both General and Account (2026-10-24):** General Back/Forward/Refresh, keyboard Tab/Shift+Tab/Enter and Offline→Online recovery 3/3 PASS; Account previously accepted; full assistive-technology/screen-reader audit not claimed |
+
+## 2026-10-24 — General operational final Human UAT and QA disposition
+
+The operator explicitly confirmed **SET-GEN-OPS steps 1–3 PASS** on the
+live Dev Container: navigating Time Zone → Regional Format → Compatibility
+Versions followed by Back/Forward/Refresh kept URL, active tab and content
+in sync; Tab/Shift+Tab/Enter keyboard traversal remained operable with
+visible focus; and after forcing DevTools Network Offline, restoring Online
+and Refresh recovered the General page without fabricated data. These are
+human-confirmed browser observations rather than a captured network HAR or
+full screen-reader assessment.
+
+The operator also ran `python -m ruff format --check` on
+`tests/contracts/settings/test_settings_uat_negative_boundaries.py`
+and `tests/ui/test_representative_interactions.py`; the observed result
+was **2 files already formatted — PASS**, resolving the remaining
+formatter-only finding after PR #3061. The rerun message did not contain
+a new local SHA; the earlier contract **15/15 PASS** and Playwright
+**12/12 PASS** were captured at
+`a0d412a3c925cbfa92236f21d296357c1bfe3ad4`. Settings Final Lock
+**PASS (18 templates)** remains recorded from that earlier run.
+
+**Disposition:** Settings → General functional/visual/operational Human UAT
+is **Accepted** for completed SET-GEN-01–04 and SET-GEN-OPS 1–3. Focused
+negative Flask-WTF and isolated browser regressions are PASS. Do not treat
+this as official Full Admission, completed security threat-model review,
+datastore/scheduler immutability proof, or comprehensive AT/DAST coverage.
+Residual evidence includes the separate JSON browser-timezone endpoint's
+CSRF/cross-origin security review, direct raw HTTP-negative traces where
+needed, canonical UTC/schedule mutation verification and screen-reader
+testing. No additional end-user reapproval of already accepted flows is
+required. Official Developer Check, Full Admission, `kaori/staging`,
+main promotion and release remain **HOLD**.
 
 ## 2026-10-24 — General negative boundary regression workstream
 
@@ -76,8 +109,10 @@ parameterized cases and existing cases) in 7.74 s, **12/12 Playwright PASS**
 (6 canonical viewports × 2 new scenarios, 78 deselected) in 33.88 s,
 `ruff check` PASS and Settings Final Lock PASS (18 templates).
 `ruff format --check` failed solely on the two test files' formatting
-and the formatter-only follow-up was committed under #2880; executable
-post-format Ruff check is pending on that later commit.
+and the formatter-only follow-up was merged through PR #3061 under #2880.
+The operator subsequently reran `ruff format --check` on both test files:
+**2 files already formatted — PASS**. That rerun had no new local SHA output;
+the earlier tests remain attributable to `a0d412a3c925cbfa92236f21d296357c1bfe3ad4`.
 
 | Scoped concern | Regression test | Evidence state |
 | --- | --- | --- |
@@ -94,12 +129,15 @@ CSRF threat model. The current Time Zone browser script uses local detection
 and does not send a synchronization request on Detect Again; the dormant
 JSON route must not be confused with the Flask-WTF form-post CSRF contract.
 
-The operator-reported results do not constitute a full assistive-technology
-screen-reader assessment, network Offline/Online recovery trace, canonical
-UTC/scheduler datastore proof, or a security review of the separate browser
-timezone JSON endpoint. Retain those evidence boundaries for scoped follow-up.
+The operator additionally completed the three-step General operational
+walkthrough (**Human PASS** for browser history, keyboard and Offline→Online
+recovery). This is manual acceptance, not an archived HAR/network trace.
+Full assistive-technology/screen-reader coverage, canonical UTC/scheduler
+datastore proof, and review of the separate browser-timezone JSON endpoint
+remain distinct evidence boundaries.
 
-Recheck the formatter-only follow-up in the existing Dev Container:
+The following regression commands were exercised by the operator; rerun as
+needed on the exact admission candidate SHA (the formatter rerun is PASS):
 
 ```bash
 git rev-parse HEAD
@@ -305,9 +343,10 @@ Feature: General Settings navigation and accessible tab strip
 **Evidence:** The operator reported existing General+Account six-viewport
 Playwright **12/12 PASS**, Settings Final Lock **4/4 PASS**, shared verifier
 PASS, and visual scrollbar removal after #3032. Account keyboard/history
-and offline recovery UAT are accepted separately. Do **not** treat those
-Account-specific manual observations as a separate complete General
-keyboard/assistive-technology/offline recovery certification.
+and offline recovery UAT are accepted separately. Subsequently the General
+operator **accepted all three General operational steps**: Back/Forward/Refresh,
+Tab/Shift+Tab/Enter and Offline→Online recovery. This is not a comprehensive
+screen-reader/assistive-technology certification or an archived network trace.
 
 ### General Gherkin-to-test and evidence traceability
 
@@ -317,7 +356,7 @@ keyboard/assistive-technology/offline recovery certification.
 | SET-GEN-02 | `app/settings/general/actions.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Five-step manual positive PASS; canonical data/schedule mutation evidence not supplied |
 | SET-GEN-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_rejects_privileged_reference_tabs_without_system_view` and `::test_system_information_never_projects_unrelated_sensitive_configuration` | Five-step authorization/read-only Human PASS; raw HTTP header trace absent |
 | SET-GEN-04 | `tests/contracts/settings/test_compatibility_registry_projection.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Eight-step Human PASS, synthetic pagination coverage and JS-disabled Playwright 6/6 PASS; MinIO one-line visual Human PASS |
-| SET-OPS-01 | `tests/ui/test_representative_interactions.py::test_settings_general_query_tabs_keep_vertical_scroll_closed`; `tests/contracts/settings/test_settings_final_lock_contract.py` | General+Account viewport Playwright 12/12 PASS, General keyboard Tab/Enter Playwright 6/6 PASS; manual offline/AT pending |
+| SET-OPS-01 | `tests/ui/test_representative_interactions.py::test_settings_general_query_tabs_keep_vertical_scroll_closed`; `tests/contracts/settings/test_settings_final_lock_contract.py` | General+Account viewport Playwright 12/12 PASS, General keyboard Tab/Enter Playwright 6/6 PASS, General operational steps 3/3 Human PASS; full AT pending |
 
 These are acceptance **specifications only**. No `.feature` runner, new
 step definitions, alternative test taxonomy or new official CI gate is
@@ -563,8 +602,9 @@ claimed PASS. The user did not provide a new exact `git rev-parse HEAD` with
 this browser run; do not attribute it to the later holding branch head.
 
 **Status:** `SET-GEN-02` positive functional **Human UAT PASS**, while
-General UAT overall remains in progress (`SET-GEN-03`, `SET-GEN-04` and
-remaining scoped negative/security evidence). Official CI/CD, Full
+At this **earlier** point General UAT was still in progress. Later
+SET-GEN-03/04 and General operational UAT passed; remaining scoped advanced
+security/AT evidence remains independent. Official CI/CD, Full
 Admission, staging/main promotion, deployment and release remain **HOLD**.
 
 ## 2026-10-24 — General Time Zone positive UAT and shared tab regression
@@ -585,9 +625,11 @@ Notification Surface Style **PASS**, and existing General+Account six-viewport
 Playwright cases **12 passed, 66 deselected in 107.50s**. Exact same-run local
 SHA was not included in those terminal outputs; the shared tab fix was merged
 to temporary holding at `c5f0e902905b957e43ba7569b28d540c50ffee94`.
-The previous Account Human Acceptance remains unaffected; the General suite is
-**not yet fully accepted** because SET-GEN-01 negative and SET-GEN-02–04
-scope-specific evidence remain separate.
+The previous Account Human Acceptance remains unaffected. This paragraph
+records the **earlier** UAT stage; subsequent SET-GEN-01–04 positive Human
+Acceptance, General negative-contract/Playwright PASS and General operational
+3/3 Human PASS supersede that stage. Residual security/AT evidence remains
+separately tracked, not silently marked PASS.
 
 ## 2026-10-24 — Account UAT evidence reconciliation
 
