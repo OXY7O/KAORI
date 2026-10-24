@@ -31,8 +31,14 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'visibleJobCount' in template
     assert 'x-text="visibleJobCount"' in template
     assert 'No matching jobs' in template
-    assert 'line-clamp-1 text-xs leading-5' in template
-    assert 'title="{{ item.description }}">{{ item.catalog_summary }}' in template
+    assert 'title="{{ item.name }}">{{ item.name }}' in template
+    assert 'mt-1.5 flex min-w-0 items-center' in template
+    assert 'title="{{ item.queue_name }}">{{ item.queue_name }}' in template
+    assert 'id="job-catalog-status-' in template
+    assert 'id="job-catalog-activity-' in template
+    assert 'line-clamp-1 text-xs leading-5' not in template
+    assert '{{ item.catalog_summary }}' not in template
+    assert '<p class="mt-0.5 text-xs font-semibold text-content-muted">{{ item.domain }}</p>' not in template
     assert "variant='guide'" in template
     assert 'aria-label="Registered Jobs"' in template
     assert 'x-ref="jobList"' in template
@@ -44,16 +50,21 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'hx-target="#job-configuration-workspace"' in template
 
 
-def test_registered_job_summaries_are_concise_without_mutating_definitions() -> None:
+
+def test_catalog_search_preserves_authoritative_job_descriptions() -> None:
+    template = (ROOT / 'app/templates/platform_operations/jobs/configuration/_workspace.html').read_text(
+        encoding='utf-8'
+    )
     source = (ROOT / 'app/platform_operations/jobs/configuration.py').read_text(encoding='utf-8')
     catalog = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text(
         encoding='utf-8'
     )
-    assert '_CATALOG_SUMMARIES:' in source
+
+    assert "item.description ~ ' ' ~ item.queue_name" in template
     assert "'description': definition.description" in source
-    assert "'catalog_summary': _CATALOG_SUMMARIES.get(definition.key, definition.description)" in source
-    registered_keys = {line.split(': ', 1)[1] for line in catalog.splitlines() if line.startswith('- key: ')}
-    summaries = source.split('_CATALOG_SUMMARIES:', 1)[1].split('\n}', 1)[0]
-    for key in registered_keys:
-        assert f"'{key}': " in summaries
+    assert "'domain': definition.domain" in source
+    assert "'catalog_summary':" not in source
+    assert '_CATALOG_SUMMARIES' not in source
+    assert template.count('data-job-catalog-row') == 2
+    registered_keys = [line for line in catalog.splitlines() if line.startswith('- key: ')]
     assert len(registered_keys) == 19
