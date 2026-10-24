@@ -284,9 +284,7 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         expect(search).not_to_be_focused()
         expect(page.locator('[data-workspace-empty]')).to_be_hidden()
         expect(page.locator('[data-workspace-card]:visible')).to_have_count(original_count)
-        expect(page.locator('[data-workspace-result-count]')).to_have_text(
-            f'{original_count} Workspaces'
-        )
+        expect(page.locator('[data-workspace-result-count]')).to_have_text(f'{original_count} Workspaces')
         assert_document_fits_viewport(page)
 
 
@@ -734,9 +732,7 @@ def test_representative_filter_pagination_and_form_controls(
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
 
 
-def _assert_query_tab_strip_has_no_vertical_overflow(
-    page: Page, *, expect_horizontal_scroll: bool
-) -> None:
+def _assert_query_tab_strip_has_no_vertical_overflow(page: Page, *, expect_horizontal_scroll: bool) -> None:
     tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
     expect(tablist).to_be_visible()
     geometry = tablist.evaluate(
@@ -846,16 +842,13 @@ def test_settings_general_query_tabs_keep_vertical_scroll_closed(
                     page.locator('#general-settings-page a[href*="tab=regional-format"]').first.click()
                     expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
 
-                current_tab = page.locator(
-                    f'[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab={tab}"]'
-                )
+                current_tab = page.locator(f'[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab={tab}"]')
                 expect(current_tab).to_have_attribute('aria-selected', 'true')
                 _assert_query_tab_strip_has_no_vertical_overflow(
                     page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}
                 )
 
             assert_document_fits_viewport(page)
-
 
 
 def test_settings_general_keyboard_tab_and_enter_navigation(
@@ -881,9 +874,9 @@ def test_settings_general_keyboard_tab_and_enter_navigation(
     expect(regional_tab).to_be_focused()
     page.keyboard.press('Enter')
     expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
-    expect(page.locator(
-        '[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab=regional-format"]'
-    )).to_have_attribute('aria-selected', 'true')
+    expect(
+        page.locator('[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab=regional-format"]')
+    ).to_have_attribute('aria-selected', 'true')
     expect(page.get_by_role('heading', name='Regional Format')).to_be_visible()
 
 
@@ -921,9 +914,7 @@ def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
         expect(no_js_page.locator('#compatibility-registry-results')).not_to_contain_text('MinIO')
 
         no_js_page.locator('#compatibility-registry a[href*="tab=compatibility-versions"]').first.click()
-        expect(no_js_page).to_have_url(
-            re.compile(r'/settings/general[?]tab=compatibility-versions(?:&|$)')
-        )
+        expect(no_js_page).to_have_url(re.compile(r'/settings/general[?]tab=compatibility-versions(?:&|$)'))
         expect(no_js_page.locator('#compatibility-registry-results')).to_contain_text('MinIO')
         expect(search).to_have_value('')
     finally:
