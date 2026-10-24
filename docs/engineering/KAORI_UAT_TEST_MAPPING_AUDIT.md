@@ -305,3 +305,22 @@ The **seven exact node IDs** below were checked by reading their source on the n
 
 **Integration prerequisite:** converge reviewed #1725 documentation, #1738 specifications, #1726 browser tests, #1727 non-UI tests and #1728 pilot evidence tooling on one issue-linked source candidate **before** executing the existing Developer Check/Full Admission/UAT flow. No PR, merge, CI gate, live provider or deployment is authorized by this source mapping. All **91/91** scenario results remain **NOT RUN**, all human decisions **PENDING**, and admission **HOLD**.
 
+## Welcome Workspace Catalog source-mapping addendum — 2026-10-24
+
+**Authority:** #1738 catalog specification, #746 Welcome UAT evidence, #1726 UI, #1727 non-UI and #1725 evidence fields. The 2026-10-16 original **24/91** individually reviewed assertion IDs remain a historical checkpoint. The seven additional written IDs extend the catalog to **98**; the matrix's **24/98** source-reviewed original IDs / **74/98** awaiting individual audit deliberately do **not** recast preliminary source pointers as complete scenario mappings.
+
+**Source inspected:** `kaori/review/staging-uat` Welcome routes/shortcuts, Access Overview/decorator, `tests/e2e/welcome/test_welcome_smoke.py`, `tests/welcome/test_welcome_characterization.py`, `tests/security/welcome/test_welcome_security.py`, and `tests/ui/test_representative_interactions.py`. These paths are on a separate review holding branch, not proof of an identical frozen candidate in this staging-based #1738 work branch.
+
+| Scenario | Existing source-level candidate | Missing exact-candidate assertion |
+| --- | --- | --- |
+| `UAT-WEL-001` | Authenticated `/` and `/welcome` E2E smoke; `app/welcome/routes.py` | Attributable execution/response evidence; provider-free boundary as real integration observation |
+| `UAT-WEL-002` | Welcome shortcut characterization and security metadata filtering | Default Viewer **server-rendered HTML** negative check, all effective grants/card count and forbidden HTML absence |
+| `UAT-WEL-003` | `test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports` | Exact-candidate browser run and stored post-filter artifact |
+| `UAT-WEL-004` | Same Playwright test checks Escape after `tenant` filter; template/JS empty state contracts | Browser **unmatched** query yields 0 and canonical empty state, then Escape restores original permissions/count |
+| `UAT-WEL-005` | `test_welcome_visual_qa_light_and_dark` and `tests/ui/visual_audit.py` | Complete exact-candidate 6×2 run, full-catalog scroll/action assertions and reviewed baseline diff |
+| `UAT-WEL-006` | `tests/unit/welcome/test_welcome_target_resolution.py` | Real browser Open Workspace click-through, correct route and independent authorization assertion |
+| `UAT-IAM-007` | `app/access/overview/routes.py` guarded by `any_permission_required`; decorator aborts 403 | Automated authenticated Viewer GET `/access/` response status, safe 403 HTML/no protected content |
+
+**Manual evidence boundary:** #746 records 2026-10-24 operator-observed `tenant` filtering, unmatched-query empty state, Escape reset, Viewer role-aware counts, real browser `GET /access/` HTTP **403**, and mobile light/dark screenshots at 390×844 and 360×800. Those observations support bounded human UAT only; none is retroactively a pytest/Playwright machine PASS for a newly written Scenario ID. The exact local SHA was not supplied.
+
+**Next automation work:** Reuse #1726 Playwright and #1727 capability-owned security/test-client suites; extend existing tests for the specific uncovered browser/HTML/authorization assertions rather than adding a Gherkin runner, bespoke verifier or extra Visual QA baseline engine. Any new test change needs issue-linked work and reviewed branch targeting; keep official CI/CD, Full Admission, staging/main promotion and release **HOLD**.
