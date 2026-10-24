@@ -24,6 +24,10 @@ Feature: Kubernetes — Dashboard, Inventory & Topology
     And inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-INV-001
     Then correct selected-cluster scope, navigation, row/detail identity and shared table UI
     And object, row, breadcrumb and source IDs never cross clusters
+    And the shared Inventory workspace covers Overview, Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration
+    And every resource modal exposes identity, current-generation snapshot context, relationships and a safe operational boundary
+    And Close and Escape dismiss an opened and reopened detail without losing scope
+    And ConfigMap and Secret Inventory reveal key names and safe metadata, never their protected values
     And the observed success is attributable to the selected source, authorized actor and correct committed identity
 
   # Layer: Both; risk: High; Newly expanded specification — capability-owner review required.
@@ -69,6 +73,12 @@ Feature: Kubernetes — Dashboard, Inventory & Topology
     And inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-INV-004
     Then filters persist across HTMX navigation; pagination and No Results follow shared standard
     And hTMX preserves selection and no-result/page-reset semantics
+    And Resource Type, lifecycle, class, Namespace and search filters preserve correct resource identities
+    And clear filters resets the resource-specific defaults and returns to the first page
+    And the standard table defaults to five rows while configured Rows options remain available
+    And Topology Resource List and Details/Relationships Inspector remain usable for dense graphs
+    And dense Full Relationships Hierarchy and Dependency layouts offer readable focal exploration
+    And explicit Fit distinguishes a complete graph overview from readable focus without omitting committed resources
     And the observed success is attributable to the selected source, authorized actor and correct committed identity
 
   # Layer: Both; risk: High; Newly expanded specification — capability-owner review required.
