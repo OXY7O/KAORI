@@ -160,27 +160,27 @@
             ) %}
                 <div class="space-y-5">
                     <section aria-labelledby="execution-extended-context-title">
-                        {{ detail.subsection('Extended Execution Context', 'Domain scope and scheduler attribution.') }}
                         <div id="execution-extended-context-title">
-                            {{ detail.inventory_fact_grid([
+                            {{ detail.subsection('Extended Execution Context', 'Domain scope and scheduler attribution.') }}
+                        </div>
+                        {{ detail.inventory_fact_grid([
                                 ('Trigger', execution.trigger_label),
                                 ('Scope Type', execution.scope_type),
                                 ('Resource Group', execution.resource_group),
                                 ('Integration Instance', execution.integration_instance)
                             ], columns=2) }}
-                        </div>
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="execution-extended-lifecycle-title">
-                        {{ detail.subsection('Additional Lifecycle Evidence', 'Recorded operational timestamps; unavailable values remain explicit.') }}
                         <div id="execution-extended-lifecycle-title">
-                            {{ detail.inventory_fact_grid([
+                            {{ detail.subsection('Additional Lifecycle Evidence', 'Recorded operational timestamps; unavailable values remain explicit.') }}
+                        </div>
+                        {{ detail.inventory_fact_grid([
                                 ('Last Heartbeat', execution.heartbeat_at),
                                 ('Cancel Requested', execution.cancel_requested_at),
                                 ('Last Updated', execution.updated_at),
                                 ('Expires', execution.expires_at)
                             ], columns=2) }}
-                        </div>
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="execution-technical-references-title">
