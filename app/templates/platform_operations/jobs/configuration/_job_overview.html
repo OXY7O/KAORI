@@ -39,16 +39,18 @@
     {% if overview_notice|default('') %}
         <footer class="flex min-w-0 items-center justify-between gap-3 border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
             <p class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
-                <i data-lucide="info" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="info"
+                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
                 <span class="{{ 'min-w-0 truncate' if overview_notice_short|default('') else 'min-w-0' }}"
                       {% if overview_notice_short|default('') %}title="{{ overview_notice }}"{% endif %}>{{ overview_notice_short|default(overview_notice) }}</span>
             </p>
             {% if overview_notice_short|default('') %}
-                {{ info_tip.render('jobs-overview-safety-' ~ (definition.key|replace('.', '-')),
-                                'Job Safety Evidence',
-                                overview_notice,
-                                placement='right',
-                                variant='guide') }}
+                {{ info_tip.render('jobs-overview-safety-' ~ (definition.key|replace('.', '-') ),
+                'Job Safety Evidence',
+                overview_notice,
+                placement='right',
+                variant='guide') }}
             {% endif %}
         </footer>
     {% endif %}
