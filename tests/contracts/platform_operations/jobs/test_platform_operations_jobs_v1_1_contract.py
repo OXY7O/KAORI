@@ -162,6 +162,7 @@ def test_registry_detail_primary_facts_and_timeline_are_responsive() -> None:
     assert 'payload_json' not in source
     assert 'deduplication_key' not in source
 
+
 def test_guarded_empty_inventory_recovery_panels_share_safety_layout() -> None:
     environment = Environment()
     for domain, target in (

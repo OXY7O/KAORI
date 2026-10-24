@@ -142,10 +142,10 @@
                         </div>
                     </div>
                     {{ info_tip.render('jobs-empty-bucket-recovery-safety',
-                                            'Guarded Recovery Boundary',
-                                            'Only after independent verification that every bucket was deliberately removed. Unexpected zero ListBuckets results preserve the last committed assets. This action checks provider eligibility and performs two complete bucket discovery requests before atomically replacing the selected system snapshot with zero assets. Confirmation is bound to the signed-in operator, selected system and current snapshot. Mismatch or changed evidence fails closed without deleting records.',
-                                            placement='right',
-                                            variant='guide') }}
+                                        'Guarded Recovery Boundary',
+                                        'Only after independent verification that every bucket was deliberately removed. Unexpected zero ListBuckets results preserve the last committed assets. This action checks provider eligibility and performs two complete bucket discovery requests before atomically replacing the selected system snapshot with zero assets. Confirmation is bound to the signed-in operator, selected system and current snapshot. Mismatch or changed evidence fails closed without deleting records.',
+                                        placement='right',
+                                        variant='guide') }}
                 </div>
             </header>
             <form method="post"

@@ -43,6 +43,7 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'hx-push-url="true"' in template
     assert 'hx-target="#job-configuration-workspace"' in template
 
+
 def test_registered_job_summaries_are_concise_without_mutating_definitions() -> None:
     source = (ROOT / 'app/platform_operations/jobs/configuration.py').read_text(encoding='utf-8')
     catalog = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text(
