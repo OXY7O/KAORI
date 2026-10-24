@@ -31,10 +31,10 @@ def test_gherkin_and_all_case_register_match_catalog_ids() -> None:
         for file in feature_files
         for scenario_id in SCENARIO.findall(file.read_text(encoding='utf-8'))
     ]
-    assert len(expected) == len(catalog) == 91
-    assert len(feature_files) == 18
-    assert len(cases) == len(set(cases)) == 91
-    assert len(scenario_ids) == len(set(scenario_ids)) == 91
+    assert len(expected) == len(catalog) == 98
+    assert len(feature_files) == 19
+    assert len(cases) == len(set(cases)) == 98
+    assert len(scenario_ids) == len(set(scenario_ids)) == 98
     assert expected == set(cases) == set(scenario_ids)
 
 
@@ -44,7 +44,7 @@ def test_all_case_procedures_include_required_evidence_and_safety() -> None:
         CASES.read_text(encoding='utf-8'),
         flags=re.M,
     )[1:]
-    assert len(sections) == 91
+    assert len(sections) == 98
     for case in sections:
         for field in (
             '**Preconditions:**', '**Steps:**', '**Expected results:**',
@@ -77,7 +77,7 @@ def test_gherkin_has_tags_and_given_when_then_per_case() -> None:
             body = text[match.end():stop]
             for keyword in ('Given', 'When', 'Then'):
                 assert re.search(rf'(?m)^    {keyword} ', body), scenario_id
-    assert counts == {'first_wave': 14, 'owner_review': 77}
+    assert counts == {'first_wave': 14, 'owner_review': 84}
 
 
 def test_source_audit_never_claims_executed_uat() -> None:
@@ -85,11 +85,11 @@ def test_source_audit_never_claims_executed_uat() -> None:
     matrix = (ENGINEERING / 'uat' / 'SCENARIO_COVERAGE_MATRIX.md').read_text(encoding='utf-8')
     audit = (ENGINEERING / 'KAORI_UAT_TEST_MAPPING_AUDIT.md').read_text(encoding='utf-8')
     rows = [line for line in matrix.splitlines() if line.startswith('| `UAT-')]
-    assert len(rows) == 91
+    assert len(rows) == 98
     assert all(line.endswith('| NOT RUN / PENDING |') for line in rows)
-    assert '**24/91**' in matrix
-    assert '**67/91**' in matrix
-    assert '**0/91' in matrix
+    assert '**24/98**' in matrix
+    assert '**74/98**' in matrix
+    assert '**0/98' in matrix
     assert '**Admission:** HOLD' in matrix
 
     additional_ids = (
