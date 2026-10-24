@@ -113,7 +113,7 @@ Feature: Platform Operations — Data Lifecycle & Secret Reveal
 
   # Layer: ui + non_ui; risk: high; authority #2605/#2457/#1384 and catalog #1738.
   # Separate candidate-specific human evidence from unrun executable Gherkin scenarios.
-  @UAT-LIF-008 @positive @high @ui @@non_ui @specified @owner_review
+  @UAT-LIF-008 @positive @high @ui @non_ui @specified @owner_review
   Scenario: UAT-LIF-008 - Approved Harbor policy save and rollback preserve audit correlation
     Given a permitted operator expressly authorizes a nonproduction harbor policy test
     And harbor is Available with a Disabled policy and no impacted pending reveal requests
@@ -127,7 +127,7 @@ Feature: Platform Operations — Data Lifecycle & Secret Reveal
 
   # Layer: ui + non_ui; risk: high; authority #2605/#2457/#1384 and catalog #1738.
   # Separate candidate-specific human evidence from unrun executable Gherkin scenarios.
-  @UAT-LIF-009 @negative @high @ui @@non_ui @specified @owner_review
+  @UAT-LIF-009 @negative @high @ui @non_ui @specified @owner_review
   Scenario: UAT-LIF-009 - Viewer direct requests cannot read Kubernetes Admin configuration
     Given a Viewer without Kubernetes Secret Reveal management permission
     When the Viewer requests the Kubernetes Admin Overview URL directly
@@ -150,7 +150,7 @@ Feature: Platform Operations — Data Lifecycle & Secret Reveal
 
   # Layer: ui + non_ui; risk: high; authority #2605/#2457/#1384 and catalog #1738.
   # Separate candidate-specific human evidence from unrun executable Gherkin scenarios.
-  @UAT-LIF-011 @negative @high @ui @@non_ui @specified @owner_review
+  @UAT-LIF-011 @negative @high @ui @non_ui @specified @owner_review
   Scenario: UAT-LIF-011 - Unavailable namespace source and unready clusters fail closed
     Given an isolated cluster with controllable Namespace provider availability and readiness
     When the Namespace provider cannot confirm live namespace presence
