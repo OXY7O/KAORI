@@ -52,7 +52,7 @@ No Account screenshot hashes are manufactured or locked before review.
 
 | ID | Scenario | Expected evidence | Current status |
 | --- | --- | --- | --- |
-| SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | Functional UAT approved; negative browser evidence pending |
+| SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | **Human PASS for positive flow (2026-10-24):** manual save/reload, automatic mode, Detect Again, Account effective timezone; invalid-IANA/CSRF negative browser evidence pending |
 | SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | Functional UAT approved; runtime capture pending |
 | SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | Source negative regression added; runtime pending |
 | SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | Pure projection negative regression added; browser pending |
@@ -256,6 +256,28 @@ pytest commands continues to execute the actual regression tests; no BDD runner,
 `.feature` parser, new fixture, provider mutation or official admission gate is
 introduced. General Settings scenarios SET-GEN-01–04 remain separate and pending
 their own negative/browser UAT evidence.
+
+## 2026-10-24 — General Time Zone positive UAT and shared tab regression
+
+The operator confirmed the five guided `SET-GEN-01` positive Time Zone checks:
+manual Asia/Jakarta → Asia/Makassar and Save; preference persistence after Refresh;
+automatic browser detection selection and Save; Detect Again without unintended
+mode change; and the effective timezone shown in Account → Personal Presentation.
+This is **Human UAT PASS for the positive browser journey**, not evidence of a
+forged/invalid IANA value, explicit CSRF negative trace or canonical datastore
+inspection. Invalid-IANA and CSRF-negative evidence remain pending.
+
+For shared Settings query-backed tabs, the operator's screenshot showed the
+phantom vertical scrollbar removed after #3032 / PR #3033. Their Dev Container
+outputs report `djlint` PASS (0 changes), Settings Final Lock focused contract
+**4 passed in 0.78s**, Settings Final Lock verifier **PASS (18 templates)**,
+Notification Surface Style **PASS**, and existing General+Account six-viewport
+Playwright cases **12 passed, 66 deselected in 107.50s**. Exact same-run local
+SHA was not included in those terminal outputs; the shared tab fix was merged
+to temporary holding at `c5f0e902905b957e43ba7569b28d540c50ffee94`.
+The previous Account Human Acceptance remains unaffected; the General suite is
+**not yet fully accepted** because SET-GEN-01 negative and SET-GEN-02–04
+scope-specific evidence remain separate.
 
 ## 2026-10-24 — Account UAT evidence reconciliation
 
