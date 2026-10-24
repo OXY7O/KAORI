@@ -125,6 +125,21 @@ Jobs & Executions, Job Configuration, Activity Center, report execution details,
 surfaces. Domain-specific progress toasts may wrap the same low-level violet bar primitive, but must not
 introduce a second visual or percentage contract.
 
+## Execution Registry Detail Contract
+
+The Registry **View Details** modal reads only a sanitized committed `JobExecution` snapshot via
+`present_job_execution_detail()`. The existing shared Resource Detail controller owns the
+modal header, summary, focus/close actions, scrolling and loading/error states; the fragment
+must declare `data-kaori-detail-variant="job-execution"` so the controller projects those
+sections rather than duplicating a second title and leaving the loading placeholder visible.
+
+The outcome-first operator view prioritizes status, real progress, last worker stage and
+conditional recorded error evidence. Execution context, lifecycle timeline, sanitized
+result-summary fields and technical identifiers follow as separate evidence sections.
+An absent result summary is an explicit empty state, not an execution failure.
+Raw job request payloads, deduplication keys and parameter fingerprints are never displayed.
+Scheduler/queue/provider authorities remain unchanged by this presentation contract.
+
 ## Operations UI Performance Contract
 
 Jobs & Executions is intentionally server-backed and demand-loaded. The page must not build hidden workspaces merely to support client-side tab switching.
