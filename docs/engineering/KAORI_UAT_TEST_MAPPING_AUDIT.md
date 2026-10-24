@@ -324,3 +324,16 @@ The **seven exact node IDs** below were checked by reading their source on the n
 **Manual evidence boundary:** #746 records 2026-10-24 operator-observed `tenant` filtering, unmatched-query empty state, Escape reset, Viewer role-aware counts, real browser `GET /access/` HTTP **403**, and mobile light/dark screenshots at 390×844 and 360×800. Those observations support bounded human UAT only; none is retroactively a pytest/Playwright machine PASS for a newly written Scenario ID. The exact local SHA was not supplied.
 
 **Next automation work:** Reuse #1726 Playwright and #1727 capability-owned security/test-client suites; extend existing tests for the specific uncovered browser/HTML/authorization assertions rather than adding a Gherkin runner, bespoke verifier or extra Visual QA baseline engine. Any new test change needs issue-linked work and reviewed branch targeting; keep official CI/CD, Full Admission, staging/main promotion and release **HOLD**.
+
+## Welcome source-implementation checkpoint — issue #3012
+
+**2026-10-24:** On isolated review-based implementation branch `kaori/issue-3012-welcome-qa-regressions` (not merged into `kaori/review/staging-uat`), issue #3012 now authors bounded regression assertions matching four new specification IDs:
+
+- `UAT-WEL-002` → `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_welcome_html_contains_only_permitted_workspace_cards`. Evaluates current `DEFAULT_ROLE_PERMISSIONS['viewer']` and each permission-to-endpoint shortcut; checks raw returned HTML cards, count, forbidden Integrations/Platform Operations/Access metadata and universal Settings without pinning a perpetual 13-card baseline.
+- `UAT-IAM-007` → `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_direct_access_overview_returns_http_403_and_safe_guidance`. Uses the same isolated Viewer principal, tests `GET /access/` status 403, Access Denied guidance and absence of Access Overview copy.
+- `UAT-WEL-004` → existing `tests/ui/test_representative_interactions.py::test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports` now also checks unmatched search → zero count/shared empty state → Escape resets restored cards and focus.
+- `UAT-WEL-006` → `tests/ui/test_representative_interactions.py::test_welcome_authorized_workspace_card_navigation_across_canonical_viewports` clicks permitted Settings card and checks actual Account destination; separate browser evidence scope prevents catalog screenshot labeling drift. Route denial remains under IAM-007.
+
+**No execution evidence exists yet**: these are GitHub source-written tests only. Exact Dev Container tested SHA, JUnit, screenshots/traces, pytest/Playwright, Ruff, Developer Check and Full Admission are **NOT RUN**. No Gherkin runner, CI gate, visual rebaseline or application behavior change was added. The original source-reviewed numerator **24/98** has not been inflated merely by drafting new tests. After execution, update the mapping and evidence records against exact candidate SHA.
+
+**Integration boundary:** The documentation/catalog branch is based on historic `kaori/staging`, whereas #3012 is based on a more recent held review SHA. Keep branches separate pending operator-authorized reconciliation, before any formal staging PR.
