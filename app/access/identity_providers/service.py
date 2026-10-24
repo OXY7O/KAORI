@@ -316,6 +316,9 @@ def update_identity_provider(
                 .with_for_update()
             ).scalar_one()
         )
+        # Refresh the previously loaded ORM record after obtaining the lock;
+        # otherwise another request's committed state can remain stale here.
+        db.session.refresh(provider)
         ensure_provider_identity_continuity(provider, configuration)
         apply_identity_provider_configuration(provider, configuration)
         if was_enabled and not provider.enabled:
