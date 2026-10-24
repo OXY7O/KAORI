@@ -161,3 +161,29 @@ def test_registry_detail_primary_facts_and_timeline_are_responsive() -> None:
     assert 'progress_bar.job_progress' in source
     assert 'payload_json' not in source
     assert 'deduplication_key' not in source
+
+def test_guarded_empty_inventory_recovery_panels_share_safety_layout() -> None:
+    environment = Environment()
+    for domain, target in (
+        ('object_storage_inventory_sync.html', 'confirm_empty_system_id'),
+        ('artifact_registry_inventory_sync.html', 'confirm_empty_instance_id'),
+    ):
+        source = _read('app/templates/platform_operations/jobs/configuration/definitions/' + domain)
+        environment.parse(source)
+        assert 'Confirm an Empty' in source
+        assert 'Guarded Recovery · Manual Only' in source
+        assert 'data-lucide="shield-alert"' in source
+        assert 'bg-status-warning-soft' in source
+        assert 'components/info_tip.html' in source
+        assert 'Guarded Recovery Boundary' in source
+        assert "variant='guide'" in source
+        assert 'Two complete reads required; mismatches preserve committed records.' in source
+        assert 'name="empty_reconciliation" value="confirm"' in source
+        assert f'name="{target}"' in source
+        assert 'name="confirmation_phrase"' in source
+        assert 'placeholder="CONFIRM EMPTY"' in source
+        assert 'manual_form.hidden_tag()' in source
+        assert 'can_reconcile' in source
+        assert 'selected_job.active_job or selected_job.execution_disabled' in source
+        assert "url_for('jobs.run_now', job_key=definition.key)" in source
+        assert 'shrink-0 whitespace-nowrap' in source
