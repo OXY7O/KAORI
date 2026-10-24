@@ -2113,6 +2113,8 @@ def test_capsule_profile_unsupported_mutation_guard_is_not_just_copy() -> None:
     controls = read('app/kubernetes/tenant/resource_profile_controls.py')
     assert 'const renderCapsuleProfileCoverage = (form, profile) => {' in js
     assert "requestedUnsupported.push('Container Defaults')" in js
+    assert 'Object.keys(profile.storage_policy || {}).length > 0' in js
+    assert 'Object.keys(profile.limits || {}).length > 0' in js
     assert "requestedUnsupported.push('Per-PVC Policy')" in js
     assert "apply.disabled = blocked" in js
     assert 'kaoriInitiallyDisabled' in js
