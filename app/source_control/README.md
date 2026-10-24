@@ -15,7 +15,7 @@ Acceptance. The isolated local-database super-admin boundary still applies
 until #724 resource-scoped authorization is admitted. Signed webhook ingress
 and consumer both remain disabled by default. The authoritative Dev Container
 procedure and actual evidence requirements live in
-[`docs/operations/github-source-control-devcontainer-uat.md`](../../../docs/operations/github-source-control-devcontainer-uat.md).
+[`docs/operations/github-source-control-devcontainer-uat.md`](../../docs/operations/github-source-control-devcontainer-uat.md).
 
 ## Historical SC-01 starting point
 

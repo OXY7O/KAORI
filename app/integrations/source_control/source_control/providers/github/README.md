@@ -21,7 +21,7 @@ of production or broad-user activation. The signed webhook HTTP ingress and
 maintenance consumer are disabled by default. Before Human UAT, verify
 PostgreSQL migrations, canonical worker registration, App installation scope,
 HMAC/replay security, cross-organization isolation, and Visual QA using the
-existing [Dev Container UAT runbook](../../../../../../../docs/operations/github-source-control-devcontainer-uat.md).
+existing [Dev Container UAT runbook](../../../../../../docs/operations/github-source-control-devcontainer-uat.md).
 
 ## Historical SC-02 first transport increment
 
