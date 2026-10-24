@@ -169,6 +169,18 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Audit Privacy Boundary' not in activity
 
 
+def test_recent_authentication_activity_context_column_is_right_aligned() -> None:
+    activity = read('app/templates/settings/account/partials/_recent_login_activity.html')
+    assert '<th class="{{ table_ui.header_cell_classes(action=true) }}">Context</th>' in activity
+    assert '<td class="{{ table_ui.cell_classes(action=true) }} min-w-56">' in activity
+    assert 'class="mt-1 flex items-center justify-end gap-1.5 text-xs text-content-muted"' in activity
+    assert '<span class="text-right">{{ metadata.get("browser") or \'Browser unavailable\' }}' in activity
+
+    # The other data columns retain the ordinary left-aligned shared table variant.
+    for header in ('Event', 'Source', 'Result'):
+        assert f'<th class="{{{{ table_ui.header_cell_classes() }}}}">{header}</th>' in activity
+
+
 def test_credential_workspace_keeps_action_left_and_security_context_right() -> None:
     credentials = read('app/templates/settings/account/partials/_change_password.html')
     context = read('app/templates/settings/account/partials/_credential_information.html')
