@@ -54,7 +54,7 @@ No Account screenshot hashes are manufactured or locked before review.
 | --- | --- | --- | --- |
 | SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | **Human PASS for positive flow (2026-10-24):** manual save/reload, automatic mode, Detect Again, Account effective timezone; invalid-IANA/CSRF negative browser evidence pending |
 | SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | **Human PASS for positive flow (2026-10-24):** id-ID, year_month_day, 12h; persisted preview updates after Save, Refresh retention, Account locale consistency; independent canonical UTC/schedule mutation verification pending |
-| SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | Source negative regression added; runtime pending |
+| SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | **Human PASS (positive/negative access boundary, 2026-10-24):** authorized metadata/capability view, truthful unknown build, no secrets, Viewer privileged tabs hidden, direct unauthorized tab falls back to Time Zone; raw HTTP trace not archived |
 | SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | Pure projection negative regression added; browser pending |
 | SET-ACC-01 | Profile local/external identity, RBAC role vs Super Admin | Read-only and source-backed identity; no false live provider readiness | **Human PASS (Account scope):** Local Super Admin and LDAP Viewer linked identity/profile screenshots; provider live-readiness was not asserted |
 | SET-ACC-02 | Empty/five recent auth events and Activity Audit authorization | Five-event sample, safe status, IP proxy caveat, permitted drill-down | **Human PASS (UI/RBAC boundary):** local + LDAP event sample, Viewer denied at direct audit URL, authorized audit access; separate HTTP 403 header capture not provided |
@@ -256,6 +256,31 @@ pytest commands continues to execute the actual regression tests; no BDD runner,
 `.feature` parser, new fixture, provider mutation or official admission gate is
 introduced. General Settings scenarios SET-GEN-01–04 remain separate and pending
 their own negative/browser UAT evidence.
+
+## 2026-10-24 — General System Information authorization UAT
+
+The operator confirmed all five `SET-GEN-03` guided browser checks PASS:
+an authorized account can read release identity, environment and capability
+catalog; absent build SHA/date is honestly displayed as `Not supplied`;
+System Information does not expose secret/configuration details; an LDAP
+Viewer lacking `system.view` has neither System Information nor
+Compatibility Versions tab; and directly requesting
+`/settings/general?tab=system-information` as that Viewer falls back to
+Time Zone without projecting privileged data. This matches the existing
+fail-closed Settings route and focused negative contract; separate raw
+Network/HTTP header evidence was not archived.
+
+**Post-acceptance visual refinement:** issue #3040 / PR #3044 shortened three
+System Information descriptions and added canonical title-level Violet
+`Guide` Info Tips across all four General tabs. Source readback PASS and
+merged to temporary UAT holding at
+`f1cbc897c9e02603233007ce0b516311c408decd`. New copy layout and
+hover/focus/touch visual QA on the operator's exact viewport remain pending;
+the already accepted SET-GEN-03 permission/runtime results stand independently.
+
+General `SET-GEN-04` Compatibility registry interactions, other scoped
+negative evidence, and official Full Admission remain separate. CI/CD,
+`kaori/staging`, main and release remain **HOLD**.
 
 ## 2026-10-24 — General Regional Format positive UAT
 
