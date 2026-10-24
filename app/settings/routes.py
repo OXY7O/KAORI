@@ -15,6 +15,8 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
 from app.access.users.directory import build_user_identity_context
@@ -171,6 +173,13 @@ def general():
 @bp.post('/general/browser-timezone')
 @login_required
 def sync_browser_timezone():
+    # The browser includes a session-bound Flask-WTF token for this JSON mutation.
+    # The preference forms' CSRF validation does not cover a standalone POST.
+    try:
+        validate_csrf(request.headers.get('X-CSRFToken'))
+    except ValidationError:
+        return jsonify({'status': 'invalid_csrf'}), 400
+
     user = cast(User, current_user._get_current_object())
     payload = request.get_json(silent=True) or {}
     browser_timezone = str(payload.get('timezone') or '').strip()

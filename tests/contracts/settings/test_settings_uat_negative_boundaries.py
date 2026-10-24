@@ -5,11 +5,13 @@ Negative cases never commit credentials or call external identity providers.
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
-from flask import Flask
+from flask import Flask, request
+from flask_wtf.csrf import generate_csrf
 
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.settings.account.actions import process_password_change
@@ -19,7 +21,7 @@ from app.settings.general.actions import (
     sync_browser_timezone_preference,
 )
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
-from app.settings.routes import bp, general
+from app.settings.routes import bp, general, sync_browser_timezone
 from app.settings.system_information import build_system_information
 
 
@@ -274,3 +276,75 @@ def test_browser_timezone_sync_denies_untrusted_or_unchanged_updates(
     assert timezone == 'Asia/Jakarta'
     assert user.timezone == 'Asia/Jakarta'
     commit.assert_not_called()
+
+
+@pytest.mark.parametrize('csrf_value', (None, 'forged-token'))
+def test_browser_timezone_json_post_rejects_missing_or_invalid_csrf(csrf_value: str | None) -> None:
+    """The standalone JSON mutation must not bypass Flask-WTF's session token."""
+    app = _settings_app()
+    app.config['WTF_CSRF_ENABLED'] = True
+    user = SimpleNamespace(timezone_mode='automatic', timezone='Asia/Jakarta')
+    headers = {'X-CSRFToken': csrf_value} if csrf_value is not None else {}
+
+    with (
+        app.test_request_context(
+            '/settings/general/browser-timezone',
+            method='POST',
+            json={'timezone': 'Asia/Makassar'},
+            headers=headers,
+        ),
+        patch(
+            'app.settings.routes.current_user',
+            SimpleNamespace(_get_current_object=lambda: user),
+        ),
+        patch('app.settings.routes.sync_browser_timezone_preference') as sync,
+        patch('app.settings.general.actions.db.session.commit') as commit,
+    ):
+        # A valid server-side CSRF session exists; the header is still absent or forged.
+        generate_csrf()
+        response, status = sync_browser_timezone.__wrapped__()
+
+    assert status == 400
+    assert response.get_json() == {'status': 'invalid_csrf'}
+    assert user.timezone == 'Asia/Jakarta'
+    sync.assert_not_called()
+    commit.assert_not_called()
+
+
+def test_browser_timezone_json_post_accepts_valid_session_csrf() -> None:
+    """Preserve the legitimate same-origin auto-sync path with a bound token."""
+    app = _settings_app()
+    app.config['WTF_CSRF_ENABLED'] = True
+    user = SimpleNamespace(timezone_mode='automatic', timezone='Asia/Jakarta')
+
+    with (
+        app.test_request_context(
+            '/settings/general/browser-timezone',
+            method='POST',
+            json={'timezone': 'Asia/Makassar'},
+            headers={'X-CSRFToken': 'pending-session-token'},
+        ),
+        patch(
+            'app.settings.routes.current_user',
+            SimpleNamespace(_get_current_object=lambda: user),
+        ),
+        patch('app.settings.general.actions.db.session.commit') as commit,
+    ):
+        # Generate the real Flask-WTF token in the same request/session.
+        request.environ['HTTP_X_CSRFTOKEN'] = generate_csrf()
+        response, status = sync_browser_timezone.__wrapped__()
+
+    assert status == 200
+    assert response.get_json() == {'status': 'updated', 'timezone': 'Asia/Makassar'}
+    assert user.timezone == 'Asia/Makassar'
+    commit.assert_called_once()
+
+
+def test_browser_timezone_json_client_uses_session_bound_csrf_header() -> None:
+    """The existing browser script must retain the server-approved header."""
+    root = Path(__file__).resolve().parents[3]
+    client = (root / 'app/static/js/user_timezone_sync.js').read_text(encoding='utf-8')
+    layout = (root / 'app/templates/layouts/app.html').read_text(encoding='utf-8')
+    assert "'X-CSRFToken': csrfToken" in client
+    assert "credentials: 'same-origin'" in client
+    assert 'data-csrf="{{ csrf_token() }}"' in layout

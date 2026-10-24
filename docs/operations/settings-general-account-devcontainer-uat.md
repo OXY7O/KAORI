@@ -63,6 +63,58 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
 | SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for both General and Account (2026-10-24):** General Back/Forward/Refresh, keyboard Tab/Shift+Tab/Enter and Offline→Online recovery 3/3 PASS; Account previously accepted; full assistive-technology/screen-reader audit not claimed |
 
+## 2026-10-24 — Browser Time Zone JSON CSRF security remediation
+
+**Scoped bug:** #3066 (child of #2880; link the native parent-child
+relationship in GitHub Project when possible). Source audit found that
+`app/static/js/user_timezone_sync.js` already submits a session-bound
+`X-CSRFToken` from the shared app layout but the independent
+`POST /settings/general/browser-timezone` handler did not validate it
+before allowing the automatic-mode preference update. The form POST
+contracts that passed earlier **do not cover this route**. This is a
+confirmed **missing CSRF validation control**, not evidence of an
+exploitable cross-site attack in a production browser: JSON preflight,
+origin restrictions and production SameSite cookie settings remain
+separate mitigations. Do not conflate either assessment.
+
+**Scoped fix (new implementation; runtime evidence pending):**
+reuse Flask-WTF `validate_csrf(request.headers.get('X-CSRFToken'))`
+before reading JSON or invoking `sync_browser_timezone_preference`.
+Missing/forged tokens return safe HTTP `400`,
+`{"status":"invalid_csrf"}`; a valid signed session token preserves
+the existing JSON `updated` response and automatic IANA sync.
+No new middleware, JS fetch, session token format, external provider
+calls, database migration, form UI or operational scheduling changes.
+
+**Regression ownership:** added to existing
+`tests/contracts/settings/test_settings_uat_negative_boundaries.py`:
+missing-header and forged-header cases prove HTTP 400 and no mutation;
+valid Flask-WTF session token proves one legitimate committed
+automatic preference sync; client contract verifies shared layout
+token and unchanged same-origin `fetch` header. Execute with Ruff,
+focused pytest and Settings Final Lock in Dev Container before
+marking remediation verified. GitHub source readback alone is **not
+an executable security gate**.
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check app/settings/routes.py tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python -m ruff format --check app/settings/routes.py tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_uat_negative_boundaries.py tests/contracts/settings/test_settings_final_lock_contract.py
+python scripts/verify_settings_final_lock.py
+```
+
+**UAT boundary:** confirm valid automatic browser timezone sync
+still updates a test account when its browser timezone differs from
+stored state, without visible false save/notification or changing
+manual mode. Run isolated authenticated request tests for missing
+and invalid CSRF, **never** attack a live user session. Capture the
+actual tested SHA and redacted HTTP status, not cookies or tokens.
+Previously accepted SET-GEN-01–04/OPS flows remain accepted; this
+security-sensitive mutation requires separate review before any
+official admission. Full Admission, staging/main and release HOLD.
+
 ## 2026-10-24 — General operational final Human UAT and QA disposition
 
 The operator explicitly confirmed **SET-GEN-OPS steps 1–3 PASS** on the
