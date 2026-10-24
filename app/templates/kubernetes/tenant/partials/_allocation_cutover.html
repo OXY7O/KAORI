@@ -37,18 +37,26 @@
           data-tenant-allocation-change-form>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-5 p-5">
-            <div class="flex flex-wrap items-center gap-2 border-b border-outline-subtle pb-4 text-xs text-content-secondary">
-                <i data-lucide="eye"
-                   class="h-4 w-4 text-kaori-primary"
-                   aria-hidden="true"></i>
-                Adopted Baseline · Observed
-                <i data-lucide="arrow-right"
-                   class="h-4 w-4 text-content-muted"
-                   aria-hidden="true"></i>
-                <i data-lucide="shield-check"
-                   class="h-4 w-4 text-kaori-primary"
-                   aria-hidden="true"></i>
-                KAORI Managed · Only after verified cutover
+            <div class="grid items-stretch gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+                 data-tenant-native-cutover-journey>
+                <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
+                        <i data-lucide="eye" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Observed Provider Baseline
+                    </div>
+                    <p class="mt-1 text-xs text-content-muted">Frozen Native ResourceQuota and LimitRange evidence.</p>
+                </div>
+                <span class="flex items-center justify-center text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="arrow-right" class="hidden h-4 w-4 md:block"></i>
+                    <i data-lucide="arrow-down" class="h-4 w-4 md:hidden"></i>
+                </span>
+                <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
+                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Proposed KAORI Managed Contract
+                    </div>
+                    <p class="mt-1 text-xs text-content-secondary">Only committed after admitted provider read-back.</p>
+                </div>
             </div>
             <div class="flex items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
