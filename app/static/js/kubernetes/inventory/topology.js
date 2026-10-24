@@ -55,6 +55,9 @@ const startTopologyWorkspace = () => {
     const canvas = $('topology-canvas')
     const canvasShell = $('topology-canvas-shell')
     const viewportHint = $('topology-viewport-hint')
+    const viewportHintTitle = $('topology-viewport-hint-title')
+    const viewportHintCount = $('topology-viewport-hint-count')
+    const viewportHintDescription = $('topology-viewport-hint-description')
     const boundaryLayer = $('topology-namespace-boundaries')
     const clusterSelect = $('topology-cluster')
     const namespaceSelect = $('topology-namespace')
@@ -709,16 +712,15 @@ const startTopologyWorkspace = () => {
     const DENSE_NODE_THRESHOLD = 12
 
     const updateViewportHint = (nodeCount) => {
-        if (!viewportHint) return
+        if (!viewportHint || !viewportHintTitle || !viewportHintCount || !viewportHintDescription) return
         const compactOverview = nodeCount > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD
         viewportHint.hidden = !readableFocusActive && !compactOverview
-        if (readableFocusActive) {
-            viewportHint.textContent =
-                `Focused view · ${nodeCount} resources in scope. Pan or zoom to explore; Fit shows the full graph.`
-        } else if (compactOverview) {
-            viewportHint.textContent =
-                `Full graph overview · ${nodeCount} resources. Zoom in to read labels or use Resource List.`
-        }
+        if (viewportHint.hidden) return
+        viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'
+        viewportHintCount.textContent = `${nodeCount} resources`
+        viewportHintDescription.textContent = readableFocusActive
+            ? 'Pan to explore nearby resources. Fit shows the full graph.'
+            : 'Zoom to inspect labels. Resource List shows every name.'
     }
 
     const readableFocusNode = (visibleNodes) => {
@@ -2133,13 +2135,12 @@ const startTopologyWorkspace = () => {
             if (visible?.nodes().length && rect.width >= 120 && rect.height >= 120) {
                 const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
                 const margin = 20
-                if (
-                    !readableFocusActive &&
-                    (box.x1 < margin ||
+                const clipped =
+                    box.x1 < margin ||
                     box.y1 < margin ||
                     box.x2 > rect.width - margin ||
-                    box.y2 > rect.height - margin)
-                ) {
+                    box.y2 > rect.height - margin
+                if (!readableFocusActive && clipped) {
                     window.requestAnimationFrame(fitGraphToCanvas)
                 }
             }
