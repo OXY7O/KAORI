@@ -3,9 +3,9 @@
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% set execution_tabs = [
-    ('active', 'Active Work', 'activity', url_for('jobs.executions', execution_tab='active'), job_stats.active),
-    ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry'), job_stats.total),
-    ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'), job_stats.queues)
+    ('active', 'Active Work', 'activity', url_for('jobs.executions', execution_tab='active')),
+    ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry')),
+    ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'))
 ] %}
 <section id="job-execution-workspace" class="space-y-5">
     <section class="{{ operational_section.shell_classes() }}"
