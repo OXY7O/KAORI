@@ -2,6 +2,7 @@
 
 Negative cases never commit credentials or call external identity providers.
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -132,7 +133,8 @@ def test_external_credentials_are_rejected_before_validation_or_password_access(
     ],
 )
 def test_password_rejections_preserve_credential_and_session_state(
-    password_matches: tuple[bool, ...], expected_reason: str,
+    password_matches: tuple[bool, ...],
+    expected_reason: str,
 ) -> None:
     app = _settings_app()
     user = Mock()
@@ -272,4 +274,3 @@ def test_browser_timezone_sync_denies_untrusted_or_unchanged_updates(
     assert timezone == 'Asia/Jakarta'
     assert user.timezone == 'Asia/Jakarta'
     commit.assert_not_called()
-
