@@ -1187,3 +1187,33 @@ presentation and unchanged guarded actions. DevContainer Visual QA must cover
 Guide hover/keyboard/touch, overlay position and dismissal, modal keyboard
 interaction, desktop/mobile and light/dark, including Control Unavailable
 and multi-dimension drift. Human UAT and official admission remain separate.
+
+
+### Native Resource Profile coverage disclosures (#2985)
+
+In `Namespace Provisioning → Allocation Change` and `Adopted Native
+Governance Cutover`, the **complete Native provider profile** is rendered
+through one reusable, read-only `_resource_profile_coverage_comparison.html`
+macro. Both forms preserve their six headline quota metrics and compare
+the same `Current (frozen)` and `Proposed (versioned profile)` objects
+through the existing `data-tenant-allocation-*` hooks.
+
+The secondary workspace uses the approved
+`components/view_more_content.html` accessible expandable pattern instead
+of the earlier technical vertical-tab controller:
+
+- Basic Resources: CPU requests/limits, memory requests/limits, Pods.
+- Storage Guardrails: PVC count, total storage requests, per-PVC min/max.
+- Object Limits: Services, ConfigMaps, Secrets.
+- Container Defaults: the four native LimitRange default request/limit keys.
+- Advanced Controls: provider capability preflight versus recorded
+  evaluation, **not** verified provider execution. An enabled control
+  must pass the existing attachment validation before mutation.
+
+Absence of a quota or storage bound is `Unbounded` (never zero).
+Unrecorded advanced state stays `Not recorded`. Operators cannot submit
+any action through the disclosure itself; the original CSRF form,
+`tenant.manage`, capacity admission, authoritative provider write,
+read-back and committed evidence gates remain independent. CSS uses KAORI
+light/dark, responsive native summary/details. Browser accessibility and
+actual live provider UAT remain required for human acceptance.
