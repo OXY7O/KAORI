@@ -10,19 +10,21 @@
 
 **Kubernetes Admin addendum (2026-10-24):** #2605 records explicit operator Human Acceptance for the bounded manually executed Batch 01–06 (navigation, pager, filters, Cancel, authorized Harbor save/rollback, Activity Audit correlation, Viewer GET denial). These are issue-bound manual results, **not** machine `UAT-LIF-*` PASS verdicts; the matrix still says `NOT RUN / PENDING` per scenario because no exact ID-to-JUnit/Playwright execution record was produced. Direct POST/CSRF negative, unavailable-provider failure, Error detail visual, and full six-viewport × two-theme matrix were **not** exercised.
 
+**Kubernetes Dashboard human acceptance (2026-10-24):** #937 documents an explicit operator **Human UAT APPROVED** decision over the four Dashboard tabs plus a downloadable Ready report. The ten new `UAT-KDB-001`–`010` specifications provide capability-owned reusable requirements. Their source/test mappings below are provisional; **no per-Scenario-ID exact-candidate execution record exists**, and the approved UI screenshots do not establish negative scope/RBAC/failure outcomes or the full six-viewport/two-theme automated Visual QA. This acceptance is recorded on the **owning issue**, not silently in the machine-result column.
+
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **106/106** across 19 Gherkin files and case register |
+| Written case procedures | **116/116** across 20 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/106** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
-| Scenario IDs without individual assertion-level review | **82/106**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **92**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/106**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **102/106 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/106 attributed to this catalog checkpoint** |
-| Human acceptance | **0/106 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
+| Scenario IDs with inspected source assertions | **24/116** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **92/116**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **102**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/116**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **112/116 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/116 attributed to this catalog checkpoint** |
+| Human acceptance | **0/116 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -48,6 +50,16 @@
 | `UAT-KCL-002` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-003` | High | Non-UI | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KCL-004` | High | Both | [Gherkin](features/kcl-kubernetes-clusters.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-KDB-001` | High | UI | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: authenticated Dashboard E2E smoke + source-qualified operational KPI contracts; full candidate scope not individually audited | NOT RUN / PENDING |
+| `UAT-KDB-002` | High | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: health table/pagination contract and source-derived severity; registered Healthy vs alert Critical semantics require committed fixture | NOT RUN / PENDING |
+| `UAT-KDB-003` | Medium | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | SOURCE REVIEW + LOCAL QA: capacity/forecast contract + Kubernetes domain unit (36 passed combined dashboard suite at historical SHA; not Scenario-ID execution) | NOT RUN / PENDING |
+| `UAT-KDB-004` | High | UI | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: five AlertCase preview and shared six-step response contracts; real alert lifecycle fixture per Scenario-ID missing | NOT RUN / PENDING |
+| `UAT-KDB-005` | Medium | UI | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | SOURCE REVIEW + LOCAL QA: shared 2-line recommendation contract and CSS verifier; operator screenshot accepted; hover/detail interaction not proven | NOT RUN / PENDING |
+| `UAT-KDB-006` | High | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | MANUAL ACCEPTED ON #937: operator opened Reports Workspace and downloaded one Ready Analytics Overview Report; no full per-ID automation or checksum proof | NOT RUN / PENDING |
+| `UAT-KDB-007` | Medium | UI | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: shared tab/Visual QA source contracts; full 6×2 light/dark and browser history test not attributed to this ID | NOT RUN / PENDING |
+| `UAT-KDB-008` | High | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: unavailable alert and dashed empty-state source contract; missing-data negative fixture not operator-executed | NOT RUN / PENDING |
+| `UAT-KDB-009` | High | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: selected-cluster resolution, clusterless blocker and Kubernetes-only report-domain contract; multi-cluster negative runtime unverified | NOT RUN / PENDING |
+| `UAT-KDB-010` | High | Both | [Gherkin](features/kdb-kubernetes-operations-dashboard.feature) | REVIEW-ONLY: dashboard authorization-first Flask characterization tests; restricted direct browser/endpoints not operator-executed | NOT RUN / PENDING |
 | `UAT-INV-001` | Medium | UI | [Gherkin](features/inv-kubernetes-inventory.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-INV-002` | High | Both | [Gherkin](features/inv-kubernetes-inventory.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-INV-003` | High | Non-UI | [Gherkin](features/inv-kubernetes-inventory.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -141,8 +153,8 @@
 
 ## Closure before gate
 
-1. Obtain domain-owner review of the 84 newly expanded written procedures against current approved KAORI standards and admitted source routes.
-2. Map all 98 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
+1. Obtain domain-owner review of the 102 newly expanded written procedures against current approved KAORI standards and admitted source routes.
+2. Map all 116 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
 3. Integrate #1725 standards, #1738 catalog, #1726 Playwright and #1727 non-UI test branches into a controlled exact candidate, including synchronizing the stacked #1728 branch with this updated #1738 tree.
 4. After the explicit CI/CD hold is lifted, run Developer Check and admission as required, then governed UAT with JUnit, screenshot/trace, committed/provider read-back and a separate human decision.
 5. Treat any mandatory SKIP/NOT RUN/FAIL, missing provider authorization, or misleading fake-provider PASS as unresolved. No automatic release readiness is inferred.
