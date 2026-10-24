@@ -110,6 +110,7 @@ Feature: Personal authentication activity
 
   Scenario: Restrict administrative Activity Audit to users with permission
     Given an LDAP Viewer lacks the "activity_audit.view" permission
+    And a separate authorized user has "activity_audit.view"
     When the Viewer opens personal Recent Authentication Activity
     Then the "Open Activity Audit" action is not shown
     When the Viewer navigates directly to /access/activity-audit/
