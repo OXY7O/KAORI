@@ -41,13 +41,24 @@ def test_dense_topology_viewport_hint_is_accessible_and_nonblocking() -> None:
     source = TOPOLOGY_JS.read_text(encoding='utf-8')
     template = TOPOLOGY_TEMPLATE.read_text(encoding='utf-8')
     pattern = TOPOLOGY_PATTERN.read_text(encoding='utf-8')
-    assert 'id="topology-viewport-hint"' in template
+    for element_id in (
+        'topology-viewport-hint',
+        'topology-viewport-hint-title',
+        'topology-viewport-hint-count',
+        'topology-viewport-hint-description',
+    ):
+        assert f'id="{element_id}"' in template
     assert 'role="status"' in template
     assert 'aria-live="polite"' in template
     assert 'pointer-events-none absolute' in template
-    assert 'Pan or zoom to explore; Fit shows the full graph.' in source
-    assert 'Zoom in to read labels or use Resource List.' in source
+    assert 'border-outline-subtle bg-surface-card' in template
+    assert 'bg-kaori-soft text-kaori-primary' in template
+    assert 'Pan to explore nearby resources. Fit shows the full graph.' in source
+    assert 'Zoom to inspect labels. Resource List shows every name.' in source
+    assert "viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'" in source
+    assert 'viewportHintCount.textContent = `${nodeCount} resources`' in source
     assert 'const updateViewportHint = (nodeCount) =>' in source
+    assert 'viewportHint.textContent' not in source
     assert 'focused viewport' in pattern.lower() or 'focal viewport' in pattern.lower()
 
 
