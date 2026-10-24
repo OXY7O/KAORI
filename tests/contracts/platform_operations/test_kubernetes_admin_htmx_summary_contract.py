@@ -325,7 +325,9 @@ def test_secret_reveal_workspace_uses_integrated_header_tabs_and_panels() -> Non
     readiness = cluster.index('id="secret-reveal-readiness-section"', prereq_panel)
     boundary = cluster.index('secret-reveal-kubernetes-boundary-heading', readiness)
     policy_panel = cluster.index('id="secret-reveal-management-panel-policies"', boundary)
-    policies = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html', policy_panel)
+    policies = cluster.index(
+        'platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html', policy_panel
+    )
     assert shell < heading < selector < tabs < prereq_panel < readiness < boundary < policy_panel < policies
     assert 'operational_section.shell_classes()' in cluster
     assert 'Cluster Access Configuration' in cluster
