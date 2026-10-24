@@ -107,3 +107,52 @@ def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
     assert 'mismatch or changed evidence fails closed' in storage.lower()
     assert 'name="confirmation_phrase"' in storage
     assert 'name="confirm_empty_system_id"' in storage
+
+def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() -> None:
+    overview = _read('app/templates/platform_operations/jobs/configuration/_job_overview.html')
+    activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+    folder = 'app/templates/platform_operations/jobs/configuration/definitions/'
+    templates = {
+        'kv': _read(folder + 'secrets_pki_inventory_sync.html'),
+        'alert': _read(folder + 'vault_alert_observation.html'),
+        'issuer': _read(folder + 'secrets_pki_pki_sync.html'),
+        'stored': _read(folder + 'secrets_pki_stored_cert_sync.html'),
+    }
+
+    assert 'overview_notice_short|default(overview_notice)' in overview
+    assert 'title="{{ overview_notice }}"' in overview
+    assert 'selected_description|default(definition.description)' in overview
+    assert 'components/info_tip.html' in overview
+    assert "variant='guide'" in overview
+    assert 'execution_safety_short|default(definition.safety_summary)' in activity
+    assert 'title="{{ definition.safety_summary }}"' in activity
+    assert "variant='guide'" in activity
+    for key, source in templates.items():
+        assert 'overview_notice_short' in source, key
+        assert 'policy_form.hidden_tag()' in source or key == 'alert'
+    for key in ('kv', 'issuer', 'stored'):
+        source = templates[key]
+        assert 'grid items-stretch gap-4' in source
+        assert 'min-h-[6rem]' in source
+        assert 'truncate whitespace-nowrap text-sm' in source
+        assert 'policy_form.enabled(' in source
+        assert 'policy_form.interval_minutes(' in source
+    assert 'worker-only HMAC' in templates['alert']
+    assert 'no_store/imported certificates are not enumerable' in templates['stored']
+    assert 'Over 64 stored certificates blocks collection' in templates['stored']
+
+
+def test_materialization_one_line_copy_retains_policy_and_safety() -> None:
+    source = _read('app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html')
+    definition = _read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
+    assert 'lg:grid-cols-12 lg:items-stretch' in source
+    assert 'min-h-[7rem]' in source
+    assert 'min-h-[9rem]' in source
+    assert 'Run snapshot refreshes from the saved policy.' in source
+    assert 'Keep the last successful snapshot available.' in source
+    assert 'object_storage.analytics.materialize' in source
+    assert 'execution_safety_short' in source
+    assert 'The last usable snapshot remains available inside the stale-grace window.' in definition
+    assert 'policy_form.enabled(' in source
+    assert 'policy_form.stale_grace_minutes(' in source
+    assert 'policy_form.freshness_minutes(' in source
