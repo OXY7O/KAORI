@@ -41,6 +41,11 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-5">
                 <a href="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                   hx-get="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                   hx-target="#namespace-provisioning-workspace"
+                   hx-select="#namespace-provisioning-workspace"
+                   hx-swap="outerHTML show:none focus-scroll:false"
+                   hx-push-url="true"
                    class="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     Open Tenant Quota
                     <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
@@ -72,6 +77,11 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-5">
                 <a href="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation') }}"
+                   hx-get="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation') }}"
+                   hx-target="#namespace-provisioning-workspace"
+                   hx-select="#namespace-provisioning-workspace"
+                   hx-swap="outerHTML show:none focus-scroll:false"
+                   hx-push-url="true"
                    class="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     Open Shared Allocation
                     <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
