@@ -65,6 +65,7 @@ def test_catalog_search_preserves_authoritative_job_descriptions() -> None:
     assert "'domain': definition.domain" in source
     assert "'catalog_summary':" not in source
     assert '_CATALOG_SUMMARIES' not in source
-    assert template.count('data-job-catalog-row') == 2
+    assert template.count('[data-job-catalog-row]') == 2
+    assert 'data-job-catalog-row\n' in template
     registered_keys = [line for line in catalog.splitlines() if line.startswith('- key: ')]
     assert len(registered_keys) == 19
