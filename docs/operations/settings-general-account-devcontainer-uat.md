@@ -77,6 +77,7 @@ them to PASS without the Dev Container output and candidate SHA.
 | Missing CSRF token on actual Flask-WTF Time Zone and Regional Format forms | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_preference_forms_reject_missing_csrf_before_any_mutation` (2 cases) | **NEW — executable verification pending**; Flask-WTF is tested with CSRF enabled despite the isolated test app's default bypass |
 | Browser timezone sync, manual/invalid/unchanged inputs | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_browser_timezone_sync_denies_untrusted_or_unchanged_updates` (3 cases) | **NEW — executable verification pending**; no save on these branches |
 | True JavaScript-disabled Compatibility GET, filter and Reset | `tests/ui/test_representative_interactions.py::test_settings_compatibility_registry_without_javascript_uses_get_fallback` | **NEW — browser execution pending**; authenticate in existing isolated fixture, then reuse its session cookie in a JS-disabled browser context; no password change or provider mutation |
+| General keyboard Tab and Enter activation | `tests/ui/test_representative_interactions.py::test_settings_general_keyboard_tab_and_enter_navigation` | **NEW — browser execution pending**; focus moves between shared tabs and Enter activates the correct route/selected workspace |
 
 These tests do **not** independently certify persisted scheduler/canonical
 UTC data, an external LDAP permission trace, all assistive technologies,
@@ -93,7 +94,7 @@ git status --short
 python -m ruff check tests/contracts/settings/test_settings_uat_negative_boundaries.py tests/ui/test_representative_interactions.py
 python -m ruff format --check tests/contracts/settings/test_settings_uat_negative_boundaries.py tests/ui/test_representative_interactions.py
 python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_uat_negative_boundaries.py
-python -m pytest -q -s -p no:cacheprovider tests/ui/test_representative_interactions.py -k settings_compatibility_registry_without_javascript_uses_get_fallback
+python -m pytest -q -s -p no:cacheprovider tests/ui/test_representative_interactions.py -k 'settings_compatibility_registry_without_javascript_uses_get_fallback or settings_general_keyboard_tab_and_enter_navigation'
 python scripts/verify_settings_final_lock.py
 ```
 
