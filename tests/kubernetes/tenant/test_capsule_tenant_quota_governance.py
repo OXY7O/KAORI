@@ -534,3 +534,35 @@ def test_accept_drift_freshness_uses_read_only_capability_validation(monkeypatch
     )
 
     assert calls == {'read': 1, 'mutation': 0}
+
+
+def test_capsule_quota_profiles_fail_closed_on_unsupported_base_controls() -> None:
+    """#2986 unsupported LimitRange/per-PVC profile intent cannot pass Capsule quota admission."""
+    from app.kubernetes.tenant.resource_profile_controls import (
+        _validate_resource_profile_base_controls,
+        resource_profile_base_control_state,
+    )
+
+    tenant = _tenant()
+    quota_only = _profile()
+    assert all(
+        item['state'] != 'unsupported'
+        for item in _validate_resource_profile_base_controls(quota_only, tenant).values()
+    )
+
+    with_defaults = _profile()
+    with_defaults.limit_defaults_json = {'default': {'cpu': '250m'}}
+    states = resource_profile_base_control_state(with_defaults, provider_key='capsule')
+    assert states['container_defaults']['state'] == 'unsupported'
+    with pytest.raises(ValueError, match='Container Defaults'):
+        _validate_resource_profile_base_controls(with_defaults, tenant)
+
+    with_pvc_guardrails = _profile()
+    with_pvc_guardrails.storage_policy_json = {'min': '1Gi', 'max': '10Gi'}
+    with pytest.raises(ValueError, match='PVC Storage Guardrails'):
+        _validate_resource_profile_base_controls(with_pvc_guardrails, tenant)
+
+    # The same profile dimensions remain admitted by the separate Native authority.
+    native = SimpleNamespace(provider_key='native_kubernetes')
+    assert _validate_resource_profile_base_controls(with_defaults, native)['container_defaults']['state'] == 'managed'
+    assert _validate_resource_profile_base_controls(with_pvc_guardrails, native)['pvc_storage_policy']['state'] == 'managed'
