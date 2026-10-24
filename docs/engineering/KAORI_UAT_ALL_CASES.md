@@ -640,11 +640,14 @@
 2. Perform the scenario action using an approved browser or domain test client: Operator opens Cluster/Dashboard then Inventory lists and details.
 3. open object detail on cluster A then repeat on cluster B.
 4. Inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-INV-001.
+5. Review every Inventory asset family, open a representative shared Full Workspace Modal, verify its committed relationships and Close/reopen/Escape behavior, and confirm Configuration key-names-only rendering for both ConfigMap and Secret.
 
 **Expected results:**
 - Correct selected-cluster scope, navigation, row/detail identity and shared table UI.
 - object, row, breadcrumb and source IDs never cross clusters.
 - The observed success is attributable to the selected source, authorized actor and correct committed identity.
+
+- All eight Inventory asset families and the overview use canonical tables and committed-scoped detail sheets; modal dismissal preserves scope and protected configuration values are never exposed by the Inventory UI.
 
 **Required evidence:** browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; source freshness, scope keys, rendered state and normalized read-back.
 
@@ -709,11 +712,14 @@
 2. Perform the scenario action using an approved browser or domain test client: Filter/sort/page Inventory records including zero-result state.
 3. sort/filter, change page and Rows then clear filters.
 4. Inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-INV-004.
+5. Exercise namespace, lifecycle, type and class filters with Clear Filters/pagination reset; switch Topology Graph and Resource List, choose Details/Relationships, and compare focused Full Relationships Hierarchy/Dependency versus explicit Fit overview.
 
 **Expected results:**
 - Filters persist across HTMX navigation; pagination and No Results follow shared standard.
 - HTMX preserves selection and no-result/page-reset semantics.
 - The observed success is attributable to the selected source, authorized actor and correct committed identity.
+
+- Default five-row tables and reset semantics remain consistent; Topology retains Resource List identities and inspector relationships while a dense graph provides readable focus without hiding committed nodes or confusing Fit with focus.
 
 **Required evidence:** browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; source freshness, scope keys, rendered state and normalized read-back.
 
