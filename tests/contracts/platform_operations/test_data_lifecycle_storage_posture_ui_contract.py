@@ -134,8 +134,8 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
     assert 'divide-y' not in steps
     assert "rounded-lg border" not in steps
     assert (
-        'Up to {{ lifecycle.purge_batch_size }} expired artifacts '
-        'per admitted run; failures retry safely.'
+        'Max {{ lifecycle.purge_batch_size }} expired artifacts '
+        'per admitted run; retries available.'
     ) in source
     assert 'partial failures remain retryable.' not in source
 
