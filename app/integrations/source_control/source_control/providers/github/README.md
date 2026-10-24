@@ -1,15 +1,35 @@
-# GitHub.com GitHub App transport — SC-02
+# GitHub.com GitHub App — transport and bounded review admission
 
 Parent Source Control [#559](https://github.com/OXY7O/KAORI/issues/559);
 architecture [#958](https://github.com/OXY7O/KAORI/issues/958);
 implementation [#2741](https://github.com/OXY7O/KAORI/issues/2741).
 Depends on SC-01 [#2740](https://github.com/OXY7O/KAORI/issues/2740).
 
-This **first transport increment** is intentionally NOT a registered/available
-GitHub provider. The canonical provider matrix remains `planned`; the normal
-Integrations workspace reuses shared KAORI UI and has no connect/test buttons
-until the complete secure registration/validation/JobExecution lifecycle is
-admitted.
+## Current UAT-branch contract (2026-10-24)
+
+The **`kaori/review/staging-uat` temporary review candidate** registers GitHub
+as `available` for authorized Dev Container UAT, with GitHub App connection
+registration, Full Validation/Runtime Refresh, bounded repository reconciliation,
+committed-only installation inventory and a scoped UAT workspace. Only an active
+local-database Super Admin with `integrations.manage` may register credentials
+or access installation-specific UAT operations while #724 broader source-scoped
+admission remains incomplete. GitHub API remains authoritative; web views
+read committed KAORI state, not live provider calls.
+
+This is **not** official `kaori/staging`/`main` admission or an endorsement
+of production or broad-user activation. The signed webhook HTTP ingress and
+maintenance consumer are disabled by default. Before Human UAT, verify
+PostgreSQL migrations, canonical worker registration, App installation scope,
+HMAC/replay security, cross-organization isolation, and Visual QA using the
+existing [Dev Container UAT runbook](../../../../../../../docs/operations/github-source-control-devcontainer-uat.md).
+
+## Historical SC-02 first transport increment
+
+The initial SC-02 transport-only increment was intentionally **not** a
+registered/available provider: the matrix was `planned` and no connect/test
+form, worker, UAT UI or live inventory existed. Subsequent issue-scoped work
+implemented those candidates and assembled them in the temporary holding
+branch. Historical notes below retain their increment-specific scope.
 
 ## Security and authority boundary
 
@@ -66,7 +86,7 @@ and https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-delive
 - `registration.py` checks approved KAORI environment values, credential shape, exact App/installation/account scope, duplicate names/installations, protected App reuse and always revalidates live grant on save. **Save explicitly rejects the provider while the canonical provider matrix remains `planned`**; no unadmitted connection is created.
 - `readiness.py` assesses per-capability permission coverage, separately from repository collection. Observed access cannot yield Ready until real worker/inventory/UAT admission.
 - `adapter.py` implements unregistered candidate operations for Test Connection, Full Validation and lightweight Runtime Refresh, retaining only sanitized canonical `IntegrationInstance` metadata. There is no job/worker registration or exposed routes yet.
-- No new provider-specific UI components exist. When introduced, the provider must reuse KAORI shared Integrations Hero/cards/tables, HTMX, pagination 5, feedback, accessibility and RBAC.
+- At the original registration-service checkpoint no provider-specific UI components existed. The current review candidate reuses KAORI shared Integrations Hero/cards/tables, HTMX, pagination 5, feedback, accessibility and RBAC.
 
 ## Durable webhook staging (non-operational candidate)
 
@@ -81,7 +101,7 @@ a separate, scope-qualified reconciliation job is admitted.
 
 No route or worker is wired, no raw payload is retained, no repository fact is
 accepted as provider evidence, and no event is sent to Notification Channels.
-Webhook ingress is disabled while the GitHub provider is `planned`; SC-03
+At this historical increment webhook ingress was also disabled while GitHub was `planned`; SC-03
 must implement the follow-up authoritative refresh and committed provider
 state, including all/selected repository grant coverage.
 
@@ -95,12 +115,13 @@ to inline execution, Full Validation to the existing
 `integration-runtime` queue. The shared Source Control domain page remains
 the detail location; no new provider-specific component is needed here.
 
-The descriptor is **not imported by the Kernel builtin loader**. Its
-`register_after_admission()` refuses registration while the canonical GitHub
-matrix entry is `planned`. Following reviewed SC-01/SC-02 UAT, a separately
-approved workstream must enable the provider, connect the canonical worker
-lifecycle, install the reusable forms/HTMX views, prove the webhook ingress
-transaction-to-dispatch transition and perform security/visual acceptance.
+At the descriptor-only checkpoint, it was **not imported by the Kernel builtin loader**.
+Its `register_after_admission()` refuses registration while the canonical
+GitHub matrix entry is `planned`. On the later temporary holding branch,
+provider wiring, JobExecution and reusable forms/HTMX views are present for
+restricted UAT; webhook ingress/consumer remain default-off. Broad production
+admission, source-scope policy and security/visual Human Acceptance remain
+separate mandatory decisions.
 Draft PR #2766 is not that approval.
 
 The webhook inbox cannot be interpreted as a source event or a notification
@@ -148,7 +169,7 @@ identity/scope probe and Save revalidates the grant before committing a
 non-ready canonical connection. Live validation, JobExecution/status
 presentation, provider promotion and production webhook ingress remain blocked.
 
-This is a UI review shell with **disabled actions**, not evidence of
+This historical planned-provider checkpoint was a UI review shell with **disabled actions**, not evidence of
 successfully connected GitHub installations. Source Control currently has
 no committed repository inventory (SC-03), so the overview intentionally
 uses `Not Observed` / `Not Admitted` instead of invented zero counts.
@@ -165,7 +186,7 @@ durability, Redis resource locks, Celery queue dispatch, status snapshots,
 progress, cancellation and existing notifications. No GitHub-specific
 Celery worker or job scheduler is created. The bridge fails closed unless:
 
-- The provider matrix is `available` through an approved admission step.
+- The provider matrix is `available` on the isolated UAT candidate (or later through separately approved admission).
 - Canonical `IntegrationInstance`, `SourceInstallation`, App credential,
   host, and account identities match and are enabled/active.
 - Integration Kernel resolves the correct registered GitHub provider record.
