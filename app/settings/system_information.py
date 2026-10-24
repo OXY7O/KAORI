@@ -130,9 +130,7 @@ def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
         'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
         'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
         'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
-        'capability_summary': (
-            'S3 reachability, bucket discovery, and optional object-storage governance.'
-        ),
+        'capability_summary': ('S3 reachability, bucket discovery, and optional object-storage governance.'),
         'validation_basis': (
             'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.'
         ),
