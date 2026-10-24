@@ -7,11 +7,14 @@ cross-domain execution safety #2906; approved historical Data Lifecycle Final Lo
 
 This is the **single all-domain UAT checklist**, extending the focused AuditEvent
 (`docs/operations/audit-event-data-lifecycle-devcontainer-uat.md`) and Notification
-Delivery (#2847/#2850) security/retention gates. **Retention Policies UI was
-operator-accepted on 2026-10-24**, subject to the final Execution Boundary
-Guide correction. That acceptance is limited to page design and navigation:
-none of the PostgreSQL, Celery, Archive Storage, checksum, cleanup, or
-negative security cases below is marked PASS without execution evidence.
+Delivery (#2847/#2850) security/retention gates. On **2026-10-24 the operator
+explicitly accepted the Data Lifecycle page UI as a whole**: Retention
+Policies (nine domains), Archive History and Archive Storage, after the
+shared Jinja and visual/copy fixes through PR #2988. The exact **local**
+DevContainer SHA and executable browser/test evidence were not supplied,
+so this is a **human page/design acceptance**, not proof of comprehensive
+PostgreSQL/Celery/Archive Storage, checksum, cleanup or negative-security
+execution. No DL-E2E test status is changed to PASS by this statement.
 
 ## 1. Current domain inventory and authority
 
@@ -439,6 +442,32 @@ security constraints intact. Complete all applicable per-domain
 Preview, canonical JobExecution, archive checksum, source-safe cleanup,
 RBAC-negative and recovery tests before declaring end-to-end lifecycle
 finished. Official CI/CD gates remain HOLD.
+
+### Page-wide human UI acceptance and outstanding admission (#2907)
+
+**ACCEPTED — 2026-10-24 (operator):** the complete Data Lifecycle
+page, including all nine Retention Policies, Archive History and
+Archive Storage. The operator reviewed the later simplified Storage
+design, desktop Archive-First separators and concise Purge Batch Limit
+copy. This closes page design/copy-only issues on UAT holding; avoid
+reopening redesign without a new observed regression.
+
+**NOT CLAIMED:** complete end-to-end Data Lifecycle operation or final
+admission. The provided Archive History screenshot contained no
+archive rows, and Storage reported a reachable S3 endpoint with
+`Awaiting Evidence`. Consequently successful Verify/download of a
+real approved artifact, profile-matching write/read/checksum,
+maintenance worker queue completion, cleanup safety and security
+negative tests are not evidenced by those screenshots. Record exact
+DevContainer revision, test outputs and scoped source authorization
+separately when available.
+
+Remaining test authority: #2907 (DL-E2E-01–20), #2906 and historical
+#1569/#1571–#1576 for mutation/integrity admission. Notification
+Delivery #2868→#2869→#2870 and AuditEvent #2891→#2892 are independent,
+source-security/compaction blockers. Retain fail-closed archive-only,
+no unauthorized scheduling, deletion, cold purge, export or lookup.
+Official CI/CD, staging/main, deployment and release stay HOLD.
 
 ## 4. Execution / failure-injection matrix
 
