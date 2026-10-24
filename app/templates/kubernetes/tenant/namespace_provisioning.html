@@ -16,6 +16,11 @@
             ('capsule-governance', 'Capsule Governance', 'waypoints', url_for('tenant.namespace_provisioning', view='capsule-governance')),
             ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
         ] %}
+    {% set capsule_scope_tabs = [
+            ('overview', 'Overview', 'layout-grid', url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='overview')),
+            ('tenant-quota', 'Tenant Quota', 'shield-check', url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota')),
+            ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation'))
+        ] %}
     {% set namespace_metrics = [
             ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed/adopted Namespace records in KAORI', 'info'),
             ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
@@ -74,11 +79,30 @@
                         {% include "kubernetes/tenant/partials/_allocation_cutover.html" %}
                     </div>
                 {% elif active_namespace_view == 'capsule-governance' %}
-                    <div class="space-y-5"
+                    <div class="space-y-4"
                          data-tenant-capsule-allocation-workspace
-                         data-tenant-allocation-workflow="capsule">
-                        {% include "kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html" %}
-                        {% include "kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html" %}
+                         data-tenant-allocation-workflow="capsule"
+                         data-tenant-capsule-active-view="{{ active_capsule_view }}">
+                        {{ content_tabs.render_links('capsule-governance-scope',
+                            capsule_scope_tabs,
+                            active_capsule_view,
+                            'Capsule allocation authority scope',
+                            embedded=false,
+                            data_namespace='capsule-governance',
+                            hx_target='#namespace-provisioning-workspace',
+                            hx_select='#namespace-provisioning-workspace',
+                            hx_swap='outerHTML show:none focus-scroll:false',
+                            hx_push_url='true',
+                            hx_indicator='#namespace-provisioning-workspace-loading',
+                            nowrap=true,
+                            hx_sync='this:replace') }}
+                        {% if active_capsule_view == 'overview' %}
+                            {% include "kubernetes/tenant/partials/_capsule_governance_overview.html" %}
+                        {% elif active_capsule_view == 'tenant-quota' %}
+                            {% include "kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html" %}
+                        {% elif active_capsule_view == 'shared-allocation' %}
+                            {% include "kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html" %}
+                        {% endif %}
                     </div>
                 {% elif active_namespace_view == 'decisions' %}
                     {% include "kubernetes/tenant/partials/_capacity_decisions.html" %}

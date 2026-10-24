@@ -1,0 +1,96 @@
+{# Provider authority-first landing. All counts use committed workspace collections; no live provider reads. #}
+<section class="space-y-4" aria-labelledby="capsule-governance-overview-heading"
+         data-tenant-capsule-governance-overview>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h3 id="capsule-governance-overview-heading"
+                class="text-sm font-semibold text-content-primary">Choose an allocation authority</h3>
+            <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">
+                Capsule manages two separate quota sources. Select the committed source before applying a Resource Profile.
+                Generated Namespace ResourceQuotas are provider effects, not independent shared budgets.
+            </p>
+        </div>
+        <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1.5 text-xs font-semibold text-kaori-primary">
+            <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            Capsule authoritative
+        </span>
+    </div>
+    <div class="grid items-stretch gap-4 lg:grid-cols-2">
+        <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 aria-labelledby="capsule-scope-tenant-title">
+            <div class="flex-1 p-4 sm:p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <span class="rounded-md bg-surface-hover px-2 py-1 text-xs font-medium text-content-secondary">Tenant CR</span>
+                </div>
+                <h4 id="capsule-scope-tenant-title" class="mt-3 text-sm font-semibold text-content-primary">Tenant Resource Quotas</h4>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Govern <code class="font-mono text-content-secondary">Tenant.spec.resourceQuotas</code> through an admitted Capsule write and verified read-back.</p>
+                <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-3">
+                    <div>
+                        <dt class="text-xs text-content-muted">Managed Tenants</dt>
+                        <dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capsule_tenant_quota_managed|length }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-content-muted">Legacy Cutover Candidates</dt>
+                        <dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capsule_tenant_quota_cutover_tenants|length }}</dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-5">
+                <a href="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                   hx-get="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                   hx-target="#namespace-provisioning-workspace"
+                   hx-select="#namespace-provisioning-workspace"
+                   hx-swap="outerHTML show:none focus-scroll:false"
+                   hx-push-url="true"
+                   class="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    Open Tenant Quota
+                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                </a>
+            </div>
+        </article>
+        <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 aria-labelledby="capsule-scope-shared-title">
+            <div class="flex-1 p-4 sm:p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="layers-3" class="h-4 w-4"></i>
+                    </span>
+                    <span class="rounded-md bg-surface-hover px-2 py-1 text-xs font-medium text-content-secondary">GlobalResourceQuota</span>
+                </div>
+                <h4 id="capsule-scope-shared-title" class="mt-3 text-sm font-semibold text-content-primary">Shared Allocation</h4>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Govern one shared Tenant allocation from GlobalResourceQuota; Namespace copies do not multiply capacity.</p>
+                <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-3">
+                    <div>
+                        <dt class="text-xs text-content-muted">Discovered Tenant Scope</dt>
+                        <dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capsule_shared_tenants|length }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-content-muted">Provider Authority</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">Capsule GRQ</dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-5">
+                <a href="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation') }}"
+                   hx-get="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation') }}"
+                   hx-target="#namespace-provisioning-workspace"
+                   hx-select="#namespace-provisioning-workspace"
+                   hx-swap="outerHTML show:none focus-scroll:false"
+                   hx-push-url="true"
+                   class="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    Open Shared Allocation
+                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                </a>
+            </div>
+        </article>
+    </div>
+    <p class="border-l-2 border-kaori-primary/30 pl-3 text-xs leading-5 text-content-muted">
+        Adoption, governed changes and shared quota reconciliation follow their own authority and audit workflow.
+        This overview reads committed KAORI state and does not mutate the provider.
+    </p>
+</section>

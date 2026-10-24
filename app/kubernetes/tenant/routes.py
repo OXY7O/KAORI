@@ -498,6 +498,10 @@ def namespace_provisioning():
     if active_view not in {'provision', 'allocation', 'native-cutover', 'capsule-governance', 'decisions'}:
         active_view = 'provision'
 
+    active_capsule_view = str(request.args.get('capsule_tab') or 'overview')
+    if active_capsule_view not in {'overview', 'tenant-quota', 'shared-allocation'}:
+        active_capsule_view = 'overview'
+
     context = _tenant_workspace_context()
     context.update(get_namespace_provisioning_support_context())
     context.update(get_capsule_shared_allocation_context())
@@ -527,6 +531,7 @@ def namespace_provisioning():
         tenant_page_title='Namespace Provisioning',
         tenant_page_icon='boxes',
         active_namespace_view=active_view,
+        active_capsule_view=active_capsule_view,
         **context,
     )
 
@@ -2098,7 +2103,7 @@ def cutover_capsule_shared_allocation_route():
                 'operation': 'capsule_shared_allocation_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation'))
 
 
 @tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')
@@ -2193,7 +2198,7 @@ def cutover_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota'))
 
 
 @tenant_bp.post('/tenant-quota/change')
@@ -2230,7 +2235,7 @@ def change_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota'))
 
 
 @tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')
