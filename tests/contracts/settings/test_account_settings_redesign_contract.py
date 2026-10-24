@@ -169,16 +169,26 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Audit Privacy Boundary' not in activity
 
 
-def test_recent_authentication_activity_context_column_is_right_aligned() -> None:
+def test_recent_authentication_activity_trails_with_right_aligned_result() -> None:
     activity = read('app/templates/settings/account/partials/_recent_login_activity.html')
-    assert '<th class="{{ table_ui.header_cell_classes(action=true) }}">Context</th>' in activity
-    assert '<td class="{{ table_ui.cell_classes(action=true) }} min-w-56">' in activity
-    assert 'class="mt-1 flex items-center justify-end gap-1.5 text-xs text-content-muted"' in activity
-    assert '<span class="text-right">{{ metadata.get("browser") or \'Browser unavailable\' }}' in activity
 
-    # The other data columns retain the ordinary left-aligned shared table variant.
-    for header in ('Event', 'Source', 'Result'):
-        assert f'<th class="{{{{ table_ui.header_cell_classes() }}}}">{header}</th>' in activity
+    headers = (
+        '<th class="{{ table_ui.header_cell_classes() }}">Event</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Source</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Context</th>',
+        '<th class="{{ table_ui.header_cell_classes(action=true) }}">Result</th>',
+    )
+    assert all(header in activity for header in headers)
+    assert list(map(activity.index, headers)) == sorted(map(activity.index, headers))
+
+    # Text-heavy context keeps normal reading direction; the trailing status badge is right aligned.
+    context_cell = '<td class="{{ table_ui.cell_classes() }} min-w-56">'
+    result_cell = '<td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">'
+    assert context_cell in activity
+    assert result_cell in activity
+    assert activity.index(context_cell) < activity.index(result_cell)
+    assert 'class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted"' in activity
+    assert '<span>{{ metadata.get("browser") or \'Browser unavailable\' }}' in activity
 
 
 def test_credential_workspace_keeps_action_left_and_security_context_right() -> None:
