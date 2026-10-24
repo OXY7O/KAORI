@@ -3,17 +3,17 @@
 {% set overview_metrics = [
     ('key-round', 'Registered Vault', selected_job.registered_system_count, 'Canonical provider identities'),
     ('shield-check', 'Eligible Alert Sources', selected_job.eligible_target_count,
-     'Exact, validated Vault Alertmanager bindings'),
+    'Exact, validated Vault Alertmanager bindings'),
     ('circle-pause', 'Execution Policy', 'Manual Only', 'No automatic schedule or AlertCase promotion'),
     ('history', 'Latest Execution',
-     selected_job.latest_job.status_label if selected_job.latest_job else 'No History',
-     'Canonical JobExecution evidence')
+    selected_job.latest_job.status_label if selected_job.latest_job else 'No History',
+    'Canonical JobExecution evidence')
 ] %}
 {% set overview_notice = "Manual, read-only Alertmanager observation. " ~
     "An independent worker-only correlation secret is required. " ~
     "Committed evidence expires after five minutes; unavailable or empty observations " ~
     "never imply recovery. No alert notifications or AlertCases are created. " ~
-    "Validate exact Vault Alert Source bindings and keep HMAC custody worker-only; source errors do not resolve incidents." %}
+"Validate exact Vault Alert Source bindings and keep HMAC custody worker-only; source errors do not resolve incidents." %}
 {% set overview_notice_short = "Read-only Alertmanager observations are short-lived and never create AlertCases or recovery actions." %}
 {% set execution_safety_short = "Manual read-only observation; no automatic recovery or AlertCases." %}
 <div class="space-y-5">

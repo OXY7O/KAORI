@@ -477,7 +477,7 @@ def main() -> int:
     materialization_job = read(
         'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
     )
-    if 'Keep the last successful result available.' not in materialization_job:
+    if 'Keep the last successful snapshot available.' not in materialization_job:
         errors.append('Materialization stale-fallback helper copy must remain compact')
     for relative in (
         'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
