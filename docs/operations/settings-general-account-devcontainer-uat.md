@@ -63,6 +63,54 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
 | SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for both General and Account (2026-10-24):** General Back/Forward/Refresh, keyboard Tab/Shift+Tab/Enter and Offline→Online recovery 3/3 PASS; Account previously accepted; full assistive-technology/screen-reader audit not claimed |
 
+## 2026-10-25 — Scoped CSRF HTTP assurance and Settings General UAT handoff
+
+**Disposition:** Settings → General and Settings → Account Human UAT are **Accepted**
+for all previously executed scenarios. The isolated CSRF route-function
+regressions and automatic-mode browser check were already **PASS** at
+`3ca2dac2217a54ebfb0b3411be5b10234d79f30c`. No confirmed Settings
+functional defect remains that should block UAT of *another* workspace.
+
+A final focused **HTTP-layer assurance** is added under child bug #3066,
+reusing `tests/contracts/settings/test_settings_uat_negative_boundaries.py`.
+The test creates an isolated Flask `test_client`, synthetic authenticated
+session, and standard Flask-WTF CSRF token, without real account credentials.
+It exercises the actual registered JSON route and login/CSRF gate:
+
+| HTTP scenario | Expected status | State evidence |
+| --- | --- | --- |
+| Missing `X-CSRFToken` with otherwise valid session | `400 invalid_csrf` | Account timezone unchanged; no DB commit |
+| Forged token with valid session CSRF state | `400 invalid_csrf` | Account timezone unchanged; no DB commit |
+| Validly signed token from a different session | `400 invalid_csrf` | Account timezone unchanged; no DB commit |
+| Valid signed token from the same session | `200 updated` | Synthetic timezone updated; exactly one mocked commit |
+| No authenticated session | `401` or sign-in redirect `302` | Account timezone unchanged; no DB commit |
+
+**New HTTP regression: NOT RUN** as of this source change. Execute the existing
+focused checks in Dev Container on the updated holding SHA:
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python -m ruff format --check tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_uat_negative_boundaries.py
+python scripts/verify_settings_final_lock.py
+```
+
+Passing these tests will close the **targeted HTTP CSRF regression evidence
+gap**, not certify arbitrary production-browser CSRF exploitability,
+comprehensive DAST, independent scheduler/canonical UTC data mutation proofs,
+or an end-to-end screen-reader evaluation. These are not prerequisites for
+*starting a different page's local Dev Container UAT*; track each in its
+respective governance/security workstream and keep official Full Admission
+on HOLD until expressly authorized.
+
+**QA handoff:** Existing General/Account Human Acceptance remains valid;
+do not repeat approved UI/functional checks. Work may proceed to the next
+requested KAORI page for local Dev Container UAT. The temporary
+`kaori/review/staging-uat` branch is the aggregation target; official
+CI/CD, `kaori/staging`, main, deployment, release and tagging stay HOLD.
+
 ## 2026-10-24 — Browser Time Zone JSON CSRF security remediation
 
 **Scoped bug:** #3066 (child of #2880; link the native parent-child
