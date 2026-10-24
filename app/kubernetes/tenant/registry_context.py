@@ -1113,6 +1113,38 @@ def get_namespace_registry_context(
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
+    # Capsule capability preview is based on committed Tenant evidence only.
+    # Never fetch the external provider merely to render an operational form.
+    capsule_tenants = [
+        tenant
+        for tenant in base_context['namespace_registry_tenant_options']
+        if tenant.provider_key == 'capsule'
+    ]
+    capsule_capabilities = {
+        str(tenant.id): _tenant_capability_statuses(tenant)
+        for tenant in capsule_tenants
+    }
+    capsule_advanced_preflight = {
+        str(tenant.id): {
+            str(profile.id): {
+                key: {
+                    'requested': bool(value.get('requested')),
+                    'state': str(value.get('state') or 'unknown'),
+                    'reason': str(value.get('reason') or ''),
+                    'label': str(value.get('label') or key),
+                }
+                for key, value in evaluate_resource_profile_advanced_controls(
+                    profile.advanced_controls_json,
+                    provider_key='capsule',
+                    capability_statuses=capsule_capabilities[str(tenant.id)],
+                ).items()
+                if value.get('requested')
+            }
+            for profile in profile_options
+            if profile.advanced_controls_json
+        }
+        for tenant in capsule_tenants
+    }
     return {
         **base_context,
         'namespace_options': namespace_options,
@@ -1126,6 +1158,7 @@ def get_namespace_registry_context(
             namespace_allocation_options, profile_options
         ),
         'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+        'capsule_advanced_profile_preflight': capsule_advanced_preflight,
         'namespace_allocation_profiles': {
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
