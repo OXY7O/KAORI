@@ -43,7 +43,6 @@ def test_admin_overview_tab_navigation_preserves_current_url_parameters():
     assert 'history.replaceState(null' not in page
 
 
-
 def test_kubernetes_admin_operational_hierarchy_keeps_authoritative_summary() -> None:
     page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
@@ -123,6 +122,7 @@ def test_kubernetes_admin_hero_is_one_line_and_tabs_use_integrated_workspace() -
         assert phrase in index
         assert phrase in summary
 
+
 def test_kubernetes_admin_integrated_tabs_have_explicit_panel_labels() -> None:
     page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
     shared = (ROOT / 'app/templates/components/workspace_tabs.html').read_text()
@@ -155,9 +155,9 @@ def test_administration_control_projection_scales_without_placeholder_roadmap() 
     assert "'status_label': status_label" in source
     assert "'status_tone': status_tone" in source
     assert "'eligible_policy_count'" in source
-    assert "for control in administration_controls" in rows
-    assert "administration_control_count" in overview
-    assert "id=\"kubernetes-admin-controls-list\"" in overview
+    assert 'for control in administration_controls' in rows
+    assert 'administration_control_count' in overview
+    assert 'id="kubernetes-admin-controls-list"' in overview
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
     assert 'platform_operations/kubernetes/_administration_control_rows.html' in overview
     assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
@@ -207,6 +207,7 @@ def test_kubernetes_admin_navigation_uses_inventory_shell_spacing() -> None:
     assert nav < hero
     assert 'moveTab(' in index
     assert 'kubernetes:load-secret-reveal from:window once' in index
+
 
 def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_rows() -> None:
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
@@ -288,7 +289,7 @@ def test_managed_controls_are_a_compact_operator_brief() -> None:
     assert 'id="kubernetes-admin-summary-section"' not in overview
     assert "id='kubernetes-admin-summary-section'" in overview
     assert 'id="kubernetes-admin-overview-status"' in overview
-    assert "header_badge=overview_posture" in overview
+    assert 'header_badge=overview_posture' in overview
     assert 'Counts represent committed KAORI configuration.' in overview
     assert 'id="kubernetes-admin-control-count"' in overview
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
@@ -309,7 +310,9 @@ def test_managed_control_metrics_do_not_claim_live_authorization() -> None:
 
 def test_secret_reveal_workspace_uses_integrated_header_tabs_and_panels() -> None:
     cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
-    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    namespace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
     shared_tabs = (ROOT / 'app/templates/components/content_tabs.html').read_text()
 
     # Match the canonical Integration domain hierarchy: one enclosing shell,
@@ -322,7 +325,9 @@ def test_secret_reveal_workspace_uses_integrated_header_tabs_and_panels() -> Non
     readiness = cluster.index('id="secret-reveal-readiness-section"', prereq_panel)
     boundary = cluster.index('secret-reveal-kubernetes-boundary-heading', readiness)
     policy_panel = cluster.index('id="secret-reveal-management-panel-policies"', boundary)
-    policies = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html', policy_panel)
+    policies = cluster.index(
+        'platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html', policy_panel
+    )
     assert shell < heading < selector < tabs < prereq_panel < readiness < boundary < policy_panel < policies
     assert 'operational_section.shell_classes()' in cluster
     assert 'Cluster Access Configuration' in cluster
@@ -360,8 +365,8 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
         'id="secret-reveal-cluster-workspace"',
         'id="secret-reveal-cluster"',
         'data-kaori-auto-submit',
-        "platform_operations.kubernetes.secret_reveal.workspace",
-        "platform_operations.kubernetes.secret_reveal.update_readiness",
+        'platform_operations.kubernetes.secret_reveal.workspace',
+        'platform_operations.kubernetes.secret_reveal.update_readiness',
         'hx-target="#secret-reveal-cluster-workspace"',
         'hx-swap="outerHTML"',
         'hx-swap="outerHTML show:none"',
@@ -382,7 +387,7 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
         'selected_cluster_ready',
         'secret-reveal-selected-cluster-posture',
         'hx-swap-oob="outerHTML"',
-        "empty_state_permission = \"clusters.manage\"",
+        'empty_state_permission = "clusters.manage"',
         'components/states/_empty_state.html',
     ):
         assert marker in cluster
@@ -402,14 +407,28 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
     assert 'content_tabs.render_controlled_links(' in verifier
     assert 'embedded=true' in verifier
     assert 'secret-reveal-kubernetes-boundary-heading' in verifier
+    assert 'Configured prerequisites and policies do not prove live access.' in verifier
+    assert 'Reveal execution rechecks Namespace policy, user authorization, session verification' in verifier
+    assert "'Step-Up Required'" in verifier
+    assert "'Approval by Policy'" in verifier
+    assert 'Protected Reveal policy engine boundary missing' in verifier
+    assert 'Protected Reveal request guidance must stay neutral and payload-free' in verifier
+    assert 'UPPERCASE_UTILITY.search(source)' in verifier
+    assert 'uppercase tracking-wide' not in cluster
 
 
 def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> None:
-    workspace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    workspace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html'
+    ).read_text()
     component = (ROOT / 'app/templates/components/content_tabs.html').read_text()
     page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
-    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    namespace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
 
     assert 'components/content_tabs.html' in workspace
     assert 'content_tabs.render_controlled_links(' in workspace
@@ -430,7 +449,7 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert '@popstate.window' in workspace
     assert 'window.history.pushState' in workspace
     assert 'role="tabpanel"' in workspace
-    assert "render_controlled_links(" in component
+    assert 'render_controlled_links(' in component
     assert 'data-kaori-tab-fallback="server-navigation"' in component
     assert '@keydown.arrow-right.prevent' in component
     assert '@keydown.home.prevent' in component
@@ -447,14 +466,17 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'id="secret-reveal-cluster-loading"' not in workspace
     assert "'secret-reveal-namespace-loading'" in namespace
     assert 'secret-reveal-selected-cluster-posture' in workspace
-    assert "empty_state_permission = \"clusters.manage\"" in workspace
-
+    assert 'empty_state_permission = "clusters.manage"' in workspace
 
 
 def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() -> None:
     cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
-    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    namespace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
 
     assert 'id="secret-reveal-cluster-loading"' not in cluster
     assert 'hx-indicator="#secret-reveal-cluster-loading"' not in cluster
@@ -474,10 +496,19 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
     assert 'hx-target="#secret-reveal-cluster-workspace"' in namespace
 
-    for primitive in ('table_classes(', 'head_classes()', 'header_cell_classes()',
-                      'header_cell_classes(action=true)', 'body_classes()', 'row_classes()',
-                      'cell_classes()', 'cell_classes(action=true)', 'title_cell(', 'action_classes()',
-                      'filter_select_classes()'):
+    for primitive in (
+        'table_classes(',
+        'head_classes()',
+        'header_cell_classes()',
+        'header_cell_classes(action=true)',
+        'body_classes()',
+        'row_classes()',
+        'cell_classes()',
+        'cell_classes(action=true)',
+        'title_cell(',
+        'action_classes()',
+        'filter_select_classes()',
+    ):
         assert 'table_ui.' + primitive in table
     assert 'table-fixed' not in table
     assert 'min-w-[980px]' in table
@@ -498,8 +529,12 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
 
 
 def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
-    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    section = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
     shared = (ROOT / 'app/templates/components/table.html').read_text()
 
     # Action controls remain in regular-height rows. One at a time opens an
@@ -548,7 +583,9 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
 
 
 def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() -> None:
-    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    section = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
     source = section.index('id="secret-reveal-live-source"')
     block = section.index('id="secret-reveal-namespace-section"')
     loading = section.index("'secret-reveal-namespace-loading'", block)
@@ -559,8 +596,8 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section[source:block]
     assert 'table_ui.action_classes()' in section[source:block]
     assert 'refresh_namespace=1' not in section[block:]
-    assert "registry_ui.clear_filters_action(" in section[block:loading]
-    assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
+    assert 'registry_ui.clear_filters_action(' in section[block:loading]
+    assert ':hidden="!query.trim() && policy === \'all\'"' in section
     assert "{% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}" in section
     assert 'table_ui.inventory_block_header(' in section
     assert 'class="{{ table_ui.loading_bar_classes() }}"' not in section
@@ -572,14 +609,18 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
 def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:
     routes = (ROOT / 'app/platform_operations/kubernetes/secret_reveal/routes.py').read_text()
     administration = (ROOT / 'app/platform_operations/kubernetes/routes.py').read_text()
-    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    namespace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
 
     assert "'per_page', 'view'" in administration
     assert "'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites'" in routes
     assert "('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view')" in routes
     assert "'view': 'policies' if request.args.get('view') == 'policies' else 'prerequisites'" in routes
-    assert "settings_args[key] = value" in routes
+    assert 'settings_args[key] = value' in routes
     assert "response.headers['HX-Push-Url'] = page_url" in routes
     assert "response.headers['HX-Push-Url'] = url_for(" in routes
     assert "tab='secret-reveal', view='policies'" in namespace
@@ -622,7 +663,9 @@ def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -
 
 
 def test_cluster_prerequisites_use_one_responsive_checklist_surface() -> None:
-    workspace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    workspace = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html'
+    ).read_text()
     start = workspace.index('Readiness Controls')
     finish = workspace.index('Kubernetes Boundary', start)
     readiness = workspace[start:finish]
@@ -643,10 +686,11 @@ def test_cluster_prerequisites_use_one_responsive_checklist_surface() -> None:
     assert 'sm:grid-cols-2 xl:grid-cols-4' in workspace
 
 
-
 def test_namespace_policy_table_actions_use_public_shared_macro_signature() -> None:
     """Regression: unsupported size kwarg in table wrapper caused workspace HTTP 500."""
-    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    section = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
     shared_table = (ROOT / 'app/templates/components/table.html').read_text()
 
     # The public table wrapper only supports destructive=..., not size=...
@@ -659,11 +703,14 @@ def test_namespace_policy_table_actions_use_public_shared_macro_signature() -> N
     assert 'id="secret-reveal-live-source"' in section
 
 
-
 def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> None:
     cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
-    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    section = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
 
     # Copy remains concise without weakening the underlying RBAC checks.
     assert 'Kubeconfig available from cluster configuration.' in cluster
@@ -675,11 +722,11 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     assert 'Live Namespace Source' in section
     assert 'Kubernetes reports Namespace presence; KAORI governs reveal policies.' in section
     assert 'Selected cluster: {{ selected_cluster.name }}' in section
-    assert "namespace_source.has_successful_snapshot" in section
+    assert 'namespace_source.has_successful_snapshot' in section
     assert section.index('id="secret-reveal-live-source"') < section.index('id="secret-reveal-namespace-section"')
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section
     assert 'refresh_namespace=1' in section
-    assert "namespace_pagination.per_page, refresh_namespace=1)" in section
+    assert 'namespace_pagination.per_page, refresh_namespace=1)' in section
     assert section.count("'secret-reveal-namespace-loading'") >= 1
     assert 'table_ui.inventory_block_header(' in section
     assert 'class="{{ table_ui.loading_bar_classes() }}"' not in section
@@ -687,12 +734,12 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
 
     # Clear Filters uses the existing KAORI action owner and appears only
     # when either search or policy filter is actually active.
-    assert "registry_ui.clear_filters_action(" in section
+    assert 'registry_ui.clear_filters_action(' in section
     assert "(namespace_filters.query or '') | tojson" in section
     assert "(namespace_filters.policy or 'all') | tojson" in section
     assert 'x-model="query"' in section
     assert 'x-model="policy"' in section
-    assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
+    assert ':hidden="!query.trim() && policy === \'all\'"' in section
     assert "{% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}" in section
     assert 'hx-target="#secret-reveal-namespace-table-content"' in section
 
@@ -718,10 +765,13 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     assert 'pagination_ui.numeric_pages(' in table
 
 
-
 def test_namespace_policy_row_toggle_uses_existing_detail_controller_and_loading_component() -> None:
-    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
-    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
+    section = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    ).read_text()
     shared = (ROOT / 'app/templates/components/table.html').read_text()
     loading = (ROOT / 'app/templates/components/loading_bar.html').read_text()
     detail_js = (ROOT / 'app/static/js/detail_rows.js').read_text()
@@ -766,7 +816,6 @@ def test_namespace_policy_row_toggle_uses_existing_detail_controller_and_loading
     assert 'name="csrf_token"' in table
     assert 'enable_option_blocked' in table
     assert 'hx-post=' in table
-
 
 
 def test_kubernetes_posture_cards_share_operational_section_hierarchy() -> None:
@@ -832,7 +881,6 @@ def test_kubernetes_posture_cards_share_operational_section_hierarchy() -> None:
     assert 'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html' in config
 
 
-
 def test_namespace_numeric_pagination_uses_canonical_htmx_and_url_context() -> None:
     """Numbered pages must match working Previous/Next controls."""
     table = (
@@ -889,9 +937,7 @@ def test_shared_numeric_page_links_render_valid_routes_and_filters() -> None:
     templates = ROOT / 'app/templates'
     env = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
     env.globals['request'] = SimpleNamespace(endpoint='wrong.current.endpoint', view_args={}, args={})
-    env.globals['url_for'] = (
-        lambda endpoint, **params: '/' + endpoint + '?' + urlencode(params)
-    )
+    env.globals['url_for'] = lambda endpoint, **params: '/' + endpoint + '?' + urlencode(params)
 
     params = {
         'tab': 'secret-reveal',
@@ -902,7 +948,8 @@ def test_shared_numeric_page_links_render_valid_routes_and_filters() -> None:
         'per_page': 5,
     }
     rendered = env.get_template('components/pagination.html').module.numeric_pages(
-        2, 5,
+        2,
+        5,
         endpoint='platform_operations.kubernetes.secret_reveal.workspace',
         href_endpoint='platform_operations.kubernetes.index',
         query_params=params,
@@ -930,7 +977,6 @@ def test_shared_numeric_page_links_render_valid_routes_and_filters() -> None:
         assert int(href_args['page'][0]) in {1, 3, 4, 5}
 
 
-
 def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htmx_events() -> None:
     """Regression for inert 1–5 links after htmx:afterSwap + htmx:afterSettle."""
     script = (ROOT / 'app/static/js/pagination.js').read_text()
@@ -943,13 +989,13 @@ def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htm
     assert 'const sourceLinks = new WeakMap()' in script
     assert 'sourceLinks.set(container, original)' in script
     assert 'return sourceLinks.get(container) || null' in script
-    assert "a[hx-get]:not([data-kaori-generated-page])" in script
+    assert 'a[hx-get]:not([data-kaori-generated-page])' in script
     assert "link.setAttribute('hx-get', replacePage(hxGet, page, pageParam))" in script
     assert "'hx-select'," in script
     assert "'hx-push-url'," in script
     assert "document.addEventListener('htmx:afterSwap', renderAfterHtmxSwap)" in script
     assert "document.addEventListener('htmx:afterSettle', renderAfterHtmxSwap)" in script
-    assert "window.htmx.process(root)" in script
+    assert 'window.htmx.process(root)' in script
     assert 'data-kaori-generated-page' in script
     assert 'data-kaori-numeric-pagination' in macro
     assert "filename='js/pagination.js'" in layout
@@ -957,10 +1003,9 @@ def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htm
     # Browser regression exercises two renders, a real click, and a new
     # server pagination window; not just static href attributes.
     assert 'test_numeric_pagination_survives_repeated_htmx_renders' in browser_test
-    assert "window.paginationTestClick" in browser_test
+    assert 'window.paginationTestClick' in browser_test
     assert 'htmx:afterSwap' in browser_test
     assert 'htmx:afterSettle' in browser_test
-
 
 
 def test_cluster_access_has_external_section_intro_inside_htmx_swap_root() -> None:
@@ -994,7 +1039,7 @@ def test_cluster_access_has_external_section_intro_inside_htmx_swap_root() -> No
     assert 'hx-target="#secret-reveal-cluster-workspace"' in cluster
     assert 'hx-swap="outerHTML"' in cluster
     assert "activeTab: '{{ secret_reveal_view }}'" in cluster
-    assert "@popstate.window=" in cluster
+    assert '@popstate.window=' in cluster
 
     # No duplicate card or additional HTMX target after introducing the wrapper.
     assert cluster.count('id="secret-reveal-cluster-workspace"') == 1
