@@ -55,13 +55,204 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | **Human PASS for positive flow (2026-10-24):** manual save/reload, automatic mode, Detect Again, Account effective timezone; invalid-IANA/CSRF negative browser evidence pending |
 | SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | **Human PASS for positive flow (2026-10-24):** id-ID, year_month_day, 12h; persisted preview updates after Save, Refresh retention, Account locale consistency; independent canonical UTC/schedule mutation verification pending |
 | SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | **Human PASS (positive/negative access boundary, 2026-10-24):** authorized metadata/capability view, truthful unknown build, no secrets, Viewer privileged tabs hidden, direct unauthorized tab falls back to Time Zone; raw HTTP trace not archived |
-| SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | Pure projection negative regression added; browser pending |
+| SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | **Human PASS (2026-10-24, steps 1–8):** five-product registry, search, Extended-only MinIO, reset, selection/detail, empty state, URL/history/refresh and direct full GET; synthetic pagination contract exists, JavaScript-disabled fallback not separately tested; new MinIO one-line copy visual retest pending |
 | SET-ACC-01 | Profile local/external identity, RBAC role vs Super Admin | Read-only and source-backed identity; no false live provider readiness | **Human PASS (Account scope):** Local Super Admin and LDAP Viewer linked identity/profile screenshots; provider live-readiness was not asserted |
 | SET-ACC-02 | Empty/five recent auth events and Activity Audit authorization | Five-event sample, safe status, IP proxy caveat, permitted drill-down | **Human PASS (UI/RBAC boundary):** local + LDAP event sample, Viewer denied at direct audit URL, authorized audit access; separate HTTP 403 header capture not provided |
 | SET-ACC-03 | Credentials Local Database vs external provider | Password field only for local; external owner rejects change | **Human PASS (UI boundary):** local password form; LDAP provider-managed recovery without local form; automatic negative contracts also passed in focused suite |
 | SET-ACC-04 | Incorrect current password, reuse, CSRF, session generation | No secret leakage; rejected no commit; on legitimate success current session remains, others revoked | **Human PASS (credential & session behavior):** both invalid password UI rejections, dedicated local UAT user successful rotation, old session revoked and current session retained, audit/toast; second rejection audit-detail evidence and independent CSRF browser capture remain pending |
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
 | SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for Account only:** navigation/history, HTMX XHR 200, keyboard/focus, light/dark, offline recovery; General/AT-specific coverage not claimed |
+
+## Settings → General — Gherkin acceptance specification
+
+These General Settings scenarios record already accepted browser behavior and
+the remaining boundary expectations as **non-executable** `Given–When–Then`
+acceptance specifications. They reuse current pytest, UI and UAT taxonomy rather
+than creating a BDD runner. A `Then` statement describes required behavior;
+only the evidence notes below identify what was actually verified.
+
+### SET-GEN-01 — Time Zone display preference
+
+```gherkin
+Feature: Personal timezone presentation
+  Scenario: Persist a manual timezone without changing source data
+    Given an authenticated KAORI user has opened Settings > General > Time Zone
+    And the effective timezone is "Asia/Jakarta"
+    When the user selects manual mode and chooses "Asia/Makassar"
+    And saves the Time Zone preference
+    Then the saved effective timezone is "Asia/Makassar"
+    And the preference persists after browser refresh
+    And Account > Personal Presentation shows the same effective timezone
+    And the preference affects rendering, not canonical UTC or job schedules
+
+  Scenario: Detect and save the browser timezone in automatic mode
+    Given the account's Time Zone workspace is open
+    When the user selects Automatic from browser and saves
+    Then the mode is persisted as automatic
+    When the user activates Detect Again
+    Then the displayed detected timezone is refreshed from the browser
+    And no unsaved manual preference is silently committed
+
+  Scenario: Reject invalid IANA timezone evidence without updating state
+    Given a Time Zone form with a previously saved valid IANA timezone
+    When the user submits an invalid IANA timezone value
+    Then KAORI rejects the update and displays safe validation feedback
+    And the previous saved timezone is not overwritten
+```
+
+**Evidence:** Operator-confirmed steps 1–5 **positive functional PASS** on
+2026-10-24. The invalid-IANA forged browser submission/CSRF-negative HTTP
+trace and datastore/schedule immutability have **not** been independently
+supplied; the last scenario remains a specification, not a completed Human UAT.
+
+### SET-GEN-02 — Regional Format presentation
+
+```gherkin
+Feature: Account-specific regional presentation
+  Scenario: Save locale, date pattern and clock convention
+    Given an authenticated user is in Settings > General > Regional Format
+    When the user chooses "id-ID" regional locale
+    And selects the "year_month_day" date pattern and "12h" time format
+    Then the current presentation preview still reflects saved preferences before Save
+    When the user saves the regional preferences
+    Then a success response is presented
+    And the preview uses the saved new preferences
+    And refreshing the page preserves the three selections
+    And the account identity view shows locale "id-ID"
+    And KAORI interface language remains unchanged
+
+  Scenario: Preserve external and canonical time authority
+    Given a user updates only their personal regional presentation preference
+    When KAORI applies the preference to user-facing timestamps
+    Then canonical UTC records and provider settings remain authoritative
+    And operational schedules are not changed by this display preference
+```
+
+**Evidence:** Operator-confirmed five-step **positive functional PASS** on
+2026-10-24. No independent datastore, canonical UTC, provider or scheduler diff
+was supplied for the second scenario; do not elevate source-level design
+boundaries into execution evidence.
+
+### SET-GEN-03 — Read-only System Information authorization
+
+```gherkin
+Feature: Authorized read-only release reference
+  Scenario: Show only safe release, build and capability metadata
+    Given a KAORI user has "system.view" permission
+    When the user opens Settings > General > System Information
+    Then the release identity, environment and curated Capability Catalog are visible
+    And unavailable build reference or date is labeled "Not supplied"
+    And secrets, credentials and internal configuration endpoints are not exposed
+    And a capability description does not claim live provider readiness
+
+  Scenario: Fail closed when the current user lacks system.view
+    Given an LDAP Viewer does not have "system.view" permission
+    When the user opens Settings > General
+    Then System Information and Compatibility Versions tabs are unavailable
+    When the Viewer requests "/settings/general?tab=system-information" directly
+    Then the request falls back to the authorized Time Zone tab
+    And privileged release/capability metadata is not projected
+```
+
+**Evidence:** Operator-confirmed five-step **Human PASS**, including Viewer
+direct-URL fallback. Focused negative route tests exist; no separate raw HTTP
+response-header capture was archived. Later title Guide and compact copy
+refinements were independently accepted as design.
+
+### SET-GEN-04 — Qualified Integration Compatibility reference
+
+```gherkin
+Feature: Read-only compatibility registry and qualification details
+  Scenario: Search, filter and reset the five-product reference catalog
+    Given a user with "system.view" opens Compatibility Versions
+    And the baseline registry lists Kubernetes, Prometheus, Thanos Query, Alertmanager and MinIO
+    When the user searches for "Prometheus"
+    Then matching results and their selection detail replace the registry results
+    When the user clears search and filters Support Posture to "Extended only"
+    Then only qualifying Extended-only providers appear
+    And the MinIO release lifecycle remains "Upstream Archived"
+    When the user activates Reset
+    Then search and support filters return to their defaults
+    And the five products are shown again
+
+  Scenario: Preserve selected provider authority and empty-state meaning
+    Given the complete compatibility catalog is displayed
+    When the user selects MinIO
+    Then the qualified versions and General Contract are displayed
+    And KAORI support and upstream lifecycle are presented separately
+    And the provider's Version Qualification is separate from Readiness Authority
+    And qualification is not represented as live provider readiness
+    When the user searches for "nonexistent-provider-123"
+    Then "No matching integrations" is displayed
+    And stale previously selected provider details are not displayed
+
+  Scenario: Preserve search selection and URL across navigation and full GET
+    Given the user has selected a compatibility result
+    When the user uses browser Back, Forward and Refresh
+    Then URL query, selected result and visible detail remain consistent
+    When the user opens the result URL as a new browser document
+    Then a full GET renders the same authorized compatibility view
+
+  Scenario: Bound pagination and invalid query inputs
+    Given a synthetic compatibility catalog with more than five products
+    When the registry is projected at the first and later pages
+    Then each page contains at most five products
+    And invalid page, filter and selection inputs are normalized safely
+    And an empty filter result does not retain an unrelated stale detail
+```
+
+**Evidence:** Operator explicitly confirmed **SET-GEN-04 steps 1–8 PASS**
+and supplied the Extended-only MinIO screenshot. The live catalog has only
+five products, so no visible second-page control is expected; the independent
+synthetic 12-product projection contract covers pagination. Opening a URL in
+a new browser tab verifies full-document GET fallback, **not** script-disabled
+(no-JavaScript) behavior. The MinIO General Contract summary was subsequently
+shortened under #2241 / PR #3050 to
+`S3 reachability, bucket discovery, and optional object-storage governance.`
+That **new text layout** awaits an updated operator screenshot; the existing
+1–8 functional acceptance remains intact.
+
+### SET-OPS-01 — General tab operability and visual overflow
+
+```gherkin
+Feature: General Settings navigation and accessible tab strip
+  Scenario: Keep General query-backed tabs usable in the canonical viewports
+    Given the General Settings page uses the shared KAORI query tab component
+    When the six canonical viewports are rendered in light and dark themes
+    Then the tab strip has no unintended vertical overflow
+    And narrow viewports retain horizontal scrolling between tabs
+    And the selected tab and the visible workspace remain consistent
+
+  Scenario: Preserve loading and keyboard behavior during General navigation
+    Given an authenticated user navigates General Settings query tabs
+    When the user follows a tab by keyboard, mouse or URL query
+    Then the active tab and workspace correspond to the requested URL
+    And HTMX partial requests use the existing nonvisual loading status
+    And the authorized full GET fallback remains usable
+```
+
+**Evidence:** The operator reported existing General+Account six-viewport
+Playwright **12/12 PASS**, Settings Final Lock **4/4 PASS**, shared verifier
+PASS, and visual scrollbar removal after #3032. Account keyboard/history
+and offline recovery UAT are accepted separately. Do **not** treat those
+Account-specific manual observations as a separate complete General
+keyboard/assistive-technology/offline recovery certification.
+
+### General Gherkin-to-test and evidence traceability
+
+| ID | Existing QA ownership | Evidence disposition |
+| --- | --- | --- |
+| SET-GEN-01 | `app/settings/general/actions.py`; `tests/contracts/settings/test_settings_final_lock_contract.py` | Five-step manual positive PASS; invalid IANA / CSRF-negative browser proof pending |
+| SET-GEN-02 | `app/settings/general/actions.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Five-step manual positive PASS; canonical data/schedule mutation evidence not supplied |
+| SET-GEN-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_general_rejects_privileged_reference_tabs_without_system_view` and `::test_system_information_never_projects_unrelated_sensitive_configuration` | Five-step authorization/read-only Human PASS; raw HTTP header trace absent |
+| SET-GEN-04 | `tests/contracts/settings/test_compatibility_registry_projection.py`; `tests/contracts/settings/test_general_settings_redesign_contract.py` | Eight-step Human PASS; synthetic pagination contracts available; no-JS disabled mode and post-copy screenshot pending |
+| SET-OPS-01 | `tests/ui/test_representative_interactions.py::test_settings_general_query_tabs_keep_vertical_scroll_closed`; `tests/contracts/settings/test_settings_final_lock_contract.py` | General+Account 12/12 viewport Playwright PASS; broader standalone General manual accessibility/recovery not yet documented |
+
+These are acceptance **specifications only**. No `.feature` runner, new
+step definitions, alternative test taxonomy or new official CI gate is
+introduced. Existing negative-test gaps and exact-SHA limitations remain
+visible. `SET-GEN-04` Human Acceptance is not a release or live provider
+certification, and official Full Admission remains **HOLD**.
 
 ## Settings → Account — Gherkin acceptance specification
 
