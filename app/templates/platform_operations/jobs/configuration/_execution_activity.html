@@ -205,10 +205,10 @@
         </p>
         {% if execution_safety_short|default('') %}
             {{ info_tip.render('jobs-execution-safety-' ~ (definition.key|replace('.', '-')),
-                'Execution Safety',
-                definition.safety_summary,
-                placement='right',
-                variant='guide') }}
+                            'Execution Safety',
+                            definition.safety_summary,
+                            placement='right',
+                            variant='guide') }}
         {% endif %}
     </footer>
 </section>
