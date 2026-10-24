@@ -270,6 +270,48 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         expect(access_card).to_be_visible()
         assert_document_fits_viewport(page)
 
+        # UAT-WEL-004: unmatched search must show empty state and recover.
+        original_count = cards.count()
+        search.fill('kaori-no-such-workspace-uat')
+        expect(page.locator('[data-workspace-result-count]')).to_have_text('0 Workspaces')
+        expect(page.locator('[data-workspace-empty]')).to_be_visible()
+        expect(page.locator('[data-workspace-card]:visible')).to_have_count(0)
+        expect(page.locator('[data-workspace-group]:visible')).to_have_count(0)
+        assert_document_fits_viewport(page)
+
+        search.press('Escape')
+        expect(search).to_have_value('')
+        expect(search).not_to_be_focused()
+        expect(page.locator('[data-workspace-empty]')).to_be_hidden()
+        expect(page.locator('[data-workspace-card]:visible')).to_have_count(original_count)
+        expect(page.locator('[data-workspace-result-count]')).to_have_text(
+            f'{original_count} Workspaces'
+        )
+        assert_document_fits_viewport(page)
+
+
+def test_welcome_authorized_workspace_card_navigation_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-WEL-006: clicking an authorized card navigates to the owning route."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'welcome-card-navigation', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None and response.ok
+
+        settings_card = page.get_by_role('link', name='Open Settings Workspace')
+        expect(settings_card).to_be_visible()
+        assert_document_fits_viewport(page)
+        settings_card.click()
+        expect(page).to_have_url(re.compile(r'/settings/account/?$'))
+        expect(page.get_by_role('heading', name='Account', exact=True)).to_be_visible()
+        assert_document_fits_viewport(page)
+
 
 def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_viewports(
     configured_page: Page,
