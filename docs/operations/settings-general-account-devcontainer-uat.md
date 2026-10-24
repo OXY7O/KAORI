@@ -63,6 +63,200 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-VIS-01 | Account Profile/Activity/Credentials: six viewports, both themes, keyboard | No horizontal page overflow; shared tab focus/URL; no visual loading bars | **Operator automated PASS:** Playwright 6 passed, 66 deselected, 71.10 s after Chromium dependencies installed; exact browser-run SHA not independently captured |
 | SET-OPS-01 | General/Account reload/back navigation, slow HTMX GET, accessibility | Nonvisual `sr-only role=status`, persistent controls/toast, no spinner/bar geometry | **Human PASS for Account only:** navigation/history, HTMX XHR 200, keyboard/focus, light/dark, offline recovery; General/AT-specific coverage not claimed |
 
+## Settings → Account — Gherkin acceptance specification
+
+These six scenario families make the **existing Human UAT decisions** reviewable in
+`Given–When–Then` form. They document acceptance behavior and are **not**
+executable `.feature` files, new step definitions, or a replacement for KAORI's
+existing pytest test taxonomy. The results in the UAT matrix and evidence register
+below remain the authority for what was actually observed; a `Then` clause is
+an expected contract, **not** proof that a separate trace was captured.
+
+### SET-ACC-01 — Account identity, access posture and provider ownership
+
+```gherkin
+Feature: Account identity and access posture
+  Scenario Outline: Show canonical identity without treating provider linkage as live health
+    Given an active KAORI user authenticated through "<identity_source>"
+    And the user has RBAC role "<role>" and administrative tier "<tier>"
+    When the user opens Settings > Account > Account Profile & Access
+    Then the account identity and authentication source are shown read-only
+    And the assigned RBAC role is separate from administrative tier
+    And the credential owner is "<credential_owner>"
+    And the latest verified sign-in shows locally recorded evidence when available
+    And the page does not claim a live identity-provider readiness check
+
+    Examples:
+      | identity_source       | role   | tier             | credential_owner       |
+      | Local Database        | Admin  | Super Admin      | KAORI                  |
+      | LDAP / Active Directory | Viewer | Standard Account | KAORI Active Directory |
+```
+
+**Evidence:** Human PASS, local Super Admin and LDAP Viewer screenshots.
+Provider health/live readiness was intentionally **not** tested.
+
+### SET-ACC-02 — Recent authentication evidence and audit permission boundary
+
+```gherkin
+Feature: Personal authentication activity
+  Scenario: Display only the account's latest five authentication events
+    Given a signed-in KAORI user has recorded authentication events
+    When the user opens Settings > Account > Recent Authentication Activity
+    Then no more than five latest events are shown in newest-first order
+    And summary counts describe only those displayed events, not full history
+    And each event preserves its authentication source and safe result label
+    And the recorded IP is presented as request evidence that may be a proxy hop
+    And secrets and credential values are absent from the event presentation
+
+  Scenario: Restrict administrative Activity Audit to users with permission
+    Given an LDAP Viewer lacks the "activity_audit.view" permission
+    And a separate authorized user has "activity_audit.view"
+    When the Viewer opens personal Recent Authentication Activity
+    Then the "Open Activity Audit" action is not shown
+    When the Viewer navigates directly to /access/activity-audit/
+    Then the server denies the privileged request without disclosing audit records
+    And the KAORI Access Denied guidance is presented
+    When a user with "activity_audit.view" opens Activity Audit
+    Then that user can review the authorized Activity Register
+```
+
+**Evidence:** Human PASS for latest-five samples, denied Viewer UI, and authorized
+audit access; deterministic Playwright verifies the empty-activity presentation.
+The unauthorized response's **HTTP 403 header was not separately captured**
+in the supplied browser evidence; it remains an independent trace limitation.
+
+### SET-ACC-03 — Local versus provider-managed credentials
+
+```gherkin
+Feature: Credential ownership boundary
+  Scenario: KAORI owns local credentials
+    Given a user has a Local Database identity
+    When the user opens Settings > Account > Credential Management
+    Then KAORI presents the local password-change form
+    And the local password policy and session-handling guidance are shown
+
+  Scenario: External providers remain responsible for their credentials
+    Given a user is linked to LDAP / Active Directory
+    When the user opens Settings > Account > Credential Management
+    Then no KAORI local password-change form is available
+    And the credential owner and recovery path identify the external provider
+    And KAORI retains independent account lifecycle and RBAC enforcement
+    And KAORI does not claim to reset or observe the provider's password
+```
+
+**Evidence:** Human PASS for local and LDAP credential UIs; isolated automated
+negative tests reject external password mutation without committing credentials
+or calling the external provider.
+
+### SET-ACC-04 — Password rejection, rotation and session invalidation
+
+```gherkin
+Feature: Local password and session security
+  Scenario Outline: Reject an invalid local password change without mutation
+    Given a Local Database user has an active authenticated session
+    When the user submits a change with "<input_condition>"
+    Then the password change is rejected with safe inline and toast feedback
+    And the stored password and session generation are not changed
+    And an audit-only rejection uses reason "<reason_code>"
+    And no password or secret value is written to audit or notifications
+
+    Examples:
+      | input_condition                 | reason_code                |
+      | an incorrect current password   | current_password_mismatch  |
+      | a new password equal to current | current_password_reuse     |
+
+  Scenario: Rotate a valid local password and revoke other browser sessions
+    Given the same disposable Local Database UAT user has sessions A and B
+    And both sessions can access a protected KAORI workspace
+    When the user successfully changes the local password in session A
+    Then session A remains authenticated
+    And session B is rejected on its next protected request
+    And the old password can no longer authenticate
+    And the new password can authenticate
+    And a successful password-change audit event and user feedback are recorded
+    And remembered sign-ins are subject to the same revocation boundary
+```
+
+**Evidence:** Human PASS for both rejection messages and the successful
+two-browser rotation/revocation flow; isolated pytest checks no commit/session
+mutation on rejection and session-generation implementation. A **second distinct
+rejection audit-detail capture** (for reuse) and a standalone **CSRF browser
+negative trace** were not supplied. Do not claim those independent checks PASS.
+
+### SET-VIS-01 — Deterministic responsive/theme/three-tab visual contract
+
+```gherkin
+Feature: Responsive Account presentation
+  Scenario Outline: Render Account in every canonical KAORI viewport
+    Given the deterministic browser fixture has an authenticated local user
+    And its personal authentication activity fixture has no events
+    And the viewport is "<viewport>" with dimensions "<dimensions>"
+    When the tester visits Profile, Activity and Credentials in light and dark
+    Then the correct tab and workspace are displayed in each theme
+    And there is no horizontal page overflow or clipped primary action
+    And the activity empty state does not fabricate authentication events
+    And HTMX pending feedback remains nonvisual with accessible status semantics
+    And visual evidence is recorded without submitting a password
+
+    Examples:
+      | viewport       | dimensions |
+      | large-desktop  | 1440x900   |
+      | laptop         | 1280x800   |
+      | compact-laptop | 1024x768  |
+      | tablet         | 768x1024  |
+      | mobile         | 390x844   |
+      | small-mobile   | 360x800   |
+```
+
+**Evidence:** Operator-reported Playwright **6 passed, 66 deselected**; each
+viewport test traverses both themes and all three Account tabs. Exact same-run
+SHA was not included in that output. Separate nonempty event-table desktop
+visual UAT was accepted at `295e4c84baf018d7df6630766e200cede2f7bd5f`.
+
+### SET-OPS-01 — Account navigation, accessibility and recoverability
+
+```gherkin
+Feature: Account workspace operability
+  Scenario: Preserve active tab through browser history and reload
+    Given an authenticated user is on Settings > Account
+    When the user opens Profile, Activity and Credentials in sequence
+    And navigates with browser Back and Forward
+    And refreshes the page
+    Then the active tab, URL query parameter and visible workspace remain in sync
+
+  Scenario: Keep HTMX, keyboard and network recovery usable
+    Given the authenticated Account workspace is available
+    When the user changes tabs with keyboard focus and Enter
+    Then the focus indicator is visible and the requested tab opens
+    When the user changes tabs under throttled network conditions
+    Then HTMX navigation replaces the expected workspace
+    And the loading status remains screen-reader-only, without a visual loading bar
+    When network access is interrupted and then restored
+    Then the workspace can be recovered and used again
+```
+
+**Evidence:** Operator-confirmed Human PASS for Back/Forward/Refresh, keyboard,
+light/dark, offline recovery and tab navigation; DevTools screenshot shows
+`htmx.min.js (xhr)`-initiated HTTP 200 navigation. Raw HAR, complete screen-reader
+session and independent browser-failure trace were not archived.
+
+### Gherkin-to-test and evidence traceability
+
+| Scenario ID | Owning existing automated coverage | UAT evidence / limits |
+| --- | --- | --- |
+| SET-ACC-01 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (profile/layout); `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa` | Local/LDAP read-only profile screenshots: Human PASS; no live-provider health check |
+| SET-ACC-02 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (activity/layout); same Playwright browser test (mocked empty state) | Latest-five and Viewer deny/authorized audit: Human PASS; separate HTTP 403 header pending |
+| SET-ACC-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_external_credentials_are_rejected_before_validation_or_password_access`; `tests/contracts/settings/test_account_credential_security_contract.py` | Local/LDAP credential ownership: Human PASS; contract-level external mutation rejection |
+| SET-ACC-04 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_password_rejections_preserve_credential_and_session_state`; `tests/contracts/settings/test_account_credential_security_contract.py` | Rejection and two-browser session rotation: Human PASS; separate reuse audit detail and CSRF browser trace pending |
+| SET-VIS-01 | `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa`; `tests/ui/test_visual_audit_contract.py` | 6/6 browser parameterizations PASS; exact same-run SHA not recorded |
+| SET-OPS-01 | Shared HTMX tab contract in `tests/contracts/settings/test_account_settings_redesign_contract.py`; read-only browser navigation in the visual QA test | Account history, keyboard, HTMX and offline recovery: Human PASS; full AT audit not claimed |
+
+The Gherkin above is **documentation-only acceptance mapping**. Running existing
+pytest commands continues to execute the actual regression tests; no BDD runner,
+`.feature` parser, new fixture, provider mutation or official admission gate is
+introduced. General Settings scenarios SET-GEN-01–04 remain separate and pending
+their own negative/browser UAT evidence.
+
 ## 2026-10-24 — Account UAT evidence reconciliation
 
 The Account portion of this matrix is **human accepted** for the tested functional, security, visual, and operational behavior. Acceptance is not equivalent to Full Admission or a complete screen-reader/DAST/CSRF assessment. Evidence was supplied through Dev Container terminal outputs and browser screenshots in the KAORI review conversation, then recorded in GitHub issue #2880. The accepted Activity table alignment refinement is governed by #3019 / merged PR #3020.
