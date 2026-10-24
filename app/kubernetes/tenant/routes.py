@@ -495,7 +495,7 @@ def resource_profiles():
 @any_permission_required('tenant.view', 'tenant.manage')
 def namespace_provisioning():
     active_view = str(request.args.get('view') or 'provision')
-    if active_view not in {'provision', 'allocation', 'decisions'}:
+    if active_view not in {'provision', 'allocation', 'native-cutover', 'capsule-governance', 'decisions'}:
         active_view = 'provision'
 
     context = _tenant_workspace_context()
@@ -2098,7 +2098,7 @@ def cutover_capsule_shared_allocation_route():
                 'operation': 'capsule_shared_allocation_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
 
 
 @tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')
@@ -2193,7 +2193,7 @@ def cutover_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
 
 
 @tenant_bp.post('/tenant-quota/change')
@@ -2230,7 +2230,7 @@ def change_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance'))
 
 
 @tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')
@@ -2328,7 +2328,7 @@ def cutover_namespace_allocation_route():
                 'operation': 'allocation_governance_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='native-cutover'))
 
 
 @tenant_bp.post('/namespace-allocation')
@@ -2366,7 +2366,7 @@ def change_namespace_allocation_route():
                 'operation': 'change_namespace_allocation',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning'))
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
 
 
 @tenant_bp.post('/namespaces')

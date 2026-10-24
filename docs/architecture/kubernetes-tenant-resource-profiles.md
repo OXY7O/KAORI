@@ -1284,3 +1284,43 @@ remain independent and authoritative, protecting direct POST actions even if
 client-side validation is bypassed. Provider capability evidence can be
 stale; formal mutation rechecks it at the server boundary. The UI must never
 label mere profile configuration as successful provider enforcement.
+
+
+### Namespace Provisioning primary allocation workflow tabs (#2998)
+
+During DevContainer UAT, the former top-level `Allocation Change` tab was
+split into three mutually exclusive primary content views using the existing
+`components/content_tabs.html::render_links` server/HTMX contract:
+
+- **Native Allocation** (`?view=allocation`): managed Native Namespace
+  Resource Profile comparison and admitted allocation mutation. The URL key
+  intentionally stays `allocation` so prior bookmarks remain valid.
+- **Native Cutover** (`?view=native-cutover`): legacy Adopted/Observed Native
+  Namespace allocation governance takeover only. Cutover is not equivalent to
+  changing an already-managed Native Namespace.
+- **Capsule Governance** (`?view=capsule-governance`): Capsule-owned
+  Tenant CR quota governance (adopted cutover and managed change) and
+  GlobalResourceQuota shared allocation, with their distinct provider-specific
+  authority and existing capability gates.
+
+These three sit alongside `Provision Namespace` and `Capacity Decisions`
+in the same five-item primary navigation. One selected workflow is rendered
+at a time, **not** an always-present three-workflow stack under collapsible
+outer containers. Individual Resource Profile comparison groups continue to
+use the previously approved expandable sections. The existing horizontally
+scrollable compact Content Tabs styling, HTMX URL synchronization, and
+loading treatment are reused without custom JavaScript.
+
+The GET controller admits the new view keys, preserves the legacy
+`?view=allocation` key, and keeps an unknown view on the existing
+`provision` fallback. Native allocation, Native cutover, Capsule Tenant CR
+cutover/managed change, and Capsule GRQ cutover POSTs redirect to their own
+workflow after **both success and handled failure**. Provisioning still
+returns to `Provision Namespace` by default. No new provider mutation,
+authorization, persistent model or schema is introduced.
+
+Treat this as user-visible workflow navigation change: run source contracts
+and visual/keyboard/responsive/light-dark DevContainer QA plus human
+acceptance before entering official admission. The temporary holding
+`kaori/review/staging-uat` is **not** `kaori/staging`; official CI/CD
+and promotion remain HOLD.
