@@ -77,6 +77,23 @@ The first four jobs currently use the existing `inventory` queue and remain inde
 Global **Sync All Inventory** dispatches `artifact_registry.inventory.sync` only. Heavy security evidence must
 not extend the inventory correctness path; Harbor vulnerability detail is refreshed only for new/changed scan evidence.
 
+## Compact Job Configuration Evidence
+
+Jobs → Configuration uses the existing `_job_overview.html` and
+`_execution_activity.html` to keep long safety summaries readable.
+For Vault/PKI and selected Object Storage Analytics jobs, the visible
+one-line synopsis is **presentation-only**; the existing canonical
+`JobDefinition.description`, `safety_summary`, result evidence,
+and provider-owned policy remain unchanged. A standard KAORI Info Tip
+**Guide** exposes complete safety context to keyboard and pointer users,
+including approved mounts, metadata-only collection, HMAC custody,
+PKI coverage limitations and committed snapshot/fail-closed behavior.
+The application must never infer eligibility or success from abbreviated copy.
+
+Vault policy forms continue to use their existing CSRF fields, permissions,
+schedule-enabled controls and interval constraints. The analytics refresh
+and stale-grace inputs likewise preserve their canonical semantics.
+
 ## Guarded Empty-Inventory Recovery UI
 
 Object Storage and Artifact Registry expose **manual-only**, permission-gated

@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "components/info_tip.html" as info_tip %}
 {% set definition = selected_job.definition %}
 <section class="{{ operational_section.shell_classes() }}">
     <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
@@ -11,7 +12,7 @@
                     <p class="text-xs font-semibold text-kaori-primary">{{ definition.domain }}</p>
                     <h2 class="mt-1 text-base font-semibold text-content-primary">{{ definition.name }}</h2>
                     <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted xl:truncate"
-                       title="{{ definition.description }}">{{ definition.description }}</p>
+                       title="{{ definition.description }}">{{ selected_description|default(definition.description) }}</p>
                 </div>
             </div>
             {% include "platform_operations/jobs/configuration/_selected_status.html" %}
@@ -36,11 +37,19 @@
         {% endfor %}
     </div>
     {% if overview_notice|default('') %}
-        <footer class="border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
-            <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
-                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                <span>{{ overview_notice }}</span>
+        <footer class="flex min-w-0 items-center justify-between gap-3 border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
+            <p class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
+                <i data-lucide="info" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <span class="{{ 'min-w-0 truncate' if overview_notice_short|default('') else 'min-w-0' }}"
+                      {% if overview_notice_short|default('') %}title="{{ overview_notice }}"{% endif %}>{{ overview_notice_short|default(overview_notice) }}</span>
             </p>
+            {% if overview_notice_short|default('') %}
+                {{ info_tip.render('jobs-overview-safety-' ~ (definition.key|replace('.', '-')),
+                                'Job Safety Evidence',
+                                overview_notice,
+                                placement='right',
+                                variant='guide') }}
+            {% endif %}
         </footer>
     {% endif %}
 </section>

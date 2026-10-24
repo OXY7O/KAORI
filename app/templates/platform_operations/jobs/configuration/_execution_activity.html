@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
 {% set definition = selected_job.definition %}
 {% set active_job = selected_job.active_job %}
 {% set can_execute = current_user.has_permission(definition.execute_permission) and (not definition.domain_execute_permission or current_user.has_permission(definition.domain_execute_permission)) %}
@@ -191,11 +192,23 @@
             {% endfor %}
         </div>
     </div>
-    <footer class="border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
-        <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+    <footer class="flex min-w-0 items-center justify-between gap-3 border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
+        <p class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
             <i data-lucide="shield-check"
-               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-            <span><strong class="font-semibold text-content-primary">Execution Safety:</strong> {{ definition.safety_summary }}</span>
+               class="h-4 w-4 shrink-0 text-kaori-primary"
+               aria-hidden="true"></i>
+            <span class="{{ 'min-w-0 truncate' if execution_safety_short|default('') else 'min-w-0' }}"
+                  {% if execution_safety_short|default('') %}title="{{ definition.safety_summary }}"{% endif %}>
+                <strong class="font-semibold text-content-primary">Execution Safety:</strong>
+                {{ execution_safety_short|default(definition.safety_summary) }}
+            </span>
         </p>
+        {% if execution_safety_short|default('') %}
+            {{ info_tip.render('jobs-execution-safety-' ~ (definition.key|replace('.', '-')),
+                            'Execution Safety',
+                            definition.safety_summary,
+                            placement='right',
+                            variant='guide') }}
+        {% endif %}
     </footer>
 </section>
