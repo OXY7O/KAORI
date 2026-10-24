@@ -71,6 +71,7 @@ def test_optional_evidence_uses_shared_accessible_disclosure_not_custom_js() -> 
     for prohibited in ('onclick=', 'hx-post=', '<form', 'style='):
         assert prohibited not in detail
 
+
 def test_warning_detail_uses_attention_not_an_implied_failure_or_retry() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     assert "'Failure Summary' if item.status == 'error' else 'Attention Summary'" in detail
@@ -93,4 +94,3 @@ def test_warning_preserves_recorded_evidence_and_error_review_guidance() -> None
     assert 'item.related_sources' in detail
     assert 'No separate failure-context fields are available in this Activity Register entry.' in detail
     assert 'data-activity-outcome="recorded"' in detail
-
