@@ -1,5 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% set definition = selected_job.definition %}
 {% set policy = selected_job.policy %}
@@ -47,7 +48,8 @@
                             </span>
                             <span class="min-w-0">
                                 <span class="block text-sm font-semibold text-content-primary">Automatic Object Storage Inventory Sync</span>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted">Dispatch the job automatically when the saved interval becomes due.</span>
+                                <span class="mt-1 block truncate text-xs leading-5 text-content-muted"
+                                      title="Dispatch the job automatically when the saved interval becomes due.">Run when the saved interval is due.</span>
                             </span>
                         </span>
                         <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
@@ -173,13 +175,19 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="max-w-2xl text-xs leading-5 text-content-muted">
-                        A confirmation is bound to the current snapshot identity, the signed-in operator, and the selected system.
-                        If bucket discovery disagrees or committed evidence changes, recovery fails closed without deleting any records.
-                    </p>
+                    <div class="flex min-w-0 items-center gap-1.5">
+                        <p class="min-w-0 truncate text-xs leading-5 text-content-muted">
+                            Mismatch stops recovery safely; no records are deleted.
+                        </p>
+                        {{ info_tip.render('jobs-empty-bucket-recovery-safety',
+                            'Guarded Recovery Boundary',
+                            'Confirmation is bound to the current snapshot identity, signed-in operator, and selected system. If bucket discovery disagrees or committed evidence changes, recovery fails closed without deleting records.',
+                            placement='right',
+                            variant='guide') }}
+                    </div>
                     <button type="submit"
                             {% if selected_job.active_job or selected_job.execution_disabled %}disabled{% endif %}
-                            class="{{ action_button.classes('secondary') }}">
+                            class="{{ action_button.classes('secondary') }} shrink-0 whitespace-nowrap">
                         <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
                         Verify &amp; Reconcile Empty
                     </button>

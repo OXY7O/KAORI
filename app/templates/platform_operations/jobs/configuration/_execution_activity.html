@@ -107,10 +107,11 @@
         </div>
     {% endif %}
     <div class="flex flex-col gap-4 bg-surface-hover px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <p class="max-w-3xl text-xs leading-5 text-content-secondary">
-            Manual runs use the same queue, job record, and audit boundary as scheduled executions.
+        <p class="min-w-0 text-xs leading-5 text-content-secondary lg:truncate"
+           title="Manual runs use the same queue, job record, and audit boundary as scheduled executions.">
+            Manual and scheduled runs share the same execution and audit trail.
         </p>
-        <div class="flex flex-col gap-2 sm:flex-row">
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
             <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
                class="{{ action_button.classes('secondary') }}">
                 <i data-lucide="list-checks" class="h-4 w-4"></i>
@@ -125,7 +126,7 @@
                     {{ manual_form.hidden_tag() }}
                     <button type="submit"
                             {% if active_job or selected_job.execution_disabled %}disabled{% endif %}
-                            class="{{ action_button.classes('primary') }}">
+                            class="{{ action_button.classes('primary') }} whitespace-nowrap">
                         <i data-lucide="{{ selected_job.manual_action_icon }}" class="h-4 w-4"></i>
                         {{ selected_job.manual_action_label }}
                     </button>
