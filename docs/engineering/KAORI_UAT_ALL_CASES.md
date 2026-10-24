@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (91 scenarios)
+# KAORI — Complete Acceptance Case Specifications (98 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 77 are expanded and require capability-owner review. No scenario is counted PASS, all execution statuses are NOT RUN at this authoring checkpoint, and human acceptance is PENDING.
+**Maturity:** Original 14 first-wave procedures retained; the other 84 are expanded and require capability-owner review. No scenario is counted PASS, all execution statuses are NOT RUN at this authoring checkpoint, and human acceptance is PENDING.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -266,6 +266,29 @@
 **Isolation / cleanup:** Use deterministic isolated fixtures and restore modified UI/session state; record expected unavailable/empty states without inventing provider data.
 
 **Automation mapping:** Not validated. Inspect assertions under tests/contracts/access/; tests/access/users/; tests/security/access/; tests/ui/.; do not infer coverage from filename.
+
+### UAT-IAM-007 — Viewer cannot open Access Overview through a direct read request
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Authenticated default Viewer test principal lacking users.view, users.manage, identity_providers.view, roles.view and activity_audit.view; isolated environment and captured effective permissions.
+
+**Steps:**
+1. Sign in as the Viewer and verify absence of Access workspace permission in the role fixture.
+2. Request GET /access/ directly, bypassing Welcome and sidebar navigation.
+3. Assert the actual document response status and inspect the returned Access Denied HTML.
+4. Confirm protected Access Overview content is absent and no administrative state was modified.
+
+**Expected results:**
+- HTTP 403 Forbidden is returned by the server, not a client-side hidden-card fallback.
+- Accessible Access Denied guidance shows Viewer, blocked access, an administrator contact path and safe Welcome navigation.
+- No protected user/role/identity provider data or unauthorized administrative side effect is disclosed.
+
+**Required evidence:** Exact request/response status 403, authenticated role permission read-back, browser screenshot/trace, safe HTML assertions and negative authorization test JUnit; 2026-10-24 operator Network screenshot recorded separately on #746.
+
+**Isolation / cleanup:** Use a disposable Viewer principal and isolated authorization fixture; do not perform role/user mutations or expose user secrets.
+
+**Automation mapping:** Partial: app/access/overview/routes.py @any_permission_required and app/access/rbac/decorators.py abort(403) are source-reviewed; this specific Viewer read-only document request needs exact-candidate automated HTTP/HTML regression mapping, distinct from UAT-IAM-002 mutation denial.
 
 ## Kubernetes — Cluster Registration & Provider Readiness
 
@@ -1923,6 +1946,143 @@
 
 **Automation mapping:** Not validated. Inspect assertions under tests/contracts/platform_operations/; tests/platform_operations/; tests/security/kubernetes/.; do not infer coverage from filename.
 
+## Welcome Workspace Catalog
+
+**Owner:** app/welcome/; app/templates/welcome/; app/templates/components/.  
+**Candidate pytest/Playwright suites:** tests/welcome/; tests/security/welcome/; tests/rendering/welcome/; tests/e2e/welcome/; tests/ui/.  
+**Manual evidence authority:** #746 (2026-10-23/24 operator acceptance and screenshots); machine execution remains NOT RUN for these new Scenario IDs.
+
+### UAT-WEL-001 — Authenticated users reach the canonical Welcome landing
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** An active signed-in test principal; exact source SHA, role and session origin recorded; external providers isolated.
+
+**Steps:**
+1. Request / and /welcome in the same authenticated browser session.
+2. Inspect response status, role metadata, Hero, Workspace Catalog, and app shell.
+3. Verify page rendering uses only authorized catalog metadata and no provider request in the landing route.
+
+**Expected results:**
+- Both routes render authenticated Welcome with correct identity/role and authorized workspace cards.
+- The landing remains provider-free; no infrastructure metric/health data is fetched by Welcome.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Partial: tests/e2e/welcome/test_welcome_smoke.py::test_authenticated_user_can_render_welcome_with_global_application_shell, app/welcome/routes.py (source-reviewed). Provider-free enforcement is a source/design contract, not a live provider-execution test.
+
+### UAT-WEL-002 — Welcome only renders workspaces authorized for the active role
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Disposable Super Admin and default Viewer identities, their effective role grants, current shortcut definitions, and independent sessions.
+
+**Steps:**
+1. Open /welcome as Super Admin; capture cards, group counts and response HTML.
+2. Open /welcome as Viewer in a fresh session; read actual rendered HTML before client filtering.
+3. Compare each authorized destination and group/count with permission-to-endpoint definitions; inspect unauthorized metadata absence.
+4. Confirm universal personal Settings remains discoverable and target routes independently authorize.
+
+**Expected results:**
+- Visible and server-rendered workspaces correspond to role permissions with correct counts and no duplicate cards.
+- Viewer cannot discover Integrations, Platform Operations or Access with default role grants; forbidden card metadata is absent from HTML.
+- Settings is available for every authenticated user; no permission is conferred by card visibility.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Partial: tests/welcome/test_welcome_characterization.py and tests/security/welcome/test_welcome_security.py inspect catalog definition filtering. Exact default Viewer server-rendered HTML and role matrix browser assertions still require automated proof.
+
+### UAT-WEL-003 — Tenant search filters authorized workspace cards
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Authenticated user with tenant.view, current Tenant Management card rendered, idle browser with searchable catalog.
+
+**Steps:**
+1. Locate the Search Workspaces control and focus it using the keyboard shortcut /.
+2. Fill tenant; observe the rendered cards, per-group counts and polite result counter.
+3. Inspect search DOM for unrelated/unauthorized cards and verify document width.
+
+**Expected results:**
+- Only the Tenant Management card remains visible with result count 1 Workspace.
+- Unmatched capability groups are hidden and the authorized DOM does not gain permissions or request provider data.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Source-reviewed: tests/ui/test_representative_interactions.py::test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports. Actual pytest/Playwright execution not observed.
+
+### UAT-WEL-004 — Unmatched search shows an empty state and Escape restores the catalog
+
+**Type:** Negative · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Authenticated user with a nonempty authorized catalog, keyboard-enabled browser and a search term not present in rendered workspace metadata.
+
+**Steps:**
+1. Capture original authorized card/group counts.
+2. Type a guaranteed unmatched query and inspect result count, hidden groups/cards and canonical no-results state.
+3. While the search input is focused, press Escape.
+4. Verify the query is cleared, focus leaves the input, all original cards/groups return and counts restore.
+
+**Expected results:**
+- Unmatched search shows exactly 0 Workspaces and No Permitted Workspace Matches This Search.
+- Escape restores only the original permitted catalog and does not leak unauthorized destinations or leave focus trapped.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Partial: existing Playwright Welcome test checks Escape restoration following tenant filter; static template/JS contracts inspect empty state. The full unmatched-query browser transition is not yet directly asserted.
+
+### UAT-WEL-005 — Welcome remains usable across canonical viewports and persisted themes
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Reviewed KAORI Violet layout/visual baselines, built frontend assets, existing Playwright fixtures, six canonical viewport sizes and persisted-theme setup.
+
+**Steps:**
+1. Render light and dark theme at 1440x900, 1280x800, 1024x768, 768x1024, 390x844 and 360x800.
+2. Inspect Hero/Access Scope, catalog search, all capability groups, card contents and Open Workspace actions including bottom-of-page scroll.
+3. Run the existing geometry and governed screenshot-baseline assertions; capture screenshots/trace and any mismatch.
+4. Leave approved visual-baseline fingerprints unchanged unless a separate explicit human visual acceptance approves the exact intentional delta.
+
+**Expected results:**
+- No document-width overflow, clipped cards, overlapping text or unreachable actions; expected responsive reflow and theme persistence remain intact.
+- Baseline mismatch remains FAIL pending review rather than silent regeneration.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Source-reviewed: tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark and ::test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports; tests/ui/visual_audit.py. Full-scroll cards/accessibility are not equivalent to viewport screenshot-only assertions.
+
+### UAT-WEL-006 — An authorized workspace card navigates to its protected destination
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+
+**Preconditions:** Authenticated principal with a permission allowing at least one Welcome destination; route under test is implemented and enabled.
+
+**Steps:**
+1. Select a permitted workspace card and record its server-resolved href.
+2. Activate Open Workspace through a real browser click, not direct hidden DOM mutation.
+3. Assert the route responds with the intended destination and expected breadcrumb/heading.
+4. Recheck destination permission guard using separate restricted principal or owning endpoint test.
+
+**Expected results:**
+- The selected card lands in its capability-owned route with the correct page context.
+- Destination authorization remains independent from Welcome discoverability, without privilege expansion.
+
+**Required evidence:** Exact candidate SHA, effective role/permissions where relevant, browser response and DOM assertions, Playwright screenshots/trace/JUnit where applicable, screenshot theme/viewport and reviewed baseline identity; manual #746 UAT recorded independently.
+
+**Isolation / cleanup:** Use isolated disposable users, a deterministic browser and provider-free landing boundary; restore session/theme/filter state after tests. Do not mutate production providers or approve visual baselines automatically.
+
+**Automation mapping:** Partial: Welcome target resolution is covered by tests/unit/welcome/test_welcome_target_resolution.py and catalog characterization; browser click-through to an authorized destination is not directly established by the inspected Welcome smoke.
+
 ## Shared Shell, Settings, Visual QA & Accessibility
 
 **Owner:** docs/standards/KAORI_ENGINEERING_STANDARD_V1.md; #222; #543.  
@@ -2188,7 +2348,7 @@
 
 ## Review and execution truth
 
-- 91 written test cases are specified; 77 require capability-owner review before acceptance.
+- 98 written test cases are specified; 84 require capability-owner review before acceptance.
 - These files neither trigger CI/CD nor claim any pytest/Playwright, provider/UAT or human PASS.
 - Unavailable or unadmitted functions must be marked BLOCKED and reviewed against current documentation; never invent provider behavior.
 - Maintain exact scenario ID relationships across catalog, Gherkin, pytest/Playwright, execution evidence and human acceptance.
