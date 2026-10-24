@@ -2126,3 +2126,46 @@ def test_capsule_profile_unsupported_mutation_guard_is_not_just_copy() -> None:
     assert "'pvc_storage_policy': False" in controls
     assert '_validate_resource_profile_attachment_controls(profile, tenant)' in tenant_governance
     assert '_validate_resource_profile_attachment_controls(profile, tenant)' in grq_governance
+
+
+def test_capsule_advanced_placement_capability_preflight_is_committed_and_fail_closed() -> None:
+    """#2986: proposed advanced controls use recorded provider capability, not mere copy."""
+    from jinja2 import Environment
+
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(page)
+
+    assert "'capsule_advanced_profile_preflight': capsule_advanced_preflight" in registry
+    assert "if tenant.provider_key == 'capsule'" in registry
+    assert "capsule_capabilities = {" in registry
+    assert "_tenant_capability_statuses(tenant)" in registry
+    assert "evaluate_resource_profile_advanced_controls(" in registry
+    assert "provider_key='capsule'" in registry
+    assert "'requested': bool(value.get('requested'))" in registry
+    assert "'state': str(value.get('state') or 'unknown')" in registry
+    assert "'reason': str(value.get('reason') or '')" in registry
+    assert "'label': str(value.get('label') or key)" in registry
+    assert "if profile.advanced_controls_json" in registry
+
+    assert 'id="tenant-capsule-advanced-profile-preflight"' in page
+    assert '{{ capsule_advanced_profile_preflight|tojson }}' in page
+    assert "const committedEvaluations = readJson('tenant-capsule-advanced-profile-preflight')" in script
+    assert "const evaluation = committedEvaluations?.[tenantId]?.[profileId] || {}" in script
+    assert "preflight?.state === 'enabled' && preflight.requested === true" in script
+    assert "'Available · Capability preflight'" in script
+    assert "'Committed provider capability evidence unavailable.'" in script
+    assert "requestedUnsupported.push(preflight?.label || key)" in script
+    assert script.count(
+        'renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)'
+    ) == 3
+    assert 'apply.disabled = blocked' in script
+    assert "apply.dataset.kaoriInitiallyDisabled === 'true'" in script
+    assert "profile?.advanced_controls || {}" in script
+
+    # The data is pre-evaluated from committed state; ordinary UI render is read-only.
+    assert "get_namespace_registry_context(" in read('app/kubernetes/tenant/routes.py')
+    assert 'data-tenant-capsule-advanced-preview="{{ control_key }}"' in read(
+        'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
+    )
