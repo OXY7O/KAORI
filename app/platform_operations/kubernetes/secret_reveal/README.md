@@ -78,10 +78,10 @@ The list is server-side filtered and paginated.
 The table contract is:
 
 ```text
-Namespace | Live Namespace | Current Policy | Set Policy
+Namespace | Live Namespace | Current Policy | Actions
 ```
 
-`Live Namespace` uses `Available`, `Missing`, or `Unknown`. `Set Policy` remains explicit-save. The Save button is neutral/disabled until the row selection changes, then becomes the Violet primary action. When cluster readiness is blocked or live presence is not `Available`, enabled policy options are disabled; an existing enabled policy can always be changed to `Disabled` so access can be revoked.
+`Live Namespace` uses `Available`, `Missing`, or `Unknown`. `Edit Policy` opens one scoped editor; `Save Policy` is explicitly disabled until its selection changes and never auto-submits. When cluster readiness is blocked or live presence is not `Available`, enabled policy options are disabled; an existing enabled policy can always be changed to `Disabled` so access can be revoked.
 
 ## Consolidated administration tab
 
@@ -105,7 +105,7 @@ Each HTMX save response must:
 - update Secret Reveal Configuration counts/readiness and the parent Overview capability posture through HTMX out-of-band fragments;
 - keep Secret Reveal active.
 
-Operational toasts remain correct here because Save Readiness and Set Policy are immediate configuration mutations. Background execution progress must not be introduced into this workspace.
+Operational toasts remain correct here because Save Readiness and Save Policy are immediate configuration mutations. Background execution progress must not be introduced into this workspace.
 
 ## Visual contract
 
@@ -115,7 +115,7 @@ Operational toasts remain correct here because Save Readiness and Set Policy are
 - Activation Boundary uses a clear `bg-surface-card` surface.
 - Kubernetes Boundary uses a clear KAORI card surface; it must not return to a solid Violet panel.
 - Namespace Policies exposes live-source state, last successful refresh, and an explicit Refresh action.
-- Table headers use Title Case and the fixed proportional column contract `38% / 16% / 20% / 26%`.
+- Table headers use Title Case and the reviewed responsive column contract `34% / 22% / 18% / 26%` with shared table primitives and horizontal overflow on narrow viewports.
 - Shared semantic labels, pagination, dark-mode tokens, and KAORI Violet action hierarchy remain mandatory.
 
 

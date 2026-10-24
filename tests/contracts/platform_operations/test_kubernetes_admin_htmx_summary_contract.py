@@ -395,7 +395,8 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
     for marker in ('Secret Get Only', 'Avoid List and Watch', 'Namespace Scope', 'Credential Scope'):
         assert marker in cluster
 
-    # Existing final-lock verifier must reject the retired squeezed nested cards.
+    # Final lock requires the approved shared intro while rejecting retired cramped grids.
+    assert "'section_intro.render('," in verifier
     assert "for retired in ('xl:col-span-7', 'xl:col-span-5')" in verifier
     assert 'operational_section.shell_classes()' in verifier
     assert 'content_tabs.render_controlled_links(' in verifier

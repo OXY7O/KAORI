@@ -479,9 +479,9 @@ def main() -> int:
     namespace_table = read(
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
     )
-    if 'min-w-[980px]' in namespace_table or '<div class="overflow-x-auto">' in namespace_table:
-        errors.append('Namespace Policies must not force desktop horizontal scrolling')
-    for width in ('w-[38%]', 'w-[16%]', 'w-[20%]', 'w-[26%]'):
+    if "table_ui.table_classes('min-w-[980px]')" not in namespace_table or 'w-full overflow-x-auto' not in namespace_table:
+        errors.append('Namespace Policies must preserve canonical responsive table scroll geometry')
+    for width in ('w-[34%]', 'w-[22%]', 'w-[18%]', 'w-[26%]'):
         if width not in namespace_table:
             errors.append(f'Namespace Policies proportional column contract missing: {width}')
     if 'data-kaori-auto-submit' not in namespace_table:
@@ -536,7 +536,8 @@ def main() -> int:
     )
     for required in (
         'Live Namespace Source Unavailable',
-        'Last Refreshed',
+        'Refreshed {{ namespace_source.last_successful_at }}',
+        'Last successful {{ namespace_source.last_successful_at }}',
         'refresh_namespace=1',
         'data-lucide="refresh-cw"',
     ):
@@ -547,7 +548,9 @@ def main() -> int:
 
     for required in (
         '>Live Namespace<',
-        '>Set Policy<',
+        '>Actions<',
+        'data-kaori-namespace-policy-editor',
+        'Save Policy',
         "live_label = 'Available'",
         "else 'Unknown'",
         'x-data="{ initial:',
@@ -561,7 +564,9 @@ def main() -> int:
     for required in (
         'Cluster Credential',
         'selected_cluster_readiness.credential_configured',
-        'All three cluster prerequisites must be satisfied.',
+        'Read-only prerequisite',
+        'Operator attestation',
+        'section_intro.render(',
         'operational_section.shell_classes()',
         'secret-reveal-cluster-readiness-heading',
         'content_tabs.render_controlled_links(',
@@ -580,7 +585,7 @@ def main() -> int:
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
-    for retired in ('xl:col-span-7', 'xl:col-span-5', 'section_intro.render('):
+    for retired in ('xl:col-span-7', 'xl:col-span-5'):
         if retired in cluster_workspace:
             errors.append(f'Secret Reveal Cluster Readiness uses retired cramped layout: {retired}')
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
@@ -728,13 +733,13 @@ def main() -> int:
         if forbidden in context_rail:
             errors.append(f'Secret Reveal v1.7 shared context rail must return to natural-height geometry: {forbidden}')
     for required in (
-        'grid gap-4 p-5 sm:p-6 xl:grid-cols-12',
-        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7',
-        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5',
-        'grid gap-3 p-4 sm:grid-cols-2 sm:p-5',
+        'mt-4 grid min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:grid-cols-3',
+        'Readiness Controls',
+        'Activation Boundary',
+        'mt-4 grid min-w-0 gap-3 border-t border-outline-subtle pt-4 sm:grid-cols-2 xl:grid-cols-4',
     ):
         if required not in cluster_workspace:
-            errors.append(f'Secret Reveal v1.7 administration natural-height contract missing: {required}')
+            errors.append(f'Secret Reveal administration responsive readiness/boundary contract missing: {required}')
     for forbidden in (
         'grid items-stretch gap-4',
         'flex h-full flex-col overflow-hidden rounded-2xl',
