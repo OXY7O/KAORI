@@ -857,6 +857,36 @@ def test_settings_general_query_tabs_keep_vertical_scroll_closed(
             assert_document_fits_viewport(page)
 
 
+
+def test_settings_general_keyboard_tab_and_enter_navigation(
+    configured_page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Confirm standard tab focus progression and Enter activation in General."""
+    page = configured_page
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(
+        f'{kaori_authenticated_base_url}/settings/general?tab=time-locale',
+        wait_until='networkidle',
+    )
+    assert response is not None and response.ok
+    tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
+    time_tab = tablist.locator('a[href*="tab=time-locale"]').first
+    regional_tab = tablist.locator('a[href*="tab=regional-format"]').first
+    expect(time_tab).to_have_attribute('aria-selected', 'true')
+
+    time_tab.focus()
+    expect(time_tab).to_be_focused()
+    page.keyboard.press('Tab')
+    expect(regional_tab).to_be_focused()
+    page.keyboard.press('Enter')
+    expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
+    expect(page.locator(
+        '[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab=regional-format"]'
+    )).to_have_attribute('aria-selected', 'true')
+    expect(page.get_by_role('heading', name='Regional Format')).to_be_visible()
+
+
 def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
     configured_page: Page,
     kaori_authenticated_base_url: str,
