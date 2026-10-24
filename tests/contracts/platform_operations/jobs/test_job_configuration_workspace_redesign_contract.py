@@ -127,15 +127,22 @@ def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() ->
     assert "variant='guide'" in overview
     assert 'execution_safety_short|default(definition.safety_summary)' in activity
     assert 'title="{{ definition.safety_summary }}"' in activity
-    assert "variant='guide'" in activity
+    assert 'info_tip.render(' not in activity
+    assert 'title="{{ active_job.progress_process }}"' in activity
+    assert 'title="{{ active_job.progress_detail }}"' in activity
+    assert 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]' in activity
+    assert "items=[definition.safety_summary]" in overview
+    assert 'jobs-selected-safety-' in overview
     for key, source in templates.items():
         assert 'overview_notice_short' in source, key
         assert 'policy_form.hidden_tag()' in source or key == 'alert'
     for key in ('kv', 'issuer', 'stored'):
         source = templates[key]
         assert 'grid items-stretch gap-4' in source
-        assert 'min-h-[6rem]' in source
-        assert 'truncate whitespace-nowrap text-sm' in source
+        assert 'min-h-[7rem]' in source
+        assert 'block truncate text-sm' in source
+        assert 'Saved policy takes effect on the next scheduler cycle.' in source
+        assert 'definition.minimum_interval_minutes' in source
         assert 'policy_form.enabled(' in source
         assert 'policy_form.interval_minutes(' in source
     assert 'worker-only HMAC' in templates['alert']
@@ -157,3 +164,50 @@ def test_materialization_one_line_copy_retains_policy_and_safety() -> None:
     assert 'policy_form.enabled(' in source
     assert 'policy_form.stale_grace_minutes(' in source
     assert 'policy_form.freshness_minutes(' in source
+
+def test_job_policy_cards_have_guidance_without_mutating_policy_controls() -> None:
+    folder = 'app/templates/platform_operations/jobs/configuration/definitions/'
+    vault_templates = (
+        'secrets_pki_inventory_sync.html',
+        'secrets_pki_pki_sync.html',
+        'secrets_pki_stored_cert_sync.html',
+    )
+    registry_templates = (
+        'artifact_registry_security_sync.html',
+        'artifact_registry_governance_sync.html',
+    )
+    for name in vault_templates:
+        source = _read(folder + name)
+        assert 'border-kaori-primary/20 bg-kaori-soft' in source
+        assert 'min-h-[7rem]' in source
+        assert 'policy_form.hidden_tag()' in source
+        assert 'policy_form.enabled(' in source
+        assert 'policy_form.interval_minutes(' in source
+        assert 'disabled=not can_configure' in source
+        assert 'Saved policy takes effect on the next scheduler cycle.' in source
+    for name in registry_templates:
+        source = _read(folder + name)
+        assert 'Saved policy changes take effect without restarting Celery Beat.' in source
+        assert 'policy_form.hidden_tag()' in source
+        assert 'policy_form.enabled(' in source
+        assert 'policy_form.interval_minutes(' in source
+
+    registry_analytics = _read(folder + 'artifact_registry_analytics_refresh.html')
+    assert 'execution_safety_short' in registry_analytics
+    assert 'Analytics reads committed Registry and qualified Metrics Source' in registry_analytics
+
+
+def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() -> None:
+    overview = _read('app/templates/platform_operations/jobs/configuration/_job_overview.html')
+    activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+    assert 'jobs-selected-safety-' in overview
+    assert "variant='guide'" in overview
+    assert "items=[definition.safety_summary]" in overview
+    assert overview.index('jobs-selected-safety-') < overview.index('selected_description|default')
+    assert 'jobs-overview-safety-' not in overview
+    assert 'info_tip.render(' not in activity
+    assert 'execution_safety_short|default(definition.safety_summary)' in activity
+    assert 'title="{{ active_job.progress_process }}"' in activity
+    assert 'title="{{ active_job.progress_detail }}"' in activity
+    assert 'progress_bar.job_progress(active_job' in activity
+    assert "url_for('jobs.run_now', job_key=definition.key)" in activity
