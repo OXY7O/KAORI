@@ -719,8 +719,8 @@ const startTopologyWorkspace = () => {
         viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'
         viewportHintCount.textContent = `${nodeCount} resources`
         viewportHintDescription.textContent = readableFocusActive
-            ? 'Pan to explore nearby resources. Fit shows the full graph.'
-            : 'Zoom to inspect labels. Resource List shows every name.'
+            ? 'Pan to explore · Fit for overview.'
+            : 'Zoom for labels · Use Resource List.'
     }
 
     const readableFocusNode = (visibleNodes) => {
@@ -751,11 +751,7 @@ const startTopologyWorkspace = () => {
         cy.fit(bounds, padding)
         graphViewportInitialized = true
         readableFocusActive = false
-        if (
-            preferReadable &&
-            visible.nodes().length > DENSE_NODE_THRESHOLD &&
-            cy.zoom() < DENSE_ZOOM_THRESHOLD
-        ) {
+        if (preferReadable && visible.nodes().length > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD) {
             cy.zoom(READABLE_ZOOM)
             cy.center(readableFocusNode(visible.nodes()))
             readableFocusActive = true
