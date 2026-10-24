@@ -1231,8 +1231,7 @@ silently report them as managed.
 
 The same five-category expandable vocabulary from Native Allocation Change is
 used for Capsule Tenant CR and GRQ: Basic Resources, Storage Guardrails,
-Object Limits, Container Defaults and Advanced Controls, with a separate
-Per-PVC Policy expansion inside storage coverage. All Current/Proposed quota
+Object Limits, Container Defaults and Advanced Controls, and read-only Per-PVC Policy rows inside the Storage Guardrails disclosure. All Current/Proposed quota
 fields are bound to committed/provider evidence and selected versioned
 Resource Profile through the existing read-only JS preview. The unsupported
 groups display the actual proposed values and `Not governed` provider
