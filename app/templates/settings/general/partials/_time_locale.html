@@ -24,19 +24,18 @@
                 </span>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-    <h2 class="text-base font-bold text-content-primary">Time Zone</h2>
-    {{ info_tip.render(
-        'general-timezone-title-guide',
-        'Time Zone',
-        'Choose automatic browser detection or a fixed IANA timezone for this account.',
-        items=[
-            'This preference changes displayed timestamps, not stored UTC or operational schedules.',
-            'Automatic follows the browser; manual keeps the selected timezone until changed.'
-        ],
-        placement='right',
-        variant='guide'
-    ) }}
-</div>
+                        <h2 class="text-base font-bold text-content-primary">Time Zone</h2>
+                        {{ info_tip.render('general-timezone-title-guide',
+                                                'Time Zone',
+                                                'Choose automatic browser detection or a fixed IANA timezone for this account.',
+                                                items=[
+                                                'This preference changes displayed timestamps, not stored UTC or operational schedules.',
+                                                'Automatic follows the browser; manual keeps the selected timezone until changed.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
+
                     <p class="mt-1 text-sm leading-6 text-content-muted">
                         Choose automatic browser detection for mobility or pin a fixed IANA timezone for a stable operational context.
                     </p>
