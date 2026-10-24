@@ -105,6 +105,7 @@ def test_v1_1_templates_parse() -> None:
     ):
         environment.parse(_read(relative))
 
+
 def test_registry_detail_outcome_first_keeps_success_and_failure_truthful() -> None:
     detail = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     presentation = _read('app/common/job_execution_presentation.py')
@@ -120,6 +121,7 @@ def test_registry_detail_outcome_first_keeps_success_and_failure_truthful() -> N
     assert 'Result Reference' in detail
     assert "'error_message': job.error_message or 'No execution error was recorded.'" in presentation
     assert 'payload_json' not in detail
+
 
 def test_registry_detail_density_uses_one_sheet_and_progressive_disclosure() -> None:
     source = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
@@ -154,9 +156,8 @@ def test_registry_detail_primary_facts_and_timeline_are_responsive() -> None:
         assert f'execution.{key}' in source
     for label in ('Technical References', 'Execution ID', 'Celery Task ID', 'Result Reference'):
         assert label in source
-    assert "columns=2" in source
+    assert 'columns=2' in source
     assert 'sm:grid-cols-3' in source
     assert 'progress_bar.job_progress' in source
     assert 'payload_json' not in source
     assert 'deduplication_key' not in source
-

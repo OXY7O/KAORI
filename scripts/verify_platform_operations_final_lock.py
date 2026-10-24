@@ -399,16 +399,34 @@ def main() -> int:
 
     execution_detail = read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     for required in (
-        'Execution Identity',
-        'Scope & Ownership',
-        'Lifecycle',
-        'Result & Failure Evidence',
-        'Result Summary',
+        'data-kaori-detail-variant="job-execution"',
+        'data-resource-detail-header',
+        'data-resource-detail-summary',
+        'Execution Snapshot',
+        'Execution Outcome',
+        'Execution Context',
+        'Lifecycle Timeline',
+        'Committed Result Evidence',
+        'Additional Execution Evidence',
+        'Technical References',
+        'detail.resource_sheet()',
+        'detail.inventory_fact_grid(execution.result_summary, columns=2)',
+        'view_more.render(',
+        "closed_label='View More'",
+        'progress_bar.job_progress',
+        'Recorded Error Evidence',
+        'No Result Summary Recorded',
+        'execution.public_id',
+        'execution.task_id',
     ):
         if required not in execution_detail:
             errors.append(f'Execution detail evidence contract missing: {required}')
-    if 'payload_json' in execution_detail:
-        errors.append('Execution detail must not render raw execution payloads')
+    if "execution.error_code != '-'" not in execution_detail or (
+        "execution.error_message != 'No execution error was recorded.'" not in execution_detail
+    ):
+        errors.append('Execution detail must condition recorded errors on committed evidence')
+    if any(raw in execution_detail for raw in ('payload_json', 'deduplication_key', 'parameter_fingerprint')):
+        errors.append('Execution detail must not render raw execution payloads or fingerprints')
 
     queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
     for required in (
