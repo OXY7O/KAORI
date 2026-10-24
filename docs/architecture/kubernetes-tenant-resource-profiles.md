@@ -1379,3 +1379,27 @@ ordinary navigation.
 This user-visible information architecture change requires desktop/mobile,
 light/dark and keyboard Visual QA plus human UAT, separately from official
 CI/CD admission. No change to real Kubernetes authority is implied.
+
+
+### Namespace provisioning Quota & Default Details mini-cards (#3002)
+
+The **Provision Namespace** form retains its existing read-only quota/default
+preview based exclusively on the selected versioned Resource Profile.
+The `_namespace_form.html` detail disclosure now presents four evenly
+spaced group mini-cards rather than cells with decorative empty fillers:
+Compute Limits (2), Storage Policy (3), Object Limits (3) and Container
+Defaults (4). Each group uses a responsive definition-list layout with
+three columns for three-value groups at supported widths and ordinary
+two-column group layouts elsewhere. Exactly the existing twelve
+`data-tenant-namespace-resource-field` hooks remain bound to the
+namespace form's selection controller.
+
+When a Resource Profile is selected, a missing dimension is displayed as
+**Not managed** rather than an unexplained dash. Before selection, the
+existing initial placeholder remains. Values are informational and do
+not imply provider support: placement advanced-capability checks, Capsule
+authority exclusion, namespace creation admission and read-back remain
+independent. No input/CSRF/backend mutation change is introduced.
+
+Browser mobile/light-dark/keyboard QA and human acceptance are required;
+official CI/CD and promotion remain HOLD in DevContainer review.
