@@ -599,23 +599,30 @@ def main() -> int:
     ):
         errors.append('Secret Reveal no-cluster state must use the canonical KAORI setup empty state')
 
+    # Administration presents committed configuration evidence, not a duplicate
+    # reveal-request flow. The actual policy and approval gates are verified below.
     for required in (
-        'Protection Boundary',
-        'Step-up Authentication',
-        'Independent Approval',
-        'Namespace Policy',
-        'Kubernetes RBAC',
+        'Global Reveal Gate',
+        'Protected Clusters',
+        'Enabled Namespaces',
+        'Selected Cluster Readiness',
+        'Configured prerequisites and policies do not prove live access.',
+        'Reveal execution rechecks Namespace policy, user authorization, session verification and Kubernetes RBAC.',
         'secret-reveal-protected-cluster-count',
         'secret-reveal-enabled-namespace-count',
         'secret-reveal-selected-cluster-posture',
     ):
         if required not in secret_workspace:
-            errors.append(f'Secret Reveal compact posture/boundary contract missing: {required}')
+            errors.append(f'Secret Reveal configuration/boundary evidence missing: {required}')
 
     cluster_workspace = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
-    for evidence in ('Kubernetes RBAC', 'Step-up', 'Approval'):
-        if evidence.lower() not in cluster_workspace.lower() and evidence.lower() not in secret_workspace.lower():
-            errors.append(f'Secret Reveal protected boundary evidence missing: {evidence}')
+    for required in (
+        'Kubernetes Boundary',
+        'Least-privilege Kubernetes RBAC remains the final authorization boundary.',
+        'Configured readiness does not establish live Secret access.',
+    ):
+        if required not in cluster_workspace:
+            errors.append(f'Secret Reveal Kubernetes boundary evidence missing: {required}')
 
     protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     for required in (
@@ -682,10 +689,22 @@ def main() -> int:
     request_form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
     if 'rounded-xl bg-kaori-primary text-white' in request_form:
         errors.append('Protected Reveal informational request icon must not use a solid Bright Violet surface')
-    if 'space-y-1 text-xs leading-5 text-content-secondary' not in request_form:
-        errors.append('Protected Reveal request guidance must use neutral content text')
+    if (
+        'class="text-xs leading-5 text-content-secondary">KAORI records request details, not Secret values.'
+        not in request_form
+        or 'Verify and reveal once in My Requests after approval.' not in request_form
+    ):
+        errors.append('Protected Reveal request guidance must stay neutral and payload-free')
 
     protected_reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    reveal_policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
+    for required in ("'step_up': 'Step-up authentication'", "'approval_required': 'Approval required'"):
+        if required not in reveal_policy:
+            errors.append(f'Protected Reveal policy engine boundary missing: {required}')
+    for required in ("'Step-Up Required'", "'Approval by Policy'", "'Resolve Policy'", "'Verify Identity'", "'Reveal Once'"):
+        if required not in protected_reveal_page:
+            errors.append(f'Protected Reveal request flow boundary missing: {required}')
+
     protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     context_rail = read('app/templates/components/context_rail.html')
     form_context = read('app/templates/components/form_with_context_rail.html')
