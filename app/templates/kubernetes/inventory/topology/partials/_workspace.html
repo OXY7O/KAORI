@@ -330,11 +330,28 @@
                          role="img"
                          aria-label="Kubernetes resource relationship graph. Use Resource List for a keyboard-accessible representation."
                          class="absolute inset-0 z-10 h-full w-full"></div>
-                    <p id="topology-viewport-hint"
-                       role="status"
-                       aria-live="polite"
-                       hidden
-                       class="pointer-events-none absolute left-4 top-4 z-20 max-w-sm rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs leading-5 text-content-secondary shadow-sm"></p>
+                    <div id="topology-viewport-hint"
+                         role="status"
+                         aria-live="polite"
+                         hidden
+                         class="pointer-events-none absolute inset-x-4 top-4 z-20 max-w-sm rounded-xl border border-outline-subtle bg-surface-card p-3 shadow-sm sm:right-auto">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="scan-eye" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span id="topology-viewport-hint-title"
+                                          class="text-xs font-semibold leading-5 text-content-primary">Full graph overview</span>
+                                    <span id="topology-viewport-hint-count"
+                                          class="inline-flex shrink-0 rounded-md bg-kaori-soft px-1.5 py-0.5 text-[10px] font-semibold text-kaori-primary"></span>
+                                </div>
+                                <p id="topology-viewport-hint-description"
+                                   class="mt-1 text-xs leading-4 text-content-secondary"></p>
+                            </div>
+                        </div>
+                    </div>
                     <div id="topology-empty-state"
                          class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                         <div class="pointer-events-auto w-full max-w-md">
