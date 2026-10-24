@@ -79,6 +79,8 @@ def test_registered_job_configuration_templates_use_canonical_platform_operation
         assert template_name.startswith('platform_operations/jobs/configuration/definitions/')
         assert (ROOT / 'app/templates' / template_name).is_file(), template_name
 
+
+
 def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
     overview = _read('app/templates/platform_operations/jobs/configuration/_job_overview.html')
     activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
