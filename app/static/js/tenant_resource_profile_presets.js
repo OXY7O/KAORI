@@ -512,9 +512,10 @@
         ]
         // GlobalResourceQuota cutover still exposes the six headline metrics;
         // the two Tenant CR forms disclose all ten supported quota dimensions.
-        const comparisonDimensions = form.hasAttribute('data-tenant-shared-allocation-form')
-            ? dimensions.slice(0, 6)
-            : dimensions
+        // Both admitted Capsule quota sources can govern all ten supported
+        // ResourceQuota hard dimensions. Every one is now visible in the same
+        // provider-authoritative disclosure before a provider write.
+        const comparisonDimensions = dimensions
         const countDimensions = new Set(['pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'])
         const factors = {
             '': 1,
@@ -587,7 +588,61 @@
         }
     }
 
-        const initSharedAllocationForm = (form) => {
+        const renderCapsuleProfileCoverage = (form, profile) => {
+        const valueFor = (source, key) => {
+            if (!profile) return null
+            const object = profile[source] || {}
+            if (source === 'limits') return key.split('.').reduce((value, part) => value?.[part], object) ?? null
+            return object[key] ?? null
+        }
+        form.querySelectorAll('[data-tenant-capsule-external-source]').forEach((cell) => {
+            const source = cell.dataset.tenantCapsuleExternalSource
+            const key = cell.dataset.tenantCapsuleExternalKey
+            const value = valueFor(source, key)
+            cell.textContent = !profile ? '—' : value === null || value === '' ? 'Not configured' : `Not governed · ${value}`
+        })
+        const advanced = profile?.advanced_controls || {}
+        form.querySelectorAll('[data-tenant-capsule-advanced-preview]').forEach((cell) => {
+            const control = advanced[cell.dataset.tenantCapsuleAdvancedPreview]
+            const requested = control === true || (control && typeof control === 'object' && control.enabled !== false)
+            cell.textContent = !profile
+                ? '—'
+                : requested
+                  ? 'Requested · Capability checked on submit'
+                  : 'Not requested'
+        })
+        const requestedUnsupported = []
+        if (profile) {
+            if (Object.values(profile.storage_policy || {}).some((value) => value !== null && value !== '')) {
+                requestedUnsupported.push('Per-PVC Policy')
+            }
+            const defaults = profile.limits || {}
+            const configuredDefaults = ['default_request', 'default'].some((key) =>
+                Object.values(defaults[key] || {}).some((value) => value !== null && value !== '')
+            )
+            if (configuredDefaults) requestedUnsupported.push('Container Defaults')
+        }
+        const alert = form.querySelector('[data-tenant-capsule-coverage-alert]')
+        if (alert) {
+            alert.hidden = requestedUnsupported.length === 0
+            alert.textContent = requestedUnsupported.length
+                ? `Unsupported by this Capsule quota authority: ${requestedUnsupported.join(', ')}. Disable these Managed controls in a compatible Resource Profile before applying.`
+                : ''
+        }
+        const apply = form.querySelector('[data-tenant-capsule-apply-button]')
+        if (apply) {
+            // Preserve server-rendered role/capability gates; never re-enable
+            // an action that was disabled by server authorization.
+            if (!Object.hasOwn(apply.dataset, 'kaoriInitiallyDisabled')) {
+                apply.dataset.kaoriInitiallyDisabled = String(apply.disabled)
+            }
+            const blocked = apply.dataset.kaoriInitiallyDisabled === 'true' || !profile || requestedUnsupported.length > 0
+            apply.disabled = blocked
+            apply.setAttribute('aria-disabled', String(blocked))
+        }
+    }
+
+    const initSharedAllocationForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
 
@@ -626,6 +681,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -683,6 +739,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -720,6 +777,7 @@
                 state ? state.desired_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed)
         }
 
         tenantSelect?.addEventListener('change', render)
