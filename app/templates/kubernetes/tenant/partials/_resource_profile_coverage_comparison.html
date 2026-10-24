@@ -1,0 +1,95 @@
+{# Canonical Resource Profile read-only comparison for Native allocation workflows.
+   Field groups reflect service_contracts._PROFILE_* and the Profile Library.
+   The existing preflight JS binds committed/proposed values; no mutation lives here. #}
+{% import "components/view_more_content.html" as view_more_content %}
+
+{% macro native_sections(advanced_controls={}) -%}
+    <div class="space-y-3" data-tenant-profile-coverage="native_kubernetes">
+        {% for key, label, subtitle, icon, rows in [
+            ('basic', 'Basic Resources', 'Native ResourceQuota · Requests, limits, and pod slots', 'cpu', [
+                ('CPU Requests', 'quota.requests.cpu'),
+                ('CPU Limits', 'quota.limits.cpu'),
+                ('Memory Requests', 'quota.requests.memory'),
+                ('Memory Limits', 'quota.limits.memory'),
+                ('Pods', 'quota.pods')
+            ]),
+            ('storage', 'Storage Guardrails', 'Namespace storage quota, PVC count, and per-PVC admission policy', 'hard-drive', [
+                ('PVCs', 'quota.persistentvolumeclaims'),
+                ('Total Storage', 'quota.requests.storage'),
+                ('Min PVC Size', 'storage_policy.min'),
+                ('Max PVC Size', 'storage_policy.max')
+            ]),
+            ('objects', 'Object Limits', 'Native ResourceQuota · Namespace object ceilings', 'boxes', [
+                ('Services', 'quota.services'),
+                ('ConfigMaps', 'quota.configmaps'),
+                ('Secrets', 'quota.secrets')
+            ]),
+            ('defaults', 'Container Defaults', 'Native LimitRange · Defaults for new containers', 'container', [
+                ('Default CPU Request', 'limits.default_request.cpu'),
+                ('Default CPU Limit', 'limits.default.cpu'),
+                ('Default Memory Request', 'limits.default_request.memory'),
+                ('Default Memory Limit', 'limits.default.memory')
+            ])
+            ] %}
+            {% call view_more_content.render(label, subtitle, icon=icon,
+                aria_label='Native ' ~ label ~ ' comparison',
+                compact_action=true,
+                extra_classes='shadow-none',
+                open_by_default=key == 'basic') %}
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[27rem] text-left text-xs"
+                           aria-label="Native {{ label }} current and proposed contract">
+                        <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 font-semibold">Dimension</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">Current · Frozen</th>
+                                <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for name, path in rows %}
+                                <tr class="hover:bg-surface-hover" data-tenant-allocation-tech-row>
+                                    <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ name }}</th>
+                                    <td class="break-words px-3 py-2 text-content-muted"
+                                        data-tenant-allocation-tech-current="{{ path }}">—</td>
+                                    <td class="break-words px-3 py-2 font-semibold text-content-primary"
+                                        data-tenant-allocation-tech-proposed="{{ path }}">—</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endcall %}
+        {% endfor %}
+        {% call view_more_content.render('Advanced Controls',
+            'Placement capability preflight; not verified provider execution.',
+            icon='shield-check', aria_label='Native Advanced Controls capability comparison',
+            compact_action=true, extra_classes='shadow-none') %}
+            <div class="overflow-x-auto" data-tenant-allocation-advanced-list>
+                <table class="w-full min-w-[27rem] text-left text-xs" aria-label="Native Advanced Controls preflight">
+                    <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                        <tr>
+                            <th scope="col" class="px-3 py-2 font-semibold">Control</th>
+                            <th scope="col" class="px-3 py-2 font-semibold">Current · Recorded</th>
+                            <th scope="col" class="px-3 py-2 font-semibold text-kaori-primary">Proposed · Preflight</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for control_key, contract in advanced_controls.items() %}
+                            <tr data-tenant-allocation-advanced-row="{{ control_key }}" hidden>
+                                <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ contract.label }}</th>
+                                <td class="break-words px-3 py-2 text-content-muted"
+                                    data-tenant-allocation-advanced-current="{{ control_key }}">—</td>
+                                <td class="break-words px-3 py-2 font-medium text-content-primary"
+                                    data-tenant-allocation-advanced-proposed="{{ control_key }}">—</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="py-2 text-xs text-content-muted" data-tenant-allocation-advanced-empty>No configured Advanced Controls in either contract.</p>
+            <p class="mt-2 text-xs text-content-muted">Supported = preflight only; Recorded = committed evaluation, not proof of execution.</p>
+        {% endcall %}
+        <p class="text-xs leading-5 text-content-muted">Read-only comparison. Capacity admission, provider mutation and read-back remain separate governance gates.</p>
+    </div>
+{%- endmacro %}
