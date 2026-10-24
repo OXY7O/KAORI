@@ -53,7 +53,7 @@ No Account screenshot hashes are manufactured or locked before review.
 | ID | Scenario | Expected evidence | Current status |
 | --- | --- | --- | --- |
 | SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | **Human PASS for positive flow (2026-10-24):** manual save/reload, automatic mode, Detect Again, Account effective timezone; invalid-IANA/CSRF negative browser evidence pending |
-| SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | Functional UAT approved; runtime capture pending |
+| SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | **Human PASS for positive flow (2026-10-24):** id-ID, year_month_day, 12h; persisted preview updates after Save, Refresh retention, Account locale consistency; independent canonical UTC/schedule mutation verification pending |
 | SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | Source negative regression added; runtime pending |
 | SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | Pure projection negative regression added; browser pending |
 | SET-ACC-01 | Profile local/external identity, RBAC role vs Super Admin | Read-only and source-backed identity; no false live provider readiness | **Human PASS (Account scope):** Local Super Admin and LDAP Viewer linked identity/profile screenshots; provider live-readiness was not asserted |
@@ -256,6 +256,29 @@ pytest commands continues to execute the actual regression tests; no BDD runner,
 `.feature` parser, new fixture, provider mutation or official admission gate is
 introduced. General Settings scenarios SET-GEN-01–04 remain separate and pending
 their own negative/browser UAT evidence.
+
+## 2026-10-24 — General Regional Format positive UAT
+
+The operator confirmed all five `SET-GEN-02` steps **PASS** in a live
+Dev Container browser: choosing `id-ID`; choosing `year_month_day`
+(`2026-07-17` display example) and `12h`; observing the presentation
+preview change on Save with success feedback; persistence after Refresh;
+and Account Profile showing the persisted locale without changing the KAORI
+interface language. The preview's pre-save persisted-value semantics were
+also included in the operator-confirmed test steps.
+
+**Evidence boundary:** these are human-confirmed browser observations, not a
+datastore diff or an independently captured HTTP trace. The canonical UTC
+data and operational job schedules must remain unchanged per approved design;
+no separate database/scheduler-level proof was supplied with this run.
+Negative tests for malformed or unauthorized regional values are not newly
+claimed PASS. The user did not provide a new exact `git rev-parse HEAD` with
+this browser run; do not attribute it to the later holding branch head.
+
+**Status:** `SET-GEN-02` positive functional **Human UAT PASS**, while
+General UAT overall remains in progress (`SET-GEN-03`, `SET-GEN-04` and
+remaining scoped negative/security evidence). Official CI/CD, Full
+Admission, staging/main promotion, deployment and release remain **HOLD**.
 
 ## 2026-10-24 — General Time Zone positive UAT and shared tab regression
 
