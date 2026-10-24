@@ -479,7 +479,10 @@ def main() -> int:
     namespace_table = read(
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
     )
-    if "table_ui.table_classes('min-w-[980px]')" not in namespace_table or 'w-full overflow-x-auto' not in namespace_table:
+    if (
+        "table_ui.table_classes('min-w-[980px]')" not in namespace_table
+        or 'w-full overflow-x-auto' not in namespace_table
+    ):
         errors.append('Namespace Policies must preserve canonical responsive table scroll geometry')
     for width in ('w-[34%]', 'w-[22%]', 'w-[18%]', 'w-[26%]'):
         if width not in namespace_table:
