@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (98 scenarios)
+# KAORI — Complete Acceptance Case Specifications (106 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 84 are expanded and require capability-owner review. No scenario is counted PASS, all execution statuses are NOT RUN at this authoring checkpoint, and human acceptance is PENDING.
+**Maturity:** Original 14 first-wave procedures retained; the other 92 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605, while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -1900,28 +1900,29 @@
 
 **Automation mapping:** Not validated. Inspect assertions under tests/contracts/platform_operations/; tests/platform_operations/; tests/security/kubernetes/.; do not infer coverage from filename.
 
-### UAT-LIF-004 — Kubernetes Admin Overview → Secret Reveal tab and policy forms
+### UAT-LIF-004 — Kubernetes Admin Overview and Secret Reveal workspace navigation
 
-**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
 
-**Preconditions:** Archive destination, retention policies, isolated lifecycle artifacts and explicit secret-reveal authorization; safe policy fixtures and Kubernetes Admin Secret Reveal tab.
+**Preconditions:** An authorized Kubernetes Admin operator and selected Kubernetes X300 cluster; The global Secret Reveal gate is deployment-managed and read-only in this workspace. Record role, cluster context and source SHA.
 
 **Steps:**
-1. Record the exact candidate, actor, scoped source identity and baseline state for: Kubernetes Admin Overview → Secret Reveal tab and policy forms.
-2. Perform the scenario action using an approved browser or domain test client: Kubernetes Admin Overview → Secret Reveal tab and policy forms.
-3. open deep link via HTMX then validate and save policy.
-4. Inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-LIF-004.
+1. The operator opens the Kubernetes Admin Overview.
+2. Opens Secret Reveal, Cluster Prerequisites, then Namespace Policies.
+3. Reloads a direct policies deep link.
+4. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
 
 **Expected results:**
-- HTMX lazy loading, deep links, accessible modal and save feedback work.
-- correct tab, errors, toast and persisted policy.
-- The observed success is attributable to the selected source, authorized actor and correct committed identity.
+- Canonical Hero, committed coverage and Secret Reveal configuration render.
+- Tab, selected cluster and policy-view context survive navigation and browser refresh.
+- Credential readiness and operator attestations remain readable without exposing Secret payloads.
+- Inline namespace policy editors remain collapsed until explicitly opened.
 
-**Required evidence:** browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; JobExecution/activity audit and persisted state or relevant normalized correlation.
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
 
-**Isolation / cleanup:** Use deterministic isolated fixtures and restore modified UI/session state; record expected unavailable/empty states without inventing provider data.
+**Isolation / cleanup:** Use authorized test principals and the documented cluster source; restore browser filters/editor state. No unintended Secret or provider writes.
 
-**Automation mapping:** Not validated. Inspect assertions under tests/contracts/platform_operations/; tests/platform_operations/; tests/security/kubernetes/.; do not infer coverage from filename.
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
 
 ### UAT-LIF-005 — Lifecycle attempt duplicates during policy update or failure
 
@@ -1945,6 +1946,189 @@
 **Isolation / cleanup:** Use disposable scoped identities and sanitized artifacts. Never mutate production providers. If the provider mutation is relevant, run only in a governed sandbox with before/after read-back and cleanup.
 
 **Automation mapping:** Not validated. Inspect assertions under tests/contracts/platform_operations/; tests/platform_operations/; tests/security/kubernetes/.; do not infer coverage from filename.
+
+### UAT-LIF-006 — Namespace Policy pagination, search and filters retain canonical state
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** A selected cluster with 25 live namespaces and two enabled policies. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The operator moves to page 2 then page 3 of the five-row Namespace Policies table.
+2. Uses Previous to return to page 2 and refreshes the browser.
+3. Searches for harbor, clears filters, and selects Enabled only.
+4. Changes Rows Per Page from 5 to 10.
+5. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- Numbered pagination preserves its selected page across HTMX updates and reload.
+- Search and Enabled only scope the matching live namespace policies correctly.
+- The header says 25 Total Namespaces while the footer counts current filter matches.
+- Ten-row pagination has three pages without opening policy editors.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
+
+**Isolation / cleanup:** Use authorized test principals and the documented cluster source; restore browser filters/editor state. No unintended Secret or provider writes.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-007 — Cancel discards an unsaved namespace policy change
+
+**Type:** Negative · **Layer:** UI · **Risk:** Medium · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** The committed minio namespace policy is Step-up authentication. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The operator opens Edit Policy for minio.
+2. Changes the proposed policy to Disabled without clicking Save Policy.
+3. Clicks Cancel and refreshes the page.
+4. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- The inline editor closes with no committed change.
+- The original Step-up authentication policy and enabled namespace count remain unchanged.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
+
+**Isolation / cleanup:** Use authorized test principals and the documented cluster source; restore browser filters/editor state. No unintended Secret or provider writes.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-008 — Approved Harbor policy save and rollback preserve audit correlation
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** A permitted operator expressly authorizes a nonproduction harbor policy test; Harbor is Available with a Disabled policy and no impacted pending reveal requests. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The operator saves Approval required for harbor.
+2. Confirms the new policy and committed Activity Audit evidence.
+3. Immediately saves Disabled to restore the original policy.
+4. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- The enabled namespace count rises from two to three and returns to two.
+- The first audit event records disabled to approval_required.
+- The second audit event records approval_required to disabled.
+- Both event keys and actor attribution remain correct without exposing Secret payloads.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
+
+**Isolation / cleanup:** Only the explicitly approved nonproduction Harbor namespace; confirm no pending or approved reveal requests will expire. Restore its original Disabled policy immediately; never reveal a Secret.
+
+**Automation mapping:** Existing candidate suites: `tests/platform_operations/test_secret_reveal_htmx_save.py; tests/contracts/platform_operations/test_kubernetes_admin_atomic_activity_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-009 — Viewer direct requests cannot read Kubernetes Admin configuration
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** A Viewer without Kubernetes Secret Reveal management permission. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The Viewer requests the Kubernetes Admin Overview URL directly.
+2. Requests the Secret Reveal workspace URL directly.
+3. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- The server denies both unauthorized read requests.
+- The KAORI Access Denied page explains the role and access administrator contact.
+- No cluster credential or namespace policy data is disclosed.
+- A permitted administrator can later read the unchanged configuration.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
+
+**Isolation / cleanup:** Use authorized test principals and the documented cluster source; restore browser filters/editor state. No unintended Secret or provider writes.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-010 — Unauthorized or missing-CSRF policy POST cannot commit changes
+
+**Type:** Negative · **Layer:** Non-UI · **Risk:** High · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** Isolated test identities and a known committed namespace policy. Record role, cluster context and source SHA.
+
+**Steps:**
+1. A Viewer attempts a direct namespace policy POST.
+2. A permitted test principal posts without a valid CSRF token.
+3. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- The server rejects each unauthorized request.
+- No policy update or successful Activity Audit event is committed.
+- The original policy and Secret confidentiality are preserved.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. This negative/visual case was NOT RUN during the bounded manual Kubernetes Admin UAT.
+
+**Isolation / cleanup:** Use isolated fixtures and a deterministic simulated provider failure; do not issue unauthorized live writes or invalidate production readiness.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-011 — Unavailable namespace source and unready clusters fail closed
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** An isolated cluster with controllable Namespace provider availability and readiness. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The Namespace provider cannot confirm live namespace presence.
+2. An operator attempts policy enablement on an unavailable namespace or unready cluster.
+3. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- Source Unknown is distinct from an authoritatively Missing namespace.
+- The enablement attempt fails closed without pretending runtime access is verified.
+- No Secret value or unauthorized policy change is exposed.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. This negative/visual case was NOT RUN during the bounded manual Kubernetes Admin UAT.
+
+**Isolation / cleanup:** Use isolated fixtures and a deterministic simulated provider failure; do not issue unauthorized live writes or invalidate production readiness.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/platform_operations/test_kubernetes_admin_htmx_summary_contract.py; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-012 — Audit Warning presents successful namespace restriction as attention
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** Committed Activity Audit events for an approved harbor policy change and rollback. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The auditor opens the Success policy enable event.
+2. Opens the Warning policy disable event.
+3. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- The Success record retains its before and after changes and event key.
+- The Warning record shows Attention Summary and Review Guidance.
+- No failure claim or retry instruction is displayed for a successful disable.
+- A genuine Error event still presents Failure Summary and Next Review Step.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. Relevant manual observation and acceptance commentary: #2605, #2457 or #1384; that does not attribute a machine Scenario-ID PASS.
+
+**Isolation / cleanup:** Read-only review of already committed Activity Audit records; never replay a mutation just to create evidence.
+
+**Automation mapping:** Existing candidate suites: `tests/contracts/access/test_activity_audit_outcome_first_detail_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-013 — Kubernetes Admin responsive visual and keyboard coverage
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Expanded QA specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; #2605 Human Accepted the bounded UAT workstream)
+
+**Preconditions:** The approved KAORI Violet light and dark design system and six canonical viewports. Record role, cluster context and source SHA.
+
+**Steps:**
+1. The operator navigates workspace tabs, policy filters and inline editors by keyboard.
+2. Inspects loading, blocked and no-results states across the supported viewports.
+3. Inspect the resulting UI, authoritative committed state and source-owned audit evidence without exposing credentials..
+
+**Expected results:**
+- Focus order and accessible control labels remain correct.
+- No action, table or guidance is clipped in light or dark mode.
+- Visual baselines are not silently accepted or regenerated.
+
+**Required evidence:** Sanitized browser state before/after action and exact candidate SHA; HTTP/JUnit/Playwright trace if automated; committed policy and Activity Audit record for mutation or explicit negative absence for denied paths. This negative/visual case was NOT RUN during the bounded manual Kubernetes Admin UAT.
+
+**Isolation / cleanup:** Use existing stable UI fixtures and the canonical Visual QA harness; do not rebaseline without human review.
+
+**Automation mapping:** Existing candidate suites: `tests/ui/; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
 
 ## Welcome Workspace Catalog
 

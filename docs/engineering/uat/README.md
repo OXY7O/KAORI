@@ -12,15 +12,17 @@ Read one `.feature` file per KAORI capability, click the scenario with its stabl
 
 **2026-10-24 Welcome addendum:** #746 manual browser screenshots and Viewer HTTP 403 support scoped human-observed behavior, not executed Gherkin/pytest IDs. The six `UAT-WEL-*` and separate `UAT-IAM-007` specifications remain `@owner_review` and `NOT RUN` for machine scenario attribution. Historic 2026-10-16 mapping counts are kept distinct from this addition.
 
-The [98-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates all written test cases from existing test-node mapping, the four-case #1728 pilot and outstanding runtime/human evidence. It records **HOLD** for admission while owner review and automation mapping are incomplete. The existing pytest contract at `tests/contracts/release/test_uat_written_scenario_contract.py` checks written ID, Gherkin structure, and case-field traceability; it does **not** execute business/UAT scenarios.
+The [106-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates all written test cases from existing test-node mapping, the four-case #1728 pilot and outstanding runtime/human evidence. It records **HOLD** for admission while owner review and automation mapping are incomplete. The existing pytest contract at `tests/contracts/release/test_uat_written_scenario_contract.py` checks written ID, Gherkin structure, and case-field traceability; it does **not** execute business/UAT scenarios.
 
 ## Execution and ownership boundaries
 
-- **98 scenarios in 19 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **All 98 `@specified` scenarios** now have individual preconditions, actions, assertions, evidence and isolation instructions in the [complete test-case register](../KAORI_UAT_ALL_CASES.md). **14 `@first_wave`** retain original procedures; **84 `@owner_review`** are expanded and still require capability-owner review and executable mapping.
+- **106 scenarios in 19 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **All 106 `@specified` scenarios** now have individual preconditions, actions, assertions, evidence and isolation instructions in the [complete test-case register](../KAORI_UAT_ALL_CASES.md). **14 `@first_wave`** retain original procedures; **92 `@owner_review`** are expanded and still require capability-owner review and executable mapping.
 - Existing pytest/Playwright nodes, domain fixtures, JUnit, screenshot/trace and provider/audit evidence are implementation/execution owners. See the [test mapping audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md); a Gherkin `@UAT-...` tag does not execute a test or create a pytest marker.
 - **Execution status belongs to candidate-bound evidence, never the reusable `.feature` files.** At the initial authoring checkpoint (2026-10-13), none of the original 91 scenario IDs had a specific UAT execution result and human acceptance remained PENDING. For current results consult the owning Issue/PR execution records. Unrelated historic CI PASS is not scenario acceptance.
 - Provider mutation is only allowed in a governed disposable sandbox with read-back/cleanup and explicit permission. Simulated/fake-provider test results do not prove real-provider UAT.
 - Acceptance requires exact source SHA/tree, deployed digest if relevant, actual runner/timestamp and result, meaningful assertions and evidence, findings/retest, and a separate authorized human decision. No PR, CI/CD, or new Gherkin/Cucumber runtime is introduced by these files.
+
+**Kubernetes Admin Gherkin addendum (2026-10-24):** #2605 holds explicit human acceptance of the scoped Dev Container Batch 01–06 workflow. `UAT-LIF-004` now reflects the approved Overview/Secret Reveal UI and `UAT-LIF-006`–`013` cover pagination/filtering, Cancel/no mutation, permitted Harbor save/restore and audit correlation, Viewer denial, unexecuted POST/CSRF/degraded negative paths, Access Activity Audit warning-vs-error semantics, and unexecuted full keyboard/light-dark visual coverage. These are **specifications** only; no machine Scenario-ID PASS is inferred from independent browser screenshots or focused pytest results.
 
 ## Feature index
 
@@ -41,11 +43,11 @@ The [98-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates 
 | Intelligence — Recommendations, Alerts, Catalog & Automation Control | 5 | 2 | 3 | 0 | [`inl-intelligence.feature`](features/inl-intelligence.feature) |
 | Reports — Generate, Generated, Templates, Schedules & Storage | 7 | 3 | 4 | 2 | [`rpt-reports.feature`](features/rpt-reports.feature) |
 | Platform Operations — Overview, Jobs & Executions | 4 | 2 | 2 | 0 | [`ops-platform-operations.feature`](features/ops-platform-operations.feature) |
-| Platform Operations — Data Lifecycle & Secret Reveal | 5 | 2 | 3 | 1 | [`lif-data-lifecycle.feature`](features/lif-data-lifecycle.feature) |
+| Platform Operations — Data Lifecycle & Secret Reveal | 13 | 6 | 7 | 1 | [`lif-data-lifecycle.feature`](features/lif-data-lifecycle.feature) |
 | Welcome Workspace Catalog | 6 | 5 | 1 | 0 | [`wel-welcome-workspace-catalog.feature`](features/wel-welcome-workspace-catalog.feature) |
 | Shared Shell, Settings, Visual QA & Accessibility | 7 | 3 | 4 | 2 | [`uix-shared-ui-ux.feature`](features/uix-shared-ui-ux.feature) |
 | Release & Server UAT Operational Evidence | 4 | 2 | 2 | 1 | [`rel-release-uat.feature`](features/rel-release-uat.feature) |
-| **Total** | **98** | **43** | **55** | **14** | |
+| **Total** | **106** | **47** | **59** | **14** | |
 
 ## Example: how a Gherkin spec maps to executable evidence
 

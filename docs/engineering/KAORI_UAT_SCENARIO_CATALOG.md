@@ -4,15 +4,17 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 98 written acceptance test cases
+## Complete 106 written acceptance test cases
 
-[Review all 98 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 84 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 106 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 92 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **19 `.feature` files containing all 98 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 84 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **19 `.feature` files containing all 106 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 92 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
 
 **2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
+
+**2026-10-24 Kubernetes Admin addendum:** Existing `UAT-LIF-004` was reconciled to the canonical integrated Overview/Secret Reveal page and inline editor. `UAT-LIF-006`–`013` cover search, filters and pagination; unsaved Cancel; approved Harbor policy save/rollback with Activity Audit; Viewer read denial; unexecuted POST/CSRF negatives; unavailable source/cluster; Warning-vs-Error detail; and keyboard/responsive light-dark coverage. **Human Accepted** Batch 01–06 results belong to owning issue #2605 and #2457, not to machine-attributed execution of newly authored Gherkin IDs. No claim that all negative/visual matrix cases ran.
 
 ## Reviewer guide — where to inspect and comment
 
@@ -35,8 +37,8 @@ Every listed scenario is a **specified candidate, not executed**:
 
 - **Specification:** yes (this catalog; some first-wave cases expanded in the companion execution specification).
 - **Automation assertion mapping:** **UNVERIFIED**; the existing test folders below are *candidate owners only*, not proof that an individual scenario is implemented, reaches a real browser, or has passed.
-- **Execution outcome against target candidate:** **NOT RUN** for every scenario in this catalog. Historical CI/tests may have other valid results; they are not silently re-attributed to these IDs.
-- **Human acceptance:** **PENDING**, separate from execution. No synthetic data or AI assessment grants sign-off.
+- **Execution outcome against target candidate:** **NOT RUN per Gherkin ID** for machine-attributed scenario execution; scoped human Kubernetes Admin UAT was explicitly accepted separately on #2605. Historical CI/tests may have other valid results; they are not silently re-attributed to these IDs.
+- **Human acceptance:** **PENDING per newly mapped Scenario ID** unless exact attribution is subsequently reviewed; human acceptance of the bounded Kubernetes Admin workflow is recorded on #2605. No synthetic data or AI assessment grants sign-off.
 - **Safety:** simulated provider evidence is not real-provider UAT; provider mutations require controlled sandbox, explicit permission, isolation/cleanup, and read-back. Inactive, unsupported, or still-governance-only functions must be tested as correctly unavailable, *not* treated as required successful mutations.
 
 ### Risk and wave selection
@@ -244,8 +246,16 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-LIF-001` | Positive | Both | High | Operator previews lifecycle policy and executes approved archive-first run | Verified archival evidence precedes governed cleanup; JobExecution/audit consistent |
 | `UAT-LIF-002` | Negative | Non-UI | High | Archive verification fails, destination missing or artifact is partial | Destructive cleanup blocked and recoverable original data preserved |
 | `UAT-LIF-003` | Negative | Both | High | Unapproved/expired reveal request tries to access secret | Fail closed; only authorized one-time disclosure, never routine leakage |
-| `UAT-LIF-004` | Positive | UI | Medium | Kubernetes Admin Overview → Secret Reveal tab and policy forms | HTMX lazy loading, deep links, accessible modal and save feedback work |
+| `UAT-LIF-004` | Positive | UI | Medium | Kubernetes Admin Overview and Secret Reveal workspace navigation | Committed posture, deep links and inline policy editor remain scoped without Secret disclosure |
 | `UAT-LIF-005` | Negative | Both | High | Lifecycle attempt duplicates during policy update or failure | No duplicate destructive job or false archived/cleaned claim |
+| `UAT-LIF-006` | Positive | UI | Medium | Namespace Policy pagination, search and filters retain canonical state | numbered pagination preserves its selected page across HTMX updates and reload |
+| `UAT-LIF-007` | Negative | UI | Medium | Cancel discards an unsaved namespace policy change | the inline editor closes with no committed change |
+| `UAT-LIF-008` | Positive | Both | High | Approved Harbor policy save and rollback preserve audit correlation | the enabled namespace count rises from two to three and returns to two |
+| `UAT-LIF-009` | Negative | Both | High | Viewer direct requests cannot read Kubernetes Admin configuration | the server denies both unauthorized read requests |
+| `UAT-LIF-010` | Negative | Non-UI | High | Unauthorized or missing-CSRF policy POST cannot commit changes | the server rejects each unauthorized request |
+| `UAT-LIF-011` | Negative | Both | High | Unavailable namespace source and unready clusters fail closed | source Unknown is distinct from an authoritatively Missing namespace |
+| `UAT-LIF-012` | Positive | UI | Medium | Audit Warning presents successful namespace restriction as attention | the Success record retains its before and after changes and event key |
+| `UAT-LIF-013` | Positive | UI | Medium | Kubernetes Admin responsive visual and keyboard coverage | focus order and accessible control labels remain correct |
 
 ### Welcome Workspace Catalog (`UAT-WEL-*`)
 
