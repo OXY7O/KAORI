@@ -1258,3 +1258,29 @@ quota-only preview. Runtime Jinja and JS execution, responsive dark/light,
 keyboard/touch accessibility and actual Capsule negative/positive admission
 UAT remain mandatory before human acceptance. This workstream holds official
 CI/CD and production promotion.
+
+### Capsule committed advanced capability preflight (#2986 follow-up)
+
+Quota comparison **Advanced Controls** uses recorded provider capability status,
+not just a selected Resource Profile's boolean intent. The Namespace
+Provisioning read-only registry context evaluates the selected versioned
+profile using the existing `evaluate_resource_profile_advanced_controls`
+provider matrix and Capsule capability states in committed Tenant evidence.
+The result is scoped by Tenant ID and Profile ID and serialized once to
+`tenant-capsule-advanced-profile-preflight`; normal form rendering makes no
+additional live Capsule request. Current result states are explicit:
+`Available · Capability preflight` when requested and admitted,
+`Unavailable · <reason>` when requested but unsupported, and
+`Not requested` when disabled. A missing committed evaluation for a
+requested control is **Unavailable** (fail-closed). These are capability
+preflight results, not proof that a quota write also executed advanced
+resources or successful provider read-back.
+
+The same client guard disables submit if any requested advanced control is
+unavailable, if Native-only Container Defaults/per-PVC policy is configured,
+or if server-rendered RBAC/provider controls already disable it. Server
+`_validate_resource_profile_attachment_controls` and base control gates
+remain independent and authoritative, protecting direct POST actions even if
+client-side validation is bypassed. Provider capability evidence can be
+stale; formal mutation rechecks it at the server boundary. The UI must never
+label mere profile configuration as successful provider enforcement.
