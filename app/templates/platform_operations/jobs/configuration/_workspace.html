@@ -1,21 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 <div class="grid gap-6 xl:grid-cols-12 xl:items-stretch"
-     x-data="{
-         activeJob: '{{ (selected_job_key or '')|replace('.', '-') |replace('/', '-') }}',
-         ensureActiveVisible() {
-             this.$nextTick(() => {
-                 const list = this.$refs.jobList;
-                 if (!list || list.scrollHeight <= list.clientHeight) return;
-                 const active = Array.from(list.querySelectorAll('[data-job-catalog-row]'))
-                     .find(item => item.dataset.jobKey === this.activeJob);
-                 if (!active) return;
-                 const viewport = list.getBoundingClientRect();
-                 const item = active.getBoundingClientRect();
-                 if (item.top < viewport.top) list.scrollTop += item.top - viewport.top;
-                 else if (item.bottom > viewport.bottom) list.scrollTop += item.bottom - viewport.bottom;
-             });
-         }
-     }"
+ x-data="{ activeJob: '{{ (selected_job_key or '')|replace('.', '-') |replace('/', '-') }}', ensureActiveVisible() { this.$nextTick(() => { const list = this.$refs.jobList; if (!list || list.scrollHeight <= list.clientHeight) return; const active = Array.from(list.querySelectorAll('[data-job-catalog-row]')) .find(item => item.dataset.jobKey === this.activeJob); if (!active) return; const viewport = list.getBoundingClientRect(); const item = active.getBoundingClientRect(); if (item.top < viewport.top) list.scrollTop += item.top - viewport.top; else if (item.bottom > viewport.bottom) list.scrollTop += item.bottom - viewport.bottom; }); } }"
      x-init="ensureActiveVisible()"
      @popstate.window="activeJob = (new URLSearchParams(window.location.search).get('job_key') || '{{ (selected_job_key or '')|replace('.', '-') |replace('/', '-') }}').replace(/[./]/g, '-'); ensureActiveVisible()">
     <aside class="min-w-0 xl:relative xl:col-span-4 xl:min-h-[25rem] xl:max-h-[calc(100vh-12rem)]"
@@ -36,8 +21,7 @@
                 </div>
                 <p class="mt-2 text-xs leading-4 text-content-muted">Centralized orchestration with domain-owned execution.</p>
             </div>
-            <nav class="min-h-0 flex-1 overflow-hidden"
-                 aria-label="Registered Jobs">
+            <nav class="min-h-0 flex-1 overflow-hidden" aria-label="Registered Jobs">
                 <div x-ref="jobList"
                      class="h-full space-y-3 overflow-y-auto overscroll-contain p-3">
                     {% for item in job_catalog %}
@@ -63,8 +47,8 @@
                                         </div>
                                         <span id="job-catalog-status-{{ item.key|replace('.', '-') |replace('/', '-') }}">
                                             {{ table_label.status_indicator_label(item.status.label,
-                                                                                item.status.tone,
-                                                                                item.status.icon) }}
+                                                                                        item.status.tone,
+                                                                                        item.status.icon) }}
                                         </span>
                                     </div>
                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
