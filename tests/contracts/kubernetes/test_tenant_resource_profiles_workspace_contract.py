@@ -2206,3 +2206,33 @@ def test_native_technical_coverage_compact_summary_and_cutover_journey() -> None
     assert 'Observed Provider Baseline' in cutover
     assert 'Proposed KAORI Managed Contract' in cutover
     assert 'Only committed after admitted provider read-back.' in cutover
+
+
+def test_namespace_quota_default_details_use_compact_four_card_read_only_grid() -> None:
+    """#3002: all 12 selected Resource Profile detail bindings remain visible."""
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(source)
+    assert 'Quota &amp; Default Details' in source
+    assert 'data-tenant-quota-default-card-grid' in source
+    assert 'data-tenant-quota-default-card' in source
+    for group in ('Compute Limits', 'Storage Policy', 'Object Limits', 'Container Defaults'):
+        assert f"'{group}'" in source
+    for key in (
+        'limits_cpu', 'limits_memory', 'persistentvolumeclaims',
+        'pvc_min_storage', 'pvc_max_storage',
+        'services', 'configmaps', 'secrets',
+        'default_request_cpu', 'default_cpu',
+        'default_request_memory', 'default_memory',
+    ):
+        assert f"('{key}', " in source
+    assert 'data-tenant-namespace-resource-field="{{ field }}"' in source
+    assert 'data-tenant-value-display' in source
+    assert 'grid-cols-2 sm:grid-cols-3' in source
+    assert 'border-t border-outline-subtle pt-2' in source
+    assert "form.querySelectorAll('[data-tenant-quota-default-card] [data-tenant-value-display]')" in script
+    assert "if (cell.textContent.trim() === '—' && profile) cell.textContent = 'Not managed'" in script
+    assert "const profile = profiles[profileSelect?.value] || null" in script
+    assert 'renderAdvancedControls()' in script
