@@ -24,7 +24,9 @@ Shared owners:
 - `components/details/_detail_content.html`
 - `app/static/js/detail_rows.js`
 
-Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory use this style.
+Kubernetes Inventory Overview Cluster Details, Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory use this style. The Overview cluster detail uses the same Full Workspace Modal and Unified Resource Sheet V10; Topology retains its adaptive explorer inspector.
+
+**Human Dev Container reference (2026-10-24):** Kubernetes Overview Cluster Details and `desktop-worker` Node Details were visually reviewed as dense, structured Inventory workspaces, including summary, section rails, committed evidence and persistent footer. Node modal vertical scrolling was visible and the operator confirmed **Close / Escape**. This does not constitute exhaustive automated accessibility, browser history or full light/dark responsive testing.
 
 ### Required behavior
 
