@@ -453,9 +453,10 @@ copy. This closes page design/copy-only issues on UAT holding; avoid
 reopening redesign without a new observed regression.
 
 **NOT CLAIMED:** complete end-to-end Data Lifecycle operation or final
-admission. The provided Archive History screenshot contained no
+admission. The earlier Archive History screenshot contained no
 archive rows, and Storage reported a reachable S3 endpoint with
-`Awaiting Evidence`. Consequently successful Verify/download of a
+`Awaiting Evidence`; a later accepted operator screenshot now shows
+three Ready artifacts (see runtime checkpoint below). Consequently successful Verify/download of a
 real approved artifact, profile-matching write/read/checksum,
 maintenance worker queue completion, cleanup safety and security
 negative tests are not evidenced by those screenshots. Record exact
@@ -468,6 +469,42 @@ Delivery #2868→#2869→#2870 and AuditEvent #2891→#2892 are independent,
 source-security/compaction blockers. Retain fail-closed archive-only,
 no unauthorized scheduling, deletion, cold purge, export or lookup.
 Official CI/CD, staging/main, deployment and release stay HOLD.
+
+### Archive History and execution — operator-accepted runtime checkpoint (2026-10-24)
+
+**Human UAT accepted:** Functional Regression and Archive Only end-to-end,
+based on the operator's 2026-10-24 report and attached Archive History
+screenshot. The visible history now has **three Ready archive artifacts**
+in the S3-compatible target (superseding the earlier empty-history
+screenshot):
+
+| Hot domain | Mode | Reported records | Reported hot rows cleaned | Archive History status |
+| --- | --- | ---: | ---: | --- |
+| Activity Audit (`operational_activity`) | Archive Only | 172 | 0 | Ready |
+| Activity Audit (`operational_activity`) | Archive Only | 172 | 0 | Ready |
+| Runtime Observations (`runtime_observation`) | Archive And Cleanup | 1,361 | 1,361 | Ready |
+
+The screenshot displays the Data, Manifest and Verify actions for each
+row, plus the default five-row pagination. The two Archive Only rows
+support the expected **no-cleanup** outcome; the third row reports a
+completed cleanup on a cleanup-capable domain. The displayed Ready state
+is the **application's reported archive status**, not independent proof
+that the reviewer clicked Verify, downloaded Data/Manifest, compared
+SHA-256 digests, or checked the resulting source database. The user's
+Human Acceptance of the tested workflow is recorded without claiming
+those specific checks were witnessed in this screenshot.
+
+**Scope boundary:** the operator's functional regression and Archive
+Only acceptance is recorded for the workflow they tested, not as
+automatic execution evidence for all **nine** domains or all negative
+cases. The exact local `git rev-parse HEAD`, command outputs, source
+high-watermarks, worker JobExecution IDs, object-profile integrity
+details and RBAC/failure tests were not supplied. Therefore the
+all-domain DL-E2E-01–20 matrix stays **NOT RUN** until scenario-specific
+evidence is registered. In particular, Notification Delivery and
+AuditEvent still deny hot cleanup, archive-object purge and unadmitted
+archive lookup/export. Do not repeat the already accepted human UI
+review unless a regression is discovered.
 
 ## 4. Execution / failure-injection matrix
 
