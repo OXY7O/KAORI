@@ -82,7 +82,7 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert 'Provider Ready' not in profile
     assert 'identity_context.provider_name != identity_context.type_label' in profile
     assert 'RBAC permissions enforced after authentication.' in profile
-    assert 'Super Admin authority requires a Local Database identity.' in profile
+    assert 'Super Admin: Local Database only; separate from RBAC.' in profile
     assert 'Password hashes and resets' in profile
     assert "'Time zone: ' ~ current_timezone" in profile
     assert "'Locale: ' ~ current_locale" in profile
