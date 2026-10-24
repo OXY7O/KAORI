@@ -11,7 +11,8 @@ from flask import Blueprint, abort, make_response, redirect, render_template, re
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf import FlaskForm
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
@@ -77,6 +78,31 @@ def index() -> ResponseReturnValue:
     )
 
 
+def _installation_job_predicate(*, integration_instance_id: int, installation_id: int) -> ColumnElement[bool]:
+    """Only admit proven Source Control validation or exact-installation sync jobs.
+
+    A scope key is not globally unique across KAORI job types or providers.
+    Do not attribute unrelated JobExecution evidence to a GitHub installation.
+    """
+    return and_(
+        JobExecution.integration_type == 'source_control',
+        or_(
+            and_(
+                JobExecution.job_type == 'integration_operation',
+                JobExecution.operation.in_(('full_validation', 'runtime_refresh')),
+                JobExecution.scope_type == 'integration_instance',
+                JobExecution.integration_instance_id == integration_instance_id,
+            ),
+            and_(
+                JobExecution.job_type == 'source_control_repository_inventory',
+                JobExecution.operation == 'sync_source_control_repositories',
+                JobExecution.scope_type == 'source_control_installation',
+                JobExecution.scope_key == f'installation:{installation_id}',
+            ),
+        ),
+    )
+
+
 @github_uat_bp.get('/installations/<int:installation_id>')
 @permission_required('integrations.manage')
 def detail(installation_id: int) -> ResponseReturnValue:
@@ -84,9 +110,9 @@ def detail(installation_id: int) -> ResponseReturnValue:
     canonical = installation.integration_instance
     jobs = (
         JobExecution.query
-        .filter(or_(
-            JobExecution.integration_instance_id == installation.integration_instance_id,
-            JobExecution.scope_key == f'installation:{installation.id}',
+        .filter(_installation_job_predicate(
+            integration_instance_id=installation.integration_instance_id,
+            installation_id=installation.id,
         ))
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .limit(5)
