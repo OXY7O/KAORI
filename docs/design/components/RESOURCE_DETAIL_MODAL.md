@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provide one reusable, maximized detail workspace for complex Kubernetes Inventory resources without expanding or reflowing the owning table.
+Provide one reusable, maximized detail workspace for complex Kubernetes Inventory resources and Inventory Overview cluster evidence, without expanding or reflowing the owning table.
 
 ## Shared owner
 
@@ -13,6 +13,7 @@ app/static/js/detail_rows.js
 
 ## Reference pages
 
+- Kubernetes Inventory Overview — Cluster Details
 - Node Inventory
 - Namespace Inventory
 - Workload Inventory
@@ -22,7 +23,7 @@ app/static/js/detail_rows.js
 - Storage Inventory
 - Configuration Inventory
 
-Inventory Overview continues to use the Side Drawer. Kubernetes Topology continues to use the Adaptive Explorer Inspector.
+Kubernetes Inventory Overview cluster details use the shared Full Workspace Modal and Unified Resource Sheet V10, as defined in `docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md`. Kubernetes Topology continues to use the Adaptive Explorer Inspector.
 
 ## Geometry
 
@@ -33,6 +34,12 @@ Inventory Overview continues to use the Side Drawer. Kubernetes Topology continu
 - full available workspace on small screens;
 - fixed header and footer;
 - independently scrollable detail body with hidden horizontal page overflow;
+
+## Human-reviewed dense-data reference — 2026-10-24
+
+Kubernetes Inventory **Node Details** (`/inventory/nodes`, `desktop-worker`) and **Overview Cluster Details** (`/inventory/`) are the accepted KAORI reference for long, information-dense read-only Inventory views. Compose the existing header, four-metric summary band, Unified Resource Sheet V10 section rails, long technical values, operational callouts, and persistent footer; let **only the modal body scroll vertically** instead of introducing nested scroll regions or page-local geometry.
+
+The operator reviewed top/bottom Node detail screenshots and confirmed the shared **Close / Escape** behavior in Dev Container UAT. This is scoped human evidence, not a claim that focus trapping, Back/Forward deep-link recovery, all viewport/theme variants, or every consumer were machine-tested. Reuse this modal when the content warrants a full workspace; smaller details may follow another already-approved KAORI Detail Style.
 
 ## Header and summary ownership
 
