@@ -11,19 +11,17 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-    <h2 class="text-base font-bold text-content-primary">Integration Compatibility</h2>
-    {{ info_tip.render(
-        'general-compatibility-title-guide',
-        'Integration Compatibility',
-        'Qualified versions and compatibility policies are reference evidence, not live readiness.',
-        items=[
-            'Qualification ranges and support windows come from versioned policy definitions.',
-            'Provider capabilities, identity, bindings, and consumers still determine operational readiness.'
-        ],
-        placement='right',
-        variant='guide'
-    ) }}
-</div>
+                        <h2 class="text-base font-bold text-content-primary">Integration Compatibility</h2>
+                        {{ info_tip.render('general-compatibility-title-guide',
+                                                'Integration Compatibility',
+                                                'Qualified versions and compatibility policies are reference evidence, not live readiness.',
+                                                items=[
+                                                'Qualification ranges and support windows come from versioned policy definitions.',
+                                                'Provider capabilities, identity, bindings, and consumers still determine operational readiness.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
                         Qualification is policy evidence; operational readiness requires live provider and consumer validation.
                     </p>
