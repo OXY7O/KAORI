@@ -1996,8 +1996,10 @@ def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() 
     assert shared.count("coverage_comparison.capsule_sections('capsule_global_resource_quota'") == 1
     assert "{% macro capsule_sections(authority, advanced_controls={})" in comparison
     for category in ('Basic Resources', 'Storage Guardrails', 'Object Limits',
-                     'Per-PVC Policy', 'Container Defaults', 'Advanced Controls'):
+                     'Container Defaults', 'Advanced Controls'):
         assert f"'{category}'" in comparison
+    # Per-PVC policy is a non-governed row *within* Storage Guardrails.
+    assert '· Per-PVC Policy' in comparison
     for key in (
         'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
         'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
@@ -2042,7 +2044,7 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     assert 'quota dimensions differ · Read only' in preview
     assert 'const comparisonDimensions = dimensions' in preview
     assert 'dimensions.slice(0, 6)' not in preview
-    assert 'const renderCapsuleProfileCoverage = (form, profile) => {' in preview
+    assert 'const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {' in preview
     assert 'data-tenant-capsule-external-source' in preview
     assert 'data-tenant-capsule-advanced-preview' in preview
     assert 'data-tenant-capsule-coverage-alert' in preview
@@ -2111,14 +2113,16 @@ def test_capsule_profile_unsupported_mutation_guard_is_not_just_copy() -> None:
     tenant_governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
     grq_governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
     controls = read('app/kubernetes/tenant/resource_profile_controls.py')
-    assert 'const renderCapsuleProfileCoverage = (form, profile) => {' in js
+    assert 'const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {' in js
     assert "requestedUnsupported.push('Container Defaults')" in js
     assert 'Object.keys(profile.storage_policy || {}).length > 0' in js
     assert 'Object.keys(profile.limits || {}).length > 0' in js
     assert "requestedUnsupported.push('Per-PVC Policy')" in js
     assert "apply.disabled = blocked" in js
     assert 'kaoriInitiallyDisabled' in js
-    assert js.count('renderCapsuleProfileCoverage(form, proposed)') == 3
+    assert js.count(
+        'renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)'
+    ) == 3
     assert tenant_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 2
     assert grq_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 1
     assert "'capsule': {" in controls
