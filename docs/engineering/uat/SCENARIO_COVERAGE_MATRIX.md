@@ -8,19 +8,21 @@
 
 **Addendum 2026-10-24:** Six Welcome-owned scenarios (`UAT-WEL-001`–`006`) and one separate IAM Viewer direct-read denial (`UAT-IAM-007`) expand the written catalog to 98. Their links to existing source assertions are preliminary, not complete exact-candidate test-node coverage or machine PASS. Human Welcome acceptance/screenshot observations remain recorded on #746, not retrospectively attributed to these new Gherkin IDs.
 
+**Kubernetes Admin addendum (2026-10-24):** #2605 records explicit operator Human Acceptance for the bounded manually executed Batch 01–06 (navigation, pager, filters, Cancel, authorized Harbor save/rollback, Activity Audit correlation, Viewer GET denial). These are issue-bound manual results, **not** machine `UAT-LIF-*` PASS verdicts; the matrix still says `NOT RUN / PENDING` per scenario because no exact ID-to-JUnit/Playwright execution record was produced. Direct POST/CSRF negative, unavailable-provider failure, Error detail visual, and full six-viewport × two-theme matrix were **not** exercised.
+
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **98/98** across 19 Gherkin files and case register |
+| Written case procedures | **106/106** across 19 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/98** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
-| Scenario IDs without individual assertion-level review | **74/98**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **84**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/98**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **94/98 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/98 attributed to this catalog checkpoint** |
-| Human acceptance | **0/98 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
+| Scenario IDs with inspected source assertions | **24/106** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **82/106**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **92**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/106**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **102/106 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/106 attributed to this catalog checkpoint** |
+| Human acceptance | **0/106 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -109,8 +111,16 @@
 | `UAT-LIF-001` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-LIF-002` | High | Non-UI | [Gherkin](features/lif-data-lifecycle.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-LIF-003` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-LIF-004` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-LIF-004` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: #2605 Batch 01; exact machine ID execution NOT RUN | NOT RUN / PENDING |
 | `UAT-LIF-005` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-LIF-006` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: #2605/#2457 bounded Batch 02–06; machine ID run NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-007` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: #2605/#2457 bounded Batch 02–06; machine ID run NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-008` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: #2605/#2457 bounded Batch 02–06; machine ID run NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-009` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: #2605/#2457 bounded Batch 02–06; machine ID run NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-010` | High | Non-UI | [Gherkin](features/lif-data-lifecycle.feature) | SPECIFIED BACKLOG: negative/degraded/full visual matrix NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-011` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | SPECIFIED BACKLOG: negative/degraded/full visual matrix NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-012` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: Access #1384 Warning/Success, Error detail visual NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-013` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | SPECIFIED BACKLOG: negative/degraded/full visual matrix NOT RUN | NOT RUN / PENDING |
 | `UAT-WEL-001` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: authenticated / and /welcome E2E smoke exists; provider-free source contract is partial | NOT RUN / PENDING |
 | `UAT-WEL-002` | High | Both | [Gherkin](features/wel-welcome-workspace-catalog.feature) | SOURCE AUTHORED / NOT RUN: #3012 `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_welcome_html_contains_only_permitted_workspace_cards`; separate review-based branch | NOT RUN / PENDING |
 | `UAT-WEL-003` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Welcome catalog tenant-search test exists; exact candidate execution not observed | NOT RUN / PENDING |
