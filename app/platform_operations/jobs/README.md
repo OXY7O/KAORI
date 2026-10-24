@@ -77,6 +77,22 @@ The first four jobs currently use the existing `inventory` queue and remain inde
 Global **Sync All Inventory** dispatches `artifact_registry.inventory.sync` only. Heavy security evidence must
 not extend the inventory correctness path; Harbor vulnerability detail is refreshed only for new/changed scan evidence.
 
+## Guarded Empty-Inventory Recovery UI
+
+Object Storage and Artifact Registry expose **manual-only**, permission-gated
+reconciliation when a previously nonempty committed inventory appears empty.
+Their Job Configuration sections use shared KAORI operational-card and Info Tip
+Guide patterns: a prominent Guarded Recovery header, target selector, explicit
+`CONFIRM EMPTY` phrase and visible fail-closed boundary. Provider-specific
+safety details remain readable in the Guide. Compact operator copy must not
+remove the independently verified removal prerequisite, last-good snapshot
+protection, two complete discovery checks, binding to the authenticated actor,
+selected target and current committed snapshot, or fail-closed behavior.
+
+The Guide is read-only and does not authorize an operation. All confirmations,
+CSRF, role/domain permissions, source verification and provider-owned discovery
+remain enforced by existing routes and domain services.
+
 ## RBAC
 
 - `jobs.view`: view executions, queues, and configuration catalog.

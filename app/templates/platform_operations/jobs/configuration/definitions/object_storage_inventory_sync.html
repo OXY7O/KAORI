@@ -125,16 +125,28 @@
     {% if selected_job.empty_reconciliation_targets and can_reconcile %}
         <section class="{{ operational_section.shell_classes() }}"
                  aria-labelledby="object-storage-empty-reconciliation-title">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
-                <h3 id="object-storage-empty-reconciliation-title"
-                    class="mt-1 text-base font-semibold text-content-primary">Confirm an Empty Bucket Inventory</h3>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">
-                    Use only after independently verifying that every bucket was deliberately removed from this system.
-                    Automatic jobs retain the last committed assets when ListBuckets unexpectedly returns zero.
-                    This action checks provider eligibility and performs two complete bucket discovery requests before
-                    atomically replacing the selected system snapshot with zero assets.
-                </p>
+            <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-warning-soft text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="shield-alert" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
+                            <h3 id="object-storage-empty-reconciliation-title"
+                                class="mt-1 text-base font-semibold text-content-primary">Confirm an Empty Bucket Inventory</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                Verify intentional bucket removal before reconciling the committed inventory.
+                            </p>
+                        </div>
+                    </div>
+                    {{ info_tip.render('jobs-empty-bucket-recovery-safety',
+                                            'Guarded Recovery Boundary',
+                                            'Only after independent verification that every bucket was deliberately removed. Unexpected zero ListBuckets results preserve the last committed assets. This action checks provider eligibility and performs two complete bucket discovery requests before atomically replacing the selected system snapshot with zero assets. Confirmation is bound to the signed-in operator, selected system and current snapshot. Mismatch or changed evidence fails closed without deleting records.',
+                                            placement='right',
+                                            variant='guide') }}
+                </div>
             </header>
             <form method="post"
                   action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
@@ -174,17 +186,13 @@
                                class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
                     </div>
                 </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex min-w-0 items-center gap-1.5">
-                        <p class="min-w-0 truncate text-xs leading-5 text-content-muted">
-                            Mismatch stops recovery safely; no records are deleted.
-                        </p>
-                        {{ info_tip.render('jobs-empty-bucket-recovery-safety',
-                            'Guarded Recovery Boundary',
-                            'Confirmation is bound to the current snapshot identity, signed-in operator, and selected system. If bucket discovery disagrees or committed evidence changes, recovery fails closed without deleting records.',
-                            placement='right',
-                            variant='guide') }}
-                    </div>
+                <div class="flex flex-col gap-3 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
+                        <i data-lucide="shield-check"
+                           class="h-4 w-4 shrink-0 text-status-warning-text"
+                           aria-hidden="true"></i>
+                        <span>Two complete reads required; mismatches preserve committed records.</span>
+                    </p>
                     <button type="submit"
                             {% if selected_job.active_job or selected_job.execution_disabled %}disabled{% endif %}
                             class="{{ action_button.classes('secondary') }} shrink-0 whitespace-nowrap">
