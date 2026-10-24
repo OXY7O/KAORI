@@ -1984,39 +1984,42 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
 
 
 def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() -> None:
-    """#2980: adopted cutover and managed change expose the complete quota contract."""
+    """#2986: both Capsule authorities disclose full quota and excluded controls."""
     from jinja2 import Environment
 
-    source = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
-    Environment(autoescape=True).parse(source)
-    assert 'components/view_more_content.html' in source
-    assert source.count('{{ quota_technical_details() }}') == 2
-    assert 'Technical Details' in source
-    assert "aria_label='Capsule Tenant quota technical details'" in source
-    assert 'compact_action=true' in source
-    assert 'Unbounded means this profile does not govern the dimension' in source
-    assert 'Preview only · Not admission approval.' in source
-    assert 'ResourceQuota Dimension' in source
-    assert 'Current · Baseline' in source
-    assert 'Proposed · Profile' in source
-
+    tenant = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    shared = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    comparison = read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
+    for source in (tenant, shared, comparison):
+        Environment(autoescape=True).parse(source)
+    assert tenant.count("coverage_comparison.capsule_sections('capsule_tenant_resource_quotas'") == 2
+    assert shared.count("coverage_comparison.capsule_sections('capsule_global_resource_quota'") == 1
+    assert "{% macro capsule_sections(authority, advanced_controls={})" in comparison
+    for category in ('Basic Resources', 'Storage Guardrails', 'Object Limits',
+                     'Per-PVC Policy', 'Container Defaults', 'Advanced Controls'):
+        assert f"'{category}'" in comparison
     for key in (
         'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
         'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
         'configmaps', 'secrets',
     ):
-        assert f"'{key}'" in source
-    assert 'data-tenant-quota-metric-side="{{ side }}"' in source
-    assert 'data-tenant-quota-metric-key="{{ key }}"' in source
-    assert source.count('data-tenant-quota-change-detail') == 2
-    assert source.count('data-tenant-quota-change-summary') == 2
-    assert "tenant.change_capsule_tenant_quota_route" in source
-    assert 'data-tenant-quota-managed-form' in source
-    assert 'data-tenant-quota-allocation-form' in source
-    assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
-    macro = source.split('{% macro quota_technical_details()', 1)[1].split('{%- endmacro %}', 1)[0]
+        assert f"'{key}'" in comparison
+    assert 'data-tenant-quota-metric-side="{{ side }}"' in comparison
+    assert 'data-tenant-quota-metric-key="{{ quota_key }}"' in comparison
+    assert 'data-tenant-capsule-external-source="{{ source }}"' in comparison
+    assert 'data-tenant-capsule-advanced-preview="{{ control_key }}"' in comparison
+    assert 'This quota workflow has no admitted write/read-back authority' in comparison
+    assert 'fail closed before mutation' in comparison
+    assert tenant.count('data-tenant-capsule-coverage-alert') == 2
+    assert tenant.count('data-tenant-capsule-apply-button') == 2
+    assert 'data-tenant-capsule-coverage-alert' in shared
+    assert 'data-tenant-capsule-apply-button' in shared
+    assert tenant.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    assert shared.count('name="csrf_token" value="{{ csrf_token() }}"') == 1
+    macro = comparison.split('{% macro capsule_sections(', 1)[1].split('{%- endmacro %}', 1)[0]
     assert '<form' not in macro and 'hx-post' not in macro
-    assert 'requests.get(' not in source
+    assert 'data-tenant-quota-managed-form' in tenant
+    assert 'data-tenant-quota-allocation-form' in tenant
 
 
 def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
@@ -2036,8 +2039,13 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     assert "form.querySelector('[data-tenant-quota-change-detail]')" in preview
     assert 'changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))' in preview
     assert 'quota dimensions differ · Read only' in preview
-    assert "form.hasAttribute('data-tenant-shared-allocation-form')" in preview
-    assert 'dimensions.slice(0, 6)' in preview
+    assert 'const comparisonDimensions = dimensions' in preview
+    assert 'dimensions.slice(0, 6)' not in preview
+    assert 'const renderCapsuleProfileCoverage = (form, profile) => {' in preview
+    assert 'data-tenant-capsule-external-source' in preview
+    assert 'data-tenant-capsule-advanced-preview' in preview
+    assert 'data-tenant-capsule-coverage-alert' in preview
+    assert 'kaoriInitiallyDisabled' in preview
     assert 'comparisonDimensions.length' in preview
     assert 'of 6 quota dimensions differ' not in preview
     assert "a === 'Unbounded' || b === 'Unbounded'" in preview
