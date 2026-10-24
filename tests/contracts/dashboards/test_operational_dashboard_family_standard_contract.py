@@ -280,7 +280,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
         in capacity
     )
-    assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
+    assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
+    assert 'Data Scope:</span> worker nodes only' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
