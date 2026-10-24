@@ -685,11 +685,10 @@ uses shorter fail-closed text without changing admission or read-back.
 **Complete Capsule Tenant CR quota comparison (#2980; DevContainer UAT):**
 The six headline dimensions are *not* the entire authoritative quota contract.
 The Capsule Tenant CR adopted-cutover and managed-change comparisons now both
-reuse `components/view_more_content.html` as a collapsed, read-only
-**Technical Details** disclosure containing a single four-row
-Current (observed/committed) versus Proposed (versioned Resource Profile)
-table for `persistentvolumeclaims`, `services`, `configmaps`, and
-`secrets`. The underlying quota authority supports all **ten**
+reuse the canonical `_resource_profile_coverage_comparison.html::capsule_sections`
+and `components/view_more_content.html` disclosures for all ten ResourceQuota
+keys, separated into Basic Resources, Storage Guardrails and Object Limits;
+the same mapping applies to GlobalResourceQuota cutover. The underlying quota authority supports all **ten**
 ResourceQuota dimensions. A Managed toggle left unset is **Unbounded**,
 not zero; selection changes refresh both the headline grid and the
 technical rows without another provider read.
@@ -1217,3 +1216,46 @@ any action through the disclosure itself; the original CSRF form,
 read-back and committed evidence gates remain independent. CSS uses KAORI
 light/dark, responsive native summary/details. Browser accessibility and
 actual live provider UAT remain required for human acceptance.
+
+
+### Capsule quota attachment fail-closed coverage (#2986)
+
+The authoritative Capsule quota mutation paths **only** govern supported
+ResourceQuota hard dimensions. `Tenant.spec.resourceQuotas` and
+`GlobalResourceQuota.spec.quota.hard` can each carry the ten supported
+ResourceQuota fields; the generated Namespace ResourceQuota copies under GRQ
+are **not** independent commitment budgets. Native `LimitRange` Container
+Defaults and per-PVC min/max storage guardrails are outside either quota
+authority. Merely selecting a Resource Profile which requests them must never
+silently report them as managed.
+
+The same five-category expandable vocabulary from Native Allocation Change is
+used for Capsule Tenant CR and GRQ: Basic Resources, Storage Guardrails,
+Object Limits, Container Defaults and Advanced Controls, with a separate
+Per-PVC Policy expansion inside storage coverage. All Current/Proposed quota
+fields are bound to committed/provider evidence and selected versioned
+Resource Profile through the existing read-only JS preview. The unsupported
+groups display the actual proposed values and `Not governed` provider
+effect; the Client UI disables the apply action when a profile contains
+managed LimitRange defaults or per-PVC storage policy and explains which
+category is incompatible.
+
+**The server enforces the same condition** by
+`_validate_resource_profile_base_controls` before Capsule Tenant cutover,
+Managed Allocation Change, and GRQ cutover read/patch calls.
+`_validate_resource_profile_attachment_controls` separately verifies all
+requested advanced provider capabilities, fail-closed at mutation time; it
+is not permission to assert that unrelated advanced resources were written
+as part of a quota update. The full ten-dimension change highlights never
+count an unrendered GRQ field. These fail-closed gates intentionally mean that
+legacy profiles containing Native-only defaults or per-PVC policies must be
+cloned/revised with those Managed dimensions disabled before a new Capsule
+quota governance action. Previously completed provider governance and
+accepted allocation history are not rewritten. No Native fallback.
+
+Do not infer real Native LimitRange observations from Namespace quota
+evidence: those are separately owned and unavailable in this Capsule
+quota-only preview. Runtime Jinja and JS execution, responsive dark/light,
+keyboard/touch accessibility and actual Capsule negative/positive admission
+UAT remain mandatory before human acceptance. This workstream holds official
+CI/CD and production promotion.
