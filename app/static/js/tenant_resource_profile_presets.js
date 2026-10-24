@@ -260,45 +260,8 @@
 
         const currentProfile = form.querySelector('[data-tenant-allocation-profile="current"]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-profile="proposed"]')
-        const detailTabs = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-tab]'))
-        const detailPanels = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-panel]'))
-
-        const selectDetail = (name, focus = false) => {
-            detailTabs.forEach((button) => {
-                const selected = button.dataset.tenantAllocationDetailTab === name
-                button.setAttribute('aria-selected', String(selected))
-                button.tabIndex = selected ? 0 : -1
-                button.classList.toggle('border-kaori-primary', selected)
-                button.classList.toggle('bg-kaori-soft', selected)
-                button.classList.toggle('text-kaori-primary', selected)
-                button.classList.toggle('border-transparent', !selected)
-                button.classList.toggle('text-content-muted', !selected)
-                if (selected && focus) button.focus()
-            })
-            detailPanels.forEach((panel) => {
-                panel.hidden = panel.dataset.tenantAllocationDetailPanel !== name
-            })
-        }
-        detailTabs.forEach((button, index) => {
-            button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
-            button.addEventListener('keydown', (event) => {
-                const move = ['ArrowRight', 'ArrowDown'].includes(event.key)
-                    ? 1
-                    : ['ArrowLeft', 'ArrowUp'].includes(event.key)
-                      ? -1
-                      : 0
-                if (!move && event.key !== 'Home' && event.key !== 'End') return
-                event.preventDefault()
-                const next =
-                    event.key === 'Home'
-                        ? 0
-                        : event.key === 'End'
-                          ? detailTabs.length - 1
-                          : (index + move + detailTabs.length) % detailTabs.length
-                selectDetail(detailTabs[next].dataset.tenantAllocationDetailTab, true)
-            })
-        })
-        selectDetail('objects')
+        // Native profile categories use the canonical accessible <details> disclosure.
+        // No custom keyboard tab controller is needed.
 
         const contractValue = (contract, source, key) => {
             if (!contract) return null
@@ -317,6 +280,10 @@
                     'limits.memory',
                     'pods',
                     'requests.storage',
+                    'persistentvolumeclaims',
+                    'services',
+                    'configmaps',
+                    'secrets',
                 ]
                 return source === 'storage_policy' || (source === 'quota' && boundedQuotaKeys.includes(key))
                     ? 'Unbounded'
