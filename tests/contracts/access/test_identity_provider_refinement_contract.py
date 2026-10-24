@@ -40,7 +40,7 @@ def test_identity_provider_overview_uses_provider_adapter_boundary_and_tabs() ->
     for label in ('Configured', 'Enabled', 'Directory', 'Browser SSO'):
         assert label in overview
     for boundary in (
-        'Provider / Adapter Boundary',
+        'Provider & Adapter',
         'Credential Ownership',
         'Identity Projection',
         'Authorization Boundary',
@@ -70,6 +70,16 @@ def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table()
     shared = read('app/templates/components/table_registry.html')
     assert 'hx-target="#{{ registry_id }}"' in shared
     assert 'access/identity_providers/partials/_provider_detail.html' in registry
+    # Match the Users disclosure control; always show a descriptive label.
+    assert "open_label='View More Details', close_label='Hide Details'" in registry
+    assert "compact=true, class_name='min-w-[7.5rem]'" in registry
+    assert 'table_action=true' not in registry
+    users = read('app/templates/access/users/partials/_table.html')
+    assert "compact=true)" in users
+    toggle = read('app/templates/components/details/_expandable_row.html')
+    assert '<span data-detail-toggle-label>{{ open_label }}</span>' in toggle
+    assert 'aria-expanded="false"' in toggle
+
     for heading in ('Provider', 'Adapter', 'Configuration', 'State', 'Identity Links', 'Action'):
         assert heading in registry
     assert 'Rows Per Page' in registry
@@ -178,7 +188,7 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     assert 'data-browser-callback' in guidance
     assert 'data-callback-key' in guidance
     assert 'request.url_root.rstrip' in guidance
-    assert "'Provider / Adapter Boundary', 'Distinct Contracts'," in overview
+    assert "'Provider & Adapter', 'Distinct Contracts'," in overview
     assert "'Providers own identity; adapters run sign-in.'" in overview
     for source in (google, guidance):
         assert 'whitespace-nowrap' not in source
