@@ -195,9 +195,9 @@ def edit(provider_id: int):
                 status='success',
                 title='Identity provider updated',
                 message=(
-                    f'{provider.display_name} configuration was updated. '
+                    f'{provider.display_name} authentication is disabled. '
                     f'{revoked_identity_count} linked account session generation(s) invalidated.'
-                    if revoked_identity_count
+                    if not provider.enabled
                     else f'{provider.display_name} configuration was updated.'
                 ),
                 provider_id=provider.id,
