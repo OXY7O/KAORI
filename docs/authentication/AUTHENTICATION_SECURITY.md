@@ -24,6 +24,9 @@
 - Step-up authentication state is cleared on logout.
 - Enable Flask-Login strong session protection unless compatibility testing proves otherwise.
 - Define absolute and idle session timeouts before SSO activation; do not rely only on provider token lifetime.
+- Disabling an enabled external Identity Provider revokes all KAORI sessions issued to its linked external-source user projections on their next request. A guarded provider-row lock and atomic session-generation increment keep disablement and revocation in one transaction. This applies to LDAP and browser SSO, without a live provider call on every page.
+- Disabling blocks fresh provider authentication immediately after commit. Re-enabling permits new authentication but does **not** resurrect old cookies or remember-me sessions. A logout is not required to revoke them; currently in-flight requests are not retroactively stopped.
+- Independent Local Database users (especially break-glass Super Admin) must remain unaffected. Audit reports the count of **linked identities** whose generations were changed, not a guessed number of browser sessions.
 
 ## Brute force and lockout
 
