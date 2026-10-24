@@ -55,7 +55,7 @@ No Account screenshot hashes are manufactured or locked before review.
 | SET-GEN-01 | Time Zone manual/automatic, Detect Again, invalid IANA | No implicit save, CSRF-safe background sync, correct display-only scope | **Human PASS for positive flow (2026-10-24):** manual save/reload, automatic mode, Detect Again, Account effective timezone; invalid-IANA/CSRF negative browser evidence pending |
 | SET-GEN-02 | Regional Format locale/date/time selection | UI-only formatting; stored UTC and schedule authority unchanged | **Human PASS for positive flow (2026-10-24):** id-ID, year_month_day, 12h; persisted preview updates after Save, Refresh retention, Account locale consistency; independent canonical UTC/schedule mutation verification pending |
 | SET-GEN-03 | System Information with and without `system.view` | No privileged tab/data disclosure; build metadata `Not supplied` truthful; no secret config echo | **Human PASS (positive/negative access boundary, 2026-10-24):** authorized metadata/capability view, truthful unknown build, no secrets, Viewer privileged tabs hidden, direct unauthorized tab falls back to Time Zone; raw HTTP trace not archived |
-| SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | **Human PASS (2026-10-24, steps 1–8):** five-product registry, search, Extended-only MinIO, reset, selection/detail, empty state, URL/history/refresh and direct full GET; synthetic pagination contract exists, JavaScript-disabled fallback not separately tested; new MinIO one-line copy visual retest pending |
+| SET-GEN-04 | Compatibility filter/reset/search, empty state, pagination 5, selected detail and no-JS | Filter/URL/result/focus correct, source-qualified version never equals live readiness | **Human PASS (2026-10-24, steps 1–8):** five-product registry, search, Extended-only MinIO, reset, selection/detail, empty state, URL/history/refresh and direct full GET; synthetic pagination contract exists, JavaScript-disabled fallback not separately tested; MinIO one-line copy Human Visual UAT PASS (2026-10-24), follow-up Ruff formatter rerun pending |
 | SET-ACC-01 | Profile local/external identity, RBAC role vs Super Admin | Read-only and source-backed identity; no false live provider readiness | **Human PASS (Account scope):** Local Super Admin and LDAP Viewer linked identity/profile screenshots; provider live-readiness was not asserted |
 | SET-ACC-02 | Empty/five recent auth events and Activity Audit authorization | Five-event sample, safe status, IP proxy caveat, permitted drill-down | **Human PASS (UI/RBAC boundary):** local + LDAP event sample, Viewer denied at direct audit URL, authorized audit access; separate HTTP 403 header capture not provided |
 | SET-ACC-03 | Credentials Local Database vs external provider | Password field only for local; external owner rejects change | **Human PASS (UI boundary):** local password form; LDAP provider-managed recovery without local form; automatic negative contracts also passed in focused suite |
@@ -209,8 +209,21 @@ a new browser tab verifies full-document GET fallback, **not** script-disabled
 (no-JavaScript) behavior. The MinIO General Contract summary was subsequently
 shortened under #2241 / PR #3050 to
 `S3 reachability, bucket discovery, and optional object-storage governance.`
-That **new text layout** awaits an updated operator screenshot; the existing
-1–8 functional acceptance remains intact.
+The operator explicitly confirmed that the revised text fits **one line
+on the same desktop viewport** (**Human Visual UAT PASS**, 2026-10-24).
+The acceptance is a direct user report; no new rendered screenshot was
+attached to that confirmation. The existing 1–8 functional acceptance stands.
+
+**Focused validation as submitted by the operator:** `ruff check` PASS;
+`ruff format --check` reported **one unformatted file** and supplied its
+exact single-line correction; Settings/Compatibility/Final Lock pytest
+**19 passed in 7.85s**; Settings Final Lock verifier **PASS — 18 templates**.
+The formatter-only issue #2241 follow-up PR #3053 was merged to temporary
+holding at `ace88e961528978a61cf555129665d4ecc2bbc0e`, and the
+post-merge source readback matches the exact Ruff suggestion. A new
+Dev Container `ruff format --check` run on that follow-up SHA has not
+yet been provided. No exact local SHA accompanied the previous operator
+test output; it must not be retroactively attributed to a different commit.
 
 ### SET-OPS-01 — General tab operability and visual overflow
 
