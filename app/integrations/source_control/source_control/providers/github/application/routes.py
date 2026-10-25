@@ -158,13 +158,9 @@ def index() -> ResponseReturnValue:
                 )
             )
         if selected_coverage_environment:
-            coverage_query = coverage_query.filter(
-                IntegrationInstance.environment == selected_coverage_environment
-            )
+            coverage_query = coverage_query.filter(IntegrationInstance.environment == selected_coverage_environment)
         if selected_coverage_status:
-            coverage_query = coverage_query.filter(
-                SourceRepositoryCollectionState.coverage == selected_coverage_status
-            )
+            coverage_query = coverage_query.filter(SourceRepositoryCollectionState.coverage == selected_coverage_status)
         coverage_rows, coverage_pagination = paginate_query(
             coverage_query.order_by(
                 SourceRepository.full_name.asc(),
@@ -175,9 +171,7 @@ def index() -> ResponseReturnValue:
             per_page=requested_coverage_per_page,
         )
         coverage_environment_options = [
-            item[0]
-            for item in coverage_base.with_entities(IntegrationInstance.environment).distinct().all()
-            if item[0]
+            item[0] for item in coverage_base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
         ]
         coverage_status_options = [
             item[0]
@@ -275,6 +269,7 @@ def index() -> ResponseReturnValue:
         if target == 'github-integration-coverage':
             return _respond('integrations/source_control/github/partials/_integration_coverage.html', **context)
     return _respond('integrations/source_control/github/index.html', **context)
+
 
 @github_source_bp.route('/connections/new', methods=['GET', 'POST'])
 @permission_required('integrations.manage')

@@ -27,7 +27,7 @@
             marker='github-integration-coverage'
         ) if coverage_has_active_filters else '' %}
     {{ provider_registry.registry_header("GitHub Repository Coverage",
-        "Review repository access and validation evidence committed for each GitHub App installation.",
+        "Review committed GitHub repository access and coverage.",
         "route",
         "github-coverage-loading",
         title_id="github-integration-coverage-title",
@@ -83,7 +83,7 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon("git-branch", "brand") }}
+                                {{ integration_ui.palette_icon('git-branch', 'brand') }}
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ repository.full_name or repository.name or "Repository Identity Pending" }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ repository.default_branch or "Default branch not observed" }}</p>
@@ -95,7 +95,7 @@
                             <p class="mt-1 text-xs text-content-muted">Installation {{ installation.native_installation_id }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ connection.environment|replace("_", " ")|title }}</p>
+                            <p class="text-sm font-semibold text-content-primary">{{ connection.environment|replace('_', ' ') |title }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ "Enabled" if connection.enabled else "Disabled" }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -124,7 +124,7 @@
                             {% set empty_state_icon = "route" %}
                             {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
                             {% set empty_state_title = "No GitHub Repository Coverage Matches the Filters" if coverage_has_active_filters else ("No Repositories in Committed Coverage" if coverage_observed else "No GitHub Repository Coverage Observed") %}
-                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else ("The latest committed inventory contains no current repository grants; GitHub remains authoritative." if coverage_observed else "Register a GitHub App, complete Full Validation and commit repository access evidence to establish coverage.") %}
+                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else ("No active repository grants in the latest committed inventory." if coverage_observed else "Register and validate a GitHub App, then collect repository evidence.") %}
                             {% set empty_state_action_url = url_for('github_source.new_connection') if available and uat_workspace_enabled and not coverage_has_active_filters else none %}
                             {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
                             {% set empty_state_action_icon = "plus" %}
