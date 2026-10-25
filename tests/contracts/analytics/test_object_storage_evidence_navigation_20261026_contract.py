@@ -59,7 +59,7 @@ def test_domain_context_preserves_source_authority_and_deep_link() -> None:
     ):
         assert source in component
     assert "default('Unknown')" in component
-    assert 'No live provider' not in component or 'no live provider' in component.lower()
+    assert 'analytics_materialization.label|default(' not in component or 'Unavailable' in component
 
 
 def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
