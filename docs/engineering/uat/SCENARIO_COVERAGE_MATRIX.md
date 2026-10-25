@@ -12,19 +12,21 @@
 
 **Kubernetes Dashboard human acceptance (2026-10-24):** #937 documents an explicit operator **Human UAT APPROVED** decision over the four Dashboard tabs plus a downloadable Ready report. The ten new `UAT-KDB-001`–`010` specifications provide capability-owned reusable requirements. Their source/test mappings below are provisional; **no per-Scenario-ID exact-candidate execution record exists**, and the approved UI screenshots do not establish negative scope/RBAC/failure outcomes or the full six-viewport/two-theme automated Visual QA. This acceptance is recorded on the **owning issue**, not silently in the machine-result column.
 
+**Operations Center UAT addendum (2026-10-25; #3115):** Operator accepted the bounded Jobs Configuration, Data Lifecycle and Operations Overview visual/function paths after incremental screenshot feedback. Previous operator tests included 29 focused Jobs/Lifecycle pytest PASS with Platform Operations Final Lock v2.2 93 templates PASS on an earlier candidate; the final Overview refinement received 9 focused pytest PASS, djLint PASS and Ruff check/format PASS. This is **human UI acceptance**, not 13 newly attributed machine Scenario-ID PASS results. No exact-ID browser trace/role-fault synthetic run was supplied. Guarded recovery/provider mutations, negative cross-permission tests, intentional disabled features and full responsive matrix remain **NOT RUN / BLOCKED as applicable**. Official Developer Check, Full Admission, staging/main promotion HOLD.
+
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **116/116** across 20 Gherkin files and case register |
+| Written case procedures | **129/129** across 20 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/116** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
-| Scenario IDs without individual assertion-level review | **92/116**; includes the 7 newly specified IDs and does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **102**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/116**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **112/116 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/116 attributed to this catalog checkpoint** |
-| Human acceptance | **0/116 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
+| Scenario IDs with inspected source assertions | **24/129** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **105/129**; includes 13 newly authored Operations Center IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **115**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/129**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **125/129 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/129 attributed to this catalog checkpoint** |
+| Human acceptance | **0/129 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -120,6 +122,14 @@
 | `UAT-OPS-002` | High | Non-UI | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OPS-003` | High | Both | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OPS-004` | Medium | UI | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-OPS-005` | Medium | UI | [Gherkin](features/ops-platform-operations.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/test_platform_operations_overview_final_lock_contract.py; app/platform_operations/overview/presentation.py; #1633/#3110; Operator visually accepted Overview screenshot and one-line refinement; do not claim a machine Scenario-ID PASS | NOT RUN / PENDING |
+| `UAT-OPS-006` | Medium | UI | [Gherkin](features/ops-platform-operations.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/jobs/test_job_configuration_catalog_search_a11y_contract.py; test_job_configuration_workspace_redesign_contract.py; #3090/#3102; Human UAT accepted the tested design/functions; disabled controls awaiting full feature cycle excluded | NOT RUN / PENDING |
+| `UAT-OPS-007` | Medium | UI | [Gherkin](features/ops-platform-operations.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html; #3090; Human accepted the visible channel presentation, not every scaled fixture | NOT RUN / PENDING |
+| `UAT-OPS-008` | High | UI | [Gherkin](features/ops-platform-operations.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; definitions/object_storage_inventory_sync.html; definitions/artifact_registry_inventory_sync.html; #3090; Presentation accepted; protected mutation flow not exercised in this batch | NOT RUN / PENDING |
+| `UAT-OPS-009` | High | Both | [Gherkin](features/ops-platform-operations.feature) | SOURCE-OWNED / UNEXECUTED: app/platform_operations/jobs/configuration.py::build_job_configuration_attention_summary; app/platform_operations/overview/presentation.py; #1635; Not individually executed; do not mark Human Accepted negative path | NOT RUN / PENDING |
+| `UAT-OPS-010` | High | Both | [Gherkin](features/ops-platform-operations.feature) | SOURCE-OWNED / UNEXECUTED: app/platform_operations/overview/routes.py; app/welcome/shortcuts.py; tests/contracts/platform_operations/test_platform_operations_overview_final_lock_contract.py; #1637; Not individually executed with restricted roles | NOT RUN / PENDING |
+| `UAT-OPS-011` | High | Non-UI | [Gherkin](features/ops-platform-operations.feature) | SOURCE-OWNED / UNEXECUTED: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; owning storage/registry reconciliation tests; #1592/#3090; Not executed; only manual control appearance accepted | NOT RUN / PENDING |
+| `UAT-OPS-012` | Medium | UI | [Gherkin](features/ops-platform-operations.feature) | HUMAN-OBSERVED / UNATTRIBUTED: app/templates/platform_operations/jobs/configuration/; #1592/#3090; Human accepted truthful disabled presentation; feature-cycle completion remains blocked | NOT RUN / PENDING |
 | `UAT-LIF-001` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-LIF-002` | High | Non-UI | [Gherkin](features/lif-data-lifecycle.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-LIF-003` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -133,6 +143,11 @@
 | `UAT-LIF-011` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | SPECIFIED BACKLOG: negative/degraded/full visual matrix NOT RUN | NOT RUN / PENDING |
 | `UAT-LIF-012` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED: Access #1384 Warning/Success, Error detail visual NOT RUN | NOT RUN / PENDING |
 | `UAT-LIF-013` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | SPECIFIED BACKLOG: negative/degraded/full visual matrix NOT RUN | NOT RUN / PENDING |
+| `UAT-LIF-014` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/test_data_lifecycle_domain_navigator_contract.py; app/templates/platform_operations/data_lifecycle/index.html; #3102/#2907; Human accepted visible navigation and footer; full viewport/theme matrix not individually recorded | NOT RUN / PENDING |
+| `UAT-LIF-015` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/test_data_lifecycle_archive_reverify_contract.py; test_data_lifecycle_complete_uat_matrix_contract.py; #2907/#1569; Previous human Archive Only approval, not an inferred full-machine scenario PASS | NOT RUN / PENDING |
+| `UAT-LIF-016` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | HUMAN-OBSERVED / UNATTRIBUTED: tests/contracts/platform_operations/test_data_lifecycle_history_filter_rows_contract.py; test_data_lifecycle_history_verify_browser_contract.py; #2907/#2972/#2974; Visual/functional acceptance of tested paths; explicit re-verification evidence remains separate | NOT RUN / PENDING |
+| `UAT-LIF-017` | Medium | UI | [Gherkin](features/lif-data-lifecycle.feature) | SOURCE-OWNED / UNEXECUTED: app/templates/platform_operations/data_lifecycle/; tests/contracts/platform_operations/test_data_lifecycle_audit_event_operational_ui_contract.py; #2889/#2847; Deferred feature-cycle coverage, not end-to-end UAT | NOT RUN / PENDING |
+| `UAT-LIF-018` | High | Both | [Gherkin](features/lif-data-lifecycle.feature) | SOURCE-OWNED / UNEXECUTED: tests/contracts/platform_operations/test_data_lifecycle_archive_reverify_contract.py; test_data_lifecycle_mutation_domain_contract.py; #1569/#2907; Unexecuted negative boundary; keep under QA/feature admission backlog | NOT RUN / PENDING |
 | `UAT-WEL-001` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: authenticated / and /welcome E2E smoke exists; provider-free source contract is partial | NOT RUN / PENDING |
 | `UAT-WEL-002` | High | Both | [Gherkin](features/wel-welcome-workspace-catalog.feature) | SOURCE AUTHORED / NOT RUN: #3012 `tests/e2e/welcome/test_welcome_smoke.py::test_viewer_welcome_html_contains_only_permitted_workspace_cards`; separate review-based branch | NOT RUN / PENDING |
 | `UAT-WEL-003` | Medium | UI | [Gherkin](features/wel-welcome-workspace-catalog.feature) | REVIEW-ONLY: Playwright Welcome catalog tenant-search test exists; exact candidate execution not observed | NOT RUN / PENDING |
@@ -153,8 +168,8 @@
 
 ## Closure before gate
 
-1. Obtain domain-owner review of the 102 newly expanded written procedures against current approved KAORI standards and admitted source routes.
-2. Map all 116 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
+1. Obtain domain-owner review of the 115 newly expanded written procedures against current approved KAORI standards and admitted source routes.
+2. Map all 129 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
 3. Integrate #1725 standards, #1738 catalog, #1726 Playwright and #1727 non-UI test branches into a controlled exact candidate, including synchronizing the stacked #1728 branch with this updated #1738 tree.
 4. After the explicit CI/CD hold is lifted, run Developer Check and admission as required, then governed UAT with JUnit, screenshot/trace, committed/provider read-back and a separate human decision.
 5. Treat any mandatory SKIP/NOT RUN/FAIL, missing provider authorization, or misleading fake-provider PASS as unresolved. No automatic release readiness is inferred.

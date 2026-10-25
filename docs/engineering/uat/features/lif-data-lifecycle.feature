@@ -181,3 +181,49 @@ Feature: Platform Operations — Data Lifecycle & Secret Reveal
     Then focus order and accessible control labels remain correct
     And no action, table or guidance is clipped in light or dark mode
     And visual baselines are not silently accepted or regenerated
+
+  # Layer: UI; risk: Medium; authority #3115 / #1738; human evidence is issue-bound.
+  # Machine Scenario-ID execution NOT RUN. Disabled/provider actions require admitted isolated fixture.
+  @UAT-LIF-014 @positive @medium @ui @specified @owner_review
+  Scenario: UAT-LIF-014 - Lifecycle nine-domain navigator and boundary Guide remain consistent
+    Given a permitted Data Lifecycle operator with the nine registered domain definitions and committed policy coverage
+    When the operator searches, selects a domain, switches Retention Policies, Archive Storage and Archive History and opens the boundary Guide
+    Then domain selection and count remain consistent across navigation, responsive cards preserve selected state, and the Execution Boundary Guide opens above a one-row no-scroll footer
+    And record the candidate SHA, operator role, sanitized screenshot/test result and committed evidence without inventing provider success
+
+  # Layer: Both; risk: High; authority #3115 / #1738; human evidence is issue-bound.
+  # Machine Scenario-ID execution NOT RUN. Disabled/provider actions require admitted isolated fixture.
+  @UAT-LIF-015 @positive @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-LIF-015 - Archive Only preserves verified artifacts and audit evidence
+    Given an operator has an approved bounded Archive Only workflow on disposable eligible records and a verified archive destination
+    When the operator invokes the admitted Archive Only workflow and reviews Archive History and committed job evidence
+    Then verified archive/manifests and audit evidence are retained, records remain governed without unapproved purge, and the operator sees an attributable outcome
+    And record the candidate SHA, operator role, sanitized screenshot/test result and committed evidence without inventing provider success
+
+  # Layer: UI; risk: Medium; authority #3115 / #1738; human evidence is issue-bound.
+  # Machine Scenario-ID execution NOT RUN. Disabled/provider actions require admitted isolated fixture.
+  @UAT-LIF-016 @positive @medium @ui @specified @owner_review
+  Scenario: UAT-LIF-016 - Archive Storage and History remain readable without extra mutation
+    Given a permitted operator with committed lifecycle archive artifacts, including historical state and storage posture
+    When the operator reviews Archive Storage and Archive History, filters committed rows and opens the available Verify read path
+    Then storage guidance and bounded history rows remain readable, pagination/search preserve context and read-only evidence does not initiate cleanup
+    And record the candidate SHA, operator role, sanitized screenshot/test result and committed evidence without inventing provider success
+
+  # Layer: UI; risk: Medium; authority #3115 / #1738; human evidence is issue-bound.
+  # Machine Scenario-ID execution NOT RUN. Disabled/provider actions require admitted isolated fixture.
+  @UAT-LIF-017 @negative @medium @ui @specified @owner_review
+  Scenario: UAT-LIF-017 - Paused lifecycle adapters are not mistaken for admitted cleanup
+    Given an AuditEvent or Notification Delivery lifecycle adapter that is present but paused or disabled pending its owning feature cycle
+    When the operator examines Data Lifecycle capability coverage and related read-only status
+    Then paused/disabled posture remains explicit and no archive, retention or destructive action is presented as admitted or automatically successful
+    And record the candidate SHA, operator role, sanitized screenshot/test result and committed evidence without inventing provider success
+
+  # Layer: Both; risk: High; authority #3115 / #1738; human evidence is issue-bound.
+  # Machine Scenario-ID execution NOT RUN. Disabled/provider actions require admitted isolated fixture.
+  @UAT-LIF-018 @negative @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-LIF-018 - Unverified archive or unauthorized lifecycle mutation preserves source
+    Given a restricted principal or an isolated archive verification failure and an intact disposable lifecycle dataset
+    When the actor attempts a lifecycle policy/run mutation without required authority or with invalid verification evidence
+    Then the server rejects the request or blocks cleanup, reports an actionable state, and retains committed original records and independent archive evidence
+    And record the candidate SHA, operator role, sanitized screenshot/test result and committed evidence without inventing provider success
+
