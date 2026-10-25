@@ -250,7 +250,8 @@ def test_github_connection_registry_reuses_existing_integration_surface() -> Non
 def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() -> None:
     github = _source('app/templates/integrations/source_control/github/partials/_integration_coverage.html')
     kubernetes = _source(
-        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+        'app/templates/integrations/orchestration/container_orchestrator/providers/'
+        'kubernetes/partials/_integration_coverage.html'
     )
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
 
