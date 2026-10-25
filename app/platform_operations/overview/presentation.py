@@ -129,7 +129,7 @@ def build_platform_operations_overview_context(
                 'key': 'kubernetes',
                 'label': 'Kubernetes Administration',
                 'icon': 'server-cog',
-                'description': 'Protected Kubernetes controls with readiness and authorization gates.',
+                'description': 'Readiness and protected access controls.',
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (
