@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from flask import current_app, has_app_context
+
 from app.access.authentication.bot_protection.registry import bot_provider_definition
 from app.access.authentication.bot_protection.turnstile import (
     TurnstileVerificationConfig,
@@ -17,6 +19,10 @@ from app.access.authentication.bot_protection.turnstile import (
 )
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationSecurityPolicy
+
+
+TEST_SITE_KEYS = frozenset({'1x00000000000000000000AA', '2x00000000000000000000AB', '3x00000000000000000000FF'})
+TEST_SECRET_KEYS = frozenset({'1x0000000000000000000000000000000AA', '2x0000000000000000000000000000000AA', '3x0000000000000000000000000000000AA'})
 
 
 class BotPolicyMode(StrEnum):
@@ -66,6 +72,9 @@ def bot_policy_state() -> BotPolicyState:
         and not any(char.isspace() for char in key)
         and _configuration_ready(settings)
     )
+    if mode == BotPolicyMode.ALWAYS and has_app_context() and not (current_app.debug or current_app.testing):
+        if key in TEST_SITE_KEYS or secret in TEST_SECRET_KEYS:
+            raise BotConfigurationError('Test Turnstile credentials are not valid in production.')
     if mode == BotPolicyMode.ALWAYS and not configured:
         # A partially configured enabled instance is an availability error,
         # never permission to bypass challenge verification.
