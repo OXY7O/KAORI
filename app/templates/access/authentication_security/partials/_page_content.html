@@ -352,8 +352,8 @@
                         </div>
                     </div>
                 </section>
-                <div class="grid items-start gap-4 xl:grid-cols-5">
-                    <section class="rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
+                <div class="grid items-stretch gap-4 xl:grid-cols-5">
+                    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
                              aria-labelledby="mfa-policy-config-heading">
                         <div class="flex items-center gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -387,13 +387,12 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-subtle p-4">
-                                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">Change Impact</p>
+                                        <p class="text-sm font-semibold text-status-warning-text">Change Impact</p>
                                         <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                            Changing this policy revokes existing authenticated and Remember Me sessions, including your current session.
-                                            Mandatory policies require at least one enrolled Local Database Super Admin for recovery.
+                                            Policy changes revoke all sessions; required modes need an enrolled Local Super Admin.
                                         </p>
                                     </div>
                                 </div>
@@ -416,21 +415,21 @@
                             </p>
                         {% endif %}
                     </section>
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2"
+                    <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2"
                              aria-labelledby="mfa-policy-modes-heading">
                         <header class="flex items-center gap-2 border-b border-outline-subtle px-5 py-4">
                             <i data-lucide="list-checks" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
                             <h3 id="mfa-policy-modes-heading"
                                 class="text-sm font-semibold text-content-primary">Enforcement Modes</h3>
                         </header>
-                        <div class="divide-y divide-outline-subtle px-5">
+                        <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
                             {% for mode, label, description in [
                                 ('disabled', 'Disabled', 'Primary authentication is sufficient.'),
                                 ('optional', 'Optional', 'Only users who enrolled a factor are challenged.'),
                                 ('required_privileged', 'Required Privileged', 'Admin-level accounts must enroll and verify MFA.'),
                                 ('required_all', 'Required All', 'Every human account must enroll and verify MFA.')
                             ] %}
-                                <div class="flex items-start justify-between gap-3 py-3">
+                                <div class="flex flex-1 items-center justify-between gap-3 py-3.5">
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
                                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
