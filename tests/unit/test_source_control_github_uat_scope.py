@@ -220,6 +220,7 @@ def test_github_configuration_reuses_approved_connection_contract_and_operationa
     assert "ui.section_header('file-key-2'," in detail
     assert "action_html=github_connection_status" in detail
     assert 'xl:grid-cols-4' in detail
+    assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in detail
     assert "ui.palette_icon('waypoints', 'brand', size='sm')" in detail
     assert "table_label.metadata_label('GitHub REST API v3', 'git-branch')" in detail
     assert "operational_context.render(" in detail
