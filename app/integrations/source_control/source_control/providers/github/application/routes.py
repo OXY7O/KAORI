@@ -12,9 +12,11 @@ import json
 from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.common.pagination import build_pagination_window, paginate_query, pagination_payload
 from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.integrations.provider_matrix import provider_kind
@@ -35,7 +37,8 @@ from app.integrations.source_control.source_control.providers.github.webhook_inb
     claim_verified_delivery,
 )
 from app.integrations.source_control.uat_access import local_super_admin, require_uat_access, uat_enabled
-from app.models.source_control import SourceInstallation
+from app.models.integration import IntegrationInstance
+from app.models.source_control import SourceInstallation, SourceRepositoryGrant
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
@@ -65,26 +68,114 @@ def _notification() -> dict:
 @github_source_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
-    """Provider onboarding landing, not a fabricated repository inventory."""
+    """Provider registry and coverage exclusively from committed KAORI state."""
     available = _available()
-    registered: int | None = None
-    ready: int | None = None
-    if available:
-        from app.models.integration import IntegrationInstance
+    uat_workspace_enabled = available and uat_enabled() and local_super_admin(current_user)
+    active_tab = request.args.get('tab', 'coverage').strip()
+    if active_tab not in {'coverage', 'registry'}:
+        active_tab = 'coverage'
 
-        query = IntegrationInstance.query.filter_by(
-            integration_type='source_control', provider_key='github'
+    selected_query = request.args.get('q', '').strip()[:120]
+    selected_environment = request.args.get('environment', '').strip()[:40]
+    selected_readiness = request.args.get('readiness', '').strip()[:40]
+    requested_page = request.args.get('page', 1, type=int) or 1
+    requested_per_page = request.args.get('per_page', 5, type=int) or 5
+
+    if available:
+        base = IntegrationInstance.query.filter_by(
+            integration_type='source_control', provider_key='github',
         )
-        registered = query.count()
-        ready = query.filter_by(
+        total = base.count()
+        ready = base.filter_by(
             enabled=True, lifecycle_status='active', readiness_status='ready'
         ).count()
-    return _respond(
-        'integrations/source_control/github/index.html',
-        available=available, registered=registered, ready=ready,
-        uat_workspace_enabled=uat_enabled() and local_super_admin(current_user),
-        notification_context=_notification(),
-    )
+        grants = (
+            SourceRepositoryGrant.query.join(
+                SourceInstallation,
+                SourceInstallation.id == SourceRepositoryGrant.installation_id,
+            )
+            .filter(
+                SourceInstallation.provider_key == 'github',
+                SourceInstallation.host_key == 'github.com',
+                SourceRepositoryGrant.valid_until.is_(None),
+            )
+            .count()
+        )
+        query = base
+        if selected_query:
+            term = f'%{selected_query}%'
+            query = query.filter(or_(
+                IntegrationInstance.name.ilike(term),
+                IntegrationInstance.description.ilike(term),
+            ))
+        if selected_environment:
+            query = query.filter(IntegrationInstance.environment == selected_environment)
+        if selected_readiness:
+            query = query.filter(IntegrationInstance.readiness_status == selected_readiness)
+
+        rows, pagination = paginate_query(
+            query.order_by(IntegrationInstance.created_at.desc(), IntegrationInstance.id.desc()),
+            page=requested_page,
+            per_page=requested_per_page,
+        )
+        installations = (
+            SourceInstallation.query.filter(
+                SourceInstallation.integration_instance_id.in_([row.id for row in rows]),
+                SourceInstallation.provider_key == 'github',
+                SourceInstallation.host_key == 'github.com',
+            ).all()
+            if rows else []
+        )
+        installation_by_instance = {
+            row.integration_instance_id: row for row in installations
+        }
+        environment_options = [
+            item[0] for item in base.with_entities(
+                IntegrationInstance.environment
+            ).distinct().all() if item[0]
+        ]
+        readiness_options = [
+            item[0] for item in base.with_entities(
+                IntegrationInstance.readiness_status
+            ).distinct().all() if item[0]
+        ]
+    else:
+        # Planned/disabled providers cannot fabricate a ready or empty inventory.
+        total = ready = grants = None
+        rows = []
+        pagination = pagination_payload(build_pagination_window(total_items=0))
+        installation_by_instance = {}
+        environment_options = []
+        readiness_options = []
+
+    context = {
+        'available': available,
+        'registered': total,
+        'ready': ready,
+        'stats': {
+            'total': total if total is not None else 'Not Observed',
+            'ready': ready if ready is not None else 'Not Observed',
+            'attention': total - ready if total is not None and ready is not None else 'Not Observed',
+            'grants': grants if grants is not None else 'Not Observed',
+        },
+        'active_tab': active_tab,
+        'rows': rows,
+        'pagination': pagination,
+        'installation_by_instance': installation_by_instance,
+        'selected_query': selected_query,
+        'selected_environment': selected_environment,
+        'selected_readiness': selected_readiness,
+        'environment_options': sorted(environment_options),
+        'readiness_options': sorted(readiness_options),
+        'registry_has_active_filters': bool(
+            selected_query or selected_environment or selected_readiness
+        ),
+        'uat_workspace_enabled': uat_workspace_enabled,
+        'notification_context': _notification(),
+    }
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-Target') == 'github-connection-registry':
+        return _respond('integrations/source_control/github/partials/_connection_registry.html', **context)
+    return _respond('integrations/source_control/github/index.html', **context)
 
 
 @github_source_bp.route('/connections/new', methods=['GET', 'POST'])
@@ -141,7 +232,7 @@ def new_connection() -> ResponseReturnValue:
                         detail='Run Full Validation before consuming Source Control evidence.',
                         action_url=url_for('github_source.index'), queue_feedback=True,
                     )
-                    return redirect(url_for('github_source.index'))
+                    return redirect(url_for('github_source.index', tab='registry'))
         except (GitHubProviderError, ValueError, CredentialEncryptionError):
             message = (
                 'GitHub App connection could not be verified. '
