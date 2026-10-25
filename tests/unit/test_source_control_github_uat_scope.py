@@ -173,6 +173,10 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
         root / 'app/integrations/source_control/source_control/providers/github/kernel_contract.py'
     ).read_text()
 
+    provider_rows = (root / 'app/templates/integrations/partials/_domain_workspace.html').read_text()
+    domain_service = (root / 'app/integrations/domain_service.py').read_text()
+    assert 'row.detail_url or url_for(row.workspace_endpoint)' in provider_rows
+    assert 'module.detail_url_for_record(record, section=' in domain_service
     assert "url_for('github_source_uat.detail', installation_id=record.id)" in kernel
     assert 'local_super_admin(current_user)' in kernel
     assert "return url_for('github_source.index')" in kernel
