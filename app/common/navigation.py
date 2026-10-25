@@ -225,6 +225,7 @@ def build_navigation_breadcrumb(
     path: str = '',
     *,
     integration_owner: Mapping[str, str] | None = None,
+    integration_selector_label: str | None = None,
 ) -> list[dict[str, str | None]]:
     """Return breadcrumb items whose root matches the KAORI sidebar main menu."""
 
@@ -250,6 +251,12 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint == 'integrations.choose_integration_provider' and integration_selector_label:
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(integration_selector_label),
+            BreadcrumbItem('Choose Provider'),
+        ]
     elif endpoint.startswith('security_posture.'):
         items = [BreadcrumbItem('Security', 'shield-alert'), BreadcrumbItem('Findings' if endpoint == 'security_posture.findings' else 'Overview')]
     elif endpoint.startswith('artifact_registry.runtime'):
