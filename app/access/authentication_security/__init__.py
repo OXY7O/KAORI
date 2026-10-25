@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.authentication.bot_protection.registry import bot_provider_definitions
-from app.access.authentication.bot_protection.service import BotPolicyMode
+from app.access.authentication.bot_protection.service import BotPolicyMode, TEST_SECRET_KEYS, TEST_SITE_KEYS
 from app.access.authentication.bot_protection.turnstile import (
     TurnstileVerificationConfig,
     _configuration_ready,
@@ -164,6 +164,10 @@ def save_bot_policy():
             or (bool(submitted_secret) and submitted_secret != policy.bot_secret_key)
         )
         if mode == BotPolicyMode.ALWAYS:
+            if not (current_app.debug or current_app.testing):
+                if site_key in TEST_SITE_KEYS or effective_secret in TEST_SECRET_KEYS:
+                    db.session.rollback()
+                    abort(409, description='Turnstile test credentials cannot be enabled in production.')
             tested = policy.bot_tested_at
             if tested is not None and tested.tzinfo is None:
                 tested = tested.replace(tzinfo=UTC)
