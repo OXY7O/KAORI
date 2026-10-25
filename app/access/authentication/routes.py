@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.bot_protection.service import public_bot_state, verify_bot_challenge
 from app.access.authentication.forms import LoginForm, MfaChallengeForm
 from app.access.authentication.identity_provider.browser import (
     SsoProviderError,
@@ -51,6 +52,8 @@ from app.access.authentication.sso import (
 )
 from app.extensions.limiter import limiter
 from app.models import User
+from app.models.authentication_security import AuthenticationSecurityPolicy
+from app.extensions.db import db
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -141,7 +144,18 @@ def login():
     if form.validate_on_submit():
         username = form.username.data or ''
         password = form.password.data or ''
-        result = authenticate(username, password)
+        bot_policy = db.session.get(AuthenticationSecurityPolicy, 1)
+        bot_state = public_bot_state(bot_policy)
+        bot_verified = True
+        if bot_state.required:
+            outcome = verify_bot_challenge(bot_policy, request.form.get('cf-turnstile-response'))
+            bot_verified = outcome is not None and outcome.passed
+        result = (
+            authenticate(username, password)
+            if bot_verified
+            else AuthResult(False, 'access_not_permitted', source='database',
+                            message='Bot verification was not accepted. Complete a new challenge.')
+        )
 
         if result.success and result.user:
             try:
@@ -185,12 +199,41 @@ def login():
         {'record': provider, 'definition': provider_definition(provider.provider_key)}
         for provider in enabled_sso_providers()
     ]
-    return render_template('access/authentication/index.html', form=form, sso_provider_rows=sso_provider_rows)
+    bot_state = public_bot_state(db.session.get(AuthenticationSecurityPolicy, 1))
+    return render_template(
+        'access/authentication/index.html',
+        form=form,
+        sso_provider_rows=sso_provider_rows,
+        bot_state=bot_state,
+    )
 
 
-@auth_bp.get('/sso/<provider_key>/start')
+@auth_bp.route('/sso/<provider_key>/start', methods=['GET', 'POST'])
 @limiter.limit(lambda: current_app.config.get('AUTH_SSO_RATE_LIMIT', '20 per minute'))
 def sso_start(provider_key: str):
+    bot_policy = db.session.get(AuthenticationSecurityPolicy, 1)
+    bot_state = public_bot_state(bot_policy)
+    if bot_state.required:
+        # Legacy GET SSO initiation is never allowed to bypass a required
+        # server-side challenge. Only the CSRF-bound POST form can start SSO.
+        if request.method != 'POST':
+            return redirect(url_for('auth.login'))
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+        except ValidationError:
+            return redirect(url_for('auth.login'))
+        outcome = verify_bot_challenge(bot_policy, request.form.get('cf-turnstile-response'))
+        if outcome is None or not outcome.passed:
+            record_authentication_activity(
+                action='login', username=provider_key, source='sso',
+                result='failed', reason='bot_challenge_failed',
+            )
+            queue_transient_feedback(
+                status='error',
+                title='Bot verification failed',
+                message='Complete a new security challenge before starting SSO.',
+            )
+            return redirect(url_for('auth.login'))
     if current_user.is_authenticated:
         return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
 
