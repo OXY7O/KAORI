@@ -325,3 +325,12 @@ For `Settings → Account & Authentication → Multi-Factor Authentication`, ver
 7. Re-run `ruff check` and `ruff format --check` on `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`, `djlint --check` on `app/templates/settings/account/partials/_mfa.html`, focused `pytest`, `scripts/verify_settings_final_lock.py`, and shared sidebar verifier. User's prior Dev Container execution had 1 failing TOTP security primitive `repr` test; this is tracked separately in issue #3237 and must be fixed before full functional MFA acceptance.
 
 UAT cannot be marked PASS based solely on source review or mocked imagery. Official Developer Check, Full Admission and staging/main promotion remain HOLD.
+
+
+## MFA Settings 1/2/3 screenshot feedback checkpoint (#3228)
+
+At the reviewed Dev Container SHA check the three marked corrections: (1) MFA header background is the same neutral Account card surface as sibling tabs; (2) no redundant six-digit helper under the verification control; (3) the right column consists of a **single** full-height guide with four scannable steps and one plain final help line, not a bordered callout within another box.
+
+Verify the confirmation input uses `tracking-widest` (Settings Final Lock approved) and still submits a single six-digit `verification_code` with keyboard/autocomplete and native validation. Check desktop/mobile, light/dark, screen reader label, Guide and all three existing MFA action POST forms, then run `djlint --check app/templates/settings/account/partials/_mfa.html`, `python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_settings_final_lock_contract.py`, and `python scripts/verify_settings_final_lock.py` at the exact reviewed SHA.
+
+Do **not** mark Generate Setup Key functional UAT passed merely because the layout and contract render: backend safe feedback is tracked separately in #3251, with real local-user sign-in/password and DB evidence still required. Never screenshot generated setup keys or recovery codes.
