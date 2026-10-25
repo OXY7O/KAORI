@@ -46,6 +46,8 @@ def _reason_label(reason: str) -> str:
         'authorization_denied': 'The external sign-in request was cancelled or denied',
         'authorization_code_missing': 'The SSO callback did not include an authorization code',
         'rate_limited': 'The authentication request exceeded the configured rate limit',
+        'mfa_challenge_failed': 'The additional factor was not accepted',
+        'bot_challenge_failed': 'The bot security challenge was not accepted',
         'user_initiated': 'The authenticated user ended the session',
     }
     normalized = (reason or '').strip().lower()
