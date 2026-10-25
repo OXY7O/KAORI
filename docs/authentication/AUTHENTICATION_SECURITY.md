@@ -75,8 +75,12 @@ false policy change. The action is recorded distinctly as
 `mfa_policy_unchanged`, with previous/new mode values identical; a neutral
 info toast returns to the MFA administrator tab. On database failure the
 transaction rolls back and no successful transition may be shown or audited.
-Both cases must honor CSRF, the `identity_providers.manage` permission and
-the enrolled local recovery Super Admin prerequisite for mandatory modes.
+Both cases use the existing KAORI Operational Feedback builder to mark
+the already-committed Activity Audit evidence in the toast; that marker
+does **not** persist a duplicate event. A rollback/error uses transient
+feedback without a false audit success indicator. Both cases must honor
+CSRF, the `identity_providers.manage` permission and the enrolled local
+recovery Super Admin prerequisite for mandatory modes.
 
 The Activity Audit presentation treats `mfa_*` and `bot_*` events as
 **Authentication Security controls** in Access, not as User Signed In events.
