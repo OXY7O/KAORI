@@ -132,3 +132,8 @@ Operator screenshot refinement reuses `components/info_tip.html::render(..., var
 The **Security Control Summaries** subtitle is removed while all three committed-state controls and existing tab destinations stay unchanged. **Operational Boundaries** now uses balanced, aligned three-row semantic content per column for governed Access controls and related Settings/Identity Provider/security workstream ownership. Preserve the visible scope labels; never move mandatory status/error information into a tooltip.
 
 This change is presentation-only: no authentication admission, policy update, provider verification, database migration, permission or audit logic modification. Review at desktop/mobile and in both themes using the standard Info Tip controller, plus existing Access Final Lock, `djlint` and scoped pytest contracts.
+
+
+## Authentication Security cards without redundant heading (#3166)
+
+The Authentication Assurance Overview renders the three **MFA, Bot Protection and Session Security** control cards directly after the posture panel. The redundant visible `Security Control Summaries` heading is intentionally omitted at the operator's UAT request. The containing `section` retains an accessible `aria-label="Authentication security controls"` and existing card-level titles, state-derived labels, and navigation. Other workspace tabs, policy controls, and session enforcement remain unchanged. Validate in the normal light/dark and responsive Visual QA workflow.

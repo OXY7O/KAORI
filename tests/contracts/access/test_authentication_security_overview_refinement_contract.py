@@ -40,7 +40,10 @@ def test_hero_metrics_have_compact_one_line_copy() -> None:
 def test_overview_has_three_grounded_posture_tiles_and_operational_hierarchy() -> None:
     overview = _overview()
     assert 'Authentication Assurance Posture' in overview
-    assert 'Security Control Summaries' in overview
+    assert 'Security Control Summaries' not in overview
+    assert 'authentication-control-summary-heading' not in overview
+    assert 'aria-label="Authentication security controls"' in overview
+    assert 'class="grid gap-4 xl:grid-cols-3"' in overview
     assert 'Operational Boundaries' in overview
     assert 'Governed Here' in overview
     assert 'Managed Elsewhere' in overview
