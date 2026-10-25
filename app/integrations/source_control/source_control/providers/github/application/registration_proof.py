@@ -22,16 +22,25 @@ _PROOF_SALT = 'source-control-github-app-registration-proof-v1'
 REGISTRATION_PROOF_MAX_AGE_SECONDS = 600
 
 
+def _canonical_multiline(value: str | None) -> str | None:
+    """Match browser native FormData and HTMX newline serialization.
+
+    The original credential remains unchanged for GitHub authentication and
+    encrypted persistence. Only the keyed proof fingerprint is normalized.
+    """
+    return value.replace('\r\n', '\n').replace('\r', '\n') if value is not None else None
+
+
 def _fingerprint(values: GitHubConnectionInput) -> str:
     payload = json.dumps(
         {
             'name': values.name,
             'environment': values.environment,
-            'description': values.description,
+            'description': _canonical_multiline(values.description),
             'app_id': str(values.app_id),
             'installation_id': str(values.installation_id),
             'account_id': str(values.account_id),
-            'private_key_pem': values.private_key_pem,
+            'private_key_pem': _canonical_multiline(values.private_key_pem),
             'webhook_secret': values.webhook_secret,
             'enabled': bool(values.enabled),
         },
