@@ -79,5 +79,20 @@ def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None
     assert 'active_capability_override=' in presentation
     assert 'integration_selector_label=' in presentation
     assert "resolved_endpoint == 'integrations.choose_integration_provider'" in sidebar_model
-    assert "endpoint == 'integrations.choose_integration_provider'" in breadcrumb
+    assert "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}" in breadcrumb
+    assert "BreadcrumbItem('Choose Provider')" in breadcrumb
+
+
+
+def test_metrics_provider_chooser_stays_with_observability_navigation() -> None:
+    presentation = _read('app/bootstrap/presentation.py')
+    sidebar = _read('app/common/workspace_navigation.py')
+    navigation = _read('app/integrations/navigation.py')
+    breadcrumb = _read('app/common/navigation.py')
+
+    assert "request.endpoint == 'integrations.select_metrics_source_provider'" in presentation
+    assert "provider_selector_domain('metrics_source')" in presentation
+    assert "'integrations.select_metrics_source_provider': 'observability'" in sidebar
+    assert "'integrations.select_metrics_source_provider'" in navigation
+    assert "'integrations.select_metrics_source_provider'" in breadcrumb
     assert "BreadcrumbItem('Choose Provider')" in breadcrumb
