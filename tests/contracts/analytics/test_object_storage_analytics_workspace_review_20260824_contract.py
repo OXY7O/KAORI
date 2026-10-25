@@ -233,6 +233,7 @@ def test_object_storage_overview_capacity_trend_is_chart_centered() -> None:
     assert 'interpretation_callout(' not in health
     assert 'interpretation_grid_classes(' not in health
 
+
 def test_object_storage_overview_tab_polish_preserves_source_boundaries() -> None:
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
     consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')

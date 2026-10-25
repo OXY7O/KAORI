@@ -5,11 +5,13 @@
 {% set alerts = overview_alerts|default({}, true) %}
 {% set alert_origin = alerts.source|default({}, true) %}
 {% set observed_at = inventory_observed_at|default(none) %}
-<section class="{{ analysis_surface.snapshot_shell_classes() }}" data-object-storage-evidence-readiness>
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-evidence-readiness>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <h2 class="{{ analysis_surface.section_title_classes() }}">Evidence Readiness Snapshot</h2>
                     <p class="{{ analysis_surface.section_description_classes() }}">Review committed sources, freshness, and fallback boundaries for this scope.</p>
@@ -19,16 +21,17 @@
         </div>
     </header>
     {% set readiness_tiles = [
-                ('Metrics Contract', contract.label|default('Not Validated'), 'Validated metric-family contract', 'database'),
-                ('Inventory Observed', observed_at|user_datetime('Not Collected'), 'Committed point-in-time observation', 'clock-3'),
-                ('Forecast History', forecast_state.label|default('Unavailable'), 'Separate forecast-worker evidence', 'chart-spline'),
-                ('Alert Lifecycle Source', alert_origin.resolved_label|default('Unavailable'), 'Committed provider alert source', 'bell-ring')
-            ] %}
+            ('Metrics Contract', contract.label|default('Not Validated'), 'Validated metric-family contract', 'database'),
+            ('Inventory Observed', observed_at|user_datetime('Not Collected'), 'Committed point-in-time observation', 'clock-3'),
+            ('Forecast History', forecast_state.label|default('Unavailable'), 'Separate forecast-worker evidence', 'chart-spline'),
+            ('Alert Lifecycle Source', alert_origin.resolved_label|default('Unavailable'), 'Committed provider alert source', 'bell-ring')
+        ] %}
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% for label, value, helper, icon in readiness_tiles %}
             <article class="{{ analysis_surface.metric_cell_classes() }}">
                 <div class="flex items-center gap-2">
-                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
                     <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                 </div>
                 <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
@@ -37,11 +40,14 @@
         {% endfor %}
     </div>
 </section>
-<div class="grid gap-4 lg:grid-cols-3" data-object-storage-evidence-overview>
-    <section class="{{ analysis_surface.snapshot_shell_classes() }} lg:col-span-2" data-object-storage-evidence-coverage>
+<div class="grid gap-4 lg:grid-cols-3"
+     data-object-storage-evidence-overview>
+    <section class="{{ analysis_surface.snapshot_shell_classes() }} lg:col-span-2"
+             data-object-storage-evidence-coverage>
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true"><i data-lucide="layers-3" class="h-5 w-5"></i></span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="layers-3" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <h2 class="{{ analysis_surface.section_title_classes() }}">Committed Evidence Coverage</h2>
                     <p class="{{ analysis_surface.section_description_classes() }}">Source, status, and permitted fallback by domain.</p>
@@ -56,9 +62,11 @@
                 ] %}
         <div class="divide-y divide-outline-subtle">
             {% for domain, icon, source_name, evidence_state, boundary in evidence_domains %}
-                <article class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-3" data-object-storage-evidence-domain="{{ domain|lower }}">
+                <article class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-3"
+                         data-object-storage-evidence-domain="{{ domain|lower }}">
                     <div class="flex min-w-0 items-start gap-2">
-                        <span class="{{ analysis_surface.metric_icon_classes('compact') }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                        <span class="{{ analysis_surface.metric_icon_classes('compact') }}"
+                              aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">{{ domain }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Committed domain evidence</p>
@@ -77,10 +85,12 @@
             {% endfor %}
         </div>
     </section>
-    <section class="{{ analysis_surface.snapshot_shell_classes() }}" data-object-storage-evidence-interpretation>
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}"
+             data-object-storage-evidence-interpretation>
         <header class="border-b border-outline-subtle px-5 py-4">
             <div class="flex items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <h2 class="{{ analysis_surface.section_title_classes() }}">Evidence Interpretation Boundary</h2>
                     <p class="{{ analysis_surface.section_description_classes() }}">Rules for reading source evidence.</p>
@@ -88,15 +98,11 @@
             </div>
         </header>
         <div class="space-y-3 p-4">
-            {% set boundaries = [
-                        ('Inventory is point-in-time', 'Never treat Inventory as a usage trend.', 'database'),
-                        ('Requests remain metrics-only', 'No Inventory fallback for request or error rates.', 'activity'),
-                        ('Alert lifecycle is provider-owned', 'Alertmanager first; metric alerts are narrower.', 'bell-ring'),
-                        ('Missing is not zero', 'Unobserved evidence remains Unknown.', 'info')
-                    ] %}
+            {% set boundaries = [('Inventory is point-in-time', 'Never treat Inventory as a usage trend.', 'database'), ('Requests remain metrics-only', 'No Inventory fallback for request or error rates.', 'activity'), ('Alert lifecycle is provider-owned', 'Alertmanager first; metric alerts are narrower.', 'bell-ring'), ('Missing is not zero', 'Unobserved evidence remains Unknown.', 'info')] %}
             {% for title, detail, icon in boundaries %}
                 <article class="{{ analysis_surface.nested_evidence_card_classes('flex items-start gap-3 p-3') }}">
-                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail }}</p>

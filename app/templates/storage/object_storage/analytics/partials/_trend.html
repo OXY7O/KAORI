@@ -68,17 +68,17 @@
                 {% endif %}
                 {% if compact_usage_overview %}
                     {% set compact_metrics = [
-                                    ('Window Change', window_change, 'Observed change in the selected window'),
-                                    ('Growth / Day', trend_summary.growth_per_day_display|default('N/A'), 'Historical rate, not a forecast'),
-                                    ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed sample direction')
-                                ] %}
+                                            ('Window Change', window_change, 'Observed change in the selected window'),
+                                            ('Growth / Day', trend_summary.growth_per_day_display|default('N/A'), 'Historical rate, not a forecast'),
+                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed sample direction')
+                                        ] %}
                 {% else %}
                     {% set compact_metrics = [
-                                    ('Observed Samples', trend_summary.sample_count|default(trend|length), 'Committed history points', 'database'),
-                                    ('Window Change', window_change, 'Historical change, not projected', 'trending-up'),
-                                    ('Growth / Day', metrics.forecast_display.growth_per_day, 'Worker-materialized baseline', 'activity'),
-                                    ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed history direction', trend_summary.icon|default('chart-no-axes-combined'))
-                                ] %}
+                                            ('Observed Samples', trend_summary.sample_count|default(trend|length), 'Committed history points', 'database'),
+                                            ('Window Change', window_change, 'Historical change, not projected', 'trending-up'),
+                                            ('Growth / Day', metrics.forecast_display.growth_per_day, 'Worker-materialized baseline', 'activity'),
+                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed history direction', trend_summary.icon|default('chart-no-axes-combined'))
+                                        ] %}
                 {% endif %}
                 {% if compact_usage_overview %}
                     <dl class="flex flex-wrap items-start gap-x-8 gap-y-3 border-b border-outline-subtle pb-4"
