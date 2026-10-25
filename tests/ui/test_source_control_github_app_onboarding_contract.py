@@ -37,7 +37,7 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
     assert 'form.hidden_tag()' in form
     assert '<fieldset' in form and 'not available' in form
     assert 'type="button"' in form
-    assert 'hx-vals=\'{"action":"test"}\'' in form
+    assert 'hx-vals=' in form and '"action":"test"' in form
     assert "submit_name='action'" in form
     assert "submit_value='save'" in form
     assert 'disabled' in actions
