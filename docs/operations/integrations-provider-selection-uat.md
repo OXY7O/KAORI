@@ -51,6 +51,46 @@ registered provider connections.** above the existing two-tab surface.
 Historical navigation checks below that say **Open → Choose Provider**
 describe earlier candidates and must now be executed via **Add Connection**.
 
+## 2026-10-25 — #3225 icon-free domain workspace introduction
+
+All six domain workspaces (Orchestration, Observability, Storage, Registry,
+Secrets Management and Source Control) now have a separate compact heading
+**above** the `Source Control Workspace` / provider-registry card. The
+Source Control introduction reads **Source Control Providers & Connections**
+with the one-line description **Review Source Control provider readiness and
+registered connections.** Other domains derive
+**[Domain] Providers & Connections** from the existing approved domain label
+and use **Review provider readiness, connections, and governed consumer
+bindings.** The Source Control copy intentionally does not claim consumer
+bindings where repository grants have their own evidence model.
+
+The header reuses the existing **icon-free** provider landing heading through
+the shared `integrations/components/_workspace.html::workspace_section_intro`
+macro. Both the provider Overview tabs and the domain Overview read path
+inherit the same typography, margins, semantic header, and responsive layout
+without introducing new style classes, JavaScript, or a separate Guide.
+Existing **inner** `Source Control Connections` / other domain workspace
+headers, Guide, action buttons, provider registry and binding tabs are
+unchanged.
+
+**HTMX boundary:** This heading is rendered by
+`app/templates/integrations/domain.html` outside the
+`integrations/partials/_domain_workspace.html` partial so targeted
+`hx-select="#domain-workspace"` / `hx-target="#domain-workspace"` updates
+replace only the card and never duplicate or remove the heading. Existing
+provider-first **Add Connection**, direct read-first **Open**, authorization,
+default 5 pagination and committed KAORI evidence remain authoritative.
+
+**Human UAT:** Check all six domain landing pages before registering a
+connection; at desktop 1440×900 and mobile 390×844 in both themes, the
+icon-free title/description precede the card with the same spacing as the
+accepted Provider Connections & Coverage pattern. Verify switching provider
+registry/bindings and filters does not duplicate the heading, and Source
+Control retains only its relevant Provider Registry tab. Prior operator
+checks after #3220 were djLint PASS and 27 focused pytest PASS; they are
+historical and cannot substitute for new-SHA executable QA or Human
+Acceptance. Official CI/CD and Full Admission remain HOLD.
+
 ## Metrics Source provider chooser visual refinement (#3112)
 
 The existing `/integrations/observability/metrics-sources/new` selector

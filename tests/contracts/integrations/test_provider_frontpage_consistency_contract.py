@@ -309,12 +309,12 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     assert '"Integration Workspace"' in tabs
     assert '"Switch between integration coverage and registered connections."' in tabs
     assert 'data-kaori-integration-workspace-section' in tabs
-    assert 'Provider Connections &amp; Coverage' in tabs
+    assert 'integration_ui.workspace_section_intro(' in tabs
+    assert 'Provider Connections & Coverage' in tabs
     assert 'Monitor provider readiness, committed coverage, and registered connections.' in tabs
     outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
-    assert '<header class="min-w-0 px-1"' in outer_heading
     assert 'integration_ui.palette_icon(' not in outer_heading
-    assert tabs.index('Provider Connections &amp; Coverage') < tabs.index('data-kaori-integration-workspace-tabs')
+    assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
     assert 'components/info_tip.html' in tabs
     assert tabs.count('info_tip.render(') == 1
     assert '"integration-workspace-" ~ provider_key' in tabs
@@ -324,6 +324,9 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     for section in ('Integration Coverage —', 'Connection Registry —', 'Authority Boundary —'):
         assert section in tabs
     shared_header = read('app/templates/integrations/components/_workspace.html')
+    assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
+    assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in shared_header
+    assert 'palette_icon(' not in shared_header.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
     assert 'title_extra=None' in shared_header
     assert '{% if title_extra %}{{ title_extra }}{% endif %}' in shared_header
     assert 'title_extra=workspace_guide' in tabs
