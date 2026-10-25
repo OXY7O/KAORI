@@ -1,0 +1,20 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Save MFA Recovery Codes · KAORI{% endblock title %}
+{% block content %}
+    <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8">
+        <section class="w-full max-w-lg rounded-2xl border border-outline-default bg-surface-card p-6 shadow-xl sm:p-8"
+                 aria-labelledby="mfa-recovery-title">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="shield-check" class="h-6 w-6"></i></span>
+            <h1 id="mfa-recovery-title" class="mt-4 text-xl font-semibold text-content-primary">MFA Enabled — Save Recovery Codes</h1>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">Your identity has been fully verified and your KAORI session is active. Save these single-use codes in a password manager. They will not be displayed again.</p>
+            <ul class="mt-5 grid gap-2 sm:grid-cols-2">
+                {% for code in codes %}
+                    <li class="rounded-lg border border-outline-default bg-surface-subtle p-3 font-mono text-sm text-content-primary">{{ code }}</li>
+                {% endfor %}
+            </ul>
+            <a href="{{ url_for('welcome.index') }}"
+               class="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover">Continue to KAORI</a>
+        </section>
+    </main>
+{% endblock content %}
