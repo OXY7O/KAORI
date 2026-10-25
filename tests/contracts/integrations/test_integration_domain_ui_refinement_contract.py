@@ -140,8 +140,8 @@ def test_all_integration_domains_select_provider_before_registration() -> None:
     assert "@integrations_bp.get('/providers/<string:integration_type>')" in routes
     assert "@permission_required('integrations.manage')" in routes
     assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
-    assert "provider_kinds(integration_type)" in routes
-    assert "if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS" in routes
+    assert 'provider_kinds(integration_type)' in routes
+    assert 'if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS' in routes
 
     for domain in ('orchestration', 'observability', 'storage', 'registry', 'secrets_management', 'source_control'):
         assert f'domain_key: {domain}' in matrix
@@ -157,10 +157,10 @@ def test_all_integration_domains_select_provider_before_registration() -> None:
 
     assert "redirect(url_for('integrations.select_metrics_source_provider'))" in routes
     assert 'data-kaori-provider-selector' in picker
-    assert "if provider.registration_url" in picker
-    assert "Register {{ provider.label }}" in picker
+    assert 'if provider.registration_url' in picker
+    assert 'Register {{ provider.label }}' in picker
     assert 'components/info_tip.html' in picker
-    assert "url_for(domain.workspace_endpoint)" in picker
+    assert 'url_for(domain.workspace_endpoint)' in picker
 
 
 def test_provider_overviews_share_provider_first_registration_contract() -> None:
@@ -189,8 +189,8 @@ def test_metrics_provider_selector_uses_compact_hero_and_shared_info_tips() -> N
     routes = read('app/integrations/routes.py')
     tooltips = read('app/templates/components/info_tip.html')
 
-    assert "Adapters own validation and runtime." in selector
-    assert "Choose a provider here; adapter, query language, validation" not in selector
+    assert 'Adapters own validation and runtime.' in selector
+    assert 'Choose a provider here; adapter, query language, validation' not in selector
     assert 'info_tip.render("metrics-selector-guide"' in selector
     assert 'info_tip.render("metrics-adapter-" ~ provider.key' in selector
     assert 'info_tip.render("metrics-query-" ~ provider.key' in selector
@@ -201,7 +201,6 @@ def test_metrics_provider_selector_uses_compact_hero_and_shared_info_tips() -> N
     assert 'href="{{ provider.registration_url }}"' in selector
     assert 'Register {{ provider.label }}' in selector
     assert "url_for('integrations.register_metrics_source', provider_key=provider.key)" in routes
-
 
 
 def test_source_control_provider_matrix_declares_planned_inert_provider_choices() -> None:
@@ -224,8 +223,8 @@ def test_source_control_provider_card_registration_is_provider_owned_and_disable
     route = read('app/integrations/routes.py')
     selector = read('app/templates/integrations/provider_selector.html')
 
-    assert "kinds = sorted(provider_kinds(integration_type)" in route
-    assert "(not kind.available, kind.label.casefold())" in route
+    assert 'kinds = sorted(provider_kinds(integration_type)' in route
+    assert '(not kind.available, kind.label.casefold())' in route
     assert "'lifecycle': kind.lifecycle" in route
     assert "('source_control', 'github'): 'github_source.new_connection'" in route
     assert "('source_control', 'gitlab')" not in route
@@ -233,8 +232,8 @@ def test_source_control_provider_card_registration_is_provider_owned_and_disable
     assert 'data-kaori-provider-card-grid' in selector
     assert 'xl:grid-cols-3' in selector
     assert 'data-kaori-provider-lifecycle="{{ provider.lifecycle }}"' in selector
-    assert 'table_label.status_label("Planned", "unknown")' in selector
-    assert 'table_label.status_label("Available", "normal")' in selector
+    assert "table_label.status_label('Planned', 'unknown')" in selector
+    assert "table_label.status_label('Available', 'normal')" in selector
     assert 'if provider.registration_url' in selector
     assert 'href="{{ provider.registration_url }}"' in selector
     assert 'data-kaori-provider-register' in selector
@@ -246,20 +245,33 @@ def test_source_control_provider_card_registration_is_provider_owned_and_disable
     assert 'Not defined' in route
 
 
-def test_provider_cards_reuse_canonical_kaori_info_tips_for_adapter_and_protocol() -> None:
+def test_provider_cards_preserve_section_guide_without_field_question_icons() -> None:
     selector = read('app/templates/integrations/provider_selector.html')
     tooltip = read('app/templates/components/info_tip.html')
     controller = read('app/static/js/info_tips.js')
 
+    # Contextual guidance belongs to the shared section header, not each field.
+    assert selector.count('info_tip.render(') == 1
     assert 'info_tip.render("provider-choices-" ~ integration_type' in selector
     assert 'variant="guide"' in selector
-    assert 'info_tip.render("adapter-" ~ integration_type ~ "-" ~ provider.key' in selector
-    assert 'info_tip.render("protocol-" ~ integration_type ~ "-" ~ provider.key' in selector
+    assert 'info_tip.render("adapter-" ~ integration_type' not in selector
+    assert 'info_tip.render("protocol-" ~ integration_type' not in selector
+    assert '<dt class="text-xs font-semibold text-content-muted">Adapter</dt>' in selector
+    assert '<dt class="text-xs font-semibold text-content-muted">Protocol</dt>' in selector
+    assert 'integration_ui.palette_icon("layers-3", "brand", size="lg")' in selector
+
+    # Compact text fits desktop grid without forcing clipping on phones.
+    assert 'Registration is not yet available.' in selector
+    assert 'Provider support is planned. No registration or runtime is available.' not in selector
+    assert 'whitespace-nowrap' not in selector
+    assert 'truncate' not in selector
+
+    # The remaining title-level Guide retains KAORI's established controller.
     assert 'data-kaori-info-tip-trigger' in tooltip
     assert 'data-kaori-info-tip-preview' in tooltip
     for interaction in ("'pointerover'", "'focusin'", "'click'", "'keydown'"):
         assert interaction in controller
     assert "event.key === 'Escape'" in controller
-    assert "portal.appendChild(preview)" in controller
+    assert 'portal.appendChild(preview)' in controller
     assert '<style' not in selector
     assert '<script' not in selector
