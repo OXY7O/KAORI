@@ -54,6 +54,7 @@ from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
+from app.security.credentials import CredentialEncryptionError
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -496,7 +497,7 @@ def mfa_challenge():
                     raise MfaVerificationError('Invalid enrollment request.')
             except (ValidationError, MfaVerificationError):
                 enrollment_error = 'Enrollment could not be verified. Check your code or start again.'
-            except SQLAlchemyError:
+            except (SQLAlchemyError, CredentialEncryptionError):
                 enrollment_error = 'Authentication is temporarily unavailable.'
             if codes is not None:
                 # Proof has become active. Revalidate the account and create
@@ -539,7 +540,7 @@ def mfa_challenge():
                 action='login', username=user.username, source=str(pending['source']),
                 result='failed', reason='mfa_challenge_failed', user=user,
             )
-        except SQLAlchemyError:
+        except (SQLAlchemyError, CredentialEncryptionError):
             error = 'Authentication is temporarily unavailable.'
         else:
             # Recheck current source and account state after consuming one-time
