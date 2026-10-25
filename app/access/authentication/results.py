@@ -19,6 +19,7 @@ AuthReason = Literal[
     'authorization_denied',
     'authorization_code_missing',
     'rate_limited',
+    'bot_challenge_failed',
 ]
 
 
