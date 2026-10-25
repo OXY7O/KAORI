@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% set overview_tabs = [('capacity', 'Capacity', 'database'), ('performance', 'Performance', 'activity'), ('consumers', 'Consumers', 'layers-3'), ('forecast', 'Forecast', 'chart-spline'), ('alerts', 'Alerts', 'bell-ring'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-overview-workspace"
@@ -10,7 +11,19 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="layout-dashboard" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Analytics Overview Workspace</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Analytics Overview Workspace</h2>
+                        {{ info_tip.render('object-storage-analytics-overview-workspace-guide',
+                                                'Analytics Overview Guide',
+                                                'Select one committed evidence domain, then open its owning workspace for deeper analysis.',
+                                                items=[
+                                                'Capacity: utilization and observed usage; Performance: requests, errors, and waiting.',
+                                                'Consumers: concentration, object counts, and quota visibility.',
+                                                'Forecast: historical growth versus the worker projection; Alerts: provider lifecycle versus metric anomalies.',
+                                                'Evidence: metric contract, source authority, and supported fallback.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review one operational domain at a time, then open the owning analysis workspace when deeper evidence is required.</p>
                 </div>
             </div>
