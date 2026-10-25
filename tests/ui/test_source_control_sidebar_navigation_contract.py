@@ -41,11 +41,13 @@ def test_source_control_breadcrumb_and_kernel_owner_match():
     assert "'github_source_uat.'" in module
 
 
-def test_first_provider_github_link_uses_existing_domain_workspace():
+def test_github_provider_action_uses_existing_registration_workspace():
     workspace = _read('app/templates/integrations/partials/_domain_workspace.html')
     taxonomy = _read('app/definitions/catalogs/integrations/taxonomy.yaml')
     assert "domain.key == 'source_control'" in workspace
-    assert "url_for('github_source.index')" in workspace
-    assert 'GitHub · First Provider' in workspace
-    assert 'GitHub · Open Provider' in workspace
+    module = _read('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
+    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    assert "workspace_endpoint='github_source.new_connection'" in module
+    assert 'GitHub · First Provider' not in workspace
+    assert 'GitHub · Open Provider' not in workspace
     assert "workspace_endpoint: integrations.source_control" in taxonomy
