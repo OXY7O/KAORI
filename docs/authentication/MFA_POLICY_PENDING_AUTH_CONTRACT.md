@@ -49,3 +49,9 @@ The existing `login_required` and `permission_required` decorators MUST remain d
 5. Local, LDAP and configured SSO browser UAT, remember-me/single-session regressions, quality/static/DAST, exact-SHA Human Acceptance.
 
 Normal KAORI release admission is HOLD until operator authorization.
+
+## MFA-02 runtime extension (#3134)
+
+MFA-01's pure kernel remains the stable policy vocabulary. MFA-02 adds persisted encrypted `AuthenticationMfaFactor`, timed/replay-resistant challenges and one-time hashed recovery codes. The pre-login pending state holds **no TOTP secret** or fully authenticated user identifier and expires after five minutes. Active-session generation is issued only after verified MFA.
+
+Authorized self-service enrollment uses a fresh authenticated session and Local Database password reauthentication; first-login mandatory enrollment is restricted. Mode changes revoke existing generations, and shell reset forces restricted re-enrollment rather than bypassing mandatory policy. This extension is **UAT candidate source** pending Dev Container migration, security tests and human acceptance.

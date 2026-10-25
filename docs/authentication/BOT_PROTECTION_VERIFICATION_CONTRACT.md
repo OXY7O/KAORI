@@ -35,3 +35,9 @@ Upstream contract (Cloudflare official): https://developers.cloudflare.com/turns
 BP-02 must register and protect actual provider instances using KAORI credential encryption and enforce challenge on login/SSO before credential/session issuance. A configured always/adaptive policy without a ready instance MUST fail closed; never silently fall back to disabled due to vendor outage. Preserve local break-glass with explicitly approved recovery path; never create a CAPTCHA bypass via unprotected admin form.
 
 Do not claim end-to-end CAPTCHA protection, operator-configurable providers, readiness or UAT PASS from BP-01. Official CI and `kaori/staging` admission remain HOLD.
+
+## BP-02 runtime extension (#3137)
+
+Bot provider instance configuration lives in the committed `authentication_security_policies` row, with an encrypted verification secret. The initial supported activation policy is Disabled or Always. Cloudflare Siteverify enforcement gates credential authentication **before** password/provider evaluation and the start of SSO through a CSRF-bound POST; a legacy SSO GET is redirected when Always is active. Site key is public; secret never reaches the browser. The login-only CSP authorizes fixed Cloudflare resources and no dynamic external hosts.
+
+Provider configuration presence is not independently verified connection readiness. Every required failure, timeout or malformed token rejects authentication. Out-of-band `flask disable-bot-protection` recovery requires privileged host access, incident reason and a committed audit. Adapter tests, real provider UAT, outage/recovery rehearsal and Human Acceptance are required before production policy activation. Adaptive behavior and hCaptcha remain future scoped work, not placeholders that can be enabled.

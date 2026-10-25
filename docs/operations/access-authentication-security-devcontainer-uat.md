@@ -87,3 +87,7 @@ Record operator outcome and exact SHA before marking focused UAT PASS. Do not eq
 ## Delivery
 
 Issue branches → Draft PRs #3139/#3140/#3141 → reviewed holding integration → local QA/UAT → human acceptance. Official Developer Check, Full Admission, `kaori/staging`, main and release stay HOLD pending explicit approval.
+
+## Superseding executable UAT for MFA-02 / BP-02
+
+This earlier document describes the read-only foundation preview at #3138. For the subsequent controlled full-cycle implementation and database migrations, use **`docs/operations/authentication-security-full-cycle-uat.md`** instead. Do not treat the preview-only Not Enabled matrix as the functional UAT contract after schema upgrade and configuration. The official admission HOLD remains unchanged.

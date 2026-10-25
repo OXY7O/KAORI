@@ -99,3 +99,12 @@ A bounded, read-only **Access → Authentication Security** workspace is added a
 **Source-only readiness** is never misrepresented as enabled security posture: the MFA policy kernel (#3133) is not an enrolled/verified second-factor challenge; the Turnstile verification kernel (#3136) is not a registered provider instance or an enforced browser login challenge. No admin enable toggles, client secret handling, new login runtime, new RBAC permissions, or new provider catalog are activated through this read-only page.
 
 Future MFA self-service belongs to Settings → Account & Authentication (#562/#3134); controlled provider instance and policy administration under this Access capability remain blocked by #3137 until admission and operator UAT. Preserve canonical responsive/light-dark/a11y/loading, scoped permission checks and progressive navigation.
+
+
+## Authentication Security functional policy extension (#3134 / #3137)
+
+The prior #3138 *read-only preview* is superseded only for admitted authentication-security sub-capabilities after schema migration and operator acceptance: Access → Authentication Security uses the existing permission-gated workspace with admin mutations under `identity_providers.manage`, while reads still require `identity_providers.view`. The shared Hero, query-backed HTMX tabs, status components, responsive and accessibility standards remain authoritative.
+
+MFA admin mode (Disabled/Optional/Required Privileged/Required All) and provider-specific Bot Protection mode (Disabled/Always initially) are persisted policy, **not** a new primary Identity Provider. All state changes require CSRF and committed audit; activation revokes previously issued sessions as governed. Cloudflare Turnstile site key and hostname are public management fields, but verification secret is encrypted, never echoed. Unknown/invalid provider configuration fails closed; source-only registration is not live readiness. Adaptive/hCaptcha are not labeled ready.
+
+The authorization boundary stays server-owned and permission-scoped. The controlled user self-service factor belongs to Settings → Account & Authentication, not Access; user-factor recovery/reset requires proof or operator-shell incident procedure. Successful challenge verification, audit correlation, and first-login mandatory enrollment are subject to real Dev Container Human Acceptance.

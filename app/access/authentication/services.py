@@ -101,6 +101,8 @@ def credential_failure_message(result: AuthResult) -> str:
 
     if result.reason == 'database_unavailable':
         return result.message or DATABASE_UNAVAILABLE_MESSAGE
+    if result.reason == 'bot_challenge_failed':
+        return 'Bot verification was not accepted. Complete a new security challenge.'
     return INVALID_LOGIN_MESSAGE
 
 

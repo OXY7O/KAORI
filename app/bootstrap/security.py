@@ -12,10 +12,19 @@ _TRUSTED_INLINE_SCRIPT_OPENINGS = (
 _PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=()'
 
 
-def _content_security_policy(nonce: str) -> str:
+def _content_security_policy(nonce: str, *, allow_turnstile: bool = False) -> str:
     # Alpine's standard runtime evaluates x-* expressions dynamically. Keep the
     # compatibility allowance explicit and bounded to script evaluation while
     # inline script execution itself remains nonce-protected.
+    script_sources = f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval'"
+    connection_sources = "connect-src 'self'"
+    frame_sources: tuple[str, ...] = ()
+    if allow_turnstile:
+        # Fixed, source-owned Cloudflare endpoints only. Never use wildcard
+        # script/frame origins or site-key-derived hosts in security headers.
+        script_sources += ' https://challenges.cloudflare.com'
+        connection_sources += ' https://challenges.cloudflare.com'
+        frame_sources = ('frame-src https://challenges.cloudflare.com',)
     return '; '.join(
         (
             "default-src 'self'",
@@ -23,12 +32,13 @@ def _content_security_policy(nonce: str) -> str:
             "object-src 'none'",
             "frame-ancestors 'none'",
             "form-action 'self'",
-            f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval'",
+            script_sources,
             "script-src-attr 'none'",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
-            "connect-src 'self'",
+            connection_sources,
+            *frame_sources,
         )
     )
 
@@ -68,9 +78,17 @@ def register_security_headers(app: Flask) -> None:
 
         if response.mimetype == 'text/html':
             nonce = g.csp_nonce
+            allow_turnstile = (
+                'data-kaori-turnstile-active="true"' in response.get_data(as_text=True)
+                and response.status_code == 200
+            )
             _protect_inline_scripts(response, nonce)
-            response.headers['Content-Security-Policy'] = _content_security_policy(nonce)
+            response.headers['Content-Security-Policy'] = _content_security_policy(
+                nonce, allow_turnstile=allow_turnstile
+            )
             response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
-            response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+            # Turnstile embeds an external challenge iframe. Only its
+            # login form relaxes the cross-origin isolation needed for it.
+            response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none' if allow_turnstile else 'require-corp'
 
         return response

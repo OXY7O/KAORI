@@ -83,6 +83,16 @@
                     <span>Remember Me</span>
                 </label>
             </div>
+            {% if bot_state.required %}
+                <section class="space-y-2" aria-label="Bot verification" data-kaori-turnstile-active="true">
+                    <p class="text-xs font-semibold text-content-secondary">Security Challenge</p>
+                    {% if bot_state.site_key %}
+                        <div class="cf-turnstile" data-sitekey="{{ bot_state.site_key }}" data-action="login"></div>
+                    {% else %}
+                        <p class="text-sm text-status-critical-text" role="alert">Bot Protection is enabled but its provider is not configured. Contact an administrator.</p>
+                    {% endif %}
+                </section>
+            {% endif %}
             {{ form.submit(class="kaori-login-submit inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-semibold text-white shadow-md shadow-kaori-primary/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}
         </form>
         {% if sso_provider_rows %}
@@ -101,6 +111,16 @@
                     {% for row in sso_provider_rows %}
                         {% set provider = row.record %}
                         {% set provider_login_url = url_for('auth.sso_start', provider_key=provider.key, next=form.next.data) if form.next.data else url_for('auth.sso_start', provider_key=provider.key) %}
+                        {% if bot_state.required %}
+                            <form method="post" action="{{ provider_login_url }}" class="space-y-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="cf-turnstile" data-sitekey="{{ bot_state.site_key or '' }}" data-action="login"></div>
+                                <button type="submit"
+                                        class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                                    Continue with {{ provider.display_name }}
+                                </button>
+                            </form>
+                        {% else %}
                         <a href="{{ provider_login_url }}"
                            data-kaori-sso-provider="{{ provider.provider_key }}"
                            class="inline-flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus"
@@ -111,6 +131,7 @@
                                aria-hidden="true"></i>
                             <span class="min-w-0 truncate">{{ provider.display_name }}</span>
                         </a>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </section>
@@ -121,6 +142,9 @@
                aria-hidden="true"></i>
             Authentication Activity Is Recorded for Audit
         </div>
+        {% if bot_state.required %}
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        {% endif %}
         {% include "access/authentication/partials/_footer_meta.html" %}
     </div>
 </section>

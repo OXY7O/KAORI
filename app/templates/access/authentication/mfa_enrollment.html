@@ -1,0 +1,39 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Enroll MFA · KAORI{% endblock title %}
+{% block content %}
+    <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8">
+        <section class="w-full max-w-lg rounded-2xl border border-outline-default bg-surface-card p-6 shadow-xl sm:p-8"
+                 aria-labelledby="mfa-enroll-title">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="shield-check" class="h-6 w-6"></i></span>
+            <h1 id="mfa-enroll-title" class="mt-4 text-xl font-semibold text-content-primary">Authenticator Enrollment Required</h1>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">Your account must enroll a verified authenticator before KAORI can issue an authenticated application session. The session remains restricted until this process succeeds.</p>
+            {% if error %}
+                <p role="alert" class="mt-4 rounded-lg border border-outline-default bg-surface-hover p-3 text-sm text-status-critical-text">{{ error }}</p>
+            {% endif %}
+            <div class="mt-5 rounded-xl border border-outline-default bg-surface-subtle p-4">
+                <h2 class="text-sm font-semibold text-content-primary">1. Generate Setup Key</h2>
+                <form method="post" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="mfa_action" value="begin">
+                    <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover">Generate Setup Key</button>
+                </form>
+                {% if setup_secret %}
+                    <p class="mt-3 text-xs text-content-muted">Enter this manual key into your authenticator. It is not saved to your browser's session.</p>
+                    <code class="mt-2 block break-all font-mono text-sm font-semibold text-content-primary">{{ setup_secret }}</code>
+                {% endif %}
+            </div>
+            <div class="mt-4 rounded-xl border border-outline-default bg-surface-subtle p-4">
+                <h2 class="text-sm font-semibold text-content-primary">2. Verify Authenticator Code</h2>
+                <form method="post" class="mt-3 space-y-3">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="mfa_action" value="confirm">
+                    <label for="{{ form.verification_code.id }}" class="block text-sm font-semibold text-content-primary">Six-Digit Code</label>
+                    {{ form.verification_code(autocomplete="one-time-code", inputmode="numeric", maxlength="6",
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-content-primary") }}
+                    {{ form.submit(class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover") }}
+                </form>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

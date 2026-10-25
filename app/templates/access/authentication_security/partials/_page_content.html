@@ -19,10 +19,10 @@
                 'Authentication assurance',
                 'Security Controls',
                 'Challenge Activation',
-                'Not Enabled',
-                'unknown',
+                'Partial' if mfa_policy_mode != 'disabled' or bot_state.required else 'Not Enabled',
+                'warning' if mfa_policy_mode != 'disabled' or bot_state.required else 'unknown',
                 [
-                    ('shield-check', 'MFA', 'Not Enabled', 'Enrollment and challenge pending'),
+                    ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP and recovery challenge are governed by the selected policy'),
                     ('bot', 'Bot Protection', 'Not Enabled', 'Provider activation pending')
                 ],
                 'Review Identity Providers',
@@ -43,7 +43,7 @@
                 <div class="grid gap-4 lg:grid-cols-3">
                     {% for icon, title, summary in [
                         ('shield-check', 'Multi-Factor Authentication', 'Policy kernel available; no factor enrollment or challenge enforcement.'),
-                        ('bot', 'Bot Protection', 'Turnstile verifier available; no configured provider instance or login enforcement.'),
+                        ('bot', 'Bot Protection', 'Server-side Turnstile verifier with optional policy-backed enforcement.'),
                         ('monitor-check', 'Session Security', 'One active login generation per account; idle and absolute timeout policy remain separate.')
                     ] %}
                         <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
@@ -59,36 +59,108 @@
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-base font-semibold text-content-primary">Multi-Factor Authentication</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI-owned assurance after primary identity verification.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI controls the post-primary factor policy. Enrolled users are challenged before session issuance.</p>
                     </div>
-                    {{ table_label.status_indicator_label('Not Enabled', 'unknown') }}
+                    {{ table_label.status_indicator_label('Not Enabled' if mfa_policy_mode == 'disabled' else 'Policy Active', 'unknown' if mfa_policy_mode == 'disabled' else 'warning') }}
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Policy Contract</h3>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">Supported policy vocabulary: Disabled, Optional, Required for privileged roles, and Required for all users. Policy selection and verified TOTP enrollment are not yet available.</p>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">A fully authenticated session must never be established until required second-factor verification succeeds. The existing sign-in flow remains unchanged in this phase.</p>
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-5">
+                    <h3 class="text-sm font-semibold text-content-primary">Authentication Assurance Policy</h3>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Current policy: <strong>{{ mfa_policy_mode|replace('_', ' ')|title }}</strong>. TOTP and single-use recovery verification use committed encrypted factor state. The policy applies after Local, LDAP or SSO primary verification.</p>
+                    {% if can_manage_authentication_security %}
+                        <form method="post"
+                              action="{{ url_for('access.authentication_security.save_mfa_policy') }}"
+                              class="mt-4 space-y-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label for="mfa-policy-mode" class="block text-sm font-semibold text-content-primary">Enforcement Mode</label>
+                            <select id="mfa-policy-mode" name="mfa_mode"
+                                    class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                {% for value, label in [
+                                    ('disabled', 'Disabled'),
+                                    ('optional', 'Optional — enrolled users challenged'),
+                                    ('required_privileged', 'Required for privileged accounts'),
+                                    ('required_all', 'Required for all human accounts')
+                                ] %}
+                                    <option value="{{ value }}" {% if mfa_policy_mode == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <label class="flex items-start gap-3 text-xs leading-5 text-content-secondary">
+                                <input type="checkbox" name="acknowledge_policy_impact" value="yes"
+                                       required class="mt-1 h-4 w-4 accent-kaori-primary">
+                                <span>Changing this security policy revokes existing authenticated and Remember Me sessions. Mandatory policies require at least one enrolled Local Database Super Admin.</span>
+                            </label>
+                            <button type="submit"
+                                    class="inline-flex min-h-11 items-center justify-center rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">Save MFA Policy</button>
+                        </form>
+                    {% else %}
+                        <p class="mt-3 text-xs text-content-muted">This policy is read-only for your permission scope.</p>
+                    {% endif %}
                 </div>
+                <p class="text-xs leading-5 text-content-muted">Each user enrolls their authenticator in Settings → Account & Authentication. No administrator can retrieve TOTP secrets or recovery codes. Newly required users without enrolled factors complete a restricted sign-in enrollment flow.</p>
             {% elif active_tab == 'bot' %}
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-base font-semibold text-content-primary">Bot Protection</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Provider-neutral verification, separate from Identity Providers and MFA.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Configure a CAPTCHA verification provider separately from primary Identity Providers and MFA.</p>
                     </div>
-                    {{ table_label.status_indicator_label('Not Enabled', 'unknown') }}
+                    {{ table_label.status_indicator_label('Enforced' if bot_state.required else 'Not Enabled', 'warning' if bot_state.required else 'unknown') }}
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Verification Adapters</h3>
-                    {% for provider in bot_providers %}
-                        <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-3">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">{{ provider.label }}</p>
-                                <p class="text-xs leading-5 text-content-muted">Server-side token verification adapter; no configured instance.</p>
-                            </div>
-                            {{ table_label.status_indicator_label('Not Configured', 'unknown') }}
+                <section class="rounded-xl border border-outline-default bg-surface-subtle p-5" aria-label="Bot provider configuration">
+                    <h3 class="text-sm font-semibold text-content-primary">Cloudflare Turnstile</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Server-side Siteverify adapter. Status refers to saved configuration, not an independently verified Cloudflare connection.</p>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                        <div>
+                            <p class="text-xs font-semibold text-content-muted">Provider</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">Cloudflare Turnstile</p>
                         </div>
-                    {% endfor %}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">Enabled challenge policies require protected provider credentials, verified readiness, and server-side login enforcement. A browser widget alone is not security.</p>
-                </div>
+                        <div>
+                            <p class="text-xs font-semibold text-content-muted">Configuration</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Present' if bot_state.configured else 'Not Configured' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-content-muted">Enforcement Mode</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Always' if bot_state.required else 'Disabled' }}</p>
+                        </div>
+                    </div>
+                    {% if can_manage_authentication_security %}
+                        <form method="post" action="{{ url_for('access.authentication_security.save_bot_provider') }}"
+                              class="mt-5 grid gap-4 border-t border-outline-subtle pt-5 sm:grid-cols-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="provider_key" value="cloudflare_turnstile">
+                            <div>
+                                <label for="bot-site-key" class="block text-sm font-semibold text-content-primary">Site Key (public)</label>
+                                <input id="bot-site-key" name="site_key" type="text" maxlength="255"
+                                       value="{{ bot_state.site_key or '' }}"
+                                       class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            </div>
+                            <div>
+                                <label for="bot-hostname" class="block text-sm font-semibold text-content-primary">Allowed Hostname</label>
+                                <input id="bot-hostname" name="hostname" type="text" maxlength="253"
+                                       value="{{ bot_state.hostname or '' }}" placeholder="kaori.example.com"
+                                       class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="bot-secret-key" class="block text-sm font-semibold text-content-primary">Server Verification Secret</label>
+                                <input id="bot-secret-key" name="secret_key" type="password" autocomplete="new-password"
+                                       maxlength="256" placeholder="Leave empty to keep the existing protected secret"
+                                       class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                <p class="mt-1 text-xs text-content-muted">Existing secret is never returned to the browser; changing it requires new verification evidence.</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="bot-mode" class="block text-sm font-semibold text-content-primary">Challenge Policy</label>
+                                <select id="bot-mode" name="bot_mode"
+                                        class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                    <option value="disabled" {% if not bot_state.required %}selected{% endif %}>Disabled</option>
+                                    <option value="always" {% if bot_state.required %}selected{% endif %}>Always — require server-verified challenge before credential or SSO sign-in</option>
+                                </select>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Adaptive scoring is a separate governed workstream. A required challenge fails closed if Turnstile is unavailable. Verify vendor access and recovery before activation.</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="submit"
+                                        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">Save Bot Protection Configuration</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
             {% else %}
                 <div>
                     <h2 class="text-base font-semibold text-content-primary">Session Security</h2>

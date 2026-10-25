@@ -95,7 +95,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 ## Account & Authentication contract
 
-`/settings/account` is organized into `profile`, `activity`, and `credentials` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback.
+`/settings/account` is organized into `profile`, `activity`, `credentials`, and `mfa` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback.
 
 ### Account & Authentication presentation contract
 
