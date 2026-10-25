@@ -53,9 +53,14 @@ integration_module = IntegrationModule(
     module_path='app.integrations.source_control.source_control.providers.github',
     worker_queue='integration-runtime',
     worker_domain='source-control-provider',
-    operations=frozenset({
-        'connection.test', 'runtime.validate', 'runtime.health', 'runtime.state',
-    }),
+    operations=frozenset(
+        {
+            'connection.test',
+            'runtime.validate',
+            'runtime.health',
+            'runtime.state',
+        }
+    ),
     operation_queues={
         'connection.test': 'inline',
         'runtime.validate': 'integration-validation',
@@ -63,13 +68,19 @@ integration_module = IntegrationModule(
         'runtime.state': 'inline',
     },
     capability_keys=(
-        'repository_inventory', 'source_revision', 'pull_requests',
-        'workflow_runs', 'check_runs', 'deployments',
+        'repository_inventory',
+        'source_revision',
+        'pull_requests',
+        'workflow_runs',
+        'check_runs',
+        'deployments',
     ),
     compatibility_profiles=('github-app-readiness-v1',),
     runtime_label='Source Control',
     navigation_endpoint_prefixes=(
-        'integrations.source_control', 'github_source.', 'github_source_uat.',
+        'integrations.source_control',
+        'github_source.',
+        'github_source_uat.',
     ),
 )
 
