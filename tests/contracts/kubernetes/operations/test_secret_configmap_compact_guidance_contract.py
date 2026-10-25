@@ -67,6 +67,18 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
     assert "workflow_control('Controlled Bulk TLS Rotation'" in rotation
 
 
+def test_secret_delete_confirmation_copy_is_compact_and_keeps_safety_context() -> None:
+    delete = (ROOT / 'app/templates/kubernetes/operations/secrets/delete.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert "notice='Confirm deletion; Secret values stay hidden.'" in delete
+    assert 'Confirm removal of the validated live Secret. Secret values remain hidden.' not in delete
+    assert "'The receipt binds deletion to reviewed resourceVersion.'" in delete
+    assert "'No DELETE in Validation'" in delete
+    assert "presentation='kubernetes'" in delete
+
+
 def test_review7_operation_titles_use_shared_violet_guide_not_legacy_question_icon() -> None:
     component = (ROOT / 'app/templates/components/kubernetes_operation_ui.html').read_text(encoding='utf-8')
     assert "variant='guide'" in component
