@@ -144,3 +144,12 @@ The Authentication Assurance Overview renders the three **MFA, Bot Protection an
 Access → Authentication Security is a canonical Level-2 Access capability, not Access → Overview. The shared server-side resolver `app/common/workspace_navigation.py` maps the whole `access.authentication_security.` blueprint endpoint namespace to `authentication_security`, including its Overview/MFA/Bot Protection/Session Security GET view and policy/testing POST routes. Only this Level-2 sidebar child receives the active state for these endpoints; the individual page tabs remain page-owned detail navigation, not a third sidebar level.
 
 Preserve Sidebar Navigation Standard v2.2, permission-aware disclosure, and the existing breadcrumb ownership. Avoid client-side highlight overrides or duplicating active-state logic in the page template. No authentication security runtime/policy/database change is part of this correction.
+
+
+## MFA policy administration tab review layout (#3189)
+
+`Access → Authentication Security → Multi-Factor Authentication` is a scoped **policy administration** surface; `Settings → Account & Authentication → MFA` remains the user's own TOTP enrollment/recovery surface. This follows the approved KAORI Violet/shared `info_tip.render(variant='guide')`, semantic status labels, responsive grid/card and single `Access` sidebar ownership.
+
+The MFA tab presents a committed policy value (Disabled, Optional, Required Privileged, Required All), method capability (TOTP and single-use recovery), and impact (login/Remember Me generation revocation). It provides one permission-protected `save_mfa_policy` POST with existing CSRF and acknowledgment fields. No new permission taxonomy, authentication route, secret display, adoption estimate, or second policy store is permitted. A viewer has read-only explanatory content; an authorized manager can propose a new mode. Required modes are guarded by the approved enrolled Local Database Super Admin recovery check. A successful policy change invalidates previously issued sessions, including the administrator's current session.
+
+Functional UAT includes live TOTP enrollment in Settings, Disabled/Optional/Required policy transitions, two-browser and recovery-code negatives, accurate Activity Audit and fresh-login issuance. Record exact-SHA automated checks, light/dark/mobile/keyboard Visual QA, and Human Acceptance separately before official admission.

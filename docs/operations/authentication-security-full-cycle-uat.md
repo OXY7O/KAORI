@@ -156,3 +156,30 @@ After the revised screenshot, inspect `Access → Authentication Security → Ov
 - Compare screenshot and command outputs against an exact `git rev-parse HEAD` value; no new database migration is necessary for these changes.
 
 Regression QA: `djlint --check app/templates/access/authentication_security/partials/_page_content.html`, `python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_overview_refinement_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py`, `python scripts/verify_access_final_lock.py` and `python scripts/verify_sidebar_navigation_standard.py`. No official admission without operator authorization.
+
+
+## MFA tab administration UAT refinement (#3189)
+
+The Access MFA page must be tested independently of account enrollment:
+
+1. **Preflight:** Use the migrated Dev Container database, confirm exact `git rev-parse HEAD` and keep Bot Protection Disabled to isolate MFA behavior. Establish a local recovery Super Admin and an ordinary human UAT account; avoid changing MFA policy on production users.
+2. **Read-only:** With `identity_providers.view` but without `identity_providers.manage`, verify MFA mode, Guide, all four mode descriptions and Settings enrollment link are visible, but **Save MFA Policy is absent**. Direct POST must be forbidden by server RBAC.
+3. **Enrollment:** With the ordinary account, go to `Settings → Account & Authentication → MFA`, enter current password (Local), generate a one-time setup key, and confirm fresh TOTP; save the one-time recovery codes privately. Do not put OTP secrets or recovery codes in screenshots or audit attachments.
+4. **Optional:** As an authorized security administrator, select **Optional**, acknowledge impact, save. **Expect logout** after the committed policy changes, because the session generation of every currently active user is revoked. Sign in again; enrolled accounts must challenge after primary credentials, unenrolled accounts need not challenge.
+5. **Negative:** Try incorrect/expired/replayed OTP, reuse the same recovery code, browse protected pages while MFA is pending, refresh pending state after timeout and test Remember Me/second-browser replacement. A failed MFA attempt must not revoke the previously valid authenticated browser session.
+6. **Mandatory:** Confirm selecting Required Privileged or Required All fails safely if no eligible Local Database Super Admin is enrolled. Only enable the required modes after recovering and testing that specific local authority. Unenrolled required users should enter restricted enrollment, not a normal logged-in workspace.
+7. **Audit:** Verify meaningful MFA policy-change, enrollment, verification and recovery events without secret-bearing metadata; match actor/session correlation where full authentication is committed.
+8. **Visual:** Compare MFA policy cards, form, Guide trigger, mode list and Account Settings CTA at desktop/mobile, light/dark, keyboard-only focus and non-JS GET. Existing top-level Hero and sidebar stay unchanged.
+
+Focused test commands at the reviewed HEAD:
+
+```bash
+ruff check tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+ruff format --check tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py tests/access/authentication/test_mfa_policy_contract.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+Policy save and OTP challenge are **not UAT PASS** from a screenshot alone. This tab refinement does not require any additional migration. Official Developer Check and promotion remain HOLD.
