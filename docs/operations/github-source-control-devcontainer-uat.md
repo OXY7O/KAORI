@@ -95,6 +95,24 @@ at one narrow viewport and light/dark; browser Back should return to
 Source Control. Official CI/CD, Full Admission and staging/main promotion
 remain HOLD.
 
+## 2026-10-25 — Current approved provider-first navigation (#3106)
+
+The current approved registration journey is **Integrations → Source Control
+→ Open Source Control → Choose Source Control Provider → GitHub → Register
+GitHub App Connection**. Selection uses the Integration Provider Matrix and
+shared `integrations.provider_selector.html`, not a direct-form shortcut.
+The GitHub Kernel `workspace_endpoint` remains the zero-argument provider
+registry route `github_source.index` for other runtime/nav consumers.
+The source domain CTA uses
+`integrations.choose_integration_provider(integration_type='source_control')`.
+The GitHub overview's registration action also enters the provider picker.
+
+This supersedes the direct-form first-destination rule recorded for
+#3094 below. The original source-backed form, CSRF/permission rules,
+Test Connection, Save, Full Validation, and scoped installation inventory
+remain authoritative and unchanged. Canonical cross-domain UAT is at
+`docs/operations/integrations-provider-selection-uat.md`.
+
 ## 2026-10-25 — Source Control registration-first workspace and functional QA
 
 **Authority:** Issue #3094, scoped child of reviewed Integrations UI
@@ -109,10 +127,10 @@ assertion expected a hardcoded GitHub link in the shared domain template;
 this expectation became obsolete when KAORI switched to
 `url_for(item.workspace_endpoint)`.
 
-**Registration-first alignment:** the canonical provider IntegrationModule
-workspace endpoint is now `github_source.new_connection` (existing
+**Historical #3094 implementation (superseded by #3106):** the provider IntegrationModule
+workspace endpoint was then `github_source.new_connection` (existing
 `/integrations/source-control/github/connections/new`). The
-**Open Source Control** domain CTA therefore lands on the existing
+**Open Source Control** domain CTA then landed on the existing
 `Register GitHub App Connection` page using the reusable
 `_provider_registration_hero.html`, exactly as the Harbor/Vault
 registration forms use it. The GitHub `index` endpoint is preserved
@@ -202,12 +220,13 @@ GitHub provider landing page, without adding special-case template JavaScript.
 
 **Superseded UAT destination:** after the next operator screenshot, issue
 #3094 established **Register Connection** as the correct first action.
-The canonical IntegrationModule now uses `github_source.new_connection`
+At the #3094 checkpoint the canonical IntegrationModule used `github_source.new_connection`
 (`/integrations/source-control/github/connections/new`); the provider
 `github_source.index` remains an overview/registry for Back to Registry
 and after-save navigation. The earlier #3091 test and browser instruction
 expecting the landing index as the **first** destination no longer apply.
-Current acceptance commands and steps are in the #3094 section above.
+The #3094 checks above are historical. Use the current #3106 provider-first
+journey and runbook instead.
 
 ## 2026-10-25 — Source Control domain UI consistency review
 
