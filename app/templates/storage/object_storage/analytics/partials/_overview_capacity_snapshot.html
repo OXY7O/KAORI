@@ -1,42 +1,56 @@
-<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-capacity-compact>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database" class="h-5 w-5"></i></span>
-                <div>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="database" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
                     <h2 class="text-base font-semibold text-content-primary">Capacity Snapshot</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Current physical capacity, consumption, headroom, and observed usage direction.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Committed physical capacity, consumption, and remaining headroom.</p>
                 </div>
             </div>
             {{ table_label.status_label(metrics.capacity_posture.status, metrics.capacity_posture.tone) }}
         </div>
     </header>
-    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
-        {% set cards = [
-                    ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope', 'hard-drive'),
-                    ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
-                    ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source, 'circle-gauge'),
-                    ('Utilization', metrics.utilization_display, metrics.headroom_percent_display ~ ' headroom remains', 'gauge')
-                ] %}
-        {% for label, value, helper, icon in cards %}
-            <article class="{{ analysis_surface.metric_cell_classes() }}">
-                <div class="flex items-center gap-2">
-                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
-                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+    <div class="px-5 py-5 sm:px-6">
+        {% set capacity_facts = [
+                                ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope'),
+                                ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage'),
+                                ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source)
+                            ] %}
+        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-3" data-object-storage-capacity-facts>
+            {% for label, value, helper in capacity_facts %}
+                <div class="min-w-0">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
+                    <dd class="mt-1.5 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</dd>
                 </div>
-                <p class="mt-3 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-            </article>
-        {% endfor %}
-    </div>
-    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm leading-6 text-content-secondary">{{ metrics.capacity_posture.detail }}</p>
-            <a href="{{ url_for('analytics.object_storage_capacity', system_id=system.id, time_range=selected_time_range) }}"
-               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover">
-                Open Capacity &amp; Usage
-                <i data-lucide="arrow-right" class="h-4 w-4"></i>
-            </a>
+            {% endfor %}
+        </dl>
+        <div class="mt-5 border-t border-outline-subtle pt-4" data-object-storage-capacity-utilization>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Utilization of usable capacity</p>
+                <p class="text-sm font-semibold tabular-nums text-content-primary">{{ metrics.utilization_display }}</p>
+            </div>
+            {% if metrics.utilization is not none %}
+                <progress class="mt-2 h-2 w-full overflow-hidden rounded-full accent-kaori-primary"
+                          value="{{ metrics.utilization }}"
+                          max="100"
+                          aria-label="Used Object Storage capacity percentage">{{ metrics.utilization_display }}</progress>
+            {% else %}
+                <p class="mt-2 text-xs leading-5 text-content-muted">Capacity utilization is not available from committed evidence.</p>
+            {% endif %}
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.headroom_percent_display }} headroom remains.</p>
         </div>
     </div>
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p class="text-xs leading-5 text-content-secondary">{{ metrics.capacity_posture.detail }}</p>
+        <a href="{{ url_for('analytics.object_storage_capacity', system_id=system.id, time_range=selected_time_range) }}"
+           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover">
+            Open Capacity &amp; Usage
+            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+        </a>
+    </footer>
 </section>

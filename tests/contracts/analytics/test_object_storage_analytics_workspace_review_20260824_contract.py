@@ -177,43 +177,61 @@ def test_provider_alert_records_clear_filters_precedes_persistent_source_context
     assert 'hx-target="#object-storage-alert-records"' in source
 
 
-def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
+def test_object_storage_overview_capacity_trend_is_chart_centered() -> None:
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    capacity = read('app/templates/storage/object_storage/analytics/partials/_overview_capacity_snapshot.html')
+    health = read('app/templates/storage/object_storage/analytics/partials/_overview_analysis.html')
     overview = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     script = read('app/static/js/storage/object_storage/analytics.js')
 
     assert "page_key == 'overview' and trend_mode == 'usage'" in trend
+    assert 'data-object-storage-capacity-compact' in capacity
+    assert 'data-object-storage-capacity-facts' in capacity
+    assert 'data-object-storage-capacity-utilization' in capacity
+    assert 'sm:grid-cols-3' in capacity
+    assert 'metrics.capacity_total_display' in capacity
+    assert 'metrics.usage_total_display' in capacity
+    assert 'metrics.capacity_free_display' in capacity
+    assert 'metrics.utilization is not none' in capacity
+    assert 'value="{{ metrics.utilization }}"' in capacity
+    assert 'metrics.capacity_posture.detail' in capacity
+    assert "url_for('analytics.object_storage_capacity'" in capacity
+    assert 'metric_grid_classes(4)' not in capacity
     assert 'data-object-storage-overview-trend-summary' in trend
-    assert 'analysis_surface.metric_grid_classes(4)' in trend
-    assert 'analysis_surface.metric_cell_classes()' in trend
     for label, source in (
-        ('Current Usage', 'metrics.usage_total_display'),
         ('Window Change', 'trend_summary.delta_display'),
         ('Growth / Day', 'trend_summary.growth_per_day_display'),
         ('Direction', 'trend_summary.direction_label'),
     ):
         assert label in trend
         assert source in trend
-
     panel = trend.split('{% if trend %}', 1)[1]
     assert panel.index('data-object-storage-overview-trend-summary') < panel.index(
         'data-object-storage-chart-container'
     )
+    assert 'flex flex-wrap items-start' in trend
+    assert 'analysis_surface.metric_grid_classes(4)' in trend  # Forecast keeps original summary.
     assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
-    assert "{% elif trend_mode != 'performance' %}" in trend
     assert 'data-object-storage-trend-interpretation' in trend
     assert 'Inventory is point-in-time, not a growth forecast.' in trend
     assert 'partials/_trend.html' in overview
-    assert 'data-object-storage-trend-points' in trend
-    assert 'data-object-storage-secondary-trend-points' in trend
-    assert 'data-object-storage-projection-points' in trend
-    assert 'compact_forecast_overview' in trend
-    assert 'data-object-storage-forecast-interpretation' in trend
-    assert 'analysis_surface.snapshot_header_icon_classes()' in trend
-    assert '<canvas data-object-storage-chart' in trend
-    assert 'role="img"' in trend
+    for attr in (
+        'data-object-storage-trend-points',
+        'data-object-storage-secondary-trend-points',
+        'data-object-storage-projection-points',
+        'data-object-storage-chart',
+        'role="img"',
+    ):
+        assert attr in trend
     assert 'beginAtZero: true' in script
+    assert 'components/info_tip.html' in health
+    assert "variant='guide'" in health
+    assert "placement='right'" in health
+    assert 'metrics.operational_posture.detail' in health
+    assert 'Capacity → Performance → Top Consumers → Forecast' in health
+    assert 'interpretation_callout(' not in health
+    assert 'interpretation_grid_classes(' not in health
 
 
 def test_object_storage_overview_tab_polish_preserves_source_boundaries() -> None:
