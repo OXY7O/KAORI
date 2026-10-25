@@ -76,6 +76,14 @@ def test_bucket_detail_header_and_section_labels_follow_kubernetes_inventory_sta
     for section in badges:
         assert section in detail
     assert detail.count("badge_size='detail', stretch=false, density='compact'") == 7
-    assert "bucket.provider_detail_sections" in detail
+    assert 'bucket.provider_detail_sections' in detail
     assert "detail.inventory_row('Quota', bucket.quota.label)" in detail
     assert 'whitespace-nowrap' not in table
+
+
+def test_bucket_scope_caption_is_short_and_preserves_filtered_asset_count() -> None:
+    summary = read('app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html')
+
+    assert "'Assets in Scope', inventory.total_assets, 'Assets matching active filters.'" in summary
+    assert 'posture_grid.render(metrics, columns=4)' in summary
+    assert 'whitespace-nowrap' not in summary
