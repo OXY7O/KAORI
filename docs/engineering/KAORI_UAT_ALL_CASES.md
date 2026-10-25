@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (143 scenarios)
+# KAORI — Complete Acceptance Case Specifications (150 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 129 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
+**Maturity:** Original 14 first-wave procedures retained; the other 136 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -1597,6 +1597,10 @@
 
 ## Object Storage — Inventory & Analytics
 
+**Object Storage Inventory acceptance (2026-10-25; #3186):** The operator explicitly accepted the bounded Dev Container Inventory Overview, Systems and Buckets & Containers UAT, including filtered `kaori` and the native detail header/evidence rails. Last reported checks: djlint PASS, Ruff check PASS, Ruff format PASS, **15 focused pytest PASS in 1.61s**. The user's exact local HEAD was not supplied; remote holding branch `1b0f75f1` was verified separately. These results do **not** establish execution of individual `UAT-OST-001`–`011`. Provider outage, RBAC denial, real multi-system fixture and full light/dark/narrow testing remain NOT RUN. Official CI/CD HOLD.
+
+
+
 **Owner:** app/storage/object_storage/; app/integrations/storage/object_storage/.  
 **Candidate pytest/Playwright suites:** tests/storage/object_storage/; tests/contracts/storage/; tests/integrations/.  
 
@@ -1691,6 +1695,167 @@
 **Isolation / cleanup:** Use disposable scoped identities and sanitized artifacts. Never mutate production providers. If the provider mutation is relevant, run only in a governed sandbox with before/after read-back and cleanup.
 
 **Automation mapping:** Not validated. Inspect assertions under tests/storage/object_storage/; tests/contracts/storage/; tests/integrations/.; do not infer coverage from filename.
+
+### UAT-OST-005 — Inventory Overview separates collection readiness from protection attention
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** one registered MinIO X300 with current committed inventory and three buckets. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator opens the Inventory Overview.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the Hero and Inventory Data Snapshot show registered system and committed 1-of-1 coverage.
+- Fleet Ready expresses collection readiness while Protection Attention still reports three assessed bucket findings.
+- quota assessment, public exposure, collected usage and both asset catalog counts remain independently visible.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-006 — Systems table preserves provider identity, filters and committed freshness
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** the committed MinIO X300 system belongs to Development and has a timestamped inventory snapshot. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator filters Systems by Ready and searches MinIO then clears the filters.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the system appears exactly once with provider, environment, release, endpoint and snapshot status.
+- the shared table defaults to five rows and keeps scoped counts and filter state consistent.
+- opening or filtering the table does not call a live provider or execute an inventory job.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-007 — System detail displays provider connection and snapshot evidence without mutation
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** a selected system has recorded MinIO identity and committed connection and inventory metadata. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator opens Systems View Details then closes the Full Workspace Modal.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the detail identifies the system, provider connection, compatibility profile, and committed inventory snapshot.
+- missing optional fields remain Not Reported rather than guessed.
+- the header, evidence fields, modal close and keyboard focus are accessible without changing provider state.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-008 — Buckets overview and filters reconcile canonical asset counts
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** the committed MinIO X300 snapshot includes buckets kaori reports and thanos. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator opens Buckets & Containers then filters to Development Bucket and searches kaori.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the unfiltered view shows three buckets and zero container-native assets.
+- the filtered list and Assets in Scope posture both show one kaori bucket.
+- Clear Filters restores all three identities and canonical five-row pagination.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-009 — Bucket detail adopts Kubernetes unified header and evidence-labelled sections
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** the kaori MinIO bucket has a current committed snapshot and Protection Attention. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator opens kaori View Details and inspects the complete native detail.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the compact header separates bucket name and actual protection state from system provider and native type.
+- Identity Snapshot Capacity Protection Lifecycle Provider and MinIO Configuration rails have evidence-bound labels.
+- quota usage versioning encryption public exposure and provider-native settings remain truthful and never become invented compliance.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-010 — Partial bucket observations never become fabricated zeros or Healthy
+
+**Type:** Negative · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** an isolated Object Storage fixture has missing or stale quota usage or protection evidence. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the operator views Inventory Overview and bucket detail under the partial fixture.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- stale unavailable or unobserved evidence stays distinct from a genuinely observed zero.
+- Quota Assessed differs from Quota Configured and Fleet Ready does not certify protection controls.
+- no previous committed identity is lost and no bogus Healthy bucket state is shown.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
+
+### UAT-OST-011 — Inventory direct URLs enforce source and actor authorization
+
+**Type:** Negative · **Layer:** Non-UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** bounded Inventory UI accepted, not this exact Scenario ID
+
+**Preconditions:** an actor lacks Object Storage Inventory read permission and a permitted actor has read-only access. Record exact SHA, effective permission, selected source and committed snapshot.
+
+**Steps:**
+1. Record exact candidate SHA, actor, system ID, snapshot ages and approved isolated fixture.
+2. Exercise via existing browser/domain test client: the restricted actor requests Systems Buckets and detail endpoints directly.
+3. Observe scoped UI, HTTP and committed read-back; check there were no unauthorized provider or DB writes.
+4. Save screenshot/trace and test output, then clear filters, close modal or restore disposable fixture.
+
+**Expected results:**
+- the server rejects unauthorized request before revealing any source or bucket identity.
+- foreign provider credentials endpoints and other systems metadata are not exposed.
+- denied or permitted reads never trigger provider writes or Inventory Sync.
+
+**Required evidence:** Exact SHA, roles and source IDs, inventory DB evidence, HTTP/read-only ledger, screenshots/trace and focused pytest/Playwright JUnit. The last manual 15 pytest PASS cannot be attributed to this Scenario ID without a direct mapping.
+
+**Isolation / cleanup:** No production provider mutations. Negative conditions require disposable fixtures and read-back; restore actor and inventory scope.
+
+**Automation mapping:** REVIEW-ONLY: existing Object Storage Inventory tests under `tests/contracts/storage/object_storage/inventory/` and existing UI contract suites. Exact test-node/fixture mapping not verified.
 
 ## Artifact Registry — Inventory, Security, Runtime & Governance
 

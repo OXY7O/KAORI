@@ -18,19 +18,21 @@
 
 **Object Storage Dashboard #3168 (2026-10-25):** Ten UAT-OSD-001..010 reusable specs added. Operator visual acceptance of four tabs and prior 52 focused pytest PASS / Ruff+dJlint / later Ruff format PASS do not make exact-ID Scenario PASS. Report generation/download, RBAC, faulty source, multi-system negatives and full theme/mobile remain NOT RUN; all admission HOLD.
 
+**Object Storage Inventory acceptance (2026-10-25; #3186):** The operator explicitly accepted the bounded Dev Container Inventory Overview, Systems and Buckets & Containers UAT, including filtered `kaori` and the native detail header/evidence rails. Last reported checks: djlint PASS, Ruff check PASS, Ruff format PASS, **15 focused pytest PASS in 1.61s**. The user's exact local HEAD was not supplied; remote holding branch `1b0f75f1` was verified separately. These results do **not** establish execution of individual `UAT-OST-001`–`011`. Provider outage, RBAC denial, real multi-system fixture and full light/dark/narrow testing remain NOT RUN. Official CI/CD HOLD.
+
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **143/143** across 21 Gherkin files and case register |
+| Written case procedures | **150/150** across 21 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/143** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
-| Scenario IDs without individual assertion-level review | **119/143**; includes 13 newly authored Operations Center IDs and does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **129**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/143**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **139/143 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/143 attributed to this catalog checkpoint** |
-| Human acceptance | **0/143 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
+| Scenario IDs with inspected source assertions | **24/150** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **126/150**; includes 13 newly authored Operations Center IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **136**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/150**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **146/150 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/150 attributed to this catalog checkpoint** |
+| Human acceptance | **0/150 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -110,6 +112,13 @@
 | `UAT-OST-002` | High | Both | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OST-003` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OST-004` | High | Non-UI | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-OST-005` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-006` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-007` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-008` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-009` | High | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-010` | High | UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
+| `UAT-OST-011` | High | Non-UI | [Gherkin](features/ost-object-storage.feature) | REVIEW-ONLY: Inventory source/contract tests; exact-ID assertion and browser/security execution unverified | NOT RUN / PENDING |
 | `UAT-REG-001` | High | Both | [Gherkin](features/reg-artifact-registry.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-REG-002` | High | Both | [Gherkin](features/reg-artifact-registry.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-REG-003` | High | Both | [Gherkin](features/reg-artifact-registry.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
@@ -186,8 +195,8 @@
 
 ## Closure before gate
 
-1. Obtain domain-owner review of the 129 newly expanded written procedures against current approved KAORI standards and admitted source routes.
-2. Map all 143 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
+1. Obtain domain-owner review of the 136 newly expanded written procedures against current approved KAORI standards and admitted source routes.
+2. Map all 150 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
 3. Integrate #1725 standards, #1738 catalog, #1726 Playwright and #1727 non-UI test branches into a controlled exact candidate, including synchronizing the stacked #1728 branch with this updated #1738 tree.
 4. After the explicit CI/CD hold is lifted, run Developer Check and admission as required, then governed UAT with JUnit, screenshot/trace, committed/provider read-back and a separate human decision.
 5. Treat any mandatory SKIP/NOT RUN/FAIL, missing provider authorization, or misleading fake-provider PASS as unresolved. No automatic release readiness is inferred.

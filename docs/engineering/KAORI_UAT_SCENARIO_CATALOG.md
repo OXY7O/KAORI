@@ -4,19 +4,21 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 143 written acceptance test cases
+## Complete 150 written acceptance test cases
 
-[Review all 143 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 129 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 150 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 136 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **21 `.feature` files containing all 143 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 119 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **21 `.feature` files containing all 150 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 136 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
 
 **2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
 
 **2026-10-24 Kubernetes Admin addendum:** Existing `UAT-LIF-004` was reconciled to the canonical integrated Overview/Secret Reveal page and inline editor. `UAT-LIF-006`–`013` cover search, filters and pagination; unsaved Cancel; approved Harbor policy save/rollback with Activity Audit; Viewer read denial; unexecuted POST/CSRF negatives; unavailable source/cluster; Warning-vs-Error detail; and keyboard/responsive light-dark coverage. **Human Accepted** Batch 01–06 results belong to owning issue #2605 and #2457, not to machine-attributed execution of newly authored Gherkin IDs. No claim that all negative/visual matrix cases ran.
 
 **Object Storage Dashboard addendum (#3168):** UAT-OSD-001–010 describe dashboard acceptance, distinct from UAT-OST-001–004 Inventory/Analytics. Operator visually reviewed tabs and supplied focused green pytest/lint evidence, but no exact-ID Gherkin execution, report download, provider failure, RBAC, responsive/dark or multi-system negative results.
+
+**Object Storage Inventory acceptance (2026-10-25; #3186):** The operator explicitly accepted the bounded Dev Container Inventory Overview, Systems and Buckets & Containers UAT, including filtered `kaori` and the native detail header/evidence rails. Last reported checks: djlint PASS, Ruff check PASS, Ruff format PASS, **15 focused pytest PASS in 1.61s**. The user's exact local HEAD was not supplied; remote holding branch `1b0f75f1` was verified separately. These results do **not** establish execution of individual `UAT-OST-001`–`011`. Provider outage, RBAC denial, real multi-system fixture and full light/dark/narrow testing remain NOT RUN. Official CI/CD HOLD.
 
 ## Reviewer guide — where to inspect and comment
 
@@ -204,6 +206,13 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-OST-002` | Negative | Both | High | Object Storage provider is unreachable, disabled or returns partial results | Truthful unknown/stale/degraded presentation; no fabricated empty bucket list |
 | `UAT-OST-003` | Positive | UI | Medium | Bucket registry search/filter/pagination and details interaction | Five-row default, stable filters, accessible detail/modal and clear feedback |
 | `UAT-OST-004` | Negative | Non-UI | High | Forecast/usage receives mismatched source or missing data | No cross-system substitution, bogus zero capacity or unsupported trend claim |
+| `UAT-OST-005` | Positive | UI | Medium | Inventory Overview separates collection readiness from protection attention | the Hero and Inventory Data Snapshot show registered system and committed 1-of-1 coverage |
+| `UAT-OST-006` | Positive | UI | Medium | Systems table preserves provider identity, filters and committed freshness | the system appears exactly once with provider, environment, release, endpoint and snapshot status |
+| `UAT-OST-007` | Positive | UI | Medium | System detail displays provider connection and snapshot evidence without mutation | the detail identifies the system, provider connection, compatibility profile, and committed inventory snapshot |
+| `UAT-OST-008` | Positive | UI | Medium | Buckets overview and filters reconcile canonical asset counts | the unfiltered view shows three buckets and zero container-native assets |
+| `UAT-OST-009` | Positive | UI | High | Bucket detail adopts Kubernetes unified header and evidence-labelled sections | the compact header separates bucket name and actual protection state from system provider and native type |
+| `UAT-OST-010` | Negative | UI | High | Partial bucket observations never become fabricated zeros or Healthy | stale unavailable or unobserved evidence stays distinct from a genuinely observed zero |
+| `UAT-OST-011` | Negative | Non-UI | High | Inventory direct URLs enforce source and actor authorization | the server rejects unauthorized request before revealing any source or bucket identity |
 
 ### Artifact Registry — Inventory, Security, Runtime & Governance (`UAT-REG-*`)
 
