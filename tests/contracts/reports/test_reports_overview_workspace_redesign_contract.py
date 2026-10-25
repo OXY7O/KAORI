@@ -102,7 +102,7 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'payload.report_type_coverage.domains' in source
     assert 'data-report-domain-coverage="true"' in source
     assert 'Publication Boundary' in source
-    assert 'Published means both a canonical report contract and renderer are registered' in source
+    assert 'Published = registered contract + renderer; candidates cannot run.' in source
     assert 'payload.summary_cards[0]' in source
     assert 'payload.artifact_statistics[2]' in source
     assert 'data-artifact-estate-snapshot="true"' in source
@@ -140,6 +140,21 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'def get_artifact_portfolio()' in service
     assert 'def get_automation_summary(' in service
     assert "group['contract_count'] = len(group['items'])" in service
+
+
+def test_estate_visual_density_reuses_evidence_tiles_and_preserves_readability() -> None:
+    source = read(OVERVIEW / 'partials' / '_reporting_estate_capability.html')
+
+    assert '{% import "components/operational_evidence_tile.html" as evidence_tile %}' in source
+    assert 'sm:line-clamp-2 sm:min-h-10' in source
+    assert 'title="{{ domain.description }}"' in source
+    assert 'xl:whitespace-nowrap' in source
+    assert 'Published = registered contract + renderer; candidates cannot run.' in source
+    assert 'data-artifact-family-tiles="true"' in source
+    assert 'data-artifact-format-tiles="true"' in source
+    assert "evidence_tile.snapshot(item.label, item.value, item.icon, 'Retained family')" in source
+    assert "evidence_tile.snapshot(item.label, item.value, 'file-stack', 'Output format')" in source
+    assert 'mt-auto pt-4' not in source
 
 
 def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
