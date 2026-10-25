@@ -1138,22 +1138,29 @@
 **Owner:** app/kubernetes/operations/; app/platform_operations/kubernetes/.  
 **Candidate pytest/Playwright suites:** tests/kubernetes/operations/; tests/platform_operations/test_secret_reveal_htmx_save.py; tests/security/kubernetes/.  
 
-### UAT-KOP-001 — Permitted operator creates/edits ConfigMap in sandbox
+### UAT-KOP-001 — Permitted operator executes controlled ConfigMap CRUD in sandbox
 
 **Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING
 
-**Preconditions:** Dedicated disposable namespace and test Secret/ConfigMap; guarded reveal/rotation policy; disposable ConfigMap in approved sandbox Namespace.
+**Preconditions:** Registered Kubernetes cluster and dedicated disposable sandbox namespace, unique ConfigMap name, authorized actor with create/update/delete permission, initial object absence, and sanitized event evidence. Retain signed receipt and resourceVersion safety boundaries.
 
 **Steps:**
-1. Record the exact candidate, actor, scoped source identity and baseline state for: Permitted operator creates/edits ConfigMap in sandbox.
-2. Perform the scenario action using an approved browser or domain test client: Permitted operator creates/edits ConfigMap in sandbox.
-3. create/edit keys then read exact provider UID/resourceVersion.
-4. Inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-KOP-001.
+1. Record actor, cluster registration, test namespace, exact ConfigMap name and initial absence.
+2. Fill the Create form, prove Create disabled before dry-run, validate, change one field to invalidate the gate, revalidate, then Create.
+3. Read Kubernetes object UID, creation time, key names and resourceVersion; inspect `kubernetes_configmap_created` Activity Register outcome.
+4. Select the same live ConfigMap; choose Merge Selected Keys, review effective diff, validate the latest input, apply the update.
+5. Read back the same UID and advanced resourceVersion; inspect `kubernetes_configmap_updated` audit outcome.
+6. Select exact target for Delete; confirm name and best-effort consumer context; run non-mutating RBAC/target validation and observe the ten-minute signed receipt.
+7. Open final destructive confirmation; ensure target, namespace and safety language remain visible, then explicitly confirm deletion.
+8. Verify Kubernetes `NotFound`, `kubernetes_configmap_deleted` audit outcome and no mutation to out-of-scope resources.
 
 **Expected results:**
-- Provider read-back matches intended data; KAORI job/activity evidence accurate.
-- provider content and job/Activity reflect the admitted mutation.
-- The observed success is attributable to the selected source, authorized actor and correct committed identity.
+- Latest-state Create/Update dry-run and form invalidation prevent stale submissions.
+- Merge/Replace semantics, UID continuity, resourceVersion progression and effective diff are attributable to the live target.
+- Delete validation does not issue DELETE, and final Delete uses the signed receipt with resourceVersion precondition.
+- All three success events identify actor, target, operation and outcome without retaining ConfigMap values in audit.
+- After confirmed deletion, the exact sandbox ConfigMap returns NotFound and unrelated resources remain intact.
+- Provider authority, committed Inventory impact limits and Activity Audit boundaries remain explicit.
 
 **Required evidence:** browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; normalized source identity, committed record and provider read-back/adapter call ledger.
 
