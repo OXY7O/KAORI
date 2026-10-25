@@ -24,6 +24,7 @@ class AuthenticationSecurityPolicy(db.Model):
     bot_site_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     bot_secret_key: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     bot_hostname: Mapped[str | None] = mapped_column(db.String(253), nullable=True)
+    bot_tested_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
