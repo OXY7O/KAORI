@@ -52,34 +52,7 @@
                     {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
                 {% else %}
                     <div class="grid gap-6 xl:grid-cols-12 xl:items-stretch"
-                         x-data="{
-                             activeDomain: '{{ lifecycle.selected_domain }}',
-                             domainSearch: '',
-                             domainPickerOpen: false,
-                             get visibleDomainCount() {
-                                 const list = this.$refs.domainList;
-                                 if (!list) return {{ lifecycle.domains|length }};
-                                 const query = this.domainSearch.trim().toLowerCase();
-                                 return Array.from(list.querySelectorAll('[data-domain-search]'))
-                                     .filter(item => item.dataset.domainSearch.includes(query)).length;
-                             },
-                             ensureActiveVisible() {
-                                 this.$nextTick(() => {
-                                     const list = this.$refs.domainList;
-                                     if (!list || list.scrollHeight <= list.clientHeight) return;
-                                     const active = Array.from(list.querySelectorAll('[data-domain-id]'))
-                                         .find(item => item.dataset.domainId === this.activeDomain);
-                                     if (!active) return;
-                                     const viewport = list.getBoundingClientRect();
-                                     const item = active.getBoundingClientRect();
-                                     if (item.top < viewport.top) list.scrollTop += item.top - viewport.top;
-                                     else if (item.bottom > viewport.bottom) {
-                                         list.scrollTop += item.bottom - viewport.bottom;
-                                     }
-                                 });
-                             }
-                         }"
-                         x-init="ensureActiveVisible()"
+                         x-data="{ activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '', domainPickerOpen: false, get visibleDomainCount() { const list = this.$refs.domainList; if (!list) return {{ lifecycle.domains|length }}; const query = this.domainSearch.trim().toLowerCase(); return Array.from(list.querySelectorAll('[data-domain-search]')) .filter(item => item.dataset.domainSearch.includes(query)).length; }, ensureActiveVisible() { this.$nextTick(() => { const list = this.$refs.domainList; if (!list || list.scrollHeight <= list.clientHeight) return; const active = Array.from(list.querySelectorAll('[data-domain-id]')) .find(item => item.dataset.domainId === this.activeDomain); if (!active) return; const viewport = list.getBoundingClientRect(); const item = active.getBoundingClientRect(); if (item.top < viewport.top) list.scrollTop += item.top - viewport.top; else if (item.bottom > viewport.bottom) { list.scrollTop += item.bottom - viewport.bottom; } }); } }"                         x-init="ensureActiveVisible()"
                          @popstate.window="activeDomain = new URLSearchParams(window.location.search).get('domain') || '{{ lifecycle.selected_domain }}'; ensureActiveVisible()">
                         <aside class="min-w-0 xl:relative xl:col-span-4 xl:min-h-[25rem]"
                                aria-label="Data Lifecycle domain navigation">
@@ -176,10 +149,10 @@
                                             <span class="min-w-0 truncate text-xs font-semibold text-content-secondary"
                                                   title="Execution Boundary">Execution Boundary</span>
                                             {{ info_tip.render('data-lifecycle-execution-boundary',
-                                                                'Execution Boundary',
-                                                                'Lifecycle policy and archive evidence stay in Data Lifecycle. Worker runtime, retries, and cancellation remain canonical in Jobs & Executions.',
-                                                                placement='top',
-                                                                variant='guide') }}
+                                                                                        'Execution Boundary',
+                                                                                        'Lifecycle policy and archive evidence stay in Data Lifecycle. Worker runtime, retries, and cancellation remain canonical in Jobs & Executions.',
+                                                                                        placement='top',
+                                                                                        variant='guide') }}
                                         </div>
                                         {% if current_user.has_permission('jobs.view') %}
                                             <a href="{{ url_for('jobs.executions') }}"
