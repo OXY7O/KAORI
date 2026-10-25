@@ -173,7 +173,10 @@ def index() -> ResponseReturnValue:
         'uat_workspace_enabled': uat_workspace_enabled,
         'notification_context': _notification(),
     }
-    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-Target') == 'github-connection-registry':
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'github-connection-registry'
+    ):
         return _respond('integrations/source_control/github/partials/_connection_registry.html', **context)
     return _respond('integrations/source_control/github/index.html', **context)
 
