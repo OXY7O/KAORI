@@ -397,6 +397,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'identity_providers.index',
                 ('identity_providers.view',),
             ),
+            WorkspaceCapabilityDefinition(
+                'authentication_security',
+                'Authentication Security',
+                'shield-check',
+                'access.authentication_security.index',
+                ('identity_providers.view',),
+            ),
             WorkspaceCapabilityDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),
             WorkspaceCapabilityDefinition(
                 'permissions',
