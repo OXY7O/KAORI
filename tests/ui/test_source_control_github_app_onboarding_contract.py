@@ -21,9 +21,9 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert 'integrations/components/_workspace.html' in form
     assert 'integration_ui.section_shell_classes()' in form
     assert "domain.key == 'source_control'" in workspace
-    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
     kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
-    assert "workspace_endpoint='github_source.new_connection'" in kernel
+    assert "workspace_endpoint='github_source.index'" in kernel
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
     assert 'bg-kaori-primary' in form
@@ -61,7 +61,7 @@ def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     assert 'Not Observed' in landing
     assert 'Repository Evidence' in landing
     assert 'Connection Registry' in landing
-    assert 'Register Connection' in landing
+    assert 'Choose Provider' in landing
 
 
 def test_blueprint_is_registered_using_existing_bootstrap() -> None:
@@ -76,20 +76,23 @@ def test_blueprint_is_registered_using_existing_bootstrap() -> None:
     )
 
 
-def test_source_control_opens_shared_registration_before_connection_overview() -> None:
+def test_source_control_selects_provider_then_opens_existing_registration() -> None:
     kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     form = _source('app/templates/integrations/source_control/github/form.html')
     index = _source('app/templates/integrations/source_control/github/index.html')
 
-    assert "workspace_endpoint='github_source.new_connection'" in kernel
+    assert "workspace_endpoint='github_source.index'" in kernel
     assert "@github_source_bp.route('/connections/new', methods=['GET', 'POST'])" in routes
     assert 'integrations/components/_provider_registration_hero.html' in form
     assert 'registration_hero.render(' in form
     assert 'Register GitHub App Connection' in form
     assert "url_for('github_source.index')" in form  # Shared Back to Registry.
     assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
-    assert '"Register Connection", url_for("github_source.new_connection")' in index
+    assert (
+        '"Choose Provider", url_for("integrations.choose_integration_provider", '
+        'integration_type="source_control")'
+    ) in index
     assert 'Manage Installations' in index
 
 

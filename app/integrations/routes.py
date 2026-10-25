@@ -28,6 +28,7 @@ from app.integrations.orchestration.container_orchestrator.frontpage import (
 )
 from app.integrations.orchestration.container_orchestrator.tenant_capsule_web import capsule_rbac_operation
 from app.integrations.overview_workspace import build_integrations_overview
+from app.integrations.provider_matrix import provider_kinds
 from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -39,6 +40,7 @@ from app.integrations.service import (
     build_kubernetes_detail,
     build_metrics_source_page,
 )
+from app.integrations.taxonomy import get_domain_definition
 from app.integrations.validation.state import (
     build_validation_snapshot,
     get_active_validation_task_id,
@@ -137,6 +139,54 @@ def secrets_management() -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def source_control() -> ResponseReturnValue:
     return _render_domain_page('source_control')
+
+
+# The provider matrix defines which implementations may register; destinations
+# remain provider-owned routes, never a second KAORI registration implementation.
+_PROVIDER_REGISTRATION_ENDPOINTS = {
+    ('container_orchestrator', 'kubernetes'): 'cluster.add_cluster',
+    ('alert_source', 'alertmanager'): 'alertmanager.new_instance',
+    ('object_storage', 'minio'): 'minio.new_instance',
+    ('registry', 'harbor'): 'harbor.new_instance',
+    ('secrets_pki', 'vault'): 'vault.new_instance',
+    ('source_control', 'github'): 'github_source.new_connection',
+}
+
+
+@integrations_bp.get('/providers/<string:integration_type>')
+@permission_required('integrations.manage')
+def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
+    """Select an admitted provider before entering its owned registration form."""
+    if integration_type == 'metrics_source':
+        return redirect(url_for('integrations.select_metrics_source_provider'))
+
+    kinds = provider_kinds(integration_type)
+    if not kinds:
+        abort(404)
+
+    domain = get_domain_definition(kinds[0].domain_key)
+    providers = [
+        {
+            'key': kind.key,
+            'label': kind.label,
+            'adapter': kind.adapter_key.replace('_', ' ').title(),
+            'protocol': kind.protocol.replace('_', ' ').upper(),
+            'available': kind.available,
+            'registration_url': (
+                url_for(_PROVIDER_REGISTRATION_ENDPOINTS[(kind.integration_type, kind.key)])
+                if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS
+                else None
+            ),
+        }
+        for kind in kinds
+    ]
+    return render_template(
+        'integrations/provider_selector.html',
+        domain=domain,
+        integration_type=integration_type,
+        providers=providers,
+        available_count=sum(bool(provider['registration_url']) for provider in providers),
+    )
 
 
 @integrations_bp.get('/runtime/<string:detail_key>/details')
