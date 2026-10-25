@@ -49,6 +49,8 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
 
     assert 'Audit records metadata, never ConfigMap values.' in create
     assert 'Read live data and immutability before editing.' in update
+    assert "'Update Safety Contract', 'Active safeguards for this update.'" in update
+    assert 'Controls that stay active while the live object is edited.' not in update
     assert 'Check exact name and RBAC without DELETE.' in delete
     assert 'Only explicitly checked TLS Secrets can be updated; all unselected targets remain untouched.' in rotation
     assert 'Validate the uploaded certificate pair and every selected TLS Secret before applying an update.' in rotation
