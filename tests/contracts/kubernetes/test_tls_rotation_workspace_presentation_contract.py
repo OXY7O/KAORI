@@ -39,6 +39,19 @@ def test_bulk_tls_rotation_actions_target_the_upload_form_after_full_width_recom
     assert 'Changing either uploaded file or the selected target set invalidates the previous preview.' in template
 
 
+def test_bulk_tls_external_apply_buttons_follow_the_same_validated_form() -> None:
+    """Both actions are outside the upload form and must receive its validation event."""
+    import re
+
+    template = _template()
+    form_end = template.index('</form>', template.index('id="tls-secret-update-form"'))
+    external_actions = template[form_end:]
+    apply_buttons = re.findall(r'<button\\b[^>]*\\bdata-validation-apply\\b[^>]*>', external_actions, re.DOTALL)
+
+    assert len(apply_buttons) == 2  # Primary Update Selected and confirmation-modal Update Selected.
+    assert all('data-validation-form="tls-secret-update-form"' in button for button in apply_buttons)
+
+
 def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
     template = _template()
     assert 'x-text="crtFileName"' in template
