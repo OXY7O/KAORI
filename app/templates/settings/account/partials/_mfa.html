@@ -3,9 +3,9 @@
 <section class="rounded-2xl border border-outline-default bg-surface-card"
          aria-labelledby="account-mfa-heading"
          data-account-mfa-workspace="personal-enrollment">
-    <header class="relative isolate flex flex-col gap-4 border-b border-outline-default bg-kaori-soft/40 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+    <header class="flex flex-col gap-4 border-b border-outline-default bg-surface-card px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
                 <i data-lucide="fingerprint" class="h-5 w-5"></i>
             </span>
@@ -28,17 +28,7 @@
                 <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
             </div>
         </div>
-        <div class="flex shrink-0 items-center gap-3">
-            <div class="pointer-events-none hidden items-center gap-2 lg:flex" aria-hidden="true">
-                <span class="flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-subtle bg-surface-card/70 text-kaori-primary shadow-sm">
-                    <i data-lucide="smartphone" class="h-6 w-6"></i>
-                </span>
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="shield-check" class="h-5 w-5"></i>
-                </span>
-            </div>
-            {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
-        </div>
+        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
     </header>
     <div class="space-y-6 p-5 xl:p-6">
         <section aria-label="Account MFA security posture"
@@ -195,10 +185,8 @@
                                        pattern="[0-9]{6}"
                                        maxlength="6"
                                        placeholder="••••••"
-                                       aria-describedby="mfa-confirm-help"
-                                       class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-center font-mono text-lg tracking-[0.65em] text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                       class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-center font-mono text-lg tracking-widest text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </div>
-                            <p id="mfa-confirm-help" class="text-xs leading-5 text-content-muted">Six digits from your authenticator application.</p>
                             <button type="submit"
                                     class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                 <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
@@ -208,52 +196,49 @@
                     </section>
                 </div>
                 <aside class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
-                       aria-labelledby="account-mfa-setup-guide">
+                       aria-labelledby="account-mfa-setup-guide"
+                       data-account-mfa-guide="single-panel">
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="list-checks" class="h-4 w-4"></i>
-                        </span>
-                        <h3 id="account-mfa-setup-guide" class="text-sm font-bold text-content-primary">Enrollment Guide</h3>
+                        <i data-lucide="list-checks" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <h3 id="account-mfa-setup-guide" class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Four steps to protect your account.</p>
+                        </div>
                     </header>
                     <ol class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
                         <li class="flex flex-1 items-center gap-3 py-4">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="key-round" class="h-4 w-4"></i>
-                            </span>
+                            <i data-lucide="key-round" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Generate a setup key</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password, or use a fresh external sign-in.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password or use a fresh external sign-in.</p>
                             </div>
                         </li>
                         <li class="flex flex-1 items-center gap-3 py-4">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="smartphone" class="h-4 w-4"></i>
-                            </span>
+                            <i data-lucide="smartphone" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Add an authenticator</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Enter the manual key into a TOTP-compatible application.</p>
+                                <p class="text-sm font-semibold text-content-primary">Add an authenticator app</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Enter the setup key into a compatible TOTP application.</p>
                             </div>
                         </li>
                         <li class="flex flex-1 items-center gap-3 py-4">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="shield-check" class="h-4 w-4"></i>
-                            </span>
+                            <i data-lucide="shield-check" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Confirm and protect recovery</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Verify six digits, then store the issued recovery codes privately.</p>
+                                <p class="text-sm font-semibold text-content-primary">Verify the six-digit code</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Submit a fresh code to enable your factor.</p>
+                            </div>
+                        </li>
+                        <li class="flex flex-1 items-center gap-3 py-4">
+                            <i data-lucide="key-round" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Save recovery codes</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Keep the one-time codes in a private, secure location.</p>
                             </div>
                         </li>
                     </ol>
-                    <div class="mt-auto border-t border-outline-subtle p-5">
-                        <div class="flex items-start gap-2 rounded-lg border border-outline-default bg-kaori-soft/60 p-3">
-                            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                            <p class="text-xs leading-5 text-content-secondary">Your factor remains managed by KAORI; the primary identity provider stays authoritative for the initial sign-in.</p>
-                        </div>
-                    </div>
+                    <p class="mt-auto border-t border-outline-subtle px-5 py-4 text-xs leading-5 text-content-muted">
+                        <span class="font-semibold text-content-primary">Need help?</span>
+                        If setup fails, sign in again and confirm your current password.
+                    </p>
                 </aside>
             </div>
         {% else %}
