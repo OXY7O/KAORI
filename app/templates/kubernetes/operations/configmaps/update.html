@@ -119,7 +119,7 @@
                 {% set configmap_update_flow = [('Select Object', 'Load one live ConfigMap and resourceVersion.'), ('Review & Edit', 'Choose Merge or Replace for intended keys.'), ('Preview & Validate', 'Review the full diff and dry-run the update.'), ('Apply Update', 'Apply the validated state at the same version.')] %}
                 {{ info_flow.render('ConfigMap Update Flow', 'One validated update from live state.', configmap_update_flow, icon='git-compare-arrows', note='Target, mode, or entry changes require revalidation.', note_icon='circle-alert', open_by_default=true) }}
                 {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Read live data and immutability before editing.'), ('git-compare-arrows', 'Effective Diff', 'Review added, changed, removed, and unchanged keys.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps cannot be mutated.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion blocks stale updates.')] %}
-                {{ information_guide_card.render('Update Safety Contract', 'Controls that stay active while the live object is edited.', configmap_update_guardrails, icon='shield-check') }}
+                {{ information_guide_card.render('Update Safety Contract', 'Active safeguards for this update.', configmap_update_guardrails, icon='shield-check') }}
             </aside>
         </form>
     </div>
