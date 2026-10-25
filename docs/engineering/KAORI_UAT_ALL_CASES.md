@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (133 scenarios)
+# KAORI — Complete Acceptance Case Specifications (143 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 119 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
+**Maturity:** Original 14 first-wave procedures retained; the other 129 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -1357,6 +1357,243 @@
 
 **Automation mapping:** tests/contracts/kubernetes/test_tls_rotation_workspace_presentation_contract.py, app/static/js/native_dialogs.js and validated_operations.js; full keyboard, focus, mobile/dark and changed-target invalidation not evidenced per-ID.
 
+
+## Object Storage — Operations Dashboard
+
+**Owner:** app/storage/object_storage/dashboard/; `/dashboards/object-storage/`.  
+**Authority:** #3168/#1738 and shared #753/#923.  
+**Human evidence:** Visual screenshots of four tabs, 52 focused pytest PASS and Ruff/djlint PASS with corrected formatter PASS; no attributed Gherkin execution or report download.
+**Automation scope:** Existing dashboard/family pytest and Playwright only; no new Gherkin runner.
+
+### UAT-OSD-001 — Dashboard shell and four KPIs use committed scope
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** registered MinIO X300 with committed inventory analytics and AlertCases; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: an authorized operator opens /dashboards/object-storage/.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- the Violet Hero displays selected scope and Committed Snapshots authority.
+- four KPIs expose buckets usage utilization and KAORI AlertCases.
+- evidence age and source labels are visible without an unconditional live provider query.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-002 — Stale analytics does not conceal warning posture
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** connected Object Storage with committed inventory and stale analytics; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator opens Operations Overview.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- the health table displays Warning for stale analytics.
+- freshness remains distinct for Inventory Analytics Forecast and Alert Evidence.
+- usable fleet analytics is not misrepresented as fresh.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-003 — All Systems and selected-scope switching stays correlated
+
+**Type:** Positive · **Layer:** Both · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** two committed Object Storage systems with distinct buckets and AlertCases; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator switches All Systems and back to MinIO X300.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- All Systems shows Systems Buckets Inventory Usage and Analytics Ready.
+- selected system returns Buckets Used Capacity Utilization and Active Alerts.
+- system health table uses five-row pagination and no foreign data.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-004 — Capacity forecast and Top Consumers use committed measurements
+
+**Type:** Positive · **Layer:** Both · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** scoped used free usable capacity and 30-day forecast snapshots; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator selects Capacity & Demand.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- capacity balance and projections use committed source measurements.
+- the graph differentiates historical and forward forecast.
+- 90-day forecast conclusion and dynamic bucket share preserve uncertainty.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-005 — Signals retain AlertCase severity and governed response
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** selected-system active warning AlertCase and central recommendation findings; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator opens Signals & Actions.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- severity and up to five previews derive from KAORI AlertCase records.
+- Validate Triage Investigate Respond Verify Record steps remain ordered.
+- response guidance never initiates a provider mutation.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-006 — Recommendations use shared bounded previews and Intelligence detail
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** Object Storage Intelligence findings with long descriptions and full rule detail; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator inspects Recommended Actions and opens Intelligence detail.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- title and description previews use two-line clamp like Kubernetes.
+- source uses presentational truncation and full title is accessible.
+- original action text priority category and detail handoff remain intact.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-007 — Reporting empty state is distinct from a Ready report download
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** a clean empty Object Storage report scope and isolated Ready artifact fixture; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator opens Reporting then retrieves the Ready report.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- zero report counts show actionable no-report empty state.
+- governed Validate Select Create Generate Schedule Retain steps remain.
+- only actual authorized artifact download can establish Ready retrieval.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-008 — Four tabs retain URL theme and responsive behavior
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** permitted actor with supported light dark and narrow viewport fixtures; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator navigates all four tabs including Back Forward and refresh.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- only one active tab and matching lazy section is visible.
+- valid selected scope survives navigation history and refresh.
+- cards guidance charts and table text remain accessible without clipping.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-009 — Missing or invalid Object Storage scope cannot fake metrics
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** missing analytics evidence with a separate invalid or foreign system ID; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the operator requests a scoped section with missing data or invalid identity.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- missing measurements show unavailable rather than zero or Healthy.
+- detailed sections require a valid selected system.
+- All Systems does not expose unauthorized or unrelated committed records.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
+
+### UAT-OSD-010 — Restricted direct Dashboard and section requests are denied
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** dashboard visually reviewed; scenario-specific acceptance pending
+
+**Preconditions:** a restricted principal without dashboard.view permission; record exact candidate SHA, actor, permission, scope identity and committed source state.
+
+**Steps:**
+1. Capture source SHA, actor, selected system, evidence freshness and fixture identity.
+2. Perform scenario in an existing browser/domain client: the actor directly requests Dashboard and lazy-section URLs.
+3. Inspect actual UI, HTTP, committed read-back and negative side-effect boundary.
+4. Save JUnit/trace/screenshots as appropriate, restore fixture or browser selection, then seek independent human acceptance.
+
+**Expected results:**
+- authorization denies protected content before expensive reads.
+- bucket AlertCase recommendation and report identities do not leak.
+- read-only requests create no job provider mutation or generated report.
+
+**Required evidence:** Exact candidate SHA, actor/role, source record and ages, browser screenshot/trace, relevant pytest/API assertions, and provider/audit read-back where necessary. A Ready artifact is only proven downloadable through actual authorized retrieval.
+
+**Isolation / cleanup:** Read-only unless an explicit disposable fixture is approved; do not mutate production. Restore scope/theme and synthetic data. Negative authorization/source tests must demonstrate no write.
+
+**Automation mapping:** Source reviewed: app/storage/object_storage/dashboard/ and tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py, tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py. Exact-ID test nodes and execution NOT VERIFIED.
 
 ## Object Storage — Inventory & Analytics
 
