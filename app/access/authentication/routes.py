@@ -9,6 +9,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.bot_protection.service import (
+    BotConfigurationError,
+    bot_policy_state,
+    bot_token_verified,
+)
 from app.access.authentication.forms import LoginForm, MfaChallengeForm
 from app.access.authentication.identity_provider.browser import (
     SsoProviderError,
@@ -56,6 +61,8 @@ from app.platform_operations.notifications.service import queue_transient_feedba
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 SSO_SESSION_KEY = 'kaori_sso_flow'
+SSO_BOT_GRANT_KEY = 'kaori_sso_bot_grant'
+SSO_BOT_GRANT_TTL_SECONDS = 60
 MFA_PENDING_SESSION_KEY = 'kaori_mfa_pending'
 
 
@@ -135,10 +142,29 @@ def login():
     if current_user.is_authenticated:
         return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
 
+    try:
+        bot_state = bot_policy_state()
+    except BotConfigurationError:
+        return 'Authentication protection is temporarily unavailable.', 503
+
     form = LoginForm()
     if request.method == 'GET':
         form.next.data = safe_next_url(request.args.get('next')) or ''
     if form.validate_on_submit():
+        if not bot_token_verified(request.form.get('cf-turnstile-response'), bot_state):
+            record_authentication_activity(
+                action='login',
+                username=str(form.username.data or ''),
+                source='database',
+                result='failed',
+                reason='bot_challenge_failed',
+            )
+            queue_transient_feedback(
+                status='error',
+                title='Sign-in verification failed',
+                message='Complete the security challenge and try again.',
+            )
+            return redirect(url_for('auth.login'))
         username = form.username.data or ''
         password = form.password.data or ''
         result = authenticate(username, password)
@@ -185,7 +211,12 @@ def login():
         {'record': provider, 'definition': provider_definition(provider.provider_key)}
         for provider in enabled_sso_providers()
     ]
-    return render_template('access/authentication/index.html', form=form, sso_provider_rows=sso_provider_rows)
+    return render_template(
+        'access/authentication/index.html',
+        form=form,
+        sso_provider_rows=sso_provider_rows,
+        bot_state=bot_state,
+    )
 
 
 @auth_bp.get('/sso/<provider_key>/start')
