@@ -18,24 +18,21 @@
             ('registry', 'Connection Registry', 'database-zap', registry_count)
         ] %}
     {% set workspace_guide_items = [
-            "Integration Coverage — Review domain-specific provider access, readiness, and committed evidence where observed.",
-            "Connection Registry — Find registered connections and check validation or lifecycle status before operational use.",
-            "Authority Boundary — External providers remain authoritative for native resources; KAORI governs committed evidence and correlation."
-        ] %}
+        "Integration Coverage — Review domain-specific provider access, readiness, and committed evidence where observed.",
+        "Connection Registry — Find registered connections and check validation or lifecycle status before operational use.",
+        "Authority Boundary — External providers remain authoritative for native resources; KAORI governs committed evidence and correlation."
+    ] %}
     {% set workspace_guide = info_tip.render("integration-workspace-" ~ provider_key,
             "Integration Workspace Guide",
             "Coverage and connection registration are separate views of each provider's operational state.",
             items=workspace_guide_items,
             placement="right",
-            variant="guide") %}
+        variant="guide") %}
     <div class="space-y-3" data-kaori-integration-workspace-section>
-        <header class="flex min-w-0 items-start gap-3 px-1"
+        <header class="min-w-0 px-1"
                 aria-label="{{ provider_key|title }} provider connections and coverage">
-            {{ integration_ui.palette_icon("layers-3", "brand", size="sm") }}
-            <div class="min-w-0">
-                <h2 class="text-lg font-semibold text-content-primary">Provider Connections &amp; Coverage</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor provider readiness, committed coverage, and registered connections.</p>
-            </div>
+            <h2 class="text-lg font-semibold text-content-primary">Provider Connections &amp; Coverage</h2>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor provider readiness, committed coverage, and registered connections.</p>
         </header>
         <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
                  x-on:popstate.window="syncTab()"
@@ -43,21 +40,21 @@
                  aria-label="{{ provider_key|title }} integration workspace"
                  data-kaori-integration-workspace-tabs>
             {{ integration_ui.section_header("layout-dashboard",
-                    "Integration Workspace",
-                    "Switch between integration coverage and registered connections.",
-                    title_extra=workspace_guide) }}
-        {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
-        <div class="p-4 sm:p-5 lg:p-6">
-            <div id="{{ workspace_prefix }}-panel-coverage"
-                 x-show="activeTab === 'coverage'"
-                 role="tabpanel"
-                 aria-labelledby="{{ workspace_prefix }}-tab-coverage">{{ caller("coverage") }}</div>
-            <div id="{{ workspace_prefix }}-panel-registry"
-                 x-show="activeTab === 'registry'"
-                 x-cloak
-                 role="tabpanel"
-                 aria-labelledby="{{ workspace_prefix }}-tab-registry">{{ caller("registry") }}</div>
-        </div>
+                        "Integration Workspace",
+                        "Switch between integration coverage and registered connections.",
+                        title_extra=workspace_guide) }}
+            {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="{{ workspace_prefix }}-panel-coverage"
+                     x-show="activeTab === 'coverage'"
+                     role="tabpanel"
+                     aria-labelledby="{{ workspace_prefix }}-tab-coverage">{{ caller("coverage") }}</div>
+                <div id="{{ workspace_prefix }}-panel-registry"
+                     x-show="activeTab === 'registry'"
+                     x-cloak
+                     role="tabpanel"
+                     aria-labelledby="{{ workspace_prefix }}-tab-registry">{{ caller("registry") }}</div>
+            </div>
         </section>
     </div>
 {%- endmacro %}

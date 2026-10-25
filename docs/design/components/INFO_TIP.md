@@ -82,9 +82,10 @@ Alertmanager, MinIO, Harbor, Vault, GitHub) use the shared
 `components/integration_workspace_tabs.html` adapter. Its section heading
 is **outside** the existing operational card: **Provider Connections &
 Coverage** with the concise description **Monitor provider readiness,
-committed coverage, and registered connections.** This heading uses existing
-KAORI palette icons, semantic typography, and responsive spacing rather than
-duplicated provider templates.
+committed coverage, and registered connections.** This outer heading
+uses icon-free semantic typography and responsive spacing rather than
+duplicated provider templates. The **inner Integration Workspace** card
+retains its existing section icon and title-adjacent Violet Guide.
 
 **Inside** the card, the existing **Integration Workspace** title owns a
 single compact Violet `Guide` immediately beside it. The adapter passes
