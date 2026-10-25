@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from flask import url_for
+from flask_login import current_user
+
 from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
@@ -17,12 +20,17 @@ from app.integrations.kernel.registry import (
 )
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.adapter import runtime_adapter
+from app.integrations.source_control.uat_access import local_super_admin
 from app.models.source_control import SourceInstallation
 
 
-def _detail_url(_record: SourceInstallation, _section: str) -> str:
-    """Existing shared workspace; no unreviewed GitHub-specific detail page."""
-    return '/integrations/source-control'
+def _detail_url(record: SourceInstallation, _section: str) -> str:
+    """Route admitted UAT operators to this installation, never another scope."""
+    if local_super_admin(current_user):
+        return url_for('github_source_uat.detail', installation_id=record.id)
+    # Keep ordinary Integration readers on the authorized read-side overview.
+    # The installation detail remains protected by require_uat_access().
+    return url_for('github_source.index')
 
 
 def _record_failure(record: SourceInstallation, _error: Exception) -> None:
