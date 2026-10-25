@@ -445,7 +445,7 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
         '_overview_forecast_snapshot.html',
         '_reconciliation.html',
         '_metrics_readiness.html',
-        '_evidence_boundary.html',
+        '_overview_evidence_context.html',
     ):
         assert partial in workspace
 

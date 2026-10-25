@@ -1,0 +1,127 @@
+{# Overview composition: committed source/state evidence only. Shared Evidence tabs remain unchanged. #}
+{% set context_contract = metrics_readiness|default({}, true) %}
+{% set context_snapshot = analytics_materialization|default({}, true) %}
+{% set context_forecast = forecast_materialization|default({}, true) %}
+{% set context_alerts = overview_alerts|default({}, true) %}
+{% set context_alert_source = context_alerts.source|default({}, true) %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-evidence-context>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true">
+                    <i data-lucide="waypoints" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">How Evidence Is Assembled</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Committed sources, readiness, and audit boundaries in one workspace.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(context_snapshot.label|default('Unavailable'), context_snapshot.tone|default('unknown'), size='compact') }}
+        </div>
+    </header>
+    {% set authorities = [
+                ('Committed Inventory', 'Configuration & Point-in-Time State', 'Identity, configuration, quota, protection and explicit point-in-time usage fallback.', 'database'),
+                (metrics_source.provider_label|default('Metrics Source'), 'Operational Time-Series', 'Capacity, requests, errors, traffic, bucket activity and historical usage.', 'chart-no-axes-combined'),
+                ('Alertmanager', 'Alert Lifecycle & Routing', 'Worker-collected alert lifecycle when an eligible provider binding is resolved.', 'bell-ring')
+            ] %}
+    <div class="grid gap-px bg-outline-subtle lg:grid-cols-3"
+         data-object-storage-evidence-authorities>
+        {% for label, title, explanation, icon in authorities %}
+            <article class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-4 sm:px-5">
+                <span class="{{ analysis_surface.metric_icon_classes('compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ title }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ explanation }}</p>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6"
+         data-object-storage-evidence-readiness>
+        <h3 class="text-sm font-semibold text-content-primary">Committed Evidence Readiness</h3>
+        <p class="mt-1 text-xs leading-5 text-content-muted">Captured source states; no live provider queries on page load.</p>
+        {% set readiness = [
+                    ('Metrics Contract', context_contract.label|default('Not Validated')),
+                    ('Inventory Observed', inventory_observed_at|user_datetime('Not Collected')),
+                    ('Forecast Worker', context_forecast.label|default('Unavailable')),
+                    ('Alert Lifecycle Source', context_alert_source.resolved_label|default('Unavailable'))
+                ] %}
+        <dl class="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
+            {% for label, value in readiness %}
+                <div class="min-w-0">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
+                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </div>
+    <div class="divide-y divide-outline-subtle border-t border-outline-subtle">
+        <details data-object-storage-evidence-details>
+            <summary class="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-content-primary sm:px-6">
+                <span class="flex min-w-0 items-center gap-2">
+                    <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    Source Boundaries &amp; Missing Values
+                </span>
+                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+            </summary>
+            <div class="space-y-4 border-t border-outline-subtle p-4 sm:p-5">
+                {% set domains = [
+                            ('Capacity', metrics_source.provider_label|default('Metrics Source'), context_snapshot.label|default('Unavailable'), 'Inventory point-in-time fallback only where supported.'),
+                            ('Performance', metrics_source.provider_label|default('Metrics Source'), context_contract.label|default('Not Validated'), 'Request and error metrics never fall back to Inventory.'),
+                            ('Forecast', 'Forecast Worker', context_forecast.label|default('Unavailable'), 'Worker history and projection; no Inventory forecast fallback.'),
+                            ('Alerts', context_alert_source.resolved_label|default('Unavailable'), context_alerts.posture.status|default('Unknown'), 'Alertmanager preferred; Metrics Source ALERTS is narrower.')
+                        ] %}
+                <div data-object-storage-evidence-coverage>
+                    <h3 class="text-sm font-semibold text-content-primary">Committed Domain Coverage</h3>
+                    <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                        {% for domain, source, state, boundary in domains %}
+                            <div class="grid gap-2 p-3 text-xs leading-5 sm:grid-cols-4"
+                                 data-object-storage-evidence-domain="{{ domain|lower }}">
+                                <p class="font-semibold text-content-primary">{{ domain }}</p>
+                                <p class="text-content-secondary">{{ source }}</p>
+                                <p class="text-content-secondary">{{ state }}</p>
+                                <p class="text-content-muted">{{ boundary }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div data-object-storage-evidence-missing-values>
+                    <h3 class="text-sm font-semibold text-content-primary">How To Read Missing Or Non-Applicable Values</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Missing evidence stays Unknown and must never become fabricated zero usage or a healthy conclusion.</p>
+                    {% set missing_states = [
+                                ('Not Configured', 'info', 'Provider confirms the capability is absent, such as a bucket without a quota.'),
+                                ('No Current Samples', 'unknown', 'Query succeeded without samples; check scope, time range, and scrape coverage.'),
+                                ('Metric Not Scraped', 'warning', 'Optional metric family absent; MinIO bucket metrics require /minio/v2/metrics/bucket collection.'),
+                                ('Runtime Query Failed', 'critical', 'Worker collection query failed; preserve the failure rather than reporting zero.')
+                            ] %}
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {% for label, tone, description in missing_states %}
+                            <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                {{ table_label.status_label(label, tone, size='compact') }}
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </details>
+        <details data-object-storage-evidence-reconciliation>
+            <summary class="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-content-primary sm:px-6">
+                <span class="flex min-w-0 items-center gap-2">
+                    <i data-lucide="between-horizontal-start" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    Inventory &amp; Operational Reconciliation
+                </span>
+                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+            </summary>
+            <div class="border-t border-outline-subtle p-4 sm:p-5">
+                {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
+            </div>
+        </details>
+    </div>
+</section>
