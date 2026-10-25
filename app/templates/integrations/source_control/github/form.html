@@ -179,11 +179,11 @@
                          aria-live="polite"></div>
                 </fieldset>
                 {{ registration_actions.render(url_for('github_source.index') ,
-                        aria_label='GitHub App Connection Actions',
-                        register_label='Register Connection',
-                        loading_label='Registering Connection...',
-                        submit_name='action',
-                        submit_value='save') }}
+                aria_label='GitHub App Connection Actions',
+                register_label='Register Connection',
+                loading_label='Registering Connection...',
+                submit_name='action',
+                submit_value='save') }}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% set github_flow_items = [('Define Connection Identity', 'Name the connection and choose its operational environment.'), ('Identify GitHub Installation', 'Provide the App ID, Installation ID, and owning account.'), ('Test Connection', 'Verify installation identity, permissions, and repository scope.'), ('Register & Validate', 'Save, then run Full Validation.')] %}

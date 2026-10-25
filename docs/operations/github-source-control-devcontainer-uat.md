@@ -1074,3 +1074,75 @@ a committed-but-empty observation; do not equate an empty authorized
 collection with an unobserved collection. Observe toast, access rights,
 empty state, full revision evidence and keyboard/touch behavior separately.
 Official CI/CD, admission, staging/main promotion and release remain HOLD.
+
+
+## 2026-10-26 — #3246 GitHub Provider Registry Open and Manage Integration parity
+
+**UAT finding:** The Source Control domain Provider Registry `Open` action
+for a registered GitHub installation returned to
+`/integrations/source-control` instead of a connection detail. Its
+provider kernel `_detail_url` was still the historical placeholder.
+The **correct** detail URL now targets the matching native
+`SourceInstallation.id` through `github_source_uat.detail`, **only**
+for an active authorized local database super-admin with
+`integrations.manage`. For all other readers, the descriptor links to
+the provider-owned GitHub Overview; the installation route continues to
+enforce `require_uat_access()`. The fix does not broaden #724
+resource-scoped authorization, modify permissions, or disclose installation
+details or credentials to unauthorized callers.
+
+**Approved visual reference:** Kubernetes provider's native connection
+detail (`integrations/.../kubernetes/detail.html`). GitHub now reuses the
+same `page_hero`, `_provider_detail_posture.html`,
+`framed_workspace_tabs.html`, `integrationWorkspaceTabs`, and
+`integrations/components/_workspace.html` section geometry. Tabs:
+
+- **Configuration:** canonical identity, environment, GitHub installation
+  ID, repository-selection scope, provider authority and current readiness.
+  Private key PEM and webhook secret are never redisplayed.
+- **Validation & Capabilities:** committed readiness, CSRF-protected
+  **Run Full Validation** via the existing admitted JobExecution. It does
+  not claim repository inventory has been committed.
+- **Runtime & History:** existing most recent canonical JobExecution and
+  signed webhook receipts. Empty webhook evidence remains a valid empty
+  state when webhooks are disabled.
+- **Inventory & Lifecycle:** existing committed-only, 15-second HTMX
+  repository inventory with exact SHA, collection freshness and rows per
+  page; **Sync Repositories** remains disabled until readiness is `ready`.
+  Sync is still subject to worker registration, canonical job policy and
+  resource-scoped admission; neither the GET nor this redesign triggers
+  a sync.
+
+The Hero **Review Validation** action selects the Validation tab without
+inventing readiness. **Back to Registry** leads directly to the
+GitHub Connection Registry, not the older intermediate UAT installation
+list. Recent POST feedback initially selects the Validation or Inventory
+tab depending on the operation. Existing CSRF validation and guards in
+`uat_routes.py` are unchanged.
+
+**Additional quality correction:** The user-provided djLint formatting
+difference for GitHub registration `registration_actions.render` was
+applied without changing test/save/proof semantics.
+
+**Dev Container Human UAT:**
+1. From Integrations → Source Control → Provider Registry click the
+   registered GitHub connection's **Open**. It must open the correct
+   GitHub installation detail and must not remain on the same domain.
+   Non-authorized roles must not access the installation detail.
+2. At 1440×900 and mobile widths in both themes, compare the GitHub
+   Hero/Posture, tabs, spacing, status icons and compact responsive panels
+   to the approved Kubernetes Manage Integration design.
+3. Switch Configuration → Validation → Runtime → Inventory by mouse,
+   keyboard and touch. The Review Validation Hero CTA should select the
+   Validation tab.
+4. Run Full Validation only with authorization and observe its actual
+   canonical JobExecution status. Run Sync only after readiness becomes
+   `ready` and existing dispatch policy allows it. Confirm one
+   connection registration is not mislabeled as committed inventory.
+5. Confirm repository inventory pagination/HTMX still works, no private
+   PEM/webhook secret appears, and runtime jobs/deliveries correctly
+   represent current committed evidence.
+
+This is a holding-branch UAT workstream, not official Developer Check,
+Full Admission, production release or approval. Keep issue OPEN until
+executable quality checks and Human Acceptance are recorded.
