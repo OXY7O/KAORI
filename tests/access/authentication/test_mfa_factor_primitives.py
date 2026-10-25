@@ -28,6 +28,11 @@ def test_enrollment_secret_is_encrypted_and_compatible_with_authenticator() -> N
         assert 'otpauth://totp/' in enrollment.provisioning_uri
         secret = decrypt_credential(enrollment.encrypted_secret)
         assert secret and secret not in repr(enrollment)
+        assert enrollment.provisioning_uri not in repr(enrollment)
+        assert 'otpauth://' not in repr(enrollment)
+        assert 'encrypted_secret=' not in repr(enrollment)
+        assert 'provisioning_uri=' not in repr(enrollment)
+        assert secret in enrollment.provisioning_uri  # Authorized manual setup still works.
         timestamp = int(datetime(2026, 10, 25, tzinfo=UTC).timestamp())
         code = _totp(secret).generate(timestamp).decode('ascii')
         assert verify_totp(enrollment.encrypted_secret, code, at_time=timestamp)

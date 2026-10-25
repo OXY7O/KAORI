@@ -11,7 +11,7 @@ import hashlib
 import hmac
 import secrets
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from urllib.parse import quote
 
@@ -26,8 +26,8 @@ RECOVERY_CODE_PREFIX = 'sha256:v1:'
 
 @dataclass(frozen=True, slots=True)
 class TotpEnrollment:
-    encrypted_secret: str
-    provisioning_uri: str
+    encrypted_secret: str = field(repr=False)
+    provisioning_uri: str = field(repr=False)
 
 
 def start_totp_enrollment(*, account_label: str, issuer: str = 'KAORI') -> TotpEnrollment:
