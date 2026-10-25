@@ -5,6 +5,12 @@ from __future__ import annotations
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 
 from app.access.authentication.bot_protection.registry import bot_provider_definitions
+from app.access.authentication.bot_protection.service import (
+    BOT_ALWAYS,
+    BOT_DISABLED,
+    public_bot_state,
+    validate_bot_configuration,
+)
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyMode
 from app.access.authentication.mfa.service import mfa_enrolled, mfa_policy_mode
@@ -47,6 +53,7 @@ def index():
         'mfa_policy_mode': mfa_policy_mode(),
         'can_manage_authentication_security': current_user.has_permission('identity_providers.manage'),
         'bot_providers': bot_provider_definitions(),
+        'bot_state': public_bot_state(db.session.get(AuthenticationSecurityPolicy, 1)),
     }
     if (
         request.headers.get('HX-Request') == 'true'
@@ -101,3 +108,67 @@ def save_mfa_policy():
         current_app.logger.warning('MFA policy change was not committed.', exc_info=True)
         abort(503)
     return redirect(url_for('access.authentication_security.index', tab='mfa'))
+
+
+@bp.post('/bot/provider')
+@permission_required('identity_providers.manage')
+def save_bot_provider():
+    """Persist a protected provider instance and explicit fail-closed mode."""
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        abort(400)
+    mode = str(request.form.get('bot_mode') or '')
+    provider_key = str(request.form.get('provider_key') or '')
+    site_key = str(request.form.get('site_key') or '').strip()
+    hostname = str(request.form.get('hostname') or '').strip().lower()
+    candidate_secret = str(request.form.get('secret_key') or '').strip()
+    if mode not in (BOT_DISABLED, BOT_ALWAYS) or provider_key != 'cloudflare_turnstile':
+        abort(400)
+
+    actor = current_user._get_current_object()
+    try:
+        policy = db.session.get(AuthenticationSecurityPolicy, 1, with_for_update=True)
+        if policy is None:
+            policy = AuthenticationSecurityPolicy(id=1, mfa_mode='disabled')
+            db.session.add(policy)
+        effective_secret = candidate_secret or policy.bot_secret or ''
+        # A disabled policy may store only a complete provider definition.
+        # No active/always challenge can be admitted with incomplete values.
+        if mode == BOT_ALWAYS or any((site_key, hostname, candidate_secret)):
+            validate_bot_configuration(site_key, hostname, effective_secret)
+        old_mode = policy.bot_mode
+        changed = (
+            mode != old_mode
+            or site_key != (policy.bot_site_key or '')
+            or hostname != (policy.bot_hostname or '')
+            or bool(candidate_secret)
+        )
+        policy.bot_mode = mode
+        policy.bot_provider_key = provider_key
+        policy.bot_site_key = site_key or None
+        policy.bot_hostname = hostname or None
+        if candidate_secret:
+            policy.bot_secret = candidate_secret
+        if changed:
+            db.session.add(stage_authentication_security_event(
+                actor, action='bot_policy_changed', authenticated=True, success=True,
+                previous_mode=old_mode, next_mode=mode,
+            ))
+            if old_mode != mode and mode == BOT_ALWAYS:
+                # Existing sessions issued before the enforcement change must
+                # not quietly retain an unchallenged security assurance state.
+                db.session.execute(
+                    update(User)
+                    .where(User.account_is_active.is_(True), User.deleted_at.is_(None))
+                    .values(auth_session_version=func.coalesce(User.auth_session_version, 1) + 1)
+                )
+        db.session.commit()
+    except ValueError:
+        db.session.rollback()
+        abort(400)
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.warning('Bot Protection configuration was not committed.', exc_info=True)
+        abort(503)
+    return redirect(url_for('access.authentication_security.index', tab='bot'))
