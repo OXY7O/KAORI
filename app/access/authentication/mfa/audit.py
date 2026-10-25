@@ -20,6 +20,7 @@ MfaSecurityAction = Literal[
     'mfa_recovery_regenerated',
     'mfa_policy_changed',
     'bot_policy_changed',
+    'bot_provider_verified',
 ]
 
 
