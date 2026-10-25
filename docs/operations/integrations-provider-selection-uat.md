@@ -119,3 +119,17 @@ djlint --check \
 Container results and browser Human Acceptance are **pending**. No official
 CI/CD/Developer Check/Full Admission, promotion to `kaori/staging` or main,
 deployment, tag, or release until explicitly authorized.
+
+## 2026-10-25 — #3119 sidebar and chooser visual follow-up
+
+Operator visual UAT at 1440×900 found that dynamic `/integrations/providers/source_control` highlighted **Overview** instead of **Source Control**, and the single GitHub tile left an unused half-column. Corrected using the canonical navigation owner and matrix-derived domain identity, while the shared six-domain selector renders one provider as a compact full-width row and multiple providers in a responsive grid. Provider availability, credential handling, registration routes, RBAC, CSRF, evidence and validation behavior are unchanged.
+
+**Exact-candidate Dev Container retest:**
+
+1. Source Control → Open Source Control: sidebar highlights Source Control and breadcrumb shows Integrations → Source Control → Choose Provider. Verify the other provider chooser types highlight the owning capability, including both Observability types.
+2. Single-provider GitHub selection uses full row width with one Register GitHub CTA. With multiple/disabled providers verify balanced cards, clear status and no actionable registration for unavailable entries.
+3. Hover/click/keyboard-focus Provider Registration, Adapter and Protocol info tips. Inspect 1440×900 and 390×844, light and dark, without clipping or sideways overflow.
+4. Register GitHub opens the existing GitHub App form; Test Connection and Register Connection buttons are present and admission-gated. No credentials are needed for this navigation/visual UAT.
+5. Run Ruff, Ruff Format, djLint, selected pytest, `verify_sidebar_navigation_standard.py`, `verify_integration_domain_navigation.py`, `verify_ui_style.py`, `verify_ui_reuse.py` and existing browser/Visual QA as available.
+
+**Earlier operator evidence:** 33 passed, 1 failed (line-sensitive GitHub form button action test); Integration Domain Navigation verifier PASS. The action test is now whitespace-tolerant without changing security enforcement. Executable verification on the new candidate and Human Acceptance remain **PENDING** until actual Dev Container evidence is recorded. Official admission remains HOLD.
