@@ -37,9 +37,7 @@ def _active_access_child(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> tupl
         'access.authentication_security.test_bot_provider',
     ),
 )
-def test_authentication_security_is_the_only_active_access_child(
-    endpoint: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_authentication_security_stays_active(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> None:
     active_key, visible_keys = _active_access_child(endpoint, monkeypatch)
     assert active_key == 'authentication_security'
     assert 'overview' in visible_keys
@@ -57,9 +55,7 @@ def test_authentication_security_is_the_only_active_access_child(
         ('access.activity_audit.index', 'activity_audit'),
     ),
 )
-def test_existing_access_sidebar_capabilities_keep_their_active_state(
-    endpoint: str, expected: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_access_peer_states(endpoint: str, expected: str, monkeypatch: pytest.MonkeyPatch) -> None:
     active_key, _ = _active_access_child(endpoint, monkeypatch)
     assert active_key == expected
 
