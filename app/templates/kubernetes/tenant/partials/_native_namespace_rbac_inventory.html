@@ -60,8 +60,8 @@
             <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Committed' if latest_native_inspection else 'Not inspected' }}</p>
         </div>
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-            <p class="text-xs text-content-muted">{{ 'Matching Evidence' if access_evidence_filters.search or access_evidence_filters.status else 'Committed Evidence' }}</p>
-            <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_pagination.total_items }} records</p>
+            <p class="text-xs text-content-muted">Committed Evidence</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_total }} records</p>
         </div>
     </div>
     {% set evidence_registry_id = 'tenant-native-evidence-registry' %}
