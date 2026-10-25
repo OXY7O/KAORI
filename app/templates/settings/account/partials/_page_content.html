@@ -20,6 +20,10 @@
             <div class="p-5 xl:p-6" data-account-activity-full-width="true">
                 {% include "settings/account/partials/_recent_login_activity.html" %}
             </div>
+        {% elif active_tab == 'mfa' %}
+            <div class="p-5 xl:p-6">
+                {% include "settings/account/partials/_mfa.html" %}
+            </div>
         {% else %}
             <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-start xl:p-6"
                  data-credential-workspace-layout="natural-columns">
