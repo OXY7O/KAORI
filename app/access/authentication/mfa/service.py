@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.twofactor.totp import TOTP
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyDecision, evaluate_mfa_policy
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
@@ -71,7 +72,7 @@ def _accepted_step(
     return None
 
 
-def begin_mfa_enrollment(user: User) -> str:
+def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
     """Create expiring encrypted factor; return seed ONLY to this POST response."""
     if mfa_enrolled(user.id):
         raise MfaVerificationError('MFA is already enrolled.')
@@ -85,6 +86,9 @@ def begin_mfa_enrollment(user: User) -> str:
     factor.enrollment_expires_at = datetime.now(UTC) + ENROLLMENT_TTL
     if existing is None:
         db.session.add(factor)
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_enrollment_started', authenticated=authenticated, success=True,
+    ))
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -93,7 +97,7 @@ def begin_mfa_enrollment(user: User) -> str:
     return secret
 
 
-def confirm_mfa_enrollment(user: User, code: str) -> list[str]:
+def confirm_mfa_enrollment(user: User, code: str, *, authenticated: bool = True) -> list[str]:
     """Activate only after OTP proof; codes are returned ONCE, hashes persisted."""
     factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id).with_for_update().first()
     now = datetime.now(UTC)
@@ -113,6 +117,9 @@ def confirm_mfa_enrollment(user: User, code: str) -> list[str]:
     factor.enabled = True
     factor.enrolled_at = now
     factor.enrollment_expires_at = None
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_enrollment_confirmed', authenticated=authenticated, success=True,
+    ))
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -121,7 +128,7 @@ def confirm_mfa_enrollment(user: User, code: str) -> list[str]:
     return recovery
 
 
-def verify_mfa_challenge(user: User, submitted: str) -> str:
+def verify_mfa_challenge(user: User, submitted: str, *, authenticated: bool = False) -> str:
     """Consume a factor proof under an exclusive row lock, preventing OTP replay."""
     if not isinstance(submitted, str) or not 6 <= len(submitted) <= 64:
         raise MfaVerificationError('Verification code was not accepted.')
@@ -145,6 +152,9 @@ def verify_mfa_challenge(user: User, submitted: str) -> str:
         if remaining is None:
             raise MfaVerificationError('Verification code was not accepted.')
         factor.recovery_hashes = remaining
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_challenge_verified', authenticated=authenticated, success=True,
+    ))
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -160,6 +170,9 @@ def regenerate_mfa_recovery_codes(user: User) -> list[str]:
         raise MfaVerificationError('MFA is not enrolled.')
     codes = [secrets.token_hex(8).upper() for _ in range(8)]
     factor.recovery_hashes = [generate_password_hash(value) for value in codes]
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_recovery_regenerated', authenticated=True, success=True,
+    ))
     try:
         db.session.commit()
     except SQLAlchemyError:
