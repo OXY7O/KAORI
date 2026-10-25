@@ -56,6 +56,28 @@ def test_bulk_tls_external_apply_buttons_follow_the_same_validated_form() -> Non
     assert all('data-validation-form="tls-secret-update-form"' in button for button in apply_buttons)
 
 
+def test_bulk_tls_confirmation_reuses_native_dialog_and_current_checked_target_scope() -> None:
+    template = _template()
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="bulk-tls-rotation-confirm-dialog"' in template
+    assert '<dialog id="bulk-tls-rotation-confirm-dialog"' in template
+    assert 'data-kaori-native-dialog' in template
+    assert 'aria-labelledby="bulk-tls-rotation-confirm-title"' in template
+    assert 'aria-describedby="bulk-tls-rotation-confirm-description"' in template
+    assert 'data-kaori-dialog-close' in template
+    assert 'selectedTargets: []' in template
+    assert "document.querySelectorAll('input[name=certificate_ids]:checked')" in template
+    assert 'x-for="target in selectedTargets.slice(0, 3)"' in template
+    assert 'x-text="selectedCount - 3"' in template
+    assert 'Existing TLS material will be replaced' in template
+    assert 'No automatic rollback is provided.' in template
+    assert 'action_button.classes(\'secondary\')' in template
+    assert 'action_button.classes(\'primary\')' in template
+    assert '@htmx:before-request="$refs.bulkConfirmDialog?.close()"' in template
+    assert 'updateModal' not in template
+    assert 'x-show="updateModal"' not in template
+
+
 def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
     template = _template()
     assert 'x-text="crtFileName"' in template
