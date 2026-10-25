@@ -139,3 +139,12 @@ Follow-up human review of the approved MFA mockup identified three presentation 
 The right-hand enrollment help is **one native panel** with a concise "How to Activate MFA" heading, four relevant actions (generate manual setup key, add authenticator, verify the six digits, save one-time recovery codes), and one lightweight inline "Need help?" footer. Avoid an inner bordered/colored callout that makes the right column look like nested cards. The original shared 7/5 responsive action/context layout and mobile stacking remain intact.
 
 UI changes do not modify the underlying password, fresh-authentication, CSRF, MFA factor state, generation, audit, provider credentials, or one-time-secret responses. The separate #3251 issue owns safe diagnostic feedback for Generate Setup Key failures; only human endpoint evidence can determine their original cause. Preserve the existing `Cache-Control: no-store` guarantee and never persist/display setup secrets outside the authorized one-time response.
+
+
+## Personal MFA one-time provisioning and toast alignment (#3261)
+
+Under Settings Final Lock, personal MFA enrollment feedback uses the same canonical top-right **Operational Toast** as Account Credential Management rather than a wide redundant inline status banner. Normal full-page POST uses the existing transient Operational Feedback queue; HTMX updates emit the same toast component using OOB insertion. Successful MFA factor mutations show Activity Audit correlation only when the existing service has committed the security event. Do not create duplicate security audits or notification-deck entries.
+
+The one-time provisioning card shows **Scan QR Code** and **Manual Setup Key** side-by-side when there is a successful pending setup response, stacking on narrow screens. The QR is locally generated as PNG by the pinned vetted `qrcode` library; never call an external QR provider, persist the image or alter provider/capability ownership. QR does not require new JavaScript. The original single six-digit input remains the verifier; setup pending remains distinct from factor enabled. Preserve theme surfaces, responsive labels and no-store rendering.
+
+The UAT-1 screenshot's prior inline info strip is retired. Report status/invalid input through Operational Toast, retain safe copy and labels in the provisioning card itself, and never make manual key unavailable when scanning fails.
