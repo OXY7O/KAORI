@@ -17,7 +17,7 @@
         {{ provider_front.hero("boxes", "network",
                 "Kubernetes Integrations",
                 "Register Kubernetes API connections with governed consumer bindings.",
-                stats.total, stats.ready, stats.bindings, posture_status, url_for('cluster.add_cluster') ,
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.choose_integration_provider', integration_type='container_orchestrator') ,
         ready_total=stats.total) }}
         {{ provider_front.overview("network",
                 "Kubernetes Integration Overview",
