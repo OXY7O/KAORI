@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,8 +34,13 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')
     assert 'form.hidden_tag()' in form
     assert 'fieldset' in form and 'not available' in form
-    assert 'action" value="test"' in form
-    assert 'action" value="save"' in form
+    # djLint can put button attributes on separate lines.
+    for action in ('test', 'save'):
+        assert re.search(
+            rf'<button\b(?=[^>]*\bname="action")(?=[^>]*\bvalue="{action}")[^>]*>',
+            form,
+            re.DOTALL,
+        )
     assert 'disabled' in form
     assert 'autocomplete="off"' in form
     assert 'form.webhook_secret' in form and 'form.private_key_pem' in form

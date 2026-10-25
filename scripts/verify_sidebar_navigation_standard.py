@@ -137,7 +137,8 @@ def verify() -> None:
     _require(
         presentation,
         (
-            "'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user, request.args)",
+            "'sidebar_navigation': build_sidebar_navigation(",
+            'active_capability_override=',
             "'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args)",
         ),
         'presentation context',
