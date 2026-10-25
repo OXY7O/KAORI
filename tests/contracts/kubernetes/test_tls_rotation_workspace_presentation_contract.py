@@ -83,7 +83,10 @@ def test_bulk_tls_confirmation_explanations_are_compact_on_desktop() -> None:
     dialog = template.split('<dialog id="bulk-tls-rotation-confirm-dialog"', 1)[1].split('</dialog>', 1)[0]
 
     assert 'Apply the validated TLS pair to the selected Secrets.' in dialog
-    assert 'Replaces <span class="font-semibold">tls.crt</span> and <span class="font-semibold">tls.key</span>; no automatic rollback.' in dialog
+    assert (
+        'Replaces <span class="font-semibold">tls.crt</span> and '
+        '<span class="font-semibold">tls.key</span>; no automatic rollback.' in dialog
+    )
     assert 'KAORI rechecks the pair, coverage, and target identity.' in dialog
     # Desktop keeps the three selected notes on one line; mobile may wrap.
     assert dialog.count('sm:whitespace-nowrap') == 3
