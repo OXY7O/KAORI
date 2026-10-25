@@ -284,6 +284,9 @@ def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded(
         helper = source.index('Verify intentional')
         assert title < guide < helper, name
         assert 'mt-1 flex min-w-0 flex-wrap items-center gap-2' in source
+        assert 'border-b border-kaori-primary/15 bg-kaori-soft' in source
+        assert 'bg-status-warning-soft text-status-warning-text shadow-sm' in source
+        assert 'mt-1 text-xs leading-5 text-content-muted' in source
         assert source.count('Guarded Recovery Boundary') == 1
         assert 'manual_form.hidden_tag()' in source
         assert 'name="empty_reconciliation" value="confirm"' in source
@@ -291,7 +294,6 @@ def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded(
         assert f'name="{identity}"' in source
         assert 'selected_job.active_job or selected_job.execution_disabled' in source
         assert 'Two complete reads required; mismatches preserve committed records.' in source
-
 
 
 def test_execution_scope_and_source_control_evidence_have_compact_accurate_previews() -> None:
@@ -309,19 +311,21 @@ def test_execution_scope_and_source_control_evidence_have_compact_accurate_previ
     assert 'policy_form.hidden_tag()' in source
 
 
-
 def test_report_channels_use_bounded_accessible_collection_without_mutating_dispatch() -> None:
     source = _read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
     assert 'job-delivery-channels-title' in source
     assert 'selected_job.delivery_channels|length' in source
     assert 'max-h-64' in source
     assert 'overflow-y-auto' in source
-    assert 'xl:grid-cols-3' in source
+    assert 'divide-y divide-outline-subtle' in source
+    assert 'flex min-w-0 items-center justify-between gap-3 px-4 py-2.5' in source
+    assert 'title="{{ channel.label }}"' in source
+    assert 'title="{{ channel.description }}"' in source
+    assert "table_label.status_label(channel.status, channel.tone, none, 'detail')" in source
     assert 'No delivery channels configured.' in source
     assert 'tabindex="0"' in source
     assert 'policy_form.hidden_tag()' in source
     assert 'schedule_policy.footer(' in source
-
 
 
 def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() -> None:
@@ -333,3 +337,7 @@ def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() 
     assert "current_user.has_permission('jobs.view')" in jobs
     assert 'x-text="visibleJobCount"' in jobs
     assert 'jobs-configuration-catalog-guide' in jobs
+    assert 'overflow-x-auto whitespace-nowrap' in jobs
+    assert 'aria-label="Job configuration execution boundary and navigation"' in jobs
+    assert 'ml-auto inline-flex shrink-0' in jobs
+    assert 'border-l border-outline-subtle pl-2' in jobs
