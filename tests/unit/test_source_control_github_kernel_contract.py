@@ -14,7 +14,8 @@ def test_provider_kernel_descriptor_reuses_existing_integration_types():
     assert module.integration_type == 'source_control'
     assert module.domain_key == 'source_control'
     assert module.capability_key == 'source_control'
-    assert module.workspace_endpoint == 'integrations.source_control'
+    assert module.workspace_endpoint == 'github_source.index'
+    assert module.workspace_endpoint != module.domain.workspace_endpoint
     assert module.operation_queues['runtime.validate'] == 'integration-validation'
     assert module.operation_queues['runtime.health'] == 'integration-runtime'
     assert module.operation_queues['connection.test'] == 'inline'
@@ -53,3 +54,22 @@ def test_failure_recorder_sanitizes_provider_exception():
     assert canonical.health_status == 'unhealthy'
     assert canonical.last_checked_at is not None
     assert 'credential-leak-example' not in canonical.last_error
+
+
+def test_provider_workspace_resolves_to_distinct_github_landing_url():
+    """Exercise the real GitHub provider blueprint rather than a mocked URL."""
+    from flask import Flask, url_for
+
+    from app.integrations.source_control.source_control.providers.github.application.routes import (
+        github_source_bp,
+    )
+
+    app = Flask(__name__)
+    app.register_blueprint(github_source_bp)
+    with app.test_request_context():
+        assert url_for(kernel_contract.integration_module.workspace_endpoint) == (
+            '/integrations/source-control/github/'
+        )
+        assert url_for(kernel_contract.integration_module.workspace_endpoint) != (
+            '/integrations/source-control'
+        )
