@@ -1011,3 +1011,66 @@ open; no credentials or proofs in QA screenshots/logs.
 main promotion, deployment/release and production mutations remain HOLD.
 Human Acceptance **PENDING** until exact-SHA executable checks and
 operator visual review.
+
+
+## 2026-10-25 — #3232 Registration identity row and post-save coverage guidance
+
+**Human UAT evidence:** The operator successfully registered a GitHub App
+connection. The registry displayed one installation with **Validation
+Required**, while repository Coverage correctly remained **0**. These are
+distinct stages, **not** proof that GitHub repository access was rejected.
+
+1. **Test Connection** confirms installation identity and scope but does not
+   create persisted inventory evidence.
+2. **Register Connection** persists a canonical GitHub App connection,
+   source installation identity, and encrypted app credentials. It does not
+   launch Full Validation or an inventory collection.
+3. **Full Validation** is the separate provider-owned validation job.
+   Open **Integrations → Source Control → GitHub → Connection Registry →
+   Manage**, then select **Full Validation**. Observe actual JobExecution
+   status; do not infer success from the button request. Access remains
+   restricted to the authorized local-super-admin workflow.
+4. Once Full Validation has succeeded, select **Sync Repositories** from
+   the same installation detail. This invokes the existing canonical
+   `source_control.repository.sync` inventory job under resource-scoped
+   admission and a registered worker. The job's policy is **disabled by
+   default**: do not silently enable it or bypass worker/job admission
+   during this visual UAT. A `sync_blocked` or `validation_blocked`
+   feedback means investigate JobExecution/worker/policy readiness
+   separately, without performing hidden infrastructure mutations.
+5. Check the collection's **committed generation**, current effective-dated
+   repository grants and outcome. Only then return to **Integration
+   Coverage**. This page intentionally reads committed KAORI state with
+   `SourceRepositoryCollectionState.committed_generation > 0`, and
+   `SourceRepositoryGrant.valid_until IS NULL`. It never invents rows
+   from successful Test Connection, an installation's Selected repository
+   scope, or a queued job.
+6. With **one or more registered connections and no committed collection**
+   the UI now says **Complete Full Validation, then Sync Repositories to
+   commit repository access evidence.** and points to **View Connections**,
+   rather than suggesting a second registration. The 0-connection state
+   retains the Register Connection call-to-action; a genuinely committed
+   but empty collection retains its different empty state.
+
+**Form UI:** GitHub App ID, Installation ID and Organization/Account ID
+share a `sm:grid-cols-2 xl:grid-cols-3` identity row on desktop, stacking
+to one column on phones. No change to value semantics, registration proof,
+PEM, webhook-secret storage, CSRF or validation.
+
+**Previous QA failures resolved in source:** Operator reported two Ruff
+Format differences in integration navigation/provider contract tests; one
+stale `&amp;` literal in shared-heading test after approved macro
+extraction; djLint indentation in `integration_workspace_tabs.html`
+and `integrations/domain.html`. Correct those exact deviations without
+restoring duplicated title markup. These fixes require new SHA executable
+checks; last operator 44-pass/1-fail output is historical, not current QA.
+
+**Human UAT:** 1440×900 GitHub registration form shows one row of the
+three ID fields; narrow viewport remains usable. Registered state shows
+a truthful Validation Required in Connection Registry and guidance in
+Coverage. After a successful authorized Full Validation and permitted
+repository sync, committed repository records appear or the UI reports
+a committed-but-empty observation; do not equate an empty authorized
+collection with an unobserved collection. Observe toast, access rights,
+empty state, full revision evidence and keyboard/touch behavior separately.
+Official CI/CD, admission, staging/main promotion and release remain HOLD.
