@@ -3,60 +3,59 @@
 {% import "integrations/components/_workspace.html" as ui %}
 {% block title %}GitHub App Installations · KAORI{% endblock title %}
 {% block dashboard_content %}
-<div class="kaori-integration-semantic space-y-6">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-    {% call page_hero.intro("git-branch", "Source Control", "shield-check") %}
-        <h1 class="{{ page_hero.title_classes() }}">GitHub App Installations</h1>
-        <p class="{{ page_hero.description_classes() }} mt-2">
-            Review installation-specific validation and committed repository evidence.
-        </p>
-                {% endcall %}
-            </div>
-            {{ page_hero.context_card(
-                "Installation Registry", "Source Control", "GitHub App",
-                "Restricted", "warning",
-                [("plug", "Connections", installations|length),
-                 ("shield-check", "Access", "Local Admin")],
+    <div class="kaori-integration-semantic space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("git-branch", "Source Control", "shield-check") %}
+                        <h1 class="{{ page_hero.title_classes() }}">GitHub App Installations</h1>
+                        <p class="{{ page_hero.description_classes() }} mt-2">
+                            Review installation-specific validation and committed repository evidence.
+                        </p>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card("Installation Registry", "Source Control", "GitHub App",
+                                "Restricted", "warning",
+                                [("plug", "Connections", installations|length) ,
+                ("shield-check", "Access", "Local Admin")],
                 "Register Connection", url_for("github_source.new_connection"),
                 action_icon="plus"
-            ) }}
-        </div>
-    </section>
-    <section class="{{ ui.section_shell_classes() }}">
-        {{ ui.section_header("shield-check", "Registered GitHub App Installations", "Installation-scoped evidence · authorized administrators") }}
-        <div class="divide-y divide-outline-subtle">
-            {% for installation in installations %}
-                {% set canonical = installation.integration_instance %}
-                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
-                   class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition hover:bg-surface-hover sm:px-6">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">{{ canonical.name }}</p>
-                        <p class="mt-1 text-xs text-content-muted">
-                            Installation #{{ installation.native_installation_id }} ·
-                            {{ installation.account.login if installation.account and installation.account.login else "Account identity pending" }}
-                            · {{ installation.repository_scope|title }}
-                        </p>
-                    </div>
-                    <span class="inline-flex items-center gap-2 text-xs font-semibold text-kaori-primary">
-                        {{ canonical.readiness_status|replace('_', ' ')|title }}
-                        <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                </a>
-            {% else %}
-                <div class="p-8 text-center">
-                    <p class="text-sm font-semibold text-content-primary">No GitHub App connections yet</p>
-                    <p class="mt-2 text-sm text-content-secondary">
-                        Register a verified installation first. No inventory can be inferred without a committed connection.
-                    </p>
-                    <a href="{{ url_for('github_source.new_connection') }}"
-                       class="mt-4 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
-                        Register GitHub App
+                ) }}
+            </div>
+        </section>
+        <section class="{{ ui.section_shell_classes() }}">
+            {{ ui.section_header('shield-check', 'Registered GitHub App Installations', 'Installation-scoped evidence · authorized administrators') }}
+            <div class="divide-y divide-outline-subtle">
+                {% for installation in installations %}
+                    {% set canonical = installation.integration_instance %}
+                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
+                       class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition hover:bg-surface-hover sm:px-6">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">{{ canonical.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">
+                                Installation #{{ installation.native_installation_id }} ·
+                                {{ installation.account.login if installation.account and installation.account.login else "Account identity pending" }}
+                                · {{ installation.repository_scope|title }}
+                            </p>
+                        </div>
+                        <span class="inline-flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                            {{ canonical.readiness_status|replace('_', ' ') |title }}
+                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
                     </a>
-                </div>
-            {% endfor %}
-        </div>
-    </section>
-</div>
+                {% else %}
+                    <div class="p-8 text-center">
+                        <p class="text-sm font-semibold text-content-primary">No GitHub App connections yet</p>
+                        <p class="mt-2 text-sm text-content-secondary">
+                            Register a verified installation first. No inventory can be inferred without a committed connection.
+                        </p>
+                        <a href="{{ url_for('github_source.new_connection') }}"
+                           class="mt-4 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                            Register GitHub App
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
 {% endblock dashboard_content %}
