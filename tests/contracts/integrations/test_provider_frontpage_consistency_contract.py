@@ -254,7 +254,14 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
     assert 'title ~ " Guide"' in shared
     assert 'items=overview_guide_items' in shared
     assert 'placement="right", variant="guide"' in shared
-    for token in ('contract_title', 'contract_description', 'resolution_title', 'resolution_description', 'authority_title', 'authority_description'):
+    for token in (
+        'contract_title',
+        'contract_description',
+        'resolution_title',
+        'resolution_description',
+        'authority_title',
+        'authority_description',
+    ):
         assert token in shared
     assert 'data-kaori-info-tip-trigger' in tip
     assert 'data-kaori-info-tip-variant' in tip
