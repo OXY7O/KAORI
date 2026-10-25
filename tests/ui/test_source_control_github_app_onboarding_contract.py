@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,26 +26,49 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert "workspace_endpoint='github_source.index'" in kernel
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
-    assert "action_button.classes('primary')" in form
-    assert 'components/form_action_bar.html' in form
+    assert 'integrations/components/_provider_registration_actions.html' in form
     assert 'components/operational_toggle.html' in form
     assert 'integrations/components/_provider_registration_context.html' in form
 
 
 def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')
+    actions = _source('app/templates/integrations/components/_provider_registration_actions.html')
     assert 'form.hidden_tag()' in form
-    assert 'fieldset' in form and 'not available' in form
-    # djLint can put button attributes on separate lines.
-    for action in ('test', 'save'):
-        assert re.search(
-            rf'<button\b(?=[^>]*\bname="action")(?=[^>]*\bvalue="{action}")[^>]*>',
-            form,
-            re.DOTALL,
-        )
-    assert 'disabled' in form
+    assert '<fieldset' in form and 'not available' in form
+    assert 'type="button"' in form
+    assert 'hx-vals=' in form and '"action":"test"' in form
+    assert "submit_name='action'" in form
+    assert "submit_value='save'" in form
+    assert 'disabled' in actions
+    assert 'x-bind:disabled="!connectionVerified"' in actions
     assert 'autocomplete="off"' in form
     assert 'form.webhook_secret' in form and 'form.private_key_pem' in form
+    assert 'x-on:input.capture="invalidateConnectionTest($event)"' in form
+    assert 'x-on:change.capture="invalidateConnectionTest($event)"' in form
+    assert 'x-on:github-connection-tested.window="applyConnectionTest($event)"' in form
+    assert 'name="connection_test_proof"' in form
+
+
+def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    partial = _source(
+        'app/templates/integrations/source_control/github/partials/_connection_test_result.html'
+    )
+    assert "hx-post=" in form and "github_source.new_connection" in form
+    assert 'hx-include="#github-app-connection-form"' in form
+    assert 'hx-target="#github-connection-test-result"' in form
+    assert 'hx-disabled-elt="this"' in form
+    assert 'form.reportValidity()' in form
+    assert 'verify_github_registration_proof(' in routes
+    assert routes.index('verify_github_registration_proof(') < routes.index('save_tested_connection(values)')
+    assert 'response.status_code = 409' in routes
+    assert "response.headers['HX-Trigger']" in routes
+    assert "'github-connection-tested'" in routes
+    assert "form.clear_sensitive_fields()" in routes
+    assert 'private_key_pem' not in partial
+    assert 'webhook_secret' not in partial
 
 
 def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> None:
@@ -55,7 +77,7 @@ def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> 
     installation = form.index('GitHub App Installation')
     credentials = form.index('App Credentials')
     controls = form.index('Operational Controls')
-    actions = form.index('form_action_bar.render(')
+    actions = form.index('registration_actions.render(')
     context = form.index('registration_context.render(')
 
     assert identity < installation < credentials < controls < actions < context
@@ -68,18 +90,16 @@ def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> 
     assert 'data-kaori-provider-registration-context' not in form  # Macro owns markup.
     assert 'xl:col-span-8' in form and 'xl:col-span-4' in form
     assert 'xl:sticky xl:top-5' in form
-    assert 'form_action_bar.render(' in form
+    assert 'registration_actions.render(' in form
     assert 'components/connection_validation_header.html' in form
     assert 'connection_validation_header.render(' in form
     assert 'data-kaori-github-app-access' in form
-    assert form.index('value="test"') < form.index('form_action_bar.render(')
-    assert form.index('form_action_bar.render(') < form.index('value="save"')
-    assert form.count('value="test"') == 1
-    assert form.count('value="save"') == 1
-    assert 'title="Connection Verification"' in form
-    assert 'connection_test_proof' not in form
-    assert 'data-operation-submit' in form
-    assert 'data-loading-label="Registering Connection..."' in form
+    assert form.index('connection_validation_header.render(') < form.index('hx-vals=')
+    assert form.index('hx-vals=') < form.index('registration_actions.render(')
+    assert "submit_value='save'" in form
+    assert 'connection_test_proof' in form
+    assert 'data-operation-submit' not in form  # Shared registration macro owns loading state.
+    assert "loading_label='Registering Connection...'" in form
     assert "url_for('github_source.index')" in form
     assert 'url_for("integrations.source_control")' in form
     assert 'bg-kaori-primary px-4' not in form

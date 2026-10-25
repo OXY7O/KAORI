@@ -21,6 +21,10 @@ from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionForm,
 )
+from app.integrations.source_control.source_control.providers.github.application.registration_proof import (
+    issue_github_registration_proof,
+    verify_github_registration_proof,
+)
 from app.integrations.source_control.source_control.providers.github.registration import (
     save_tested_connection,
     test_connection,
@@ -95,31 +99,49 @@ def new_connection() -> ResponseReturnValue:
     if request.method == 'POST' and not available:
         abort(409)
     form = GitHubAppConnectionForm()
+    action = str(request.form.get('action') or '').strip() if request.method == 'POST' else ''
+    inline_test = request.headers.get('HX-Request') == 'true' and action == 'test'
     message: str | None = None
     verified_scope: str | None = None
+    registration_rejected = False
+    test_proof: str | None = None
+
     if available and form.validate_on_submit():
-        values = form.to_input()
-        action = str(request.form.get('action') or '').strip()
         if action not in {'test', 'save'}:
             abort(400)
+        values = form.to_input()
         try:
             if action == 'test':
                 observation = test_connection(values)
                 verified_scope = observation.repository_selection
+                test_proof = issue_github_registration_proof(
+                    user_id=int(current_user.id), values=values
+                )
                 message = (
                     'GitHub App installation verified. This is not Full Validation; '
                     'no repository inventory has been committed.'
                 )
             else:
-                instance = save_tested_connection(values)
-                record_operational_activity(
-                    user_id=int(current_user.id), event_type='source_control_connection_registered',
-                    status='success', title='GitHub App Connection Registered',
-                    message='Installation identity was verified and registered.',
-                    detail='Run Full Validation before consuming Source Control evidence.',
-                    action_url=url_for('github_source.index'), queue_feedback=True,
+                valid, reason = verify_github_registration_proof(
+                    token=str(request.form.get('connection_test_proof') or '').strip(),
+                    user_id=int(current_user.id),
+                    values=values,
                 )
-                return redirect(url_for('github_source.index'))
+                if not valid:
+                    message = reason
+                    registration_rejected = True
+                else:
+                    # A valid proof is a precondition, not a substitute for
+                    # the live GitHub installation identity recheck on save.
+                    save_tested_connection(values)
+                    record_operational_activity(
+                        user_id=int(current_user.id), event_type='source_control_connection_registered',
+                        status='success', title='GitHub App Connection Registered',
+                        message='Installation identity was verified and registered.',
+                        detail='Run Full Validation before consuming Source Control evidence.',
+                        action_url=url_for('github_source.index'), queue_feedback=True,
+                    )
+                    return redirect(url_for('github_source.index'))
         except (GitHubProviderError, ValueError, CredentialEncryptionError):
             message = (
                 'GitHub App connection could not be verified. '
@@ -128,16 +150,38 @@ def new_connection() -> ResponseReturnValue:
         except SQLAlchemyError:
             message = 'GitHub App connection could not be saved. Review integration configuration.'
         finally:
-            # Flask-WTF otherwise mirrors input back to templates after POST.
+            # Flask-WTF otherwise mirrors sensitive fields into an HTML response.
             form.clear_sensitive_fields()
     elif request.method == 'POST':
         message = 'Review the highlighted configuration fields and try again.'
         form.clear_sensitive_fields()
-    return _respond(
+
+    if inline_test:
+        response = make_response(
+            render_template(
+                'integrations/source_control/github/partials/_connection_test_result.html',
+                verified=bool(test_proof),
+                message=message,
+            )
+        )
+        if test_proof:
+            # HTMX publishes this event to the Alpine form; no credentials or
+            # access tokens are reflected in the fragment or event payload.
+            response.headers['HX-Trigger'] = json.dumps(
+                {'github-connection-tested': {'connected': True, 'proof': test_proof}}
+            )
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    response = _respond(
         'integrations/source_control/github/form.html',
         form=form, available=available, message=message,
         verified_scope=verified_scope, notification_context=_notification(),
     )
+    if registration_rejected:
+        response.status_code = 409
+    return response
 
 
 @github_source_bp.post('/webhook')
