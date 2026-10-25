@@ -317,7 +317,7 @@ def test_provider_cards_preserve_section_guide_without_field_question_icons() ->
     assert 'info_tip.render("adapter-" ~ integration_type' not in selector
     assert 'info_tip.render("protocol-" ~ integration_type' not in selector
     assert '<dt class="text-xs font-semibold text-content-muted">Adapter</dt>' in selector
-    assert '<dt class="text-xs font-semibold text-content-muted">Protocol</dt>' in selector
+    assert "<dt class=\"text-xs font-semibold text-content-muted\">{{ provider.secondary_label|default('Protocol') }}</dt>" in selector
     assert 'integration_ui.palette_icon("layers-3", "brand", size="lg")' in selector
 
     # Compact text fits desktop grid without forcing clipping on phones.
