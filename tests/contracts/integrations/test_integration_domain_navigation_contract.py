@@ -137,6 +137,49 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
     assert '{{ integration_ui.section_header(' in template
 
 
+def test_all_six_integration_domains_share_an_icon_free_workspace_introduction() -> None:
+    domain = read('app/templates/integrations/domain.html')
+    partial = read('app/templates/integrations/partials/_domain_workspace.html')
+    shared = read('app/templates/integrations/components/_workspace.html')
+    provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
+    routes = read('app/integrations/routes.py')
+
+    # The outer introduction precedes the card, but is outside the HTMX
+    # partial replaced by tab/filter/pagination operations.
+    assert 'data-kaori-domain-workspace-section' in domain
+    assert 'integration_ui.workspace_section_intro(' in domain
+    assert 'domain.label ~ " Providers & Connections"' in domain
+    assert '"Review Source Control provider readiness and registered connections."' in domain
+    assert '"Review provider readiness, connections, and governed consumer bindings."' in domain
+    assert 'domain.key == "source_control"' in domain
+    assert domain.index('integration_ui.workspace_section_intro(') < domain.index(
+        '{% include "integrations/partials/_domain_workspace.html" %}'
+    )
+    assert 'id="domain-workspace"' in partial
+    assert 'hx_target="#domain-workspace"' in partial
+    assert 'hx_select="#domain-workspace"' in partial
+    assert 'workspace_section_intro(' not in partial
+
+    # Domain and provider pages share the exact already-approved icon-free
+    # semantic markup rather than independent provider-specific headers.
+    assert 'integration_ui.workspace_section_intro(' in provider_tabs
+    assert 'macro workspace_section_intro(title, description, aria_label)' in shared
+    intro_macro = shared.split('macro workspace_section_intro', 1)[1].split(
+        '{%- endmacro %}', 1
+    )[0]
+    assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in intro_macro
+    assert 'palette_icon(' not in intro_macro
+    for route in (
+        '/orchestration',
+        '/observability',
+        '/storage',
+        '/registry',
+        '/secrets-management',
+        '/source-control',
+    ):
+        assert route in routes
+
+
 def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> None:
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
     domain_service = read('app/integrations/domain_service.py')
