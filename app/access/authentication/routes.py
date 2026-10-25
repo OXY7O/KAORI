@@ -155,7 +155,7 @@ def login():
             record_authentication_activity(
                 action='login',
                 username=str(form.username.data or ''),
-                source='database',
+                source='credentials',
                 result='failed',
                 reason='bot_challenge_failed',
             )
@@ -246,6 +246,13 @@ def sso_bot_challenge(provider_key: str):
             }
             return redirect(url_for('auth.sso_start', provider_key=provider_key, next=next_url))
         error = 'Complete the security challenge and try again.'
+        record_authentication_activity(
+            action='login',
+            username=provider_key,
+            source='sso',
+            result='failed',
+            reason='bot_challenge_failed',
+        )
     return render_template(
         'access/authentication/bot_challenge.html',
         bot_state=bot_state,
