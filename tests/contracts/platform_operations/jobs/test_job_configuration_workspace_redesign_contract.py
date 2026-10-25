@@ -271,6 +271,7 @@ def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fiel
     assert 'schedule_policy.manual_header(' in manual_only
     assert 'policy_form.enabled(' not in manual_only
 
+
 def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded() -> None:
     base = 'app/templates/platform_operations/jobs/configuration/definitions/'
     for name, identity in (
@@ -292,6 +293,7 @@ def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded(
         assert 'Two complete reads required; mismatches preserve committed records.' in source
 
 
+
 def test_execution_scope_and_source_control_evidence_have_compact_accurate_previews() -> None:
     activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
     source = _read(
@@ -307,6 +309,7 @@ def test_execution_scope_and_source_control_evidence_have_compact_accurate_previ
     assert 'policy_form.hidden_tag()' in source
 
 
+
 def test_report_channels_use_bounded_accessible_collection_without_mutating_dispatch() -> None:
     source = _read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
     assert 'job-delivery-channels-title' in source
@@ -318,6 +321,7 @@ def test_report_channels_use_bounded_accessible_collection_without_mutating_disp
     assert 'tabindex="0"' in source
     assert 'policy_form.hidden_tag()' in source
     assert 'schedule_policy.footer(' in source
+
 
 
 def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() -> None:
