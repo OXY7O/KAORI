@@ -16,8 +16,8 @@
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
         {{ schedule_policy.header('Report Schedule Dispatch Policy',
-            'Control how often KAORI checks for due report schedules.',
-            policy) }}
+                'Control how often KAORI checks for due report schedules.',
+                policy) }}
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
@@ -26,11 +26,11 @@
             {{ policy_form.hidden_tag() }}
             <div class="space-y-5 p-5 sm:p-6">
                 {{ schedule_policy.controls(policy_form, definition, can_configure,
-                'Automatic Schedule Dispatch',
-                'Dispatch scheduled reports on the Reports worker.',
-                icon='calendar-check',
-                interval_label='Check Interval',
-                policy_error=policy_error|default(none)) }}
+                                'Automatic Schedule Dispatch',
+                                'Dispatch scheduled reports on the Reports worker.',
+                                icon='calendar-check',
+                                interval_label='Check Interval',
+                                policy_error=policy_error|default(none) ) }}
                 {{ schedule_policy.timeline(policy) }}
                 <div class="grid max-h-64 gap-3 overflow-y-auto overscroll-contain rounded-xl border border-outline-subtle p-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Delivery Channels" tabindex="0">
                     {% for channel in selected_job.delivery_channels %}
@@ -48,7 +48,7 @@
                 </div>
             </div>
             {{ schedule_policy.footer(can_configure,
-                'Schedule definitions remain in Reports → Schedules; this policy controls worker dispatch.') }}
+                        'Schedule definitions remain in Reports → Schedules; this policy controls worker dispatch.') }}
         </form>
     </section>
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
