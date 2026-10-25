@@ -50,7 +50,6 @@ def test_github_provider_action_uses_shared_provider_selector():
     assert 'workspace_endpoint: integrations.source_control' in taxonomy
 
 
-
 def test_provider_chooser_resolves_domain_from_matrix() -> None:
     from app.integrations.navigation import provider_selector_domain
 
