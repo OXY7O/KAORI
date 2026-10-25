@@ -142,16 +142,18 @@ def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> No
     domain_service = read('app/integrations/domain_service.py')
     tabs = read('app/templates/components/integration_workspace_tabs.html')
 
-    assert "url_for(item.workspace_endpoint)" in workspace
-    assert "Open {{ item.runtime_label }}" in workspace
+    assert 'url_for(item.workspace_endpoint)' in workspace
+    assert 'Open {{ item.runtime_label }}' in workspace
     assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
     assert 'Add Connection' in workspace
     assert 'aria-label="{{ item.runtime_label }} navigation"' in workspace
     assert 'Review GitHub App installations and committed repository evidence.' in workspace
     assert "'workspace_endpoint': module.workspace_endpoint" in domain_service
-    assert "integration_ui.section_header(" in tabs
+    assert 'integration_ui.section_header(' in tabs
     assert '"Integration Workspace"' in tabs
-    assert '"Review committed coverage and registered provider connections."' in tabs
+    assert '"Switch between integration coverage and registered connections."' in tabs
+    assert 'Provider Connections &amp; Coverage' in tabs
+    assert 'title_extra=workspace_guide' in tabs
 
 
 def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
