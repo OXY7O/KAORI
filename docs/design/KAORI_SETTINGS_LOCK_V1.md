@@ -121,3 +121,12 @@ human screenshot UAT for not-enrolled/pending/enrolled/recovery views in
 desktop/mobile and both themes. Human factor/challenge enrollment acceptance
 remains separate; no migration or authentication backend change for this
 redesign.
+
+
+## Approved personal MFA visual mockup implementation (#3228)
+
+The operator reviewed and approved the second MFA Settings mockup on 2026-10-25. It supersedes the previous flat enrollment layout while retaining the approved sibling Account components and Settings Final Lock. The design keeps one clear page title and canonical Guide, adds **decorative smartphone/shield icon geometry** to a Violet-soft header (not a functional QR code), and presents three icon-led state cards for actual factor enrollment, committed Access policy and recovery-code availability. Do not fabricate provider health, OTP coverage or a QR setup workflow.
+
+Enrollment uses the established **7/5 natural-height Account action/context grid** with a numbered Step 01 (Generate Setup Key) and Step 02 (Verify Your Authenticator) on the left. The guide on the right now stretches alongside both steps rather than ending midway and leaving blank canvas. The six-digit confirmation stays **one semantic `verification_code` input**, with numeric keypad/autocomplete/pattern/length contracts and extra visual letterspacing instead of six new inputs or custom JavaScript. Existing max-width password/recovery controls and compact OTP control remain ergonomic. The footer is a subtle contextual **Security Information** surface, not a new global alert/toast.
+
+The existing enrolled recovery-regeneration UI, sensitive one-time secret response, `Cache-Control: no-store`, CSRF, local-password/fresh sign-in checks, HTMX tabs and approved Settings loading behavior remain authoritative. Only account MFA presentation and focused visual contracts change; TOTP cryptographic representation hardening has its own security issue #3237. Accept by exact-SHA djlint/Ruff/pytest, desktop/mobile light/dark screenshots, keyboard/contrast review and human confirmation before any official admission.
