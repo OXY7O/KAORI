@@ -282,16 +282,18 @@ def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() 
 
     assert "requested_coverage_page = request.args.get('coverage_page', 1, type=int) or 1" in routes
     assert "requested_coverage_per_page = request.args.get('coverage_per_page', 5, type=int) or 5" in routes
-    assert "SourceRepositoryCollectionState.committed_generation > 0" in routes
+    assert 'SourceRepositoryCollectionState.committed_generation > 0' in routes
     assert "'coverage_observed': committed_collections > 0" in routes
     assert 'No Repositories in Committed Coverage' in github
+    assert 'Review committed GitHub repository access and coverage.' in github
+    assert 'Register and validate a GitHub App, then collect repository evidence.' in github
     assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
     assert "SourceInstallation.provider_key == 'github'" in routes
     assert "SourceRepository.host_key == 'github.com'" in routes
     assert 'coverage_rows, coverage_pagination = paginate_query(' in routes
     assert "if target == 'github-integration-coverage':" in routes
     assert 'selected_coverage_query or selected_coverage_environment or selected_coverage_status' in routes
-    assert "selected_coverage_environment" in routes
-    assert "selected_coverage_status" in routes
+    assert 'selected_coverage_environment' in routes
+    assert 'selected_coverage_status' in routes
     assert 'integrations/source_control/github/partials/_integration_coverage.html' in routes
     assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
