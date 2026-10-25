@@ -102,7 +102,7 @@
         setText(scopeContext, `${scopeLabel} · ${targetLabel}`)
 
         let providerMessage =
-            'Select a Membership to resolve provider authority. KAORI validates Tenant and scope before commit.'
+            'Select a Membership to resolve Tenant and scope.'
         if (tenantId && providerKey === 'capsule') {
             providerMessage =
                 `${tenantName} uses Capsule authority. Apply checks live RBAC capability, exact ClusterRole,` +

@@ -242,7 +242,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' not in workspace
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
-    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
     assert 'Namespace scope needs one target.' in workspace
     assert 'grant_footer_classes' in workspace
     assert 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3' in workspace
@@ -257,6 +257,11 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'access-grant-form-tip' in workspace
     assert 'access-profile-tip' in workspace
     assert 'access-scope-tip' in workspace
+    for field_id in ('access-grant-membership', 'access-grant-profile', 'access-grant-scope'):
+        assert f'for="{field_id}"' in workspace
+        assert f'id="{field_id}"' in workspace
+    assert 'Prepare approved ClusterRoles before applying.' in workspace
+    assert workspace.count("variant='guide'") >= 4
     assert 'data-access-membership' in workspace
     assert 'data-access-context-scope' in workspace
     assert 'data-access-environment-field' in workspace
@@ -494,7 +499,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
