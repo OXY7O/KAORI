@@ -1,6 +1,10 @@
-{% import "components/operational_callout.html" as operational_callout %}
+{# A successful provider test is transient feedback, not operational readiness. #}
 {% if verified %}
-    {{ operational_callout.render("Connection Verified", message or "The GitHub App installation is verified. Registration requires Full Validation afterwards.", icon="badge-check", tone="normal", variant="semantic") }}
+    {% with status="success", title="GitHub App Connection Verified", message=message or "GitHub App installation verified. Full Validation is still required.", toast_oob=true %}
+        {% include "components/operational_toast.html" %}
+    {% endwith %}
 {% else %}
-    {{ operational_callout.render("Connection Not Verified", message or "Review the connection details and run Test Connection again.", icon="triangle-alert", tone="critical", variant="semantic") }}
+    {% with status="error", title="GitHub App Connection Not Verified", message=message or "Review the connection details and run Test Connection again.", toast_oob=true %}
+        {% include "components/operational_toast.html" %}
+    {% endwith %}
 {% endif %}
