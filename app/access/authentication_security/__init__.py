@@ -167,7 +167,7 @@ def save_bot_policy():
             tested = policy.bot_tested_at
             if tested is not None and tested.tzinfo is None:
                 tested = tested.replace(tzinfo=UTC)
-            recent = tested is not None and datetime.now(UTC) - tested <= timedelta(hours=1)
+            recent = tested is not None and timedelta(0) <= datetime.now(UTC) - tested <= timedelta(hours=1)
             if not ready or config_changed or not recent:
                 db.session.rollback()
                 abort(409, description='Save disabled configuration and successfully test Turnstile before enabling.')
