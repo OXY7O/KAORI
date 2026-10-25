@@ -32,7 +32,15 @@
                                 interval_label='Check Interval',
                                 policy_error=policy_error|default(none) ) }}
                 {{ schedule_policy.timeline(policy) }}
-                <div class="grid max-h-64 gap-3 overflow-y-auto overscroll-contain rounded-xl border border-outline-subtle p-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Delivery Channels" tabindex="0">
+                <section aria-labelledby="job-delivery-channels-title"
+                         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                        <h4 id="job-delivery-channels-title"
+                            class="text-sm font-semibold text-content-primary">Delivery Channels</h4>
+                        {{ table_label.metadata_label(selected_job.delivery_channels|length ~ ' Channels', icon='radio') }}
+                    </header>
+                    <div class="grid max-h-64 gap-3 overflow-y-auto overscroll-contain p-3 sm:grid-cols-2 xl:grid-cols-3"
+                         tabindex="0">
                     {% for channel in selected_job.delivery_channels %}
                         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-start justify-between gap-3">
@@ -45,7 +53,8 @@
                     {% else %}
                         <p class="col-span-full py-6 text-center text-xs text-content-muted">No delivery channels configured.</p>
                     {% endfor %}
-                </div>
+                    </div>
+                </section>
             </div>
             {{ schedule_policy.footer(can_configure,
                         'Schedule definitions remain in Reports → Schedules; this policy controls worker dispatch.') }}
