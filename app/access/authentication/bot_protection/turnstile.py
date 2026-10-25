@@ -62,7 +62,8 @@ def _configuration_ready(config: TurnstileVerificationConfig) -> bool:
         and not any(char.isspace() for char in secret)
         and isinstance(hostname, str)
         and 1 <= len(hostname) <= 253
-        and not any(char in hostname for char in '/: \\t\\r\\n')
+        and re.fullmatch(r'[a-zA-Z0-9.-]{1,253}', hostname) is not None
+        and not any(char.isspace() for char in hostname)
         and isinstance(action, str)
         and re.fullmatch(r'[a-zA-Z0-9_-]{1,32}', action) is not None
     )
