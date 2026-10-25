@@ -115,3 +115,12 @@ Never place provider verification secrets in HTML or audit.
 Adaptive policy remains unavailable until committed risk evaluation exists.
 Source changes require Dev Container Visual QA, negative authentication UAT,
 human acceptance and existing Access/Settings Final Lock checks.
+
+
+## Authentication Assurance Overview visual refinement (#3166)
+
+The approved Access → Authentication Security surface retains the **existing** KAORI Hero, workspace tabs, permission guards and MFA/Turnstile/session policy owners. The former generic three-paragraph Overview is superseded by an operational information hierarchy: a source-owned **Authentication Assurance Posture** summary (MFA policy, Turnstile enforcement and generation-based sessions), three **Security Control Summaries** with workspace-tab links, and two **Operational Boundaries** areas explaining what Access governs versus Settings enrollment / Identity Providers.
+
+Statuses MUST derive from committed KAORI MFA and Bot policies; provider adapter registration/configuration alone never proves live vendor health or a user's enrollment. No invented trend/chart/coverage metric or backend mutation is introduced by this visual change. Keep two Hero-context helper sentences compact enough for single-line desktop presentation, but allow natural wrapping on small viewports. Reuse existing Violet semantic colors, border/surface tokens, responsive grids and accessible route-backed links. Do not fork the shared Hero or card macros.
+
+Acceptance requires Dev Container screenshot QA at desktop and mobile in light/dark mode, tab URL/HTMX/accessibility regression checks, exact source SHA, and human review. Official staging/main admission remains HOLD.
