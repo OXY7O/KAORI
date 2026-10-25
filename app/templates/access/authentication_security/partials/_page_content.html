@@ -23,7 +23,7 @@
                 'warning' if mfa_policy_mode != 'disabled' else 'unknown',
                 [
                     ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP and recovery challenge are governed by the selected policy'),
-                    ('bot', 'Bot Protection', 'Not Enabled', 'Provider activation pending')
+                    ('bot', 'Bot Protection', 'Enforced' if bot_mode == 'always' else 'Not Enabled', 'Cloudflare Siteverify checked for login when enabled')
                 ],
                 'Review Identity Providers',
                 url_for('identity_providers.index'),
@@ -102,7 +102,7 @@
                         <h2 class="text-base font-semibold text-content-primary">Bot Protection</h2>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Provider-neutral verification, separate from Identity Providers and MFA.</p>
                     </div>
-                    {{ table_label.status_indicator_label('Not Enabled', 'unknown') }}
+                    {{ table_label.status_indicator_label('Enforced' if bot_mode == 'always' else 'Not Enabled', 'warning' if bot_mode == 'always' else 'unknown') }}
                 </div>
                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
                     <h3 class="text-sm font-semibold text-content-primary">Verification Adapters</h3>
@@ -110,12 +110,58 @@
                         <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-3">
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">{{ provider.label }}</p>
-                                <p class="text-xs leading-5 text-content-muted">Server-side token verification adapter; no configured instance.</p>
+                                <p class="text-xs leading-5 text-content-muted">Server-side Siteverify adapter; provider instance configuration is stored by KAORI.</p>
                             </div>
-                            {{ table_label.status_indicator_label('Not Configured', 'unknown') }}
+                            {{ table_label.status_indicator_label('Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'normal' if bot_has_secret and bot_site_key and bot_hostname else 'unknown') }}
                         </div>
                     {% endfor %}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">Enabled challenge policies require protected provider credentials, verified readiness, and server-side login enforcement. A browser widget alone is not security.</p>
+                    <p class="mt-3 text-xs leading-5 text-content-muted">An enabled challenge verifies the one-use Turnstile token with the Cloudflare Siteverify endpoint before checking credentials or beginning SSO. Provider health is not inferred from stored keys.</p>
+                    {% if can_manage_authentication_security %}
+                        <form method="post"
+                              action="{{ url_for('access.authentication_security.save_bot_policy') }}"
+                              class="mt-5 space-y-4 border-t border-outline-subtle pt-5">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="provider_key" value="cloudflare_turnstile">
+                            <div>
+                                <label for="bot-policy-mode" class="block text-sm font-semibold text-content-primary">Protection Mode</label>
+                                <select id="bot-policy-mode" name="bot_mode"
+                                        class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                    <option value="disabled" {% if bot_mode == 'disabled' %}selected{% endif %}>Disabled</option>
+                                    <option value="always" {% if bot_mode == 'always' %}selected{% endif %}>Always — require Turnstile on every login</option>
+                                </select>
+                                <p class="mt-1 text-xs text-content-muted">Adaptive risk policy is deferred until committed failure signals are validated.</p>
+                            </div>
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label for="bot-site-key" class="block text-sm font-semibold text-content-primary">Public Site Key</label>
+                                    <input id="bot-site-key" name="site_key" type="text" maxlength="255"
+                                           value="{{ bot_site_key or '' }}"
+                                           class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                </div>
+                                <div>
+                                    <label for="bot-hostname" class="block text-sm font-semibold text-content-primary">Allowed Hostname</label>
+                                    <input id="bot-hostname" name="hostname" type="text" maxlength="253"
+                                           value="{{ bot_hostname or '' }}" placeholder="kaori.example.com"
+                                           class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="bot-secret-key" class="block text-sm font-semibold text-content-primary">Verification Secret</label>
+                                <input id="bot-secret-key" name="secret_key" type="password" maxlength="256"
+                                       autocomplete="new-password"
+                                       placeholder="{{ 'Leave blank to retain encrypted secret' if bot_has_secret else 'Enter Turnstile secret' }}"
+                                       class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                <p class="mt-1 text-xs text-content-muted">Stored encrypted with KAORI's existing credential encryption key. Never displayed or recorded in Activity Audit.</p>
+                            </div>
+                            <label class="flex items-start gap-3 text-xs leading-5 text-content-secondary">
+                                <input type="checkbox" name="acknowledge_bot_impact" value="yes" required
+                                       class="mt-1 h-4 w-4 accent-kaori-primary">
+                                <span>Enabling Turnstile requires outbound HTTPS to Cloudflare and will reject sign-in if verification fails or the provider is unavailable. Confirm an approved recovery procedure before activation.</span>
+                            </label>
+                            <button type="submit"
+                                    class="inline-flex min-h-11 items-center justify-center rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Save Bot Protection</button>
+                        </form>
+                    {% endif %}
                 </div>
             {% else %}
                 <div>
