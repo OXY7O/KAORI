@@ -145,3 +145,14 @@ Following the operator's 2026-10-25 screenshots, the Authentication Security Ove
 6. Run existing Jinja/Contract/DjLint checks against the exact reviewed branch SHA; **do not claim UI Human UAT PASS** from source-only results.
 
 This is a presentation-only refinement under #3166; Database migration or re-enrollment is not required to review this UI diff. Previously migrated authentication schema is unaffected.
+
+## Assurance Overview second visual QA checkpoint (#3166)
+
+After the revised screenshot, inspect `Access → Authentication Security → Overview` for:
+- A compact **Guide** trigger directly beside Authentication Assurance Posture. Desktop hover, keyboard focus, Enter/Space, Escape, touch/click and HTMX replacement follow `components/info_tip.html`; the popover is not clipped by its parent section.
+- The **Security Control Summaries** heading has no permanent secondary text.
+- The **Operational Boundaries** two columns each contain three aligned, scannable semantic rows (Governed Here vs Managed Elsewhere) rather than long unbalanced narrative paragraphs. Responsive stack/mobile and dark mode retain the same hierarchy.
+- Policy/config status, CTA destinations and all MFA/Bot/Session non-Overview admin forms remain unchanged.
+- Compare screenshot and command outputs against an exact `git rev-parse HEAD` value; no new database migration is necessary for these changes.
+
+Regression QA: `djlint --check app/templates/access/authentication_security/partials/_page_content.html`, `python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_overview_refinement_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py`, `python scripts/verify_access_final_lock.py` and `python scripts/verify_sidebar_navigation_standard.py`. No official admission without operator authorization.
