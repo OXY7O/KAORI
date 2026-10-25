@@ -1,5 +1,5 @@
 {% import "components/action_button.html" as action_button %}
-{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
@@ -263,24 +263,19 @@
         </div>
     </section>
     {% set membership_registry_tabs = [
-        ('memberships', 'Membership Registry', 'users-round', url_for('tenant.tenants', section='memberships', membership_view='memberships')),
-        ('groups', 'Tenant Group Registry', 'users', url_for('tenant.tenants', section='memberships', membership_view='groups'))
-    ] %}
+            ('memberships', 'Membership Registry', 'users-round', url_for('tenant.tenants', section='memberships', membership_view='memberships')),
+            ('groups', 'Tenant Group Registry', 'users', url_for('tenant.tenants', section='memberships', membership_view='groups'))
+        ] %}
     <section id="tenant-membership-registries"
-             class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-label="Tenant membership registries">
-        {{ content_tabs.render_links('tenant-membership-registries',
-            membership_registry_tabs,
-            active_membership_view,
-            'Tenant membership registries',
-            embedded=true,
-            data_namespace='tenant-membership-registry',
-            hx_target='#tenant-admin-workspace',
-            hx_select='#tenant-admin-workspace',
-            hx_swap='outerHTML show:none focus-scroll:false',
-            hx_push_url='true',
-            hx_indicator='#tenant-admin-loading',
-            hx_sync='this:replace') }}
+             class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+             aria-label="Tenant membership registries"
+             hx-select="#tenant-admin-workspace">
+        {{ workspace_tabs.render_query_tabs(membership_registry_tabs,
+                active_membership_view,
+                aria_label='Tenant membership registries',
+                hx_target='#tenant-admin-workspace',
+                hx_indicator='#tenant-admin-loading',
+                hx_sync='#tenant-admin-workspace:replace') }}
         <div class="min-w-0 p-4 sm:p-5">
             {% if active_membership_view == 'groups' %}
                 <div id="tenant-membership-groups-panel" class="min-w-0">

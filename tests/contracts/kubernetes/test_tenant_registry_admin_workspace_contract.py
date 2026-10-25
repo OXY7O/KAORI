@@ -177,16 +177,18 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     assert 'paginate_query(' in read_model
 
 
-def test_membership_registries_use_nested_url_owned_content_tabs_without_desktop_overflow() -> None:
+def test_membership_registries_use_settings_query_tabs_without_desktop_overflow() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     membership = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
     groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
     routes = read('app/kubernetes/tenant/route_common.py')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
 
-    assert 'components/content_tabs.html' in workspace
-    assert "content_tabs.render_links('tenant-membership-registries'" in workspace
-    assert 'embedded=true' in workspace
+    assert 'components/workspace_tabs.html' in workspace
+    assert 'workspace_tabs.render_query_tabs(membership_registry_tabs' in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert "hx_sync='#tenant-admin-workspace:replace'" in workspace
+    assert 'components/content_tabs.html' not in workspace
     assert "('memberships', 'Membership Registry'" in workspace
     assert "('groups', 'Tenant Group Registry'" in workspace
     assert "membership_view='groups'" in workspace
@@ -211,8 +213,10 @@ def test_membership_registries_use_nested_url_owned_content_tabs_without_desktop
         assert 'registry_ui.footer' in registry
         assert 'registry_ui.clear_filters_link' in registry
 
-    assert "table_ui.table_classes('min-w-[980px] !table-fixed')" in groups
+    assert "table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0')" in groups
+    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
     assert 'min-w-[1250px]' not in groups
+    assert 'min-w-[1100px]' not in membership
     assert 'title="{{ group.subject_name }}"' in groups
     assert 'overflow-x-auto' in groups
     assert 'name="membership_view" value="groups"' in groups
@@ -411,9 +415,10 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
     assert credentials.count('flex h-full flex-col overflow-visible') >= 2
     assert 'overflow-visible rounded-xl' in namespace_access
 
-    # Field-specific guidance remains allowed when semantics are unique to the field.
-    assert 'capsule-owner-kind-tip' in tenant_form
-    assert 'capsule-owner-subject-tip' in tenant_form
+    # Capsule ownership has one section-owned Guide; distinct field helpers remain.
+    assert "'capsule-initial-owner-guide-tip'" in tenant_form
+    assert 'capsule-owner-kind-tip' not in tenant_form
+    assert 'capsule-owner-subject-tip' not in tenant_form
     assert 'access-profile-tip' in grants
     assert 'access-scope-tip' in grants
 
