@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_workspace %}
 {% block title %}Register Metrics Source · KAORI{% endblock title %}
 {% block dashboard_content %}
@@ -10,7 +11,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('chart-spline', 'Integrations', 'plus') %}
                         <h1 class="{{ page_hero.title_classes() }}">Register Metrics Source</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Choose a Metrics Source provider for governed runtime registration.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Select a metrics provider before registering a connection.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('package-search', providers|length ~ ' Available Providers') }}
                             {{ page_hero.meta_label('route', 'Adapter-Owned Runtime') }}
@@ -26,43 +27,57 @@
                             {{ page_hero.context_metric('package-search', 'Providers', providers|length, 'Registered provider implementations') }}
                             {{ page_hero.context_metric('link-2', 'Consumer Contract', 'Metrics Source', 'Bindings stay provider-neutral', 'text-sm font-semibold leading-6') }}
                         </div>
-                        {{ page_hero.context_info('shield-check', 'Choose a provider here; adapter, query language, validation, and runtime behavior remain registry-owned.') }}
+                        {{ page_hero.context_info('shield-check', 'Adapters own validation and runtime.') }}
                     </div>
                 </aside>
             </div>
         </section>
         <section class="{{ integration_workspace.section_shell_classes() }}">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <h2 class="text-base font-semibold text-content-primary">Available Metrics Providers</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Each provider declares its adapter, query language, compatibility policy, and default routing horizon through the Metrics Source registry.</p>
+            <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Available Metrics Providers</h2>
+                        {{ info_tip.render("metrics-selector-guide", "Metrics Provider Selection", "Adapters govern protocol, query language, validation and query horizon. KAORI manages connection evidence and qualified consumer routing.", placement="right", variant="guide") }}
+                    </div>
+                    <p class="mt-1 text-sm text-content-secondary">Choose Prometheus or Thanos Query to open its registration form.</p>
+                </div>
             </header>
             <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
                 {% for provider in providers %}
-                    <article class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5">
+                    <article class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 transition-colors hover:border-brand-outline">
                         <div class="flex items-start gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="{{ provider.icon }}" class="h-5 w-5"></i></span>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <h3 class="text-sm font-semibold text-content-primary">{{ provider.label }}</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ provider.description }}</p>
                             </div>
                         </div>
-                        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                        <dl class="mt-4 grid grid-cols-2 gap-4 border-t border-outline-subtle pt-4 text-xs">
                             <div>
-                                <dt class="font-semibold text-content-muted">Adapter</dt>
+                                <dt class="inline-flex items-center gap-1 font-semibold text-content-muted">
+                                    Adapter
+                                    {{ info_tip.render("metrics-adapter-" ~ provider.key, "Metrics Adapter", "The provider adapter owns the API contract and validation. KAORI records qualified evidence.", placement="right") }}
+                                </dt>
                                 <dd class="mt-1 font-medium text-content-primary">
                                     {{ provider.adapter_key|replace('_', ' ') |title }}
                                 </dd>
                             </div>
                             <div>
-                                <dt class="font-semibold text-content-muted">Query Language</dt>
+                                <dt class="inline-flex items-center gap-1 font-semibold text-content-muted">
+                                    Query Language
+                                    {{ info_tip.render("metrics-query-" ~ provider.key, "Query Language", "The provider determines supported queries and retention horizons; KAORI selects qualified sources.", placement="right") }}
+                                </dt>
                                 <dd class="mt-1 font-medium text-content-primary">
                                     {{ provider.query_language|upper }}
                                 </dd>
                             </div>
                         </dl>
-                        <div class="mt-5 flex justify-end">
+                        <div class="mt-auto flex justify-end pt-5">
                             <a href="{{ provider.registration_url }}"
-                               class="{{ action_button.classes('primary') }}"><i data-lucide="plus" class="h-4 w-4"></i>Register {{ provider.label }}</a>
+                               class="{{ action_button.classes('primary') }}">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register {{ provider.label }}
+                            </a>
                         </div>
                     </article>
                 {% else %}
