@@ -18,20 +18,20 @@
             marker='github-connection-registry'
         ) if registry_has_active_filters else '' %}
     {{ provider_registry.registry_header("GitHub Connection Registry",
-            "Review registered GitHub App installations, Full Validation readiness, and committed grant scope.",
-            "database-zap",
-            "github-registry-loading",
-            title_id="github-connection-registry-title",
-            action_html=clear_action,
-            result_count=pagination.total_items) }}
+        "Review registered GitHub App installations, Full Validation readiness, and committed grant scope.",
+        "database-zap",
+        "github-registry-loading",
+        title_id="github-connection-registry-title",
+        action_html=clear_action,
+        result_count=pagination.total_items) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         {% call registry_ui.filter_form('github_source.index',
-                'github-connection-registry',
-                'github-registry-loading',
-                pagination.per_page,
-                form_id='github-registry-filter-form',
-                aria_label='Filter GitHub connections') %}
+            'github-connection-registry',
+            'github-registry-loading',
+            pagination.per_page,
+            form_id='github-registry-filter-form',
+            aria_label='Filter GitHub connections') %}
             <input type="hidden" name="tab" value="registry">
             <div class="min-w-0">
                 {{ provider_registry.search_field("github-registry-search", "q", selected_query, "Connection name or description") }}
@@ -74,12 +74,12 @@
                             <p class="mt-1 text-xs text-content-muted">GitHub REST v3</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.environment|default("Unspecified", true)|replace("_", " ")|title }}</p>
+                            <p class="text-sm font-semibold text-content-primary">{{ row.environment|default("Unspecified", true) |replace("_", " ")|title }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ "Enabled" if row.enabled else "Disabled" }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ integration_status(row.readiness_status or "validation_required",
-                                    display="indicator") }}
+                                                        display="indicator") }}
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Full Validation complete" if row.readiness_status == "ready" else "Full Validation required" }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -123,10 +123,10 @@
             "readiness": selected_readiness
         } %}
     {{ provider_registry.pagination_footer(pagination,
-            "github_source.index",
-            "#github-connection-registry",
-            "#github-registry-loading",
-            registry_query,
-            item_label="Connections",
-            swap="outerHTML") }}
+        "github_source.index",
+        "#github-connection-registry",
+        "#github-registry-loading",
+        registry_query,
+        item_label="Connections",
+        swap="outerHTML") }}
 </section>
