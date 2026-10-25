@@ -1,7 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None, secondary_register_url=None, secondary_register_label=None, register_label='Register Connection') -%}
+{% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None, secondary_register_url=None, secondary_register_label=None, register_label='Register Connection', association_label='Consumer Bindings', association_description='Governed consumer associations') -%}
     {% set denominator = ready_total if ready_total is not none else registered_count %}
     <section class="{{ page_hero.shell_classes() }}"
              data-kaori-provider-frontpage-hero>
@@ -13,7 +13,7 @@
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label("server-cog", registered_count ~ " Registered Connections") }}
                         {{ page_hero.meta_label("circle-check-big", ready_count ~ " Ready Connections") }}
-                        {{ page_hero.meta_label("link-2", binding_count ~ " Consumer Bindings") }}
+                        {{ page_hero.meta_label("link-2", binding_count ~ " " ~ association_label) }}
                     </div>
                 {% endcall %}
             </div>
@@ -29,7 +29,7 @@
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric("badge-check", "Ready", ready_count ~ " / " ~ denominator, "Validated connections available") }}
-                        {{ page_hero.context_metric("link-2", "Bindings", binding_count, "Governed consumer associations") }}
+                        {{ page_hero.context_metric("link-2", association_label, binding_count, association_description) }}
                     </div>
                     <div class="{{ page_hero.context_actions_classes(2 if secondary_register_url else 1) }}">
                         <a href="{{ register_url }}"

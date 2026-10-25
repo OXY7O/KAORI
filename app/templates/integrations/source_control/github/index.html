@@ -1,59 +1,65 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% block title %}GitHub Source Control · KAORI{% endblock title %}
+{% block title %}GitHub Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
+    {% set posture_status = "Healthy" if ready and registered == ready else ("Attention" if registered else "Not Configured") %}
+    {% set overview_metrics = [
+            {"label": "Registered Connections", "value": stats.total, "description": "Installation-scoped GitHub App connections", "icon": "git-branch"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready for operational use", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or lifecycle review", "icon": "triangle-alert"},
+            {"label": "Committed Repository Grants", "value": stats.grants, "description": "Observed access grants, not live inventory", "icon": "link-2"}
+        ] %}
     <div class="kaori-integration-semantic space-y-6">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro("git-branch", "Source Control Integration", "code") %}
-                        <h1 class="{{ page_hero.title_classes() }}">GitHub Source Control</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage GitHub App connections and committed source evidence.</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('shield-check', 'GitHub.com App') }}
-                            {{ page_hero.meta_label('database', 'Committed Evidence') }}
-                        </div>
-                    {% endcall %}
-                </div>
-                {{ page_hero.context_card("GitHub App connections",
-                                "Connection Registry",
-                                "GitHub App",
-                                ("Ready" if ready else ("Registered" if registered else "Not Configured") ) if available else "Unavailable",
-                "normal" if ready else "warning",
-                [
-                ("plug", "Registered", registered if registered is not none else "Not Observed"),
-                ("badge-check", "Ready", ready if ready is not none else "Not Observed")
-                ],
-                "Choose Provider", url_for("integrations.choose_integration_provider", integration_type="source_control"),
-                action_icon="settings-2"
-                ) }}
-            </div>
-        </section>
-        {% set metrics = [
-                    {"label": "Registered Connections", "value": registered if registered is not none else "Not Observed", "description": "Canonical GitHub App connections", "icon": "plug"},
-                    {"label": "Ready Connections", "value": ready if ready is not none else "Not Observed", "description": "Full Validation required", "icon": "shield-check"},
-                    {"label": "Repository Evidence", "value": "Per Installation", "description": "Inspect committed inventory by installation", "icon": "database"},
-                    {"label": "Provider Lifecycle", "value": "Available" if available else "Unavailable", "description": "Controlled by KAORI provider matrix", "icon": "shield"}
-                ] %}
-        {{ provider_front.overview("git-branch", "Source Control Provider Overview",
-                "A GitHub App installation grants access only to the repositories authorized by GitHub.",
-                metrics, "GitHub App Installation",
-                "App, installation, organization/account and repository are distinct identities.",
-                "Committed Source Evidence",
-                "KAORI reads committed, installation-scoped repository and exact revision observations.",
+        {{ provider_front.hero("git-branch", "code", "GitHub Integrations",
+                "Register GitHub App connections with governed readiness and committed Source Control evidence.",
+                stats.total, stats.ready, stats.grants, posture_status,
+                url_for("github_source.new_connection") if available else url_for("integrations.choose_integration_provider", integration_type="source_control") ,
+        association_label="Repository Grants", association_description="Committed installation repository grants") }}
+        {{ provider_front.overview("git-branch",
+                "GitHub Integration Overview",
+                "Register each GitHub App installation once; verify connection readiness and committed repository access independently.",
+                overview_metrics,
+                "GitHub REST API v3",
+                "KAORI validates installation identity, read-only permissions, and required Source Control capabilities before operational use.",
+                "Installation and Revision Correlation",
+                "KAORI correlates committed repository grants, exact commit revisions, workflows, and deployment evidence by installation.",
                 "GitHub Remains Authoritative",
-                "GitHub owns permissions, repositories and workflow runs; KAORI correlates committed evidence.") }}
-        {% if available and uat_workspace_enabled %}
-            <section class="{{ integration_ui.section_shell_classes() }} p-5 sm:p-6">
-                {{ integration_ui.section_header('shield-check', 'Installation Registry', 'Manage connections and committed repository evidence') }}
-                <a href="{{ url_for('github_source_uat.index') }}"
-                   class="mt-4 inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-kaori-primary hover:bg-surface-hover">
-                    <i data-lucide="git-branch" class="h-4 w-4" aria-hidden="true"></i>
-                    Manage Installations
-                </a>
-            </section>
-        {% endif %}
+                "GitHub owns repositories, installation grants, source branches, and workflow execution; KAORI governs committed evidence.") }}
+        {% call(tab_name) integration_tabs.render("github", active_tab, stats.grants, stats.total) %}
+            {% if tab_name == "coverage" %}
+                <section class="{{ integration_ui.section_shell_classes() }}"
+                         data-kaori-github-coverage>
+                    {{ integration_ui.section_header("route", "GitHub Repository Coverage",
+                            "Only installation grants committed to KAORI are represented; provider inventory remains authoritative.") }}
+                    <div class="{{ integration_ui.metric_grid_classes(3) }}">
+                        {{ integration_ui.metric_card("Registered Installations", stats.total, "Connections stored in KAORI", "git-branch") }}
+                        {{ integration_ui.metric_card("Committed Access Grants", stats.grants, "Current effective-dated repository grants", "link-2") }}
+                        {{ integration_ui.metric_card("Full Validation Ready", stats.ready, "Validated connections, not Test Connection results", "badge-check") }}
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        {% if available and stats.grants == 0 %}
+                            {{ integration_ui.interpretation_panel("Repository Evidence Not Yet Observed",
+                                    "No current repository grants have been committed. Register a GitHub App, perform Full Validation, then synchronize repository inventory to establish coverage.",
+                            icon="database") }}
+                        {% else %}
+                            {{ integration_ui.interpretation_panel("Committed Evidence Boundary",
+                                    "Grant counts reflect committed KAORI state, not an on-demand GitHub API request or proof of complete repository access.",
+                            icon="shield-check") }}
+                        {% endif %}
+                        {% if uat_workspace_enabled %}
+                            <a href="{{ url_for('github_source_uat.index') }}"
+                               class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline">
+                                Manage GitHub Installations
+                                <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </section>
+            {% else %}
+                {% include "integrations/source_control/github/partials/_connection_registry.html" %}
+            {% endif %}
+        {% endcall %}
     </div>
 {% endblock dashboard_content %}

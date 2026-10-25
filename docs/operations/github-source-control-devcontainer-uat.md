@@ -770,3 +770,92 @@ logs, screenshots, or network evidence shared outside Dev Container.
 **Admission:** exact merged candidate executable QA and Human Acceptance
 PENDING until operator verifies. Official CI/CD, Full Admission,
 `kaori/staging`, main and release/tag remain HOLD.
+
+
+## 2026-10-25 — #3177 canonical GitHub Integrations registry after Save
+
+**Human authority:** Operator identified Alertmanager Integrations as the
+accepted list/overview reference, requiring GitHub Source Control to display
+the **same KAORI shared UI** instead of a standalone frontpage and separate
+generic UAT installation list. The user expects successful Register Connection
+to queue a **success toast** and redirect to the new GitHub Integration list.
+
+**Implementation reused** (without new palette/taxonomy): shared
+`integrations/components/_provider_frontpage.html` hero and overview;
+`components/integration_workspace_tabs.html` for Integration Coverage /
+Connection Registry; `integrations/components/_workspace.html` section
+shells and KPI cards; `integrations/components/_provider_registry.html`,
+`components/table_registry.html`, `components/table.html` and
+`components/states/_empty_state.html` for registry/table filters and
+pagination. The hero gained an **optional** association label and description
+so GitHub accurately displays **Repository Grants** without misrepresenting
+them as **Consumer Bindings**; every existing provider retains its defaults.
+
+**Committed-only read path:** `github_source.index` queries
+`IntegrationInstance` for counts and paginated (default 5) connection rows,
+`SourceInstallation` for installation identifiers/selection, and current
+`SourceRepositoryGrant` for committed grant counts. Nothing fetches the
+live provider during a normal GET. Search/name/description, Environment and
+Readiness filters use the shared HTMX registry semantics. The real state
+`validation_required` is distinct from a successful pre-save Test Connection.
+Coverage does not claim repositories are completely inventoried when no
+committed grant observation exists.
+
+**RBAC:** Source Control index remains `integrations.manage` protected.
+The existing privileged `github_source_uat.detail` Manage action only
+appears when the user also satisfies the Dev Container UAT authorization
+guard. No privileged endpoint is exposed or expanded by the UI change.
+Planned providers still show Not Observed instead of zero-ready fabrication.
+
+**Save → toast → registry:** Existing `save_tested_connection(values)`
+performs live recheck and commits first; the existing
+`record_operational_activity(queue_feedback=True)` queues a success toast,
+then `redirect(url_for('github_source.index', tab='registry'))` opens the
+new canonical Connection Registry. This does not mean the earlier observed
+proof-drift defect is automatically Human Accepted; Test→Save→Redirect needs
+its own exact-SHA evidence. Webhook may remain OFF.
+
+### Exact Dev Container checks
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python -m ruff format --check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+djlint --check \
+  app/templates/integrations/components/_provider_frontpage.html \
+  app/templates/integrations/source_control/github/index.html \
+  app/templates/integrations/source_control/github/partials/_connection_registry.html
+python -m pytest -q -p no:cacheprovider \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/contracts/integrations/test_provider_registry_pagination_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human UAT checkpoints:**
+1. Open GitHub Integrations with zero saved connections: same family of Hero,
+   overview, two framed tabs, Setup Required empty state and no false
+   ready/inventory coverage. Available Register action still opens GitHub App.
+2. Register using approved GitHub App test-only credentials: Test Connection
+   uses canonical toast, proof gate enables Register, Save persists, queues
+   success toast, then redirects to **GitHub Integrations → Connection
+   Registry**. Check saved connection appears with **Validation Required**
+   (not Ready), correct environment and installation identity.
+3. Filters (name/environment/readiness), Clear Filters, pagination 5/10/25/50,
+   no duplicate rows, stable URL on HTMX and full GET, responsive/light-dark.
+4. Open Manage only as approved super-admin within Dev Container; unprivileged
+   users cannot navigate directly to UAT detail routes. Do not show PEM,
+   webhook secret, signed proof, or network request bodies in evidence.
+5. Full Validation remains subsequent separate functional UAT; committed
+   repository access is not invented from live installation selection.
+
+**Validation boundary:** GitHub source/diff inspection is not executable
+Dev Container QA or Human Acceptance. Official Developer Check, Full
+Admission, `kaori/staging`, main, and release/tag remain HOLD.

@@ -100,7 +100,7 @@ def test_github_registration_persists_then_queues_toast_and_redirects() -> None:
     assert routes.index('save_tested_connection(values)') < routes.index('record_operational_activity(')
     assert "status='success'" in routes
     assert 'queue_feedback=True' in routes
-    assert "return redirect(url_for('github_source.index'))" in routes
+    assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
     assert 'load_operational_feedback()' in layout
     assert 'components/operational_toast.html' in layout
     assert "return 'toast'" in notifications
@@ -156,13 +156,13 @@ def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
 def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     landing = _source('app/templates/integrations/source_control/github/index.html')
-    assert 'registered: int | None = None' in routes
-    assert 'ready: int | None = None' in routes
+    assert 'total = ready = grants = None' in routes
     assert 'if available:' in routes
-    assert 'Not Observed' in landing
-    assert 'Repository Evidence' in landing
-    assert 'Connection Registry' in landing
-    assert 'Choose Provider' in landing
+    assert 'if available:' in routes
+    assert 'Not Observed' in routes
+    assert 'Repository Evidence Not Yet Observed' in landing
+    assert 'integration_tabs.render("github"' in landing
+    assert 'provider_front.hero(' in landing
 
 
 def test_blueprint_is_registered_using_existing_bootstrap() -> None:
@@ -189,11 +189,9 @@ def test_source_control_selects_provider_then_opens_existing_registration() -> N
     assert 'registration_hero.render(' in form
     assert 'Register GitHub App Connection' in form
     assert "url_for('github_source.index')" in form  # Shared Back to Registry.
-    assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
-    assert (
-        '"Choose Provider", url_for("integrations.choose_integration_provider", integration_type="source_control")'
-    ) in index
-    assert 'Manage Installations' in index
+    assert "return redirect(url_for('github_source.index', tab='registry'))" in routes  # Post-save.
+    assert 'integration_tabs.render("github"' in index
+    assert 'Manage GitHub Installations' in index
 
 
 def test_source_control_operational_templates_have_no_temporary_uat_copy() -> None:
@@ -211,3 +209,37 @@ def test_source_control_operational_templates_have_no_temporary_uat_copy() -> No
     assert 'require_uat_access()' in routes
     assert "@permission_required('integrations.manage')" in routes
     assert "if request.method == 'POST' and not available:" in routes
+
+
+def test_github_connection_registry_reuses_existing_integration_surface() -> None:
+    index = _source('app/templates/integrations/source_control/github/index.html')
+    registry = _source('app/templates/integrations/source_control/github/partials/_connection_registry.html')
+    shared_hero = _source('app/templates/integrations/components/_provider_frontpage.html')
+    tabs = _source('app/templates/components/integration_workspace_tabs.html')
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+
+    assert 'provider_front.hero(' in index
+    assert 'provider_front.overview(' in index
+    assert 'integration_tabs.render("github", active_tab, stats.grants, stats.total)' in index
+    assert 'components/framed_workspace_tabs.html' in tabs
+    assert "association_label='Consumer Bindings'" in shared_hero
+    assert 'association_label="Repository Grants"' in index
+    assert 'provider_registry.registry_header(' in registry
+    assert 'registry_ui.filter_form(' in registry
+    assert 'provider_registry.pagination_footer(' in registry
+    assert 'components/states/_empty_state.html' in registry
+    assert 'integration_status(' in registry
+    assert "github_source_uat.detail" in registry
+    assert 'if uat_workspace_enabled and installation' in registry
+    assert 'data-kaori-github-connection-registry' in registry
+    assert "request.headers.get('HX-Target') == 'github-connection-registry'" in routes
+    assert "'integrations/source_control/github/partials/_connection_registry.html'" in routes
+    assert 'paginate_query(' in routes
+    assert "requested_per_page = request.args.get('per_page', 5, type=int) or 5" in routes
+    assert "integration_type='source_control', provider_key='github'" in routes
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
+    assert 'if available:' in routes
+    assert 'require_uat_access()' in routes
+    assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
+    assert 'queue_feedback=True' in routes
+    assert '<style' not in registry and '<script' not in registry
