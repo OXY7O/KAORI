@@ -28,7 +28,7 @@ class AuthenticationSecurityPolicy(db.Model):
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
- 
+
     def __repr__(self) -> str:
         return f'<AuthenticationSecurityPolicy id={self.id} mode={self.mfa_mode} bot={self.bot_mode}>'
 
