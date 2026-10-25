@@ -1146,3 +1146,49 @@ applied without changing test/save/proof semantics.
 This is a holding-branch UAT workstream, not official Developer Check,
 Full Admission, production release or approval. Keep issue OPEN until
 executable quality checks and Human Acceptance are recorded.
+
+
+## 2026-10-26 — #3246 follow-up: GitHub Configuration contract parity
+
+The operator reviewed the merged GitHub four-tab Manage Integration screen
+against the approved Kubernetes Configuration panel. Two Human UAT findings:
+
+1. The GitHub Hero's **Committed Repository Grants** context line wrapped.
+   Use the concise **Committed grants only** helper (single line at the
+   1440px desktop UAT viewport). The **Unknown** metric remains unknown
+   until collection and is not substituted with zero.
+2. The GitHub Configuration card still used an isolated **Access &
+   Authority** two-column layout, unlike Kubernetes **Connection
+   Contract → Connection Evidence → Operational Context**. The page now
+   follows that existing structure using the shared
+   `integrations/components/_workspace.html` header and palette macros,
+   `components/table_label.html` metadata label, semantic readiness
+   indicator, and the **same**
+   `integrations/components/_provider_operational_context.html`
+   reusable macro used by Kubernetes. It has four compact identity cells
+   (canonical identity, environment, GitHub App ID and installation ID),
+   four provider-specific evidence cells (host, readiness, repository access
+   scope and committed inventory authority), four governed lifecycle steps,
+   and an explanatory footer. Identity and permissions remain GitHub-owned.
+   There is no misleading security posture claim, new credential field,
+   synthetic success or backend change.
+
+**QA repair:** Operator attached exact Ruff formatter differences for
+`kernel_contract.py` and `test_source_control_github_uat_scope.py`,
+exact djLint differences for `uat_detail.html`, and a 53-PASS/1-FAIL
+contract that incorrectly assumed single-quoted
+`url_for('github_source.index', tab='registry')` when the Jinja template
+uses double quotes. This follow-up applies Ruff's reported formatting and
+matches the template's literal without changing the back-link destination.
+It also adds an assertion for the shared Configuration contract and
+Operational Context.
+
+**Visual acceptance:** compare GitHub Configuration at 1440×900 and
+mobile/desktop, light/dark, directly against Kubernetes Configuration.
+The Hero helper must occupy one line. Connection Contract and Evidence
+headers, metrics/evidence responsive grids, operational steps and footer
+must use existing KAORI tokens, spacing and shared components. Verify
+status remains **Validation Required** before Full Validation and
+inventory remains **Not Observed / Unknown** before authorized Sync.
+No further GitHub App change, secret display or real provider call is
+required for this purely visual review.
