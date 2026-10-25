@@ -18,7 +18,8 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <div class="flex min-w-0 items-center gap-2">
-                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                          aria-hidden="true">
                         <i data-lucide="{{ 'chart-spline' if trend_mode == 'forecast' else ('activity' if trend_mode == 'performance' else 'database') }}"
                            class="h-4 w-4"></i>
                     </span>
