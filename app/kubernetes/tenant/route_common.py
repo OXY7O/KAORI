@@ -284,6 +284,10 @@ def _tenant_section_redirect(section: str):
             return redirect(
                 url_for('tenant.tenants', section=resolved_section, membership_view=_membership_registry_view())
             )
+        if resolved_section == 'access-grants' and request.values.get('access_inventory_view'):
+            return redirect(
+                url_for('tenant.tenants', section=resolved_section, access_inventory_view=_access_inventory_view())
+            )
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
     context = _tenant_workspace_context(include_sync=False)
@@ -309,6 +313,10 @@ def _tenant_section_redirect(section: str):
     if resolved_section == 'memberships':
         response.headers['HX-Replace-Url'] = url_for(
             'tenant.tenants', section=resolved_section, membership_view=_membership_registry_view()
+        )
+    if resolved_section == 'access-grants' and request.values.get('access_inventory_view'):
+        response.headers['HX-Replace-Url'] = url_for(
+            'tenant.tenants', section=resolved_section, access_inventory_view=_access_inventory_view()
         )
     return response
 
@@ -388,8 +396,14 @@ def _memberships_section_context() -> dict[str, Any]:
     }
 
 
+def _access_inventory_view() -> str:
+    """Only approved provider inspection tabs may be selected."""
+    return 'native' if request.values.get('access_inventory_view') == 'native' else 'capsule'
+
+
 def _access_grants_section_context() -> dict[str, Any]:
-    return get_access_grant_registry_context(
+    return {
+        **get_access_grant_registry_context(
         page=_query_int('grant_page'),
         per_page=_query_int('grant_per_page', 5),
         tenant_id=_query_text('grant_tenant_id'),
@@ -397,7 +411,9 @@ def _access_grants_section_context() -> dict[str, Any]:
         reconciliation_status=_query_text('grant_reconciliation_status'),
         scope_type=_query_text('grant_scope_type'),
         search=_query_text('grant_search'),
-    )
+        ),
+        'active_access_inventory_view': _access_inventory_view(),
+    }
 
 
 def _credentials_section_context() -> dict[str, Any]:
