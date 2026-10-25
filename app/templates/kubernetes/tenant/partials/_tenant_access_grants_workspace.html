@@ -46,7 +46,8 @@
                 <div class="space-y-4">
                     <div class="min-w-0">
                         <span class="inline-flex min-h-6 items-center gap-1.5">
-                            <label for="access-grant-membership" class="text-xs font-semibold text-content-primary">Membership</label>
+                            <label for="access-grant-membership"
+                                   class="text-xs font-semibold text-content-primary">Membership</label>
                             {{ info_tip.render('access-membership-tip',
                                                         'Tenant Membership',
                                                         'Choose the active Tenant principal that will receive this authorization.',
@@ -80,7 +81,8 @@
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="min-w-0">
                             <span class="inline-flex min-h-6 items-center gap-1.5">
-                                <label for="access-grant-profile" class="text-xs font-semibold text-content-primary">Access Profile</label>
+                                <label for="access-grant-profile"
+                                       class="text-xs font-semibold text-content-primary">Access Profile</label>
                                 {{ info_tip.render('access-profile-tip',
                                                                 'Access Profile',
                                                                 'Choose the least-privilege contract that matches the principal.',
@@ -107,7 +109,8 @@
                         </div>
                         <div class="min-w-0">
                             <span class="inline-flex min-h-6 items-center gap-1.5">
-                                <label for="access-grant-scope" class="text-xs font-semibold text-content-primary">Scope</label>
+                                <label for="access-grant-scope"
+                                       class="text-xs font-semibold text-content-primary">Scope</label>
                                 {{ info_tip.render('access-scope-tip',
                                                                 'Access scope',
                                                                 'Scope controls how many governed namespaces receive the selected profile.',
@@ -243,9 +246,7 @@
                            class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs leading-5 text-content-secondary"
-                           data-access-context-provider>
-                            Select a Membership to resolve Tenant and scope.
-                        </p>
+                           data-access-context-provider>Select a Membership to resolve Tenant and scope.</p>
                     </div>
                 </aside>
             </div>
