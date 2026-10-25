@@ -19,8 +19,6 @@ from app.integrations.observability.metrics_source.application.registration_web 
     test_new_instance_connection_response,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
-from app.integrations.provider_matrix import provider_kinds
-from app.integrations.taxonomy import get_domain_definition
 from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
@@ -30,6 +28,7 @@ from app.integrations.orchestration.container_orchestrator.frontpage import (
 )
 from app.integrations.orchestration.container_orchestrator.tenant_capsule_web import capsule_rbac_operation
 from app.integrations.overview_workspace import build_integrations_overview
+from app.integrations.provider_matrix import provider_kinds
 from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -41,6 +40,7 @@ from app.integrations.service import (
     build_kubernetes_detail,
     build_metrics_source_page,
 )
+from app.integrations.taxonomy import get_domain_definition
 from app.integrations.validation.state import (
     build_validation_snapshot,
     get_active_validation_task_id,
