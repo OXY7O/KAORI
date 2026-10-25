@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.authentication.bot_protection.registry import bot_provider_definitions
-from app.access.authentication.bot_protection.service import BotPolicyMode, TEST_SECRET_KEYS, TEST_SITE_KEYS
+from app.access.authentication.bot_protection.service import TEST_SECRET_KEYS, TEST_SITE_KEYS, BotPolicyMode
 from app.access.authentication.bot_protection.turnstile import (
     TurnstileVerificationConfig,
     _configuration_ready,
@@ -175,6 +175,7 @@ def save_mfa_policy():
         message='The selected MFA policy is already active; no sessions were revoked.',
     )
     return redirect(url_for('access.authentication_security.index', tab='mfa'))
+
 
 @bp.post('/bot/policy')
 @permission_required('identity_providers.manage')

@@ -171,7 +171,7 @@ def test_failed_commit_rolls_back_and_never_emits_success(
         result = pop_operational_feedback()
         assert result is not None
         assert result['status'] == 'error'
-        assert result['title'] == 'MFA policy not saved'
+        assert result['title'] == 'MFA Policy Not Saved'
         assert result['activity_audit_saved'] is False
 
     assert store.policy.mfa_mode == 'disabled'
