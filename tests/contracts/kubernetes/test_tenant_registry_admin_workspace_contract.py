@@ -282,6 +282,28 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'def get_access_grant_registry_context(' in read_model
 
 
+def test_access_grant_registry_uses_compact_dialog_without_reconciliation_hover() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'components/info_tip.html' not in registry
+    assert 'access-grant-reconciliation-' not in registry
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert 'aria-label="Selected Access Grant"' in registry
+    assert 'title="{{ grant.membership.subject_name }}"' in registry
+    assert 'title="{{ grant.tenant.name }}"' in registry
+    assert 'Review provider evidence before changing grant access.' in registry
+    assert 'Retry reconciliation for this grant.' in registry
+    assert 'Remove grant access; Membership remains.' in registry
+    assert 'tenant.reconcile_access_grant_route' in registry
+    assert 'tenant.revoke_access_grant_route' in registry
+    assert registry.count('name="access_inventory_view" value="grants"') == 4
+    assert 'No membership or RBAC mutation' in capsule
+    assert 'does not import IdP users' in capsule
+    assert '<label for="access-grant-membership"' in form
+
+
 def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidence() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     grant = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')

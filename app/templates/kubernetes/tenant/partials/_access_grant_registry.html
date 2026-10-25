@@ -2,7 +2,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% set registry_id = "tenant-access-grant-registry" %}
 {% set loading_id = "tenant-access-grant-registry-loading" %}
@@ -163,14 +162,7 @@
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <div class="flex items-center gap-1.5 whitespace-nowrap">
-                                {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
-                                {{ info_tip.render('access-grant-reconciliation-' ~ grant.id,
-                                                                'Reconciliation · ' ~ (grant.reconciliation_status|title) ,
-                                grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.',
-                                placement='left'
-                                ) }}
-                            </div>
+                            {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex items-center justify-end gap-1.5 whitespace-nowrap"
@@ -247,9 +239,7 @@
                             <h2 id="access-grant-more-actions-{{ grant.id }}-title"
                                 class="mt-1 text-base font-semibold text-content-primary">More Actions</h2>
                             <p id="access-grant-more-actions-{{ grant.id }}-description"
-                               class="mt-1 break-words text-xs leading-5 text-content-secondary">
-                                {{ grant.membership.subject_name }} · {{ grant.tenant.name }} · {{ grant.scope_type|title }}
-                            </p>
+                               class="mt-1 text-xs leading-5 text-content-secondary">Review provider evidence before changing grant access.</p>
                         </div>
                         <button type="button"
                                 data-kaori-dialog-close
@@ -259,12 +249,27 @@
                             Close
                         </button>
                     </header>
-                    <div class="min-h-0 space-y-3 overflow-y-auto bg-surface-page p-5 sm:p-6">
+                    <div class="min-h-0 space-y-3 overflow-y-auto bg-surface-page p-4 sm:p-5">
+                        <div class="grid gap-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:grid-cols-2"
+                             aria-label="Selected Access Grant">
+                            <div class="min-w-0 sm:col-span-2">
+                                <p class="text-xs font-semibold text-content-muted">Principal</p>
+                                <p class="mt-1 truncate text-xs font-semibold text-content-primary"
+                                   title="{{ grant.membership.subject_name }}">{{ grant.membership.subject_name }}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-muted">Tenant</p>
+                                <p class="mt-1 truncate text-xs font-semibold text-content-primary"
+                                   title="{{ grant.tenant.name }}">{{ grant.tenant.name }}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-muted">Scope</p>
+                                <p class="mt-1 truncate text-xs font-semibold text-content-primary">{{ grant.scope_type|title }}</p>
+                            </div>
+                        </div>
                         <div class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
                             <p class="text-xs font-semibold text-content-primary">Reconcile Provider Access</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                Inspect current scope and committed evidence before retrying provider reconciliation.
-                            </p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Retry reconciliation for this grant.</p>
                             {% if grant.status == 'active' or grant.reconciliation_status != 'revoked' %}
                                 <form method="post"
                                       action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
@@ -288,10 +293,7 @@
                         {% if grant.status == 'active' %}
                             <div class="rounded-xl border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 py-3">
                                 <p class="text-xs font-semibold text-status-critical-text">Revoke Access Grant</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                    Revoking removes the grant's governed effective access.
-                                    Tenant Membership remains separate; inspect provider evidence before continuing.
-                                </p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Remove grant access; Membership remains.</p>
                                 <form method="post"
                                       action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
                                       hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
