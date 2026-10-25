@@ -19,9 +19,18 @@ class AuthenticationSecurityPolicy(db.Model):
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     mfa_mode: Mapped[str] = mapped_column(db.String(32), nullable=False, default='disabled')
+    bot_mode: Mapped[str] = mapped_column(db.String(16), nullable=False, default='disabled')
+    bot_provider_key: Mapped[str] = mapped_column(db.String(80), nullable=False, default='cloudflare_turnstile')
+    bot_site_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
+    bot_secret: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
+    bot_hostname: Mapped[str | None] = mapped_column(db.String(253), nullable=True)
+
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
+ 
+    def __repr__(self) -> str:
+        return f'<AuthenticationSecurityPolicy id={self.id} mode={self.mfa_mode} bot={self.bot_mode}>'
 
 
 class AuthenticationMfaFactor(db.Model):
