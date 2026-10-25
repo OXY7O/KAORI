@@ -90,6 +90,26 @@
                         class="inline-flex min-h-11 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-5 text-sm font-semibold text-content-primary hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">Regenerate Recovery Codes</button>
             </form>
         </section>
+        {% if mfa_state.policy_mode in ['disabled', 'optional'] %}
+            <section class="rounded-xl border border-outline-default bg-surface-subtle p-5">
+                <h3 class="text-sm font-semibold text-content-primary">Disable MFA</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Requires your primary credential where KAORI owns it and an enrolled factor proof. All recovery codes will be invalidated.</p>
+                <form method="post" action="{{ url_for('settings.account', tab='mfa') }}" class="mt-4 space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="mfa_action" value="disable">
+                    {% if can_change_password %}
+                        <label for="mfa-disable-password" class="block text-sm font-medium text-content-primary">Current Password</label>
+                        <input id="mfa-disable-password" type="password" name="current_password" required
+                               autocomplete="current-password" maxlength="1024"
+                               class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-content-primary">
+                    {% endif %}
+                    <label for="mfa-disable-code" class="block text-sm font-medium text-content-primary">Authenticator or Recovery Code</label>
+                    <input id="mfa-disable-code" name="verification_code" required maxlength="64" autocomplete="one-time-code"
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-content-primary">
+                    <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary hover:bg-surface-hover">Disable MFA</button>
+                </form>
+            </section>
+        {% endif %}
     {% endif %}
     <p class="text-xs leading-5 text-content-muted">MFA verification is enforced only when the approved KAORI policy is Optional and you have enrolled, or Required for your account. Secret values are encrypted at rest; single-use recovery hashes are not reversible.</p>
 </section>
