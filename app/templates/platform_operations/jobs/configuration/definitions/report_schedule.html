@@ -37,7 +37,7 @@
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
                         <h4 id="job-delivery-channels-title"
                             class="text-sm font-semibold text-content-primary">Delivery Channels</h4>
-                        {{ table_label.metadata_label(selected_job.delivery_channels|length ~ (' Channel' if selected_job.delivery_channels|length == 1 else ' Channels'), icon='radio') }}
+                        {{ table_label.metadata_label(selected_job.delivery_channels|length ~ (' Channel' if selected_job.delivery_channels|length == 1 else ' Channels') , icon='radio') }}
                     </header>
                     <div class="max-h-64 divide-y divide-outline-subtle overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                          tabindex="0"
