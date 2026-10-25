@@ -133,6 +133,8 @@ def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() ->
     assert 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]' in activity
     assert 'items=[definition.safety_summary]' in overview
     assert 'jobs-selected-safety-' in overview
+    assert 'items=[definition.safety_summary]' in overview
+    assert "if overview_notice_short|default('') or execution_safety_short|default('')" not in overview
     for key, source in templates.items():
         assert 'overview_notice_short' in source, key
         assert 'policy_form.hidden_tag()' in source or key == 'alert'
