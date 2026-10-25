@@ -148,10 +148,11 @@ registration endpoint. Planned provider metadata explicitly says adapter
 **Not implemented** and protocol **Not defined**, rather than implying a
 working implementation. The reusable selector displays equal-height cards,
 available-first provider order, a real disabled button for planned providers
-and canonical `info_tip.render` for each Adapter/Protocol field. It uses
-the existing `components/info_tip.html` plus `app/static/js/info_tips.js`
-pointer/keyboard/touch controller; it does not introduce local tooltip CSS,
-JS, or a new provider implementation.
+and a single title-level canonical `Guide` Info Tip. Adapter and Protocol
+appear as plain compact labels, without repeated question-mark icons. The
+shared `components/info_tip.html` plus `app/static/js/info_tips.js` controller
+continues to own Guide hover/focus/touch behavior; no custom tooltip CSS/JS
+or new provider implementation is introduced.
 
 **Test steps — navigation-only, no credentials:**
 
@@ -164,13 +165,11 @@ JS, or a new provider implementation.
    GitLab and Bitbucket must both display **Planned**, **Not implemented**
    adapter / **Not defined** protocol, with a disabled
    **Registration Unavailable** button. Neither may link to a form.
-3. Hover the **help icon next to Adapter and Protocol** using a desktop
-   pointer; keyboard Tab must focus the same shared trigger and show
-   guidance; click/touch toggles, Escape closes. **Important:** Firefox
-   Responsive Design Mode with Android UA/touch emulation may report
-   `(hover: hover) and (pointer: fine)` false; for that device, test click/
-   touch, and switch to desktop pointer emulation to verify actual hover.
-   Do not interpret touch-only hover suppression as a broken tooltip.
+3. **Adapter** and **Protocol** contain no question-mark help triggers in
+   any card. The **Guide** beside the `Choose a Provider` section title
+   remains the only Info Tip. Validate Guide desktop hover and keyboard
+   focus; click/touch toggles and Escape closes. For Android/Firefox touch
+   emulation, test tap rather than desktop pointer hover.
 4. At **390×844** and **360×800** inspect card stacking, no horizontal
    overflow, readable metadata, disabled actions and focus-visible states.
 5. Click GitHub registration; expect existing provider-owned form. Do not
@@ -182,8 +181,35 @@ JS, or a new provider implementation.
    `verify_ui_style.py` if available in the Dev Container.
 
 **Evidence:** exact HEAD SHA, commands/output, 1440×900/390×844
-light/dark screenshots, Adapter and Protocol help observation,
-disabled-planned controls, working GitHub destination, any defect.
+light/dark screenshots, section Guide behavior, absence of Adapter/Protocol
+help icons, single-line planned description at 1440×900, disabled-planned
+controls, working GitHub destination, any defect.
 New candidate executable QA is **NOT RUN** until Dev Container evidence;
 Human Visual Acceptance **PENDING**. Official CI/CD and Full Admission
 remain **HOLD**.
+
+## 2026-10-25 — #3126 refined design acceptance after screenshot
+
+The operator accepted the domain sidebar selection and three-card direction,
+but requested further visual polish: **remove inline question-mark icons from
+Adapter and Protocol**, restore the shared KAORI `palette_icon` adjacent to
+the section **Choose a Provider**, and shorten the planned-provider explanatory
+sentence to `Registration is not yet available.` so it fits one line at
+1440×900. The copy still wraps naturally at phone widths; do not force
+`whitespace-nowrap` or clip/truncate. The **section-level Guide remains**.
+
+The operator's prior Dev Container evidence for the previous candidate:
+`ruff check` PASS; focused pytest **39 PASS**; navigation and sidebar
+verifiers PASS. `ruff format --check` reported two formatting issues
+(`app/integrations/routes.py` and the Integration UI contract test), and
+`djlint --check` reported formatting drift in the shared provider selector.
+These specific formatting findings are incorporated into this refinement.
+This is source-level correction, **not an assertion of new executable QA PASS**.
+
+Re-test: section icon and text baseline; no help glyph beside Adapter or
+Protocol; Guide still opens via keyboard/pointer/touch; shorter planned text
+stays one line at 1440×900 and wraps without overflow at 390×844; Available
+GitHub CTA works; Planned Bitbucket/GitLab registration remains disabled.
+Run Ruff, Ruff Format, djLint, focused pytest, shared sidebar and Integrations
+navigation verifiers in Dev Container. Official admission remains **HOLD**;
+Human Acceptance **PENDING**.
