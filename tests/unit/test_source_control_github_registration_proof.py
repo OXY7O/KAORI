@@ -98,3 +98,28 @@ def test_proof_rejects_missing_tampered_and_expired_tokens(monkeypatch) -> None:
             token=proof, user_id=7, values=values
         )
         assert not valid and 'expired' in error
+
+
+def test_multiline_line_endings_do_not_invalidate_identical_configuration() -> None:
+    """HTMX and native form serialization may use different line endings."""
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'test-only-application-secret'
+    with app.app_context():
+        values = replace(
+            _values(),
+            description='Line one\nLine two',
+            private_key_pem='-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----\n',
+        )
+        token = registration_proof.issue_github_registration_proof(user_id=7, values=values)
+        normalized = replace(
+            values,
+            description='Line one\r\nLine two',
+            private_key_pem='-----BEGIN PRIVATE KEY-----\r\nexample\r\n-----END PRIVATE KEY-----\r\n',
+        )
+        assert registration_proof.verify_github_registration_proof(
+            token=token, user_id=7, values=normalized
+        ) == (True, '')
+        assert registration_proof.verify_github_registration_proof(
+            token=token, user_id=7,
+            values=replace(normalized, private_key_pem=normalized.private_key_pem + 'changed'),
+        )[0] is False
