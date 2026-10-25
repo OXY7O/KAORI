@@ -123,8 +123,8 @@
                         <td colspan="6" class="p-0">
                             {% set empty_state_icon = "route" %}
                             {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
-                            {% set empty_state_title = "No GitHub Repository Coverage Matches the Filters" if coverage_has_active_filters else "No GitHub Repository Coverage Observed" %}
-                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else "Register a GitHub App, complete Full Validation and commit repository access evidence to establish coverage." %}
+                            {% set empty_state_title = "No GitHub Repository Coverage Matches the Filters" if coverage_has_active_filters else ("No Repositories in Committed Coverage" if coverage_observed else "No GitHub Repository Coverage Observed") %}
+                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else ("The latest committed inventory contains no current repository grants; GitHub remains authoritative." if coverage_observed else "Register a GitHub App, complete Full Validation and commit repository access evidence to establish coverage.") %}
                             {% set empty_state_action_url = url_for('github_source.new_connection') if available and uat_workspace_enabled and not coverage_has_active_filters else none %}
                             {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
                             {% set empty_state_action_icon = "plus" %}
