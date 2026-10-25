@@ -68,9 +68,21 @@
              data-analytics-tab-panel="evidence"
              hidden
              class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
-            {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
-            {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
+            {% include "storage/object_storage/analytics/partials/_overview_evidence_snapshot.html" %}
+            <details class="{{ analysis_surface.snapshot_shell_classes() }}" data-object-storage-evidence-details>
+                <summary class="flex cursor-pointer flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <span class="text-xs leading-5 text-content-secondary">Open full reconciliation and contract records when audit detail is required.</span>
+                    <span class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white">
+                        Open Evidence Details
+                        <i data-lucide="chevron-down" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                </summary>
+                <div class="space-y-4 border-t border-outline-subtle p-4 sm:p-5">
+                    {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
+                    {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
+                    {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
+                </div>
+            </details>
         </div>
     </div>
 </section>
