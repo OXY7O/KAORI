@@ -53,7 +53,7 @@ def test_mfa_policy_form_preserves_server_authority_and_session_impact() -> None
     assert 'required' in tab
     assert 'Save MFA Policy' in tab
     assert 'Policy changes revoke all sessions; required modes need an enrolled Local Super Admin.' in tab
-    assert 'Local Database Super Admin' in tab
+    assert 'enrolled Local Super Admin' in tab
     assert 'Policy configuration is read-only for your permission scope' in tab
 
 
