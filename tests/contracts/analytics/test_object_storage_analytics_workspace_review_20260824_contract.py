@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE_ROOT = ROOT / 'app/templates/storage/object_storage/analytics'
 
@@ -212,7 +214,9 @@ def test_object_storage_overview_capacity_trend_is_chart_centered() -> None:
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
     assert "analysis_surface.role_icon_classes('status' if loop.last else 'brand'" in trend
     assert 'for label, value, helper, icon in compact_metrics' in trend
-    assert 'analysis_surface.metric_grid_classes(4)' not in trend  # Both Overview trends reuse three shared signal cells.
+    assert (
+        'analysis_surface.metric_grid_classes(4)' not in trend
+    )  # Both Overview trends reuse three shared signal cells.
     assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
     assert 'data-object-storage-trend-interpretation' in trend
@@ -285,7 +289,9 @@ def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -
         assert source_field in evidence
     assert 'Additional Evidence Context' in workspace
     assert workspace.index('partials/_metrics_readiness.html') < workspace.index('partials/_evidence_boundary.html')
-    assert workspace.index('partials/_evidence_boundary.html') < workspace.index('partials/_overview_evidence_snapshot.html')
+    assert workspace.index('partials/_evidence_boundary.html') < workspace.index(
+        'partials/_overview_evidence_snapshot.html'
+    )
     assert "snapshot.label|default('Unavailable')" in evidence
     assert 'Request and error metrics never fall back to Inventory.' in evidence
     assert 'Unobserved evidence remains Unknown.' in evidence
@@ -318,6 +324,7 @@ def test_object_storage_analytics_overview_headings_and_trend_description_align(
     assert 'bg-surface-card p-4 sm:p-5' in trend
     assert 'sm:grid-cols-3' in trend
     assert 'compact_forecast_overview' in trend
+
 
 def test_object_storage_overview_consumer_reading_is_compact_and_unknown_safe() -> None:
     consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
@@ -372,3 +379,16 @@ def test_object_storage_evidence_shows_full_contract_as_primary_content() -> Non
     assert 'data-object-storage-evidence-details' in workspace
     assert 'Additional Evidence Context' in workspace
     assert 'partials/_reconciliation.html' in workspace
+
+def test_object_storage_analytics_templates_compile_before_http_render() -> None:
+    jinja = Environment()
+    for relative in (
+        'app/templates/storage/object_storage/analytics/index.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_trend.html',
+    ):
+        jinja.parse(read(relative))
+
+    # Flask's 500 originated during Jinja compilation, not from committed metrics.
+    jinja.from_string(read('app/templates/storage/object_storage/analytics/partials/_trend.html'))

@@ -80,33 +80,31 @@
                                             ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed history direction', trend_summary.icon|default('trending-up'))
                                         ] %}
                 {% endif %}
-                {% if compact_overview_trend %}
-                    <div class="overflow-hidden rounded-lg border border-outline-subtle"
-                         data-object-storage-overview-trend-summary>
-                        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
-                            {% for label, value, helper, icon in compact_metrics %}
-                                <div class="min-w-0 bg-surface-card p-4 sm:p-5">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <span class="{{ analysis_surface.role_icon_classes('status' if loop.last else 'brand', trend_summary.tone if loop.last else 'info', 'compact') }}"
-                                              aria-hidden="true">
-                                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                                        </span>
-                                        {% if loop.last %}
-                                            {{ table_label.status_label(trend_summary.direction_label|default('Unknown') , trend_summary.tone|default('unknown'), size='compact') }}
-                                        {% endif %}
-                                    </div>
-                                    <dt class="mt-3 {{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
-                                    <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
-                                        {{ value }}
-                                    </dd>
-                                    <dd class="mt-1 text-xs leading-5 text-content-muted">
-                                        {{ helper }}
-                                    </dd>
+                <div class="overflow-hidden rounded-lg border border-outline-subtle"
+                     data-object-storage-overview-trend-summary>
+                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                        {% for label, value, helper, icon in compact_metrics %}
+                            <div class="min-w-0 bg-surface-card p-4 sm:p-5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="{{ analysis_surface.role_icon_classes('status' if loop.last else 'brand', trend_summary.tone if loop.last else 'info', 'compact') }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    {% if loop.last %}
+                                        {{ table_label.status_label(trend_summary.direction_label|default('Unknown') , trend_summary.tone|default('unknown'), size='compact') }}
+                                    {% endif %}
                                 </div>
-                            {% endfor %}
-                        </dl>
-                    </div>
-
+                                <dt class="mt-3 {{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
+                                <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
+                                    {{ value }}
+                                </dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    {{ helper }}
+                                </dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </div>
             {% endif %}
             <div class="relative {{ 'mt-4 h-[260px] sm:h-[280px]' if compact_overview_trend else 'h-[340px]' }} rounded-lg border border-outline-subtle bg-surface-card p-3"
                  data-object-storage-chart-container>
