@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (129 scenarios)
+# KAORI — Complete Acceptance Case Specifications (133 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 115 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
+**Maturity:** Original 14 first-wave procedures retained; the other 119 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -1258,6 +1258,105 @@
 **Isolation / cleanup:** Use disposable scoped identities and sanitized artifacts. Never mutate production providers. If the provider mutation is relevant, run only in a governed sandbox with before/after read-back and cleanup.
 
 **Automation mapping:** Not validated. Inspect assertions under tests/kubernetes/operations/; tests/platform_operations/test_secret_reveal_htmx_save.py; tests/security/kubernetes/.; do not infer coverage from filename.
+
+### UAT-KOP-006 — Authorized single TLS Secret rotation changes only validated target
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; bounded TLS UI approved on #3116)
+
+**Preconditions:** Isolated Kubernetes TLS Secret in a disposable namespace; committed TLS Governance Secret and Ingress evidence with complete SAN coverage; authorized rotate operator; baseline UID, resourceVersion and fingerprint; fresh matching replacement certificate/key.
+
+**Steps:**
+1. Record the exact UAT candidate SHA, cluster/namespace/Secret identity, actor and initial fingerprint/UID/resourceVersion.
+2. Use Kubernetes Operations single TLS Rotation to upload the matching certificate and private key and click Validate Rotation.
+3. Inspect the ready preview and apply the controlled Update TLS Secret only to the locked target.
+4. Read back Kubernetes Secret tls.crt fingerprint, UID and resourceVersion and run a fresh KAORI TLS Governance sync.
+
+**Expected results:**
+- Validation permits Update only for the matching pair and complete target coverage.
+- Exactly the selected Secret rotates; UID remains stable, resourceVersion advances and the fingerprint equals the replacement certificate.
+- Committed TLS inventory, Activity Audit and notification reflect the actual provider outcome without persisting any private-key material.
+
+**Required evidence:** Operator before/after screenshots, candidate SHA, sanitized validation/activity outcomes, baseline/new fingerprint, UID/resourceVersion and TLS collection JobExecution.
+
+**Isolation / cleanup:** Run only in a disposable namespace and approved sandbox, never on production certificate material; retain sanitized evidence, resync and delete isolated fixtures at completion.
+
+**Automation mapping:** Existing candidate source suites: tests/kubernetes/operations/test_tls_rotation_validation.py, test_tls_secret_mutation_boundary.py and test_tls_update_outcomes.py. Prior operator single-provider fingerprint comparison is separate human evidence; no exact-ID runner attribution yet.
+
+
+### UAT-KOP-007 — Single TLS rotation rejects mismatched private key and uncovered SAN
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; bounded TLS UI approved on #3116)
+
+**Preconditions:** Committed test TLS Secret and mapped disposable Ingress host; original Secret certificate fingerprint, UID and resourceVersion; invalid key from unrelated certificate pair; matching wrong-SAN test pair.
+
+**Steps:**
+1. Record exact selected candidate, actor and original provider identity/fingerprint.
+2. Validate a certificate with a private key belonging to a different test certificate.
+3. Confirm a pair mismatch and disabled Update action; replace with matching certificate/key whose SAN does not cover mapped host.
+4. Validate the wrong-SAN pair; confirm coverage blocker, disabled Update and unchanged provider fingerprint/UID/resourceVersion.
+
+**Expected results:**
+- Mismatched key is rejected and cannot enable the apply action.
+- Matching pair with missing mapped host is blocked by SAN coverage admission.
+- No Secret mutation or false success event occurs; uploaded key values are absent from audit, notifications and screenshots.
+
+**Required evidence:** Two negative validation UI outcomes and status/notification, provider pre/post fingerprint/UID/resourceVersion, no-PATCH evidence when available.
+
+**Isolation / cleanup:** Disposable mismatched and wrong-SAN files only; no patch required, no private key included in GitHub artifacts or documentation.
+
+**Automation mapping:** Existing tests/kubernetes/operations/test_tls_rotation_validation.py plus relevant backend certificate/coverage suites (mapping pending assertion-level audit). Operator screenshots confirm both negative validation outcomes; no exact-ID machine run.
+
+
+### UAT-KOP-008 — Authorized bulk TLS rotation updates exactly two validated Secrets
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; bounded TLS UI approved on #3116)
+
+**Preconditions:** Two checked test TLS Secrets in isolated namespace; committed fresh Secret+Ingress mapping; one replacement pair covering both hosts; bulk Rotate permission; provider UID/resourceVersion/fingerprint baseline; optional unselected control.
+
+**Steps:**
+1. Record the exact candidate, two selected targets, actor, current committed evidence and pre-operation provider fingerprints/UIDs.
+2. Upload the matching bulk certificate/key pair, select both targets and click Validate Selected.
+3. Review the two-target Ready preview and native confirmation showing names, selected count and tls.crt/tls.key impact.
+4. Explicitly click Apply TLS Rotation; inspect per-target success, partial/warning/failure outcome, Activity Audit, and fresh provider read-back.
+5. Recollect TLS Governance, compare fingerprint for both updated Secrets, verify UID unchanged and no unselected mutation.
+
+**Expected results:**
+- Successful preview for exactly two eligible selected targets enables Update Selected; modal accurately scopes both.
+- Only explicitly confirmed selected targets receive the controlled Kubernetes update, with truthful per-target persistence/outcome state.
+- Kubernetes read-back fingerprint equals replacement certificate for each successful target, UID preserved; no secret payload in audit/logs.
+- Failure or persistence gap is not collapsed into all-success; unselected Secrets remain unchanged.
+
+**Required evidence:** Two-target preview screenshot, confirmation screenshot, submitted/response outcome, audit correlation, exact provider fingerprints/UID/resourceVersions for both targets, fresh governance snapshot and cleanup.
+
+**Isolation / cleanup:** Isolated disposable Kubernetes namespace and self-signed certificates; do not execute bulk provider write except in authorized sandbox; no private-key evidence.
+
+**Automation mapping:** Source candidates: tests/kubernetes/operations/test_tls_update_outcomes.py, test_tls_secret_mutation_boundary.py, tests/contracts/kubernetes/test_tls_rotation_workspace_presentation_contract.py. Human evidence currently proves two-target validation and modal only; BULK APPLY AND PROVIDER READ-BACK NOT YET OBSERVED.
+
+
+### UAT-KOP-009 — Bulk TLS confirmation and validation invalidation prevent accidental apply
+
+**Type:** Negative · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** PENDING (per scenario ID; bounded TLS UI approved on #3116)
+
+**Preconditions:** Validated matching test pair and two explicitly checked disposable Secrets; native dialog available in 1440x900 and mobile; keyboard and optional light/dark theme.
+
+**Steps:**
+1. Record exact UAT candidate and open Bulk TLS Rotation; validate two authorized selected targets.
+2. Open confirmation, inspect two names, target count, replacement impact and three compact explanatory sentences at desktop and narrow viewport.
+3. Dismiss without applying using Cancel, close icon, Escape and backdrop; check return focus to launcher and absence of mutation requests.
+4. Change file upload or checkbox target set after successful validation; inspect main and modal apply disabled states.
+5. Revalidate before any permitted action; ensure stale validated UI cannot perform PATCH.
+
+**Expected results:**
+- Native confirmation uses approved KAORI Violet/light-dark semantics and no horizontal overflow on mobile.
+- Cancel/close/Escape/backdrop never mutate the Kubernetes Secret; focus returns to opener.
+- Input or target changes invalidate validation and prevent apply until new successful validation; server-side preflight remains authoritative.
+
+**Required evidence:** Human screenshot review and operator djlint PASS, 8 template contract pytest PASS at holding SHA 4f5f098214d40296037ad6e941f65626c8ad0df4; negative interaction browser trace/focus and no-PATCH audit still require scenario-specific execution.
+
+**Isolation / cleanup:** Use only disposable Secret names and known test certificate; do not show private-key contents; no operation needed during dismissal/invalidation checks.
+
+**Automation mapping:** tests/contracts/kubernetes/test_tls_rotation_workspace_presentation_contract.py, app/static/js/native_dialogs.js and validated_operations.js; full keyboard, focus, mobile/dark and changed-target invalidation not evidenced per-ID.
+
 
 ## Object Storage — Inventory & Analytics
 
@@ -3105,7 +3204,7 @@
 
 ## Review and execution truth
 
-- 129 written test cases are specified; 115 require capability-owner review before acceptance.
+- 133 written test cases are specified; 119 require capability-owner review before acceptance.
 - These files neither trigger CI/CD nor claim any pytest/Playwright, provider/UAT or human PASS.
 - Unavailable or unadmitted functions must be marked BLOCKED and reviewed against current documentation; never invent provider behavior.
 - Maintain exact scenario ID relationships across catalog, Gherkin, pytest/Playwright, execution evidence and human acceptance.
