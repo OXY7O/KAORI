@@ -119,61 +119,22 @@ python scripts/verify_integration_domain_navigation.py
 Temporary `kaori/review/staging-uat` integration only; no official
 Developer Check, CI/CD, Full Admission, staging/main promotion or release.
 
-## 2026-10-25 — Open Source Control action self-navigation remediation
+## 2026-10-25 — Open Source Control self-navigation (historical #3091)
 
-**UAT result: FAIL before fix.** On the approved Source Control domain page
-the operator clicked **Open Source Control** and observed no navigation. This
-was not a missing click handler: the shared workspace link already uses
-`href="{{ url_for(item.workspace_endpoint) }}"`. The registered GitHub
-Integration Kernel descriptor supplied `integrations.source_control`
-as `workspace_endpoint`, which resolves back to the page currently open.
+The operator originally found that **Open Source Control** reloaded its own
+domain because the Source Control IntegrationModule set
+`workspace_endpoint='integrations.source_control'`. Issue #3091 fixed this
+self-link by initially routing to `github_source.index`, the existing
+GitHub provider landing page, without adding special-case template JavaScript.
 
-**Scoped fix:** issue #3091 changes the existing GitHub provider's
-`IntegrationModule.workspace_endpoint` to `github_source.index`,
-the registered provider landing route
-`/integrations/source-control/github/`. This follows the Registry →
-Harbor precedent (`harbor.index`). The domain taxonomy and sidebar
-remain owned by `integrations.source_control`; the provider's existing
-`navigation_endpoint_prefixes` still associate the GitHub page with
-the Source Control sidebar. No new button, HTMX special case, JavaScript
-navigation handler, route, permission or provider operation is introduced.
-
-**Regression ownership:** the existing kernel descriptor unit test no
-longer asserts the incorrect self-link; a new test resolves the GitHub
-provider URL from its real registered Blueprint. The existing Integrations
-UI contract now also guards against using the domain route in the provider
-workspace descriptor while preserving the canonical shared link.
-
-**Evidence state: source implementation and regression code authored;
-executable tests and browser UAT pending.** On the Dev Container holding
-candidate, click **Open Source Control** and confirm the URL changes from
-`/integrations/source-control` to
-`/integrations/source-control/github/`, the GitHub Source Control
-landing page renders, and the Integrations → Source Control sidebar
-remains selected. Browser Back returns to the domain page. If the route
-returns 403 or another HTTP failure, capture the redacted status as a
-separate defect; do not silently mark the navigation PASS.
-
-```bash
-git rev-parse HEAD
-git status --short
-python -m ruff check \
-  tests/unit/test_source_control_github_kernel_contract.py \
-  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
-python -m ruff format --check \
-  tests/unit/test_source_control_github_kernel_contract.py \
-  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
-python -m pytest -q -p no:cacheprovider \
-  tests/unit/test_source_control_github_kernel_contract.py \
-  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
-  tests/ui/test_source_control_github_app_onboarding_contract.py \
-  tests/contracts/integrations/test_integration_domain_navigation_contract.py
-djlint --check app/templates/integrations/partials/_domain_workspace.html
-python scripts/verify_integration_domain_navigation.py
-```
-
-Temporary `kaori/review/staging-uat` UAT only. Webhook ingress,
-consumer, official CI/CD, Full Admission, staging/main and release HOLD.
+**Superseded UAT destination:** after the next operator screenshot, issue
+#3094 established **Register Connection** as the correct first action.
+The canonical IntegrationModule now uses `github_source.new_connection`
+(`/integrations/source-control/github/connections/new`); the provider
+`github_source.index` remains an overview/registry for Back to Registry
+and after-save navigation. The earlier #3091 test and browser instruction
+expecting the landing index as the **first** destination no longer apply.
+Current acceptance commands and steps are in the #3094 section above.
 
 ## 2026-10-25 — Source Control domain UI consistency review
 
