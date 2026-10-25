@@ -44,8 +44,8 @@
     {% endif %}
     <section class="{{ operational_section.shell_classes() }}">
         {{ schedule_policy.header('Snapshot Refresh Policy',
-            'Control scheduling, freshness, fallback and precomputed snapshot coverage.',
-            policy) }}
+                'Control scheduling, freshness, fallback and precomputed snapshot coverage.',
+                policy) }}
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
@@ -55,15 +55,15 @@
             <div class="space-y-5 p-5 sm:p-6">
                 <div class="grid gap-4 lg:grid-cols-12 lg:items-stretch">
                     {{ schedule_policy.toggle(policy_form, can_configure,
-                        'Automatic Snapshot Refresh',
-                        'Run snapshot refreshes from the saved policy.',
-                        icon='calendar-check',
-                        span='lg:col-span-6') }}
+                                        'Automatic Snapshot Refresh',
+                                        'Run snapshot refreshes from the saved policy.',
+                                        icon='calendar-check',
+                                        span='lg:col-span-6') }}
                     {{ schedule_policy.interval(policy_form, definition, can_configure,
-                        label='Execution Interval',
-                        span='lg:col-span-3',
-                        policy_error=policy_error|default(none)) }}
-                    
+                                        label='Execution Interval',
+                                        span='lg:col-span-3',
+                                        policy_error=policy_error|default(none) ) }}
+
                     <label class="rounded-xl border border-outline-default bg-surface-hover px-4 py-4 lg:col-span-3">
                         <span class="text-xs font-semibold text-content-secondary">Snapshot Freshness</span>
                         <div class="relative mt-2">{{ policy_form.freshness_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20", disabled=not can_configure) }}<span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span></div>
