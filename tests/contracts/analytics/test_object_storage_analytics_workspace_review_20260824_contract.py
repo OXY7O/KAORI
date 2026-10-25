@@ -176,6 +176,7 @@ def test_provider_alert_records_clear_filters_precedes_persistent_source_context
     assert "alert_table.state != 'all'" in source
     assert 'hx-target="#object-storage-alert-records"' in source
 
+
 def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
     overview = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
