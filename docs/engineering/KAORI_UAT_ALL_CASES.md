@@ -1,8 +1,8 @@
-# KAORI — Complete Acceptance Case Specifications (116 scenarios)
+# KAORI — Complete Acceptance Case Specifications (129 scenarios)
 
 **Authority:** #1738 scenario catalog / #1725 QA contract. Test procedures are proposed acceptance specifications, not machine execution results. Every written case still requires exact-candidate executable test-node mapping, runtime evidence and separate human sign-off.
 
-**Maturity:** Original 14 first-wave procedures retained; the other 102 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
+**Maturity:** Original 14 first-wave procedures retained; the other 115 are expanded and require capability-owner review. No machine scenario is counted PASS. Each newly authored Gherkin ID remains NOT RUN for scenario-attributed automation evidence. The operator explicitly Human Accepted the bounded Kubernetes Admin Batch 01–06 workflow under #2605 and Kubernetes Operations Dashboard on #937 (four tabs plus selected report download), while unexercised security and visual coverage remains a separate QA backlog.
 
 **Runtime:** Existing pytest/Playwright runners only; real-provider/destructive operations require approved sandbox. Screenshots, traces, JUnit, committed data and audit evidence must be candidate/run-bound.
 
@@ -2076,6 +2076,205 @@
 
 **Automation mapping:** Not validated. Inspect assertions under tests/platform_operations/jobs/; tests/contracts/platform_operations/; tests/ui/.; do not infer coverage from filename.
 
+### UAT-OPS-005 — Operations Overview presents committed workspace posture in compact cards
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Operator visually accepted Overview screenshot and one-line refinement; do not claim a machine Scenario-ID PASS
+
+**Preconditions:** an authorized operator can view Jobs, Data Lifecycle and Kubernetes Administration from committed KAORI state Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator opens Operations Center Overview and compares the three workspace cards and Platform Posture Hero.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Three permissioned workspace cards show canonical domain status, three evidence metrics, compact one-line descriptions and source-owned navigation with a matching overall review posture.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** 2026-10-25 screenshot and operator UI acceptance; #3110 focused 9 pytest PASS, djLint PASS, Ruff check/format PASS; no individual scenario-attributed browser trace. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/test_platform_operations_overview_final_lock_contract.py; app/platform_operations/overview/presentation.py; #1633/#3110. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-006 — Jobs configuration catalog and schedule controls retain operational context
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Human UAT accepted the tested design/functions; disabled controls awaiting full feature cycle excluded
+
+**Preconditions:** a permitted Jobs operator and the registered 19-job configuration catalog with known committed schedules Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator searches and selects Jobs, reviews schedule policy and execution details, then uses the compact catalog footer Guide.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- The selected job follows the URL and HTMX navigation, search count updates, schedule controls and one-line Scope remain aligned, and the Guide opens above the footer without a horizontal scrollbar.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator accepted Jobs Configuration UI; focused 29 pytest PASS across Jobs and Lifecycle contracts at earlier tested SHA; no exact Gherkin-ID browser artifact. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/jobs/test_job_configuration_catalog_search_a11y_contract.py; test_job_configuration_workspace_redesign_contract.py; #3090/#3102. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-007 — Report dispatcher shows compact committed delivery channels
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Human accepted the visible channel presentation, not every scaled fixture
+
+**Preconditions:** a permitted Reports Schedule Dispatcher operator and known configured committed notification channels Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator views Delivery Channels with zero, one or multiple selected channels and inspects their status labels.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- The bounded keyboard-scrollable channel rows show names, statuses, singular or plural count and an explicit empty state without oversized cards or additional provider requests.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator visual acceptance of compact channel list and screenshot; 0/many-channel controlled browser matrix not individually supplied. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html; #3090. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-008 — Guarded empty-inventory recovery guidance stays adjacent and manual
+
+**Type:** Positive · **Layer:** UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Presentation accepted; protected mutation flow not exercised in this batch
+
+**Preconditions:** a permitted operator views Object Storage or Artifact Registry Job Configuration in a safe non-mutating session Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator reads each Guarded Recovery title, opens its canonical Guide and examines target selectors and confirmation controls without submitting.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Shared Violet cards retain the manual-only warning and full fail-closed Guide beside the title; the CONFIRM EMPTY challenge, CSRF and verification action remain identifiable but unexecuted.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator approved guarded recovery presentation; no empty reconciliation request or provider mutation was authorized. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; definitions/object_storage_inventory_sync.html; definitions/artifact_registry_inventory_sync.html; #3090. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-009 — Overview reflects scheduler policy dispatch failure without an execution
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Not individually executed; do not mark Human Accepted negative path
+
+**Preconditions:** a disposable committed JobPolicy with failed or evidence_failed dispatch status and no matching JobExecution Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. A permitted actor opens Overview and Jobs Configuration for that state.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Jobs posture is Needs Attention and the policy attention remains visible without fabricating completed or active executions; only persisted read models are queried.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Source contract and synthetic DB fixture/JUnit needed; no operator failure-injection run supplied. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: app/platform_operations/jobs/configuration.py::build_job_configuration_attention_summary; app/platform_operations/overview/presentation.py; #1635. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-010 — Restricted role cannot reach unauthorized Operations Overview content
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Not individually executed with restricted roles
+
+**Preconditions:** synthetic principals with jobs.configure only, jobs.view only and mixed access without unrelated permissions Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. Each principal requests the Overview URL directly, follows permitted Welcome shortcut and inspects Operating Boundaries.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Configure-only access does not grant Overview, view-only and mixed roles see only permitted workspace cards and links, and no restricted data or actions leak.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Role-scoped Flask/browser denial and read-only DB fixture needed; current screenshot was made with a privileged operator. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: app/platform_operations/overview/routes.py; app/welcome/shortcuts.py; tests/contracts/platform_operations/test_platform_operations_overview_final_lock_contract.py; #1637. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-011 — Guarded reconciliation fails closed on mismatched provider discovery
+
+**Type:** Negative · **Layer:** Non-UI · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Not executed; only manual control appearance accepted
+
+**Preconditions:** an isolated eligible Storage or Registry instance with a last-good committed inventory and intentionally mismatched first and second discovery results Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. A properly authorized disposable test actor submits CONFIRM EMPTY with the required CSRF token.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Provider mismatch or changed snapshot rejects reconciliation and preserves the committed inventory without deleting records or claiming success.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Requires explicitly approved disposable fake/isolated provider, provider-call ledger, persisted before/after snapshot and audit; not run during visual-only UAT. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/jobs/test_job_configuration_workspace_redesign_contract.py; owning storage/registry reconciliation tests; #1592/#3090. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-OPS-012 — Unfinished feature-cycle controls remain transparently unavailable
+
+**Type:** Negative · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Human accepted truthful disabled presentation; feature-cycle completion remains blocked
+
+**Preconditions:** a Jobs Configuration capability whose action is intentionally disabled until its owning feature implementation finishes Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator inspects the disabled action, readiness text and execution history without trying to bypass the server boundary.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Disabled status remains truthful, the UI does not imply a completed or executable capability, and no mutation or fake success is recorded.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator explicitly reported disabled controls awaiting full feature cycle; per-feature end-to-end actions were not exercised. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: app/templates/platform_operations/jobs/configuration/; #1592/#3090. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
 ## Platform Operations — Data Lifecycle & Secret Reveal
 
 **Owner:** app/platform_operations/data_lifecycle/; app/platform_operations/kubernetes/.  
@@ -2379,6 +2578,130 @@
 **Isolation / cleanup:** Use existing stable UI fixtures and the canonical Visual QA harness; do not rebaseline without human review.
 
 **Automation mapping:** Existing candidate suites: `tests/ui/; tests/contracts/platform_operations/test_kubernetes_admin_namespace_filter_a11y_contract.py`. Individual assertion-to-ID mapping and machine execution **not validated**; do not invent an executable UAT PASS.
+
+### UAT-LIF-014 — Lifecycle nine-domain navigator and boundary Guide remain consistent
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Human accepted visible navigation and footer; full viewport/theme matrix not individually recorded
+
+**Preconditions:** a permitted Data Lifecycle operator with the nine registered domain definitions and committed policy coverage Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator searches, selects a domain, switches Retention Policies, Archive Storage and Archive History and opens the boundary Guide.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Domain selection and count remain consistent across navigation, responsive cards preserve selected state, and the Execution Boundary Guide opens above a one-row no-scroll footer.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator Data Lifecycle UI acceptance; 29 focused Jobs/Lifecycle pytest PASS at earlier SHA and Platform Final Lock 93-template PASS; exact new scenario browser trace unavailable. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/test_data_lifecycle_domain_navigator_contract.py; app/templates/platform_operations/data_lifecycle/index.html; #3102/#2907. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-LIF-015 — Archive Only preserves verified artifacts and audit evidence
+
+**Type:** Positive · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Previous human Archive Only approval, not an inferred full-machine scenario PASS
+
+**Preconditions:** an operator has an approved bounded Archive Only workflow on disposable eligible records and a verified archive destination Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator invokes the admitted Archive Only workflow and reviews Archive History and committed job evidence.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Verified archive/manifests and audit evidence are retained, records remain governed without unapproved purge, and the operator sees an attributable outcome.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator previously confirmed Archive Only end-to-end and functional regression UAT approved; exact Gherkin-ID automation attribution and current candidate digest not recorded. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/test_data_lifecycle_archive_reverify_contract.py; test_data_lifecycle_complete_uat_matrix_contract.py; #2907/#1569. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-LIF-016 — Archive Storage and History remain readable without extra mutation
+
+**Type:** Positive · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Visual/functional acceptance of tested paths; explicit re-verification evidence remains separate
+
+**Preconditions:** a permitted operator with committed lifecycle archive artifacts, including historical state and storage posture Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator reviews Archive Storage and Archive History, filters committed rows and opens the available Verify read path.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Storage guidance and bounded history rows remain readable, pagination/search preserve context and read-only evidence does not initiate cleanup.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator accepted Data Lifecycle UI, including Archive Storage refinement; comprehensive history filter and Verify browser fallback not individually scenario-attributed. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/test_data_lifecycle_history_filter_rows_contract.py; test_data_lifecycle_history_verify_browser_contract.py; #2907/#2972/#2974. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-LIF-017 — Paused lifecycle adapters are not mistaken for admitted cleanup
+
+**Type:** Negative · **Layer:** UI · **Risk:** Medium · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Deferred feature-cycle coverage, not end-to-end UAT
+
+**Preconditions:** an AuditEvent or Notification Delivery lifecycle adapter that is present but paused or disabled pending its owning feature cycle Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The operator examines Data Lifecycle capability coverage and related read-only status.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- Paused/disabled posture remains explicit and no archive, retention or destructive action is presented as admitted or automatically successful.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Operator confirmed some controls remain disabled pending full-cycle implementation; no activation or retention mutation was tested. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: app/templates/platform_operations/data_lifecycle/; tests/contracts/platform_operations/test_data_lifecycle_audit_event_operational_ui_contract.py; #2889/#2847. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
+
+
+### UAT-LIF-018 — Unverified archive or unauthorized lifecycle mutation preserves source
+
+**Type:** Negative · **Layer:** Both · **Risk:** High · **Maturity:** Newly expanded specification — capability-owner review required · **Execution:** NOT RUN · **Human acceptance:** Unexecuted negative boundary; keep under QA/feature admission backlog
+
+**Preconditions:** a restricted principal or an isolated archive verification failure and an intact disposable lifecycle dataset Record exact candidate, actor and relevant committed source identity. Never use production mutation to prepare this scenario.
+
+**Steps:**
+1. Record the candidate SHA, authorized role, scoped DB/provider fixture and baseline source state.
+2. The actor attempts a lifecycle policy/run mutation without required authority or with invalid verification evidence.
+3. Compare the output with its owning domain view, status/permission rule and applicable audit evidence.
+4. Capture sanitized screenshots and an actual test-node result if executed; report omitted/disabled scenarios as NOT RUN or BLOCKED.
+
+**Expected results:**
+- The server rejects the request or blocks cleanup, reports an actionable state, and retains committed original records and independent archive evidence.
+- No hidden provider call, unexpected mutation, cross-domain authority duplication or invented successful evidence.
+
+**Required evidence:** Requires isolated synthetic failure/role fixture, exact denied response, persisted before/after and audit; not exercised by accepted visual UAT. Candidate-bound browser screenshot/trace and pytest JUnit when run; permission/committed DB and provider read-back only where authorized.
+
+**Isolation / cleanup:** Read-only inspection by default. Use deterministic, disposable synthetic fixtures for negative tests. Never invoke recovery, purge, direct POST or queue mutation on production; restore all isolated state and preserve audit correlation.
+
+**Automation mapping:** Candidate source/test owners only: tests/contracts/platform_operations/test_data_lifecycle_archive_reverify_contract.py; test_data_lifecycle_mutation_domain_contract.py; #1569/#2907. Inspect node-level assertions before any Scenario-ID PASS claim.
+
+**Execution:** NOT RUN
 
 ## Welcome Workspace Catalog
 
@@ -2782,7 +3105,7 @@
 
 ## Review and execution truth
 
-- 98 written test cases are specified; 84 require capability-owner review before acceptance.
+- 129 written test cases are specified; 115 require capability-owner review before acceptance.
 - These files neither trigger CI/CD nor claim any pytest/Playwright, provider/UAT or human PASS.
 - Unavailable or unadmitted functions must be marked BLOCKED and reviewed against current documentation; never invent provider behavior.
 - Maintain exact scenario ID relationships across catalog, Gherkin, pytest/Playwright, execution evidence and human acceptance.
