@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_planned_source_control_reuses_canonical_integration_templates() -> None:
+def test_source_control_reuses_canonical_integration_templates() -> None:
     domain = (ROOT / 'app/templates/integrations/domain.html').read_text()
     workspace = (ROOT / 'app/templates/integrations/partials/_domain_workspace.html').read_text()
     assert 'page_hero.shell_classes()' in domain
@@ -16,7 +16,8 @@ def test_planned_source_control_reuses_canonical_integration_templates() -> None
     assert 'registry_ui.filter_form(' in workspace
     assert "domain.key == 'source_control'" in workspace
     assert "workspace_tabs = [workspace_tabs[0]]" in workspace
-    assert 'GitHub App onboarding remains planned' in workspace
+    assert 'Source Control Connections' in workspace
+    assert 'Review Source Control provider requirements and readiness.' in workspace
 
 
 def test_source_control_route_reuses_existing_shared_domain_renderer() -> None:

@@ -1,21 +1,21 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as ui %}
-{% block title %}GitHub App UAT · KAORI{% endblock title %}
+{% block title %}GitHub App Installations · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
     {% call page_hero.intro("git-branch", "Source Control", "shield-check") %}
-        <h1 class="{{ page_hero.title_classes() }}">GitHub App · UAT Workspace</h1>
+        <h1 class="{{ page_hero.title_classes() }}">GitHub App Installations</h1>
         <p class="{{ page_hero.description_classes() }} mt-2">
             Review installation-specific validation and committed repository evidence.
         </p>
                 {% endcall %}
             </div>
             {{ page_hero.context_card(
-                "Source Control UAT", "Admission", "Installation Workspace",
+                "Installation Registry", "Source Control", "GitHub App",
                 "Restricted", "warning",
                 [("plug", "Connections", installations|length),
                  ("shield-check", "Access", "Local Admin")],
@@ -25,7 +25,7 @@
         </div>
     </section>
     <section class="{{ ui.section_shell_classes() }}">
-        {{ ui.section_header("shield-check", "Authorized GitHub App Installations", "Restricted Dev Container UAT · local super-admin only") }}
+        {{ ui.section_header("shield-check", "Registered GitHub App Installations", "Installation-scoped evidence · authorized administrators") }}
         <div class="divide-y divide-outline-subtle">
             {% for installation in installations %}
                 {% set canonical = installation.integration_instance %}

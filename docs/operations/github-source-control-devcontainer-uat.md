@@ -22,61 +22,119 @@ In the Dev Container running this UAT branch, sign in as an active local super-a
 
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
-## 2026-10-25 — Open Source Control action self-navigation remediation
+## 2026-10-25 — Source Control registration-first workspace and functional QA
 
-**UAT result: FAIL before fix.** On the approved Source Control domain page
-the operator clicked **Open Source Control** and observed no navigation. This
-was not a missing click handler: the shared workspace link already uses
-`href="{{ url_for(item.workspace_endpoint) }}"`. The registered GitHub
-Integration Kernel descriptor supplied `integrations.source_control`
-as `workspace_endpoint`, which resolves back to the page currently open.
+**Authority:** Issue #3094, scoped child of reviewed Integrations UI
+issue #3085 and correction of #3091's final destination. Operator confirmed
+Open Source Control navigation now works but showed that it entered a
+staging-oriented provider overview instead of the reusable
+**Register Connection** form. The same operator's Dev Container run reported
+`ruff check` PASS, `ruff format --check` FAIL (two exact wraps in the GitHub
+Kernel unit contract), **24 passed / 1 failed** pytest, and
+`verify_integration_domain_navigation.py` PASS. The failing onboarding
+assertion expected a hardcoded GitHub link in the shared domain template;
+this expectation became obsolete when KAORI switched to
+`url_for(item.workspace_endpoint)`.
 
-**Scoped fix:** issue #3091 changes the existing GitHub provider's
-`IntegrationModule.workspace_endpoint` to `github_source.index`,
-the registered provider landing route
-`/integrations/source-control/github/`. This follows the Registry →
-Harbor precedent (`harbor.index`). The domain taxonomy and sidebar
-remain owned by `integrations.source_control`; the provider's existing
-`navigation_endpoint_prefixes` still associate the GitHub page with
-the Source Control sidebar. No new button, HTMX special case, JavaScript
-navigation handler, route, permission or provider operation is introduced.
+**Registration-first alignment:** the canonical provider IntegrationModule
+workspace endpoint is now `github_source.new_connection` (existing
+`/integrations/source-control/github/connections/new`). The
+**Open Source Control** domain CTA therefore lands on the existing
+`Register GitHub App Connection` page using the reusable
+`_provider_registration_hero.html`, exactly as the Harbor/Vault
+registration forms use it. The GitHub `index` endpoint is preserved
+for **Back to Registry**, after-save redirect, connection summary and
+authorized **Manage Installations** access. The Source Control workspace
+heading is now **Source Control Connections**, while the Provider Registry
+tab, shared search/filter/reset, and pagination remain unchanged.
 
-**Regression ownership:** the existing kernel descriptor unit test no
-longer asserts the incorrect self-link; a new test resolves the GitHub
-provider URL from its real registered Blueprint. The existing Integrations
-UI contract now also guards against using the domain route in the provider
-workspace descriptor while preserving the canonical shared link.
+**User-visible terminology:** GitHub provider summary, installation
+registry, installation detail and connection form use operational names
+rather than `UAT`, `planned` or `design review` placeholders. Internal
+`github_source_uat` endpoint names and scoped local-super-admin guard
+are intentionally unchanged; normal HTTP GETs still read committed KAORI
+data, and Full Validation / repository sync remain governed mutations.
+The actual provider lifecycle remains authoritative: disabling provider
+registration still blocks credentials. No fake ready state or fabricated
+repository count was introduced.
 
-**Evidence state: source implementation and regression code authored;
-executable tests and browser UAT pending.** On the Dev Container holding
-candidate, click **Open Source Control** and confirm the URL changes from
-`/integrations/source-control` to
-`/integrations/source-control/github/`, the GitHub Source Control
-landing page renders, and the Integrations → Source Control sidebar
-remains selected. Browser Back returns to the domain page. If the route
-returns 403 or another HTTP failure, capture the redacted status as a
-separate defect; do not silently mark the navigation PASS.
+**New regression ownership:** existing Kernel unit and Integrations
+onboarding/sidebar/UI contracts now assert registration-first routing,
+real Blueprint URL, canonical shared provider link, shared registration
+Hero, operational user-visible labels and correct credential/authorization
+gates. Obsolete self-route and hardcoded link expectations were corrected.
+
+**QA evidence: NOT RUN on new code**, and no new browser Human Acceptance
+has been received yet. Run focused existing gates from a clean updated
+holding candidate:
 
 ```bash
 git rev-parse HEAD
 git status --short
 python -m ruff check \
   tests/unit/test_source_control_github_kernel_contract.py \
-  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/ui/test_source_control_integration_workspace_contract.py
 python -m ruff format --check \
-  tests/unit/test_source_control_github_kernel_contract.py \
-  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
-python -m pytest -q -p no:cacheprovider \
   tests/unit/test_source_control_github_kernel_contract.py \
   tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
   tests/ui/test_source_control_github_app_onboarding_contract.py \
-  tests/contracts/integrations/test_integration_domain_navigation_contract.py
-djlint --check app/templates/integrations/partials/_domain_workspace.html
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/ui/test_source_control_integration_workspace_contract.py
+python -m pytest -q -p no:cacheprovider \
+  tests/unit/test_source_control_github_kernel_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/ui/test_source_control_integration_workspace_contract.py
+djlint --check \
+  app/templates/integrations/partials/_domain_workspace.html \
+  app/templates/integrations/source_control/github/index.html \
+  app/templates/integrations/source_control/github/form.html \
+  app/templates/integrations/source_control/github/uat_index.html \
+  app/templates/integrations/source_control/github/uat_detail.html
 python scripts/verify_integration_domain_navigation.py
 ```
 
-Temporary `kaori/review/staging-uat` UAT only. Webhook ingress,
-consumer, official CI/CD, Full Admission, staging/main and release HOLD.
+**Targeted Human UAT (no real mutation required first):**
+1. Open Integrations → Source Control → **Open Source Control** and confirm
+   the page is **Register GitHub App Connection** with real form fields and
+   working Cancel/Back to Registry navigation.
+2. From the Registry, click **Register Connection** and confirm the same
+   reusable registration page.
+3. In the registered installation overview, confirm **Manage Installations**
+   and **Installation Registry** and absence of user-visible temporary
+   staging/UAT labels. Review light/dark and mobile layout.
+4. For the full functional cycle use only a dedicated approved GitHub App
+   test installation, validate identity through **Test Connection**, save
+   once, inspect the committed record, then run **Full Validation** and
+   repository sync under the existing local-super-admin permission boundary.
+   Do not expose PEM, webhook secret, signed token or provider payload.
+   Do not enable public webhook ingress for this initial UI verification.
+
+**Hold:** source code/contract authorship is not executable or Human PASS.
+Temporary `kaori/review/staging-uat` integration only; no official
+Developer Check, CI/CD, Full Admission, staging/main promotion or release.
+
+## 2026-10-25 — Open Source Control self-navigation (historical #3091)
+
+The operator originally found that **Open Source Control** reloaded its own
+domain because the Source Control IntegrationModule set
+`workspace_endpoint='integrations.source_control'`. Issue #3091 fixed this
+self-link by initially routing to `github_source.index`, the existing
+GitHub provider landing page, without adding special-case template JavaScript.
+
+**Superseded UAT destination:** after the next operator screenshot, issue
+#3094 established **Register Connection** as the correct first action.
+The canonical IntegrationModule now uses `github_source.new_connection`
+(`/integrations/source-control/github/connections/new`); the provider
+`github_source.index` remains an overview/registry for Back to Registry
+and after-save navigation. The earlier #3091 test and browser instruction
+expecting the landing index as the **first** destination no longer apply.
+Current acceptance commands and steps are in the #3094 section above.
 
 ## 2026-10-25 — Source Control domain UI consistency review
 

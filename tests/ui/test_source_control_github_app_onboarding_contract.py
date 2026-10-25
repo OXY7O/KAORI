@@ -22,7 +22,9 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert 'integrations/components/_workspace.html' in form
     assert 'integration_ui.section_shell_classes()' in form
     assert "domain.key == 'source_control'" in workspace
-    assert "url_for('github_source.index')" in workspace
+    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
+    assert "workspace_endpoint='github_source.new_connection'" in kernel
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
     assert 'bg-kaori-primary' in form
@@ -40,9 +42,7 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
 
 
 def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     assert "@permission_required('integrations.manage')" in routes
     assert "if request.method == 'POST' and not available:" in routes
     assert 'abort(409)' in routes
@@ -54,22 +54,58 @@ def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
 
 
 def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     landing = _source('app/templates/integrations/source_control/github/index.html')
     assert 'registered: int | None = None' in routes
     assert 'ready: int | None = None' in routes
     assert 'if available:' in routes
     assert 'Not Observed' in landing
-    assert 'Not Admitted' in landing
-    assert 'Provider Admission' in landing
+    assert 'Repository Evidence' in landing
+    assert 'Connection Registry' in landing
+    assert 'Register Connection' in landing
 
 
 def test_blueprint_is_registered_using_existing_bootstrap() -> None:
     bootstrap = _source('app/bootstrap/blueprints.py')
-    assert 'from app.integrations.source_control.source_control.providers.github.application.routes import github_source_bp' in bootstrap
+    assert (
+        'from app.integrations.source_control.source_control.providers.github.application.routes '
+        'import github_source_bp'
+    ) in bootstrap
     assert 'github_source_bp,' in bootstrap
     assert "url_prefix='/integrations/source-control/github'" in _source(
         'app/integrations/source_control/source_control/providers/github/application/routes.py'
     )
+
+
+def test_source_control_opens_shared_registration_before_connection_overview() -> None:
+    kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    index = _source('app/templates/integrations/source_control/github/index.html')
+
+    assert "workspace_endpoint='github_source.new_connection'" in kernel
+    assert "@github_source_bp.route('/connections/new', methods=['GET', 'POST'])" in routes
+    assert 'integrations/components/_provider_registration_hero.html' in form
+    assert 'registration_hero.render(' in form
+    assert 'Register GitHub App Connection' in form
+    assert "url_for('github_source.index')" in form  # Shared Back to Registry.
+    assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
+    assert '"Register Connection", url_for("github_source.new_connection")' in index
+    assert 'Manage Installations' in index
+
+
+def test_source_control_operational_templates_have_no_temporary_uat_copy() -> None:
+    for name in ('index.html', 'form.html', 'uat_index.html', 'uat_detail.html'):
+        template = _source(f'app/templates/integrations/source_control/github/{name}')
+        assert 'UAT' not in template, name
+        assert 'planned' not in template.lower(), name
+        assert 'design review' not in template.lower(), name
+
+    domain = _source('app/templates/integrations/partials/_domain_workspace.html')
+    assert 'Source Control Connections' in domain
+    assert 'GitHub App onboarding remains planned' not in domain
+    # Endpoint names remain internal; permission and admission gates stay intact.
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    assert 'require_uat_access()' in routes
+    assert "@permission_required('integrations.manage')" in routes
+    assert "if request.method == 'POST' and not available:" in routes
