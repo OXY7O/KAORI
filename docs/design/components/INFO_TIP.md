@@ -75,6 +75,37 @@ line in the reviewed 1440×900 viewport without changing other providers.
 The shared Overview Guide does not alter KPI counts, operational readiness,
 repository evidence, provider admission or backend behavior.
 
+## Integration Workspace heading and Guide
+
+All seven provider Integration landing pages (Kubernetes, Metrics Source,
+Alertmanager, MinIO, Harbor, Vault, GitHub) use the shared
+`components/integration_workspace_tabs.html` adapter. Its section heading
+is **outside** the existing operational card: **Provider Connections &
+Coverage** with the concise description **Monitor provider readiness,
+committed coverage, and registered connections.** This heading uses existing
+KAORI palette icons, semantic typography, and responsive spacing rather than
+duplicated provider templates.
+
+**Inside** the card, the existing **Integration Workspace** title owns a
+single compact Violet `Guide` immediately beside it. The adapter passes
+the canonical `info_tip.render(..., placement="right", variant="guide")`
+as optional `title_extra` to the existing
+`integrations/components/_workspace.html::section_header` macro.
+This preserves the generic section header's default rendering for callers
+without `title_extra` and keeps the Guide separate from right-aligned
+operational actions. The Guide explains **Integration Coverage** (observed
+and committed evidence where available), **Connection Registry** (canonical
+registration and readiness), and the **Authority Boundary** (external
+providers own native resources; KAORI normalizes and correlates committed
+evidence). Do not imply that all external source inventory is already
+complete, nor hide required readiness/errors in contextual help.
+
+The two provider tabs, their URL-backed state, HTMX/Alpine behavior, default
+five-row pagination, and connection authorization are unchanged. The existing
+`info_tips.js` controller remains the only hover, focus, click/touch, Escape
+and viewport-portal implementation. No individual provider page may add
+another workspace Guide or a new script for this shared header.
+
 ## Interaction and responsive behavior
 
 Info Tip uses **one non-modal anchored popover** for every input method.
