@@ -13,7 +13,7 @@
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("git-branch", "code", "GitHub Integrations",
-                "Register GitHub App connections with governed readiness and committed Source Control evidence.",
+                "Register GitHub Apps with governed Source Control evidence.",
                 stats.total, stats.ready, stats.grants, posture_status,
                 url_for("github_source.new_connection") if available else url_for("integrations.choose_integration_provider", integration_type="source_control") ,
         association_label="Repository Grants", association_description="Committed installation repository grants") }}
