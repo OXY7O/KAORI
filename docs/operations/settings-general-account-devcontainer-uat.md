@@ -103,8 +103,30 @@ test-fixture context reuse. All mutations remain mocked; no production
 route or CSRF validation policy changed. Apply the operator-supplied
 Ruff format adjustments for the same test module.
 
-**Corrected HTTP regression: runtime PENDING** until the operator reruns
-the following existing checks in Dev Container on the merged holding SHA:
+**Corrected HTTP regression: PASS (operator Dev Container, 2026-10-25).**
+The operator supplied the exact tested SHA
+`007f6fa60c636300627e65778d322a1259e407d5`, identical to the
+remote `kaori/review/staging-uat` HEAD during evidence reconciliation.
+The tested contract file blob is **identical** to the #3077 fixture-fix
+merge blob, even though the tested HEAD also includes an unrelated
+Jobs formatting PR #3078. The submitted results:
+
+| Focused verification | Actual result |
+| --- | --- |
+| `ruff check` — negative contract module | **PASS — All checks passed!** |
+| `ruff format --check` — same module | **PASS — 1 file already formatted** |
+| `pytest` — Settings negative contract module | **PASS — 24 passed in 6.49s** |
+| `verify_settings_final_lock.py` | **PASS — Settings Final Lock v1 · 18 templates** |
+
+The previously failing `other_session` case now passes together with
+the other authenticated HTTP CSRF cases and the existing negative
+contracts. This is scoped, isolated HTTP regression evidence with synthetic
+sessions and mocked DB commit, not an observed real-user network HAR or
+formal DAST certification. No new browser screenshot, `git status`,
+or separate before/after timezone evidence accompanied this rerun.
+
+The following commands are retained for reproducibility at subsequent
+official candidate SHAs:
 
 ```bash
 git rev-parse HEAD
@@ -115,8 +137,8 @@ python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_settings_u
 python scripts/verify_settings_final_lock.py
 ```
 
-Passing these tests will close the **targeted HTTP CSRF regression evidence
-gap**, not certify arbitrary production-browser CSRF exploitability,
+These passing tests close the **targeted HTTP CSRF regression evidence
+gap** at the tested SHA. They do not certify arbitrary production-browser CSRF exploitability,
 comprehensive DAST, independent scheduler/canonical UTC data mutation proofs,
 or an end-to-end screen-reader evaluation. These are not prerequisites for
 *starting a different page's local Dev Container UAT*; track each in its
