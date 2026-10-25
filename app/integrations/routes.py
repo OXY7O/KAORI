@@ -174,11 +174,7 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
                 if kind.adapter_key == 'not_implemented'
                 else kind.adapter_key.replace('_', ' ').title()
             ),
-            'protocol': (
-                'Not defined'
-                if kind.protocol == 'not_defined'
-                else kind.protocol.replace('_', ' ').upper()
-            ),
+            'protocol': ('Not defined' if kind.protocol == 'not_defined' else kind.protocol.replace('_', ' ').upper()),
             'lifecycle': kind.lifecycle,
             'available': kind.available,
             'registration_url': (
