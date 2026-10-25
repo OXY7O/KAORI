@@ -201,3 +201,64 @@ def test_metrics_provider_selector_uses_compact_hero_and_shared_info_tips() -> N
     assert 'href="{{ provider.registration_url }}"' in selector
     assert 'Register {{ provider.label }}' in selector
     assert "url_for('integrations.register_metrics_source', provider_key=provider.key)" in routes
+
+
+
+def test_source_control_provider_matrix_declares_planned_inert_provider_choices() -> None:
+    from app.integrations.provider_matrix import provider_kinds
+
+    kinds = {provider.key: provider for provider in provider_kinds('source_control')}
+    assert set(kinds) == {'github', 'gitlab', 'bitbucket'}
+    assert kinds['github'].available is True
+    assert kinds['github'].lifecycle == 'available'
+    assert kinds['github'].adapter_key == 'github_rest_v3'
+
+    for key in ('gitlab', 'bitbucket'):
+        assert kinds[key].lifecycle == 'planned'
+        assert kinds[key].available is False
+        assert kinds[key].adapter_key == 'not_implemented'
+        assert kinds[key].protocol == 'not_defined'
+
+
+def test_source_control_provider_card_registration_is_provider_owned_and_disabled_when_planned() -> None:
+    route = read('app/integrations/routes.py')
+    selector = read('app/templates/integrations/provider_selector.html')
+
+    assert "sorted(provider_kinds(integration_type), key=lambda kind: (not kind.available, kind.label.casefold()))" in route
+    assert "'lifecycle': kind.lifecycle" in route
+    assert "('source_control', 'github'): 'github_source.new_connection'" in route
+    assert "('source_control', 'gitlab')" not in route
+    assert "('source_control', 'bitbucket')" not in route
+    assert 'data-kaori-provider-card-grid' in selector
+    assert 'xl:grid-cols-3' in selector
+    assert 'data-kaori-provider-lifecycle="{{ provider.lifecycle }}"' in selector
+    assert 'table_label.status_label("Planned", "unknown")' in selector
+    assert 'table_label.status_label("Available", "normal")' in selector
+    assert 'if provider.registration_url' in selector
+    assert 'href="{{ provider.registration_url }}"' in selector
+    assert 'data-kaori-provider-register' in selector
+    assert 'data-kaori-provider-disabled' in selector
+    assert "action_button.classes('locked-info', full=true)" in selector
+    assert 'disabled' in selector
+    assert 'Register {{ provider.label }}' in selector
+    assert 'Not implemented' in route
+    assert 'Not defined' in route
+
+
+def test_provider_cards_reuse_canonical_kaori_info_tips_for_adapter_and_protocol() -> None:
+    selector = read('app/templates/integrations/provider_selector.html')
+    tooltip = read('app/templates/components/info_tip.html')
+    controller = read('app/static/js/info_tips.js')
+
+    assert 'info_tip.render("provider-choices-" ~ integration_type' in selector
+    assert 'variant="guide"' in selector
+    assert 'info_tip.render("adapter-" ~ integration_type ~ "-" ~ provider.key' in selector
+    assert 'info_tip.render("protocol-" ~ integration_type ~ "-" ~ provider.key' in selector
+    assert 'data-kaori-info-tip-trigger' in tooltip
+    assert 'data-kaori-info-tip-preview' in tooltip
+    for interaction in ("'pointerover'", "'focusin'", "'click'", "'keydown'"):
+        assert interaction in controller
+    assert "event.key === 'Escape'" in controller
+    assert "portal.appendChild(preview)" in controller
+    assert '<style' not in selector
+    assert '<script' not in selector
