@@ -11,7 +11,7 @@ def test_native_external_access_observer_has_explicit_read_only_authority() -> N
     service = read('app/kubernetes/tenant/external_native_access_observation.py')
     routes = read('app/kubernetes/tenant/routes_access.py')
     context = read('app/kubernetes/tenant/access_service.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    ui = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
 
     assert 'def observe_external_native_access_committed(' in service
     assert "tenant.provider_key != 'native_kubernetes'" in service
@@ -48,11 +48,18 @@ def test_native_external_access_observer_has_explicit_read_only_authority() -> N
     assert 'Labels indicate possible correlation' in ui
 
 
-def test_native_access_observation_reuses_capsule_workspace_without_duplicate_new_surface() -> None:
-    ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> None:
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    tabs = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
-    assert workspace.count('_external_capsule_access_inventory.html') == 1
-    assert ui.count('data-external-native-access-inventory') == 1
-    assert ui.count('External Capsule Access Inventory') == 1
-    assert ui.count('Native Namespace RBAC Inventory') == 1
-    assert ui.count('method="post"') >= 2
+    assert workspace.count('_access_inventory_workspace.html') == 1
+    assert tabs.count('_external_capsule_access_inventory.html') == 1
+    assert tabs.count('_native_namespace_rbac_inventory.html') == 1
+    assert 'workspace_tabs.render_query_tabs' in tabs
+    assert capsule.count('External Capsule Access Inventory') == 1
+    assert native.count('data-external-native-access-inventory') == 1
+    assert native.count('Native Namespace RBAC Inventory') == 1
+    assert 'name="access_inventory_view" value="native"' in native
+    assert 'name="access_inventory_view" value="capsule"' in capsule
+    assert native.count('method="post"') >= 2
