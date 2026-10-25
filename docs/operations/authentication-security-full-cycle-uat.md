@@ -131,3 +131,17 @@ external IdPs remain the source of truth.
 
 Never mark full-cycle UAT PASS from unit tests, source review, or mock Siteverify.
 Full Admission and promotion remain operator HOLD.
+
+
+## UAT visual feedback extension — Assurance Overview (#3166)
+
+Following the operator's 2026-10-25 screenshots, the Authentication Security Overview was redesigned without changing login enforcement or administrator form handlers. When running browser UAT, also verify:
+
+1. Hero context has concise, **single-line desktop** MFA and Turnstile helper sentences without clipped/overflowed labels; mobile remains responsive.
+2. **Authentication Assurance Posture** uses actual committed MFA mode (Disabled, Optional, Required Privileged, Required All), Bot Protection mode (Disabled or Enforced) and the existing session-generation behavior. Inspect two combinations: both optional protections disabled, then one enabled.
+3. **Security Control Summaries** display corresponding state and link to the correct existing query-backed MFA, Bot and Session tabs; browser back and HTMX tab navigation still work.
+4. **Operational Boundaries** distinguishes Access policy, user MFA enrollment under Settings, and primary Identity Provider management. No third-party health is guessed from configured credentials.
+5. Verify desktop/mobile at standard and narrow widths, light/dark contrast, keyboard focus, no horizontal overflow, no policy-form regression, and meaningful no-JS GET navigation.
+6. Run existing Jinja/Contract/DjLint checks against the exact reviewed branch SHA; **do not claim UI Human UAT PASS** from source-only results.
+
+This is a presentation-only refinement under #3166; Database migration or re-enrollment is not required to review this UI diff. Previously migrated authentication schema is unaffected.
