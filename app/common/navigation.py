@@ -108,6 +108,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'users.index': 'Users',
     'identity_providers.index': 'Identity Providers',
     'identity_providers.directory_provisioning': 'Directory Provisioning',
+    'access.authentication_security.index': 'Authentication Security',
     'access.roles.index': 'Roles',
     'access.permissions.index': 'Permissions',
     'notifications.center': 'Notification Center',
@@ -209,6 +210,8 @@ def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
         return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')], endpoint)
     if endpoint == 'notifications.center' or endpoint.startswith('notifications.'):
         return [BreadcrumbItem('Notification Center', 'bell')]
+    if endpoint.startswith('access.authentication_security.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Authentication Security')]
     if endpoint.startswith('access.activity_audit.'):
         return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Activity Audit')]
     if endpoint.startswith('access.roles.'):

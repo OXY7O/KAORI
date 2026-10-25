@@ -1,0 +1,51 @@
+"""Authentication Security workspace is read-only and reuses KAORI Access patterns (#3138)."""
+
+from pathlib import Path
+
+from jinja2 import Environment
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def source(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
+def test_authentication_security_uses_existing_access_navigation_and_rbac() -> None:
+    access = source('app/access/__init__.py')
+    navigation = source('app/common/workspace_navigation_catalog.py')
+    breadcrumb = source('app/common/navigation.py')
+    routes = source('app/access/authentication_security/__init__.py')
+
+    assert "bp.register_blueprint(authentication_security_bp, url_prefix='/authentication-security')" in access
+    assert "'authentication_security'," in navigation
+    assert "'access.authentication_security.index'," in navigation
+    assert "if endpoint.startswith('access.authentication_security.')" in breadcrumb
+    assert "@permission_required('identity_providers.view')" in routes
+    assert "if request.headers.get('HX-Request') == 'true'" in routes
+
+
+def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> None:
+    template = source('app/templates/access/authentication_security/partials/_page_content.html')
+    index = source('app/templates/access/authentication_security/index.html')
+    Environment().parse(template)
+    Environment().parse(index)
+
+    assert 'components/page_hero.html' in template
+    assert 'components/workspace_tabs.html' in template
+    assert 'workspace_tabs.render_query_tabs(' in template
+    assert "hx_target='#authentication-security-page'" in template
+    assert "status_indicator_label('Not Enabled', 'unknown')" in template
+    assert "status_indicator_label('Not Configured', 'unknown')" in template
+    assert 'no configured provider instance' in template.lower()
+    assert 'no factor enrollment or challenge enforcement' in template.lower()
+    assert 'Single active login generation' in template
+    assert 'type="submit"' not in template
+    assert 'hx-post=' not in template
+
+
+def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
+    routes = source('app/access/authentication_security/__init__.py')
+    assert "return requested if requested in supported else 'overview'" in routes
+    for key in ('overview', 'mfa', 'bot', 'sessions'):
+        assert f"('{key}'," in routes

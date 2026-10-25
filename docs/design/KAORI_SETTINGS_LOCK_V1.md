@@ -65,3 +65,7 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 - Background browser-timezone convergence stays silent.
 - Explicit **Detect Again** presents the canonical Operational Toast for detected/unchanged or failure outcomes, without persisting the local browser observation, producing an Activity Audit event, or creating a Notification Deck item. It does not replace **Save Time Zone**.
 - Notification/Activity progress surfaces use one shared notification-progress geometry rather than page-local track heights.
+
+## Planned MFA self-service placement (authority #562, AUTH-UI-01 / #3138)
+
+After tested TOTP enrollment and verified factor persistence (#3134), a bounded Settings → Account & Authentication self-service tab will own MFA enrollment, recovery codes and state. It must reuse the current query-backed HTMX tabs and existing Settings Final Lock; it must not expose an admin-wide security policy or duplicate Identity Provider management. This note is future placement authority, **not** a claim that factor enrollment currently exists or is active.
