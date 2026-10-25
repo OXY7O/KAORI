@@ -27,9 +27,11 @@ def upgrade() -> None:
     op.add_column('authentication_security_policies', sa.Column('bot_site_key', sa.String(255)))
     op.add_column('authentication_security_policies', sa.Column('bot_secret_key', sa.Text()))
     op.add_column('authentication_security_policies', sa.Column('bot_hostname', sa.String(253)))
+    op.add_column('authentication_security_policies', sa.Column('bot_tested_at', sa.DateTime(timezone=True)))
 
 
 def downgrade() -> None:
+    op.drop_column('authentication_security_policies', 'bot_tested_at')
     op.drop_column('authentication_security_policies', 'bot_hostname')
     op.drop_column('authentication_security_policies', 'bot_secret_key')
     op.drop_column('authentication_security_policies', 'bot_site_key')
