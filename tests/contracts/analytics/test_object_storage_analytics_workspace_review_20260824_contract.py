@@ -417,7 +417,7 @@ def test_object_storage_overview_guides_and_performance_family_parity() -> None:
         assert tip_id in source
         assert "variant='guide'" in source
         assert "placement='right'" in source
-    assert "{% if compact_forecast_overview %}" in trend
+    assert '{% if compact_forecast_overview %}' in trend
 
     for partial in (performance, consumers, alerts):
         assert 'analysis_surface.snapshot_shell_classes()' in partial

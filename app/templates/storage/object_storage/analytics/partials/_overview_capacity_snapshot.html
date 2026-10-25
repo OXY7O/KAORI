@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}"
          data-object-storage-capacity-compact>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -8,7 +9,18 @@
                     <i data-lucide="database" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Capacity Snapshot</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Capacity Snapshot</h2>
+                        {{ info_tip.render('object-storage-capacity-snapshot-guide',
+                                                'Capacity Snapshot Guide',
+                                                'Capacity combines physical and committed operational evidence for the selected system.',
+                                                items=[
+                                                'Usable Capacity is the physical boundary; Current Usage and Remaining Headroom are operational observations.',
+                                                'Utilization is capacity usage, not an individual bucket quota percentage.',
+                                                'Missing data remains unknown; review sustained growth and concentration before capacity changes.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Committed physical capacity, consumption, and remaining headroom.</p>
                 </div>
             </div>

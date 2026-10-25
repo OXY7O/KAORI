@@ -34,16 +34,26 @@
                                 Storage Usage Trend
                             {% endif %}
                         </h2>
-                        {% if compact_forecast_overview %}
-                        {{ info_tip.render('object-storage-overview-forecast-trend-guide',
-                                                'Storage Usage Forecast Guide',
-                                                'The observed history and dashed 30-day projection have different evidence roles.',
-                                                items=[
-                                                'Solid history reflects committed observed samples; the dashed segment is a worker projection.',
-                                                'Window Change and Historical Growth / Day describe only the observed history.',
-                                                'Do not equate projected capacity demand with a current provider alert.',
-                                                ],
-                                                placement='right', variant='guide') }}
+                        {% if compact_usage_overview %}
+                            {{ info_tip.render('object-storage-overview-usage-trend-guide',
+                                                    'Storage Usage Trend Guide',
+                                                    'The selected time-window trend uses committed historical metrics, not an Inventory forecast.',
+                                                    items=[
+                                                    'Window Change measures the difference between available samples in the selected range.',
+                                                    'Growth / Day is the observed historical rate; Inventory remains point-in-time.',
+                                                    'Interpret no samples or partial coverage as missing evidence, never fabricated zero.',
+                                                    ],
+                                                    placement='right', variant='guide') }}
+                        {% elif compact_forecast_overview %}
+                            {{ info_tip.render('object-storage-overview-forecast-trend-guide',
+                                                    'Storage Usage Forecast Guide',
+                                                    'The observed history and dashed 30-day projection have different evidence roles.',
+                                                    items=[
+                                                    'Solid history reflects committed observed samples; the dashed segment is a worker projection.',
+                                                    'Window Change and Historical Growth / Day describe only the observed history.',
+                                                    'Do not equate projected capacity demand with a current provider alert.',
+                                                    ],
+                                                    placement='right', variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">

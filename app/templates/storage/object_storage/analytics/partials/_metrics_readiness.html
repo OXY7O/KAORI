@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -8,6 +9,15 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Operational Metrics Contract</h2>
+                        {{ info_tip.render('object-storage-operational-metrics-contract-guide',
+                                                'Operational Metrics Contract Guide',
+                                                'Full Validation records the metric contract; runtime samples are committed separately.',
+                                                items=[
+                                                'Required Contract checks mandatory metric families and queries.',
+                                                'Ready Queries includes optional queries; No Data or Unsupported is not the same as zero.',
+                                                'Blocked Queries indicate failed contract or query evidence and require investigation.',
+                                                ],
+                                                placement='right', variant='guide') }}
                         {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
