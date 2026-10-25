@@ -160,7 +160,7 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
     if integration_type == 'metrics_source':
         return redirect(url_for('integrations.select_metrics_source_provider'))
 
-    kinds = provider_kinds(integration_type)
+    kinds = sorted(provider_kinds(integration_type), key=lambda kind: (not kind.available, kind.label.casefold()))
     if not kinds:
         abort(404)
 
@@ -170,9 +170,15 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
             'key': kind.key,
             'label': kind.label,
             'adapter': (
-                'Not implemented' if kind.adapter_key == 'not_implemented' else kind.adapter_key.replace('_', ' ').title()
+                'Not implemented'
+                if kind.adapter_key == 'not_implemented'
+                else kind.adapter_key.replace('_', ' ').title()
             ),
-            'protocol': 'Not defined' if kind.protocol == 'not_defined' else kind.protocol.replace('_', ' ').upper(),
+            'protocol': (
+                'Not defined'
+                if kind.protocol == 'not_defined'
+                else kind.protocol.replace('_', ' ').upper()
+            ),
             'lifecycle': kind.lifecycle,
             'available': kind.available,
             'registration_url': (
