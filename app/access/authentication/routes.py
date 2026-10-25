@@ -4,11 +4,16 @@ from typing import cast
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.bot_protection.service import (
+    BotConfigurationError,
+    bot_policy_state,
+    bot_token_verified,
+)
 from app.access.authentication.forms import LoginForm, MfaChallengeForm
 from app.access.authentication.identity_provider.browser import (
     SsoProviderError,
@@ -23,9 +28,9 @@ from app.access.authentication.mfa.policy import MfaGate
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
     MfaVerificationError,
-    mfa_decision,
     begin_mfa_enrollment,
     confirm_mfa_enrollment,
+    mfa_decision,
     verify_mfa_challenge,
 )
 from app.access.authentication.readiness import check_authentication_database_readiness
@@ -56,6 +61,8 @@ from app.platform_operations.notifications.service import queue_transient_feedba
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 SSO_SESSION_KEY = 'kaori_sso_flow'
+SSO_BOT_GRANT_KEY = 'kaori_sso_bot_grant'
+SSO_BOT_GRANT_TTL_SECONDS = 60
 MFA_PENDING_SESSION_KEY = 'kaori_mfa_pending'
 
 
@@ -135,10 +142,29 @@ def login():
     if current_user.is_authenticated:
         return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
 
+    try:
+        bot_state = bot_policy_state()
+    except BotConfigurationError:
+        return 'Authentication protection is temporarily unavailable.', 503
+
     form = LoginForm()
     if request.method == 'GET':
         form.next.data = safe_next_url(request.args.get('next')) or ''
     if form.validate_on_submit():
+        if not bot_token_verified(request.form.get('cf-turnstile-response'), bot_state):
+            record_authentication_activity(
+                action='login',
+                username=str(form.username.data or ''),
+                source='database',
+                result='failed',
+                reason='bot_challenge_failed',
+            )
+            queue_transient_feedback(
+                status='error',
+                title='Sign-in verification failed',
+                message='Complete the security challenge and try again.',
+            )
+            return redirect(url_for('auth.login'))
         username = form.username.data or ''
         password = form.password.data or ''
         result = authenticate(username, password)
@@ -185,7 +211,48 @@ def login():
         {'record': provider, 'definition': provider_definition(provider.provider_key)}
         for provider in enabled_sso_providers()
     ]
-    return render_template('access/authentication/index.html', form=form, sso_provider_rows=sso_provider_rows)
+    return render_template(
+        'access/authentication/index.html',
+        form=form,
+        sso_provider_rows=sso_provider_rows,
+        bot_state=bot_state,
+    )
+
+
+@auth_bp.route('/sso/<provider_key>/bot', methods=['GET', 'POST'])
+@limiter.limit('5 per minute', methods=['POST'])
+def sso_bot_challenge(provider_key: str):
+    """Require a fresh server-verified challenge before entering external SSO."""
+    if current_user.is_authenticated:
+        return redirect(url_for('welcome.index'))
+    try:
+        bot_state = bot_policy_state()
+    except BotConfigurationError:
+        return 'Authentication protection is temporarily unavailable.', 503
+    next_url = safe_next_url(request.values.get('next'))
+    if not bot_state.enabled:
+        return redirect(url_for('auth.sso_start', provider_key=provider_key, next=next_url))
+    error = None
+    if request.method == 'POST':
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+        except ValidationError:
+            return 'Invalid request.', 400
+        if bot_token_verified(request.form.get('cf-turnstile-response'), bot_state):
+            session[SSO_BOT_GRANT_KEY] = {
+                'provider_key': provider_key,
+                'next_url': next_url,
+                'verified_at': datetime.now(UTC).timestamp(),
+            }
+            return redirect(url_for('auth.sso_start', provider_key=provider_key, next=next_url))
+        error = 'Complete the security challenge and try again.'
+    return render_template(
+        'access/authentication/bot_challenge.html',
+        bot_state=bot_state,
+        provider_key=provider_key,
+        next_url=next_url,
+        error=error,
+    )
 
 
 @auth_bp.get('/sso/<provider_key>/start')
@@ -193,6 +260,24 @@ def login():
 def sso_start(provider_key: str):
     if current_user.is_authenticated:
         return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
+    try:
+        bot_state = bot_policy_state()
+    except BotConfigurationError:
+        return 'Authentication protection is temporarily unavailable.', 503
+    bot_verified_at = None
+    if bot_state.enabled:
+        grant = session.pop(SSO_BOT_GRANT_KEY, None)
+        now = datetime.now(UTC).timestamp()
+        next_url = safe_next_url(request.args.get('next'))
+        if (
+            not isinstance(grant, dict)
+            or grant.get('provider_key') != provider_key
+            or grant.get('next_url') != next_url
+            or type(grant.get('verified_at')) not in (int, float)
+            or not 0 <= now - grant['verified_at'] <= SSO_BOT_GRANT_TTL_SECONDS
+        ):
+            return redirect(url_for('auth.sso_bot_challenge', provider_key=provider_key, next=next_url))
+        bot_verified_at = grant['verified_at']
 
     try:
         provider = find_enabled_sso_provider(provider_key)
@@ -244,6 +329,7 @@ def sso_start(provider_key: str):
         'nonce': nonce,
         'started_at': datetime.now(UTC).timestamp(),
         'next_url': safe_next_url(request.args.get('next')),
+        'bot_verified_at': bot_verified_at,
     }
     try:
         authorization_url = adapter.build_authorization_url(
@@ -318,6 +404,16 @@ def sso_callback(provider_key: str):
 
     supplied_state = request.args.get('state', '')
     flow_ttl_seconds = int(current_app.config.get('AUTH_SSO_FLOW_TTL_SECONDS', 600))
+    try:
+        callback_bot_state = bot_policy_state()
+    except BotConfigurationError:
+        return 'Authentication protection is temporarily unavailable.', 503
+    if callback_bot_state.enabled:
+        checked_at = flow.get('bot_verified_at')
+        age = datetime.now(UTC).timestamp() - checked_at if type(checked_at) in (int, float) else -1
+        if age < 0 or age > flow_ttl_seconds:
+            return redirect(url_for('auth.login'))
+
     if not sso_flow_is_valid(
         flow,
         provider_id=provider.id,

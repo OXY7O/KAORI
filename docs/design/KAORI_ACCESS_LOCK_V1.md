@@ -99,3 +99,19 @@ A bounded, read-only **Access → Authentication Security** workspace is added a
 **Source-only readiness** is never misrepresented as enabled security posture: the MFA policy kernel (#3133) is not an enrolled/verified second-factor challenge; the Turnstile verification kernel (#3136) is not a registered provider instance or an enforced browser login challenge. No admin enable toggles, client secret handling, new login runtime, new RBAC permissions, or new provider catalog are activated through this read-only page.
 
 Future MFA self-service belongs to Settings → Account & Authentication (#562/#3134); controlled provider instance and policy administration under this Access capability remain blocked by #3137 until admission and operator UAT. Preserve canonical responsive/light-dark/a11y/loading, scoped permission checks and progressive navigation.
+
+
+## Superseding AUTH-UI security mutation scope (#3137)
+
+The earlier AUTH-UI-01 read-only implementation checkpoint is superseded by
+reviewable administration on the SAME canonical Access → Authentication
+Security page. MFA policy and Bot Protection configuration belong here,
+protected by existing `identity_providers.manage` server-side permission
+checks, POST + CSRF, committed evidence and the same existing Violet/HTMX
+workspace primitives. The default read view remains guarded by
+`identity_providers.view`. Bot policy permits Disabled or Always after a
+recent live provider verification, with no fabricated health status.
+Never place provider verification secrets in HTML or audit.
+Adaptive policy remains unavailable until committed risk evaluation exists.
+Source changes require Dev Container Visual QA, negative authentication UAT,
+human acceptance and existing Access/Settings Final Lock checks.

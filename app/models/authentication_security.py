@@ -19,6 +19,12 @@ class AuthenticationSecurityPolicy(db.Model):
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     mfa_mode: Mapped[str] = mapped_column(db.String(32), nullable=False, default='disabled')
+    bot_mode: Mapped[str] = mapped_column(db.String(24), nullable=False, default='disabled')
+    bot_provider_key: Mapped[str] = mapped_column(db.String(60), nullable=False, default='cloudflare_turnstile')
+    bot_site_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
+    bot_secret_key: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
+    bot_hostname: Mapped[str | None] = mapped_column(db.String(253), nullable=True)
+    bot_tested_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )

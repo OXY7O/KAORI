@@ -1,4 +1,4 @@
-"""Authentication Security workspace is read-only and reuses KAORI Access patterns (#3138)."""
+"""Authentication Security follows KAORI UI while guarding security mutations (#3137)."""
 
 from pathlib import Path
 
@@ -35,12 +35,13 @@ def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> 
     assert 'components/workspace_tabs.html' in template
     assert 'workspace_tabs.render_query_tabs(' in template
     assert "hx_target='#authentication-security-page'" in template
-    assert "status_indicator_label('Not Enabled', 'unknown')" in template
-    assert "status_indicator_label('Not Configured', 'unknown')" in template
-    assert 'no configured provider instance' in template.lower()
-    assert 'no factor enrollment or challenge enforcement' in template.lower()
+    assert "'Enforced' if bot_mode == 'always' else 'Not Enabled'" in template
+    assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in template
+    assert 'Cloudflare Siteverify' in template
     assert 'Single active login generation' in template
-    assert 'type="submit"' not in template
+    assert "url_for('access.authentication_security.save_bot_policy')" in template
+    assert "name=\"csrf_token\"" in template
+    assert "name=\"acknowledge_bot_impact\"" in template
     assert 'hx-post=' not in template
 
 
