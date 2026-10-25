@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "platform_operations/jobs/configuration/_schedule_policy.html" as schedule_policy %}
 {% set definition = selected_job.definition %}
 {% set overview_metrics = [
     ('key-round', 'Registered Vault', selected_job.registered_system_count, 'Canonical provider identities'),
@@ -19,13 +20,8 @@
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
-        <header class="border-b border-outline-subtle bg-surface-hover p-5 sm:px-6">
-            <h3 class="text-base font-semibold text-content-primary">Manual Observation Boundary</h3>
-            <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-               title="Automatic policy is unsupported. Validate the exact Vault Alert Source binding, configure worker-only HMAC key custody, and run from existing job execution controls. Source errors do not resolve incidents or create AlertCases.">
-                Run manually after validating the Vault binding and worker-only HMAC key.
-            </p>
-        </header>
+        {{ schedule_policy.manual_header('Manual Observation Boundary',
+            'Run only after validating the Vault Alert Source binding and worker-only HMAC custody.') }}
     </section>
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
 </div>
