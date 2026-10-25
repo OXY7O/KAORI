@@ -141,7 +141,13 @@
                 </div>
             {% endcall %}
         {% endfor %}
-        {% include "integrations/partials/_domain_workspace.html" %}
+        <div class="space-y-3" data-kaori-domain-workspace-section>
+            {{ integration_ui.workspace_section_intro(
+                domain.label ~ " Providers & Connections",
+                "Review Source Control provider readiness and registered connections." if domain.key == "source_control" else "Review provider readiness, connections, and governed consumer bindings.",
+                domain.label ~ " providers and connections") }}
+            {% include "integrations/partials/_domain_workspace.html" %}
+        </div>
         <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
              data-kaori-domain-operating-boundary>
             <div class="flex items-start gap-3">
