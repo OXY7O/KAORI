@@ -217,7 +217,8 @@ def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> Non
     # Two separate drill-through destinations, but only one action in the outer card header.
     assert "action_href=url_for('intelligence.recommendations')" in template
     assert "action_label='Open Intelligence'" in template
-    assert "section_link_button.render(url_for('tenant.operations', tab='activity'), 'Open Activity'" in template
+    assert "section_link_button.render(url_for('tenant.operations', tab='activity')" in template
+    assert "'Open Activity', icon='arrow-right')" in template
 
     # Retain source-backed status, kind, detail, time, and empty-state behavior.
     assert "'kind': 'Tenant'" in workspace
