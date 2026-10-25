@@ -60,7 +60,7 @@ domains:
         icon: waypoints
   - key: secrets_pki
     label: Secrets & PKI Reports
-    description: Planned capability-level evidence reports. No Vault Secret data export or report execution until scope authorization, committed datasets, and export safety are admitted.
+    description: Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.
     icon: key-round
     status: Planned
     tone: info
