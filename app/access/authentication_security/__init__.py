@@ -26,6 +26,12 @@ from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
+from app.platform_operations.notifications.feedback import (
+    OperationalDeliveryPolicy,
+    OperationalFeedbackSpec,
+    build_operational_feedback,
+    queue_operational_feedback,
+)
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 bp = Blueprint('authentication_security', __name__)
@@ -71,6 +77,22 @@ def index():
     ):
         return render_template('access/authentication_security/partials/_page_content.html', **context)
     return render_template('access/authentication_security/index.html', **context)
+
+
+def queue_committed_mfa_policy_feedback(*, status: str, title: str, message: str) -> None:
+    """Present already-committed policy audit without creating a second record."""
+    queue_operational_feedback(
+        build_operational_feedback(
+            OperationalFeedbackSpec(
+                status=status,
+                title=title,
+                message=message,
+                activity_audit_saved=True,
+                notification_deck_visible=False,
+                delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+            )
+        )
+    )
 
 
 @bp.post('/mfa/policy')
@@ -138,7 +160,7 @@ def save_mfa_policy():
         # now-invalid session cookie.
         logout_user()
         clear_authenticated_session()
-        queue_transient_feedback(
+        queue_committed_mfa_policy_feedback(
             status='success',
             title='MFA policy updated',
             message='MFA policy saved and existing sessions revoked; sign in again to continue.',
@@ -147,7 +169,7 @@ def save_mfa_policy():
 
     # An unchanged selection is an audited user action, not a policy transition.
     # Do not revoke sessions or claim the configuration changed.
-    queue_transient_feedback(
+    queue_committed_mfa_policy_feedback(
         status='info',
         title='MFA policy unchanged',
         message='The selected MFA policy is already active; no sessions were revoked.',
