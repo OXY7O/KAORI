@@ -4,6 +4,8 @@
 {% set context_forecast = forecast_materialization|default({}, true) %}
 {% set context_alerts = overview_alerts|default({}, true) %}
 {% set context_alert_source = context_alerts.source|default({}, true) %}
+{% set context_alert_posture = context_alerts.posture|default({}, true) %}
+{% set context_observed_at = inventory_observed_at|default(none) %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}"
          data-object-storage-evidence-context>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -48,7 +50,7 @@
         <p class="mt-1 text-xs leading-5 text-content-muted">Captured source states; no live provider queries on page load.</p>
         {% set readiness = [
                     ('Metrics Contract', context_contract.label|default('Not Validated')),
-                    ('Inventory Observed', inventory_observed_at|user_datetime('Not Collected')),
+                    ('Inventory Observed', context_observed_at|user_datetime('Not Collected')),
                     ('Forecast Worker', context_forecast.label|default('Unavailable')),
                     ('Alert Lifecycle Source', context_alert_source.resolved_label|default('Unavailable'))
                 ] %}
@@ -75,7 +77,7 @@
                             ('Capacity', metrics_source.provider_label|default('Metrics Source'), context_snapshot.label|default('Unavailable'), 'Inventory point-in-time fallback only where supported.'),
                             ('Performance', metrics_source.provider_label|default('Metrics Source'), context_contract.label|default('Not Validated'), 'Request and error metrics never fall back to Inventory.'),
                             ('Forecast', 'Forecast Worker', context_forecast.label|default('Unavailable'), 'Worker history and projection; no Inventory forecast fallback.'),
-                            ('Alerts', context_alert_source.resolved_label|default('Unavailable'), context_alerts.posture.status|default('Unknown'), 'Alertmanager preferred; Metrics Source ALERTS is narrower.')
+                            ('Alerts', context_alert_source.resolved_label|default('Unavailable'), context_alert_posture.status|default('Unknown'), 'Alertmanager preferred; Metrics Source ALERTS is narrower.')
                         ] %}
                 <div data-object-storage-evidence-coverage>
                     <h3 class="text-sm font-semibold text-content-primary">Committed Domain Coverage</h3>
