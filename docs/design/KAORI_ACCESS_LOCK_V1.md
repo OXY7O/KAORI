@@ -153,3 +153,27 @@ Preserve Sidebar Navigation Standard v2.2, permission-aware disclosure, and the 
 The MFA tab presents a committed policy value (Disabled, Optional, Required Privileged, Required All), method capability (TOTP and single-use recovery), and impact (login/Remember Me generation revocation). It provides one permission-protected `save_mfa_policy` POST with existing CSRF and acknowledgment fields. No new permission taxonomy, authentication route, secret display, adoption estimate, or second policy store is permitted. A viewer has read-only explanatory content; an authorized manager can propose a new mode. Required modes are guarded by the approved enrolled Local Database Super Admin recovery check. A successful policy change invalidates previously issued sessions, including the administrator's current session.
 
 Functional UAT includes live TOTP enrollment in Settings, Disabled/Optional/Required policy transitions, two-browser and recovery-code negatives, accurate Activity Audit and fresh-login issuance. Record exact-SHA automated checks, light/dark/mobile/keyboard Visual QA, and Human Acceptance separately before official admission.
+
+
+## MFA policy impact and enforcement panel alignment (#3189 UAT follow-up)
+
+The existing Access → Authentication Security → MFA tab uses KAORI's established
+warning semantic color tokens (`border-status-warning-border`,
+`bg-status-warning-soft`, `text-status-warning-text`) for the
+**Change Impact** notice. Keep the copy a single concise sentence:
+"Policy changes revoke all sessions; required modes need an enrolled Local Super Admin."
+The notice must remain visible beside the existing mandatory acknowledgement;
+do not obscure revocation/recovery requirements behind a tooltip.
+
+The **Policy Configuration** and **Enforcement Modes** panels share the
+same stretch-aligned grid row at `xl` widths. The left form retains its
+authorized/CSRF-protected behavior, while the right policy-mode list grows to
+fill the available height with evenly spaced entries. Mobile/smaller
+breakpoints stack naturally without fixed heights or horizontal overflow.
+No new component, permission, schema, or authentication enforcement
+behavior was introduced by this UI adjustment.
+
+The final visual QA checks both columns have aligned top and bottom
+edges, warning tone is legible in light/dark mode, the impact sentence
+fits naturally at normal desktop widths, and keyboard focus plus Save,
+acknowledgement, and Guide remain functional.
