@@ -398,7 +398,8 @@ def _memberships_section_context() -> dict[str, Any]:
 
 def _access_inventory_view() -> str:
     """Only approved provider inspection tabs may be selected."""
-    return 'native' if request.values.get('access_inventory_view') == 'native' else 'capsule'
+    selected = request.values.get('access_inventory_view')
+    return selected if selected in {'grants', 'capsule', 'native'} else 'grants'
 
 
 def _access_grants_section_context() -> dict[str, Any]:

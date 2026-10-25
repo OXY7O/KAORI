@@ -270,7 +270,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'data-tenant-id="{{ environment.tenant_id }}"' in workspace
     assert 'data-tenant-id="{{ namespace.environment.tenant_id }}"' in workspace
     assert 'hx-target="#tenant-admin-workspace"' in workspace
-    assert '_access_grant_registry.html' in workspace
+    assert '_access_inventory_workspace.html' in workspace
     assert "'Access Grant Registry'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
@@ -288,8 +288,19 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     routes = read('app/kubernetes/tenant/route_common.py')
     settings_tabs = read('app/templates/components/workspace_tabs.html')
 
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+
     assert '_access_inventory_workspace.html' in grant
+    assert '_access_grant_registry.html' not in grant
     assert 'workspace_tabs.render_query_tabs(access_inventory_tabs' in workspace
+    assert "access_inventory_view='grants'" in workspace
+    assert "active_access_inventory_view == 'grants'" in workspace
+    assert '_access_grant_registry.html' in workspace
+    assert 'name="access_inventory_view" value="grants"' in registry
+    assert "'access_inventory_view': 'grants'" in registry
+    assert "query_params={'section': 'access-grants', 'access_inventory_view': 'grants'}" in registry
+    assert registry.count('name="access_inventory_view" value="grants"') == 4
+    assert "'grants', 'capsule', 'native'" in routes
     assert "access_inventory_view='capsule'" in workspace
     assert "access_inventory_view='native'" in workspace
     assert "active_access_inventory_view == 'native'" in workspace
