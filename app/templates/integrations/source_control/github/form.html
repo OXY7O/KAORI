@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -73,8 +74,25 @@
                             </div>
                         </div>
                     </section>
-                    <section class="border-t border-outline-subtle pt-6"
-                             aria-labelledby="github-installation-identity">
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated"
+                             aria-label="GitHub App Installation and Access"
+                             data-kaori-github-app-access>
+                        {% call connection_validation_header.render(
+                            "Installation & Access",
+                            "Set GitHub App identity and credentials, then verify installation scope before registration.",
+                            icon="network"
+                            ) %}
+                            <button type="submit"
+                                    name="action"
+                                    value="test"
+                                    {% if not available %}disabled{% endif %}
+                                    class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
+                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                                Test Connection
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-6 p-4 sm:p-5">
+                    <section aria-labelledby="github-installation-identity">
                         <div class="mb-4 flex items-start gap-3">
                             {{ integration_ui.palette_icon("git-branch", "brand", size="sm") }}
                             <div class="min-w-0">
@@ -141,18 +159,12 @@
                             {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus") }}
                         {% endcall %}
                     </section>
+                        </div>
+                    </section>
                 </fieldset>
-                {% call form_action_bar.render("Test Connection checks the GitHub installation scope. Register Connection verifies again; run Full Validation after saving.", aria_label="GitHub App Connection Actions", embedded=true) %}
+                {% call form_action_bar.render("Test Connection verifies the GitHub installation scope. Registration rechecks identity and permissions; Full Validation follows saving.", aria_label="GitHub App Connection Actions", title="Connection Verification", embedded=true) %}
                     <a href="{{ url_for('github_source.index') }}"
                        class="{{ action_button.classes('secondary') }} w-full sm:w-auto">Cancel</a>
-                    <button type="submit"
-                            name="action"
-                            value="test"
-                            {% if not available %}disabled{% endif %}
-                            class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
-                        <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                        Test Connection
-                    </button>
                     <button type="submit"
                             name="action"
                             value="save"
@@ -166,22 +178,17 @@
                 {% endcall %}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set github_flow_items = [
-                    ("Define Connection Identity", "Name the connection and choose its operational environment."),
-                    ("Identify GitHub Installation", "Provide the App ID, Installation ID, and owning account."),
-                    ("Test Connection", "Verify installation identity, permissions, and repository scope."),
-                    ("Register & Validate", "Persist only after re-verification; run Full Validation before consuming evidence.")
-                ] %}
+                {% set github_flow_items = [('Define Connection Identity', 'Name the connection and choose its operational environment.'), ('Identify GitHub Installation', 'Provide the App ID, Installation ID, and owning account.'), ('Test Connection', 'Verify installation identity, permissions, and repository scope.'), ('Register & Validate', 'Persist only after re-verification; run Full Validation before consuming evidence.')] %}
                 {{ registration_context.render("GitHub App Registration Flow",
-                        "How KAORI registers an installation-scoped Source Control connection.",
-                        github_flow_items,
-                        "Source Control Integrations",
-                        "GitHub executes repository APIs; KAORI governs connection identity, evidence, readiness, and audit.",
-                        url_for("integrations.source_control"),
-                        "Open Source Control Integrations",
-                        flow_icon="workflow",
-                        flow_note="Test Connection verifies identity and scope, not repository inventory or operational readiness.",
-                        related_icon="git-branch",
+                                "How KAORI registers an installation-scoped Source Control connection.",
+                                github_flow_items,
+                                "Source Control Integrations",
+                                "GitHub executes repository APIs; KAORI governs connection identity, evidence, readiness, and audit.",
+                                url_for("integrations.source_control") ,
+                "Open Source Control Integrations",
+                flow_icon="workflow",
+                flow_note="Test Connection verifies identity and scope, not repository inventory or operational readiness.",
+                related_icon="git-branch",
                 authority_boundary="GitHub App installation grants remain authoritative. GitHub OAuth SSO uses separate credentials.") }}
             </aside>
         </form>
