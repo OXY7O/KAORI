@@ -19,6 +19,7 @@ MfaSecurityAction = Literal[
     'mfa_challenge_rejected',
     'mfa_recovery_regenerated',
     'mfa_policy_changed',
+    'mfa_policy_unchanged',
     'bot_policy_changed',
     'bot_provider_verified',
 ]
@@ -48,7 +49,7 @@ def stage_authentication_security_event(
         actor_label=actor.label,
         actor_snapshot_json=actor.as_json(),
         status='success' if success else 'warning',
-        title=action.replace('_', ' ').title(),
+        title=action.replace('_', ' ').title().replace('Mfa ', 'MFA '),
         message='Authentication security control state recorded.',
         detail='KAORI committed a security control transition without factor or credential values.',
         metadata_json={

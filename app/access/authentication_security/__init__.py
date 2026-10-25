@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
-from flask_login import current_user
+from flask_login import current_user, logout_user
 from flask_wtf.csrf import validate_csrf
 from sqlalchemy import func, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -21,10 +21,12 @@ from app.access.authentication.bot_protection.turnstile import (
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyMode
 from app.access.authentication.mfa.service import mfa_enrolled, mfa_policy_mode
+from app.access.authentication.session import clear_authenticated_session
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
+from app.platform_operations.notifications.service import queue_transient_feedback
 
 bp = Blueprint('authentication_security', __name__)
 
@@ -74,7 +76,7 @@ def index():
 @bp.post('/mfa/policy')
 @permission_required('identity_providers.manage')
 def save_mfa_policy():
-    """Change committed MFA policy and revoke previously issued login sessions."""
+    """Commit policy and audit together; make session-revocation feedback visible."""
     try:
         validate_csrf(request.form.get('csrf_token'))
         requested = MfaPolicyMode(str(request.form.get('mfa_mode') or ''))
@@ -82,6 +84,7 @@ def save_mfa_policy():
         abort(400)
     if request.form.get('acknowledge_policy_impact') != 'yes':
         abort(400)
+
     actor = current_user._get_current_object()
     if requested in (MfaPolicyMode.REQUIRED_PRIVILEGED, MfaPolicyMode.REQUIRED_ALL):
         # A mandatory policy cannot strand the final local recovery authority.
@@ -97,26 +100,59 @@ def save_mfa_policy():
             policy = AuthenticationSecurityPolicy(id=1, mfa_mode='disabled')
             db.session.add(policy)
         previous = policy.mfa_mode
-        if previous != requested.value:
+        changed = previous != requested.value
+        if changed:
             policy.mfa_mode = requested.value
-            # Changing the effective assurance level invalidates pre-policy
-            # sessions as a single atomic DB transaction, including Remember Me.
+            # Revocation and audit must commit as ONE transaction, never
+            # allow a success toast if either DB mutation fails.
             db.session.execute(
                 update(User)
                 .where(User.account_is_active.is_(True), User.deleted_at.is_(None))
                 .values(auth_session_version=func.coalesce(User.auth_session_version, 1) + 1)
             )
-            db.session.add(stage_authentication_security_event(
-                actor, action='mfa_policy_changed', authenticated=True, success=True,
-                previous_mode=previous, next_mode=requested.value,
-            ))
+        db.session.add(
+            stage_authentication_security_event(
+                actor,
+                action='mfa_policy_changed' if changed else 'mfa_policy_unchanged',
+                authenticated=True,
+                success=True,
+                previous_mode=previous,
+                next_mode=requested.value,
+            )
+        )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.warning('MFA policy change was not committed.', exc_info=True)
+        queue_transient_feedback(
+            status='error',
+            title='MFA policy not saved',
+            message='The security policy could not be committed; no session changes were applied.',
+        )
         abort(503)
-    return redirect(url_for('access.authentication_security.index', tab='mfa'))
 
+    if changed:
+        # The committed generation update also invalidated THIS administrator.
+        # Explicitly clear the old login BEFORE queuing the result; otherwise
+        # the next request's user loader can discard the toast along with the
+        # now-invalid session cookie.
+        logout_user()
+        clear_authenticated_session()
+        queue_transient_feedback(
+            status='success',
+            title='MFA policy updated',
+            message='MFA policy saved and existing sessions revoked; sign in again to continue.',
+        )
+        return redirect(url_for('auth.login'))
+
+    # An unchanged selection is an audited user action, not a policy transition.
+    # Do not revoke sessions or claim the configuration changed.
+    queue_transient_feedback(
+        status='info',
+        title='MFA policy unchanged',
+        message='The selected MFA policy is already active; no sessions were revoked.',
+    )
+    return redirect(url_for('access.authentication_security.index', tab='mfa'))
 
 @bp.post('/bot/policy')
 @permission_required('identity_providers.manage')

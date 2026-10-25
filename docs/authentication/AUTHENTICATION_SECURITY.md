@@ -56,3 +56,34 @@ LDAP requires TLS certificate validation, bounded connect/read timeouts, safe se
 ## Audit requirements
 
 Record timestamp, attempted normalized username or external subject reference, provider, success/failure, safe reason code, proxy-normalized client address, user agent, and user ID when known. Never record passwords, tokens, assertions, raw LDAP responses, cookies, or secret configuration.
+
+
+## MFA policy administration feedback and audit (#3208)
+
+`Access → Authentication Security → Multi-Factor Authentication` uses the
+existing KAORI Operational Toast pipeline for administrator policy saves. A
+committed mode transition updates the policy, increments active user session
+generations and stages immutable **MFA Policy Changed** actor/delta evidence
+in the **same transaction**. After commit the admin's now-revoked
+authentication session is explicitly cleared, **then** a success toast is
+queued and the browser redirects to Login. The toast is intended to survive
+on the Login layout; the old browser session and Remember Me token remain
+invalid.
+
+Saving the already-current policy must **not** revoke sessions or present a
+false policy change. The action is recorded distinctly as
+`mfa_policy_unchanged`, with previous/new mode values identical; a neutral
+info toast returns to the MFA administrator tab. On database failure the
+transaction rolls back and no successful transition may be shown or audited.
+Both cases must honor CSRF, the `identity_providers.manage` permission and
+the enrolled local recovery Super Admin prerequisite for mandatory modes.
+
+The Activity Audit presentation treats `mfa_*` and `bot_*` events as
+**Authentication Security controls** in Access, not as User Signed In events.
+Immutable evidence retains actor snapshot, prior/new mode and the optional
+opaque session correlation reference without TOTP seeds, recovery codes,
+browser cookies, CAPTCHA tokens, or provider secrets.
+
+This behavior uses existing notification-backed committed audit and
+transient feedback primitives; no parallel toast/audit platform, new database
+migration or additional MFA factor mechanism is introduced.

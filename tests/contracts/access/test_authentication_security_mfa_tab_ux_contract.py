@@ -90,6 +90,9 @@ def test_mfa_policy_configuration_and_modes_panels_stretch_to_matching_heights()
     tab = _mfa_tab()
     assert 'grid items-stretch gap-4 xl:grid-cols-5' in tab
     assert 'flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3' in tab
-    assert 'flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2' in tab
+    assert (
+        'flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2'
+        in tab
+    )
     assert 'flex flex-1 flex-col divide-y divide-outline-subtle px-5' in tab
     assert 'flex flex-1 items-center justify-between gap-3 py-3.5' in tab

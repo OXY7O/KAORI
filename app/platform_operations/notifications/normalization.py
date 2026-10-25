@@ -32,6 +32,7 @@ _TITLE_CASE_OVERRIDES = {
     'kaori': 'KAORI',
     'k8s': 'Kubernetes',
     'ldap': 'LDAP',
+    'mfa': 'MFA',
     'minio': 'MinIO',
     'oidc': 'OIDC',
     'rbac': 'RBAC',
