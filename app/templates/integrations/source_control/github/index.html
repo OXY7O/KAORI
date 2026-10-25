@@ -23,8 +23,8 @@
                 "GitHub App connections",
                 "Connection Registry",
                 "GitHub App",
-                ("Ready" if ready else "Not Configured") if available else "Unavailable",
-                "warning",
+                ("Ready" if ready else ("Registered" if registered else "Not Configured")) if available else "Unavailable",
+                "normal" if ready else "warning",
                 [
                     ("plug", "Registered", registered if registered is not none else "Not Observed"),
                     ("badge-check", "Ready", ready if ready is not none else "Not Observed")
@@ -37,7 +37,7 @@
     {% set metrics = [
         {"label": "Registered Connections", "value": registered if registered is not none else "Not Observed", "description": "Canonical GitHub App connections", "icon": "plug"},
         {"label": "Ready Connections", "value": ready if ready is not none else "Not Observed", "description": "Full Validation required", "icon": "shield-check"},
-        {"label": "Repository Evidence", "value": "Not Observed", "description": "Inspect committed installation inventory", "icon": "database"},
+        {"label": "Repository Evidence", "value": "Per Installation", "description": "Inspect committed inventory by installation", "icon": "database"},
         {"label": "Provider Lifecycle", "value": "Available" if available else "Unavailable", "description": "Controlled by KAORI provider matrix", "icon": "shield"}
     ] %}
     {{ provider_front.overview("git-branch", "Source Control Provider Overview",
