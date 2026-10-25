@@ -16,10 +16,8 @@ from flask import (
 )
 from flask_login import current_user, login_fresh, login_required
 from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-
-from app.security.credentials import CredentialEncryptionError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
 from app.access.authentication.mfa.service import (
@@ -31,7 +29,6 @@ from app.access.authentication.mfa.service import (
     regenerate_mfa_recovery_codes,
     verify_mfa_challenge,
 )
-from app.models.authentication_security import AuthenticationMfaFactor
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -43,6 +40,8 @@ from app.common.timezone import (
     timezone_choice_groups,
 )
 from app.models import User
+from app.models.authentication_security import AuthenticationMfaFactor
+from app.security.credentials import CredentialEncryptionError
 from app.settings.account.actions import process_password_change
 from app.settings.account.queries import authentication_activity_summary, recent_authentication_events
 from app.settings.general.actions import (
