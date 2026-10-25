@@ -213,3 +213,77 @@ GitHub CTA works; Planned Bitbucket/GitLab registration remains disabled.
 Run Ruff, Ruff Format, djLint, focused pytest, shared sidebar and Integrations
 navigation verifiers in Dev Container. Official admission remains **HOLD**;
 Human Acceptance **PENDING**.
+
+
+## 2026-10-25 — #3142 apply accepted Source Control chooser across Integrations
+
+**Human authority:** accepted Source Control provider chooser after #3131.
+Operator QA evidence on the accepted candidate: `ruff check` PASS,
+`ruff format --check` PASS (2 files formatted), `djlint --check` PASS
+(0 files requiring updates), focused pytest **39 passed**, Integration Domain
+Navigation PASS, Sidebar Navigation Standard PASS. This evidence belongs
+to the earlier Source Control SHA, not to the new cross-domain candidate.
+
+**Reuse audit:** the canonical shared selector
+`app/templates/integrations/provider_selector.html` already covers:
+
+- Orchestration / Container Orchestrator (Kubernetes available; planned
+  Rancher and Sangfor Kubernetes Engine disabled);
+- Observability / Alert Source (Alertmanager);
+- Storage / Object, File and Block Storage (matrix-owned availability);
+- Registry (Harbor available; other matrix providers planned);
+- Secrets Management / Secrets & PKI (Vault available; OpenBao planned);
+- Source Control (GitHub available; GitLab/Bitbucket planned).
+
+**Only Observability / Metrics Source diverged.** The existing endpoint
+`/integrations/observability/metrics-sources/new` remains stable, but its
+`provider_selector.html` now **extends the same canonical template**.
+The metrics route projects admitted Prometheus and Thanos provider definitions
+into the shared card contract. Provider-specific icon, description, adapter
+and **Query Language** occupy the shared card slots rather than a second
+implementation. Both approved registration endpoints remain authoritative.
+The metrics Guide remains specific to query language/validation; there is
+only **one title-level Guide**, with no duplicated Adapter or Query Language
+question icons. Hero, section icon, responsive card grid, Available/Planned
+badges, disabled buttons, and bottom governance boundary follow the accepted
+Source Control style.
+
+**Navigation:** Metrics Source provider selection must keep the Observability
+sidebar active with breadcrumb **Integrations → Observability → Choose Provider**
+rather than Overview. The Source Control active sidebar/breadcrumb logic
+remains unchanged.
+
+**Notification Channels:** retains its existing channel-type selector;
+not a member of the infrastructure provider matrix and not redesigned here.
+
+### Acceptance matrix
+
+| Domain | Selector | Main registration path | Verify |
+| --- | --- | --- | --- |
+| Orchestration | Shared | Kubernetes | Planned choices disabled; cards/Guide |
+| Observability — Metrics | Shared, via existing route/template inheritance | Prometheus / Thanos Query | Query Language, Guide, both registration URLs |
+| Observability — Alert | Shared | Alertmanager | Active CTA and semantic label |
+| Storage | Shared | MinIO | S3 choices, planned disabled |
+| Registry | Shared | Harbor | Planned disabled; responsive multi-card |
+| Secrets Management | Shared | HashiCorp Vault | Planned OpenBao inert |
+| Source Control | Shared (accepted baseline) | GitHub | No visual regression |
+
+Retest 1440×900 light/dark and 390×844 touch, no overflow, Guide pointer/
+focus/touch, keyboard controls, correct active sidebar and breadcrumb, and
+the existing provider registration forms. Registration credentials and
+operational evidence remain a separate domain UAT phase.
+
+### Focused executable check (new candidate, NOT RUN)
+
+```bash
+python -m ruff check app/integrations/routes.py app/bootstrap/presentation.py app/common/navigation.py app/common/workspace_navigation.py app/integrations/navigation.py tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py tests/ui/test_source_control_sidebar_navigation_contract.py
+python -m ruff format --check app/integrations/routes.py app/bootstrap/presentation.py app/common/navigation.py app/common/workspace_navigation.py app/integrations/navigation.py tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py tests/ui/test_source_control_sidebar_navigation_contract.py
+djlint --check app/templates/integrations/provider_selector.html app/templates/integrations/observability/metrics_source/provider_selector.html
+python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py tests/contracts/integrations/test_integration_domain_navigation_contract.py tests/ui/test_source_control_sidebar_navigation_contract.py tests/ui/test_source_control_github_app_onboarding_contract.py tests/contracts/integrations/test_metrics_source_routing_audit_20260817_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**New commit Human UAT / executable QA:** PENDING. No claim of PASS until
+exact candidate outputs and visual evidence arrive. Official Developer Check,
+Full Admission, promotion to staging/main, and release/tag: **HOLD**.
