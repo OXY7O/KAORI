@@ -1,0 +1,73 @@
+"""Authentication Security UAT visual refinement follows approved KAORI patterns (#3166)."""
+
+from pathlib import Path
+
+from jinja2 import Environment
+
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATE = ROOT / 'app/templates/access/authentication_security/partials/_page_content.html'
+
+
+def _template() -> str:
+    return TEMPLATE.read_text(encoding='utf-8')
+
+
+def _overview() -> str:
+    source = _template()
+    return source.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
+
+
+def test_template_parses_and_reuses_existing_kaori_shared_components() -> None:
+    source = _template()
+    Environment().parse(source)
+    assert 'components/page_hero.html' in source
+    assert 'components/table_label.html' in source
+    assert 'components/workspace_tabs.html' in source
+    assert 'workspace_tabs.render_query_tabs(' in source
+    assert 'authentication-security-page' in source
+
+
+def test_hero_metrics_have_compact_one_line_copy() -> None:
+    source = _template()
+    assert "'TOTP & recovery follow policy.'" in source
+    assert "'Turnstile verifies sign-ins.'" in source
+    assert 'TOTP and recovery challenge are governed by the selected policy' not in source
+    assert 'Cloudflare Siteverify checked for login when enabled' not in source
+    assert 'Governed Changes' in source
+    assert 'Read Only' in source
+
+
+def test_overview_has_three_grounded_posture_tiles_and_operational_hierarchy() -> None:
+    overview = _overview()
+    assert 'Authentication Assurance Posture' in overview
+    assert 'Security Control Summaries' in overview
+    assert 'Operational Boundaries' in overview
+    assert 'Governed Here' in overview
+    assert 'Managed Elsewhere' in overview
+    assert 'components/workspace_tabs' not in overview
+    assert "mfa_policy_mode != 'disabled'" in overview
+    assert "bot_mode == 'always'" in overview
+    assert "'required_privileged': 'Required · Privileged'" in overview
+    assert "'required_all': 'Required · All Users'" in overview
+    assert 'bot_has_secret and bot_site_key and bot_hostname' in overview
+    assert 'Single active login generation' in overview
+    assert 'Configured adapters do not prove provider availability' in overview
+
+
+def test_overview_reuses_existing_access_tab_routes_and_never_mutates_policy() -> None:
+    overview = _overview()
+    for tab in ('mfa', 'bot', 'sessions'):
+        assert f"url_for('access.authentication_security.index', tab='{tab}')" in overview
+    assert '<form' not in overview
+    assert 'hx-post=' not in overview
+    assert 'secret_key' not in overview
+    assert 'csrf_token()' not in overview
+
+
+def test_other_security_configuration_tabs_still_present() -> None:
+    source = _template()
+    assert "{% elif active_tab == 'mfa' %}" in source
+    assert "{% elif active_tab == 'bot' %}" in source
+    assert "url_for('access.authentication_security.save_mfa_policy')" in source
+    assert "url_for('access.authentication_security.save_bot_policy')" in source
+    assert 'Session Security' in source
