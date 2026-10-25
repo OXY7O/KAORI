@@ -96,3 +96,39 @@ def test_mfa_policy_configuration_and_modes_panels_stretch_to_matching_heights()
     )
     assert 'flex flex-1 flex-col divide-y divide-outline-subtle px-5' in tab
     assert 'flex flex-1 items-center justify-between gap-3 py-3.5' in tab
+
+
+def test_mfa_summary_tiles_have_distinct_semantic_icon_cues() -> None:
+    tab = _mfa_tab()
+    assert 'Current Policy</p>' in tab
+    assert 'Verification Method</p>' in tab
+    assert 'Session Impact</p>' in tab
+    for icon in ('shield-check', 'key-round', 'log-out'):
+        assert f'data-lucide="{icon}"' in tab
+    assert 'bg-status-warning-soft text-status-warning-text' in tab
+
+
+def test_enforcement_modes_use_icon_labels_without_fake_policy_state() -> None:
+    tab = _mfa_tab()
+    assert 'for mode, label, description, mode_icon in [' in tab
+    for mode, icon in (
+        ('disabled', 'shield-off'),
+        ('optional', 'shield-plus'),
+        ('required_privileged', 'shield-alert'),
+        ('required_all', 'shield-check'),
+    ):
+        assert f"('{mode}'," in tab
+        assert f"'{icon}')" in tab
+    assert 'data-lucide="{{ mode_icon }}"' in tab
+    assert "if mfa_policy_mode == mode" in tab
+    assert "status_indicator_label('Current', 'info')" in tab
+
+
+def test_enrollment_recovery_icons_stay_in_self_service_only_panel() -> None:
+    tab = _mfa_tab()
+    assert 'Authenticator App' in tab
+    assert 'Recovery Codes' in tab
+    assert 'data-lucide="smartphone"' in tab
+    assert "url_for('settings.account', tab='mfa')" in tab
+    assert 'name="verification_code"' not in tab
+    assert 'name="secret_key"' not in tab
