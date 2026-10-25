@@ -69,3 +69,15 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 ## Planned MFA self-service placement (authority #562, AUTH-UI-01 / #3138)
 
 After tested TOTP enrollment and verified factor persistence (#3134), a bounded Settings → Account & Authentication self-service tab will own MFA enrollment, recovery codes and state. It must reuse the current query-backed HTMX tabs and existing Settings Final Lock; it must not expose an admin-wide security policy or duplicate Identity Provider management. This note is future placement authority, **not** a claim that factor enrollment currently exists or is active.
+
+
+## Superseding MFA self-service delivery (#3134)
+
+Settings → Account & Authentication now includes an MFA tab for TOTP manual
+setup, confirmation, one-time recovery-code display and authenticated
+recovery regeneration. This uses the existing query-backed Settings tab
+family and does not own global MFA or Bot Protection administration.
+Factor security remains governed by the Access MFA policy and the
+restricted post-primary challenge; UI availability does not imply that
+every user's MFA policy is enabled. Do not disclose QR/manual secrets or
+recovery codes in Activity Audit. Full browser acceptance pending.
