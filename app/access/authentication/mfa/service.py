@@ -41,9 +41,7 @@ def mfa_enrolled(user_id: int) -> bool:
 
 
 def mfa_decision(user: User) -> MfaPolicyDecision:
-    return evaluate_mfa_policy(
-        mfa_policy_mode(), privileged=bool(user.is_admin_level), enrolled=mfa_enrolled(user.id)
-    )
+    return evaluate_mfa_policy(mfa_policy_mode(), privileged=bool(user.is_admin_level), enrolled=mfa_enrolled(user.id))
 
 
 def _totp(secret: str) -> TOTP:
@@ -54,9 +52,7 @@ def _totp(secret: str) -> TOTP:
     return TOTP(key, 6, hashes.SHA1(), 30)
 
 
-def _accepted_step(
-    secret: str, code: str, *, last_accepted_step: int | None, now: datetime
-) -> int | None:
+def _accepted_step(secret: str, code: str, *, last_accepted_step: int | None, now: datetime) -> int | None:
     if not isinstance(code, str) or len(code) != 6 or not code.isascii() or not code.isdecimal():
         return None
     current_step = int(now.timestamp()) // 30
@@ -86,9 +82,14 @@ def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
     factor.enrollment_expires_at = datetime.now(UTC) + ENROLLMENT_TTL
     if existing is None:
         db.session.add(factor)
-    db.session.add(stage_authentication_security_event(
-        user, action='mfa_enrollment_started', authenticated=authenticated, success=True,
-    ))
+    db.session.add(
+        stage_authentication_security_event(
+            user,
+            action='mfa_enrollment_started',
+            authenticated=authenticated,
+            success=True,
+        )
+    )
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -117,9 +118,14 @@ def confirm_mfa_enrollment(user: User, code: str, *, authenticated: bool = True)
     factor.enabled = True
     factor.enrolled_at = now
     factor.enrollment_expires_at = None
-    db.session.add(stage_authentication_security_event(
-        user, action='mfa_enrollment_confirmed', authenticated=authenticated, success=True,
-    ))
+    db.session.add(
+        stage_authentication_security_event(
+            user,
+            action='mfa_enrollment_confirmed',
+            authenticated=authenticated,
+            success=True,
+        )
+    )
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -136,9 +142,7 @@ def verify_mfa_challenge(user: User, submitted: str, *, authenticated: bool = Fa
     if factor is None:
         raise MfaVerificationError('MFA enrollment is unavailable.')
     now = datetime.now(UTC)
-    accepted = _accepted_step(
-        factor.totp_secret, submitted, last_accepted_step=factor.last_accepted_step, now=now
-    )
+    accepted = _accepted_step(factor.totp_secret, submitted, last_accepted_step=factor.last_accepted_step, now=now)
     kind = 'totp'
     if accepted is not None:
         factor.last_accepted_step = accepted
@@ -152,9 +156,14 @@ def verify_mfa_challenge(user: User, submitted: str, *, authenticated: bool = Fa
         if remaining is None:
             raise MfaVerificationError('Verification code was not accepted.')
         factor.recovery_hashes = remaining
-    db.session.add(stage_authentication_security_event(
-        user, action='mfa_challenge_verified', authenticated=authenticated, success=True,
-    ))
+    db.session.add(
+        stage_authentication_security_event(
+            user,
+            action='mfa_challenge_verified',
+            authenticated=authenticated,
+            success=True,
+        )
+    )
     try:
         db.session.commit()
     except SQLAlchemyError:
@@ -170,9 +179,14 @@ def regenerate_mfa_recovery_codes(user: User) -> list[str]:
         raise MfaVerificationError('MFA is not enrolled.')
     codes = [secrets.token_hex(8).upper() for _ in range(8)]
     factor.recovery_hashes = [generate_password_hash(value) for value in codes]
-    db.session.add(stage_authentication_security_event(
-        user, action='mfa_recovery_regenerated', authenticated=True, success=True,
-    ))
+    db.session.add(
+        stage_authentication_security_event(
+            user,
+            action='mfa_recovery_regenerated',
+            authenticated=True,
+            success=True,
+        )
+    )
     try:
         db.session.commit()
     except SQLAlchemyError:
