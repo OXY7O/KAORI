@@ -79,7 +79,10 @@ def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None
     assert 'active_capability_override=' in presentation
     assert 'integration_selector_label=' in presentation
     assert "resolved_endpoint == 'integrations.choose_integration_provider'" in sidebar_model
-    assert "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}" in breadcrumb
+    assert (
+        "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}"
+        in breadcrumb
+    )
     assert "BreadcrumbItem('Choose Provider')" in breadcrumb
 
 
