@@ -26,7 +26,7 @@
                 ("plug", "Registered", registered if registered is not none else "Not Observed"),
                 ("badge-check", "Ready", ready if ready is not none else "Not Observed")
                 ],
-                "Register Connection", url_for("github_source.new_connection"),
+                "Choose Provider", url_for("integrations.choose_integration_provider", integration_type="source_control"),
                 action_icon="settings-2"
                 ) }}
             </div>
