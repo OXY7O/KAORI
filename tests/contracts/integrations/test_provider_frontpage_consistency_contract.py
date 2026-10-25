@@ -311,6 +311,9 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     assert 'data-kaori-integration-workspace-section' in tabs
     assert 'Provider Connections &amp; Coverage' in tabs
     assert 'Monitor provider readiness, committed coverage, and registered connections.' in tabs
+    outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
+    assert '<header class="min-w-0 px-1"' in outer_heading
+    assert 'integration_ui.palette_icon(' not in outer_heading
     assert tabs.index('Provider Connections &amp; Coverage') < tabs.index('data-kaori-integration-workspace-tabs')
     assert 'components/info_tip.html' in tabs
     assert tabs.count('info_tip.render(') == 1
