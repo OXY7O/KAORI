@@ -34,7 +34,7 @@ def test_mfa_enrollment_matches_account_natural_action_context_layout() -> None:
     assert 'xl:grid-cols-12 xl:items-start' in html
     assert 'xl:col-span-7' in html
     assert 'xl:col-span-5' in html
-    assert 'Enrollment Guide' in html
+    assert 'How to Activate MFA' in html
     assert 'Recovery Security' in html
     assert 'STEP 01' in html
     assert 'STEP 02' in html
@@ -52,7 +52,7 @@ def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     assert 'id="mfa-confirm-code"' in html
     assert 'id="mfa-regen-password"' in html
     assert 'id="mfa-regen-code"' in html
-    assert 'aria-describedby="mfa-confirm-help"' in html
+    assert 'mfa-confirm-help' not in html
     assert 'inputmode="numeric"' in html
     assert 'pattern="[0-9]{6}"' in html
     assert 'maxlength="6"' in html
@@ -121,7 +121,8 @@ def test_mfa_stays_inside_shared_account_tabs_without_new_navigation() -> None:
 def test_approved_mockup_has_illustrative_hero_and_posture_cards() -> None:
     html = source()
     assert 'Add an authenticator application to protect your KAORI account' in html
-    assert 'pointer-events-none hidden items-center gap-2 lg:flex' in html
+    assert 'border-b border-outline-default bg-surface-card px-5 py-4' in html
+    assert 'bg-kaori-soft/40' not in html
     assert 'data-lucide="smartphone"' in html
     assert 'data-lucide="shield-check"' in html
     assert 'data-lucide="settings"' in html
@@ -139,6 +140,7 @@ def test_approved_mockup_connects_numbered_enrollment_and_fills_guide_column() -
     assert 'xl:grid-cols-12 xl:items-stretch' in html
     assert 'flex flex-1 flex-col divide-y divide-outline-subtle' in html
     assert 'flex min-w-0 flex-col rounded-xl border border-outline-default' in html
+    assert 'data-account-mfa-guide="single-panel"' in html
     assert 'mt-auto border-t border-outline-subtle' in html
 
 
@@ -148,9 +150,27 @@ def test_otp_remains_one_native_accessible_field_with_visual_digit_spacing() -> 
     assert html.count('name="verification_code"') == 2  # Confirm and regeneration only.
     assert 'maxlength="6"' in html
     assert 'pattern="[0-9]{6}"' in html
-    assert 'tracking-[0.65em]' in html
+    assert 'tracking-widest' in html
+    assert 'tracking-[' not in html
     assert 'text-center font-mono text-lg' in html
-    assert 'aria-describedby="mfa-confirm-help"' in html
+    assert 'mfa-confirm-help' not in html
     assert 'role="note"' in html
     assert 'Security Information' in html
     assert 'otpauth://' not in html  # No fabricated QR provisioning or inline URI.
+
+
+def test_mfa_feedback_review_has_one_clear_guide_with_four_steps() -> None:
+    html = source()
+    assert html.count('data-account-mfa-guide="single-panel"') == 1
+    assert 'How to Activate MFA' in html
+    for title in (
+        'Generate a setup key',
+        'Add an authenticator app',
+        'Verify the six-digit code',
+        'Save recovery codes',
+    ):
+        assert title in html
+    assert 'Need help?' in html
+    assert 'If setup fails, sign in again and confirm your current password.' in html
+    assert 'border border-kaori-primary/20 bg-kaori-soft/60' not in html
+    assert 'Six digits from your authenticator application.' not in html
