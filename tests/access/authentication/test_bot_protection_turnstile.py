@@ -82,7 +82,7 @@ def test_verified_token_uses_fixed_https_endpoint_and_bounded_request() -> None:
     assert response.closed
 
 
-@pytest.mark.parametrize('token', [None, '', ' ', 'a' * 2049, '\\nnewline', 'non-ascii-☃'])
+@pytest.mark.parametrize('token', [None, '', ' ', 'a' * 2049, '\nnewline', 'non-ascii-☃'])
 def test_missing_or_malformed_token_rejected_without_network(token: str | None) -> None:
     def forbidden(*args: Any, **kwargs: Any) -> FakeResponse:
         raise AssertionError('must not call provider')
