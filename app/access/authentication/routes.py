@@ -71,12 +71,13 @@ def _complete_successful_login(
     user = result.user
     if user is None:
         raise RuntimeError('Successful authentication result is missing its user.')
-    record_successful_authentication(user, source=result.source, client_ip=_client_ip())
+    issued_session_version = record_successful_authentication(user, source=result.source, client_ip=_client_ip())
 
     establish_authenticated_session(
         user,
         source=result.source,
         remember_requested=remember_requested,
+        issued_session_version=issued_session_version,
     )
     return redirect(safe_next_url(next_url) or url_for('welcome.index'))
 
