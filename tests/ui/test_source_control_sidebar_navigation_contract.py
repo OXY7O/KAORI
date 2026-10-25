@@ -48,3 +48,36 @@ def test_github_provider_action_uses_shared_provider_selector():
     assert 'GitHub · First Provider' not in workspace
     assert 'GitHub · Open Provider' not in workspace
     assert 'workspace_endpoint: integrations.source_control' in taxonomy
+
+
+
+def test_provider_chooser_resolves_domain_from_matrix() -> None:
+    from app.integrations.navigation import provider_selector_domain
+
+    expected_domains = {
+        'source_control': 'source_control',
+        'object_storage': 'storage',
+        'registry': 'registry',
+        'container_orchestrator': 'orchestration',
+        'secrets_pki': 'secrets_management',
+        'metrics_source': 'observability',
+        'alert_source': 'observability',
+    }
+    for integration_type, domain_key in expected_domains.items():
+        domain = provider_selector_domain(integration_type)
+        assert domain is not None
+        assert domain['key'] == domain_key
+
+    assert provider_selector_domain('unregistered_type') is None
+
+
+def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None:
+    presentation = _read('app/bootstrap/presentation.py')
+    sidebar_model = _read('app/common/workspace_navigation.py')
+    breadcrumb = _read('app/common/navigation.py')
+    assert "request.endpoint == 'integrations.choose_integration_provider'" in presentation
+    assert 'active_capability_override=' in presentation
+    assert 'integration_selector_label=' in presentation
+    assert "resolved_endpoint == 'integrations.choose_integration_provider'" in sidebar_model
+    assert "endpoint == 'integrations.choose_integration_provider'" in breadcrumb
+    assert "BreadcrumbItem('Choose Provider')" in breadcrumb
