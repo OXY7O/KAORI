@@ -19,8 +19,8 @@
                 'Authentication assurance',
                 'Security Controls',
                 'Challenge Activation',
-                'Partial' if mfa_policy_mode != 'disabled' else 'Not Enabled',
-                'warning' if mfa_policy_mode != 'disabled' else 'unknown',
+                'Partial' if mfa_policy_mode != 'disabled' or bot_state.required else 'Not Enabled',
+                'warning' if mfa_policy_mode != 'disabled' or bot_state.required else 'unknown',
                 [
                     ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP and recovery challenge are governed by the selected policy'),
                     ('bot', 'Bot Protection', 'Not Enabled', 'Provider activation pending')
