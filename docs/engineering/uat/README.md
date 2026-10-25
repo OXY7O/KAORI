@@ -12,11 +12,11 @@ Read one `.feature` file per KAORI capability, click the scenario with its stabl
 
 **2026-10-24 Welcome addendum:** #746 manual browser screenshots and Viewer HTTP 403 support scoped human-observed behavior, not executed Gherkin/pytest IDs. The six `UAT-WEL-*` and separate `UAT-IAM-007` specifications remain `@owner_review` and `NOT RUN` for machine scenario attribution. Historic 2026-10-16 mapping counts are kept distinct from this addition.
 
-The [143-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates all written test cases from existing test-node mapping, the four-case #1728 pilot and outstanding runtime/human evidence. It records **HOLD** for admission while owner review and automation mapping are incomplete. The existing pytest contract at `tests/contracts/release/test_uat_written_scenario_contract.py` checks written ID, Gherkin structure, and case-field traceability; it does **not** execute business/UAT scenarios.
+The [150-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates all written test cases from existing test-node mapping, the four-case #1728 pilot and outstanding runtime/human evidence. It records **HOLD** for admission while owner review and automation mapping are incomplete. The existing pytest contract at `tests/contracts/release/test_uat_written_scenario_contract.py` checks written ID, Gherkin structure, and case-field traceability; it does **not** execute business/UAT scenarios.
 
 ## Execution and ownership boundaries
 
-- **143 scenarios in 21 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **All 143 `@specified` scenarios** now have individual preconditions, actions, assertions, evidence and isolation instructions in the [complete test-case register](../KAORI_UAT_ALL_CASES.md). **14 `@first_wave`** retain original procedures; **129 `@owner_review`** are expanded and still require capability-owner review and executable mapping.
+- **150 scenarios in 21 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **All 150 `@specified` scenarios** now have individual preconditions, actions, assertions, evidence and isolation instructions in the [complete test-case register](../KAORI_UAT_ALL_CASES.md). **14 `@first_wave`** retain original procedures; **136 `@owner_review`** are expanded and still require capability-owner review and executable mapping.
 - Existing pytest/Playwright nodes, domain fixtures, JUnit, screenshot/trace and provider/audit evidence are implementation/execution owners. See the [test mapping audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md); a Gherkin `@UAT-...` tag does not execute a test or create a pytest marker.
 - **Execution status belongs to candidate-bound evidence, never the reusable `.feature` files.** At the initial authoring checkpoint (2026-10-13), none of the original 91 scenario IDs had a specific UAT execution result and human acceptance remained PENDING. For current results consult the owning Issue/PR execution records. Unrelated historic CI PASS is not scenario acceptance.
 - Provider mutation is only allowed in a governed disposable sandbox with read-back/cleanup and explicit permission. Simulated/fake-provider test results do not prove real-provider UAT.
@@ -36,6 +36,8 @@ The [143-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates
 
 **Object Storage Overview (2026-10-25; #3168):** Human desktop review covered four tabs, MinIO X300 and All Systems; focused 52 pytest PASS, Ruff lint/djlint PASS and subsequent Ruff format PASS are not per-ID Gherkin execution. Ten new UAT-OSD scenarios remain NOT RUN per ID. Report creation/download, cross-system, permission denial, provider outage, full dark/mobile testing are unexecuted. CI/CD HOLD.
 
+**Object Storage Inventory acceptance (2026-10-25; #3186):** The operator explicitly accepted the bounded Dev Container Inventory Overview, Systems and Buckets & Containers UAT, including filtered `kaori` and the native detail header/evidence rails. Last reported checks: djlint PASS, Ruff check PASS, Ruff format PASS, **15 focused pytest PASS in 1.61s**. The user's exact local HEAD was not supplied; remote holding branch `1b0f75f1` was verified separately. These results do **not** establish execution of individual `UAT-OST-001`–`011`. Provider outage, RBAC denial, real multi-system fixture and full light/dark/narrow testing remain NOT RUN. Official CI/CD HOLD.
+
 ## Feature index
 
 | Capability | Scenarios | Positive | Negative | Expanded details | Gherkin source |
@@ -50,7 +52,7 @@ The [143-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates
 | Kubernetes — Tenant Management | 8 | 3 | 5 | 3 | [`ten-kubernetes-tenant.feature`](features/ten-kubernetes-tenant.feature) |
 | Kubernetes — ConfigMaps, Secrets & Resource Operations | 9 | 4 | 5 | 1 | [`kop-kubernetes-operations.feature`](features/kop-kubernetes-operations.feature) |
 | Object Storage — Operations Dashboard | 10 | 7 | 3 | 0 | [`osd-object-storage-operations-dashboard.feature`](features/osd-object-storage-operations-dashboard.feature) |
-| Object Storage — Inventory & Analytics | 4 | 2 | 2 | 0 | [`ost-object-storage.feature`](features/ost-object-storage.feature) |
+| Object Storage — Inventory & Analytics | 11 | 7 | 4 | 0 | [`ost-object-storage.feature`](features/ost-object-storage.feature) |
 | Artifact Registry — Inventory, Security, Runtime & Governance | 5 | 2 | 3 | 1 | [`reg-artifact-registry.feature`](features/reg-artifact-registry.feature) |
 | Integrations — Registry, Provider Configuration & Runtime | 5 | 2 | 3 | 1 | [`ing-integrations.feature`](features/ing-integrations.feature) |
 | Notification Channels & Activity Center | 4 | 2 | 2 | 0 | [`ntf-notifications.feature`](features/ntf-notifications.feature) |
@@ -61,7 +63,7 @@ The [143-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates
 | Welcome Workspace Catalog | 6 | 5 | 1 | 0 | [`wel-welcome-workspace-catalog.feature`](features/wel-welcome-workspace-catalog.feature) |
 | Shared Shell, Settings, Visual QA & Accessibility | 7 | 3 | 4 | 2 | [`uix-shared-ui-ux.feature`](features/uix-shared-ui-ux.feature) |
 | Release & Server UAT Operational Evidence | 4 | 2 | 2 | 1 | [`rel-release-uat.feature`](features/rel-release-uat.feature) |
-| **Total** | **143** | **70** | **73** | **14** | |
+| **Total** | **150** | **75** | **75** | **14** | |
 
 ## Example: how a Gherkin spec maps to executable evidence
 
