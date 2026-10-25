@@ -27,7 +27,6 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
     assert 'integrations/components/_provider_registration_actions.html' in form
-    assert 'components/form_action_bar.html' in form
     assert 'components/operational_toggle.html' in form
     assert 'integrations/components/_provider_registration_context.html' in form
 
@@ -57,7 +56,7 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     partial = _source(
         'app/templates/integrations/source_control/github/partials/_connection_test_result.html'
     )
-    assert 'hx-post="{{ url_for(\'github_source.new_connection\') }}"' in form
+    assert """hx-post="{{ url_for('github_source.new_connection') }}" """ .strip() in form
     assert 'hx-include="#github-app-connection-form"' in form
     assert 'hx-target="#github-connection-test-result"' in form
     assert 'hx-disabled-elt="this"' in form
@@ -72,14 +71,13 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     assert 'webhook_secret' not in partial
 
 
-
 def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')
     identity = form.index('Connection Identity')
     installation = form.index('GitHub App Installation')
     credentials = form.index('App Credentials')
     controls = form.index('Operational Controls')
-    actions = form.index('form_action_bar.render(')
+    actions = form.index('registration_actions.render(')
     context = form.index('registration_context.render(')
 
     assert identity < installation < credentials < controls < actions < context
@@ -100,7 +98,6 @@ def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> 
     assert form.index('hx-vals=') < form.index('registration_actions.render(')
     assert "submit_value='save'" in form
     assert 'connection_test_proof' in form
-    assert 'connection_test_proof' not in form
     assert 'data-operation-submit' not in form  # Shared registration macro owns loading state.
     assert "loading_label='Registering Connection...'" in form
     assert "url_for('github_source.index')" in form
