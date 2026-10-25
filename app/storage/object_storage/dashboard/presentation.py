@@ -229,7 +229,9 @@ def _consumer_insight(
     top_share = _optional_float(ordered_usage[0].get('usage_share')) if ordered_usage else None
     if top_share is not None and top_share >= 50:
         title = 'Usage Concentration Requires Review'
-        description = f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'
+        description = (
+            f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'
+        )
     elif missing_activity_count:
         title = 'Request Activity Evidence Incomplete'
         description = f'{missing_activity_count} bucket(s) do not have committed request-rate evidence.'
