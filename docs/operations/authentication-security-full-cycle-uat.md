@@ -310,3 +310,18 @@ responsive natural-height 7/5 action/context grammar must be visible.
 Do not record factor seeds, real OTPs, recovery codes, cookies or raw user
 credentials as visual/Audit evidence. UI source readiness does not prove
 human MFA challenge/recovery UAT PASS. Official CI/CD admission remains HOLD.
+
+
+## Approved MFA Settings visual mockup — pre-factor UAT (#3228)
+
+For `Settings → Account & Authentication → Multi-Factor Authentication`, verify the newly approved mockup at the exact `kaori/review/staging-uat` commit:
+
+1. The Violet-soft header, title-adjacent canonical Guide, decorative smartphone/security icons, and accurate **Not Enrolled / Setup Pending / Factor Enrolled** badge are present.
+2. Three semantic icon-led cards show **Factor Status**, **Security Policy**, **Recovery Codes** from committed user state—not invented counts.
+3. On desktop, numbered Step 01 and Step 02 forms occupy the left 7/12 width while the guide fills the matching right 5/12 height; no large empty right-bottom area. On mobile the whole layout stacks with no overflow.
+4. Password field remains bounded; the 6-digit code is a **single real `verification_code` control** with numerical keyboard, native form validation, autocomplete, helper association and spaced display. Six decorative boxes must not lead to six independently submitted fields.
+5. No QR image or URI is asserted present: server supports manual setup key only. The one-time key and recovery codes must never appear in screenshot attachments; existing no-store server headers and fresh authentication remain unchanged.
+6. Enrolled users still receive the existing recovery-regeneration action/context panel; verify after visual UAT using sanitized artifacts.
+7. Re-run `ruff check` and `ruff format --check` on `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`, `djlint --check` on `app/templates/settings/account/partials/_mfa.html`, focused `pytest`, `scripts/verify_settings_final_lock.py`, and shared sidebar verifier. User's prior Dev Container execution had 1 failing TOTP security primitive `repr` test; this is tracked separately in issue #3237 and must be fixed before full functional MFA acceptance.
+
+UAT cannot be marked PASS based solely on source review or mocked imagery. Official Developer Check, Full Admission and staging/main promotion remain HOLD.
