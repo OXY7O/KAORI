@@ -280,6 +280,47 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'def get_access_grant_registry_context(' in read_model
 
 
+def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidence() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
+    grant = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
+
+    assert '_access_inventory_workspace.html' in grant
+    assert 'workspace_tabs.render_query_tabs(access_inventory_tabs' in workspace
+    assert "access_inventory_view='capsule'" in workspace
+    assert "access_inventory_view='native'" in workspace
+    assert "active_access_inventory_view == 'native'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert 'hx-push-url="true"' in settings_tabs
+
+    assert "def _access_inventory_view() -> str:" in routes
+    assert "'active_access_inventory_view': _access_inventory_view()" in routes
+    assert "request.values.get('access_inventory_view')" in routes
+    assert "'HX-Replace-Url'" in routes
+
+    for panel, provider in ((capsule, 'capsule'), (native, 'native')):
+        assert f'name="access_inventory_view" value="{provider}"' in panel
+        assert 'name="csrf_token"' in panel
+        assert 'Latest Inspection' in panel
+        assert 'Not inspected' in panel
+        assert 'Provider Authority' in panel
+
+    assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
+    assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
+    assert 'recent_capsule_access_remediation' in capsule
+    assert 'recent_native_access_remediation' in native
+    assert 'No committed external-access inspection yet.' in capsule
+    assert 'No committed Native RBAC observation yet.' in native
+    assert 'observe_capsule_external_access_route' in capsule
+    assert 'observe_native_external_access_route' in native
+    assert 'Analyze Access Drift' in capsule
+    assert 'Analyze Native Access Drift' in native
+
+
 def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
