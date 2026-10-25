@@ -308,18 +308,76 @@
         {% endfor %}
     </section>
     {% if recent_capsule_access_drift %}
-        <div class="border-t border-outline-subtle px-5 py-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest committed Access Drift findings</p>
-            <div class="mt-3 space-y-2">
-                {% for event in recent_capsule_access_drift %}
-                    {% set evidence = event.metadata_json or {} %}
-                    <details class="group rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                        <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-xs font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <span>{{ evidence.finding_count }} finding(s) · Tenant {{ evidence.tenant_id }}</span>
-                            {{ table_label.status_label(evidence.severity|title,
-                                                        'critical' if evidence.severity == 'critical' else 'warning'
-                                                        if evidence.severity == 'warning' else 'info') }}
-                        </summary>
+        <section class="border-t border-outline-subtle"
+                 aria-labelledby="tenant-capsule-access-drift-title">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h4 id="tenant-capsule-access-drift-title"
+                    class="text-sm font-semibold text-content-primary">Latest Committed Access Drift Findings</h4>
+                <p class="mt-1 text-xs text-content-muted">Declaration correlation only; no automatic remediation.</p>
+            </header>
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[730px] table-fixed xl:min-w-0') }}">
+                    <caption class="sr-only">Latest committed Capsule access drift findings; inspect for details.</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[38%]">Tenant</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Findings</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Observed At</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Severity</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for event in recent_capsule_access_drift %}
+                            {% set evidence = event.metadata_json or {} %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                    <p class="truncate font-mono text-xs text-content-primary"
+                                       title="{{ evidence.tenant_id }}">{{ evidence.tenant_id }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} text-xs tabular-nums">{{ evidence.finding_count }}</td>
+                                <td class="{{ table_ui.cell_classes() }} text-xs text-content-muted">{{ event.created_at|user_datetime }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_label(evidence.severity|title,
+                                        'critical' if evidence.severity == 'critical'
+                                        else 'warning' if evidence.severity == 'warning' else 'info') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="tenant-capsule-drift-{{ event.id }}"
+                                            aria-controls="tenant-capsule-drift-{{ event.id }}"
+                                            aria-haspopup="dialog"
+                                            class="{{ table_ui.action_classes() }}">View Findings</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% for event in recent_capsule_access_drift %}
+                {% set evidence = event.metadata_json or {} %}
+                <dialog id="tenant-capsule-drift-{{ event.id }}"
+                        data-kaori-native-dialog
+                        aria-labelledby="tenant-capsule-drift-{{ event.id }}-title"
+                        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+                    <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden">
+                        <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4">
+                            <div class="min-w-0">
+                                <h2 id="tenant-capsule-drift-{{ event.id }}-title"
+                                    class="text-base font-semibold text-content-primary">Committed Access Drift Findings</h2>
+                                <p class="mt-1 break-all font-mono text-xs text-content-muted">{{ evidence.tenant_id }}</p>
+                            </div>
+                            <button type="button"
+                                    data-kaori-dialog-close
+                                    aria-label="Close Access Drift findings"
+                                    class="{{ table_ui.action_classes() }} shrink-0">
+                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                                Close
+                            </button>
+                        </header>
+                        <div class="min-h-0 space-y-3 overflow-y-auto bg-surface-page p-4 sm:p-5">
+                            <p class="text-xs text-content-secondary">{{ evidence.finding_count }} committed finding(s), observed {{ event.created_at|user_datetime }}.</p>
                         <div class="mt-2 space-y-2 border-t border-outline-subtle pt-2">
                             {% for finding in evidence.findings %}
                                 <p class="text-xs leading-5 text-content-secondary">
@@ -345,10 +403,11 @@
                                 </form>
                             {% endif %}
                         </div>
-                    </details>
-                {% endfor %}
-            </div>
-        </div>
+                        </div>
+                    </section>
+                </dialog>
+            {% endfor %}
+        </section>
     {% endif %}
     {% if recent_capsule_access_remediation %}
         {% set all_access_remediation = recent_capsule_access_remediation %}
