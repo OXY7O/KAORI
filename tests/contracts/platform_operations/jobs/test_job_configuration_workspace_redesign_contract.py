@@ -99,8 +99,10 @@ def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
     assert 'same execution and audit trail' in activity
     assert 'whitespace-nowrap' in activity
     for source in (inventory, tenant, storage):
-        assert 'block truncate text-xs leading-5' in source
-        assert 'title=' in source
+        assert 'schedule_policy.controls(' in source
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    assert 'block truncate text-xs leading-5' in shared
+    assert 'title="{{ helper }}"' in shared
     assert 'Guarded Recovery Boundary' in storage
     assert "variant='guide'" in storage
     assert 'Two complete reads required; mismatches preserve committed records.' in storage
@@ -190,10 +192,9 @@ def test_job_policy_cards_have_guidance_without_mutating_policy_controls() -> No
         assert 'Saved policy takes effect on the next scheduler cycle.' in source
     for name in registry_templates:
         source = _read(folder + name)
-        assert 'Saved policy changes take effect without restarting Celery Beat.' in source
+        assert 'schedule_policy.controls(' in source
+        assert 'schedule_policy.footer(' in source
         assert 'policy_form.hidden_tag()' in source
-        assert 'policy_form.enabled(' in source
-        assert 'policy_form.interval_minutes(' in source
 
     registry_analytics = _read(folder + 'artifact_registry_analytics_refresh.html')
     assert 'execution_safety_short' in registry_analytics
