@@ -17,6 +17,7 @@ Access
 ├── Overview
 ├── User Management
 ├── Identity Providers
+├── Authentication Security (read-only preview; controls inactive)
 ├── Roles & Access
 ├── Permission Catalog
 └── Activity Audit
@@ -32,6 +33,7 @@ Access
 - `app/access/identity_providers/` owns Identity Provider administration and directory projection workflows.
 - `app/access/authentication/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
 - `app/access/authentication/` owns session admission and authentication orchestration.
+- `app/access/authentication_security/` owns the permission-gated, read-only assurance workspace. MFA/CAPTCHA runtime control stays under Authentication; no separate identity-provider authority is created.
 - `app/access/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
 - `app/platform_operations/notifications/` remains authoritative for Notification Center persistence and the shared operational evidence store/query kernel. Activity Audit presentation and HTTP orchestration belong to `app/access/activity_audit/`.
 
