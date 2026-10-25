@@ -69,3 +69,12 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 ## Planned MFA self-service placement (authority #562, AUTH-UI-01 / #3138)
 
 After tested TOTP enrollment and verified factor persistence (#3134), a bounded Settings → Account & Authentication self-service tab will own MFA enrollment, recovery codes and state. It must reuse the current query-backed HTMX tabs and existing Settings Final Lock; it must not expose an admin-wide security policy or duplicate Identity Provider management. This note is future placement authority, **not** a claim that factor enrollment currently exists or is active.
+
+
+## Account MFA self-service extension (#3134)
+
+A new `mfa` query-backed tab under Settings → Account & Authentication reuses `components/workspace_tabs.html::render_query_tabs` with normal GET/HTMX behavior and the existing Violet semantic controls. The approved scope is self-service TOTP enrollment, code verification, one-time display of hashed-at-rest recovery codes, guarded regeneration, and policy-permitted disable. The current password (Local Database) or a fresh external sign-in plus verified factor proof is required for sensitive mutations. Never expose factor seeds or recovery values in shared dashboard state, retained audit, redirects, or browser-signed sessions.
+
+This extends the existing Settings Final Lock without creating a new Settings overview or admin policy editor. Global MFA and CAPTCHA policy remains in Access. `mfa` is not a substitute for required provider MFA assurance or a grant of KAORI RBAC. No new visible loading bar is introduced; standard progressive form fallback remains.
+
+Pending-auth enrollment after a mandatory-policy primary sign-in is a restricted Authentication route, not a fully authorized Settings session. Reuse committed factor and audited session generation after successful verification; visual and security UAT required.
