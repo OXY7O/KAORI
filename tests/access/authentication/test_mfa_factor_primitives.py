@@ -1,12 +1,12 @@
-"""MFA secret encryption, TOTP and recovery-code boundaries (#3134)."""
+"""Compatibility primitives use the same tested RFC 6238 core as MFA service."""
 
 from __future__ import annotations
 
 import base64
 from datetime import UTC, datetime
 
-import pyotp
 import pytest
+from flask import Flask
 
 from app.access.authentication.mfa.factors import (
     generate_recovery_codes,
@@ -15,12 +15,11 @@ from app.access.authentication.mfa.factors import (
     start_totp_enrollment,
     verify_totp,
 )
+from app.access.authentication.mfa.service import _totp
 from app.security.credentials import decrypt_credential
 
 
-def test_enrollment_secret_is_encrypted_and_compatible_with_authenticator(monkeypatch: pytest.MonkeyPatch) -> None:
-    from flask import Flask
-
+def test_enrollment_secret_is_encrypted_and_compatible_with_authenticator() -> None:
     app = Flask(__name__)
     app.config['INTEGRATION_CREDENTIAL_KEY'] = base64.urlsafe_b64encode(b'm' * 32).decode()
     with app.app_context():
@@ -30,7 +29,7 @@ def test_enrollment_secret_is_encrypted_and_compatible_with_authenticator(monkey
         secret = decrypt_credential(enrollment.encrypted_secret)
         assert secret and secret not in repr(enrollment)
         timestamp = int(datetime(2026, 10, 25, tzinfo=UTC).timestamp())
-        code = pyotp.TOTP(secret).at(timestamp)
+        code = _totp(secret).generate(timestamp).decode('ascii')
         assert verify_totp(enrollment.encrypted_secret, code, at_time=timestamp)
         assert not verify_totp(enrollment.encrypted_secret, 'invalid', at_time=timestamp)
         assert not verify_totp(enrollment.encrypted_secret, '1234567', at_time=timestamp)
