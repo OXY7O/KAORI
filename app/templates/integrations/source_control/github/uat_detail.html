@@ -169,10 +169,22 @@
                                 {{ operational_context.render('GitHub owns repositories, installation grants, branches, and workflow execution. KAORI governs connection identity, committed evidence, correlation, and audit.',
                                     github_operational_flow,
                                     ['GitHub App', installation.repository_scope|title, 'Committed Evidence']) }}
+                                {% include 'integrations/source_control/github/partials/_minimum_validation_permissions.html' %}
                             </div>
-                            <footer class="flex items-start gap-2.5 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
-                                {{ ui.palette_icon('info', 'info', size='xs') }}
-                                <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
+                            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                <div class="flex items-start gap-2.5">
+                                    {{ ui.palette_icon('info', 'info', size='xs') }}
+                                    <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
+                                </div>
+                                <a href="https://github.com/settings/installations"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                   title="Configure installation grants on GitHub. Organization installations are managed in organization settings.">
+                                    <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                    Configure Connection
+                                    <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                </a>
                             </footer>
                         </section>
                     </div>

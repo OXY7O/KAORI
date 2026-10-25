@@ -234,3 +234,50 @@ def test_github_configuration_reuses_approved_connection_contract_and_operationa
     assert "operational_context.render(" in kubernetes
     assert 'data-kaori-provider-operational-context' in shared
     assert '<style' not in detail
+
+
+def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -> None:
+    root = Path(__file__).resolve().parents[2]
+    detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
+    github = (
+        root
+        / 'app/templates/integrations/source_control/github/partials/_minimum_validation_permissions.html'
+    ).read_text()
+    kubernetes = (
+        root
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    ).read_text()
+    readiness = (
+        root / 'app/integrations/source_control/source_control/providers/github/readiness.py'
+    ).read_text()
+
+    assert "partials/_minimum_validation_permissions.html" in detail
+    assert 'data-kaori-github-minimum-validation-permissions' in github
+    assert 'data-kaori-github-permission-modal' in github
+    assert 'components/workspace_tabs.html' in github
+    assert 'components/workspace_tabs.html' in kubernetes
+    assert "prefix='github-minimum-permissions'" in github
+    assert "('baseline', 'Baseline Validation Permissions', 'shield-check')" in github
+    assert "('governance', 'Optional Governance Permissions', 'key-round')" in github
+    assert "copyText('baselinePermissions', 'baseline')" in github
+    assert "copyText('governancePermissions', 'governance')" in github
+    assert 'aria-modal="true"' in github
+    assert 'aria-labelledby="github-minimum-permissions-title"' in github
+    assert 'closeModal()' in github
+    assert 'navigator.clipboard?.writeText' in github
+    assert '"metadata": "read"' in github
+    assert '"contents": "read"' in github
+    for capability in ('pull_requests', 'actions', 'checks', 'deployments'):
+        assert f'"{capability}": "read"' in github
+        assert f"'{capability}'" in readiness
+    assert "'source_revision': frozenset({'metadata', 'contents'})" in readiness
+    assert '"administration": "write"' not in github
+    assert '"secrets": "read"' not in github
+    assert 'form.private_key_pem' not in github
+    assert 'form.webhook_secret' not in github
+    assert 'https://github.com/settings/installations' in detail
+    assert 'rel="noopener noreferrer"' in detail
+    assert 'Configure Connection' in detail
+    assert "url_for('github_source.new_connection')" not in detail
+    assert 'url_for(\'github_source_uat.validate\', installation_id=installation.id)' in detail
+    assert 'GitHub permission changes require fresh Full Validation' in detail
