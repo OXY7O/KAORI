@@ -136,13 +136,13 @@
                 <caption class="sr-only">Capsule committed inspection evidence with actions opening separate details.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Tenant</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Observed At</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">External Bindings</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider Owners</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">KAORI-labelled</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Status</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[22%]">Actions</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">External Bindings</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Provider Owners</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">KAORI-labelled</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Status</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -182,13 +182,13 @@
                                             <input type="hidden" name="access_inventory_view" value="capsule">
                                             <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
                                             <button type="submit"
+                                                    aria-label="Analyze Access Drift for {{ evidence.tenant_id }}"
                                                     class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
                                                 <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                Analyze Access Drift
+                                                
                                             </button>
                                         </form>
                                     {% endif %}
- 
                                 </div>
                             </td>
                         </tr>
@@ -258,7 +258,7 @@
                                                'warning' if evidence.status == 'review_required' else 'info') }}</div>
                             </div>
                         </div>
-<div class="mt-2 space-y-3 text-xs text-content-secondary">
+                        <div class="mt-2 space-y-3 text-xs text-content-secondary">
                             <p>
                                 Provider UID: <span class="break-all font-mono">{{ evidence.provider_uid }}</span>
                                 · resourceVersion {{ evidence.resource_version }}
