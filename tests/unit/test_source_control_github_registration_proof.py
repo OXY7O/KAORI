@@ -120,6 +120,7 @@ def test_multiline_line_endings_do_not_invalidate_identical_configuration() -> N
             token=token, user_id=7, values=normalized
         ) == (True, '')
         assert registration_proof.verify_github_registration_proof(
-            token=token, user_id=7,
+            token=token,
+            user_id=7,
             values=replace(normalized, private_key_pem=normalized.private_key_pem + 'changed'),
         )[0] is False
