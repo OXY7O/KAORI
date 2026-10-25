@@ -42,6 +42,30 @@ For a canonical registry with shared status or lifecycle vocabulary, place one *
 
 For **Kubernetes Tenant**, title-level guidance in Tenant Setup, Discovery, Membership, Access, Credentials, Resource Profiles, Capacity Policy/Budget and Namespace Provisioning/Allocation sections uses the same compact Guide label. **Capsule Initial Owner** consolidates Owner Kind and Owner Subject explanations into one title-adjacent Guide because both fields describe the same provider ownership boundary; the field labels and required ownership state remain visible without hovering. Other genuinely field-specific principal/selection help and row-specific reconciliation evidence remain icon-only. The four Resource Profile resource-group disclosures render their Guide beside the heading **inside the summary**, never as a detached `Section help` row below it. Activating that Guide must not toggle the disclosure; the chevron and summary area still operate normally. Preserve required inline status/error guidance outside popovers.
 
+## Integration provider Overview headers
+
+All canonical provider landing pages (Kubernetes, Metrics Source, Alertmanager,
+MinIO, Harbor, Vault and GitHub) receive **one** standard Violet
+`Guide` beside the **Integration Overview** section title. The owning
+shared macro is
+`integrations/components/_provider_frontpage.html::overview`, not
+provider-specific markup or a new Info Tip implementation.
+
+The Guide popover provides existing provider-owned Overview description,
+**Integration Contract**, **Consumer Resolution**, and **Authority Boundary**
+context. The trigger uses a provider-title-derived ID to prevent duplicate
+tooltip IDs within a page. It reuses `components/info_tip.html` and
+`info_tips.js` for pointer hover, touch/click, keyboard focus, Escape,
+viewport clamping, and light/dark; no separate scripts or hidden field-level
+question icons. Section titles wrap naturally on mobile.
+
+Provider Hero descriptions are concise, semantically accurate copy rather
+than CSS `nowrap`/clamping. The GitHub Hero uses
+`Register GitHub Apps with governed Source Control evidence.` to fit one
+line in the reviewed 1440×900 viewport without changing other providers.
+The shared Overview Guide does not alter KPI counts, operational readiness,
+repository evidence, provider admission or backend behavior.
+
 ## Interaction and responsive behavior
 
 Info Tip uses **one non-modal anchored popover** for every input method.
