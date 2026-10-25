@@ -133,3 +133,57 @@ Operator visual UAT at 1440×900 found that dynamic `/integrations/providers/sou
 5. Run Ruff, Ruff Format, djLint, selected pytest, `verify_sidebar_navigation_standard.py`, `verify_integration_domain_navigation.py`, `verify_ui_style.py`, `verify_ui_reuse.py` and existing browser/Visual QA as available.
 
 **Earlier operator evidence:** 33 passed, 1 failed (line-sensitive GitHub form button action test); Integration Domain Navigation verifier PASS. The action test is now whitespace-tolerant without changing security enforcement. Executable verification on the new candidate and Human Acceptance remain **PENDING** until actual Dev Container evidence is recorded. Official admission remains HOLD.
+
+## 2026-10-25 — #3126 Source Control planned provider card UAT
+
+**Authority:** #3126 (follow-up to #3106 and navigation refinement #3119).
+Human screenshot and feedback on the preceding UAT candidate confirmed the
+Source Control sidebar is active and the focused tests were **52 PASS**,
+with both navigation verifiers PASS. The wide single-provider row remained
+visually rejected; field-level hover behavior was not accepted.
+
+**Candidate behavior:** Provider Matrix now contains **GitHub (available)**,
+**GitLab (planned)**, **Bitbucket (planned)**. Only GitHub has an admitted
+registration endpoint. Planned provider metadata explicitly says adapter
+**Not implemented** and protocol **Not defined**, rather than implying a
+working implementation. The reusable selector displays equal-height cards,
+available-first provider order, a real disabled button for planned providers
+and canonical `info_tip.render` for each Adapter/Protocol field. It uses
+the existing `components/info_tip.html` plus `app/static/js/info_tips.js`
+pointer/keyboard/touch controller; it does not introduce local tooltip CSS,
+JS, or a new provider implementation.
+
+**Test steps — navigation-only, no credentials:**
+
+1. Update to the exact holding SHA and restart Flask. Open
+   **Integrations → Source Control → Open Source Control**.
+   Expect Source Control active, breadcrumb ending **Choose Provider**.
+2. At **1440×900** in **light** and **dark** themes verify a balanced grid
+   ordered GitHub, Bitbucket/GitLab (planned choices may alphabetize among
+   themselves); GitHub has **Available** and working **Register GitHub**.
+   GitLab and Bitbucket must both display **Planned**, **Not implemented**
+   adapter / **Not defined** protocol, with a disabled
+   **Registration Unavailable** button. Neither may link to a form.
+3. Hover the **help icon next to Adapter and Protocol** using a desktop
+   pointer; keyboard Tab must focus the same shared trigger and show
+   guidance; click/touch toggles, Escape closes. **Important:** Firefox
+   Responsive Design Mode with Android UA/touch emulation may report
+   `(hover: hover) and (pointer: fine)` false; for that device, test click/
+   touch, and switch to desktop pointer emulation to verify actual hover.
+   Do not interpret touch-only hover suppression as a broken tooltip.
+4. At **390×844** and **360×800** inspect card stacking, no horizontal
+   overflow, readable metadata, disabled actions and focus-visible states.
+5. Click GitHub registration; expect existing provider-owned form. Do not
+   submit secrets for this UI-focused scenario. Back navigation must restore
+   Source Control context.
+6. Run selected Ruff, Ruff Format, djLint, pytest for domain UI, matrix and
+   Source Control; run `verify_integration_domain_navigation.py`,
+   `verify_sidebar_navigation_standard.py`, `verify_ui_reuse.py`,
+   `verify_ui_style.py` if available in the Dev Container.
+
+**Evidence:** exact HEAD SHA, commands/output, 1440×900/390×844
+light/dark screenshots, Adapter and Protocol help observation,
+disabled-planned controls, working GitHub destination, any defect.
+New candidate executable QA is **NOT RUN** until Dev Container evidence;
+Human Visual Acceptance **PENDING**. Official CI/CD and Full Admission
+remain **HOLD**.

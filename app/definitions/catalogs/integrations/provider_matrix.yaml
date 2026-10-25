@@ -140,3 +140,13 @@ integration_types:
     adapter_key: github_rest_v3
     lifecycle: available
     protocol: github_rest_v3
+  - key: gitlab
+    label: GitLab
+    adapter_key: not_implemented
+    lifecycle: planned
+    protocol: not_defined
+  - key: bitbucket
+    label: Bitbucket
+    adapter_key: not_implemented
+    lifecycle: planned
+    protocol: not_defined

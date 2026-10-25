@@ -14,7 +14,7 @@
                         <h1 class="{{ page_hero.title_classes() }}">Choose Provider</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Select a provider to configure a new connection.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("package-search", available_count ~ " Available Providers") }}
+                            {{ page_hero.meta_label("package-search", available_count ~ (" Available Provider" if available_count == 1 else " Available Providers")) }}
                             {{ page_hero.meta_label("shield-check", "Provider-Owned Registration") }}
                         </div>
                     {% endcall %}
@@ -35,15 +35,12 @@
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-label="{{ domain.label }} provider selection">
             <header class="flex flex-wrap items-center justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex min-w-0 items-center gap-3">
-                    {{ integration_ui.palette_icon("layers-3", "brand", size="lg") }}
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="text-base font-semibold text-content-primary">Available Providers</h2>
-                            {{ info_tip.render("provider-choices-" ~ integration_type, "Provider Registration", "Choose an admitted provider before entering its configuration. The external engine owns validation and runtime; KAORI records committed connection evidence.", placement="right", variant="guide") }}
-                        </div>
-                        <p class="mt-1 text-sm text-content-secondary">Choose a provider to open its registration form.</p>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Choose a Provider</h2>
+                        {{ info_tip.render("provider-choices-" ~ integration_type, "Provider Registration", "Only admitted providers can register a connection. Planned providers remain visible as roadmap entries without an operational adapter or registration endpoint.", placement="right", variant="guide") }}
                     </div>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Choose an available provider to open its registration form.</p>
                 </div>
                 <a href="{{ url_for(domain.workspace_endpoint) }}"
                    class="{{ action_button.classes('secondary') }}">
@@ -52,57 +49,75 @@
                 </a>
             </header>
             <div class="p-5 sm:p-6">
-                <div class="grid gap-4 {{ 'lg:grid-cols-2' if providers|length > 1 else '' }}">
+                <div class="grid gap-4 {{ 'md:grid-cols-2 xl:grid-cols-3' if providers|length >= 3 else ('md:grid-cols-2' if providers|length == 2 else 'max-w-2xl') }}"
+                     data-kaori-provider-card-grid>
                     {% for provider in providers %}
-                        <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-5 transition-colors hover:border-brand-outline sm:p-6"
-                                 data-kaori-provider-choice="{{ provider.key }}">
-                            <div class="{{ 'md:flex md:items-center md:gap-8' if providers|length == 1 else '' }}">
+                        <article data-kaori-provider-choice="{{ provider.key }}"
+                                 data-kaori-provider-lifecycle="{{ provider.lifecycle }}"
+                                 class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 transition-colors {{ 'hover:border-brand-outline focus-within:border-brand-outline' if provider.registration_url else 'opacity-90' }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(domain.icon, "brand" if provider.registration_url else "unknown", size="lg") }}
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex items-start gap-3">
-                                        {{ integration_ui.palette_icon(domain.icon, "brand", size="lg") }}
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-base font-semibold text-content-primary">{{ provider.label }}</h3>
-                                                {% if provider.registration_url %}
-                                                    {{ table_label.status_label("Available", "normal") }}
-                                                {% else %}
-                                                    {{ table_label.status_label("Not Available", "unknown") }}
-                                                {% endif %}
-                                            </div>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ domain.label }} integration · {{ provider.protocol }}</p>
-                                        </div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold text-content-primary">{{ provider.label }}</h3>
+                                        {% if provider.registration_url %}
+                                            {{ table_label.status_label("Available", "normal") }}
+                                        {% elif provider.lifecycle == 'planned' %}
+                                            {{ table_label.status_label("Planned", "unknown") }}
+                                        {% else %}
+                                            {{ table_label.status_label("Not Available", "unknown") }}
+                                        {% endif %}
                                     </div>
-                                    <dl class="mt-5 grid grid-cols-1 gap-4 border-t border-outline-subtle pt-4 text-sm sm:grid-cols-2">
-                                        <div class="min-w-0">
-                                            <dt class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-muted">
-                                                Adapter
-                                                {{ info_tip.render("adapter-" ~ integration_type ~ "-" ~ provider.key, "Provider Adapter", "The external provider remains authoritative. KAORI normalizes and correlates committed evidence.", placement="right") }}
-                                            </dt>
-                                            <dd class="mt-1 break-words font-medium text-content-primary">{{ provider.adapter }}</dd>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <dt class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-muted">
-                                                Protocol
-                                                {{ info_tip.render("protocol-" ~ integration_type ~ "-" ~ provider.key, "Provider Protocol", "The provider integration defines its protocol and validates compatibility before operational use.", placement="right") }}
-                                            </dt>
-                                            <dd class="mt-1 break-words font-medium text-content-primary">{{ provider.protocol }}</dd>
-                                        </div>
-                                    </dl>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        {% if provider.lifecycle == 'planned' %}
+                                            Future {{ domain.label }} integration
+                                        {% else %}
+                                            {{ domain.label }} integration
+                                        {% endif %}
+                                    </p>
                                 </div>
-                                <div class="{{ 'mt-5 flex shrink-0 md:mt-0 md:justify-end' if providers|length == 1 else 'mt-5 flex justify-end border-t border-outline-subtle pt-4' }}">
-                                    {% if provider.registration_url %}
-                                        <a href="{{ provider.registration_url }}"
-                                           class="{{ action_button.classes('primary', full=providers|length == 1) }} {{ 'md:w-auto' if providers|length == 1 else '' }}">
-                                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                                            Register {{ provider.label }}
-                                        </a>
-                                    {% else %}
-                                        <span class="inline-flex items-center gap-2 text-sm font-medium text-content-muted">
-                                            <i data-lucide="lock" class="h-4 w-4" aria-hidden="true"></i>
-                                            Registration unavailable
-                                        </span>
-                                    {% endif %}
+                            </div>
+                            <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">
+                                {% if provider.lifecycle == 'planned' %}
+                                    Provider support is planned. No registration or runtime is available.
+                                {% else %}
+                                    Open provider-owned configuration and validate the connection.
+                                {% endif %}
+                            </p>
+                            <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
+                                <div class="min-w-0">
+                                    <dt class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">
+                                        <span>Adapter</span>
+                                        {{ info_tip.render("adapter-" ~ integration_type ~ "-" ~ provider.key, "Provider Adapter", "An adapter implements the external provider contract. Planned providers do not have an operational adapter; KAORI must not report readiness until admitted.", placement="right") }}
+                                    </dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">{{ provider.adapter }}</dd>
                                 </div>
+                                <div class="min-w-0">
+                                    <dt class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">
+                                        <span>Protocol</span>
+                                        {{ info_tip.render("protocol-" ~ integration_type ~ "-" ~ provider.key, "Provider Protocol", "This field identifies the provider connection protocol when defined. Planned integration details are not a validated connection contract.", placement="right") }}
+                                    </dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">{{ provider.protocol }}</dd>
+                                </div>
+                            </dl>
+                            <div class="mt-auto pt-5">
+                                {% if provider.registration_url %}
+                                    <a href="{{ provider.registration_url }}"
+                                       data-kaori-provider-register
+                                       class="{{ action_button.classes('primary', full=true) }}">
+                                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                        Register {{ provider.label }}
+                                    </a>
+                                {% else %}
+                                    <button type="button"
+                                            data-kaori-provider-disabled
+                                            class="{{ action_button.classes('locked-info', full=true) }}"
+                                            disabled
+                                            aria-label="{{ provider.label }} registration not available">
+                                        <i data-lucide="lock" class="h-4 w-4" aria-hidden="true"></i>
+                                        Registration Unavailable
+                                    </button>
+                                {% endif %}
                             </div>
                         </article>
                     {% else %}
@@ -117,7 +132,7 @@
                     <i data-lucide="shield-check"
                        class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent"
                        aria-hidden="true"></i>
-                    <p>Connection settings and credentials remain provider-owned. Validate the connection before operational use.</p>
+                    <p>External engines own credentials and validation; KAORI governs connections and committed evidence.</p>
                 </div>
             </div>
         </section>
