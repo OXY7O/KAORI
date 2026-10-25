@@ -16,8 +16,8 @@
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
         {{ schedule_policy.header('Kubernetes Inventory Sync Policy',
-            'Control automatic fleet inventory refresh and its scheduler cadence.',
-            policy) }}
+                'Control automatic fleet inventory refresh and its scheduler cadence.',
+                policy) }}
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
@@ -26,11 +26,11 @@
             {{ policy_form.hidden_tag() }}
             <div class="space-y-5 p-5 sm:p-6">
                 {{ schedule_policy.controls(policy_form, definition, can_configure,
-                'Automatic Kubernetes Inventory Sync',
-                'Run when the saved interval is due.',
-                icon='calendar-check',
-                interval_label='Execution Interval',
-                policy_error=policy_error|default(none)) }}
+                                'Automatic Kubernetes Inventory Sync',
+                                'Run when the saved interval is due.',
+                                icon='calendar-check',
+                                interval_label='Execution Interval',
+                                policy_error=policy_error|default(none) ) }}
                 <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                     <div class="flex items-center justify-between border-b border-outline-subtle px-4 py-3">
                         <div class="flex items-center gap-2">
@@ -62,7 +62,7 @@
                 </div>
             </div>
             {{ schedule_policy.footer(can_configure,
-                'Saved changes are picked up by the scheduler without restarting Celery Beat.') }}
+                        'Saved changes are picked up by the scheduler without restarting Celery Beat.') }}
         </form>
     </section>
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
