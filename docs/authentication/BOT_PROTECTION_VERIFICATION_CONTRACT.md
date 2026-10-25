@@ -35,3 +35,27 @@ Upstream contract (Cloudflare official): https://developers.cloudflare.com/turns
 BP-02 must register and protect actual provider instances using KAORI credential encryption and enforce challenge on login/SSO before credential/session issuance. A configured always/adaptive policy without a ready instance MUST fail closed; never silently fall back to disabled due to vendor outage. Preserve local break-glass with explicitly approved recovery path; never create a CAPTCHA bypass via unprotected admin form.
 
 Do not claim end-to-end CAPTCHA protection, operator-configurable providers, readiness or UAT PASS from BP-01. Official CI and `kaori/staging` admission remain HOLD.
+
+
+## BP-02 implementation supersession (#3137)
+
+The source-only BP-01 status above records its historical baseline. BP-02
+now provides the committed `AuthenticationSecurityPolicy` Turnstile fields,
+encrypted-at-rest secret, Access administrative Save/Test/Enable actions,
+server-side Local/LDAP credential enforcement and SSO preflight/callback
+continuity enforcement. Mode defaults to Disabled on every new deployment.
+Always mode is admitted only after a matching provider configuration has
+passed a live server-side test within one hour. Changes to credentials or
+hostname invalidate the test proof. Known public Cloudflare dummy keys cannot
+be enabled in non-debug/non-testing runtime.
+
+The admin page never returns the stored verification secret. No CAPTCHA token,
+provider secret, or raw Cloudflare verification response is persisted as audit
+metadata. Enabled vendor failure/timeouts reject login rather than silently
+falling back to disabled. Adaptive scoring remains future scope because no
+committed risk-signal model is approved.
+
+This is a **source implementation**, not automatically accepted browser UAT.
+Follow `docs/operations/authentication-security-full-cycle-uat.md` for
+migration order, focused QA, negative Siteverify cases, multiple provider
+sign-in routes, device/session regression and human acceptance.
