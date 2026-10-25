@@ -14,7 +14,7 @@ def test_provider_kernel_descriptor_reuses_existing_integration_types():
     assert module.integration_type == 'source_control'
     assert module.domain_key == 'source_control'
     assert module.capability_key == 'source_control'
-    assert module.workspace_endpoint == 'github_source.new_connection'
+    assert module.workspace_endpoint == 'github_source.index'
     assert module.workspace_endpoint != module.domain.workspace_endpoint
     assert module.operation_queues['runtime.validate'] == 'integration-validation'
     assert module.operation_queues['runtime.health'] == 'integration-runtime'
@@ -58,8 +58,8 @@ def test_failure_recorder_sanitizes_provider_exception():
     assert 'credential-leak-example' not in canonical.last_error
 
 
-def test_provider_workspace_resolves_to_github_connection_registration_url():
-    """Resolve the reusable registration page through the real provider blueprint."""
+def test_provider_workspace_resolves_to_github_registry_url():
+    """Resolve the canonical provider registry through its real blueprint."""
     from flask import Flask, url_for
 
     from app.integrations.source_control.source_control.providers.github.application.routes import (
@@ -70,6 +70,6 @@ def test_provider_workspace_resolves_to_github_connection_registration_url():
     app.register_blueprint(github_source_bp)
     with app.test_request_context():
         assert url_for(kernel_contract.integration_module.workspace_endpoint) == (
-            '/integrations/source-control/github/connections/new'
+            '/integrations/source-control/github/'
         )
         assert url_for(kernel_contract.integration_module.workspace_endpoint) != ('/integrations/source-control')
