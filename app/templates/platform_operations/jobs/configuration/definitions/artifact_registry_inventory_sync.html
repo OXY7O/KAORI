@@ -51,18 +51,20 @@
                         </span>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
-                            <h3 id="registry-confirm-empty-title"
-                                class="mt-1 text-base font-semibold text-content-primary">Confirm an Empty Registry Inventory</h3>
+                            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                                <h3 id="registry-confirm-empty-title"
+                                class="min-w-0 text-base font-semibold text-content-primary">Confirm an Empty Registry Inventory</h3>
+                                {{ info_tip.render('jobs-empty-registry-recovery-safety',
+                                'Guarded Recovery Boundary',
+                                'Only after independently verifying all projects were deliberately removed from the selected Registry. Unexpected zero discovery preserves the last-good snapshot. This action checks the prior committed generation and performs two independent complete project discovery requests. Confirmation is bound to the authenticated operator, one eligible Registry instance and its current committed inventory. Changed snapshots, malformed discovery or a nonempty second read fail closed without modifying records.',
+                                placement='right',
+                                variant='guide') }}
+                            </div>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">
                                 Verify intentional project removal before reconciling the committed inventory.
                             </p>
                         </div>
                     </div>
-                    {{ info_tip.render('jobs-empty-registry-recovery-safety',
-                                        'Guarded Recovery Boundary',
-                                        'Only after independently verifying all projects were deliberately removed from the selected Registry. Unexpected zero discovery preserves the last-good snapshot. This action checks the prior committed generation and performs two independent complete project discovery requests. Confirmation is bound to the authenticated operator, one eligible Registry instance and its current committed inventory. Changed snapshots, malformed discovery or a nonempty second read fail closed without modifying records.',
-                                        placement='right',
-                                        variant='guide') }}
                 </div>
             </header>
             <form method="post"
