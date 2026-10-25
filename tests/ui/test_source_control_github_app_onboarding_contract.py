@@ -89,7 +89,10 @@ def test_source_control_selects_provider_then_opens_existing_registration() -> N
     assert 'Register GitHub App Connection' in form
     assert "url_for('github_source.index')" in form  # Shared Back to Registry.
     assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
-    assert '"Choose Provider", url_for("integrations.choose_integration_provider", integration_type="source_control")' in index
+    assert (
+        '"Choose Provider", url_for("integrations.choose_integration_provider", '
+        'integration_type="source_control")'
+    ) in index
     assert 'Manage Installations' in index
 
 
