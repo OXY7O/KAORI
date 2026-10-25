@@ -446,9 +446,9 @@ def mfa_challenge():
             try:
                 validate_csrf(request.form.get('csrf_token'))
                 if action == 'begin':
-                    setup_secret = begin_mfa_enrollment(user)
+                    setup_secret = begin_mfa_enrollment(user, authenticated=False)
                 elif action == 'confirm' and form.validate_on_submit():
-                    codes = confirm_mfa_enrollment(user, str(form.verification_code.data or ''))
+                    codes = confirm_mfa_enrollment(user, str(form.verification_code.data or ''), authenticated=False)
                 else:
                     raise MfaVerificationError('Invalid enrollment request.')
             except (ValidationError, MfaVerificationError):
