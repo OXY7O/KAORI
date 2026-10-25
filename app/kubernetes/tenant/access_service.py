@@ -4,9 +4,10 @@ import re
 
 import yaml
 from kubernetes.client.rest import ApiException
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG,
@@ -902,6 +903,47 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
             )
             db.session.commit()
         raise
+
+
+def get_provider_access_evidence_registry_context(
+    *,
+    provider: str,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    status: str = '',
+) -> dict[str, object]:
+    """Page committed inspection AuditEvents for one provider; never query Kubernetes."""
+    target_types = {
+        'capsule': 'kubernetes_tenant_external_access_inventory',
+        'native': 'kubernetes_tenant_native_external_access_inventory',
+    }
+    if provider not in target_types:
+        raise ValueError('Unknown Tenant access inspection provider.')
+
+    search_value = search.strip()[:120]
+    status_value = status if status in {'observed', 'review_required'} else ''
+    query = AuditEvent.query.filter(AuditEvent.target_type == target_types[provider])
+    if status_value:
+        query = query.filter(AuditEvent.metadata_json['status'].as_string() == status_value)
+    if search_value:
+        pattern = f'%{search_value}%'
+        query = query.filter(
+            or_(
+                AuditEvent.metadata_json['tenant_id'].as_string().ilike(pattern),
+                AuditEvent.summary.ilike(pattern),
+            )
+        )
+    rows, pagination = paginate_query(
+        query.order_by(AuditEvent.id.desc()),
+        page=page,
+        per_page=per_page,
+    )
+    return {
+        'access_evidence_rows': rows,
+        'access_evidence_pagination': pagination,
+        'access_evidence_filters': {'search': search_value, 'status': status_value},
+    }
 
 
 def get_tenant_access_context() -> dict[str, object]:
