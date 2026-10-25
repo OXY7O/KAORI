@@ -1,0 +1,38 @@
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% set access_inventory_tabs = [
+        ('capsule', 'Capsule External Access', 'shield-question', url_for('tenant.tenants', section='access-grants', access_inventory_view='capsule')),
+        ('native', 'Native Namespace RBAC', 'shield-search', url_for('tenant.tenants', section='access-grants', access_inventory_view='native'))
+    ] %}
+<section id="tenant-access-inventory-workspace"
+         class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="tenant-access-inventory-title"
+         hx-select="#tenant-admin-workspace">
+    <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="shield-search" class="h-5 w-5"></i>
+        </span>
+        <div class="min-w-0">
+            <h3 id="tenant-access-inventory-title"
+                class="text-base font-semibold text-content-primary">Access Inventory Workspace</h3>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                Inspect provider-side access evidence before importing identities or taking governance action.
+            </p>
+        </div>
+    </header>
+    {{ workspace_tabs.render_query_tabs(access_inventory_tabs,
+            active_access_inventory_view,
+            aria_label='Provider Access Inventory',
+            hx_target='#tenant-admin-workspace',
+            hx_indicator='#tenant-admin-loading',
+            hx_sync='#tenant-admin-workspace:replace') }}
+    {% if active_access_inventory_view == 'native' %}
+        <div id="native-access-inventory-panel" class="min-w-0">
+            {% include "kubernetes/tenant/partials/_native_namespace_rbac_inventory.html" %}
+        </div>
+    {% else %}
+        <div id="capsule-access-inventory-panel" class="min-w-0">
+            {% include "kubernetes/tenant/partials/_external_capsule_access_inventory.html" %}
+        </div>
+    {% endif %}
+</section>
