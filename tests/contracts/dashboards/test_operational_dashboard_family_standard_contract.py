@@ -384,9 +384,11 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
         assert token in kubernetes_response
     for token in (
         'committed snapshot freshness',
-        'before acting on the signal.',
-        'establish an accountable owner.',
-        'remains auditable.',
+        'alert-source evidence.',
+        'blast radius',
+        'affected bucket or request path',
+        'and owner.',
+        'follow-up evidence.',
     ):
         assert token in object_response
 
