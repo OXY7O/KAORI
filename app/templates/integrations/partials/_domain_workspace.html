@@ -82,9 +82,9 @@
     ] %}
 {% elif domain.key == 'source_control' %}
     {% set domain_guidance_title = "Source Control Provider and Evidence Authority" %}
-    {% set domain_guidance_text = "GitHub remains authoritative for repositories, source revisions, pull requests, workflow runs and releases. KAORI uses committed source evidence for correlation and governance; a listed planned provider is not a usable connection." %}
+    {% set domain_guidance_text = "GitHub remains authoritative for repositories, source revisions, pull requests, workflow runs and releases. KAORI governs committed evidence, correlation and access to registered connections." %}
     {% set domain_guidance_items = [
-        "The GitHub App provider is planned until installation scope, credential isolation and readiness are qualified.",
+        "GitHub App connections require verified installation scope, isolated credentials and Full Validation before operational use.",
         "Repository IDs, immutable revisions and application ownership remain distinct; consumer bindings must not be inferred from names."
     ] %}
 {% endif %}
@@ -100,7 +100,7 @@
                     <div class="mt-0.5 flex items-center gap-1.5">
                         <h2 id="domain-workspace-title"
                             class="text-base font-semibold text-content-primary">
-                            {{ 'Provider Registry' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}
+                            {{ 'Source Control Connections' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}
                         </h2>
                         {% if domain_guidance_title %}
                             {{ info_tip.render('integration-' ~ domain.key ~ '-workspace-guidance',
@@ -112,7 +112,7 @@
                         {% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        {{ ('GitHub is the first Source Control provider. Open its workspace to register a GitHub App installation.' if integration_types else 'Review the Source Control provider boundary; GitHub App onboarding remains planned until validated.') if domain.key == 'source_control' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}
+                        {{ ('Register a GitHub App connection to manage installations and repository evidence.' if integration_types else 'Review Source Control provider requirements and readiness.') if domain.key == 'source_control' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}
                     </p>
                 </div>
             </div>
