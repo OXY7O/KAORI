@@ -52,7 +52,9 @@ def verify_totp(encrypted_secret: str, value: str, *, at_time: int | None = None
     if not secret:
         return False
     timestamp = int(at_time) if at_time is not None else int(datetime.now(UTC).timestamp())
-    return _accepted_step(secret, value, last_accepted_step=None, now=datetime.fromtimestamp(timestamp, UTC)) is not None
+    return (
+        _accepted_step(secret, value, last_accepted_step=None, now=datetime.fromtimestamp(timestamp, UTC)) is not None
+    )
 
 
 def generate_recovery_codes(*, count: int = RECOVERY_CODE_COUNT) -> tuple[str, ...]:
