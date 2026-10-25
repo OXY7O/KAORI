@@ -156,11 +156,11 @@ def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
 def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     landing = _source('app/templates/integrations/source_control/github/index.html')
-    assert 'registered: int | None = None' in routes
-    assert 'ready: int | None = None' in routes
+    assert 'total = ready = grants = None' in routes
+    assert 'if available:' in routes
     assert 'if available:' in routes
     assert 'Not Observed' in routes
-    assert 'Repository Evidence' in landing
+    assert 'Repository Evidence Not Yet Observed' in landing
     assert 'Connection Registry' in landing
     assert 'provider_front.hero(' in landing
 
