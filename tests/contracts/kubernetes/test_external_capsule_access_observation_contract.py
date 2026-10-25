@@ -13,6 +13,7 @@ def test_external_access_inspection_reuses_tenant_workspaces_and_never_autogrant
     service = read('app/kubernetes/tenant/access_service.py')
     ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    tabs = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
 
     assert "tenant.provider_key != 'capsule'" in observation
     assert "'v1beta2' not in snapshot.tenant_api_versions" in observation
@@ -34,7 +35,8 @@ def test_external_access_inspection_reuses_tenant_workspaces_and_never_autogrant
     assert "'recent_external_capsule_access'" in service
     assert "'external_capsule_tenants'" in service
     assert '.limit(5).all()' in service
-    assert '_external_capsule_access_inventory.html' in workspace
+    assert '_access_inventory_workspace.html' in workspace
+    assert '_external_capsule_access_inventory.html' in tabs
     assert 'Inspect External Access' in ui
     assert 'role.permissions_sha256' not in ui
     assert 'name="csrf_token"' in ui
