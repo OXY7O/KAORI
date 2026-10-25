@@ -268,4 +268,3 @@ def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fiel
     manual_only = _read(base + 'vault_alert_observation.html')
     assert 'schedule_policy.manual_header(' in manual_only
     assert 'policy_form.enabled(' not in manual_only
-
