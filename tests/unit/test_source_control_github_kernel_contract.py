@@ -58,8 +58,8 @@ def test_failure_recorder_sanitizes_provider_exception():
     assert 'credential-leak-example' not in canonical.last_error
 
 
-def test_provider_workspace_resolves_to_distinct_github_landing_url():
-    """Exercise the real GitHub provider blueprint rather than a mocked URL."""
+def test_provider_workspace_resolves_to_github_connection_registration_url():
+    """Resolve the reusable registration page through the real provider blueprint."""
     from flask import Flask, url_for
 
     from app.integrations.source_control.source_control.providers.github.application.routes import (
