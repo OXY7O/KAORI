@@ -4,13 +4,13 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 129 written acceptance test cases
+## Complete 133 written acceptance test cases
 
-[Review all 129 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 102 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 133 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 119 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **20 `.feature` files containing all 129 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 115 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **20 `.feature` files containing all 133 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 119 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
 
 **2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
 
@@ -170,6 +170,10 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-KOP-003` | Positive | UI | Medium | Secret operation form loads and validates bounded metadata | Form labels, modal, loading, focus, feedback and layout follow shared standards |
 | `UAT-KOP-004` | Negative | Both | High | User without reveal policy requests Secret material | No Secret value disclosure via UI, response, logs, trace or audit |
 | `UAT-KOP-005` | Negative | Non-UI | High | TLS Secret rotation encounters wrong target or partial provider failure | No false rotation success; pre/post identity and recovery evidence preserved |
+| `UAT-KOP-006` | Positive | Both | High | Authorized single TLS Secret rotation after valid pair and complete SAN coverage | Only selected TLS Secret changes; stable UID, advanced resourceVersion and matching provider fingerprint |
+| `UAT-KOP-007` | Negative | Both | High | Single TLS rotation validates a mismatched key or uncovered Ingress SAN | Validation fails closed; Update disabled and original Secret remains unchanged |
+| `UAT-KOP-008` | Positive | Both | High | Authorized bulk TLS rotation of two selected committed Secrets with modal confirmation | Two targets validated then explicitly confirmed; per-target provider read-back, audit and truthful outcomes |
+| `UAT-KOP-009` | Negative | UI | Medium | Bulk native modal dismiss/invalidation and responsive safe presentation | No PATCH on dismissal, focus restored and file/target change requires revalidation |
 
 ### Object Storage — Inventory & Analytics (`UAT-OST-*`)
 
