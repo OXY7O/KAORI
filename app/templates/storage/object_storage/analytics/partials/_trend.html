@@ -75,13 +75,12 @@
                                         ] %}
                 {% else %}
                     {% set compact_metrics = [
-                                            ('Observed Samples', trend_summary.sample_count|default(trend|length), 'Committed history points', 'database'),
-                                            ('Window Change', window_change, 'Historical change, not projected', 'trending-up'),
-                                            ('Growth / Day', metrics.forecast_display.growth_per_day, 'Worker-materialized baseline', 'activity'),
-                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed history direction', trend_summary.icon|default('chart-no-axes-combined'))
+                                            ('Window Change', window_change, 'Observed change in the history window', 'chart-no-axes-combined'),
+                                            ('Historical Growth / Day', trend_summary.growth_per_day_display|default('N/A'), 'Measured history rate, not the worker baseline', 'activity'),
+                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed history direction', trend_summary.icon|default('trending-up'))
                                         ] %}
                 {% endif %}
-                {% if compact_usage_overview %}
+                {% if compact_overview_trend %}
                     <div class="overflow-hidden rounded-lg border border-outline-subtle"
                          data-object-storage-overview-trend-summary>
                         <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
@@ -107,25 +106,7 @@
                             {% endfor %}
                         </dl>
                     </div>
-                {% else %}
-                    <div class="overflow-hidden rounded-lg border border-outline-subtle"
-                         data-object-storage-overview-trend-summary>
-                        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
-                            {% for label, value, helper, icon in compact_metrics %}
-                                <article class="{{ analysis_surface.metric_cell_classes() }}">
-                                    <div class="flex items-center gap-2">
-                                        <span class="{{ analysis_surface.metric_icon_classes('compact') }}">
-                                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                                        </span>
-                                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
-                                    </div>
-                                    <p class="mt-2 break-words text-base font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
+
             {% endif %}
             <div class="relative {{ 'mt-4 h-[260px] sm:h-[280px]' if compact_overview_trend else 'h-[340px]' }} rounded-lg border border-outline-subtle bg-surface-card p-3"
                  data-object-storage-chart-container>
