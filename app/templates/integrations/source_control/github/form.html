@@ -22,7 +22,7 @@
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
               autocomplete="off"
-              x-data="{ connectionVerified: false, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
+              x-data="{ connectionVerified: false, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; this.$refs.connectionTestResult.replaceChildren(); }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
               x-on:input.capture="invalidateConnectionTest($event)"
               x-on:change.capture="invalidateConnectionTest($event)"
               x-on:github-connection-tested.window="applyConnectionTest($event)">
@@ -97,7 +97,7 @@
                                     hx-target="#github-connection-test-result"
                                     hx-swap="innerHTML"
                                     hx-disabled-elt="this"
-                                    x-on:click="connectionVerified = false; $refs.connectionProof.value = ''; const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                    x-on:click="connectionVerified = false; $refs.connectionProof.value = ''; $refs.connectionTestResult.replaceChildren(); const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
                                     {% if not available %}disabled{% endif %}
                                     class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
                                 <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
@@ -175,6 +175,7 @@
                         </div>
                     </section>
                     <div id="github-connection-test-result"
+                         x-ref="connectionTestResult"
                          aria-live="polite"></div>
                 </fieldset>
                 {{ registration_actions.render(url_for('github_source.index') ,
