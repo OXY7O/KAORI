@@ -87,3 +87,12 @@ Record operator outcome and exact SHA before marking focused UAT PASS. Do not eq
 ## Delivery
 
 Issue branches → Draft PRs #3139/#3140/#3141 → reviewed holding integration → local QA/UAT → human acceptance. Official Developer Check, Full Admission, `kaori/staging`, main and release stay HOLD pending explicit approval.
+
+
+## Supersession — full-cycle authentication UAT
+
+This file is the original read-only source review. For the subsequent
+policy-driven TOTP and live Turnstile implementation, use
+`docs/operations/authentication-security-full-cycle-uat.md`.
+Never mistake the earlier NOT IMPLEMENTED snapshot for current source state,
+or mark full-cycle security UAT PASS before actual browser execution.
