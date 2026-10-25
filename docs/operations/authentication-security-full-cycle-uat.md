@@ -247,3 +247,27 @@ separate outstanding formatting work; this fix does not change the template.
 No new schema migration. Do not claim successful browser UAT based on test
 source/earlier CI output; collect exact SHA, actual toast screenshot (without
 secrets), audit detail and human acceptance. Official admission HOLD.
+
+
+## MFA iconography screenshot checkpoint (#3189)
+
+Before proceeding with the functional factor UAT, verify the updated
+Access → Authentication Security → Multi-Factor Authentication tab:
+
+- Three summary tiles visibly distinguish Current Policy, TOTP verification
+  and Session Impact using the existing Lucide icon treatment.
+- Each enforcement mode has its own small icon, but Disabled/Optional/Required
+  mode semantics and the **Current** badge remain state-driven. Toggle the
+  policy in a **safe UAT environment** to confirm active styling is not a
+  static decoration.
+- Authenticator App and Recovery Codes are clearly scoped to the self-service
+  enrollment link; no TOTP seed, OTP or recovery plaintext is present.
+- Existing warning Change Impact, acknowledgement, Save, Guide, role-gated
+  form, equal panel alignment and Session Security navigation are preserved.
+- Capture desktop/mobile, light/dark and keyboard focus images; check icons
+  do not clip on narrow layouts, text remains readable without color and the
+  Info Tip does not obscure the form.
+
+Run the approved MFA tab contract, global Access lock, sidebar and djlint
+checks on the exact review SHA. The icon change does **not** constitute
+functional MFA enrolment/challenge UAT acceptance.
