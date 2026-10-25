@@ -4,8 +4,8 @@ from typing import cast
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.audit import record_authentication_activity
@@ -24,9 +24,9 @@ from app.access.authentication.mfa.policy import MfaGate
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
     MfaVerificationError,
-    mfa_decision,
     begin_mfa_enrollment,
     confirm_mfa_enrollment,
+    mfa_decision,
     verify_mfa_challenge,
 )
 from app.access.authentication.readiness import check_authentication_database_readiness
@@ -50,10 +50,10 @@ from app.access.authentication.sso import (
     find_enabled_sso_provider,
     resolve_sso_identity,
 )
+from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
-from app.extensions.db import db
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
