@@ -281,7 +281,9 @@ def _tenant_section_redirect(section: str):
 
     if request.headers.get('HX-Request') != 'true':
         if resolved_section == 'memberships':
-            return redirect(url_for('tenant.tenants', section=resolved_section, membership_view=_membership_registry_view()))
+            return redirect(
+                url_for('tenant.tenants', section=resolved_section, membership_view=_membership_registry_view())
+            )
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
     context = _tenant_workspace_context(include_sync=False)

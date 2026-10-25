@@ -186,6 +186,7 @@ def test_membership_registries_use_nested_url_owned_content_tabs_without_desktop
 
     assert 'components/content_tabs.html' in workspace
     assert "content_tabs.render_links('tenant-membership-registries'" in workspace
+    assert 'embedded=true' in workspace
     assert "('memberships', 'Membership Registry'" in workspace
     assert "('groups', 'Tenant Group Registry'" in workspace
     assert "membership_view='groups'" in workspace

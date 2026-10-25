@@ -267,12 +267,13 @@
         ('groups', 'Tenant Group Registry', 'users', url_for('tenant.tenants', section='memberships', membership_view='groups'))
     ] %}
     <section id="tenant-membership-registries"
-             class="min-w-0 space-y-4"
+             class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-label="Tenant membership registries">
         {{ content_tabs.render_links('tenant-membership-registries',
             membership_registry_tabs,
             active_membership_view,
             'Tenant membership registries',
+            embedded=true,
             data_namespace='tenant-membership-registry',
             hx_target='#tenant-admin-workspace',
             hx_select='#tenant-admin-workspace',
@@ -280,14 +281,16 @@
             hx_push_url='true',
             hx_indicator='#tenant-admin-loading',
             hx_sync='this:replace') }}
-        {% if active_membership_view == 'groups' %}
-            <div id="tenant-membership-groups-panel" class="min-w-0">
+        <div class="min-w-0 p-4 sm:p-5">
+            {% if active_membership_view == 'groups' %}
+                <div id="tenant-membership-groups-panel" class="min-w-0">
                 {% include "kubernetes/tenant/partials/_group_registry.html" %}
-            </div>
-        {% else %}
-            <div id="tenant-membership-members-panel" class="min-w-0">
-                {% include "kubernetes/tenant/partials/_membership_registry.html" %}
-            </div>
-        {% endif %}
+                </div>
+            {% else %}
+                <div id="tenant-membership-members-panel" class="min-w-0">
+                    {% include "kubernetes/tenant/partials/_membership_registry.html" %}
+                </div>
+            {% endif %}
+        </div>
     </section>
 </div>
