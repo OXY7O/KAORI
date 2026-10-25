@@ -199,14 +199,18 @@ def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
     assert panel.index('data-object-storage-overview-trend-summary') < panel.index(
         'data-object-storage-chart-container'
     )
-    assert "h-[260px] sm:h-[280px]" in trend
+    assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
     assert "{% elif trend_mode != 'performance' %}" in trend
     assert 'data-object-storage-trend-interpretation' in trend
     assert 'Inventory is point-in-time, not a growth forecast.' in trend
-    assert "partials/_trend.html" in overview
+    assert 'partials/_trend.html' in overview
     assert 'data-object-storage-trend-points' in trend
     assert 'data-object-storage-secondary-trend-points' in trend
     assert 'data-object-storage-projection-points' in trend
-    assert 'data-object-storage-chart\\n                        role="img"' in trend
+    assert 'compact_forecast_overview' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'analysis_surface.snapshot_header_icon_classes()' in trend
+    assert '<canvas data-object-storage-chart' in trend
+    assert 'role="img"' in trend
     assert 'beginAtZero: true' in script
