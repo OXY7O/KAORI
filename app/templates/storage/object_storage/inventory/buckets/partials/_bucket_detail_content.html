@@ -11,9 +11,9 @@
         {% set detail_description = "Committed identity, usage, protection, lifecycle, and provider evidence." %}
         {% call detail.workspace_header(detail_description, 'container',
             context_items=[
-                {'label': bucket.system_name, 'icon': 'server'},
-                {'label': bucket.provider_label, 'icon': 'database'},
-                {'label': bucket.native_type_label, 'icon': 'container'}
+            {'label': bucket.system_name, 'icon': 'server'},
+            {'label': bucket.provider_label, 'icon': 'database'},
+            {'label': bucket.native_type_label, 'icon': 'container'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(bucket.name, compact=true) }}
