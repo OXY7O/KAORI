@@ -17,7 +17,9 @@
          aria-label="Capsule Tenant inspection controls">
         <div class="min-w-0">
             <p class="text-xs font-semibold text-content-primary">Inspection Target</p>
-            <p class="mt-1 text-xs text-content-muted">On-demand, read-only provider inspection; results are committed to KAORI.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                No membership or RBAC mutation occurs; this inspection does not import IdP users.
+            </p>
         </div>
         {% if can_manage and external_capsule_tenants %}
             <form method="post"
