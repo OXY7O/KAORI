@@ -34,7 +34,7 @@ def test_mfa_enrollment_matches_account_natural_action_context_layout() -> None:
     assert 'xl:grid-cols-12 xl:items-start' in html
     assert 'xl:col-span-7' in html
     assert 'xl:col-span-5' in html
-    assert 'Enrollment Guide' in html
+    assert 'How to Activate MFA' in html
     assert 'Recovery Security' in html
     assert 'STEP 01' in html
     assert 'STEP 02' in html
