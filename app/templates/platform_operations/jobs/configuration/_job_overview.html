@@ -12,14 +12,12 @@
                     <p class="text-xs font-semibold text-kaori-primary">{{ definition.domain }}</p>
                     <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
                         <h2 class="min-w-0 text-base font-semibold text-content-primary">{{ definition.name }}</h2>
-                        {% if overview_notice_short|default('') or execution_safety_short|default('') %}
-                            {{ info_tip.render('jobs-selected-safety-' ~ (definition.key|replace('.', '-') ),
-                            'Job Safety Evidence',
-                            overview_notice|default(''),
-                            items=[definition.safety_summary] if execution_safety_short|default('') else none,
-                            placement='right',
-                            variant='guide') }}
-                        {% endif %}
+                        {{ info_tip.render('jobs-selected-safety-' ~ (definition.key|replace('.', '-') ),
+                        'Job Safety Evidence',
+                        overview_notice|default(''),
+                        items=[definition.safety_summary],
+                        placement='right',
+                        variant='guide') }}
                     </div>
                     <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted xl:truncate"
                        title="{{ definition.description }}">{{ selected_description|default(definition.description) }}</p>
