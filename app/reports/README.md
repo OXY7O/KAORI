@@ -66,7 +66,9 @@ Reports Overview is the operational landing workspace for the Reports domain. It
 
 1. Reporting Posture: the canonical KAORI hero owns page identity, infrastructure scope, artifact readiness, and two compact operational metrics.
 2. Reporting Operational Posture: Reports worker/queue readiness, active schedules, artifact storage health, current generation demand, and resolved completion quality.
-3. Report Coverage & Artifact Estate: publication coverage by infrastructure domain, retained artifact footprint/mix, output-contract boundaries, and reusable automation.
+3. Reporting landscape and governance: two independent, vertically stacked cards. **Report Coverage & Artifact Estate** owns infrastructure-domain publication coverage, retained artifact footprint/mix and output-contract boundaries; **Contracts & Automation** owns published contract families, schedules and templates. Each card has its own shared `section_intro` title and short description above the card, with the existing card title retained for concrete workspace identity.
+
+The shared `components/section_intro.html` macro owns the two outer section headings; neither page-local heading styling nor a competing reporting metric/contract source should be introduced. Planned Secrets & PKI copy stays definition-owned in `app/definitions/catalogs/reports/coverage.yaml` and must keep the distinction between planned/non-executable reports and admitted published contracts.
 
 Generic helper callouts are avoided on the Overview. Operational interpretation uses `Operational Reading`, while export guidance is expressed as an `Output Contract` boundary. Planned Server/VM and HCI coverage is definition-owned in `app/definitions/catalogs/reports/coverage.yaml`; the Overview service must not embed future report catalogs as Python literals.
 
