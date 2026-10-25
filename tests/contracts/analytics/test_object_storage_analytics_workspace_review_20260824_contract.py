@@ -265,37 +265,38 @@ def test_object_storage_overview_tab_polish_preserves_source_boundaries() -> Non
 
 def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -> None:
     workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
-    evidence = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_snapshot.html')
+    context = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_context.html')
 
-    assert 'partials/_overview_evidence_snapshot.html' in workspace
-    assert 'data-object-storage-evidence-details' in workspace
-    assert '<details' in workspace and '<summary' in workspace
-    for retained in ('_reconciliation.html', '_metrics_readiness.html', '_evidence_boundary.html'):
-        assert retained in workspace
+    assert 'partials/_metrics_readiness.html' in workspace
+    assert 'partials/_overview_evidence_context.html' in workspace
+    assert 'partials/_overview_evidence_snapshot.html' not in workspace
+    assert 'partials/_evidence_boundary.html' not in workspace
+    assert 'data-object-storage-evidence-context' in context
     for marker in (
+        'data-object-storage-evidence-authorities',
         'data-object-storage-evidence-readiness',
         'data-object-storage-evidence-coverage',
-        'data-object-storage-evidence-interpretation',
+        'data-object-storage-evidence-details',
+        'data-object-storage-evidence-missing-values',
+        'data-object-storage-evidence-reconciliation',
     ):
-        assert marker in evidence
+        assert marker in context
     for source_field in (
         'metrics_readiness',
         'analytics_materialization',
         'inventory_observed_at',
         'forecast_materialization',
         'overview_alerts',
-        'alert_origin.resolved_label',
+        'context_alert_source.resolved_label',
+        'metrics_source.provider_label',
     ):
-        assert source_field in evidence
-    assert 'Additional Evidence Context' in workspace
-    assert workspace.index('partials/_metrics_readiness.html') < workspace.index('partials/_evidence_boundary.html')
-    assert workspace.index('partials/_evidence_boundary.html') < workspace.index(
-        'partials/_overview_evidence_snapshot.html'
-    )
-    assert "snapshot.label|default('Unavailable')" in evidence
-    assert 'Request and error metrics never fall back to Inventory.' in evidence
-    assert 'Unobserved evidence remains Unknown.' in evidence
-    assert 'Ready · Optional Gaps' not in evidence
+        assert source_field in context
+    assert 'partials/_reconciliation.html' in context
+    for state in ('Not Configured', 'No Current Samples', 'Metric Not Scraped', 'Runtime Query Failed'):
+        assert state in context
+    assert 'Request and error metrics never fall back to Inventory.' in context
+    assert 'Missing evidence stays Unknown' in context
+    assert 'Additional Evidence Context' not in workspace
 
 
 def test_object_storage_analytics_overview_headings_and_trend_description_align() -> None:
@@ -372,13 +373,13 @@ def test_object_storage_evidence_shows_full_contract_as_primary_content() -> Non
     workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
 
     primary_contract = workspace.index('partials/_metrics_readiness.html')
-    primary_boundary = workspace.index('partials/_evidence_boundary.html')
-    optional_preview = workspace.index('partials/_overview_evidence_snapshot.html')
-    assert primary_contract < primary_boundary < optional_preview
-    assert '<details' in workspace and '<summary' in workspace
-    assert 'data-object-storage-evidence-details' in workspace
-    assert 'Additional Evidence Context' in workspace
-    assert 'partials/_reconciliation.html' in workspace
+    unified_context = workspace.index('partials/_overview_evidence_context.html')
+    assert primary_contract < unified_context
+    context = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_context.html')
+    assert context.count('<details') == 2
+    assert 'data-object-storage-evidence-details' in context
+    assert 'data-object-storage-evidence-reconciliation' in context
+    assert 'partials/_reconciliation.html' in context
 
 
 def test_object_storage_analytics_templates_compile_before_http_render() -> None:
@@ -417,7 +418,7 @@ def test_object_storage_overview_guides_and_performance_family_parity() -> None:
         assert tip_id in source
         assert "variant='guide'" in source
         assert "placement='right'" in source
-    assert "{% if compact_forecast_overview %}" in trend
+    assert '{% if compact_forecast_overview %}' in trend
 
     for partial in (performance, consumers, alerts):
         assert 'analysis_surface.snapshot_shell_classes()' in partial
@@ -447,6 +448,28 @@ def test_object_storage_overview_modified_templates_pass_jinja_parser() -> None:
         'app/templates/storage/object_storage/analytics/partials/_overview_alerts_snapshot.html',
         'app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html',
         'app/templates/storage/object_storage/analytics/partials/_trend.html',
+        'app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_capacity_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_evidence_context.html',
     )
     for path in paths:
         jinja.from_string(read(path))
+
+
+def test_object_storage_overview_capacity_and_contract_guides() -> None:
+    capacity = read('app/templates/storage/object_storage/analytics/partials/_overview_capacity_snapshot.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    contract = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
+
+    for source, guide_id in (
+        (capacity, 'object-storage-capacity-snapshot-guide'),
+        (trend, 'object-storage-overview-usage-trend-guide'),
+        (contract, 'object-storage-operational-metrics-contract-guide'),
+    ):
+        assert 'components/info_tip.html' in source
+        assert guide_id in source
+        assert "variant='guide'" in source
+        assert "placement='right'" in source
+    assert '{% if compact_usage_overview %}' in trend
+    assert '{% elif compact_forecast_overview %}' in trend
+    assert 'object-storage-overview-forecast-trend-guide' in trend
