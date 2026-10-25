@@ -18,6 +18,10 @@
 ## Session and cookie policy
 
 - Rotate session state on every successful login.
+- **Single active login generation per human account:** every successful Local Database, LDAP or browser SSO login advances `User.auth_session_version` through an atomic database UPDATE with RETURNING. Only the exact returned generation is attached to the login response; the prior browser/remember generations are invalid on their next authenticated request, across KAORI web instances. Concurrent successful logins cannot both retain valid generations.
+- A non-secret random `auth_session_ref` correlates successful sign-in and sign-out Activity Audit events. It is **not** a bearer token, cookie value, device identifier or authentication input; audit never persists session cookies. Login audit records the authoritative actor/source and does not imply a revoked browser performed a sign-out.
+- This control limits independently issued login sessions, **not** the number of humans operating a shared credential or users replaying a copied identical authenticated cookie. Individual human accounts, strong MFA and incident response remain mandatory; avoid describing this as physical-device or person binding.
+- No per-session active-device registry/remote termination UI exists in this increment. Later scoped work can add active-session inventory and administrative revocation without replacing the generation admission guard.
 - Use Secure, HttpOnly, SameSite=Lax cookies in production.
 - Logout is a POST action protected by CSRF.
 - Super-admin persistent sessions are disabled by default.

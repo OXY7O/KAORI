@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sqlalchemy import func, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.identity_provider.registry import build_credential_provider_registry
+from app.access.authentication.session import AuthSessionError
 from app.access.authentication.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -52,17 +54,41 @@ def record_successful_authentication(
     *,
     source: str,
     client_ip: str | None,
-) -> None:
-    """Persist login evidence before the authenticated session is established."""
+) -> int:
+    """Atomically issue the one current login generation for this KAORI user.
 
-    user.last_login_at = datetime.now(UTC)
-    user.last_login_ip = client_ip
-    user.last_auth_source = source
+    PostgreSQL serializes concurrent UPDATEs on the same user row. RETURNING
+    captures *this login's* generation; re-reading the ORM object after commit
+    could instead capture a newer concurrent login and admit both browsers.
+    """
+    issued_at = datetime.now(UTC)
+    normalized_source = source.strip().lower()
     try:
+        issued_version = db.session.execute(
+            update(User)
+            .where(
+                User.id == user.id,
+                User.account_is_active.is_(True),
+                User.deleted_at.is_(None),
+                func.lower(User.auth_source) == normalized_source,
+            )
+            .values(
+                auth_session_version=func.coalesce(User.auth_session_version, 1) + 1,
+                last_login_at=issued_at,
+                last_login_ip=client_ip,
+                last_auth_source=source,
+            )
+            .returning(User.auth_session_version)
+        ).scalar_one_or_none()
+        if issued_version is None:
+            # The account can have changed since primary authentication.
+            db.session.rollback()
+            raise AuthSessionError('KAORI session admission was revoked before issuance.')
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
         raise
+    return int(issued_version)
 
 
 def credential_failure_message(result: AuthResult) -> str:

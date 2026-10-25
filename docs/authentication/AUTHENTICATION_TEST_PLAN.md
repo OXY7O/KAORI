@@ -53,6 +53,12 @@ The canonical suite is `tests/access/authentication/`.
 ### Session, Readiness, and Identity Ownership
 
 - Successful login clears prior session state and establishes a fresh session.
+- A successful Local, LDAP or SSO login atomically increments its own user's session generation; old signed browser and remember cookies are denied on the next request while unrelated accounts remain authenticated.
+- Concurrent login transactions for the same user serialize generation increments. The response must bind to **its own** UPDATE RETURNING generation rather than an ORM refresh that could observe the newer login's generation.
+- Failed credentials, account disabled/deleted before issuance, source mismatch or SQL error must not commit a replacement generation or permit a new authenticated session.
+- The non-secret login-specific `auth_session_ref` is safe in success/login and logout Activity Audit only. A failed login may name a target user but cannot inherit authenticated actor or active-session correlation from other sessions.
+- Multiple browser tabs sharing the same copied signed cookie are out of scope for the one-login-generation guarantee; test that distinction rather than describing the feature as one physical device.
+- Guided two-browser UAT verifies Browser A login then Browser B login as the same user, A rejected, B allowed, optional remember-me old cookie rejected, independent user unaffected and clean audit correlation; also exercise two parallel login requests and provider-disable/password-change regressions.
 - Super-admin remember-me is denied unless explicitly enabled.
 - Logout clears auth and step-up state.
 - Readiness requires every table touched by the login path.
