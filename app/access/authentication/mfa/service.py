@@ -151,3 +151,18 @@ def verify_mfa_challenge(user: User, submitted: str) -> str:
         db.session.rollback()
         raise
     return kind
+
+
+def regenerate_mfa_recovery_codes(user: User) -> list[str]:
+    """Call only after fresh primary reauthentication AND a consumed MFA proof."""
+    factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id, enabled=True).with_for_update().first()
+    if factor is None:
+        raise MfaVerificationError('MFA is not enrolled.')
+    codes = [secrets.token_hex(8).upper() for _ in range(8)]
+    factor.recovery_hashes = [generate_password_hash(value) for value in codes]
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return codes
