@@ -1,6 +1,6 @@
-from jinja2 import Environment
-
 from pathlib import Path
+
+from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE_ROOT = ROOT / 'app/templates/storage/object_storage/analytics'
