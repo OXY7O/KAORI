@@ -19,8 +19,8 @@
                 'Authentication assurance',
                 'Security Controls',
                 'Challenge Activation',
-                'Partial' if mfa_policy_mode != 'disabled' else 'Not Enabled',
-                'warning' if mfa_policy_mode != 'disabled' else 'unknown',
+                'Enforced' if bot_mode == 'always' else ('Partial' if mfa_policy_mode != 'disabled' else 'Not Enabled'),
+                'warning' if bot_mode == 'always' or mfa_policy_mode != 'disabled' else 'unknown',
                 [
                     ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP and recovery challenge are governed by the selected policy'),
                     ('bot', 'Bot Protection', 'Enforced' if bot_mode == 'always' else 'Not Enabled', 'Cloudflare Siteverify checked for login when enabled')
@@ -42,8 +42,8 @@
                 </div>
                 <div class="grid gap-4 lg:grid-cols-3">
                     {% for icon, title, summary in [
-                        ('shield-check', 'Multi-Factor Authentication', 'Policy kernel available; no factor enrollment or challenge enforcement.'),
-                        ('bot', 'Bot Protection', 'Turnstile verifier available; no configured provider instance or login enforcement.'),
+                        ('shield-check', 'Multi-Factor Authentication', 'TOTP enrollment and recovery are committed, with restricted post-primary challenges when policy requires them.'),
+                        ('bot', 'Bot Protection', 'Turnstile Siteverify is enforced at login when the committed provider policy is enabled.'),
                         ('monitor-check', 'Session Security', 'One active login generation per account; idle and absolute timeout policy remain separate.')
                     ] %}
                         <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
