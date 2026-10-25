@@ -40,7 +40,7 @@ def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> 
         assert f"('{mode}'," in tab
     assert 'Committed KAORI configuration' in tab
     assert 'Every human account must enroll and verify MFA.' in tab
-    assert 'No enrollment count' not in tab  # Scope: no invented adoption or coverage statistic.
+    assert 'Total enrolled users' not in tab
 
 
 def test_mfa_policy_form_preserves_server_authority_and_session_impact() -> None:
