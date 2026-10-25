@@ -22,7 +22,9 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert 'integrations/components/_workspace.html' in form
     assert 'integration_ui.section_shell_classes()' in form
     assert "domain.key == 'source_control'" in workspace
-    assert "url_for('github_source.index')" in workspace
+    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
+    assert "workspace_endpoint='github_source.new_connection'" in kernel
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
     assert 'bg-kaori-primary' in form
@@ -62,8 +64,9 @@ def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     assert 'ready: int | None = None' in routes
     assert 'if available:' in routes
     assert 'Not Observed' in landing
-    assert 'Not Admitted' in landing
-    assert 'Provider Admission' in landing
+    assert 'Repository Evidence' in landing
+    assert 'Connection Registry' in landing
+    assert 'Register Connection' in landing
 
 
 def test_blueprint_is_registered_using_existing_bootstrap() -> None:
