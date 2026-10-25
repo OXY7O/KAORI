@@ -295,6 +295,7 @@ _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'settings': {'settings.account': 'account'},
     'integrations': {
         'integrations.observability': 'observability',
+        'integrations.select_metrics_source_provider': 'observability',
         'integrations.storage': 'storage',
         'integrations.orchestration': 'orchestration',
         'integrations.registry': 'registry',

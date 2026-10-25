@@ -89,11 +89,11 @@ def register_presentation(app: Flask) -> None:
             if current_user.is_authenticated
             else 'manual'
         )
-        selector_domain = (
-            provider_selector_domain((request.view_args or {}).get('integration_type'))
-            if request.endpoint == 'integrations.choose_integration_provider'
-            else None
-        )
+        selector_domain = None
+        if request.endpoint == 'integrations.choose_integration_provider':
+            selector_domain = provider_selector_domain((request.view_args or {}).get('integration_type'))
+        elif request.endpoint == 'integrations.select_metrics_source_provider':
+            selector_domain = provider_selector_domain('metrics_source')
         integration_navigation = build_integration_navigation_context(
             request.endpoint,
             selected_domain_key=selector_domain['key'] if selector_domain else None,

@@ -63,7 +63,7 @@ def build_integration_navigation_context(
                 break
 
     if (
-        current_endpoint == 'integrations.choose_integration_provider'
+        current_endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}
         and selected_domain_key in {domain.key for domain in domains}
     ):
         active_domain_key = selected_domain_key

@@ -184,23 +184,83 @@ def test_provider_overviews_share_provider_first_registration_contract() -> None
     assert 'integrations.select_metrics_source_provider' in metrics_landing
 
 
-def test_metrics_provider_selector_uses_compact_hero_and_shared_info_tips() -> None:
+def test_metrics_provider_selector_inherits_approved_shared_chooser() -> None:
     selector = read('app/templates/integrations/observability/metrics_source/provider_selector.html')
+    shared = read('app/templates/integrations/provider_selector.html')
     routes = read('app/integrations/routes.py')
-    tooltips = read('app/templates/components/info_tip.html')
+    tooltip = read('app/templates/components/info_tip.html')
 
-    assert 'Adapters own validation and runtime.' in selector
-    assert 'Choose a provider here; adapter, query language, validation' not in selector
-    assert 'info_tip.render("metrics-selector-guide"' in selector
-    assert 'info_tip.render("metrics-adapter-" ~ provider.key' in selector
-    assert 'info_tip.render("metrics-query-" ~ provider.key' in selector
-    assert 'variant="guide"' in selector
-    assert 'data-kaori-info-tip-trigger' in tooltips
-    assert 'sm:grid-cols-2' in selector
-    assert 'hover:border-brand-outline' in selector
-    assert 'href="{{ provider.registration_url }}"' in selector
-    assert 'Register {{ provider.label }}' in selector
+    # Metrics owns its provider-specific data, but never a duplicate card/hero template.
+    assert '{% extends "integrations/provider_selector.html" %}' in selector
+    assert '{% block title %}Choose Metrics Source Provider · KAORI{% endblock title %}' in selector
+    assert '<article' not in selector
+    assert 'info_tip.render(' not in selector
+
+    # All six domains share the approved KAORI card, Guide, and registration actions.
+    assert 'Adapters own validation and runtime.' in shared
+    assert 'data-kaori-provider-card-grid' in shared
+    assert 'integration_ui.palette_icon("layers-3", "brand", size="lg")' in shared
+    assert 'provider.icon|default(domain.icon)' in shared
+    assert 'provider.description is defined and provider.description' in shared
+    assert "provider.secondary_label|default('Protocol')" in shared
+    assert 'info_tip.render("provider-choices-" ~ integration_type' in shared
+    assert 'variant="guide"' in shared
+    assert 'data-kaori-provider-disabled' in shared
+    assert 'href="{{ provider.registration_url }}"' in shared
+    assert 'Register {{ provider.label }}' in shared
+    assert 'info_tip.render("metrics-adapter-' not in selector
+    assert 'info_tip.render("metrics-query-' not in selector
+    assert 'data-kaori-info-tip-trigger' in tooltip
+
+    # Provider-owned Prometheus/Thanos forms and meaningful query-language metadata persist.
+    assert "admitted_kinds = {kind.key: kind for kind in provider_kinds('metrics_source')}" in routes
     assert "url_for('integrations.register_metrics_source', provider_key=provider.key)" in routes
+    assert "'secondary_label': 'Query Language'" in routes
+    assert "'protocol': provider.query_language.upper()" in routes
+    assert "'lifecycle': admitted_kinds[provider.key].lifecycle" in routes
+    assert "if admitted_kinds[provider.key].available" in routes
+    assert "domain=get_domain_definition('observability')" in routes
+    assert "integration_type='metrics_source'" in routes
+    assert "guide_title='Metrics Provider Selection'" in routes
+
+
+def test_shared_provider_selection_visual_contract_covers_all_six_domains() -> None:
+    from app.integrations.provider_matrix import provider_kinds
+    from app.integrations.taxonomy import ordered_domain_definitions
+
+    domains = {domain.key for domain in ordered_domain_definitions()}
+    assert domains == {
+        'orchestration',
+        'observability',
+        'storage',
+        'registry',
+        'secrets_management',
+        'source_control',
+    }
+    types = {
+        'container_orchestrator': 'orchestration',
+        'metrics_source': 'observability',
+        'alert_source': 'observability',
+        'object_storage': 'storage',
+        'registry': 'registry',
+        'secrets_pki': 'secrets_management',
+        'source_control': 'source_control',
+    }
+    for integration_type, domain_key in types.items():
+        kinds = provider_kinds(integration_type)
+        assert kinds
+        assert all(kind.domain_key == domain_key for kind in kinds)
+
+    shared = read('app/templates/integrations/provider_selector.html')
+    routes = read('app/integrations/routes.py')
+    assert 'md:grid-cols-2 xl:grid-cols-3' in shared
+    assert 'Registration is not yet available.' in shared
+    assert shared.count('info_tip.render(') == 1
+    assert '<dt class="text-xs font-semibold text-content-muted">Adapter</dt>' in shared
+    assert 'if provider.registration_url' in shared
+    assert 'data-kaori-provider-disabled' in shared
+    assert "'integrations/provider_selector.html'" in routes
+    assert "'integrations/observability/metrics_source/provider_selector.html'" in routes
 
 
 def test_source_control_provider_matrix_declares_planned_inert_provider_choices() -> None:

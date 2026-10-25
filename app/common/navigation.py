@@ -254,7 +254,10 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
-    elif endpoint == 'integrations.choose_integration_provider' and integration_selector_label:
+    elif (
+        endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}
+        and integration_selector_label
+    ):
         items = [
             BreadcrumbItem('Integrations', 'plug'),
             BreadcrumbItem(integration_selector_label),

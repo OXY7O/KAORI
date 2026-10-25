@@ -630,6 +630,9 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
 @integrations_bp.get('/observability/metrics-sources/new')
 @permission_required('integrations.manage')
 def select_metrics_source_provider() -> ResponseReturnValue:
+    # Keep provider-specific capability definitions authoritative while reusing
+    # the same admitted/planned registration contract as other Integrations.
+    admitted_kinds = {kind.key: kind for kind in provider_kinds('metrics_source')}
     providers = [
         {
             'key': provider.key,
@@ -638,11 +641,30 @@ def select_metrics_source_provider() -> ResponseReturnValue:
             'icon': provider.icon,
             'adapter_key': provider.adapter_key,
             'query_language': provider.query_language,
-            'registration_url': url_for('integrations.register_metrics_source', provider_key=provider.key),
+            'adapter': provider.adapter_key.replace('_', ' ').title(),
+            'protocol': provider.query_language.upper(),
+            'secondary_label': 'Query Language',
+            'lifecycle': admitted_kinds[provider.key].lifecycle,
+            'registration_url': (
+                url_for('integrations.register_metrics_source', provider_key=provider.key)
+                if admitted_kinds[provider.key].available
+                else None
+            ),
         }
         for provider in provider_definitions()
     ]
-    return render_template('integrations/observability/metrics_source/provider_selector.html', providers=providers)
+    return render_template(
+        'integrations/observability/metrics_source/provider_selector.html',
+        domain=get_domain_definition('observability'),
+        integration_type='metrics_source',
+        providers=providers,
+        available_count=sum(bool(provider['registration_url']) for provider in providers),
+        guide_title='Metrics Provider Selection',
+        guide_text=(
+            'Metrics adapters define protocol, query language, validation and query horizon. '
+            'KAORI manages connection evidence and qualified consumer routing.'
+        ),
+    )
 
 
 @integrations_bp.route('/observability/metrics-sources/<string:provider_key>/new', methods=['GET', 'POST'])
