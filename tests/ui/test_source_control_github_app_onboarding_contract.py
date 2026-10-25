@@ -161,7 +161,7 @@ def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     assert 'if available:' in routes
     assert 'Not Observed' in routes
     assert 'Repository Evidence Not Yet Observed' in landing
-    assert 'Connection Registry' in landing
+    assert 'integration_tabs.render("github"' in landing
     assert 'provider_front.hero(' in landing
 
 
