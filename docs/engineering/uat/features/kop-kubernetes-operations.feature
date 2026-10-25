@@ -99,3 +99,65 @@ Feature: Kubernetes — ConfigMaps, Secrets & Resource Operations
     And no false rotation success; recovery and original identity remain visible
     And the negative request does not create a misleading success state or an unauthorized committed/provider side effect
 
+  # Layer: Both; risk: High; QA extension under #3123 — capability-owner review required.
+  # Evidence: authorized sandbox operator, screenshots/Activity Audit and Kubernetes tls.crt fingerprint, UID and resourceVersion read-back; no private key disclosure.
+  # Isolation: Disposable namespace, self-signed matching pair and declared Ingress host; sync committed KAORI evidence, restore/delete fixtures after review.
+  @UAT-KOP-006 @positive @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-KOP-006 - Authorized single TLS Secret rotation changes only validated target
+    Given an authorized TLS rotate operator selected a committed TLS Secret with complete Ingress host coverage
+    And the disposable Secret UID, resourceVersion, certificate fingerprint and selected source SHA were recorded
+    And a matching replacement certificate and private key cover the declared Ingress host
+    When the operator uploads the pair and selects Validate Rotation
+    Then the preview shows the intended host covered and Update TLS Secret is enabled
+    When the operator applies the controlled rotation
+    Then Kubernetes returns the same Secret UID and an advanced resourceVersion for the exact selected target
+    And Kubernetes tls.crt read-back fingerprint matches the replacement certificate
+    And a new TLS governance sync records the resulting certificate and audit outcome
+    And no Secret key material appears in the evidence or activity records
+
+  # Layer: Both; risk: High; QA extension under #3123 — capability-owner review required.
+  # Evidence: negative browser validation, disabled apply control, unchanged provider fingerprints/UIDs and safe audit outcome.
+  # Isolation: Use mismatched disposable test pairs or a certificate with a SAN unrelated to the declared test Ingress host.
+  @UAT-KOP-007 @negative @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-KOP-007 - Single TLS rotation rejects mismatched private key and uncovered SAN
+    Given a committed disposable TLS Secret has confirmed Ingress host mapping and baseline fingerprint
+    And the authorized operator opens its single TLS rotation workspace
+    When the operator validates a certificate with a private key from another test pair
+    Then the validation reports pair mismatch and keeps Update TLS Secret disabled
+    When the operator validates a matching pair whose SAN omits the mapped Ingress host
+    Then the preview reports uncovered host coverage and keeps Update TLS Secret disabled
+    And the Kubernetes Secret fingerprint, UID and resourceVersion remain unchanged
+    And neither rejected validation records a successful rotation or leaks uploaded private-key content
+
+  # Layer: Both; risk: High; QA extension under #3123 — capability-owner review required.
+  # Evidence: 2-target validation screenshot, native confirmation, per-target audit/result, fingerprints and Secret UID/resourceVersion; real bulk apply requires separate execution.
+  # Isolation: Two explicitly checked disposable TLS Secrets with confirmed hosts covered by one replacement pair, and a separate unselected control Secret if available.
+  @UAT-KOP-008 @positive @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-KOP-008 - Authorized bulk TLS rotation updates exactly two validated Secrets
+    Given the authorized bulk operator has selected two committed disposable TLS Secrets
+    And each target has fresh Secret identity evidence and confirmed Ingress mapping
+    And the uploaded replacement certificate and private key cover the hosts of both targets
+    When the operator clicks Validate Selected
+    Then validation reports two ready targets and enables Update Selected
+    When the operator opens the canonical TLS confirmation dialog
+    Then the dialog lists the two selected Secret names and the exact tls.crt and tls.key replacement consequence
+    When the operator explicitly confirms Apply TLS Rotation
+    Then the existing server-side preflight checks each target before its Kubernetes mutation
+    And the result distinguishes successful, failed and persistence-warning targets without a false all-success claim
+    And read-back for each successful target preserves its UID and matches the replacement certificate fingerprint
+    And no unselected Secret is changed and Activity Audit contains no certificate or private-key payload
+
+  # Layer: UI; risk: Medium; QA extension under #3123 — capability-owner review required.
+  # Evidence: desktop/mobile screenshots, keyboard focus, no-PATCH browser trace, disabled/enabled state assertions and existing presentation-contract pytest.
+  # Isolation: Valid disposable pair and targets; Cancel/Escape/backdrop are non-mutating, while any real apply is tested separately in sandbox.
+  @UAT-KOP-009 @negative @medium @ui @specified @owner_review
+  Scenario: UAT-KOP-009 - Bulk TLS confirmation and validation invalidation prevent accidental apply
+    Given two disposable TLS Secrets have passed current bulk certificate validation
+    When the operator opens the native confirmation dialog at the desktop viewport
+    Then the selected target names and replacement impact are readable in KAORI Violet light and dark appearance
+    And the three concise explanation lines remain compact on desktop and may wrap without overflow on mobile
+    When the operator closes the dialog using Cancel, close icon, Escape or backdrop
+    Then no Kubernetes mutation occurs and focus returns to the Update Selected launcher
+    When the operator changes either uploaded file or a selected target after validation
+    Then the main and modal apply actions remain disabled until a new successful validation
+    And a stale validation state cannot submit a rotation through the browser
