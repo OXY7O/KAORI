@@ -23,6 +23,7 @@ from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
+from app.security.credentials import CredentialEncryptionError
 
 bp = Blueprint('authentication_security', __name__)
 
@@ -103,7 +104,7 @@ def save_mfa_policy():
                 previous_mode=previous, next_mode=requested.value,
             ))
         db.session.commit()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, CredentialEncryptionError):
         db.session.rollback()
         current_app.logger.warning('MFA policy change was not committed.', exc_info=True)
         abort(503)
@@ -167,7 +168,7 @@ def save_bot_provider():
     except ValueError:
         db.session.rollback()
         abort(400)
-    except SQLAlchemyError:
+    except (SQLAlchemyError, CredentialEncryptionError):
         db.session.rollback()
         current_app.logger.warning('Bot Protection configuration was not committed.', exc_info=True)
         abort(503)
