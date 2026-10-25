@@ -27,7 +27,10 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert "workspace_endpoint='github_source.index'" in kernel
     assert '<style' not in landing and '<style' not in form
     assert 'text-kaori-primary' in landing
-    assert 'bg-kaori-primary' in form
+    assert "action_button.classes('primary')" in form
+    assert 'components/form_action_bar.html' in form
+    assert 'components/operational_toggle.html' in form
+    assert 'integrations/components/_provider_registration_context.html' in form
 
 
 def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
@@ -44,6 +47,34 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
     assert 'disabled' in form
     assert 'autocomplete="off"' in form
     assert 'form.webhook_secret' in form and 'form.private_key_pem' in form
+
+
+def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> None:
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    identity = form.index('Connection Identity')
+    installation = form.index('GitHub App Installation')
+    credentials = form.index('App Credentials')
+    controls = form.index('Operational Controls')
+    actions = form.index('form_action_bar.render(')
+    context = form.index('registration_context.render(')
+
+    assert identity < installation < credentials < controls < actions < context
+    assert 'integration_ui.palette_icon("settings-2", "brand", size="lg")' in form
+    assert 'operational_toggle.render("Allow KAORI to Use This Connection"' in form
+    assert 'form.enabled' in form
+    assert 'form.private_key_pem' in form
+    assert 'form.webhook_secret' in form
+    assert 'GitHub App Registration Flow' in form
+    assert 'data-kaori-provider-registration-context' not in form  # Macro owns markup.
+    assert 'xl:col-span-8' in form and 'xl:col-span-4' in form
+    assert 'xl:sticky xl:top-5' in form
+    assert 'form_action_bar.render(' in form
+    assert 'data-operation-submit' in form
+    assert 'data-loading-label="Registering Connection..."' in form
+    assert "url_for('github_source.index')" in form
+    assert "url_for(\"integrations.source_control\")" in form
+    assert 'bg-kaori-primary px-4' not in form
+    assert 'rounded-lg border border-outline-default bg-surface-card px-4 py-2' not in form
 
 
 def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
