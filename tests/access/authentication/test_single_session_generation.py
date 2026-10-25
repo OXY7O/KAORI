@@ -146,3 +146,64 @@ def test_audit_correlation_is_only_an_opaque_non_credential_reference() -> None:
         assert audit._audit_session_reference() is None
         session.pop('auth_session_ref')
         assert audit._audit_session_reference() is None
+
+
+def test_authentication_audit_correlates_only_actual_authenticated_sessions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = Flask(__name__)
+    app.secret_key = 'test-only-not-a-credential'
+    committed: list[Any] = []
+
+    class StubAuditStore:
+        def add(self, record: Any) -> None:
+            committed.append(record)
+
+        def commit(self) -> None:
+            pass
+
+        def rollback(self) -> None:
+            raise AssertionError('No database rollback expected.')
+
+    class AuditRecord:
+        pass
+
+    def actor_snapshot(user: User | None = None) -> SimpleNamespace:
+        key = f'user:{user.id}' if user is not None else 'unauthenticated'
+        return SimpleNamespace(key=key, label=key, as_json=lambda: {'actor': key})
+
+    monkeypatch.setattr(audit.db, 'session', StubAuditStore())
+    monkeypatch.setattr(audit, 'Notification', AuditRecord)
+    monkeypatch.setattr(audit, 'event_category_key', lambda value: value)
+    monkeypatch.setattr(audit, '_provider_label', lambda value: 'Local Database')
+    monkeypatch.setattr(audit, 'actor_snapshot_for_user', actor_snapshot)
+    monkeypatch.setattr(audit, 'unauthenticated_actor_snapshot', actor_snapshot)
+    monkeypatch.setattr(audit, 'redact_operational_text', lambda value, **kwargs: value)
+    monkeypatch.setattr(audit, 'redact_operational_metadata', lambda value: value)
+    actor = User(id=46, username='kaori-uat-user', auth_source='database')
+
+    with app.test_request_context('/auth/login', method='POST'):
+        session['auth_session_ref'] = 'b' * 32
+        audit.record_authentication_activity(
+            action='login', username=actor.username, source='database',
+            result='success', reason='success', user=actor,
+        )
+        assert committed[-1].actor_key == 'user:46'
+        assert committed[-1].metadata_json['session_reference'] == 'b' * 32
+        assert committed[-1].metadata_json['session_policy'] == 'single_active_login_generation'
+
+        audit.record_authentication_activity(
+            action='logout', username=actor.username, source='database',
+            result='success', reason='user_initiated', user=actor,
+        )
+        assert committed[-1].metadata_json['session_reference'] == 'b' * 32
+        assert committed[-1].metadata_json['session_policy'] is None
+
+        # Even a failed attempt targeting the same User never becomes the
+        # account's authenticated actor or inherits its login reference.
+        audit.record_authentication_activity(
+            action='login', username=actor.username, source='database',
+            result='failed', reason='invalid_credentials', user=actor,
+        )
+        assert committed[-1].actor_key == 'unauthenticated'
+        assert committed[-1].metadata_json['session_reference'] is None
