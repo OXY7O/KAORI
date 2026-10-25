@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/action_button.html" as action_button %}
-{% import "components/form_action_bar.html" as form_action_bar %}
+{% import "integrations/components/_provider_registration_actions.html" as registration_actions %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_toggle.html" as operational_toggle %}
@@ -21,8 +21,16 @@
         <form id="github-app-connection-form"
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              autocomplete="off">
+              autocomplete="off"
+              x-data="{ connectionVerified: false, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
+              x-on:input.capture="invalidateConnectionTest($event)"
+              x-on:change.capture="invalidateConnectionTest($event)"
+              x-on:github-connection-tested.window="applyConnectionTest($event)">
             {{ form.hidden_tag() }}
+            <input type="hidden"
+                   name="connection_test_proof"
+                   x-ref="connectionProof"
+                   value="">
             <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex min-w-0 items-start gap-3">
@@ -82,9 +90,14 @@
                             "Set GitHub App identity and credentials, then verify installation scope before registration.",
                             icon="network"
                             ) %}
-                            <button type="submit"
-                                    name="action"
-                                    value="test"
+                            <button type="button"
+                                    hx-post="{{ url_for('github_source.new_connection') }}"
+                                    hx-include="#github-app-connection-form"
+                                    hx-vals='{"action":"test"}'
+                                    hx-target="#github-connection-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-disabled-elt="this"
+                                    x-on:click="connectionVerified = false; $refs.connectionProof.value = ''; const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
                                     {% if not available %}disabled{% endif %}
                                     class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
                                 <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
@@ -161,33 +174,27 @@
                             </section>
                         </div>
                     </section>
+                    <div id="github-connection-test-result"
+                         aria-live="polite"></div>
                 </fieldset>
-                {% call form_action_bar.render("Test Connection verifies the GitHub installation scope. Registration rechecks identity and permissions; Full Validation follows saving.", aria_label="GitHub App Connection Actions", title="Connection Verification", embedded=true) %}
-                    <a href="{{ url_for('github_source.index') }}"
-                       class="{{ action_button.classes('secondary') }} w-full sm:w-auto">Cancel</a>
-                    <button type="submit"
-                            name="action"
-                            value="save"
-                            {% if not available %}disabled{% endif %}
-                            data-operation-submit
-                            data-loading-label="Registering Connection..."
-                            class="{{ action_button.classes('primary') }} w-full sm:w-auto">
-                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                        <span data-operation-submit-label>Register Connection</span>
-                    </button>
-                {% endcall %}
+                {{ registration_actions.render(url_for('github_source.index') ,
+                        aria_label='GitHub App Connection Actions',
+                        register_label='Register Connection',
+                        loading_label='Registering Connection...',
+                        submit_name='action',
+                        submit_value='save') }}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set github_flow_items = [('Define Connection Identity', 'Name the connection and choose its operational environment.'), ('Identify GitHub Installation', 'Provide the App ID, Installation ID, and owning account.'), ('Test Connection', 'Verify installation identity, permissions, and repository scope.'), ('Register & Validate', 'Persist only after re-verification; run Full Validation before consuming evidence.')] %}
+                {% set github_flow_items = [('Define Connection Identity', 'Name the connection and choose its operational environment.'), ('Identify GitHub Installation', 'Provide the App ID, Installation ID, and owning account.'), ('Test Connection', 'Verify installation identity, permissions, and repository scope.'), ('Register & Validate', 'Reverify, save, then run Full Validation.')] %}
                 {{ registration_context.render("GitHub App Registration Flow",
-                                "How KAORI registers an installation-scoped Source Control connection.",
+                                "Register a verified GitHub App connection.",
                                 github_flow_items,
                                 "Source Control Integrations",
                                 "GitHub executes repository APIs; KAORI governs connection identity, evidence, readiness, and audit.",
                                 url_for("integrations.source_control") ,
                 "Open Source Control Integrations",
                 flow_icon="workflow",
-                flow_note="Test Connection verifies identity and scope, not repository inventory or operational readiness.",
+                flow_note="Test verifies identity and scope.",
                 related_icon="git-branch",
                 authority_boundary="GitHub App installation grants remain authoritative. GitHub OAuth SSO uses separate credentials.") }}
             </aside>
