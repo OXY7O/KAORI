@@ -37,7 +37,7 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
     # djLint can put button attributes on separate lines.
     for action in ('test', 'save'):
         assert re.search(
-            rf'<button\\b(?=[^>]*\\bname="action")(?=[^>]*\\bvalue="{action}")[^>]*>',
+            rf'<button\b(?=[^>]*\bname="action")(?=[^>]*\bvalue="{action}")[^>]*>',
             form,
             re.DOTALL,
         )
