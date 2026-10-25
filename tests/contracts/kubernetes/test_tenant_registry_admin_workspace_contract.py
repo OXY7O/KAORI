@@ -183,6 +183,7 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
     groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
     routes = read('app/kubernetes/tenant/route_common.py')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
 
     assert 'components/workspace_tabs.html' in workspace
     assert 'workspace_tabs.render_query_tabs(membership_registry_tabs' in workspace
@@ -195,8 +196,9 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
     assert "membership_view='memberships'" in workspace
     assert "active_membership_view == 'groups'" in workspace
     assert "hx_target='#tenant-admin-workspace'" in workspace
-    assert "hx_select='#tenant-admin-workspace'" in workspace
-    assert "hx_push_url='true'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert 'hx-push-url="true"' in settings_tabs
     assert workspace.count('partials/_membership_registry.html') == 1
     assert workspace.count('partials/_group_registry.html') == 1
     assert 'name="membership_view" value="groups"' in workspace
