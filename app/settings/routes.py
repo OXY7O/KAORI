@@ -200,6 +200,24 @@ def sync_browser_timezone():
     return jsonify({'status': status, 'timezone': timezone}), 400 if status == 'invalid_timezone' else 200
 
 
+def _mfa_account_error_message(error: MfaVerificationError) -> str:
+    """Translate known MFA failures into safe actionable account guidance."""
+    return {
+        'Sign in again before changing MFA.': (
+            'Your sign-in session is no longer fresh. Sign out and sign back in before trying again.'
+        ),
+        'Your current password was not accepted.': (
+            'Current password was not accepted. Verify your password and try again.'
+        ),
+        'MFA is already enrolled.': 'MFA is already enrolled. Use the recovery section below.',
+        'Start MFA enrollment again.': 'Generate a new setup key before verifying a code.',
+        'MFA enrollment expired; start again.': 'Setup key expired. Generate a new setup key and retry.',
+        'Verification code was not accepted.': (
+            'Verification code was not accepted. Check your authenticator time and retry.'
+        ),
+    }.get(str(error), 'MFA request was not accepted. Verify your session and retry.')
+
+
 @bp.route('/account', methods=['GET', 'POST'])
 @login_required
 def account():
@@ -257,8 +275,12 @@ def account():
                 mfa_feedback = 'Recovery codes regenerated. Previous unused codes are invalid.'
             else:
                 raise MfaVerificationError('Unsupported MFA operation.')
-        except (ValidationError, MfaVerificationError):
-            mfa_feedback = 'MFA request was not accepted. Check your credentials and verification code.'
+        except ValidationError:
+            mfa_feedback = 'The security form expired. Refresh this page and submit again.'
+        except MfaVerificationError as exc:
+            # Only known server-owned reason codes are disclosed. Never echo
+            # arbitrary exception details, credentials, OTPs, or setup keys.
+            mfa_feedback = _mfa_account_error_message(exc)
         except (CredentialEncryptionError, SQLAlchemyError):
             mfa_feedback = 'MFA configuration is temporarily unavailable.'
             current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
