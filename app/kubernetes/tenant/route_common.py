@@ -7,7 +7,10 @@ from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
-from app.kubernetes.tenant.access_service import get_tenant_access_context
+from app.kubernetes.tenant.access_service import (
+    get_provider_access_evidence_registry_context,
+    get_tenant_access_context,
+)
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_credential_registry_context,
@@ -403,7 +406,20 @@ def _access_inventory_view() -> str:
 
 
 def _access_grants_section_context() -> dict[str, Any]:
+    active_view = _access_inventory_view()
+    provider_evidence = (
+        get_provider_access_evidence_registry_context(
+            provider=active_view,
+            page=_query_int('access_evidence_page'),
+            per_page=_query_int('access_evidence_per_page', 5),
+            search=_query_text('access_evidence_search'),
+            status=_query_text('access_evidence_status'),
+        )
+        if active_view in {'capsule', 'native'}
+        else {}
+    )
     return {
+        **provider_evidence,
         **get_access_grant_registry_context(
             page=_query_int('grant_page'),
             per_page=_query_int('grant_per_page', 5),
@@ -413,7 +429,7 @@ def _access_grants_section_context() -> dict[str, Any]:
             scope_type=_query_text('grant_scope_type'),
             search=_query_text('grant_search'),
         ),
-        'active_access_inventory_view': _access_inventory_view(),
+        'active_access_inventory_view': active_view,
     }
 
 
