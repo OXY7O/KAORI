@@ -7,7 +7,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.identity_provider.registry import build_credential_provider_registry
-from app.access.authentication.session import AuthSessionError
 from app.access.authentication.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -16,6 +15,7 @@ from app.access.authentication.results import (
     AuthReason,
     AuthResult,
 )
+from app.access.authentication.session import AuthSessionError
 from app.extensions.db import db
 from app.models import User
 
