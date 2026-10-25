@@ -63,3 +63,19 @@ class GitHubAppConnectionForm(FlaskForm):
         """Prevent secret rehydration into a failed or successful POST response."""
         self.private_key_pem.data = ''
         self.webhook_secret.data = ''
+
+
+class GitHubAppConnectionEditForm(FlaskForm):
+    """Edit canonical connection settings without exposing shared App secrets."""
+
+    name = StringField(
+        'Connection Name', validators=[DataRequired(), Length(min=2, max=160)],
+    )
+    environment = SelectField(
+        'Environment', choices=ENVIRONMENTS, validators=[DataRequired()],
+    )
+    description = TextAreaField(
+        'Description', validators=[Optional(), Length(max=2000)],
+        render_kw={'rows': 3},
+    )
+    enabled = BooleanField('Allow KAORI to Use This Connection')

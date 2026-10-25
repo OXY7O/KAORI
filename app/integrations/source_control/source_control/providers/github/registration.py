@@ -188,3 +188,63 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         db.session.rollback()
         raise
     return installation
+
+
+def update_github_connection_configuration(
+    installation: SourceInstallation,
+    *,
+    name: str,
+    environment: str,
+    description: str | None,
+    enabled: bool,
+) -> bool:
+    """Edit KAORI metadata without rebinding or changing shared GitHub App secrets.
+
+    Returns whether the environment/operational access change invalidated
+    Full Validation. Historical committed source evidence remains untouched.
+    """
+    canonical = installation.integration_instance
+    if (
+        installation.provider_key != 'github'
+        or installation.host_key != 'github.com'
+        or canonical is None
+        or canonical.integration_type != 'source_control'
+        or canonical.provider_key != 'github'
+        or canonical.adapter_key != 'github_rest_v3'
+        or canonical.id != installation.integration_instance_id
+    ):
+        raise ValueError('GitHub installation is not a canonical Source Control connection.')
+
+    validated_name = _validate_name(name)
+    if environment not in {value for value, _label in ENVIRONMENTS}:
+        raise ValueError('Environment does not match approved KAORI taxonomy.')
+    clean_description = str(description or '').strip() or None
+    if clean_description is not None and len(clean_description) > 2000:
+        raise ValueError('Connection description is too long.')
+    duplicate = IntegrationInstance.query.filter_by(
+        integration_type='source_control', name=validated_name,
+    ).first()
+    if duplicate is not None and duplicate.id != canonical.id:
+        raise ValueError('A Source Control connection with that name already exists.')
+
+    invalidates_readiness = (
+        canonical.environment != environment or bool(canonical.enabled) != bool(enabled)
+    )
+    canonical.name = validated_name
+    canonical.environment = environment
+    canonical.description = clean_description
+    canonical.enabled = bool(enabled)
+    if invalidates_readiness:
+        canonical.readiness_status = 'validation_required'
+        canonical.health_status = None
+        canonical.last_checked_at = None
+        canonical.last_error = None
+        metadata = dict(canonical.metadata_json or {})
+        metadata.pop('github_validation', None)
+        canonical.metadata_json = metadata
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return invalidates_readiness

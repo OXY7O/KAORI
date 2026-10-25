@@ -70,8 +70,8 @@
                 <div class="shrink-0 bg-surface-card px-4 sm:px-6"
                      data-kaori-github-permission-tabs>
                     {{ workspace_tabs.render([
-                        ('baseline', 'Baseline Validation Permissions', 'shield-check'),
-                        ('governance', 'Optional Governance Permissions', 'key-round')
+                                        ('baseline', 'Baseline Validation Permissions', 'shield-check') ,
+                    ('governance', 'Optional Governance Permissions', 'key-round')
                     ], prefix='github-minimum-permissions', aria_label='GitHub Permission Example Type') }}
                 </div>
                 <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6"
@@ -93,7 +93,7 @@
                                         <p class="text-sm font-semibold text-content-primary">Baseline Validation Permissions</p>
                                         <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-status-normal-soft px-2 text-xs font-semibold text-status-normal-text">Recommended Baseline</span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Metadata and Contents (read) are required for repository scope and source revision readiness. They do not prove synchronized inventory.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Metadata and Contents: read required; inventory needs synchronization.</p>
                                 </div>
                             </div>
                             <button type="button"
@@ -143,7 +143,7 @@
                                         <p class="text-sm font-semibold text-content-primary">Optional Governance Permissions</p>
                                         <span class="inline-flex min-h-6 items-center rounded-md border border-status-warning/20 bg-status-warning-soft px-2 text-xs font-semibold text-status-warning-text">Capability Dependent</span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Add only the read scopes needed for optional workflows, pull requests, checks, or deployment correlation. This example is not a write-access request.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Optional capabilities use approved read scopes; no write access.</p>
                                 </div>
                             </div>
                             <button type="button"
@@ -156,15 +156,15 @@
                         <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
                             <div class="bg-surface-card px-4 py-3">
                                 <p class="text-xs font-semibold text-content-muted">Scope</p>
-                                <p class="mt-1 text-xs font-medium text-content-primary">Approved installation and selected capabilities</p>
+                                <p class="mt-1 text-xs font-medium text-content-primary">Approved installation and capabilities</p>
                             </div>
                             <div class="bg-surface-card px-4 py-3">
                                 <p class="text-xs font-semibold text-content-muted">Permission Model</p>
-                                <p class="mt-1 text-xs font-medium text-content-primary">Pull requests, Actions, Checks and Deployments (read)</p>
+                                <p class="mt-1 text-xs font-medium text-content-primary">PRs, Actions, Checks, Deployments · read</p>
                             </div>
                             <div class="bg-surface-card px-4 py-3">
                                 <p class="text-xs font-semibold text-content-muted">Approval Boundary</p>
-                                <p class="mt-1 text-xs font-medium text-content-primary">Never substitute for privileged governance approval</p>
+                                <p class="mt-1 text-xs font-medium text-content-primary">Privileged access requires separate approval</p>
                             </div>
                         </div>
                         <div class="max-h-[22rem] overflow-auto bg-kaori-primary-dark p-4">
@@ -186,7 +186,7 @@
                                    aria-hidden="true"></i>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-status-warning-text">GitHub Remains Authoritative</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Configure or approve installation grants in GitHub. Admin, Secrets, and write permissions are not part of this example. After any grant change, run KAORI Full Validation and separately authorize repository synchronization.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Manage grants in GitHub; revalidate and sync separately in KAORI.</p>
                                 </div>
                             </div>
                         </div>
