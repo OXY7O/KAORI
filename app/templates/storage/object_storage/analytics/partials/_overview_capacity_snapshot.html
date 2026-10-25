@@ -3,7 +3,8 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true">
                     <i data-lucide="database" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
@@ -16,20 +17,26 @@
     </header>
     <div class="px-5 py-5 sm:px-6">
         {% set capacity_facts = [
-                                ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope'),
-                                ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage'),
-                                ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source)
-                            ] %}
-        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-3" data-object-storage-capacity-facts>
+                    ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope'),
+                    ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage'),
+                    ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source)
+                ] %}
+        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-3"
+            data-object-storage-capacity-facts>
             {% for label, value, helper in capacity_facts %}
                 <div class="min-w-0">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
-                    <dd class="mt-1.5 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</dd>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</dd>
+                    <dd class="mt-1.5 break-words text-xl font-semibold tabular-nums text-content-primary">
+                        {{ value }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ helper }}
+                    </dd>
                 </div>
             {% endfor %}
         </dl>
-        <div class="mt-5 border-t border-outline-subtle pt-4" data-object-storage-capacity-utilization>
+        <div class="mt-5 border-t border-outline-subtle pt-4"
+             data-object-storage-capacity-utilization>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="{{ analysis_surface.metric_label_classes() }}">Utilization of usable capacity</p>
                 <p class="text-sm font-semibold tabular-nums text-content-primary">{{ metrics.utilization_display }}</p>

@@ -16,13 +16,13 @@
          data-object-storage-projection-points="{{ projection_trend|tojson|forceescape }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <div class="flex min-w-0 items-center gap-2">
-                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
-                          aria-hidden="true">
-                        <i data-lucide="{{ 'chart-spline' if trend_mode == 'forecast' else ('activity' if trend_mode == 'performance' else 'database') }}"
-                           class="h-4 w-4"></i>
-                    </span>
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true">
+                    <i data-lucide="{{ 'chart-spline' if trend_mode == 'forecast' else ('activity' if trend_mode == 'performance' else 'database') }}"
+                       class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
                     <h2 class="text-base font-semibold text-content-primary">
                         {% if trend_mode == 'performance' %}
                             Request &amp; Error Trend
@@ -32,16 +32,16 @@
                             Storage Usage Trend
                         {% endif %}
                     </h2>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                        {% if trend_mode == 'forecast' %}
+                            Committed forecast history is solid; the linear 30-day projection is dashed.
+                        {% elif trend_mode == 'performance' %}
+                            {{ metrics_source.provider_label }} range for {{ selected_time_range }}. Requests and errors remain separate; traffic alone is not unhealthy.
+                        {% else %}
+                            {{ metrics_source.provider_label }} {{ selected_time_range }} range. Use slope and change for direction; Inventory remains point-in-time.
+                        {% endif %}
+                    </p>
                 </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    {% if trend_mode == 'forecast' %}
-                        Committed forecast history is solid; the linear 30-day projection is dashed.
-                    {% elif trend_mode == 'performance' %}
-                        {{ metrics_source.provider_label }} range for {{ selected_time_range }}. Requests and errors remain separate; traffic alone is not unhealthy.
-                    {% else %}
-                        {{ metrics_source.provider_label }} {{ selected_time_range }} range. Use slope and change for direction; Inventory remains point-in-time.
-                    {% endif %}
-                </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if compact_usage_overview %}
@@ -69,9 +69,9 @@
                 {% endif %}
                 {% if compact_usage_overview %}
                     {% set compact_metrics = [
-                                            ('Window Change', window_change, 'Observed change in the selected window'),
-                                            ('Growth / Day', trend_summary.growth_per_day_display|default('N/A'), 'Historical rate, not a forecast'),
-                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed sample direction')
+                                            ('Window Change', window_change, 'Observed change in this window', 'chart-no-axes-combined'),
+                                            ('Growth / Day', trend_summary.growth_per_day_display|default('N/A'), 'Historical rate, not a forecast', 'activity'),
+                                            ('Direction', trend_summary.direction_label|default('Unknown'), 'Observed sample direction', trend_summary.icon|default('trending-up'))
                                         ] %}
                 {% else %}
                     {% set compact_metrics = [
@@ -82,16 +82,31 @@
                                         ] %}
                 {% endif %}
                 {% if compact_usage_overview %}
-                    <dl class="flex flex-wrap items-start gap-x-8 gap-y-3 border-b border-outline-subtle pb-4"
-                        data-object-storage-overview-trend-summary>
-                        {% for label, value, helper in compact_metrics %}
-                            <div class="min-w-0">
-                                <dt class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
-                                <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ value }}</dd>
-                                <dd class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</dd>
-                            </div>
-                        {% endfor %}
-                    </dl>
+                    <div class="overflow-hidden rounded-lg border border-outline-subtle"
+                         data-object-storage-overview-trend-summary>
+                        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                            {% for label, value, helper, icon in compact_metrics %}
+                                <div class="min-w-0 bg-surface-card p-4 sm:p-5">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="{{ analysis_surface.role_icon_classes('status' if loop.last else 'brand', trend_summary.tone if loop.last else 'info', 'compact') }}"
+                                              aria-hidden="true">
+                                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        {% if loop.last %}
+                                            {{ table_label.status_label(trend_summary.direction_label|default('Unknown') , trend_summary.tone|default('unknown'), size='compact') }}
+                                        {% endif %}
+                                    </div>
+                                    <dt class="mt-3 {{ analysis_surface.metric_label_classes() }}">{{ label }}</dt>
+                                    <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
+                                        {{ value }}
+                                    </dd>
+                                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                        {{ helper }}
+                                    </dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </div>
                 {% else %}
                     <div class="overflow-hidden rounded-lg border border-outline-subtle"
                          data-object-storage-overview-trend-summary>

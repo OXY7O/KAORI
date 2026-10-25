@@ -23,7 +23,15 @@
                 {% include "storage/object_storage/analytics/partials/_controls.html" %}
             {% endif %}
             {% if page_key == 'overview' %}
+                <div class="space-y-1" data-object-storage-operational-posture-heading>
+                    <h2 class="text-base font-semibold text-content-primary">Operational Posture</h2>
+                    <p class="text-sm leading-6 text-content-secondary">Review capacity, request reliability, growth, and concentration from committed evidence.</p>
+                </div>
                 {% include "storage/object_storage/analytics/partials/_overview_analysis.html" %}
+                <div class="space-y-1" data-object-storage-analysis-workspaces-heading>
+                    <h2 class="text-base font-semibold text-content-primary">Analysis Workspaces</h2>
+                    <p class="text-sm leading-6 text-content-secondary">Explore capacity trends, request performance, consumers, forecasts, and source evidence.</p>
+                </div>
                 {% include "storage/object_storage/analytics/partials/_overview_workspace.html" %}
             {% elif page_key == 'capacity' %}
                 {% include "storage/object_storage/analytics/partials/_capacity_workspace.html" %}

@@ -209,7 +209,9 @@ def test_object_storage_overview_capacity_trend_is_chart_centered() -> None:
     assert panel.index('data-object-storage-overview-trend-summary') < panel.index(
         'data-object-storage-chart-container'
     )
-    assert 'flex flex-wrap items-start' in trend
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
+    assert "analysis_surface.role_icon_classes('status' if loop.last else 'brand'" in trend
+    assert "for label, value, helper, icon in compact_metrics" in trend
     assert 'analysis_surface.metric_grid_classes(4)' in trend  # Forecast keeps original summary.
     assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
@@ -286,3 +288,31 @@ def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -
     assert 'Request and error metrics never fall back to Inventory.' in evidence
     assert 'Unobserved evidence remains Unknown.' in evidence
     assert 'Ready · Optional Gaps' not in evidence
+
+
+def test_object_storage_analytics_overview_headings_and_trend_description_align() -> None:
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    overview_health = 'partials/_overview_analysis.html'
+    overview_workspace = 'partials/_overview_workspace.html'
+
+    posture_heading = index.index('data-object-storage-operational-posture-heading')
+    workspace_heading = index.index('data-object-storage-analysis-workspaces-heading')
+    assert posture_heading < index.index(overview_health)
+    assert index.index(overview_health) < workspace_heading < index.index(overview_workspace)
+    assert 'Operational Posture' in index
+    assert 'Analysis Workspaces' in index
+    assert 'Review capacity, request reliability, growth, and concentration' in index
+    assert 'Explore capacity trends, request performance, consumers, forecasts' in index
+
+    header = trend.split('<header class=', 1)[1].split('</header>', 1)[0]
+    assert 'flex min-w-0 items-start gap-3' in header
+    assert header.index('<h2 class=') < header.index('<p class=')
+    title_container = header.split('<div class="min-w-0">', 1)[1]
+    assert '<h2 class=' in title_container
+    assert '<p class=' in title_container
+    assert 'Storage Usage Trend' in title_container
+    assert 'data-object-storage-overview-trend-summary' in trend
+    assert 'bg-surface-card p-4 sm:p-5' in trend
+    assert 'sm:grid-cols-3' in trend
+    assert 'compact_forecast_overview' in trend
