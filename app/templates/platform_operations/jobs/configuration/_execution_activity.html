@@ -47,10 +47,14 @@
                             <dl class="mt-2 grid min-w-0 gap-1.5 text-xs sm:grid-cols-[3.5rem_minmax(0,1fr)] sm:gap-x-3">
                                 <dt class="font-semibold text-content-muted">Process</dt>
                                 <dd class="min-w-0 truncate font-semibold text-content-primary"
-                                    title="{{ active_job.progress_process }}">{{ active_job.progress_process }}</dd>
+                                    title="{{ active_job.progress_process }}">
+                                    {{ active_job.progress_process }}
+                                </dd>
                                 <dt class="font-semibold text-content-muted">Detail</dt>
                                 <dd class="min-w-0 truncate leading-5 text-content-secondary"
-                                    title="{{ active_job.progress_detail }}">{{ active_job.progress_detail }}</dd>
+                                    title="{{ active_job.progress_detail }}">
+                                    {{ active_job.progress_detail }}
+                                </dd>
                             </dl>
                         {% else %}
                             <p class="mt-2 text-sm font-semibold leading-6 text-content-primary">{{ selected_job.execution_state.description }}</p>
