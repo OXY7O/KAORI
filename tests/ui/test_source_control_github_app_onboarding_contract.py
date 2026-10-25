@@ -42,9 +42,7 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
 
 
 def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     assert "@permission_required('integrations.manage')" in routes
     assert "if request.method == 'POST' and not available:" in routes
     assert 'abort(409)' in routes
@@ -56,9 +54,7 @@ def test_server_checks_rbac_and_blocks_post_before_reading_secrets() -> None:
 
 
 def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     landing = _source('app/templates/integrations/source_control/github/index.html')
     assert 'registered: int | None = None' in routes
     assert 'ready: int | None = None' in routes
@@ -71,7 +67,10 @@ def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
 
 def test_blueprint_is_registered_using_existing_bootstrap() -> None:
     bootstrap = _source('app/bootstrap/blueprints.py')
-    assert 'from app.integrations.source_control.source_control.providers.github.application.routes import github_source_bp' in bootstrap
+    assert (
+        'from app.integrations.source_control.source_control.providers.github.application.routes '
+        'import github_source_bp'
+    ) in bootstrap
     assert 'github_source_bp,' in bootstrap
     assert "url_prefix='/integrations/source-control/github'" in _source(
         'app/integrations/source_control/source_control/providers/github/application/routes.py'
@@ -80,9 +79,7 @@ def test_blueprint_is_registered_using_existing_bootstrap() -> None:
 
 def test_source_control_opens_shared_registration_before_connection_overview() -> None:
     kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     form = _source('app/templates/integrations/source_control/github/form.html')
     index = _source('app/templates/integrations/source_control/github/index.html')
 
@@ -108,9 +105,7 @@ def test_source_control_operational_templates_have_no_temporary_uat_copy() -> No
     assert 'Source Control Connections' in domain
     assert 'GitHub App onboarding remains planned' not in domain
     # Endpoint names remain internal; permission and admission gates stay intact.
-    routes = _source(
-        'app/integrations/source_control/source_control/providers/github/application/routes.py'
-    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
     assert 'require_uat_access()' in routes
     assert "@permission_required('integrations.manage')" in routes
     assert "if request.method == 'POST' and not available:" in routes
