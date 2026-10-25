@@ -13,7 +13,7 @@ def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_reports_overview_uses_canonical_hero_and_two_block_body() -> None:
+def test_reports_overview_uses_canonical_hero_and_separate_governed_sections() -> None:
     source = read(OVERVIEW / 'index.html')
 
     assert 'data-reports-overview-layout="operational-full-width"' in source
@@ -28,6 +28,12 @@ def test_reports_overview_uses_canonical_hero_and_two_block_body() -> None:
 
     assert '_reporting_operational_posture.html' in source
     assert '_reporting_estate_capability.html' in source
+    assert '_reporting_contracts_automation.html' in source
+    assert '{% import "components/section_intro.html" as section_intro %}' in source
+    assert "section_intro.render('Reporting Landscape'," in source
+    assert "section_intro.render('Reporting Governance'," in source
+    assert 'aria-labelledby="reporting-landscape-heading"' in source
+    assert 'aria-labelledby="reporting-governance-heading"' in source
     for legacy in (
         '_reporting_operations.html',
         '_reporting_statistics.html',
@@ -89,16 +95,19 @@ def test_operational_posture_merges_runtime_and_generation_statistics() -> None:
     assert 'Verify Now' in source
 
 
-def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
+def test_estate_and_contracts_are_distinct_source_owned_cards() -> None:
     source = read(OVERVIEW / 'partials' / '_reporting_estate_capability.html')
+    contracts = read(OVERVIEW / 'partials' / '_reporting_contracts_automation.html')
     service = read(SERVICE)
     presentation = read(PRESENTATION)
 
+    assert 'data-reports-overview-block="contracts-automation"' in contracts
+    assert 'aria-labelledby="contracts-automation-title"' in contracts
     assert 'data-reports-overview-block="estate-capability"' in source
     assert 'Report Coverage &amp; Artifact Estate' in source
     assert 'Reporting Domain Coverage' in source
     assert 'Artifact Estate' in source
-    assert 'Contracts &amp; Automation' in source
+    assert 'Contracts &amp; Automation' in contracts
     assert 'payload.report_type_coverage.domains' in source
     assert 'data-report-domain-coverage="true"' in source
     assert 'Publication Boundary' in source
@@ -120,14 +129,14 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'XLSX · CSV' in source
     assert 'Candidate Domains' in source
     assert 'Contract + renderer required' in source
-    assert 'Contracts &amp; Automation' in source
-    assert 'payload.automation_summary.active_schedules' in source
-    assert 'payload.reporting_coverage' in source
-    assert 'data-contract-family-summary="true"' in source
-    assert 'Published Contract Families' in source
-    assert 'data-contract-automation-boundary="true"' in source
-    assert 'Automation Boundary' in source
-    assert 'group.contract_count' in source
+    assert 'Contracts &amp; Automation' in contracts
+    assert 'payload.automation_summary.active_schedules' in contracts
+    assert 'payload.reporting_coverage' in contracts
+    assert 'data-contract-family-summary="true"' in contracts
+    assert 'Published Contract Families' in contracts
+    assert 'data-contract-automation-boundary="true"' in contracts
+    assert 'Automation Boundary' in contracts
+    assert 'group.contract_count' in contracts
     assert 'Generated Reports' in source
     assert 'Templates' in source
     assert "url_for('reports.report_templates')" in source
@@ -155,6 +164,11 @@ def test_estate_visual_density_reuses_evidence_tiles_and_preserves_readability()
     assert "evidence_tile.snapshot(item.label, item.value, item.icon, 'Retained family')" in source
     assert "evidence_tile.snapshot(item.label, item.value, 'file-stack', 'Output format')" in source
     assert 'mt-auto pt-4' not in source
+    assert 'Ready or archived artifacts.' in source
+    assert 'Ready or archived artifacts retained in the reporting estate.' not in source
+    assert 'Contracts &amp; Automation' not in source
+    catalog = read(ROOT / 'app/definitions/catalogs/reports/coverage.yaml')
+    assert 'Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.' in catalog
 
 
 def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
@@ -164,6 +178,7 @@ def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
             OVERVIEW / 'index.html',
             OVERVIEW / 'partials' / '_reporting_operational_posture.html',
             OVERVIEW / 'partials' / '_reporting_estate_capability.html',
+            OVERVIEW / 'partials' / '_reporting_contracts_automation.html',
         )
     )
 
