@@ -919,3 +919,44 @@ def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
         expect(search).to_have_value('')
     finally:
         no_js_context.close()
+
+
+def test_integration_runtime_cross_page_navigation_keeps_outer_shell_in_viewport(
+    page: Page, kaori_authenticated_base_url: str
+) -> None:
+    """A domain-to-runtime link must not scroll the clipped app shell itself."""
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+
+    for width, height in ((1440, 900), (390, 844)):
+        page.set_viewport_size({'width': width, 'height': height})
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/integrations/source-control',
+            wait_until='domcontentloaded',
+        )
+        assert response is not None and response.ok
+        link = page.get_by_role('link', name='Runtime Overview')
+        expect(link).to_have_attribute('href', re.compile(r'/integrations/\?tab=runtime$'))
+        link.click()
+        expect(page).to_have_url(re.compile(r'/integrations/\?tab=runtime$'))
+        expect(page.locator('[data-integration-overview-workspace="runtime"]')).to_be_visible()
+
+        # KAORI locks html/body and scrolls only the dedicated main viewport.
+        # Fragment navigation must never shift the entire fixed-height shell.
+        geometry = page.evaluate(
+            """() => {
+                const shell = document.querySelector('body > div[x-data]');
+                const rect = shell.getBoundingClientRect();
+                return {
+                    scrollY: window.scrollY,
+                    rootScroll: document.scrollingElement.scrollTop,
+                    shellTop: rect.top,
+                    shellBottom: rect.bottom,
+                    viewportHeight: window.innerHeight,
+                };
+            }"""
+        )
+        assert geometry['scrollY'] == 0, geometry
+        assert geometry['rootScroll'] == 0, geometry
+        assert abs(geometry['shellTop']) <= 1, geometry
+        assert abs(geometry['shellBottom'] - geometry['viewportHeight']) <= 1, geometry

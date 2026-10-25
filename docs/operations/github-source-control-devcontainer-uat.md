@@ -22,6 +22,51 @@ In the Dev Container running this UAT branch, sign in as an active local super-a
 
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
+## 2026-10-25 — Runtime Overview cross-domain navigation scroll
+
+**Finding / authority:** issue #3097, after Source Control UI review. The
+operator reported a white strip beneath Integrations Overview after using
+**Runtime Overview** from the Source Control domain. The 1440×900 responsive
+screenshot also shows the top of the fixed shell clipped. Source inspection
+found the full navigation link contained `#integration-workspace`; the
+KAORI app shell intentionally locks root html/body overflow and scrolls
+only `main[data-kaori-main-scroll]`. Browser fragment navigation can move
+the root scroll unexpectedly, leaving a shell-sized white gap.
+
+**Scoped correction:** cross-page Runtime Overview uses
+`url_for('integrations.overview', tab='runtime')` **without a fragment**,
+so server-owned selected workspace comes from `?tab=runtime`. The
+Integrations Overview Hero Browse Providers / Review Runtime fallbacks
+likewise use canonical fragment-free URLs. Existing HTMX
+`hx-target`, `hx-select`, `hx-push-url`, server-selected tab and
+in-workspace `outerHTML show:none` behavior are preserved. No global
+CSS override or custom scroll-reset script is introduced.
+
+**Regression:** existing Integrations Overview contract now asserts
+fragment-free navigation without disabling the HTMX selector; existing
+Playwright representative-interaction suite includes a cross-page click
+and fixed-shell viewport geometry check at 1440×900 and 390×844.
+
+**Evidence:** BEFORE screenshot and source implementation identified;
+executable contract / browser tests and updated Human visual UAT PENDING.
+After updating Dev Container holding branch, test:
+
+```bash
+python -m pytest -q -p no:cacheprovider \
+  tests/contracts/integrations/test_integrations_overview_workspace_contract.py
+python -m pytest -q -s -p no:cacheprovider \
+  tests/ui/test_representative_interactions.py \
+  -k 'integration_runtime_cross_page_navigation_keeps_outer_shell_in_viewport'
+```
+
+Human check: from **Integrations → Source Control**, click
+**Runtime Overview** and confirm that Integration Overview opens the
+Runtime tab, the header/sidebar top remains fully visible, and no white
+strip appears below the shell at the 1440×900 responsive viewport. Repeat
+at one narrow viewport and light/dark; browser Back should return to
+Source Control. Official CI/CD, Full Admission and staging/main promotion
+remain HOLD.
+
 ## 2026-10-25 — Source Control registration-first workspace and functional QA
 
 **Authority:** Issue #3094, scoped child of reviewed Integrations UI

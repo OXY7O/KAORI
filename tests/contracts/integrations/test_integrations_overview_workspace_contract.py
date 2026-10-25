@@ -242,3 +242,25 @@ def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None
     assert 'for implementation in registry.implementations_for_type(module.integration_type):' in runtime
     assert 'implementation.runtime_overview_builder is None' in runtime
     assert 'runtime_overview_builder=build_runtime_overview_rows' in minio
+
+
+def test_integration_hero_navigation_does_not_scroll_outer_shell() -> None:
+    domain = read('app/templates/integrations/domain.html')
+    hero = read('app/templates/integrations/partials/_hero.html')
+    shell = read('app/templates/layouts/app.html')
+
+    # A fragment on a cross-page link can scroll the outer, clipped app
+    # viewport instead of the nested KAORI main scroller.
+    assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in domain
+    assert '}}#integration-workspace"' not in domain
+    assert '}}#integration-workspace"' not in hero
+    assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in hero
+    assert "href=\"{{ url_for('integrations.overview', tab='catalog') }}\"" in hero
+
+    # Retain existing HTMX partial replacement and server-owned runtime tab.
+    assert 'hx-target="#integration-workspace"' in hero
+    assert 'hx-select="#integration-workspace"' in hero
+    assert 'hx-push-url="true"' in hero
+    assert "hx_swap='outerHTML show:none'" in read('app/templates/integrations/overview.html')
+    assert 'data-kaori-main-scroll' in shell
+    assert 'h-full overflow-hidden' in shell
