@@ -179,3 +179,22 @@ def regenerate_mfa_recovery_codes(user: User) -> list[str]:
         db.session.rollback()
         raise
     return codes
+
+
+def disable_mfa(user: User, submitted: str) -> None:
+    """Delete protected factor only when current KAORI policy permits it."""
+    if mfa_decision(user).policy_required:
+        raise MfaVerificationError('MFA is required by the current security policy.')
+    verify_mfa_challenge(user, submitted, authenticated=True)
+    factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id, enabled=True).with_for_update().first()
+    if factor is None:
+        raise MfaVerificationError('MFA is not enrolled.')
+    db.session.delete(factor)
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_disabled', authenticated=True, success=True,
+    ))
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
