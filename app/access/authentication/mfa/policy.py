@@ -67,9 +67,7 @@ def evaluate_mfa_policy(
     if selected == MfaPolicyMode.DISABLED:
         return MfaPolicyDecision(selected, MfaGate.ALLOW, False)
 
-    required = selected == MfaPolicyMode.REQUIRED_ALL or (
-        selected == MfaPolicyMode.REQUIRED_PRIVILEGED and privileged
-    )
+    required = selected == MfaPolicyMode.REQUIRED_ALL or (selected == MfaPolicyMode.REQUIRED_PRIVILEGED and privileged)
     if required and not enrolled:
         return MfaPolicyDecision(selected, MfaGate.ENROLLMENT_REQUIRED, True)
     if enrolled:

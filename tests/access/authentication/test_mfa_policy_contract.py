@@ -39,9 +39,7 @@ def test_disabled_policy_keeps_current_login_behavior(privileged: bool, enrolled
 def test_post_primary_policy_gate(mode: str, privileged: bool, enrolled: bool, expected: MfaGate) -> None:
     decision = evaluate_mfa_policy(mode, privileged=privileged, enrolled=enrolled)
     assert decision.gate == expected
-    assert decision.policy_required == (
-        mode == 'required_all' or (mode == 'required_privileged' and privileged)
-    )
+    assert decision.policy_required == (mode == 'required_all' or (mode == 'required_privileged' and privileged))
     if expected == MfaGate.ALLOW:
         assert can_issue_session(decision)
     elif expected == MfaGate.CHALLENGE:
