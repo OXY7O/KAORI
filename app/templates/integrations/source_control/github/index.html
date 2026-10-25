@@ -29,34 +29,7 @@
                 "GitHub owns repositories, installation grants, source branches, and workflow execution; KAORI governs committed evidence.") }}
         {% call(tab_name) integration_tabs.render("github", active_tab, stats.grants, stats.total) %}
             {% if tab_name == "coverage" %}
-                <section class="{{ integration_ui.section_shell_classes() }}"
-                         data-kaori-github-coverage>
-                    {{ integration_ui.section_header("route", "GitHub Repository Coverage",
-                            "Only installation grants committed to KAORI are represented; provider inventory remains authoritative.") }}
-                    <div class="{{ integration_ui.metric_grid_classes(3) }}">
-                        {{ integration_ui.metric_card("Registered Installations", stats.total, "Connections stored in KAORI", "git-branch") }}
-                        {{ integration_ui.metric_card("Committed Access Grants", stats.grants, "Current effective-dated repository grants", "link-2") }}
-                        {{ integration_ui.metric_card("Full Validation Ready", stats.ready, "Validated connections, not Test Connection results", "badge-check") }}
-                    </div>
-                    <div class="p-5 sm:p-6">
-                        {% if available and stats.grants == 0 %}
-                            {{ integration_ui.interpretation_panel("Repository Evidence Not Yet Observed",
-                                    "No current repository grants have been committed. Register a GitHub App, perform Full Validation, then synchronize repository inventory to establish coverage.",
-                            icon="database") }}
-                        {% else %}
-                            {{ integration_ui.interpretation_panel("Committed Evidence Boundary",
-                                    "Grant counts reflect committed KAORI state, not an on-demand GitHub API request or proof of complete repository access.",
-                            icon="shield-check") }}
-                        {% endif %}
-                        {% if uat_workspace_enabled %}
-                            <a href="{{ url_for('github_source_uat.index') }}"
-                               class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline">
-                                Manage GitHub Installations
-                                <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                            </a>
-                        {% endif %}
-                    </div>
-                </section>
+                {% include "integrations/source_control/github/partials/_integration_coverage.html" %}
             {% else %}
                 {% include "integrations/source_control/github/partials/_connection_registry.html" %}
             {% endif %}
