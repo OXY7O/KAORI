@@ -218,6 +218,8 @@ def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() 
     assert 'progress_bar.job_progress(active_job' in activity
     assert "url_for('jobs.run_now', job_key=definition.key)" in activity
 
+
+
 def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> None:
     base = 'app/templates/platform_operations/jobs/configuration/definitions/'
     templates = (
@@ -242,6 +244,8 @@ def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> Non
         assert 'policy_form.hidden_tag()' in source
         assert '_job_overview.html' in source
         assert '_execution_activity.html' in source
+
+
 
 def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fields() -> None:
     base = 'app/templates/platform_operations/jobs/configuration/definitions/'
