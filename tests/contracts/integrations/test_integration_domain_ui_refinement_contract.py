@@ -202,7 +202,7 @@ def test_metrics_provider_selector_inherits_approved_shared_chooser() -> None:
     assert 'integration_ui.palette_icon("layers-3", "brand", size="lg")' in shared
     assert 'provider.icon|default(domain.icon)' in shared
     assert 'provider.description is defined and provider.description' in shared
-    assert "provider.secondary_label|default('Protocol')" in shared
+    assert 'provider.secondary_label|default("Protocol")' in shared
     assert 'info_tip.render("provider-choices-" ~ integration_type' in shared
     assert 'variant="guide"' in shared
     assert 'data-kaori-provider-disabled' in shared
