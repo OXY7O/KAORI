@@ -18,6 +18,8 @@ def test_provider_evidence_tables_reuse_shared_registry_and_native_dialogs() -> 
         assert "table_ui.table_classes('min-w-[1050px] table-fixed xl:min-w-0')" in ui
         assert 'scope="col"' in ui
         assert 'Observed At' in ui
+        assert 'Review Required' in ui
+        assert 'access_evidence_review_required }} records' in ui
         assert 'Access' in ui or 'RBAC' in ui
         assert '{% for event in access_evidence_rows %}' in ui
         assert 'access_evidence_pagination.allowed_per_page' in ui
