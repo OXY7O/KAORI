@@ -127,6 +127,24 @@ def index() -> ResponseReturnValue:
             )
         )
         grants = coverage_base.count()
+        committed_collections = (
+            SourceRepositoryCollectionState.query.join(
+                SourceInstallation,
+                SourceInstallation.id == SourceRepositoryCollectionState.installation_id,
+            )
+            .join(
+                IntegrationInstance,
+                IntegrationInstance.id == SourceInstallation.integration_instance_id,
+            )
+            .filter(
+                SourceRepositoryCollectionState.committed_generation > 0,
+                SourceInstallation.provider_key == 'github',
+                SourceInstallation.host_key == 'github.com',
+                IntegrationInstance.integration_type == 'source_control',
+                IntegrationInstance.provider_key == 'github',
+            )
+            .count()
+        )
 
         coverage_query = coverage_base
         if selected_coverage_query:
@@ -205,6 +223,7 @@ def index() -> ResponseReturnValue:
     else:
         # No provider admission means the inventory is not observed, not ready.
         total = ready = grants = None
+        committed_collections = 0
         rows = []
         pagination = pagination_payload(build_pagination_window(total_items=0))
         installation_by_instance = {}
@@ -236,6 +255,7 @@ def index() -> ResponseReturnValue:
         'readiness_options': sorted(readiness_options),
         'registry_has_active_filters': bool(selected_query or selected_environment or selected_readiness),
         'coverage_rows': coverage_rows,
+        'coverage_observed': committed_collections > 0,
         'coverage_pagination': coverage_pagination,
         'selected_coverage_query': selected_coverage_query,
         'selected_coverage_environment': selected_coverage_environment,
