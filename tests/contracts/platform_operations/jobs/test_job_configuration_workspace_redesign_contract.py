@@ -219,7 +219,6 @@ def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() 
     assert "url_for('jobs.run_now', job_key=definition.key)" in activity
 
 
-
 def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> None:
     base = 'app/templates/platform_operations/jobs/configuration/definitions/'
     templates = (
@@ -244,7 +243,6 @@ def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> Non
         assert 'policy_form.hidden_tag()' in source
         assert '_job_overview.html' in source
         assert '_execution_activity.html' in source
-
 
 
 def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fields() -> None:
@@ -272,3 +270,62 @@ def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fiel
     manual_only = _read(base + 'vault_alert_observation.html')
     assert 'schedule_policy.manual_header(' in manual_only
     assert 'policy_form.enabled(' not in manual_only
+
+def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded() -> None:
+    base = 'app/templates/platform_operations/jobs/configuration/definitions/'
+    for name, identity in (
+        ('object_storage_inventory_sync.html', 'confirm_empty_system_id'),
+        ('artifact_registry_inventory_sync.html', 'confirm_empty_instance_id'),
+    ):
+        source = _read(base + name)
+        guide = source.index('Guarded Recovery Boundary')
+        title = source.index('Confirm an Empty')
+        helper = source.index('Verify intentional')
+        assert title < guide < helper, name
+        assert 'mt-1 flex min-w-0 flex-wrap items-center gap-2' in source
+        assert source.count('Guarded Recovery Boundary') == 1
+        assert 'manual_form.hidden_tag()' in source
+        assert 'name="empty_reconciliation" value="confirm"' in source
+        assert 'name="confirmation_phrase"' in source
+        assert f'name="{identity}"' in source
+        assert 'selected_job.active_job or selected_job.execution_disabled' in source
+        assert 'Two complete reads required; mismatches preserve committed records.' in source
+
+
+def test_execution_scope_and_source_control_evidence_have_compact_accurate_previews() -> None:
+    activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+    source = _read(
+        'app/templates/platform_operations/jobs/configuration/definitions/source_control_repository_sync.html'
+    )
+    assert 'min-w-0 truncate whitespace-nowrap' in activity
+    assert 'title="{{ selected_job.execution_scope_label }}"' in activity
+    assert '{{ selected_job.execution_scope_label }}' in activity
+    assert 'overview_notice_short' in source
+    assert 'execution_safety_short' in source
+    assert 'Scheduling is disabled by default.' in source
+    assert 'Incomplete scans preserve committed evidence' in source
+    assert 'policy_form.hidden_tag()' in source
+
+
+def test_report_channels_use_bounded_accessible_collection_without_mutating_dispatch() -> None:
+    source = _read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
+    assert 'job-delivery-channels-title' in source
+    assert 'selected_job.delivery_channels|length' in source
+    assert 'max-h-64' in source
+    assert 'overflow-y-auto' in source
+    assert 'xl:grid-cols-3' in source
+    assert 'No delivery channels configured.' in source
+    assert 'tabindex="0"' in source
+    assert 'policy_form.hidden_tag()' in source
+    assert 'schedule_policy.footer(' in source
+
+
+def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() -> None:
+    jobs = _read('app/templates/platform_operations/jobs/configuration/_workspace.html')
+    lifecycle = _read('app/templates/platform_operations/data_lifecycle/index.html')
+    for component in ('Execution Boundary', "url_for('jobs.executions')", "variant='guide'"):
+        assert component in jobs
+        assert component in lifecycle
+    assert "current_user.has_permission('jobs.view')" in jobs
+    assert 'x-text="visibleJobCount"' in jobs
+    assert 'jobs-configuration-catalog-guide' in jobs
