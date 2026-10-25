@@ -61,7 +61,8 @@
                             </div>
                             {{ table_label.status_indicator_label(workspace.status_label, workspace.status_tone) }}
                         </div>
-                        <p class="px-5 text-sm leading-6 text-content-secondary">{{ workspace.description }}</p>
+                        <p class="min-w-0 truncate px-5 text-sm leading-6 text-content-secondary"
+                           title="{{ workspace.description }}">{{ workspace.description }}</p>
                         <dl class="mt-5 grid grid-cols-3 divide-x divide-outline-subtle border-y border-outline-subtle bg-surface-subtle">
                             {% for icon, label, value in workspace.metrics %}
                                 <div class="min-w-0 px-3 py-4">
