@@ -312,6 +312,9 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert "active_access_inventory_view == 'native'" in workspace
     assert 'hx-select="#tenant-admin-workspace"' in workspace
     assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert workspace.count('_access_grant_registry.html') == 1
+    assert workspace.count('_external_capsule_access_inventory.html') == 1
+    assert workspace.count('_native_namespace_rbac_inventory.html') == 1
     assert 'hx-push-url="true"' in settings_tabs
 
     assert 'def _access_inventory_view() -> str:' in routes
@@ -325,6 +328,11 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
         assert 'Latest Inspection' in panel
         assert 'Not inspected' in panel
         assert 'Provider Authority' in panel
+        assert 'Inspection Target' in panel
+        assert 'Inspection Evidence' in panel
+        assert 'rounded-xl border border-dashed' in panel
+        assert 'read-only' in panel.lower()
+        assert 'bg-surface-hover px-5 py-4' in panel
 
     assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
     assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
@@ -334,6 +342,12 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert 'No committed Native RBAC observation yet.' in native
     assert 'observe_capsule_external_access_route' in capsule
     assert 'observe_native_external_access_route' in native
+    assert 'components/action_button.html' in native
+    assert 'components/table_label.html' in native
+    assert 'name="tenant_id"' in capsule
+    assert 'name="tenant_id"' in native
+    assert 'Review Profile Match' in capsule
+    assert 'Review Profile Match' in native
     assert 'Analyze Access Drift' in capsule
     assert 'Analyze Native Access Drift' in native
 
