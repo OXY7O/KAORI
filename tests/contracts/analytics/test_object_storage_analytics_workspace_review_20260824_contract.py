@@ -215,6 +215,7 @@ def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
     assert 'role="img"' in trend
     assert 'beginAtZero: true' in script
 
+
 def test_object_storage_overview_tab_polish_preserves_source_boundaries() -> None:
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
     consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
