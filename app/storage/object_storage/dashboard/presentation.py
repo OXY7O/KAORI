@@ -149,7 +149,7 @@ def build_forecast_view(payload: dict[str, Any] | None, state: dict[str, Any]) -
         'insight': (
             f'{attention_count} bucket forecast(s) are inside the 90-day attention boundary.'
             if attention_count
-            else 'Current committed bucket forecasts show no capacity pressure within the 90-day attention window. Continue monitoring growth and utilization.'
+            else 'No bucket forecast shows 90-day capacity pressure; monitor growth.'
         ),
     }
 
@@ -229,10 +229,7 @@ def _consumer_insight(
     top_share = _optional_float(ordered_usage[0].get('usage_share')) if ordered_usage else None
     if top_share is not None and top_share >= 50:
         title = 'Usage Concentration Requires Review'
-        description = (
-            f'The leading bucket accounts for {format_percent(top_share)} of committed storage usage, '
-            'showing how much usage is concentrated in the largest consumer.'
-        )
+        description = f'Top bucket holds {format_percent(top_share)} of committed storage usage.'
     elif missing_activity_count:
         title = 'Request Activity Evidence Incomplete'
         description = f'{missing_activity_count} bucket(s) do not have committed request-rate evidence.'

@@ -77,7 +77,7 @@
                             {% elif capacity_tone == 'warning' %}
                                 {% set capacity_action = "Review top bucket concentration and the 30-day forecast before approving additional growth or quota changes." %}
                             {% elif capacity_tone == 'normal' %}
-                                {% set capacity_action = "Continue scheduled analytics and forecast refreshes, and review concentration before material growth changes." %}
+                                {% set capacity_action = "Keep analytics and forecasts current; review concentration before growth." %}
                             {% else %}
                                 {% set capacity_action = "Refresh Object Storage Analytics evidence before using capacity posture for an operational decision." %}
                             {% endif %}
