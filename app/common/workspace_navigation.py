@@ -399,6 +399,8 @@ def build_sidebar_navigation(
     endpoint: str | None,
     user: Any,
     query_args: Mapping[str, Any] | None = None,
+    *,
+    active_capability_override: str | None = None,
 ) -> tuple[dict[str, Any], ...]:
     if not getattr(user, 'is_authenticated', False):
         return ()
@@ -426,6 +428,12 @@ def build_sidebar_navigation(
         active_capability = (
             _active_capability_key(workspace.key, resolved_endpoint) if active_workspace == workspace.key else None
         )
+        if (
+            workspace.key == 'integrations'
+            and resolved_endpoint == 'integrations.choose_integration_provider'
+            and active_capability_override in {capability.key for capability in visible_capabilities}
+        ):
+            active_capability = active_capability_override
         context = _preserved_context(
             query_args,
             _WORKSPACE_CONTEXT_KEYS.get(workspace.key, ()),
