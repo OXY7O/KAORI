@@ -404,13 +404,13 @@ def _access_inventory_view() -> str:
 def _access_grants_section_context() -> dict[str, Any]:
     return {
         **get_access_grant_registry_context(
-        page=_query_int('grant_page'),
-        per_page=_query_int('grant_per_page', 5),
-        tenant_id=_query_text('grant_tenant_id'),
-        status=_query_text('grant_status'),
-        reconciliation_status=_query_text('grant_reconciliation_status'),
-        scope_type=_query_text('grant_scope_type'),
-        search=_query_text('grant_search'),
+            page=_query_int('grant_page'),
+            per_page=_query_int('grant_per_page', 5),
+            tenant_id=_query_text('grant_tenant_id'),
+            status=_query_text('grant_status'),
+            reconciliation_status=_query_text('grant_reconciliation_status'),
+            scope_type=_query_text('grant_scope_type'),
+            search=_query_text('grant_search'),
         ),
         'active_access_inventory_view': _access_inventory_view(),
     }
