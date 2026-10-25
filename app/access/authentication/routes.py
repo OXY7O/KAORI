@@ -3,6 +3,8 @@ from typing import cast
 
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
@@ -22,6 +24,8 @@ from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
     MfaVerificationError,
     mfa_decision,
+    begin_mfa_enrollment,
+    confirm_mfa_enrollment,
     verify_mfa_challenge,
 )
 from app.access.authentication.readiness import check_authentication_database_readiness
@@ -85,9 +89,7 @@ def _complete_successful_login(
     # Every required factor must be verified before generation issuance (#3121).
     if not mfa_verified:
         decision = mfa_decision(user)
-        if decision.gate == MfaGate.ENROLLMENT_REQUIRED:
-            raise AuthSessionError('MFA enrollment is required before application access.')
-        if decision.gate == MfaGate.CHALLENGE:
+        if decision.gate in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
             session.clear()
             session[MFA_PENDING_SESSION_KEY] = {
                 'user_id': user.id,
@@ -428,11 +430,58 @@ def mfa_challenge():
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
     decision = mfa_decision(user)
-    if decision.gate != MfaGate.CHALLENGE:
+    if decision.gate not in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
 
     form = MfaChallengeForm()
+    if decision.gate == MfaGate.ENROLLMENT_REQUIRED:
+        setup_secret = None
+        codes = None
+        enrollment_error = None
+        if request.method == 'POST':
+            pending['attempts'] += 1
+            session[MFA_PENDING_SESSION_KEY] = pending
+            action = str(request.form.get('mfa_action') or '')
+            try:
+                validate_csrf(request.form.get('csrf_token'))
+                if action == 'begin':
+                    setup_secret = begin_mfa_enrollment(user)
+                elif action == 'confirm' and form.validate_on_submit():
+                    codes = confirm_mfa_enrollment(user, str(form.verification_code.data or ''))
+                else:
+                    raise MfaVerificationError('Invalid enrollment request.')
+            except (ValidationError, MfaVerificationError):
+                enrollment_error = 'Enrollment could not be verified. Check your code or start again.'
+            except SQLAlchemyError:
+                enrollment_error = 'Authentication is temporarily unavailable.'
+            if codes is not None:
+                # Proof has become active. Revalidate the account and create
+                # the ONLY authenticated session for this completed flow.
+                result = enforce_login_admission(
+                    AuthResult(True, 'success', source=str(pending['source']), user=user)
+                )
+                if not result.success:
+                    session.pop(MFA_PENDING_SESSION_KEY, None)
+                    return redirect(url_for('auth.login'))
+                try:
+                    _complete_successful_login(
+                        result, remember_requested=bool(pending.get('remember')),
+                        next_url=pending.get('next_url'), mfa_verified=True,
+                    )
+                except (SQLAlchemyError, AuthSessionError):
+                    session.pop(MFA_PENDING_SESSION_KEY, None)
+                    return redirect(url_for('auth.login'))
+                _record_result(user.username, result)
+                response = current_app.make_response(
+                    render_template('access/authentication/mfa_recovery_codes.html', codes=codes)
+                )
+                response.headers['Cache-Control'] = 'no-store'
+                return response
+        return render_template(
+            'access/authentication/mfa_enrollment.html',
+            form=form, setup_secret=setup_secret, error=enrollment_error,
+        )
     error = None
     if form.validate_on_submit():
         # Failed attempts are bounded in the signed pending-auth cookie as
