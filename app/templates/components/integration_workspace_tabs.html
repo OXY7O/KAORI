@@ -30,8 +30,8 @@
         variant="guide") %}
     <div class="space-y-3" data-kaori-integration-workspace-section>
         {{ integration_ui.workspace_section_intro("Provider Connections & Coverage",
-            "Monitor provider readiness, committed coverage, and registered connections.",
-            provider_key|title ~ " provider connections and coverage") }}
+                "Monitor provider readiness, committed coverage, and registered connections.",
+                provider_key|title ~ " provider connections and coverage") }}
         <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
                  x-on:popstate.window="syncTab()"
                  class="{{ operational_section_card.shell_classes() }}"

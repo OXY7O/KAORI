@@ -297,3 +297,38 @@ def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() 
     assert 'selected_coverage_status' in routes
     assert 'integrations/source_control/github/partials/_integration_coverage.html' in routes
     assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
+
+
+def test_github_identity_fields_share_one_responsive_desktop_row() -> None:
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    installation = form.split('data-kaori-github-app-access', 1)[1].split('App Credentials', 1)[0]
+
+    assert 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3' in installation
+    assert '[form.app_id, form.installation_id, form.account_id]' in installation
+    assert 'min-w-0' in installation
+    assert 'form.hidden_tag()' in form
+    assert 'connection_test_proof' in form
+
+
+def test_github_coverage_empty_state_guides_registered_installations_to_validation_and_sync() -> None:
+    coverage = _source('app/templates/integrations/source_control/github/partials/_integration_coverage.html')
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    uat = _source('app/integrations/source_control/source_control/providers/github/application/uat_routes.py')
+
+    assert '{% elif registered %}' in coverage
+    assert 'Complete Full Validation, then Sync Repositories to commit repository access evidence.' in coverage
+    assert "url_for('github_source.index', tab='registry')" in coverage
+    assert 'View Connections' in coverage
+    assert 'No GitHub Repository Coverage Observed' in coverage
+    assert 'No Repositories in Committed Coverage' in coverage
+    assert 'Register and validate a GitHub App, then collect repository evidence.' in coverage
+    assert "url_for('github_source.new_connection')" in coverage
+    assert '{% if coverage_has_active_filters %}' in coverage
+
+    # Registration persists identity, not repository inventory. Coverage
+    # requires a separately committed grant generation.
+    assert 'SourceRepositoryCollectionState.committed_generation > 0' in routes
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
+    assert "'registered': total" in routes
+    assert "operation='full_validation'" in uat
+    assert 'enqueue_source_repository_sync(' in uat
