@@ -12,7 +12,7 @@
                 </span>
                 <div class="min-w-0">
                     <h3 class="text-sm font-semibold text-content-primary">Provider Alerts &amp; Anomaly Snapshot</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Alertmanager is preferred for provider alert lifecycle evidence; Metrics Source is the narrower fallback. KAORI anomaly signals remain separate metric-derived evidence.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Alertmanager owns lifecycle; metrics alerts are fallback, anomalies separate.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -25,7 +25,7 @@
         <article class="px-4 py-4 sm:px-5">
             <p class="text-xs font-medium text-content-muted">Provider Alerts</p>
             <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.provider_alert_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Active alerts committed from the selected provider source.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Committed alerts from the selected provider.</p>
         </article>
         <article class="px-4 py-4 sm:px-5">
             <p class="text-xs font-medium text-content-muted">Critical</p>
@@ -40,7 +40,7 @@
         <article class="px-4 py-4 sm:px-5">
             <p class="text-xs font-medium text-content-muted">Anomaly Signals</p>
             <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.anomaly_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI metric-derived signals crossing an operating boundary.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI signals crossing monitored thresholds.</p>
         </article>
     </div>
     <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">

@@ -123,7 +123,7 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     alert_projection = read('app/storage/object_storage/analytics/alert_sources.py')
 
     assert 'Committed inventory; provider configuration and live health remain integration-owned.' in system_detail
-    assert 'Active alerts committed from the selected provider source.' in overview_alerts
+    assert 'Committed alerts from the selected provider.' in overview_alerts
     assert 'Inflight requests indicate work, not pressure without a concurrency limit.' in performance
     assert 'Waiting requests and offline nodes determine posture.' in performance
     assert '{{ metrics_source.provider_label }} range for {{ selected_time_range }}.' in trend
@@ -199,14 +199,72 @@ def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
     assert panel.index('data-object-storage-overview-trend-summary') < panel.index(
         'data-object-storage-chart-container'
     )
-    assert "h-[260px] sm:h-[280px]" in trend
+    assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
     assert "{% elif trend_mode != 'performance' %}" in trend
     assert 'data-object-storage-trend-interpretation' in trend
     assert 'Inventory is point-in-time, not a growth forecast.' in trend
-    assert "partials/_trend.html" in overview
+    assert 'partials/_trend.html' in overview
     assert 'data-object-storage-trend-points' in trend
     assert 'data-object-storage-secondary-trend-points' in trend
     assert 'data-object-storage-projection-points' in trend
-    assert 'data-object-storage-chart\\n                        role="img"' in trend
+    assert 'compact_forecast_overview' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'analysis_surface.snapshot_header_icon_classes()' in trend
+    assert '<canvas data-object-storage-chart' in trend
+    assert 'role="img"' in trend
     assert 'beginAtZero: true' in script
+
+
+def test_object_storage_overview_tab_polish_preserves_source_boundaries() -> None:
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
+    alerts = read('app/templates/storage/object_storage/analytics/partials/_overview_alerts_snapshot.html')
+
+    assert 'analysis_surface.snapshot_header_icon_classes()' in trend
+    assert 'compact_forecast_overview' in trend
+    assert 'compact_overview_trend = compact_usage_overview or compact_forecast_overview' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'selected_forecast_history_window' in trend
+    assert 'data-object-storage-projection-points' in trend
+    assert 'Open Top Consumers for ranked bucket evidence and ownership.' in consumers
+    assert "url_for('analytics.object_storage_top_consumers'" in consumers
+    for phrase in (
+        'Alertmanager owns lifecycle; metrics alerts are fallback, anomalies separate.',
+        'Committed alerts from the selected provider.',
+        'KAORI signals crossing monitored thresholds.',
+    ):
+        assert phrase in alerts
+    assert 'overview_alerts.provider_alert_count' in alerts
+    assert 'overview_alerts.anomaly_count' in alerts
+
+
+def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -> None:
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+    evidence = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_snapshot.html')
+
+    assert 'partials/_overview_evidence_snapshot.html' in workspace
+    assert 'data-object-storage-evidence-details' in workspace
+    assert '<details' in workspace and '<summary' in workspace
+    for retained in ('_reconciliation.html', '_metrics_readiness.html', '_evidence_boundary.html'):
+        assert retained in workspace
+    for marker in (
+        'data-object-storage-evidence-readiness',
+        'data-object-storage-evidence-coverage',
+        'data-object-storage-evidence-interpretation',
+    ):
+        assert marker in evidence
+    for source_field in (
+        'metrics_readiness',
+        'analytics_materialization',
+        'inventory_observed_at',
+        'forecast_materialization',
+        'overview_alerts',
+        'alert_origin.resolved_label',
+    ):
+        assert source_field in evidence
+    assert 'Open Evidence Details' in workspace
+    assert "snapshot.label|default('Unavailable')" in evidence
+    assert 'Request and error metrics never fall back to Inventory.' in evidence
+    assert 'Unobserved evidence remains Unknown.' in evidence
+    assert 'Ready · Optional Gaps' not in evidence
