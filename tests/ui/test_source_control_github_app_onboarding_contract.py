@@ -76,3 +76,41 @@ def test_blueprint_is_registered_using_existing_bootstrap() -> None:
     assert "url_prefix='/integrations/source-control/github'" in _source(
         'app/integrations/source_control/source_control/providers/github/application/routes.py'
     )
+
+
+def test_source_control_opens_shared_registration_before_connection_overview() -> None:
+    kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
+    routes = _source(
+        'app/integrations/source_control/source_control/providers/github/application/routes.py'
+    )
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    index = _source('app/templates/integrations/source_control/github/index.html')
+
+    assert "workspace_endpoint='github_source.new_connection'" in kernel
+    assert "@github_source_bp.route('/connections/new', methods=['GET', 'POST'])" in routes
+    assert 'integrations/components/_provider_registration_hero.html' in form
+    assert 'registration_hero.render(' in form
+    assert 'Register GitHub App Connection' in form
+    assert "url_for('github_source.index')" in form  # Shared Back to Registry.
+    assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
+    assert '"Register Connection", url_for("github_source.new_connection")' in index
+    assert 'Manage Installations' in index
+
+
+def test_source_control_operational_templates_have_no_temporary_uat_copy() -> None:
+    for name in ('index.html', 'form.html', 'uat_index.html', 'uat_detail.html'):
+        template = _source(f'app/templates/integrations/source_control/github/{name}')
+        assert 'UAT' not in template, name
+        assert 'planned' not in template.lower(), name
+        assert 'design review' not in template.lower(), name
+
+    domain = _source('app/templates/integrations/partials/_domain_workspace.html')
+    assert 'Source Control Connections' in domain
+    assert 'GitHub App onboarding remains planned' not in domain
+    # Endpoint names remain internal; permission and admission gates stay intact.
+    routes = _source(
+        'app/integrations/source_control/source_control/providers/github/application/routes.py'
+    )
+    assert 'require_uat_access()' in routes
+    assert "@permission_required('integrations.manage')" in routes
+    assert "if request.method == 'POST' and not available:" in routes
