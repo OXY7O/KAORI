@@ -56,3 +56,14 @@ LDAP requires TLS certificate validation, bounded connect/read timeouts, safe se
 ## Audit requirements
 
 Record timestamp, attempted normalized username or external subject reference, provider, success/failure, safe reason code, proxy-normalized client address, user agent, and user ID when known. Never record passwords, tokens, assertions, raw LDAP responses, cookies, or secret configuration.
+
+
+## MFA and Bot Protection (UAT candidate #3134 / #3137)
+
+KAORI owns the step-up decision after Local Database, LDAP or SSO primary identity verification. Committed `authentication_security_policies` stores disabled/optional/required privileged/required all modes; MFA factor enrollment is encrypted-at-rest via the canonical `EncryptedText` credential protection, never held as plaintext in a Flask session. Recovery codes exist as secure hashes, are shown once and consumed once. Replay-resistant TOTP verification uses the vetted `cryptography` TOTP implementation, 30-second steps and a database row-lock/last-accepted-step guard. Rejected/challenge-expired attempts cannot issue authenticated Flask-Login state.
+
+When MFA is needed, `auth_session_version` is issued **after** the verified factor rather than after primary credentials; rejected OTPs must not evict an existing valid session. Mandatory but unenrolled identities receive restricted enrollment, not normal application RBAC. Policy changes atomically invalidate old sessions, including Remember Me, and are audit-only events. Default MFA policy is Disabled until explicitly set by a security administrator.
+
+Bot Protection is provider-neutral and separate from Identity Providers. First adapter is Cloudflare Turnstile, requiring mandatory server-side Siteverify with fixed HTTPS endpoint, bounded response/token, hostname/action/freshness and duplicate rejection. Site key is public and provider secret is encrypted at rest. The initial enforced mode is **Always**, with Disabled as the default; adaptive scoring and additional provider adapters require independent authority/evidence. Protected form challenge applies before Local/LDAP credential verification and before SSO start; GET SSO entry cannot bypass an enabled policy. Provider errors fail closed. Provider configuration presence does not prove live readiness.
+
+The centralized CSP adds a fixed Cloudflare script/frame/connect allowlist only on an active challenge login page. Controlled, audited server-shell recovery commands `flask disable-bot-protection` and `flask reset-user-mfa` require an incident reason and operator authority. Do not create a public emergency challenge bypass. The Dev Container UAT authority is `docs/operations/authentication-security-full-cycle-uat.md`. Production use remains subject to security gates, vendor reliability, recovery rehearsal and Human Acceptance.
