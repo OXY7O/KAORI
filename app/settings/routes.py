@@ -16,12 +16,11 @@ from flask import (
 )
 from flask_login import current_user, login_fresh, login_required
 from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-
-from app.security.credentials import CredentialEncryptionError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
+from app.access.authentication.mfa.qr import build_totp_qr_data_uri
 from app.access.authentication.mfa.service import (
     MfaVerificationError,
     begin_mfa_enrollment,
@@ -31,7 +30,6 @@ from app.access.authentication.mfa.service import (
     regenerate_mfa_recovery_codes,
     verify_mfa_challenge,
 )
-from app.models.authentication_security import AuthenticationMfaFactor
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -43,6 +41,15 @@ from app.common.timezone import (
     timezone_choice_groups,
 )
 from app.models import User
+from app.models.authentication_security import AuthenticationMfaFactor
+from app.platform_operations.notifications.feedback import (
+    OperationalDeliveryPolicy,
+    OperationalFeedbackSpec,
+    build_operational_feedback,
+    queue_operational_feedback,
+)
+from app.platform_operations.notifications.service import create_transient_feedback
+from app.security.credentials import CredentialEncryptionError
 from app.settings.account.actions import process_password_change
 from app.settings.account.queries import authentication_activity_summary, recent_authentication_events
 from app.settings.general.actions import (
@@ -248,11 +255,16 @@ def account():
         if result.saved and not is_htmx:
             return redirect(url_for('settings.account', tab='credentials'))
 
-    mfa_feedback: str | None = None
     mfa_setup_secret: str | None = None
+    mfa_setup_qr_src: str | None = None
     mfa_recovery_codes: list[str] | None = None
+    mfa_toast: dict[str, Any] | None = None
     if active_tab == 'mfa' and request.method == 'POST':
         action = str(request.form.get('mfa_action') or '')
+        status = 'error'
+        title = 'MFA request not accepted'
+        message = 'Verify your sign-in session and retry.'
+        committed_audit = False
         try:
             validate_csrf(request.form.get('csrf_token'))
             if not login_fresh():
@@ -263,27 +275,52 @@ def account():
                     raise MfaVerificationError('Your current password was not accepted.')
             if action == 'begin':
                 mfa_setup_secret = begin_mfa_enrollment(user)
-                mfa_feedback = 'Enter this setup key in an authenticator app, then confirm one code.'
+                # QR contains the same one-time setup secret. Never persist it
+                # or send it to a third-party QR endpoint.
+                mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
+                title = 'Authenticator setup started'
+                message = 'Scan the QR code or enter the setup key, then verify one code.'
             elif action == 'confirm':
-                mfa_recovery_codes = confirm_mfa_enrollment(
-                    user, str(request.form.get('verification_code') or '')
-                )
-                mfa_feedback = 'MFA enabled. Save your recovery codes now; they are shown only once.'
+                mfa_recovery_codes = confirm_mfa_enrollment(user, str(request.form.get('verification_code') or ''))
+                title = 'MFA enabled'
+                message = 'Save the recovery codes now. They will not be shown again.'
             elif action == 'regenerate':
                 verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
                 mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
-                mfa_feedback = 'Recovery codes regenerated. Previous unused codes are invalid.'
+                title = 'Recovery codes regenerated'
+                message = 'Save the new codes now. Previously unused codes are invalid.'
             else:
                 raise MfaVerificationError('Unsupported MFA operation.')
+            status = 'success'
+            # The factor service already staged and committed the Activity
+            # Audit event. This toast must not generate another audit record.
+            committed_audit = True
         except ValidationError:
-            mfa_feedback = 'The security form expired. Refresh this page and submit again.'
+            title = 'MFA form expired'
+            message = 'Refresh this page and submit again.'
         except MfaVerificationError as exc:
-            # Only known server-owned reason codes are disclosed. Never echo
-            # arbitrary exception details, credentials, OTPs, or setup keys.
-            mfa_feedback = _mfa_account_error_message(exc)
+            title = 'MFA request not accepted'
+            message = _mfa_account_error_message(exc)
         except (CredentialEncryptionError, SQLAlchemyError):
-            mfa_feedback = 'MFA configuration is temporarily unavailable.'
+            title = 'MFA temporarily unavailable'
+            message = 'MFA configuration is temporarily unavailable.'
             current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
+
+        if committed_audit:
+            mfa_toast = build_operational_feedback(
+                OperationalFeedbackSpec(
+                    status=status,
+                    title=title,
+                    message=message,
+                    activity_audit_saved=True,
+                    notification_deck_visible=False,
+                    delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+                )
+            )
+        else:
+            mfa_toast = create_transient_feedback(status=status, title=title, message=message)
+        if not is_htmx:
+            queue_operational_feedback(mfa_toast)
 
     mfa_factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id).first()
     mfa_state = {
@@ -305,8 +342,9 @@ def account():
         'password_toast': password_toast,
         'mfa_state': mfa_state,
         'mfa_setup_secret': mfa_setup_secret,
+        'mfa_setup_qr_src': mfa_setup_qr_src,
+        'mfa_toast': mfa_toast if is_htmx else None,
         'mfa_recovery_codes': mfa_recovery_codes,
-        'mfa_feedback': mfa_feedback,
         'identity_context': identity_context,
         'recent_login_events': recent_login_events,
         'activity_summary': activity_summary,
@@ -316,6 +354,8 @@ def account():
     response = make_response(render_template(template_name, **context))
     if mfa_setup_secret is not None or mfa_recovery_codes is not None:
         response.headers['Cache-Control'] = 'no-store'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Referrer-Policy'] = 'no-referrer'
     if notification_changed:
         response.headers['HX-Trigger'] = json.dumps(
             {
