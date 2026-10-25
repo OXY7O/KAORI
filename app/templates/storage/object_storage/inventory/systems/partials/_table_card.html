@@ -15,7 +15,7 @@
     {% endif %}
     {{ table_ui.inventory_block_header('server',
         'Object Storage Systems',
-        'Compare canonical system identity, provider posture, and committed inventory state. No live provider query is issued by this page.',
+        'Compare system identity, provider posture, and committed snapshot state.',
         'object-storage-systems-loading',
         'Refreshing Object Storage Systems',
         url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,

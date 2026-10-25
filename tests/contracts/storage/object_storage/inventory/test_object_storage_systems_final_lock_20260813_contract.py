@@ -52,7 +52,9 @@ def test_systems_workspace_keeps_kaori_hero_summary_filter_and_job_ownership() -
     assert 'table_ui.inventory_block_header(' in table_card
     assert "job_key='object_storage.inventory.sync'" in table_card
     assert 'Manage Inventory Jobs' in table_card
-    assert 'No live provider query is issued by this page.' in table_card
+    assert 'Compare system identity, provider posture, and committed snapshot state.' in table_card
+    modal_host = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    assert 'Committed Object Storage Inventory snapshot · No live provider API query.' in modal_host
 
 
 def test_object_storage_templates_do_not_add_local_style_debt() -> None:
