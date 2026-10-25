@@ -271,8 +271,7 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'No bucket forecast shows 90-day capacity pressure; monitor growth.' in presentation
     assert 'Keep analytics and forecasts current; review concentration before growth.' in capacity
     expected_consumer_copy = (
-        "f'The largest bucket accounts for {format_percent(top_share)} of committed "
-        "storage usage in this system.'"
+        "f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'"
     )
     assert expected_consumer_copy in presentation
     assert "'chart_items': [chart_item] if chart_item else []" in presentation
