@@ -149,6 +149,9 @@ def record_authentication_activity(
         'request_endpoint': _bounded_text(request.endpoint, limit=160),
         'target_user_id': user.id if user is not None else None,
         'session_reference': session_reference,
+        # A successful sign-in issues a new generation, invalidating previous
+        # issued logins. This is not a claim about the number of browser devices.
+        'session_policy': 'single_active_login_generation' if success and not is_logout else None,
     }
     # Defense in depth for this direct audit-only Notification producer; the
     # standard operational writer is not on the authentication commit path.
