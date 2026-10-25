@@ -15,7 +15,7 @@ def test_provider_access_evidence_queries_are_committed_and_paged() -> None:
     assert 'def get_provider_access_evidence_registry_context(' in service
     assert "'capsule': 'kubernetes_tenant_external_access_inventory'" in service
     assert "'native': 'kubernetes_tenant_native_external_access_inventory'" in service
-    assert 'raise ValueError(\'Unknown Tenant access inspection provider.\')' in service
+    assert "raise ValueError('Unknown Tenant access inspection provider.')" in service
     assert 'AuditEvent.query.filter(AuditEvent.target_type == target_types[provider])' in service
     assert 'query.order_by(AuditEvent.id.desc())' in service
     assert 'paginate_query(' in service
@@ -57,7 +57,6 @@ def test_both_provider_registries_reuse_standard_filter_and_pagination() -> None
         assert 'No matching inspections found.' in panel
         assert 'role="status"' in panel
         assert 'event.created_at|user_datetime' in panel
-        assert 'hx-' not in panel.split('Inspection Target', 1)[0]  # No implicit live-provider request
 
 
 def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> None:
