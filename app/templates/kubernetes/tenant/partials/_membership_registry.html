@@ -106,8 +106,8 @@
             </div>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
             <caption class="sr-only">Tenant membership registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>

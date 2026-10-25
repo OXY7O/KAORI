@@ -13,9 +13,9 @@ REGISTRIES = {
     # workspace contracts assert no forced minimum or horizontal overflow.
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
-    # Group actions fit inside the normal desktop Tenant Workspace; overflow is narrow-only.
-    '_group_registry': (980, (18, 15, 17, 12, 12, 26)),
-    '_membership_registry': (1100, (23, 20, 14, 13, 15, 15)),
+    # Settings-style Memberships tables fit desktop with narrow-only table-local scrolling.
+    '_group_registry': (840, (18, 15, 17, 12, 12, 26)),
+    '_membership_registry': (800, (23, 20, 14, 13, 15, 15)),
     '_namespace_access_registry': (1400, (16, 17, 13, 17, 12, 12, 13)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
@@ -45,7 +45,11 @@ def _header_widths(html: str) -> tuple[int, ...]:
 def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
     for name, (minimum_width, percentages) in REGISTRIES.items():
         template = _template(name)
-        assert f'min-w-[{minimum_width}px] !table-fixed' in template, name
+        if name in {'_membership_registry', '_group_registry'}:
+            assert f'min-w-[{minimum_width}px] table-fixed xl:min-w-0' in template, name
+            assert 'w-full min-w-0 max-w-full overflow-x-auto' in template, name
+        else:
+            assert f'min-w-[{minimum_width}px] !table-fixed' in template, name
         assert _header_widths(template) == percentages, name
         assert sum(percentages) == 100, name
         assert 'overflow-x-auto' in template, name
