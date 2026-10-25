@@ -71,6 +71,24 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     assert 'webhook_secret' not in partial
 
 
+
+def test_named_register_action_survives_shared_operation_loading_state() -> None:
+    form = _source('app/templates/integrations/source_control/github/form.html')
+    footer = _source('app/templates/integrations/components/_provider_registration_actions.html')
+    shell = _source('app/static/js/application_shell.js')
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+
+    assert "submit_name='action'" in form and "submit_value='save'" in form
+    assert 'data-operation-submit' in footer
+    assert 'name="{{ submit_name }}"' in footer
+    assert 'value="{{ submit_value }}"' in footer
+    assert "form.addEventListener(" in shell
+    assert "'formdata'" in shell
+    assert 'formDataEvent.formData.set(submitName, submitValue)' in shell
+    assert shell.index("'formdata'") < shell.index('submitButton.disabled = true')
+    assert "if action not in {'test', 'save'}:" in routes
+    assert 'verify_github_registration_proof(' in routes
+
 def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')
     identity = form.index('Connection Identity')

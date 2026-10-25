@@ -630,3 +630,66 @@ python scripts/verify_sidebar_navigation_standard.py
 claim a clean gate or Human Acceptance before exact-SHA Dev Container output.
 Official Developer Check, Full Admission, staging/main promotion and release
 remain **HOLD**.
+
+
+## 2026-10-25 — #3167 HTTP 400 on Register after successful Test Connection
+
+**Observed Human UAT:** GitHub App Test Connection succeeded and enabled the
+Register Connection action, but Save navigated to the browser's unstyled
+`400 Bad Request` response. The GitHub App installation credentials and
+disabled webhook are **not** the cause.
+
+**Root cause:** KAORI's shared `app/static/js/application_shell.js` changes
+the pressed `data-operation-submit` button to `disabled` in the native
+`submit` event before the browser constructs the outgoing FormData.
+Because the shared registration footer uses the clicked button as the
+named submitter `name="action" value="save"`, disabling that submitter drops
+`action=save` from the POST. The Source Control backend deliberately rejects
+unknown/missing action using `abort(400)`. The earlier Test Connection is
+a separate HTMX button and is unaffected.
+
+**Fix:** The existing shared submit-loading handler now installs a one-shot
+native `formdata` event listener to preserve the selected named
+submitter's `name=value` before disabling it. It uses
+`formData.set(name, value)` for only the chosen submitter. No static
+hidden `action=save`, no backend fallback accepting missing actions,
+no change to the HTMX `action=test` request, no additional JS/controller,
+no provider adapter or credential change. Unnamed submit buttons retain
+their existing behavior.
+
+**Existing quality gates/retest:**
+```bash
+git rev-parse HEAD
+git status --short
+python -m pytest -q -p no:cacheprovider \
+  tests/contracts/design/test_application_shell_interaction_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/unit/test_source_control_github_registration_proof.py
+python -m ruff check \
+  tests/contracts/design/test_application_shell_interaction_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python -m ruff format --check \
+  tests/contracts/design/test_application_shell_interaction_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python scripts/verify_javascript_syntax.py
+python scripts/verify_application_shell_standard.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human UAT:** restart Flask after pulling this holding SHA. A new page
+reload clears the earlier proof, so fill the GitHub App form and perform
+Test Connection again, then click Register within the ten-minute proof
+window without editing fields. Expect navigation to the GitHub Source
+Control registry, a newly registered `validation_required` connection,
+and then the separate Full Validation stage. Do **not** submit the PEM,
+webhook secret, signed proof, browser network body or raw request headers
+as GitHub issue/UAT evidence. Only share redacted screenshots and
+credential-free status/error summaries.
+
+**Regression scope:** verify existing operational form buttons that use
+`data-operation-submit`, including unnamed submitters; failed/missing
+proof still rejected by GitHub and none of the original credential/CSRF
+checks are weakened. Executable checks and Human Acceptance for the new
+exact SHA are **NOT RUN/PENDING** pending Dev Container evidence.
+Official CI/CD / Full Admission / staging/main promotion remain HOLD.
