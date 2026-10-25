@@ -43,7 +43,7 @@ def test_github_provider_action_uses_shared_provider_selector():
     taxonomy = _read('app/definitions/catalogs/integrations/taxonomy.yaml')
     assert "domain.key == 'source_control'" in workspace
     module = _read('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
-    assert 'url_for('integrations.choose_integration_provider', integration_type=item.key)' in workspace
+    assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
     assert "workspace_endpoint='github_source.index'" in module
     assert 'GitHub · First Provider' not in workspace
     assert 'GitHub · Open Provider' not in workspace
