@@ -75,17 +75,27 @@
                 </div>
             </nav>
             <footer class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:px-4">
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-secondary">
+                <div class="flex min-w-0 flex-wrap items-center gap-1.5">
                     <i data-lucide="list-checks"
-                       class="h-4 w-4 text-kaori-primary"
+                       class="h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent"
                        aria-hidden="true"></i>
-                    <span x-text="visibleJobCount">{{ job_catalog|length }}</span> of {{ job_catalog|length }} jobs shown
-                </span>
-                {{ info_tip.render('jobs-configuration-catalog-guide',
-                                'Registered Job Catalog',
-                                'Search and select a registered job to review its committed configuration. Scrolling this catalog does not run a job or change its saved policy.',
-                                placement='right',
-                                variant='guide') }}
+                    <span class="text-xs font-semibold text-content-secondary">Execution Boundary</span>
+                    {{ info_tip.render('jobs-configuration-catalog-guide',
+                        'Execution Boundary',
+                        'Jobs configuration controls saved policy and manual dispatch. Worker runtime, retries and cancellation remain authoritative in Jobs & Executions; lifecycle archive and retention belong to Data Lifecycle.',
+                        placement='right',
+                        variant='guide') }}
+                    <span class="text-xs text-content-muted">
+                        <span x-text="visibleJobCount">{{ job_catalog|length }}</span>/{{ job_catalog|length }} jobs
+                    </span>
+                </div>
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.executions') }}"
+                       class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus dark:text-kaori-accent">
+                        <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Open Jobs &amp; Executions
+                    </a>
+                {% endif %}
             </footer>
         </section>
     </aside>

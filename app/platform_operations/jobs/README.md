@@ -130,6 +130,30 @@ These are presentation-only changes: existing CSRF fields, permissions,
 schedule-enabled controls and interval constraints remain authoritative.
 Analytics refresh and stale-grace inputs likewise preserve their canonical semantics.
 
+## Job Configuration UI Reuse and Evidence Density
+
+The Job Configuration sidebar follows the approved Data Lifecycle footer
+pattern: `Execution Boundary`, a canonical Info Tip Guide, a current
+catalog result count and a permission-gated `Open Jobs & Executions` link.
+Catalog filtering, HTMX selection, history and independent list scroll remain
+local to the sidebar; runtime state and attempts are authoritative in Jobs.
+
+Guarded Empty Inventory reconciliation (Object Storage and Artifact Registry)
+keeps the Guide adjacent to its title while displaying the original independent
+verification requirement and two-read fail-closed safety. The `CONFIRM EMPTY`
+phrase, target selector, CSRF, permission checks and provider-owned discovery
+logic must never be bypassed for a presentation-only update.
+
+Execution scope values may be truncated visually, but the complete committed
+label is retained in the accessible HTML title. GitHub Repository Sync presents
+a short synopsis while retaining the original admission and incomplete-scan
+safety evidence in the canonical selected-job title Guide.
+
+Report Schedule Dispatcher delivery channels use a bounded, responsive,
+scrollable grid over the existing committed channel collection. Header count
+and empty state come from the same collection, and no live provider request
+or delivery mutation is performed by rendering it.
+
 ## Guarded Empty-Inventory Recovery UI
 
 Object Storage and Artifact Registry expose **manual-only**, permission-gated

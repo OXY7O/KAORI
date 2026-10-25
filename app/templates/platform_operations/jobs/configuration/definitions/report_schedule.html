@@ -16,8 +16,8 @@
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
         {{ schedule_policy.header('Report Schedule Dispatch Policy',
-            'Control how often KAORI checks for due report schedules.',
-            policy) }}
+                'Control how often KAORI checks for due report schedules.',
+                policy) }}
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
@@ -26,13 +26,21 @@
             {{ policy_form.hidden_tag() }}
             <div class="space-y-5 p-5 sm:p-6">
                 {{ schedule_policy.controls(policy_form, definition, can_configure,
-                'Automatic Schedule Dispatch',
-                'Dispatch scheduled reports on the Reports worker.',
-                icon='calendar-check',
-                interval_label='Check Interval',
-                policy_error=policy_error|default(none)) }}
+                                'Automatic Schedule Dispatch',
+                                'Dispatch scheduled reports on the Reports worker.',
+                                icon='calendar-check',
+                                interval_label='Check Interval',
+                                policy_error=policy_error|default(none) ) }}
                 {{ schedule_policy.timeline(policy) }}
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <section aria-labelledby="job-delivery-channels-title"
+                         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                        <h4 id="job-delivery-channels-title"
+                            class="text-sm font-semibold text-content-primary">Delivery Channels</h4>
+                        {{ table_label.metadata_label(selected_job.delivery_channels|length ~ ' Channels', icon='radio') }}
+                    </header>
+                    <div class="grid max-h-64 gap-3 overflow-y-auto overscroll-contain p-3 sm:grid-cols-2 xl:grid-cols-3"
+                         tabindex="0">
                     {% for channel in selected_job.delivery_channels %}
                         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-start justify-between gap-3">
@@ -42,11 +50,14 @@
                             <h4 class="mt-3 text-sm font-semibold text-content-primary">{{ channel.label }}</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ channel.description }}</p>
                         </article>
+                    {% else %}
+                        <p class="col-span-full py-6 text-center text-xs text-content-muted">No delivery channels configured.</p>
                     {% endfor %}
-                </div>
+                    </div>
+                </section>
             </div>
             {{ schedule_policy.footer(can_configure,
-                'Schedule definitions remain in Reports → Schedules; this policy controls worker dispatch.') }}
+                        'Schedule definitions remain in Reports → Schedules; this policy controls worker dispatch.') }}
         </form>
     </section>
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
