@@ -14,12 +14,7 @@ def _active_access_child(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> tupl
     monkeypatch.setattr(navigation, 'url_for', lambda target, **kwargs: f'/{target}')
     user = SimpleNamespace(is_authenticated=True, has_permission=lambda _permission: True)
     sections = navigation.build_sidebar_navigation(endpoint, user)
-    active_workspaces = [
-        workspace
-        for section in sections
-        for workspace in section['items']
-        if workspace['active']
-    ]
+    active_workspaces = [workspace for section in sections for workspace in section['items'] if workspace['active']]
     assert len(active_workspaces) == 1
     workspace = active_workspaces[0]
     assert workspace['key'] == 'access'
@@ -67,12 +62,7 @@ def test_active_highlight_requires_access_permission(monkeypatch: pytest.MonkeyP
         has_permission=lambda permission: permission != 'identity_providers.view',
     )
     sections = navigation.build_sidebar_navigation('access.authentication_security.index', user)
-    access = next(
-        workspace
-        for section in sections
-        for workspace in section['items']
-        if workspace['key'] == 'access'
-    )
+    access = next(workspace for section in sections for workspace in section['items'] if workspace['key'] == 'access')
     assert access['active']
     assert not any(child['key'] == 'authentication_security' for child in access['children'])
     # Do not create a second active child to compensate for an unavailable
