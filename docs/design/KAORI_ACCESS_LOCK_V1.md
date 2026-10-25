@@ -137,3 +137,10 @@ This change is presentation-only: no authentication admission, policy update, pr
 ## Authentication Security cards without redundant heading (#3166)
 
 The Authentication Assurance Overview renders the three **MFA, Bot Protection and Session Security** control cards directly after the posture panel. The redundant visible `Security Control Summaries` heading is intentionally omitted at the operator's UAT request. The containing `section` retains an accessible `aria-label="Authentication security controls"` and existing card-level titles, state-derived labels, and navigation. Other workspace tabs, policy controls, and session enforcement remain unchanged. Validate in the normal light/dark and responsive Visual QA workflow.
+
+
+## Authentication Security sidebar active-state correction (#3181)
+
+Access → Authentication Security is a canonical Level-2 Access capability, not Access → Overview. The shared server-side resolver `app/common/workspace_navigation.py` maps the whole `access.authentication_security.` blueprint endpoint namespace to `authentication_security`, including its Overview/MFA/Bot Protection/Session Security GET view and policy/testing POST routes. Only this Level-2 sidebar child receives the active state for these endpoints; the individual page tabs remain page-owned detail navigation, not a third sidebar level.
+
+Preserve Sidebar Navigation Standard v2.2, permission-aware disclosure, and the existing breadcrumb ownership. Avoid client-side highlight overrides or duplicating active-state logic in the page template. No authentication security runtime/policy/database change is part of this correction.
