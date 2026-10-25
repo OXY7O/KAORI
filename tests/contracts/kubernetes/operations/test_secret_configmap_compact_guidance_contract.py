@@ -52,6 +52,8 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
     assert "'Update Safety Contract', 'Active safeguards for this update.'" in update
     assert 'Controls that stay active while the live object is edited.' not in update
     assert 'Check exact name and RBAC without DELETE.' in delete
+    assert "note='Irreversible and resourceVersion-bound.'" in delete
+    assert 'Final deletion is irreversible from KAORI and must target the same validated resourceVersion.' not in delete
     target = (ROOT / 'app/templates/kubernetes/operations/configmaps/_delete_target.html').read_text(
         encoding='utf-8'
     )
