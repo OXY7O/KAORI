@@ -22,6 +22,59 @@ In the Dev Container running this UAT branch, sign in as an active local super-a
 
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
+## 2026-10-25 — Source Control domain UI consistency review
+
+**Authority:** scoped UX issue #3085 and operator screenshots comparing the
+Source Control domain with accepted Integrations → Registry → Harbor flow.
+Three source-level discrepancies were found:
+
+- The Source Control Hero taxonomy copy was longer than neighboring domain
+  descriptions. It now uses a concise provider-neutral sentence, with the
+  existing shared `page_hero.description_classes()` and normal responsive
+  wrapping rather than clipping or `nowrap`.
+- The shared `table_registry.clear_filters_link()` was invoked with its
+  default `lead=true` so the action rendered `order-first` on the filter
+  heading's flex row. Explicit `lead=false` keeps the heading to the left
+  and **Clear Filters** on the right, still shown only with active filters.
+  Canonical GET/HTMX reset, page 1 and Rows preservation remain unchanged.
+- The custom `GitHub · First Provider` and `GitHub · Open Provider` header
+  items were redundant beside the canonical provider workspace action.
+  Only the existing `Open Source Control` integration type link remains.
+
+**Focused regression ownership:** the existing
+`tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py`
+now contains scoped assertions for compact taxonomy copy, one provider
+workspace action, and Clear Filters order/conditional/HTMX query semantics.
+Previous contracts verify shared UI primitives but did **not** enforce all
+three criteria, so they cannot be claimed as pre-existing passes.
+
+**Evidence state: Source diff/contract authored; executable QA and updated
+browser Human UAT pending.** Recheck the exact candidate SHA and ensure
+empty state, active search reset and returning to the provider entrypoint
+function in light/dark and desktop/mobile widths. No provider credentials or
+jobs are needed for this review.
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+python -m ruff format --check tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+python -m pytest -q -p no:cacheprovider \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py \
+  tests/contracts/integrations/test_provider_registry_pagination_contract.py \
+  tests/ui/test_source_control_integration_workspace_contract.py
+djlint --check \
+  app/templates/integrations/partials/_domain_workspace.html \
+  app/templates/integrations/domain.html
+python scripts/verify_definition_registry.py
+```
+
+**Delivery:** temporary `kaori/review/staging-uat` UAT only; no new
+component, changes to GitHub integration provider credentials, HMAC,
+webhooks, database/worker or provider readiness, and no official CI/CD,
+Full Admission, promotion or release until explicit human authorization.
+
 ## 2. Existing Developer Check — commands to run
 
 To update the shared holding branch without discarding other reviewed UAT workstreams:

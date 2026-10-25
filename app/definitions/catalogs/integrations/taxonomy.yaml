@@ -33,7 +33,7 @@ domains:
   order: 50
 - key: source_control
   label: Source Control
-  description: Connect GitHub as the first Source Control provider; govern repository inventory, source revision evidence and delivery correlation.
+  description: Connect source control providers with governed evidence.
   icon: git-branch
   workspace_endpoint: integrations.source_control
   order: 60
