@@ -45,19 +45,10 @@
             <div class="flex flex-1 flex-col gap-4 p-5">
                 <div class="space-y-4">
                     <div class="min-w-0">
-                        <span class="inline-flex min-h-6 items-center gap-1.5">
-                            <label for="access-grant-membership"
+                        <div class="min-h-6">
+                                <label for="access-grant-membership"
                                    class="text-xs font-semibold text-content-primary">Membership</label>
-                            {{ info_tip.render('access-membership-tip',
-                                                        'Tenant Membership',
-                                                        'Choose the active Tenant principal that will receive this authorization.',
-                                                        [
-                                                        'The Membership fixes the Tenant boundary before scope selection.',
-                                                        'User, Group, and ServiceAccount principals keep their existing identity authority.',
-                                                        'Cross-Tenant targets are filtered out and rejected server-side.'
-                                                        ],
-                                                        placement='right', variant='guide') }}
-                        </span>
+                            </div>
                         <select id="access-grant-membership"
                                 name="membership_id"
                                 data-access-membership
@@ -80,20 +71,10 @@
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="min-w-0">
-                            <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <div class="min-h-6">
                                 <label for="access-grant-profile"
                                        class="text-xs font-semibold text-content-primary">Access Profile</label>
-                                {{ info_tip.render('access-profile-tip',
-                                                                'Access Profile',
-                                                                'Choose the least-privilege contract that matches the principal.',
-                                                                [
-                                                                'Viewer — read-only workload and namespace visibility.',
-                                                                'Operator — manage workloads and application resources; no Secrets write.',
-                                                                'Tenant Admin — Operator permissions plus namespaced Secret management.',
-                                                                'Deployer — automation profile for ServiceAccount memberships only.'
-                                                                ],
-                                                                placement='right', variant='guide') }}
-                            </span>
+                            </div>
                             <select id="access-grant-profile"
                                     name="access_profile"
                                     data-access-profile
@@ -108,20 +89,10 @@
                             </select>
                         </div>
                         <div class="min-w-0">
-                            <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <div class="min-h-6">
                                 <label for="access-grant-scope"
                                        class="text-xs font-semibold text-content-primary">Scope</label>
-                                {{ info_tip.render('access-scope-tip',
-                                                                'Access scope',
-                                                                'Scope controls how many governed namespaces receive the selected profile.',
-                                                                [
-                                                                'Namespace — exactly one namespace; narrowest choice.',
-                                                                'Environment — every governed namespace in one Tenant environment.',
-                                                                'Tenant — every governed namespace in the selected Tenant; no target field.',
-                                                                'Tenant scope still uses namespaced RBAC; it does not grant cluster-wide access.'
-                                                                ],
-                                                                placement='right', variant='guide') }}
-                            </span>
+                            </div>
                             <select id="access-grant-scope"
                                     name="scope_type"
                                     data-access-scope
@@ -219,15 +190,15 @@
                         </div>
                     </dl>
                     <div class="flex flex-1 flex-col justify-center px-4 py-3">
-                        <div class="flex flex-col gap-2 rounded-lg border border-kaori-primary/15 bg-surface-card/85 px-3.5 py-3">
-                            <div class="flex min-w-0 items-start gap-2.5">
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kaori-primary/15 bg-surface-card/85 px-3.5 py-3">
+                            <div class="flex min-w-0 flex-1 items-center gap-2.5">
                                 <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
                                     <i data-lucide="file-code-2" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-content-primary">Capsule RBAC Prerequisites</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Prepare approved ClusterRoles before applying.</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Prepare approved ClusterRoles.</p>
                                 </div>
                             </div>
                             <button type="button"
@@ -235,7 +206,7 @@
                                     data-dialog-target="capsule-access-role-manifest-dialog"
                                     aria-haspopup="dialog"
                                     aria-controls="capsule-access-role-manifest-dialog"
-                                    class="{{ action_button.classes('secondary') }} self-end !h-9 !px-3 !text-xs">
+                                    class="{{ action_button.classes('secondary') }} shrink-0 !h-9 !px-3 !text-xs">
                                 <i data-lucide="file-text" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                 Prepare Roles
                             </button>
