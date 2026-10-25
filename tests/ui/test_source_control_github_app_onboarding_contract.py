@@ -69,10 +69,19 @@ def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> 
     assert 'xl:col-span-8' in form and 'xl:col-span-4' in form
     assert 'xl:sticky xl:top-5' in form
     assert 'form_action_bar.render(' in form
+    assert 'components/connection_validation_header.html' in form
+    assert 'connection_validation_header.render(' in form
+    assert 'data-kaori-github-app-access' in form
+    assert form.index('value="test"') < form.index('form_action_bar.render(')
+    assert form.index('form_action_bar.render(') < form.index('value="save"')
+    assert form.count('value="test"') == 1
+    assert form.count('value="save"') == 1
+    assert 'title="Connection Verification"' in form
+    assert 'connection_test_proof' not in form
     assert 'data-operation-submit' in form
     assert 'data-loading-label="Registering Connection..."' in form
     assert "url_for('github_source.index')" in form
-    assert "url_for(\"integrations.source_control\")" in form
+    assert 'url_for("integrations.source_control")' in form
     assert 'bg-kaori-primary px-4' not in form
     assert 'rounded-lg border border-outline-default bg-surface-card px-4 py-2' not in form
 
@@ -127,8 +136,7 @@ def test_source_control_selects_provider_then_opens_existing_registration() -> N
     assert "url_for('github_source.index')" in form  # Shared Back to Registry.
     assert "return redirect(url_for('github_source.index'))" in routes  # Post-save.
     assert (
-        '"Choose Provider", url_for("integrations.choose_integration_provider", '
-        'integration_type="source_control")'
+        '"Choose Provider", url_for("integrations.choose_integration_provider", integration_type="source_control")'
     ) in index
     assert 'Manage Installations' in index
 

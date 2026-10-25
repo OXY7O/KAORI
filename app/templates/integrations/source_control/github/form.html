@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -73,86 +74,97 @@
                             </div>
                         </div>
                     </section>
-                    <section class="border-t border-outline-subtle pt-6"
-                             aria-labelledby="github-installation-identity">
-                        <div class="mb-4 flex items-start gap-3">
-                            {{ integration_ui.palette_icon("git-branch", "brand", size="sm") }}
-                            <div class="min-w-0">
-                                <h3 id="github-installation-identity"
-                                    class="text-sm font-semibold text-content-primary">GitHub App Installation</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">GitHub owns App identity, installation grants, and repository selection.</p>
-                            </div>
-                        </div>
-                        <div class="grid gap-4 md:grid-cols-2">
-                            {% for field in [form.app_id, form.installation_id, form.account_id] %}
-                                <div class="min-w-0">
-                                    <label for="{{ field.id }}"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
-                                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
-                                    {% for error in field.errors %}
-                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated"
+                             aria-label="GitHub App Installation and Access"
+                             data-kaori-github-app-access>
+                        {% call connection_validation_header.render(
+                            "Installation & Access",
+                            "Set GitHub App identity and credentials, then verify installation scope before registration.",
+                            icon="network"
+                            ) %}
+                            <button type="submit"
+                                    name="action"
+                                    value="test"
+                                    {% if not available %}disabled{% endif %}
+                                    class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
+                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                                Test Connection
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-6 p-4 sm:p-5">
+                            <section aria-labelledby="github-installation-identity">
+                                <div class="mb-4 flex items-start gap-3">
+                                    {{ integration_ui.palette_icon("git-branch", "brand", size="sm") }}
+                                    <div class="min-w-0">
+                                        <h3 id="github-installation-identity"
+                                            class="text-sm font-semibold text-content-primary">GitHub App Installation</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">GitHub owns App identity, installation grants, and repository selection.</p>
+                                    </div>
+                                </div>
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    {% for field in [form.app_id, form.installation_id, form.account_id] %}
+                                        <div class="min-w-0">
+                                            <label for="{{ field.id }}"
+                                                   class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                                            {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                                            {% for error in field.errors %}
+                                                <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                            {% endfor %}
+                                        </div>
                                     {% endfor %}
                                 </div>
-                            {% endfor %}
+                            </section>
+                            <section class="border-t border-outline-subtle pt-6"
+                                     aria-labelledby="github-app-credentials">
+                                <div class="mb-4 flex items-start gap-3">
+                                    {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
+                                    <div class="min-w-0">
+                                        <h3 id="github-app-credentials"
+                                            class="text-sm font-semibold text-content-primary">App Credentials</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Private keys and webhook secrets are encrypted. Installation access tokens remain transient.</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="{{ form.private_key_pem.id }}"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.private_key_pem.label.text }}</label>
+                                        {{ form.private_key_pem(class_="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 font-mono text-sm leading-6 text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Paste the GitHub App PEM private key. KAORI does not redisplay it after submission.</p>
+                                        {% for error in form.private_key_pem.errors %}
+                                            <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    <div>
+                                        <label for="{{ form.webhook_secret.id }}"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.webhook_secret.label.text }}</label>
+                                        {{ form.webhook_secret(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Separate GitHub App webhook secret; do not use GitHub OAuth SSO credentials.</p>
+                                        {% for error in form.webhook_secret.errors %}
+                                            <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="border-t border-outline-subtle pt-6"
+                                     aria-labelledby="github-operational-controls">
+                                <div class="mb-4 flex items-start gap-3">
+                                    {{ integration_ui.palette_icon("sliders-horizontal", "brand", size="sm") }}
+                                    <div class="min-w-0">
+                                        <h3 id="github-operational-controls"
+                                            class="text-sm font-semibold text-content-primary">Operational Controls</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Registration does not establish provider readiness until Full Validation succeeds.</p>
+                                    </div>
+                                </div>
+                                {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are not eligible for operational use.") %}
+                                    {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus") }}
+                                {% endcall %}
+                            </section>
                         </div>
-                    </section>
-                    <section class="border-t border-outline-subtle pt-6"
-                             aria-labelledby="github-app-credentials">
-                        <div class="mb-4 flex items-start gap-3">
-                            {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
-                            <div class="min-w-0">
-                                <h3 id="github-app-credentials"
-                                    class="text-sm font-semibold text-content-primary">App Credentials</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Private keys and webhook secrets are encrypted. Installation access tokens remain transient.</p>
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="{{ form.private_key_pem.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.private_key_pem.label.text }}</label>
-                                {{ form.private_key_pem(class_="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 font-mono text-sm leading-6 text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Paste the GitHub App PEM private key. KAORI does not redisplay it after submission.</p>
-                                {% for error in form.private_key_pem.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                            <div>
-                                <label for="{{ form.webhook_secret.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.webhook_secret.label.text }}</label>
-                                {{ form.webhook_secret(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Separate GitHub App webhook secret; do not use GitHub OAuth SSO credentials.</p>
-                                {% for error in form.webhook_secret.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </section>
-                    <section class="border-t border-outline-subtle pt-6"
-                             aria-labelledby="github-operational-controls">
-                        <div class="mb-4 flex items-start gap-3">
-                            {{ integration_ui.palette_icon("sliders-horizontal", "brand", size="sm") }}
-                            <div class="min-w-0">
-                                <h3 id="github-operational-controls"
-                                    class="text-sm font-semibold text-content-primary">Operational Controls</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Registration does not establish provider readiness until Full Validation succeeds.</p>
-                            </div>
-                        </div>
-                        {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are not eligible for operational use.") %}
-                            {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus") }}
-                        {% endcall %}
                     </section>
                 </fieldset>
-                {% call form_action_bar.render("Test Connection checks the GitHub installation scope. Register Connection verifies again; run Full Validation after saving.", aria_label="GitHub App Connection Actions", embedded=true) %}
+                {% call form_action_bar.render("Test Connection verifies the GitHub installation scope. Registration rechecks identity and permissions; Full Validation follows saving.", aria_label="GitHub App Connection Actions", title="Connection Verification", embedded=true) %}
                     <a href="{{ url_for('github_source.index') }}"
                        class="{{ action_button.classes('secondary') }} w-full sm:w-auto">Cancel</a>
-                    <button type="submit"
-                            name="action"
-                            value="test"
-                            {% if not available %}disabled{% endif %}
-                            class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
-                        <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                        Test Connection
-                    </button>
                     <button type="submit"
                             name="action"
                             value="save"
@@ -166,22 +178,17 @@
                 {% endcall %}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set github_flow_items = [
-                    ("Define Connection Identity", "Name the connection and choose its operational environment."),
-                    ("Identify GitHub Installation", "Provide the App ID, Installation ID, and owning account."),
-                    ("Test Connection", "Verify installation identity, permissions, and repository scope."),
-                    ("Register & Validate", "Persist only after re-verification; run Full Validation before consuming evidence.")
-                ] %}
+                {% set github_flow_items = [('Define Connection Identity', 'Name the connection and choose its operational environment.'), ('Identify GitHub Installation', 'Provide the App ID, Installation ID, and owning account.'), ('Test Connection', 'Verify installation identity, permissions, and repository scope.'), ('Register & Validate', 'Persist only after re-verification; run Full Validation before consuming evidence.')] %}
                 {{ registration_context.render("GitHub App Registration Flow",
-                        "How KAORI registers an installation-scoped Source Control connection.",
-                        github_flow_items,
-                        "Source Control Integrations",
-                        "GitHub executes repository APIs; KAORI governs connection identity, evidence, readiness, and audit.",
-                        url_for("integrations.source_control"),
-                        "Open Source Control Integrations",
-                        flow_icon="workflow",
-                        flow_note="Test Connection verifies identity and scope, not repository inventory or operational readiness.",
-                        related_icon="git-branch",
+                                "How KAORI registers an installation-scoped Source Control connection.",
+                                github_flow_items,
+                                "Source Control Integrations",
+                                "GitHub executes repository APIs; KAORI governs connection identity, evidence, readiness, and audit.",
+                                url_for("integrations.source_control") ,
+                "Open Source Control Integrations",
+                flow_icon="workflow",
+                flow_note="Test Connection verifies identity and scope, not repository inventory or operational readiness.",
+                related_icon="git-branch",
                 authority_boundary="GitHub App installation grants remain authoritative. GitHub OAuth SSO uses separate credentials.") }}
             </aside>
         </form>

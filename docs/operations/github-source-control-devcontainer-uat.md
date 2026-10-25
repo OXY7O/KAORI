@@ -458,3 +458,78 @@ evidence. Provider admission and Full Validation remain independent gates.
 **Exact candidate executable QA / Human Acceptance:** PENDING. Source review
 alone does not count as completion. No official CI/CD, Full Admission,
 staging/main promotion, release/tag or infrastructure mutation.
+
+
+## 2026-10-25 — #3145 Kubernetes-aligned GitHub registration UAT refinement
+
+**Authority:** #3145 follow-up to #3148. Operator supplied side-by-side
+1440×900 screenshots of the accepted Kubernetes connection registration and
+the newer GitHub App form. GitHub already has canonical identity and sidebar
+content, but lacks the cohesive bordered **Endpoint & Access** region with
+**Test Connection in its header**, and its footer remained crowded.
+
+**Design applied:** The GitHub form continues using the shared registration
+Hero and 8/4 responsive grid. Connection Identity stays at the top. Installation
+identity, App PEM and webhook secret, and operational enablement are grouped
+inside one bordered **Installation & Access** surface using the same
+`components/connection_validation_header.html` component as Kubernetes.
+`Test Connection` moves from the bottom footer into this surface header.
+The shared `form_action_bar` footer now only contains Cancel and
+Register Connection, with an accurate note that GitHub **revalidates on
+registration**. The right sticky panel keeps the shared four-step Registration
+Flow and Related Operational Workspace composition. Component and responsive
+tokens come from existing KAORI patterns; no new CSS/JS is introduced.
+
+**Do not conflate functional contracts:** Kubernetes/MinIO/Harbor registration
+depends on a time-bound connection-test proof and disables Register until the
+proof is available. GitHub has **no such proof field**: the existing server
+verifies identity/permissions again in `action=save`. This visual alignment
+must not fabricate a proof gate, separate endpoint, or a false "test required"
+claim. `action=test`, `action=save`, CSRF, fieldset admission guard, server
+RBAC/local-super-admin UAT, masked credentials and clear-sensitive-after-POST
+are unchanged.
+
+**Bundled known QA repairs (previous candidate):** operator reported Ruff
+check PASS, Ruff Format FAIL on GitHub UI test, djLint FAIL on GitHub form,
+pytest **42 passed / 1 failed** due to an obsolete Metrics Source assertion
+expecting `default('Protocol')`, and both navigation verifiers PASS.
+This follow-up aligns exact known formatting changes and updates the
+Metrics Source contract to the approved djLint form `default("Protocol")`.
+Do not count previous results as proof of this new candidate.
+
+### New candidate verification
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+python -m ruff format --check \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+djlint --check \
+  app/templates/integrations/source_control/github/form.html \
+  app/templates/integrations/provider_selector.html \
+  app/templates/integrations/observability/metrics_source/provider_selector.html
+python -m pytest -q -p no:cacheprovider \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py \
+  tests/contracts/integrations/test_metrics_source_routing_audit_20260817_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+Visual checks: compare Kubernetes and GitHub at 1440×900 and 390×844,
+light/dark, ensuring consistent Section Header, bounded Installation & Access,
+right flow cards, field hierarchy, Test Connection header action, footer
+alignment, no horizontal overflow, keyboard focus, visible errors, and no
+secret exposure. Use a deliberately invalid test credential for negative
+submit test only in a controlled UAT environment. Positive Test/Register
+with real secrets belongs to authorized functional UAT; redact evidence.
+
+**Executable QA and Human Visual Acceptance on this new SHA:** PENDING.
+Official Developer Check, Full Admission, `kaori/staging`/main promotion,
+release/tag and infrastructure mutation remain HOLD.
