@@ -1,0 +1,6 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% if verified %}
+    {{ operational_callout.render("Connection Verified", message or "The GitHub App installation is verified. Registration requires Full Validation afterwards.", icon="badge-check", tone="normal", variant="semantic") }}
+{% else %}
+    {{ operational_callout.render("Connection Not Verified", message or "Review the connection details and run Test Connection again.", icon="triangle-alert", tone="critical", variant="semantic") }}
+{% endif %}
