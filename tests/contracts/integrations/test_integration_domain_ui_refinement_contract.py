@@ -86,7 +86,7 @@ def test_source_control_header_uses_one_canonical_provider_workspace_action() ->
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
     # The reviewed Registry flow uses the provider type's existing workspace link.
     assert workspace.count('Open {{ item.runtime_label }}') == 1
-    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    assert 'url_for('integrations.choose_integration_provider', integration_type=item.key)' in workspace
     assert 'GitHub · First Provider' not in workspace
     assert 'GitHub · Open Provider' not in workspace
     assert "domain.key == 'source_control'" in workspace
@@ -116,16 +116,16 @@ def test_domain_registry_clear_filters_stays_on_header_right() -> None:
     assert "'binding_per_page': binding_per_page" in workspace
 
 
-def test_source_control_action_opens_github_registration_not_domain_self_link() -> None:
+def test_source_control_action_selects_provider_before_registration() -> None:
     """The shared workspace link must resolve to the provider, not its domain."""
     kernel = read('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
     provider_routes = read('app/integrations/source_control/source_control/providers/github/application/routes.py')
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
 
-    assert "workspace_endpoint='github_source.new_connection'" in kernel
+    assert "workspace_endpoint='github_source.index'" in kernel
     assert "workspace_endpoint='integrations.source_control'" not in kernel
     assert "url_prefix='/integrations/source-control/github'" in provider_routes
     assert "@github_source_bp.route('/connections/new', methods=['GET', 'POST'])" in provider_routes
-    assert 'href="{{ url_for(item.workspace_endpoint) }}"' in workspace
+    assert 'url_for('integrations.choose_integration_provider', integration_type=item.key)' in workspace
     assert 'Open {{ item.runtime_label }}' in workspace
     assert "'Source Control Connections' if domain.key == 'source_control'" in workspace
