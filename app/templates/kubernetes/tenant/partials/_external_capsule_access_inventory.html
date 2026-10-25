@@ -1,7 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
-<section class="min-w-0"
-         aria-labelledby="external-capsule-access-heading">
+<section class="min-w-0" aria-labelledby="external-capsule-access-heading">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
             <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -57,7 +56,6 @@
             <p class="mt-1 text-sm font-semibold text-content-primary">{{ recent_external_capsule_access|length }} shown</p>
         </div>
     </div>
-
     <div class="space-y-3 px-5 py-4">
         {% if recent_external_capsule_access %}
             {% for event in recent_external_capsule_access %}
@@ -79,7 +77,7 @@
                               action="{{ url_for('tenant.analyze_capsule_external_access_route') }}"
                               class="mt-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="access_inventory_view" value="capsule">
+                            <input type="hidden" name="access_inventory_view" value="capsule">
                             <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
                             <button type="submit"
                                     class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
@@ -121,7 +119,7 @@
                                               action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
                                               class="mt-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="access_inventory_view" value="capsule">
+                                            <input type="hidden" name="access_inventory_view" value="capsule">
                                             <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
                                             <input type="hidden" name="binding_index" value="{{ loop.index0 }}">
                                             <button type="submit"
@@ -172,7 +170,7 @@
                                 <form method="post"
                                       action="{{ url_for('tenant.plan_capsule_access_remediation_route') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="access_inventory_view" value="capsule">
+                                    <input type="hidden" name="access_inventory_view" value="capsule">
                                     <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
                                     <button type="submit"
                                             class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
