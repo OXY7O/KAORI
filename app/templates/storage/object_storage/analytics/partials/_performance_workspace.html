@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set performance_tabs = [('reliability', 'Request Health', 'scan-heart'), ('traffic', 'Traffic & Trend', 'arrow-left-right'), ('buckets', 'Bucket Activity', 'container'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set performance_tabs = [('reliability', 'Request Health', 'scan-heart'), ('traffic', 'Traffic & Trend', 'arrow-left-right'), ('buckets', 'Bucket Activity', 'container'), ('recommendations', 'Recommendations', 'list-checks')] %}
 <section id="object-storage-performance-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-performance-content"
@@ -21,6 +21,7 @@
         </div>
     </header>
     {{ content_tabs.render_buttons('object-storage-performance-content', performance_tabs, 'Performance Analysis Workspace', embedded=true, data_namespace='analytics', active_key='reliability', show_badges=false, nowrap=true) }}
+    {% include "storage/object_storage/analytics/partials/_domain_evidence_context.html" %}
     <div class="p-4 sm:p-5">
         <div id="object-storage-performance-content-panel-reliability"
              role="tabpanel"
@@ -51,15 +52,6 @@
              hidden
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
-        </div>
-        <div id="object-storage-performance-content-panel-evidence"
-             role="tabpanel"
-             aria-labelledby="object-storage-performance-content-tab-evidence"
-             data-analytics-tab-panel="evidence"
-             hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
-            {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
         </div>
     </div>
 </section>

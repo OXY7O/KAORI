@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('recommendations', 'Recommendations', 'list-checks')] %}
 <section id="object-storage-capacity-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-capacity-content"
@@ -21,12 +21,28 @@
         </div>
     </header>
     {{ content_tabs.render_buttons('object-storage-capacity-content', capacity_tabs, 'Capacity & Usage Workspace', embedded=true, data_namespace='analytics', active_key='summary', show_badges=false, nowrap=true) }}
+    {% include "storage/object_storage/analytics/partials/_domain_evidence_context.html" %}
     <div class="p-4 sm:p-5">
         <div id="object-storage-capacity-content-panel-summary"
              role="tabpanel"
              aria-labelledby="object-storage-capacity-content-tab-summary"
              data-analytics-tab-panel="summary"
-             class="space-y-4">{% include "storage/object_storage/analytics/partials/_capacity_analysis.html" %}</div>
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_capacity_analysis.html" %}
+            <details class="rounded-lg border border-outline-subtle bg-surface-card"
+                     data-object-storage-capacity-reconciliation>
+                <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-content-primary">
+                    <span class="inline-flex items-center gap-2">
+                        <i data-lucide="scan-search" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Inventory &amp; Operational Reconciliation
+                    </span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="border-t border-outline-subtle p-4">
+                    {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
+                </div>
+            </details>
+        </div>
         <div id="object-storage-capacity-content-panel-trend"
              role="tabpanel"
              aria-labelledby="object-storage-capacity-content-tab-trend"
@@ -49,16 +65,6 @@
              hidden
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
-        </div>
-        <div id="object-storage-capacity-content-panel-evidence"
-             role="tabpanel"
-             aria-labelledby="object-storage-capacity-content-tab-evidence"
-             data-analytics-tab-panel="evidence"
-             hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
-            {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
-            {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
         </div>
     </div>
 </section>

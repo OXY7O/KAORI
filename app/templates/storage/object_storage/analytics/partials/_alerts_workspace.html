@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set alert_tabs = [('overview', 'Alert Overview', 'radar'), ('records', 'Provider Alerts', 'bell-ring'), ('signals', 'Anomaly Signals', 'list-tree'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set alert_tabs = [('overview', 'Alert Overview', 'radar'), ('records', 'Provider Alerts', 'bell-ring'), ('signals', 'Anomaly Signals', 'list-tree'), ('recommendations', 'Recommendations', 'list-checks')] %}
 <section id="object-storage-alerts-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-alerts-content"
@@ -21,12 +21,28 @@
         </div>
     </header>
     {{ content_tabs.render_buttons('object-storage-alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true, data_namespace='analytics', active_key='overview', show_badges=false, nowrap=true) }}
+    {% include "storage/object_storage/analytics/partials/_domain_evidence_context.html" %}
     <div class="p-4 sm:p-5">
         <div id="object-storage-alerts-content-panel-overview"
              role="tabpanel"
              aria-labelledby="object-storage-alerts-content-tab-overview"
              data-analytics-tab-panel="overview"
-             class="space-y-4">{% include "storage/object_storage/analytics/partials/_alerts_summary.html" %}</div>
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_alerts_summary.html" %}
+            <details class="rounded-lg border border-outline-subtle bg-surface-card"
+                     data-object-storage-alert-source-details>
+                <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-content-primary">
+                    <span class="inline-flex items-center gap-2">
+                        <i data-lucide="radio-tower" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Alert Source &amp; Lifecycle Details
+                    </span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="border-t border-outline-subtle p-4">
+                    {% include "storage/object_storage/analytics/partials/_alerts_source_evidence.html" %}
+                </div>
+            </details>
+        </div>
         <div id="object-storage-alerts-content-panel-records"
              role="tabpanel"
              aria-labelledby="object-storage-alerts-content-tab-records"
@@ -48,16 +64,6 @@
              hidden
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
-        </div>
-        <div id="object-storage-alerts-content-panel-evidence"
-             role="tabpanel"
-             aria-labelledby="object-storage-alerts-content-tab-evidence"
-             data-analytics-tab-panel="evidence"
-             hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_alerts_source_evidence.html" %}
-            {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
-            {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
         </div>
     </div>
 </section>

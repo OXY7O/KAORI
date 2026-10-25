@@ -1,0 +1,33 @@
+{# Compact source-bound evidence status for owning domain workspaces; the audit record lives in Overview. #}
+{% if page_key == 'alerts' %}
+    {% set context_status = alert_source.label|default('Unknown') %}
+    {% set context_tone = alert_source.tone|default('unknown') %}
+    {% set context_source = alert_source.resolved_label|default('Unavailable') %}
+    {% set context_detail = 'Provider alert lifecycle source; KAORI metric anomalies remain separate.' %}
+{% elif page_key == 'forecast' %}
+    {% set context_status = forecast_materialization.label|default('Unavailable') %}
+    {% set context_tone = forecast_materialization.tone|default('unknown') %}
+    {% set context_source = 'Forecast Worker' %}
+    {% set context_detail = 'Worker-committed planning evidence; method and refresh are shown under Worker & Method.' %}
+{% else %}
+    {% set context_status = analytics_materialization.label|default('Unavailable') %}
+    {% set context_tone = analytics_materialization.tone|default('unknown') %}
+    {% set context_source = metrics_source.provider_label|default('Metrics Source') %}
+    {% set context_detail = 'Committed analytics for this window; provider queries are not issued on page load.' %}
+{% endif %}
+<div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+     data-object-storage-domain-evidence-context>
+    <div class="flex min-w-0 flex-wrap items-center gap-2">
+        <i data-lucide="database" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <span class="text-xs font-semibold text-content-primary">Committed Evidence</span>
+        {{ table_label.status_label(context_status, context_tone, size='compact') }}
+        <span class="text-xs text-content-secondary">{{ context_source }}</span>
+        <span class="text-xs text-content-muted">{{ context_detail }}</span>
+    </div>
+    <a href="{{ url_for('analytics.object_storage_overview', system_id=system.id, time_range=selected_time_range, tab='evidence') }}"
+       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+       data-object-storage-central-evidence-link>
+        View Data &amp; Evidence
+        <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+    </a>
+</div>
