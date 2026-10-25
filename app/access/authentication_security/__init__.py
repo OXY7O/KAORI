@@ -1,8 +1,13 @@
-"""Access-owned, read-only authentication assurance review workspace (#3138)."""
+"""Access-owned authentication assurance administration and read-side composition."""
 
 from __future__ import annotations
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
+from flask_login import current_user
+from flask_wtf.csrf import validate_csrf
+from sqlalchemy import func, update
+from sqlalchemy.exc import SQLAlchemyError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.bot_protection.registry import bot_provider_definitions
 from app.access.authentication.bot_protection.service import (
@@ -14,15 +19,10 @@ from app.access.authentication.bot_protection.service import (
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyMode
 from app.access.authentication.mfa.service import mfa_enrolled, mfa_policy_mode
+from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
-from flask_login import current_user
-from flask_wtf.csrf import validate_csrf
-from sqlalchemy import func, update
-from sqlalchemy.exc import SQLAlchemyError
-from wtforms.validators import ValidationError
-from app.access.rbac.decorators import permission_required
 
 bp = Blueprint('authentication_security', __name__)
 
