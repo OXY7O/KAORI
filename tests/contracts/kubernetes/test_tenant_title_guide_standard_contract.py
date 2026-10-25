@@ -11,7 +11,7 @@ TITLE_GUIDES = {
     '_tenant_discovery.html': ('tenant-discovery-status-tip',),
     '_group_registry.html': ('tenant-group-lifecycle-tip',),
     '_membership_registry.html': ('tenant-membership-lifecycle-tip',),
-    '_tenant_form.html': ('tenant-setup-form-tip',),
+    '_tenant_form.html': ('tenant-setup-form-tip', 'capsule-initial-owner-guide-tip'),
     '_tenant_memberships_workspace.html': (
         'membership-user-tip',
         'membership-group-tip',
@@ -64,6 +64,36 @@ def test_every_approved_tenant_title_guide_uses_shared_variant() -> None:
     assert all("variant='guide'" in expression for expression in advanced)
 
 
+def test_capsule_initial_owner_uses_one_shared_section_guide() -> None:
+    source = _read('_tenant_form.html')
+    section_start = source.index('Capsule Initial Owner')
+    section_end = source.index('Existing Capsule Tenant? Use Discovery', section_start)
+    capsule_section = source[section_start:section_end]
+
+    assert capsule_section.count("'capsule-initial-owner-guide-tip'") == 1
+    assert "variant='guide'" in capsule_section
+    assert 'Owner Kind: User' in capsule_section
+    assert 'Owner Kind: Group' in capsule_section
+    assert 'Owner Kind: ServiceAccount' in capsule_section
+    assert 'Owner Subject must match' in capsule_section
+    assert 'oidc:org:platform-team' in capsule_section
+    assert 'system:serviceaccount:platform:deployer' in capsule_section
+    assert 'capsule-owner-kind-tip' not in capsule_section
+    assert 'capsule-owner-subject-tip' not in capsule_section
+
+    # Both labels and required provider controls remain permanently visible.
+    assert 'Required for Capsule provider ownership' in capsule_section
+    assert 'form_field.label_row("Owner Kind")' in capsule_section
+    assert 'form_field.label_row("Owner Subject")' in capsule_section
+    assert 'name="capsule_owner_kind"' in capsule_section
+    assert 'name="capsule_owner_subject"' in capsule_section
+    assert capsule_section.count('data-capsule-owner-control') == 2
+    assert 'value="User"' in capsule_section
+    assert 'value="Group" selected' in capsule_section
+    assert 'value="ServiceAccount"' in capsule_section
+    assert capsule_section.count('disabled') == 2
+
+
 def test_resource_group_guides_are_inside_owning_disclosure_title() -> None:
     source = _read('_resource_profile_form.html')
     assert 'Section help' not in source
@@ -86,7 +116,6 @@ def test_resource_group_guides_are_inside_owning_disclosure_title() -> None:
 
 def test_field_and_row_specific_evidence_remains_icon_only() -> None:
     field_tips = {
-        '_tenant_form.html': ('capsule-owner-kind-tip', 'capsule-owner-subject-tip'),
         '_tenant_access_grants_workspace.html': (
             'access-membership-tip',
             'access-profile-tip',
