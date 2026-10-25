@@ -9,7 +9,7 @@
                     <h1 class="{{ page_hero.title_classes() }}">Authentication Security</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">Review second-factor, bot protection, and session assurance boundaries.</p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('lock-keyhole', 'Read Only') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Governed Changes' if can_manage_authentication_security else 'Read Only') }}
                         {{ page_hero.meta_label('shield-check', 'Policy-Governed') }}
                         {{ page_hero.meta_label('history', 'Audit-Aware') }}
                     </div>
@@ -22,8 +22,8 @@
                 'Enforced' if bot_mode == 'always' else ('Partial' if mfa_policy_mode != 'disabled' else 'Not Enabled'),
                 'warning' if bot_mode == 'always' or mfa_policy_mode != 'disabled' else 'unknown',
                 [
-                    ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP and recovery challenge are governed by the selected policy'),
-                    ('bot', 'Bot Protection', 'Enforced' if bot_mode == 'always' else 'Not Enabled', 'Cloudflare Siteverify checked for login when enabled')
+                    ('shield-check', 'MFA', 'Policy Active' if mfa_policy_mode != 'disabled' else 'Not Enabled', 'TOTP & recovery follow policy.'),
+                    ('bot', 'Bot Protection', 'Enforced' if bot_mode == 'always' else 'Not Enabled', 'Turnstile verifies sign-ins.')
                 ],
                 'Review Identity Providers',
                 url_for('identity_providers.index'),
@@ -36,25 +36,215 @@
         {{ workspace_tabs.render_query_tabs(tabs, active_tab, aria_label='Authentication Security Sections', hx_target='#authentication-security-page', hx_sync='this:replace') }}
         <div class="space-y-4 p-5 lg:p-6">
             {% if active_tab == 'overview' %}
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Assurance Overview</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">These controls have distinct authorities. Registered adapters alone do not make a challenge active.</p>
-                </div>
-                <div class="grid gap-4 lg:grid-cols-3">
-                    {% for icon, title, summary in [
-                        ('shield-check', 'Multi-Factor Authentication', 'TOTP enrollment and recovery are committed, with restricted post-primary challenges when policy requires them.'),
-                        ('bot', 'Bot Protection', 'Turnstile Siteverify is enforced at login when the committed provider policy is enabled.'),
-                        ('monitor-check', 'Session Security', 'One active login generation per account; idle and absolute timeout policy remain separate.')
-                    ] %}
-                        <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="{{ icon }}" class="h-5 w-5 text-kaori-primary" aria-hidden="true"></i>
-                                <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                {% set mfa_active = mfa_policy_mode != 'disabled' %}
+                {% set bot_active = bot_mode == 'always' %}
+                {% set mfa_display = {
+                    'disabled': 'Disabled',
+                    'optional': 'Optional',
+                    'required_privileged': 'Required · Privileged',
+                    'required_all': 'Required · All Users'
+                }.get(mfa_policy_mode, 'Unrecognized Policy') %}
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                         aria-labelledby="authentication-posture-heading">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="shield-check" class="h-5 w-5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 id="authentication-posture-heading"
+                                    class="text-base font-semibold text-content-primary">Authentication Assurance Posture</h2>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Current KAORI policy and session enforcement at a glance.</p>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-content-secondary">{{ summary }}</p>
+                        </div>
+                        {{ table_label.status_indicator_label('Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled', 'info' if mfa_active or bot_active else 'unknown') }}
+                    </header>
+                    <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-muted">MFA Policy</p>
+                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">{{ mfa_display }}</p>
+                                </div>
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                                </span>
+                            </div>
+                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">
+                                {{ 'TOTP challenge follows primary sign-in for enrolled accounts.' if mfa_active else 'Additional factor challenge is not required by policy.' }}
+                            </p>
                         </article>
-                    {% endfor %}
-                </div>
+                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-muted">Bot Protection</p>
+                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">{{ 'Enforced' if bot_active else 'Disabled' }}</p>
+                                </div>
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if bot_active else 'bg-kaori-soft text-kaori-primary' }}"
+                                      aria-hidden="true">
+                                    <i data-lucide="bot" class="h-5 w-5"></i>
+                                </span>
+                            </div>
+                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">
+                                {{ 'Turnstile token verification is required before sign-in.' if bot_active else 'Turnstile is not currently required at sign-in.' }}
+                            </p>
+                        </article>
+                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-muted">Session Security</p>
+                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">Active</p>
+                                </div>
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text"
+                                      aria-hidden="true">
+                                    <i data-lucide="monitor-check" class="h-5 w-5"></i>
+                                </span>
+                            </div>
+                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">Single active login generation per account.</p>
+                        </article>
+                    </div>
+                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 lg:px-6">
+                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                            <p>Policy state comes from KAORI. Configured adapters do not prove provider availability or successful user enrollment.</p>
+                        </div>
+                    </footer>
+                </section>
+                <section class="space-y-3" aria-labelledby="authentication-control-summary-heading">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+                        <div>
+                            <h2 id="authentication-control-summary-heading"
+                                class="text-base font-semibold text-content-primary">Security Control Summaries</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Review enforcement boundaries and open the appropriate policy workspace.</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 xl:grid-cols-3">
+                        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <div class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="fingerprint" class="h-5 w-5"></i>
+                                    </span>
+                                    <h3 class="text-sm font-semibold text-content-primary">Multi-Factor Authentication</h3>
+                                </div>
+                                {{ table_label.status_indicator_label('Policy Active' if mfa_active else 'Disabled', 'info' if mfa_active else 'unknown') }}
+                            </div>
+                            <div class="flex flex-1 flex-col gap-4 p-4">
+                                <p class="text-sm leading-6 text-content-secondary">TOTP and recovery verification follow the selected policy.</p>
+                                <dl class="mt-auto space-y-2 border-t border-outline-subtle pt-3 text-xs">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Assurance mode</dt>
+                                        <dd class="text-right font-semibold text-content-primary">{{ mfa_display }}</dd>
+                                    </div>
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Factor ownership</dt>
+                                        <dd class="text-right font-semibold text-content-primary">User enrollment</dd>
+                                    </div>
+                                </dl>
+                                <a href="{{ url_for('access.authentication_security.index', tab='mfa') }}"
+                                   class="inline-flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-kaori-primary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    Review MFA Policy
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </article>
+                        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <div class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="bot" class="h-5 w-5"></i>
+                                    </span>
+                                    <h3 class="text-sm font-semibold text-content-primary">Bot Protection</h3>
+                                </div>
+                                {{ table_label.status_indicator_label('Enforced' if bot_active else 'Disabled', 'normal' if bot_active else 'unknown') }}
+                            </div>
+                            <div class="flex flex-1 flex-col gap-4 p-4">
+                                <p class="text-sm leading-6 text-content-secondary">Cloudflare Turnstile verification is required when policy is enabled.</p>
+                                <dl class="mt-auto space-y-2 border-t border-outline-subtle pt-3 text-xs">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Provider</dt>
+                                        <dd class="text-right font-semibold text-content-primary">Cloudflare Turnstile</dd>
+                                    </div>
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Instance setup</dt>
+                                        <dd class="text-right font-semibold text-content-primary">{{ 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured' }}</dd>
+                                    </div>
+                                </dl>
+                                <a href="{{ url_for('access.authentication_security.index', tab='bot') }}"
+                                   class="inline-flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-kaori-primary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    Review Bot Protection
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </article>
+                        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <div class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
+                                          aria-hidden="true">
+                                        <i data-lucide="monitor-check" class="h-5 w-5"></i>
+                                    </span>
+                                    <h3 class="text-sm font-semibold text-content-primary">Session Security</h3>
+                                </div>
+                                {{ table_label.status_indicator_label('Active', 'normal') }}
+                            </div>
+                            <div class="flex flex-1 flex-col gap-4 p-4">
+                                <p class="text-sm leading-6 text-content-secondary">One active login generation is allowed per account.</p>
+                                <dl class="mt-auto space-y-2 border-t border-outline-subtle pt-3 text-xs">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Revocation</dt>
+                                        <dd class="text-right font-semibold text-content-primary">Generation-based</dd>
+                                    </div>
+                                    <div class="flex items-start justify-between gap-3">
+                                        <dt class="text-content-muted">Remember Me</dt>
+                                        <dd class="text-right font-semibold text-content-primary">Old sessions rejected</dd>
+                                    </div>
+                                </dl>
+                                <a href="{{ url_for('access.authentication_security.index', tab='sessions') }}"
+                                   class="inline-flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-kaori-primary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    Review Session Security
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                         aria-labelledby="authentication-boundaries-heading">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 lg:px-6">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="route" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h2 id="authentication-boundaries-heading"
+                                class="text-sm font-semibold text-content-primary">Operational Boundaries</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Understand what this workspace governs and where related actions belong.</p>
+                        </div>
+                    </header>
+                    <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
+                        <div class="space-y-3 bg-surface-card p-5 lg:p-6">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <h3 class="text-sm font-semibold text-content-primary">Governed Here</h3>
+                            </div>
+                            <p class="text-sm leading-6 text-content-secondary">MFA assurance policy, Turnstile activation and session security posture are administered or reviewed under Access.</p>
+                            <p class="text-xs leading-5 text-content-muted">Challenges follow committed policy. KAORI records security activity without storing authentication tokens in audit evidence.</p>
+                        </div>
+                        <div class="space-y-3 bg-surface-card p-5 lg:p-6">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="network" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <h3 class="text-sm font-semibold text-content-primary">Managed Elsewhere</h3>
+                            </div>
+                            <p class="text-sm leading-6 text-content-secondary">Users enroll authenticators in Settings. Primary login sources are registered under Identity Providers.</p>
+                            <p class="text-xs leading-5 text-content-muted">Idle/absolute session timeouts and remote session inventory remain separate qualification workstreams.</p>
+                        </div>
+                    </div>
+                </section>
             {% elif active_tab == 'mfa' %}
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
