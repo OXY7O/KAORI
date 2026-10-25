@@ -258,6 +258,7 @@
                             </div>
                         </div>
                         <div class="mt-3 space-y-3 text-xs text-content-secondary">
+                            <h3 class="text-sm font-semibold text-content-primary">Observed Namespaces</h3>
                             {% for namespace in evidence.namespaces %}
                                 <p class="break-all">
                                     <span class="font-semibold">{{ namespace.name }}</span>
@@ -265,6 +266,7 @@
                                     · resourceVersion {{ namespace.resource_version }}
                                 </p>
                             {% endfor %}
+                            <h3 class="text-sm font-semibold text-content-primary">Observed RoleBindings</h3>
                             {% for binding in evidence.bindings %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                                     <div class="flex flex-wrap items-start justify-between gap-2">
