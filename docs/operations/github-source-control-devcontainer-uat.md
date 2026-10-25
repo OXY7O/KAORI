@@ -382,3 +382,79 @@ Only after worker/recovery review, opt into `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENA
 Collect SHA, migration graph and DB upgrade/downgrade, `ruff`/`pytest`/`pyright`/`djlint`/verifiers, queue registration, two redacted real installation scopes, JobExecution IDs/status, HMAC negative results and UI screenshots in both themes. Record FAIL and remediation separately. **Human acceptance is mandatory** for this user-visible and security-sensitive integration.
 
 The code is assembled on the shared **temporary** `kaori/review/staging-uat` holding branch for Dev Container UAT. No merge to official `kaori/staging` or `main`, no official CI/CD admission and no production flags until explicit authorization.
+
+
+## 2026-10-25 — #3145 canonical GitHub App registration form polish
+
+**Visual finding:** The operator's Register GitHub App Connection screenshot
+showed a flat fieldset with a detached validation sidebar carrying Cancel,
+Test Connection and Register Connection buttons. This was inconsistent with
+the approved MinIO/Harbor/Alertmanager KAORI registration archetype.
+
+**Fix scope:** The GitHub form keeps `registration_hero.render` and the
+provider-owned Flask-WTF fields but now uses the canonical
+`integration_ui.section_shell_classes`, `integration_ui.palette_icon`,
+`operational_toggle.render`, `form_action_bar.render`, `action_button.classes`,
+`operational_callout.render` and `registration_context.render`.
+Its primary card contains **Connection Identity → GitHub App Installation →
+App Credentials → Operational Controls**, followed by the action footer;
+the sticky right column is dedicated to **Registration Flow** and external
+provider authority. No new UI controller or one-off design tokens.
+
+**Security boundary preserved:** CSRF hidden token and gated fieldset,
+`name=action` /`value=test|save` submit actions, server RBAC and local
+super-admin UAT authorization, 409 for unadmitted provider, required App PEM /
+webhook secret fields, secret clearing after POST, identity recheck during
+save, and encrypted-at-rest credentials remain unchanged. GitHub currently
+rechecks identity on Save, so do **not** substitute MinIO/Harbor's
+`provider_registration_actions` proof-gated component, which requires a
+different verified-payload lifecycle.
+
+**Bundled QA repair for #3142:** Earlier cross-domain Metrics Source evidence
+reported Ruff check PASS, Ruff Format **4 unformatted files**, djLint
+**1 file**, pytest **41 PASS / 1 FAIL** (stale literal Protocol label
+assertion), Integration Domain Navigation PASS and Sidebar Standard PASS.
+The expected Ruff/djLint formatting changes and flexible Protocol /
+Query Language assertion were applied separately and are not claimed
+as executable verification on this new candidate.
+
+### Exact-candidate Dev Container QA
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check app/common/navigation.py app/integrations/navigation.py \
+  app/bootstrap/presentation.py app/common/workspace_navigation.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python -m ruff format --check app/common/navigation.py app/integrations/navigation.py \
+  app/bootstrap/presentation.py app/common/workspace_navigation.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+djlint --check app/templates/integrations/provider_selector.html \
+  app/templates/integrations/observability/metrics_source/provider_selector.html \
+  app/templates/integrations/source_control/github/form.html
+python -m pytest -q -p no:cacheprovider \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/contracts/integrations/test_metrics_source_routing_audit_20260817_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human Visual QA:** 1440×900 and 390×844, light and dark, keyboard
+focus and touch. Check section headers/icons, field labels and errors,
+Cancel/Test/Register footer alignment, registration-flow sidebar, scroll/
+overflow, and clear masking of PEM and webhook secret. With no secrets,
+verify that registration page loads and forms are not accidentally
+submitted. With an approved **test** GitHub App only, separately test
+negative/positive Test Connection and Register behavior with redacted
+evidence. Provider admission and Full Validation remain independent gates.
+
+**Exact candidate executable QA / Human Acceptance:** PENDING. Source review
+alone does not count as completion. No official CI/CD, Full Admission,
+staging/main promotion, release/tag or infrastructure mutation.
