@@ -41,9 +41,8 @@ def test_qr_reuses_vetted_totp_uri_contract_without_external_lookup() -> None:
 def test_qr_function_preserves_provider_identity_boundary_and_no_network_calls() -> None:
     from pathlib import Path
 
-    qr_source = (
-        Path(__file__).resolve().parents[3] / 'app/access/authentication/mfa/qr.py'
-    ).read_text(encoding='utf-8')
+    path = Path(__file__).resolve().parents[3] / 'app/access/authentication/mfa/qr.py'
+    qr_source = path.read_text(encoding='utf-8')
     assert 'totp_provisioning_uri(secret, account_label=account_label)' in qr_source
     assert 'qrcode.QRCode(' in qr_source
     assert 'requests' not in qr_source
