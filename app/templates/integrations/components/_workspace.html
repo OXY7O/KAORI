@@ -1,4 +1,10 @@
 {% import "components/loading_bar.html" as loading_bar %}
+{% macro workspace_section_intro(title, description, aria_label=None) -%}
+    <header class="min-w-0 px-1"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}>
+        <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+    </header>
+{%- endmacro %}
 {% macro section_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}
