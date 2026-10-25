@@ -22,7 +22,7 @@ def test_mfa_tab_uses_approved_shared_kaori_visual_components() -> None:
     Environment().parse(source)
     tab = _mfa_tab()
     assert '{% import "components/info_tip.html" as info_tip %}' in source
-    assert "info_tip.render(" in tab
+    assert 'info_tip.render(' in tab
     assert "variant='guide'" in tab
     assert 'MFA Assurance Policy' in tab
     assert 'Policy Configuration' in tab
@@ -35,7 +35,7 @@ def test_mfa_tab_uses_approved_shared_kaori_visual_components() -> None:
 def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> None:
     tab = _mfa_tab()
     assert "mfa_policy_mode == 'disabled'" in tab
-    assert "{{ current_mfa_label }}" in tab
+    assert '{{ current_mfa_label }}' in tab
     for mode in ('disabled', 'optional', 'required_privileged', 'required_all'):
         assert f"('{mode}'," in tab
     assert 'Committed KAORI configuration' in tab
@@ -45,15 +45,15 @@ def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> 
 
 def test_mfa_policy_form_preserves_server_authority_and_session_impact() -> None:
     tab = _mfa_tab()
-    assert "{% if can_manage_authentication_security %}" in tab
+    assert '{% if can_manage_authentication_security %}' in tab
     assert "url_for('access.authentication_security.save_mfa_policy')" in tab
     assert 'name="csrf_token"' in tab
     assert 'name="mfa_mode"' in tab
     assert 'name="acknowledge_policy_impact"' in tab
     assert 'required' in tab
     assert 'Save MFA Policy' in tab
-    assert 'Changing this policy revokes existing authenticated and Remember Me sessions' in tab
-    assert 'Local Database Super Admin' in tab
+    assert 'Policy changes revoke all sessions; required modes need an enrolled Local Super Admin.' in tab
+    assert 'enrolled Local Super Admin' in tab
     assert 'Policy configuration is read-only for your permission scope' in tab
 
 
@@ -74,5 +74,22 @@ def test_unchanged_router_keeps_viewer_and_manager_permissions() -> None:
     assert "@permission_required('identity_providers.manage')" in route
     assert "requested = MfaPolicyMode(str(request.form.get('mfa_mode') or ''))" in route
     assert "if request.form.get('acknowledge_policy_impact') != 'yes':" in route
-    assert "if not any(mfa_enrolled(item.id) for item in recovery_admins):" in route
+    assert 'if not any(mfa_enrolled(item.id) for item in recovery_admins):' in route
     assert 'values(auth_session_version=func.coalesce(User.auth_session_version, 1) + 1)' in route
+
+
+def test_mfa_policy_impact_uses_canonical_warning_tone_and_compact_copy() -> None:
+    tab = _mfa_tab()
+    assert 'border-status-warning-border bg-status-warning-soft' in tab
+    assert 'text-status-warning-text' in tab
+    assert 'Policy changes revoke all sessions; required modes need an enrolled Local Super Admin.' in tab
+    assert 'Mandatory policies require at least one enrolled Local Database Super Admin for recovery.' not in tab
+
+
+def test_mfa_policy_configuration_and_modes_panels_stretch_to_matching_heights() -> None:
+    tab = _mfa_tab()
+    assert 'grid items-stretch gap-4 xl:grid-cols-5' in tab
+    assert 'flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3' in tab
+    assert 'flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2' in tab
+    assert 'flex flex-1 flex-col divide-y divide-outline-subtle px-5' in tab
+    assert 'flex flex-1 items-center justify-between gap-3 py-3.5' in tab

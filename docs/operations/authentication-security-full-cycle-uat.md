@@ -183,3 +183,21 @@ python scripts/verify_sidebar_navigation_standard.py
 ```
 
 Policy save and OTP challenge are **not UAT PASS** from a screenshot alone. This tab refinement does not require any additional migration. Official Developer Check and promotion remain HOLD.
+
+
+## MFA visual pre-UAT refinement — impact notice and equal panels (#3189)
+
+Screenshot feedback requires the **Change Impact** panel to use the approved
+KAORI warning semantic tone and a compact one-sentence description.
+At desktop widths, confirm the sentence is easy to read without overflow,
+and confirm the policy form and the right **Enforcement Modes** panel have
+aligned top/bottom boundaries. Their responsive/mobile layout must remain
+free of horizontal scrolling; verify both light/dark mode and keyboard focus.
+The mandatory acknowledgement remains required and the Save policy workflow
+is unchanged.
+
+The scoped test `tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py`
+locks the warning tokens, concise description, `items-stretch` layout and
+unchanged MFA form authority. This refinement adds no database migration,
+MFA factor change or session mutation; full functional MFA UAT remains a
+separate human acceptance checkpoint.
