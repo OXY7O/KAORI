@@ -201,3 +201,49 @@ locks the warning tokens, concise description, `items-stretch` layout and
 unchanged MFA form authority. This refinement adds no database migration,
 MFA factor change or session mutation; full functional MFA UAT remains a
 separate human acceptance checkpoint.
+
+
+## Save MFA Policy — durable feedback and Activity Audit UAT (#3208)
+
+Before continuing into personal MFA enrollment, test **Access → Authentication
+Security → Multi-Factor Authentication** with an authorized UAT admin.
+
+1. Keep **Disabled** selected, acknowledge policy impact and press
+   **Save MFA Policy**. Expect the **MFA policy unchanged** info toast on the
+   MFA tab. Inspect Access Activity Audit for the distinct
+   **MFA Policy Unchanged** entry; previous/new policy must both be
+   `disabled`, actor must be the actual administrator, and no session
+   revocation should occur. There must be no fabricated policy-change event.
+2. Select **Optional**, acknowledge impact and Save. The policy/revocation/
+   audit transaction must commit together. The browser should redirect to
+   **Login** and show the **MFA policy updated** success toast **after the
+   current administrator session has been revoked**. The old browser and
+   Remember Me cookies must not regain authenticated access.
+3. Sign in again, return to **Access → Activity Audit**, open the most
+   recent **MFA Policy Changed** detail and inspect its immutable actor,
+   `previous_policy_mode=disabled`, `new_policy_mode=optional`, session
+   reference correlation and Access category. It must be presented as an
+   Authentication Security Control, **not as User Signed In**.
+4. Verify invalid CSRF/missing acknowledgement/unauthorized actor/mandatory
+   policy without local recovery authority are denied; failures must not
+   create any successful policy-change audit or success toast. A simulated
+   DB commit failure must roll back the policy and session generation update.
+5. After this administrator flow, go to **Settings → Account &
+   Authentication → MFA** (also available from the **Open My MFA Settings**
+   CTA) to review the personal TOTP enrollment and recovery screen.
+   Full login challenge/recovery UAT remains a separate phase.
+
+Focused regression:
+```bash
+ruff check app/access/authentication_security app/access/authentication/mfa/audit.py app/platform_operations/notifications/event_catalog.py app/platform_operations/notifications/normalization.py tests/access/authentication/test_mfa_policy_save_feedback_audit.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+ruff format --check app/access/authentication_security app/access/authentication/mfa/audit.py app/platform_operations/notifications/event_catalog.py app/platform_operations/notifications/normalization.py tests/access/authentication/test_mfa_policy_save_feedback_audit.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+python -m pytest -q -p no:cacheprovider tests/access/authentication/test_mfa_policy_save_feedback_audit.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py tests/access/authentication/test_mfa_policy_contract.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+The existing `djlint --check` difference on the common page template is
+separate outstanding formatting work; this fix does not change the template.
+No new schema migration. Do not claim successful browser UAT based on test
+source/earlier CI output; collect exact SHA, actual toast screenshot (without
+secrets), audit detail and human acceptance. Official admission HOLD.
