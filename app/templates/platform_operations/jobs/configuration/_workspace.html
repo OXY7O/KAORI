@@ -76,8 +76,8 @@
             </nav>
             <footer class="flex shrink-0 items-center justify-between gap-2 border-t border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:px-4">
                 <div class="flex min-w-0 items-center gap-2">
-                    <span class="shrink-0 text-xs font-semibold tabular-nums text-content-secondary"
-                          aria-label="Visible registered jobs">
+                    <span class="shrink-0 text-xs font-semibold tabular-nums text-content-secondary">
+                        <span class="sr-only">Jobs shown:</span>
                         <span x-text="visibleJobCount">{{ job_catalog|length }}</span>/{{ job_catalog|length }}
                     </span>
                     {{ info_tip.render('jobs-configuration-catalog-guide',
