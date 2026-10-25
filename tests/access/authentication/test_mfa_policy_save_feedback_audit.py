@@ -113,7 +113,7 @@ def test_changed_policy_audit_commits_before_session_clear_and_toast_survives(
         result = pop_operational_feedback()
         assert result is not None
         assert result['status'] == 'success'
-        assert result['activity_audit_saved'] is False  # Toast is not a second audit write.
+        assert result['activity_audit_saved'] is True  # Already committed in the policy transaction.
         assert result['title'] == 'MFA policy updated'
         assert 'sign in again' in result['message']
         assert 'no-leak-session-reference' not in str(result)
@@ -148,6 +148,7 @@ def test_unchanged_policy_is_audited_without_fake_transition_or_logout(
         assert result is not None
         assert result['status'] == 'info'
         assert result['title'] == 'MFA policy unchanged'
+        assert result['activity_audit_saved'] is True
         assert 'no sessions were revoked' in result['message']
 
     assert store.commits == 1 and not store.executions
@@ -171,6 +172,7 @@ def test_failed_commit_rolls_back_and_never_emits_success(
         assert result is not None
         assert result['status'] == 'error'
         assert result['title'] == 'MFA policy not saved'
+        assert result['activity_audit_saved'] is False
 
     assert store.policy.mfa_mode == 'disabled'
     assert store.rollbacks == 1 and store.commits == 0
