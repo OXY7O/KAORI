@@ -9,7 +9,8 @@ import pytest
 from flask import Flask, session
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.access.authentication import audit, services, session as auth_session
+from app.access.authentication import audit, services
+from app.access.authentication import session as auth_session
 from app.models import User
 
 
@@ -65,9 +66,7 @@ def test_failed_or_stale_login_admission_never_commits_generation(
     monkeypatch.setattr(services.db, 'session', store)
 
     with pytest.raises(auth_session.AuthSessionError):
-        services.record_successful_authentication(
-            User(id=42, auth_source='ldap'), source='ldap', client_ip=None
-        )
+        services.record_successful_authentication(User(id=42, auth_source='ldap'), source='ldap', client_ip=None)
     assert store.commits == 0
     assert store.rollbacks == 1
 
@@ -185,16 +184,24 @@ def test_authentication_audit_correlates_only_actual_authenticated_sessions(
     with app.test_request_context('/auth/login', method='POST'):
         session['auth_session_ref'] = 'b' * 32
         audit.record_authentication_activity(
-            action='login', username=actor.username, source='database',
-            result='success', reason='success', user=actor,
+            action='login',
+            username=actor.username,
+            source='database',
+            result='success',
+            reason='success',
+            user=actor,
         )
         assert committed[-1].actor_key == 'user:46'
         assert committed[-1].metadata_json['session_reference'] == 'b' * 32
         assert committed[-1].metadata_json['session_policy'] == 'single_active_login_generation'
 
         audit.record_authentication_activity(
-            action='logout', username=actor.username, source='database',
-            result='success', reason='user_initiated', user=actor,
+            action='logout',
+            username=actor.username,
+            source='database',
+            result='success',
+            reason='user_initiated',
+            user=actor,
         )
         assert committed[-1].metadata_json['session_reference'] == 'b' * 32
         assert committed[-1].metadata_json['session_policy'] is None
@@ -202,8 +209,12 @@ def test_authentication_audit_correlates_only_actual_authenticated_sessions(
         # Even a failed attempt targeting the same User never becomes the
         # account's authenticated actor or inherits its login reference.
         audit.record_authentication_activity(
-            action='login', username=actor.username, source='database',
-            result='failed', reason='invalid_credentials', user=actor,
+            action='login',
+            username=actor.username,
+            source='database',
+            result='failed',
+            reason='invalid_credentials',
+            user=actor,
         )
         assert committed[-1].actor_key == 'unauthenticated'
         assert committed[-1].metadata_json['session_reference'] is None
