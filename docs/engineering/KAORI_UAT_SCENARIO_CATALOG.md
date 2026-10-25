@@ -4,13 +4,13 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
-## Complete 116 written acceptance test cases
+## Complete 129 written acceptance test cases
 
-[Review all 116 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 102 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+[Review all 129 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 102 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
 
 ## Read the scenarios as Gherkin code
 
-**[Open the Gherkin Feature Index](uat/README.md)** to browse **20 `.feature` files containing all 116 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 102 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **20 `.feature` files containing all 129 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 115 are tagged `@owner_review`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
 
 **2026-10-24 scope refinement:** Added Welcome-owned scenarios from #746 and one read-only Access authorization scenario without reusing IAM mutation coverage. Scenario ID/count changes are new specifications only; historic #1738 original 91-case mapping is not retroactively executed. No hard-coded expected 16/13 count in reusable tests; derive role counts from current effective permissions.
 
@@ -254,6 +254,15 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-OPS-003` | Negative | Both | High | Worker/queue dependency unavailable or blocked | Correct blocked/degraded visibility, no invented execution success |
 | `UAT-OPS-004` | Positive | UI | Medium | Platform Overview and Jobs tabs/filters/actions are exercised | Committed-only summary, appropriate permission scopes and canonical visual states |
 
+| `UAT-OPS-005` | Positive | UI | Medium | Operations Overview presents committed workspace posture in compact cards | Three permissioned workspace cards show canonical domain status, three evidence metrics, compact one-line descriptions and source-owned navigation with a matching overall review posture |
+| `UAT-OPS-006` | Positive | UI | Medium | Jobs configuration catalog and schedule controls retain operational context | The selected job follows the URL and HTMX navigation, search count updates, schedule controls and one-line Scope remain aligned, and the Guide opens above the footer without a horizontal scrollbar |
+| `UAT-OPS-007` | Positive | UI | Medium | Report dispatcher shows compact committed delivery channels | The bounded keyboard-scrollable channel rows show names, statuses, singular or plural count and an explicit empty state without oversized cards or additional provider requests |
+| `UAT-OPS-008` | Positive | UI | High | Guarded empty-inventory recovery guidance stays adjacent and manual | Shared Violet cards retain the manual-only warning and full fail-closed Guide beside the title; the CONFIRM EMPTY challenge, CSRF and verification action remain identifiable but unexecuted |
+| `UAT-OPS-009` | Negative | Both | High | Overview reflects scheduler policy dispatch failure without an execution | Jobs posture is Needs Attention and the policy attention remains visible without fabricating completed or active executions; only persisted read models are queried |
+| `UAT-OPS-010` | Negative | Both | High | Restricted role cannot reach unauthorized Operations Overview content | Configure-only access does not grant Overview, view-only and mixed roles see only permitted workspace cards and links, and no restricted data or actions leak |
+| `UAT-OPS-011` | Negative | Non-UI | High | Guarded reconciliation fails closed on mismatched provider discovery | Provider mismatch or changed snapshot rejects reconciliation and preserves the committed inventory without deleting records or claiming success |
+| `UAT-OPS-012` | Negative | UI | Medium | Unfinished feature-cycle controls remain transparently unavailable | Disabled status remains truthful, the UI does not imply a completed or executable capability, and no mutation or fake success is recorded |
+
 ### Platform Operations — Data Lifecycle & Secret Reveal (`UAT-LIF-*`)
 
 **Owning source:** app/platform_operations/data_lifecycle/; app/platform_operations/kubernetes/. **Candidate test owner(s), not verified mapping:** tests/contracts/platform_operations/; tests/platform_operations/; tests/security/kubernetes/. **Shared preconditions:** Archive destination, retention policies, isolated lifecycle artifacts and explicit secret-reveal authorization.
@@ -273,6 +282,12 @@ Each row reads as an abbreviated **Given precondition → When action → Then e
 | `UAT-LIF-011` | Negative | Both | High | Unavailable namespace source and unready clusters fail closed | source Unknown is distinct from an authoritatively Missing namespace |
 | `UAT-LIF-012` | Positive | UI | Medium | Audit Warning presents successful namespace restriction as attention | the Success record retains its before and after changes and event key |
 | `UAT-LIF-013` | Positive | UI | Medium | Kubernetes Admin responsive visual and keyboard coverage | focus order and accessible control labels remain correct |
+
+| `UAT-LIF-014` | Positive | UI | Medium | Lifecycle nine-domain navigator and boundary Guide remain consistent | Domain selection and count remain consistent across navigation, responsive cards preserve selected state, and the Execution Boundary Guide opens above a one-row no-scroll footer |
+| `UAT-LIF-015` | Positive | Both | High | Archive Only preserves verified artifacts and audit evidence | Verified archive/manifests and audit evidence are retained, records remain governed without unapproved purge, and the operator sees an attributable outcome |
+| `UAT-LIF-016` | Positive | UI | Medium | Archive Storage and History remain readable without extra mutation | Storage guidance and bounded history rows remain readable, pagination/search preserve context and read-only evidence does not initiate cleanup |
+| `UAT-LIF-017` | Negative | UI | Medium | Paused lifecycle adapters are not mistaken for admitted cleanup | Paused/disabled posture remains explicit and no archive, retention or destructive action is presented as admitted or automatically successful |
+| `UAT-LIF-018` | Negative | Both | High | Unverified archive or unauthorized lifecycle mutation preserves source | The server rejects the request or blocks cleanup, reports an actionable state, and retains committed original records and independent archive evidence |
 
 ### Welcome Workspace Catalog (`UAT-WEL-*`)
 
