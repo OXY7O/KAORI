@@ -10,8 +10,8 @@ import base64
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from cryptography.exceptions import InvalidToken
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.totp import TOTP
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
