@@ -5,11 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-import requests
-
 from app.access.authentication.bot_protection.turnstile import (
     BotVerificationResult,
-    TurnstileVerificationConfig,
     verify_turnstile,
 )
 
