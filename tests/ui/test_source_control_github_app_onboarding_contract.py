@@ -53,10 +53,8 @@ def test_form_is_csrf_protected_and_admission_gated_in_ui() -> None:
 def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
-    partial = _source(
-        'app/templates/integrations/source_control/github/partials/_connection_test_result.html'
-    )
-    assert "hx-post=" in form and "github_source.new_connection" in form
+    partial = _source('app/templates/integrations/source_control/github/partials/_connection_test_result.html')
+    assert 'hx-post=' in form and 'github_source.new_connection' in form
     assert 'hx-include="#github-app-connection-form"' in form
     assert 'hx-target="#github-connection-test-result"' in form
     assert 'hx-disabled-elt="this"' in form
@@ -66,9 +64,12 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     assert 'response.status_code = 409' in routes
     assert "response.headers['HX-Trigger']" in routes
     assert "'github-connection-tested'" in routes
-    assert "form.clear_sensitive_fields()" in routes
+    assert 'form.clear_sensitive_fields()' in routes
     assert 'private_key_pem' not in partial
     assert 'webhook_secret' not in partial
+    assert 'components/operational_toast.html' in partial
+    assert 'toast_oob=true' in partial
+    assert 'operational_callout.render(' not in partial
 
 
 
@@ -82,12 +83,28 @@ def test_named_register_action_survives_shared_operation_loading_state() -> None
     assert 'data-operation-submit' in footer
     assert 'name="{{ submit_name }}"' in footer
     assert 'value="{{ submit_value }}"' in footer
-    assert "form.addEventListener(" in shell
+    assert 'form.addEventListener(' in shell
     assert "'formdata'" in shell
     assert 'formDataEvent.formData.set(submitName, submitValue)' in shell
     assert shell.index("'formdata'") < shell.index('submitButton.disabled = true')
     assert "if action not in {'test', 'save'}:" in routes
     assert 'verify_github_registration_proof(' in routes
+
+
+def test_github_registration_persists_then_queues_toast_and_redirects() -> None:
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    layout = _source('app/templates/layouts/app.html')
+    notifications = _source('app/platform_operations/notifications/service.py')
+
+    assert routes.index('verify_github_registration_proof(') < routes.index('save_tested_connection(values)')
+    assert routes.index('save_tested_connection(values)') < routes.index('record_operational_activity(')
+    assert "status='success'" in routes
+    assert 'queue_feedback=True' in routes
+    assert "return redirect(url_for('github_source.index'))" in routes
+    assert 'load_operational_feedback()' in layout
+    assert 'components/operational_toast.html' in layout
+    assert "return 'toast'" in notifications
+
 
 def test_github_registration_uses_canonical_kaori_form_sections_and_footer() -> None:
     form = _source('app/templates/integrations/source_control/github/form.html')

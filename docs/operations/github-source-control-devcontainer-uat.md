@@ -693,3 +693,80 @@ proof still rejected by GitHub and none of the original credential/CSRF
 checks are weakened. Executable checks and Human Acceptance for the new
 exact SHA are **NOT RUN/PENDING** pending Dev Container evidence.
 Official CI/CD / Full Admission / staging/main promotion remain HOLD.
+
+
+## 2026-10-25 — #3172 Test Connection toast + proof drift after native Save
+
+**Human finding:** Operator completed GitHub App Test Connection (with webhook
+inactive). The inline callout and shared footer showed Connection Verified,
+but clicking Register displayed `Connection Review: Connection settings
+changed after testing. Run Test Connection again.` instead of committing,
+queuing a success toast and redirecting. Operator explicitly requests
+**KAORI toast for successful Test Connection**, and **toast + redirect for
+successful Register Connection**.
+
+**Serialization correction:** HTMX and native browser form submission can
+serialize textarea line endings differently (LF, CRLF or CR). The
+GitHub-specific, HMAC-protected proof fingerprint now normalizes only
+`description` and `private_key_pem` multiline line endings to LF before
+fingerprinting. This does **not** change the PEM supplied to GitHub, saved
+encrypted credentials, or the strict comparison of all other fields. An
+actual changed secret, identity, enabled state or description still rejects
+the proof. Expiration, user binding and signed-proof integrity remain.
+
+**Feedback:** The GitHub HTMX Test Connection result reuses
+`components/operational_toast.html` with an out-of-band swap into
+`#operational-toast-stack`; it no longer renders a duplicate inline
+Connection Verified/Not Verified callout. The shared footer remains
+Connection Test Required / Connection Verified as an **action-state**
+indicator. A successful Register already executes the provider-owned live
+identity recheck, persists the installation in `validation_required`,
+records `source_control_connection_registered` with
+`queue_feedback=True`, and redirects to `github_source.index`. This
+existing queued feedback appears through the shared toast stack after the
+redirect; no new ad-hoc notifications or success-before-save paths.
+
+**Previous executable evidence:** Operator ran Ruff check PASS; Ruff
+format FAIL on one onboarding contract; pytest **23 passed**, JavaScript
+syntax PASS, Application Shell Standard PASS, Integration Navigation PASS,
+Sidebar Standard PASS. This finding is tracked separately from code
+delivery and does not qualify a new SHA as UAT Accepted.
+
+### Exact candidate QA
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  app/integrations/source_control/source_control/providers/github/application/registration_proof.py \
+  tests/unit/test_source_control_github_registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python -m ruff format --check \
+  app/integrations/source_control/source_control/providers/github/application/registration_proof.py \
+  tests/unit/test_source_control_github_registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+djlint --check \
+  app/templates/integrations/source_control/github/partials/_connection_test_result.html
+python -m pytest -q -p no:cacheprovider \
+  tests/unit/test_source_control_github_registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/contracts/design/test_application_shell_interaction_contract.py
+python scripts/verify_javascript_syntax.py
+python scripts/verify_application_shell_standard.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human UAT:** Fresh GET, re-enter secrets locally; Test Connection shows
+one KAORI success toast and shared footer becomes Connection Verified with
+Register enabled. Do not edit any input before clicking Register. Browser
+should redirect to GitHub Source Control index and display a queued KAORI
+success toast. Verify canonical installation and
+`validation_required` readiness. Check edited real PEM/password/any input
+still invalidates proof and disables Save. Expired/missing/different user
+proof still cannot save. No PEM, webhook secret or signed proof in issue,
+logs, screenshots, or network evidence shared outside Dev Container.
+
+**Admission:** exact merged candidate executable QA and Human Acceptance
+PENDING until operator verifies. Official CI/CD, Full Admission,
+`kaori/staging`, main and release/tag remain HOLD.

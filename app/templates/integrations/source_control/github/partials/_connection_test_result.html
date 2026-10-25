@@ -1,6 +1,13 @@
-{% import "components/operational_callout.html" as operational_callout %}
+{# Shared, transient KAORI toast; the footer alone owns connection test state. #}
 {% if verified %}
-    {{ operational_callout.render("Connection Verified", message or "The GitHub App installation is verified. Registration requires Full Validation afterwards.", icon="badge-check", tone="normal", variant="semantic") }}
+    {% set toast_status = "success" %}
+    {% set toast_title = "GitHub App Connection Verified" %}
+    {% set toast_message = message or "GitHub App installation verified." %}
 {% else %}
-    {{ operational_callout.render("Connection Not Verified", message or "Review the connection details and run Test Connection again.", icon="triangle-alert", tone="critical", variant="semantic") }}
+    {% set toast_status = "error" %}
+    {% set toast_title = "GitHub App Connection Not Verified" %}
+    {% set toast_message = message or "Run Test Connection again." %}
 {% endif %}
+{% with status=toast_status, title=toast_title, message=toast_message, toast_oob=true %}
+    {% include "components/operational_toast.html" %}
+{% endwith %}
