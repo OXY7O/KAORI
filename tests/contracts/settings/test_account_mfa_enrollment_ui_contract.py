@@ -86,7 +86,8 @@ def test_mfa_state_is_derived_and_recovery_warnings_remain_visible() -> None:
     assert 'Not Available' in html
     assert 'Not Enrolled' in html
     assert 'status_indicator_label(' in html
-    assert 'role="status"' in html
+    assert 'mfa_feedback' not in html
+    assert 'data-mfa-one-time-provisioning="true"' in html
     assert 'One-time recovery codes' in html
     assert 'mfa_recovery_codes' in html
     assert 'mfa_setup_secret' in html
@@ -122,7 +123,7 @@ def test_approved_mockup_has_illustrative_hero_and_posture_cards() -> None:
     html = source()
     assert 'Add an authenticator application to protect your KAORI account' in html
     assert 'border-b border-outline-default bg-surface-card px-5 py-4' in html
-    assert 'bg-kaori-soft/40' not in html
+    assert 'border-b border-outline-default bg-surface-card px-5 py-4' in html
     assert 'data-lucide="smartphone"' in html
     assert 'data-lucide="shield-check"' in html
     assert 'data-lucide="settings"' in html
@@ -174,3 +175,43 @@ def test_mfa_feedback_review_has_one_clear_guide_with_four_steps() -> None:
     assert 'If setup fails, sign in again and confirm your current password.' in html
     assert 'border border-kaori-primary/20 bg-kaori-soft/60' not in html
     assert 'Six digits from your authenticator application.' not in html
+
+
+def test_one_time_authenticator_provisioning_exposes_local_qr_and_manual_fallback() -> None:
+    html = source()
+    assert '{% if mfa_setup_secret %}' in html
+    assert '{% if mfa_setup_qr_src %}' in html
+    assert 'Scan QR Code' in html
+    assert 'Manual Setup Key' in html
+    assert 'src="{{ mfa_setup_qr_src }}"' in html
+    assert 'alt="Scan this one-time QR code with an authenticator app"' in html
+    assert '{{ mfa_setup_secret }}' in html
+    assert 'data-mfa-one-time-provisioning="true"' in html
+    assert 'mfa_feedback' not in html
+    assert 'qrserver.com' not in html
+    assert 'chart.googleapis.com' not in html
+
+
+def test_account_partial_uses_existing_operational_toast_oob() -> None:
+    page = (ROOT / 'app/templates/settings/account/partials/_page_content.html').read_text(
+        encoding='utf-8'
+    )
+    assert '{% if mfa_toast %}' in page
+    assert 'status=mfa_toast.status' in page
+    assert 'activity_audit_saved=mfa_toast.activity_audit_saved' in page
+    assert 'toast_oob=true' in page
+    assert '{% include "components/operational_toast.html" %}' in page
+
+
+def test_mfa_backend_queues_full_page_feedback_and_protects_one_time_response() -> None:
+    routes = (ROOT / 'app/settings/routes.py').read_text(encoding='utf-8')
+    assert "mfa_toast: dict[str, Any] | None = None" in routes
+    assert 'build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)' in routes
+    assert "if not is_htmx:\n            queue_operational_feedback(mfa_toast)" in routes
+    assert "'mfa_toast': mfa_toast if is_htmx else None" in routes
+    assert "response.headers['Cache-Control'] = 'no-store'" in routes
+    assert "response.headers['Pragma'] = 'no-cache'" in routes
+    assert "response.headers['Referrer-Policy'] = 'no-referrer'" in routes
+    assert 'activity_audit_saved=True' in routes
+    assert 'notification_deck_visible=False' in routes
+    assert 'mfa_feedback' not in routes
