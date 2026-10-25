@@ -3,9 +3,9 @@
 <section class="rounded-2xl border border-outline-default bg-surface-card"
          aria-labelledby="account-mfa-heading"
          data-account-mfa-workspace="personal-enrollment">
-    <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+    <header class="relative isolate flex flex-col gap-4 border-b border-outline-default bg-kaori-soft/40 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
                 <i data-lucide="fingerprint" class="h-5 w-5"></i>
             </span>
@@ -25,41 +25,51 @@
                         variant='guide'
                     ) }}
                 </div>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Manage your authenticator and one-time recovery access for KAORI sign-in.</p>
+                <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
             </div>
         </div>
         {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
     </header>
     <div class="space-y-6 p-5 xl:p-6">
-        <section aria-label="Account MFA security posture" data-account-mfa-posture="cards">
+        <section aria-label="Account MFA security posture"
+                 data-account-mfa-posture="cards">
             <div class="grid gap-3 md:grid-cols-3">
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
-                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Factor Status
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Factor Status</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">
+                            {{ 'Authenticator Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') }}
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Verified TOTP enrollment for this account.</p>
                     </div>
-                    <p class="mt-2 text-sm font-bold text-content-primary">
-                        {{ 'Authenticator Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') }}
-                    </p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Verified TOTP enrollment for this account.</p>
                 </article>
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
-                        <i data-lucide="shield" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Security Policy
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="settings" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Security Policy</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">{{ mfa_state.policy_mode|replace('_', ' ')|title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Set by Access → Authentication Security.</p>
                     </div>
-                    <p class="mt-2 text-sm font-bold text-content-primary">{{ mfa_state.policy_mode|replace('_', ' ')|title }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Set by Access → Authentication Security.</p>
                 </article>
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
-                        <i data-lucide="key-round" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Recovery Codes
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ 'bg-kaori-soft text-kaori-primary' if mfa_state.enrolled else 'bg-status-warning-soft text-status-warning-text' }}"
+                          aria-hidden="true">
+                        <i data-lucide="key-round" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Recovery Codes</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">
+                            {{ mfa_state.recovery_count ~ ' Remaining' if mfa_state.enrolled else 'Not Available' }}
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Each code can be used only once.</p>
                     </div>
-                    <p class="mt-2 text-sm font-bold text-content-primary">
-                        {{ mfa_state.recovery_count ~ ' Remaining' if mfa_state.enrolled else 'Not Available' }}
-                    </p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Each code can be used only once.</p>
                 </article>
             </div>
         </section>
