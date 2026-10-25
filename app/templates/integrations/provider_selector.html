@@ -60,7 +60,7 @@
                                  data-kaori-provider-lifecycle="{{ provider.lifecycle }}"
                                  class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 transition-colors {{ 'hover:border-brand-outline focus-within:border-brand-outline' if provider.registration_url else 'opacity-90' }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon(provider.icon|default(domain.icon), "brand" if provider.registration_url else "unknown", size="lg") }}
+                                {{ integration_ui.palette_icon(provider.icon|default(domain.icon) , "brand" if provider.registration_url else "unknown", size="lg") }}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-base font-semibold text-content-primary">{{ provider.label }}</h3>
