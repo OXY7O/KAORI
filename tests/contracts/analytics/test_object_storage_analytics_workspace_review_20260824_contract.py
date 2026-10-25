@@ -289,6 +289,7 @@ def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -
     assert 'Unobserved evidence remains Unknown.' in evidence
     assert 'Ready · Optional Gaps' not in evidence
 
+
 def test_object_storage_analytics_overview_headings_and_trend_description_align() -> None:
     index = read('app/templates/storage/object_storage/analytics/index.html')
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
