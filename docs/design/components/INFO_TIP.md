@@ -51,9 +51,18 @@ shared macro is
 `integrations/components/_provider_frontpage.html::overview`, not
 provider-specific markup or a new Info Tip implementation.
 
-The Guide popover provides existing provider-owned Overview description,
-**Integration Contract**, **Consumer Resolution**, and **Authority Boundary**
-context. The trigger uses a provider-title-derived ID to prevent duplicate
+The Guide popover provides existing provider-owned Overview description
+and the **complete** titles and descriptions from **Integration Contract**,
+**Consumer Resolution**, and **Authority Boundary**. In the compact
+Integration Overview design these three explanations live **only in the Guide**;
+the old persistent three-column explanatory footer is removed across all
+seven providers through the shared macro. The four operational KPI cards
+(registered, validated/ready, needs attention, and provider-specific
+coverage/grants) remain continuously visible, because status and readiness
+must not be hidden in contextual help. No provider-specific overview markup,
+new JS/CSS, or custom info icon is permitted.
+
+The trigger uses a provider-title-derived ID to prevent duplicate
 tooltip IDs within a page. It reuses `components/info_tip.html` and
 `info_tips.js` for pointer hover, touch/click, keyboard focus, Escape,
 viewport clamping, and light/dark; no separate scripts or hidden field-level

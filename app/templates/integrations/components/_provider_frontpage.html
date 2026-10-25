@@ -61,13 +61,13 @@
                 </span>
                 <div class="min-w-0">
                     {% set overview_guide_items = [
-                            contract_title ~ ": " ~ contract_description,
-                            resolution_title ~ ": " ~ resolution_description,
-                            authority_title ~ ": " ~ authority_description
-                        ] %}
+                                            "Integration Contract — " ~ contract_title ~ ": " ~ contract_description,
+                                            "Consumer Resolution — " ~ resolution_title ~ ": " ~ resolution_description,
+                                            "Authority Boundary — " ~ authority_title ~ ": " ~ authority_description
+                                        ] %}
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                        {{ info_tip.render("provider-overview-" ~ (title|lower|replace(" ", "-")), title ~ " Guide", description, items=overview_guide_items, placement="right", variant="guide") }}
+                        {{ info_tip.render("provider-overview-" ~ (title|lower|replace(" ", "-") ), title ~ " Guide", description, items=overview_guide_items, placement="right", variant="guide") }}
                     </div>
                     <p class="mt-1 max-w-5xl text-sm leading-6 text-content-secondary">{{ description }}</p>
                 </div>
@@ -77,23 +77,6 @@
             {% for item in metrics %}
                 {{ integration_ui.metric_card(item.label, item.value, item.description, item.icon) }}
             {% endfor %}
-        </div>
-        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
-            <article class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Integration Contract</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ contract_title }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ contract_description }}</p>
-            </article>
-            <article class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Resolution</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ resolution_title }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ resolution_description }}</p>
-            </article>
-            <article class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Authority Boundary</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ authority_title }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ authority_description }}</p>
-            </article>
         </div>
     </section>
 {%- endmacro %}

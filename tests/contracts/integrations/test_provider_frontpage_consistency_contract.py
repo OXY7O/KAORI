@@ -66,7 +66,12 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'Integration Contract' in overview
     assert 'Consumer Resolution' in overview
     assert 'Authority Boundary' in overview
-    assert 'md:grid-cols-3' in overview
+    # Architectural explanations live in the shared Guide, not persistent footer cards.
+    assert 'md:grid-cols-3' not in overview
+    assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in overview
+    assert 'info_tip.render(' in overview
+    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
+        assert f'"{section} — "' in overview
 
 
 def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
@@ -192,15 +197,18 @@ def test_observability_coverage_includes_kubernetes_and_object_storage_assets() 
     assert 'url_for(provider.registry_endpoint' in coverage_template
 
 
-def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> None:
+def test_metrics_source_provider_selector_inherits_canonical_shared_hero() -> None:
     selector = read('app/templates/integrations/observability/metrics_source/provider_selector.html')
+    shared = read('app/templates/integrations/provider_selector.html')
 
-    assert 'page_hero.shell_classes()' in selector
-    assert 'page_hero.layout_classes()' in selector
-    assert 'page_hero.content_classes()' in selector
-    assert "page_hero.intro('chart-spline', 'Integrations', 'plus')" in selector
-    assert '<h1 class="{{ page_hero.title_classes() }}">Register Metrics Source</h1>' in selector
-    assert 'page_hero.hero(' not in selector
+    assert '{% extends "integrations/provider_selector.html" %}' in selector
+    assert 'page_hero.shell_classes()' in shared
+    assert 'page_hero.layout_classes()' in shared
+    assert 'page_hero.content_classes()' in shared
+    assert 'page_hero.intro(domain.icon, domain.label, "package-search")' in shared
+    assert '<h1 class="{{ page_hero.title_classes() }}">Choose Provider</h1>' in shared
+    assert 'page_hero.hero(' not in shared
+    assert 'page_hero.shell_classes()' not in selector
 
 
 def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
@@ -253,6 +261,11 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
     assert '"provider-overview-" ~ (title|lower|replace(" ", "-"))' in shared
     assert 'title ~ " Guide"' in shared
     assert 'items=overview_guide_items' in shared
+    assert 'md:grid-cols-3' not in shared
+    assert 'integration_ui.metric_grid_classes(4)' in shared
+    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
+        assert f'"{section} — "' in shared
+    assert 'bg-surface-card px-5 py-4 sm:px-6' not in shared
     assert 'placement="right", variant="guide"' in shared
     for token in (
         'contract_title',

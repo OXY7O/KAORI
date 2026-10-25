@@ -65,7 +65,9 @@ def test_title_level_guides_use_canonical_variant_and_preserve_scope() -> None:
         source = _read(template)
         assert 'info_tip.render(' in source, template
         assert "variant='guide'" in source, template
-        assert "placement='right'" in source, template
+        # Data Lifecycle uses the approved top placement to avoid its header edge.
+        expected_placement = 'top' if template == 'platform_operations/data_lifecycle/index.html' else 'right'
+        assert f"placement='{expected_placement}'" in source, template
 
     artifact = _read('artifact_registry/partials/_inventory_workspace.html')
     assert artifact.count("variant='guide'") == 3
