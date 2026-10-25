@@ -15,16 +15,30 @@ Feature: Kubernetes — ConfigMaps, Secrets & Resource Operations
   # Evidence: browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; normalized source identity, committed record and provider read-back/adapter call ledger.
   # Isolation: Use disposable scoped identities and sanitized artifacts. Never mutate production providers. If the provider mutation is relevant, run only in a governed sandbox with before/after read-back and cleanup.
   @UAT-KOP-001 @positive @high @ui @non_ui @specified @owner_review
-  Scenario: UAT-KOP-001 - Permitted operator creates/edits ConfigMap in sandbox
-    Given dedicated disposable namespace and test Secret/ConfigMap; guarded reveal/rotation policy; disposable ConfigMap in approved sandbox Namespace
-    And the actor permission, selected source and original state are recorded
-    When record the exact candidate, actor, scoped source identity and baseline state for: Permitted operator creates/edits ConfigMap in sandbox
-    And perform the scenario action using an approved browser or domain test client: Permitted operator creates/edits ConfigMap in sandbox
-    And create/edit keys then read exact provider UID/resourceVersion
-    And inspect the resulting UI or API state, committed KAORI state and authoritative evidence for UAT-KOP-001
-    Then provider read-back matches intended data; KAORI job/activity evidence accurate
-    And provider content and job/Activity reflect the admitted mutation
-    And the observed success is attributable to the selected source, authorized actor and correct committed identity
+  Scenario: UAT-KOP-001 - Permitted operator executes controlled ConfigMap CRUD in sandbox
+    Given a dedicated disposable Kubernetes namespace and unique ConfigMap name
+    And the operator has permission for create, update, and delete
+    And the selected registered cluster, actor and initial state are recorded
+    When the operator defines a key and runs Kubernetes server-side dry-run
+    Then Create is enabled only for the latest validated form state
+    And changing the form invalidates the prior validation
+    When the operator creates the ConfigMap
+    Then the Kubernetes API returns the new object with UID and resourceVersion
+    And Activity Audit records kubernetes_configmap_created without field values
+    When the operator selects the same live ConfigMap for Merge Selected Keys
+    And reviews an effective diff and validates the latest intended changes
+    Then the server-side dry-run succeeds and stale edits require revalidation
+    When the operator applies the validated update
+    Then Kubernetes preserves UID and advances resourceVersion
+    And Activity Audit records kubernetes_configmap_updated without field values
+    When the operator selects the exact ConfigMap for deletion
+    And types the exact-name confirmation
+    And performs deletion validation without issuing a DELETE request
+    Then the server issues a signed ten-minute receipt bound to actor, target and resourceVersion
+    When the operator explicitly confirms the destructive modal using the receipt
+    Then the Kubernetes API returns NotFound for the exact target
+    And Activity Audit records kubernetes_configmap_deleted without field values
+    And no resources outside the disposable namespace were modified
 
   # Layer: Both; risk: High; Newly expanded specification — capability-owner review required.
   # Evidence: browser screenshots and Playwright trace after interaction; pytest JUnit and exact request/response; normalized source identity, committed record and provider read-back/adapter call ledger.
