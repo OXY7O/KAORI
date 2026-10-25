@@ -252,7 +252,7 @@ def account():
                 )
                 mfa_feedback = 'MFA enabled. Save your recovery codes now; they are shown only once.'
             elif action == 'regenerate':
-                verify_mfa_challenge(user, str(request.form.get('verification_code') or ''))
+                verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
                 mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
                 mfa_feedback = 'Recovery codes regenerated. Previous unused codes are invalid.'
             else:
