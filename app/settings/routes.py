@@ -24,6 +24,7 @@ from app.access.authentication.mfa.service import (
     MfaVerificationError,
     begin_mfa_enrollment,
     confirm_mfa_enrollment,
+    disable_mfa,
     mfa_enrolled,
     mfa_policy_mode,
     regenerate_mfa_recovery_codes,
@@ -238,7 +239,7 @@ def account():
             validate_csrf(request.form.get('csrf_token'))
             if not login_fresh():
                 raise MfaVerificationError('Sign in again before changing MFA.')
-            if action in {'begin', 'regenerate'} and user.auth_source == 'database':
+            if action in {'begin', 'regenerate', 'disable'} and user.auth_source == 'database':
                 password = str(request.form.get('current_password') or '')
                 if not password or not user.check_password(password):
                     raise MfaVerificationError('Your current password was not accepted.')
@@ -254,6 +255,9 @@ def account():
                 verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
                 mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
                 mfa_feedback = 'Recovery codes regenerated. Previous unused codes are invalid.'
+            elif action == 'disable':
+                disable_mfa(user, str(request.form.get('verification_code') or ''))
+                mfa_feedback = 'MFA disabled under the current security policy.'
             else:
                 raise MfaVerificationError('Unsupported MFA operation.')
         except (ValidationError, MfaVerificationError):
