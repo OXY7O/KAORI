@@ -91,3 +91,10 @@ browser cookies, CAPTCHA tokens, or provider secrets.
 This behavior uses existing notification-backed committed audit and
 transient feedback primitives; no parallel toast/audit platform, new database
 migration or additional MFA factor mechanism is introduced.
+
+
+## TOTP enrollment object representation hardening (#3237)
+
+Enrollment provisioning URIs contain the plaintext TOTP secret by protocol design and are transient sensitive output. The frozen `TotpEnrollment` structure must **never expose its encrypted_secret or provisioning_uri fields in its automatic Python representation**; both fields are `repr=False`. This mitigates accidental leakage into application logs, traces, test assertion output and exception representations. Authorized direct access to the provisioning URI for manual authenticator setup is unchanged.
+
+This safeguard does **not** authorize logging a provisioning URI, storing it as permanent plaintext, or including it in Activity Audit metadata. Verify the existing `test_mfa_factor_primitives.py` proof that the URI still works for enrollment while `repr(enrollment)` exposes neither secret nor URI. Source-level hardening is not a substitute for Dev Container security and functional verification.
