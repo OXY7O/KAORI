@@ -307,7 +307,23 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     assert 'integrations/components/_workspace.html' in tabs
     assert 'integration_ui.section_header("layout-dashboard",' in tabs
     assert '"Integration Workspace"' in tabs
-    assert '"Review committed coverage and registered provider connections."' in tabs
+    assert '"Switch between integration coverage and registered connections."' in tabs
+    assert 'data-kaori-integration-workspace-section' in tabs
+    assert 'Provider Connections &amp; Coverage' in tabs
+    assert 'Monitor provider readiness, committed coverage, and registered connections.' in tabs
+    assert tabs.index('Provider Connections &amp; Coverage') < tabs.index('data-kaori-integration-workspace-tabs')
+    assert 'components/info_tip.html' in tabs
+    assert tabs.count('info_tip.render(') == 1
+    assert '"integration-workspace-" ~ provider_key' in tabs
+    assert 'placement="right"' in tabs
+    assert 'variant="guide"' in tabs
+    assert 'items=workspace_guide_items' in tabs
+    for section in ('Integration Coverage —', 'Connection Registry —', 'Authority Boundary —'):
+        assert section in tabs
+    shared_header = read('app/templates/integrations/components/_workspace.html')
+    assert 'title_extra=None' in shared_header
+    assert '{% if title_extra %}{{ title_extra }}{% endif %}' in shared_header
+    assert 'title_extra=workspace_guide' in tabs
     assert tabs.index('integration_ui.section_header(') < tabs.index('framed_workspace_tabs.render(')
     assert 'framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label)' in tabs
     assert "('coverage', 'Integration Coverage'" in tabs
