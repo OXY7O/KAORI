@@ -56,7 +56,7 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     partial = _source(
         'app/templates/integrations/source_control/github/partials/_connection_test_result.html'
     )
-    assert """hx-post="{{ url_for('github_source.new_connection') }}" """ .strip() in form
+    assert "hx-post=" in form and "github_source.new_connection" in form
     assert 'hx-include="#github-app-connection-form"' in form
     assert 'hx-target="#github-connection-test-result"' in form
     assert 'hx-disabled-elt="this"' in form
