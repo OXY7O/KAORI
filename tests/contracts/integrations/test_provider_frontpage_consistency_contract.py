@@ -258,7 +258,8 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
 
     assert 'components/info_tip.html' in shared
     assert shared.count('info_tip.render(') == 1
-    assert '"provider-overview-" ~ (title|lower|replace(" ", "-"))' in shared
+    # Whitespace around the Jinja replace call is owned by djLint.
+    assert '"provider-overview-" ~ (title|lower|replace(" ", "-")' in shared
     assert 'title ~ " Guide"' in shared
     assert 'items=overview_guide_items' in shared
     assert 'md:grid-cols-3' not in shared
@@ -289,3 +290,28 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
     assert 'Register GitHub Apps with governed Source Control evidence.' in github
     assert 'whitespace-nowrap' not in github
     assert 'line-clamp' not in github
+
+
+def test_provider_workspace_tabs_share_title_description_and_existing_tab_geometry() -> None:
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
+    pages = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
+        'app/templates/integrations/observability/metrics_source/frontpage.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/index.html',
+        'app/templates/integrations/registry/providers/harbor/index.html',
+        'app/templates/integrations/secrets_management/vault/index.html',
+        'app/templates/integrations/source_control/github/index.html',
+    )
+
+    assert 'integrations/components/_workspace.html' in tabs
+    assert 'integration_ui.section_header("layout-dashboard",' in tabs
+    assert '"Integration Workspace"' in tabs
+    assert '"Review committed coverage and registered provider connections."' in tabs
+    assert tabs.index('integration_ui.section_header(') < tabs.index('framed_workspace_tabs.render(')
+    assert 'framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label)' in tabs
+    assert "('coverage', 'Integration Coverage'" in tabs
+    assert "('registry', 'Connection Registry'" in tabs
+    assert 'x-on:popstate.window="syncTab()"' in tabs
+    for page in pages:
+        assert 'components/integration_workspace_tabs.html' in read(page), page
