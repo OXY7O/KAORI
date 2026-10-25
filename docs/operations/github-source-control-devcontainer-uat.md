@@ -22,6 +22,62 @@ In the Dev Container running this UAT branch, sign in as an active local super-a
 
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
+## 2026-10-25 — Open Source Control action self-navigation remediation
+
+**UAT result: FAIL before fix.** On the approved Source Control domain page
+the operator clicked **Open Source Control** and observed no navigation. This
+was not a missing click handler: the shared workspace link already uses
+`href="{{ url_for(item.workspace_endpoint) }}"`. The registered GitHub
+Integration Kernel descriptor supplied `integrations.source_control`
+as `workspace_endpoint`, which resolves back to the page currently open.
+
+**Scoped fix:** issue #3091 changes the existing GitHub provider's
+`IntegrationModule.workspace_endpoint` to `github_source.index`,
+the registered provider landing route
+`/integrations/source-control/github/`. This follows the Registry →
+Harbor precedent (`harbor.index`). The domain taxonomy and sidebar
+remain owned by `integrations.source_control`; the provider's existing
+`navigation_endpoint_prefixes` still associate the GitHub page with
+the Source Control sidebar. No new button, HTMX special case, JavaScript
+navigation handler, route, permission or provider operation is introduced.
+
+**Regression ownership:** the existing kernel descriptor unit test no
+longer asserts the incorrect self-link; a new test resolves the GitHub
+provider URL from its real registered Blueprint. The existing Integrations
+UI contract now also guards against using the domain route in the provider
+workspace descriptor while preserving the canonical shared link.
+
+**Evidence state: source implementation and regression code authored;
+executable tests and browser UAT pending.** On the Dev Container holding
+candidate, click **Open Source Control** and confirm the URL changes from
+`/integrations/source-control` to
+`/integrations/source-control/github/`, the GitHub Source Control
+landing page renders, and the Integrations → Source Control sidebar
+remains selected. Browser Back returns to the domain page. If the route
+returns 403 or another HTTP failure, capture the redacted status as a
+separate defect; do not silently mark the navigation PASS.
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  tests/unit/test_source_control_github_kernel_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+python -m ruff format --check \
+  tests/unit/test_source_control_github_kernel_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py
+python -m pytest -q -p no:cacheprovider \
+  tests/unit/test_source_control_github_kernel_contract.py \
+  tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py
+djlint --check app/templates/integrations/partials/_domain_workspace.html
+python scripts/verify_integration_domain_navigation.py
+```
+
+Temporary `kaori/review/staging-uat` UAT only. Webhook ingress,
+consumer, official CI/CD, Full Admission, staging/main and release HOLD.
+
 ## 2026-10-25 — Source Control domain UI consistency review
 
 **Authority:** scoped UX issue #3085 and operator screenshots comparing the
