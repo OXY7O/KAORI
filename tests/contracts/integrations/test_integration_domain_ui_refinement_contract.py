@@ -218,7 +218,7 @@ def test_metrics_provider_selector_inherits_approved_shared_chooser() -> None:
     assert "'secondary_label': 'Query Language'" in routes
     assert "'protocol': provider.query_language.upper()" in routes
     assert "'lifecycle': admitted_kinds[provider.key].lifecycle" in routes
-    assert "if admitted_kinds[provider.key].available" in routes
+    assert 'if admitted_kinds[provider.key].available' in routes
     assert "domain=get_domain_definition('observability')" in routes
     assert "integration_type='metrics_source'" in routes
     assert "guide_title='Metrics Provider Selection'" in routes
