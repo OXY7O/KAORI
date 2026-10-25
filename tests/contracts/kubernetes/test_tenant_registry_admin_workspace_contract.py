@@ -203,7 +203,7 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
     assert workspace.count('partials/_group_registry.html') == 1
     assert 'name="membership_view" value="groups"' in workspace
 
-    assert "def _membership_registry_view() -> str:" in routes
+    assert 'def _membership_registry_view() -> str:' in routes
     assert "request.values.get('membership_view') == 'groups'" in routes
     assert "'active_membership_view': _membership_registry_view()" in routes
     assert "response.headers['HX-Replace-Url']" in routes
@@ -255,13 +255,15 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
-    assert 'access-profile-tip' in workspace
-    assert 'access-scope-tip' in workspace
+    assert 'access-membership-tip' not in workspace
+    assert 'access-profile-tip' not in workspace
+    assert 'access-scope-tip' not in workspace
     for field_id in ('access-grant-membership', 'access-grant-profile', 'access-grant-scope'):
         assert f'for="{field_id}"' in workspace
         assert f'id="{field_id}"' in workspace
-    assert 'Prepare approved ClusterRoles before applying.' in workspace
-    assert workspace.count("variant='guide'") >= 4
+    assert 'Prepare approved ClusterRoles.' in workspace
+    assert workspace.count("variant='guide'") == 1
+    assert 'flex flex-wrap items-center justify-between' in workspace
     assert 'data-access-membership' in workspace
     assert 'data-access-context-scope' in workspace
     assert 'data-access-environment-field' in workspace
@@ -293,6 +295,10 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert '_access_inventory_workspace.html' in grant
     assert '_access_grant_registry.html' not in grant
     assert 'workspace_tabs.render_query_tabs(access_inventory_tabs' in workspace
+    assert 'Access Registry &amp; Inventory' not in workspace
+    assert 'tenant-access-inventory-title' not in workspace
+    assert 'aria-label="Tenant Access Registry and Inventory"' in workspace
+    assert 'class="min-w-0 p-4 sm:p-5"' in workspace
     assert "access_inventory_view='grants'" in workspace
     assert "active_access_inventory_view == 'grants'" in workspace
     assert '_access_grant_registry.html' in workspace
@@ -306,9 +312,12 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert "active_access_inventory_view == 'native'" in workspace
     assert 'hx-select="#tenant-admin-workspace"' in workspace
     assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert workspace.count('_access_grant_registry.html') == 1
+    assert workspace.count('_external_capsule_access_inventory.html') == 1
+    assert workspace.count('_native_namespace_rbac_inventory.html') == 1
     assert 'hx-push-url="true"' in settings_tabs
 
-    assert "def _access_inventory_view() -> str:" in routes
+    assert 'def _access_inventory_view() -> str:' in routes
     assert "'active_access_inventory_view': _access_inventory_view()" in routes
     assert "request.values.get('access_inventory_view')" in routes
     assert "'HX-Replace-Url'" in routes
@@ -319,6 +328,11 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
         assert 'Latest Inspection' in panel
         assert 'Not inspected' in panel
         assert 'Provider Authority' in panel
+        assert 'Inspection Target' in panel
+        assert 'Inspection Evidence' in panel
+        assert 'rounded-xl border border-dashed' in panel
+        assert 'read-only' in panel.lower()
+        assert 'bg-surface-hover px-5 py-4' in panel
 
     assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
     assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
@@ -328,6 +342,12 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert 'No committed Native RBAC observation yet.' in native
     assert 'observe_capsule_external_access_route' in capsule
     assert 'observe_native_external_access_route' in native
+    assert 'components/action_button.html' in native
+    assert 'components/table_label.html' in native
+    assert 'name="tenant_id"' in capsule
+    assert 'name="tenant_id"' in native
+    assert 'Review Profile Match' in capsule
+    assert 'Review Profile Match' in native
     assert 'Analyze Access Drift' in capsule
     assert 'Analyze Native Access Drift' in native
 
@@ -478,8 +498,10 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
     assert "'capsule-initial-owner-guide-tip'" in tenant_form
     assert 'capsule-owner-kind-tip' not in tenant_form
     assert 'capsule-owner-subject-tip' not in tenant_form
-    assert 'access-profile-tip' in grants
-    assert 'access-scope-tip' in grants
+    assert 'access-profile-tip' not in grants
+    assert 'access-scope-tip' not in grants
+    assert 'access-membership-tip' not in grants
+    assert "'access-grant-form-tip'" in grants
 
 
 def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> None:

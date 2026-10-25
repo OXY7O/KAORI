@@ -6,38 +6,27 @@
 ] %}
 <section id="tenant-access-inventory-workspace"
          class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-         aria-labelledby="tenant-access-inventory-title"
+         aria-label="Tenant Access Registry and Inventory"
          hx-select="#tenant-admin-workspace">
-    <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-              aria-hidden="true">
-            <i data-lucide="shield-check" class="h-5 w-5"></i>
-        </span>
-        <div class="min-w-0">
-            <h3 id="tenant-access-inventory-title"
-                class="text-base font-semibold text-content-primary">Access Registry &amp; Inventory</h3>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                Review committed Access Grants or inspect provider-side evidence within one governed workspace.
-            </p>
-        </div>
-    </header>
     {{ workspace_tabs.render_query_tabs(access_inventory_tabs,
         active_access_inventory_view,
         aria_label='Tenant Access Registry and Inventory',
         hx_target='#tenant-admin-workspace',
         hx_indicator='#tenant-admin-loading',
         hx_sync='#tenant-admin-workspace:replace') }}
-    {% if active_access_inventory_view == 'grants' %}
-        <div id="access-grant-registry-panel" class="min-w-0 p-4 sm:p-5">
-            {% include "kubernetes/tenant/partials/_access_grant_registry.html" %}
-        </div>
-    {% elif active_access_inventory_view == 'native' %}
-        <div id="native-access-inventory-panel" class="min-w-0">
-            {% include "kubernetes/tenant/partials/_native_namespace_rbac_inventory.html" %}
-        </div>
-    {% else %}
-        <div id="capsule-access-inventory-panel" class="min-w-0">
-            {% include "kubernetes/tenant/partials/_external_capsule_access_inventory.html" %}
-        </div>
-    {% endif %}
+    <div class="min-w-0 p-4 sm:p-5">
+        {% if active_access_inventory_view == 'grants' %}
+            <div id="access-grant-registry-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_access_grant_registry.html" %}
+            </div>
+        {% elif active_access_inventory_view == 'native' %}
+            <div id="native-access-inventory-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_native_namespace_rbac_inventory.html" %}
+            </div>
+        {% else %}
+            <div id="capsule-access-inventory-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_external_capsule_access_inventory.html" %}
+            </div>
+        {% endif %}
+    </div>
 </section>
