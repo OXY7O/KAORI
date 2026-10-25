@@ -224,7 +224,8 @@ def test_source_control_provider_card_registration_is_provider_owned_and_disable
     route = read('app/integrations/routes.py')
     selector = read('app/templates/integrations/provider_selector.html')
 
-    assert "sorted(provider_kinds(integration_type), key=lambda kind: (not kind.available, kind.label.casefold()))" in route
+    assert "kinds = sorted(provider_kinds(integration_type)" in route
+    assert "(not kind.available, kind.label.casefold())" in route
     assert "'lifecycle': kind.lifecycle" in route
     assert "('source_control', 'github'): 'github_source.new_connection'" in route
     assert "('source_control', 'gitlab')" not in route
