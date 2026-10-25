@@ -171,6 +171,21 @@ def test_estate_visual_density_reuses_evidence_tiles_and_preserves_readability()
     assert 'Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.' in catalog
 
 
+def test_overview_removes_floating_heading_icons_without_losing_operational_icons() -> None:
+    estate = read(OVERVIEW / 'partials' / '_reporting_estate_capability.html')
+    contracts = read(OVERVIEW / 'partials' / '_reporting_contracts_automation.html')
+
+    # Trailing icons in section headers are decorative and disconnect from the text.
+    for icon in ('network', 'archive', 'layers-2', 'file-stack'):
+        assert f'<i data-lucide="{icon}"' not in estate
+    assert '<i data-lucide="folder-tree"' not in contracts
+
+    # Preserve icons that communicate report-domain identity or metric meaning.
+    assert 'data-lucide="{{ domain.icon }}"' in estate
+    assert "evidence_tile.snapshot(item.label, item.value, item.icon, 'Retained family')" in estate
+    assert 'data-lucide="{{ group.icon }}"' in contracts
+
+
 def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
     combined = '\n'.join(
         read(path)
