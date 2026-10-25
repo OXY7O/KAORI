@@ -28,7 +28,17 @@
                 <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
             </div>
         </div>
-        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
+        <div class="flex shrink-0 items-center gap-3">
+            <div class="pointer-events-none hidden items-center gap-2 lg:flex" aria-hidden="true">
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-subtle bg-surface-card/70 text-kaori-primary shadow-sm">
+                    <i data-lucide="smartphone" class="h-6 w-6"></i>
+                </span>
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+            </div>
+            {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
+        </div>
     </header>
     <div class="space-y-6 p-5 xl:p-6">
         <section aria-label="Account MFA security posture"
@@ -103,9 +113,9 @@
             </section>
         {% endif %}
         {% if not mfa_state.enrolled %}
-            <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
+            <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch"
                  data-account-mfa-enrollment-layout="action-context">
-                <main class="min-w-0 space-y-4 xl:col-span-7">
+                <div class="min-w-0 space-y-4 xl:col-span-7">
                     <section class="rounded-xl border border-outline-default bg-surface-card p-5"
                              aria-labelledby="account-mfa-step-one">
                         <div class="flex items-start gap-3">
@@ -177,7 +187,7 @@
                               class="mt-5 space-y-4">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="mfa_action" value="confirm">
-                            <div class="max-w-[15rem]">
+                            <div class="max-w-[21rem]">
                                 <label for="mfa-confirm-code"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">Verification Code</label>
                                 <input id="mfa-confirm-code"
@@ -188,9 +198,9 @@
                                        inputmode="numeric"
                                        pattern="[0-9]{6}"
                                        maxlength="6"
-                                       placeholder="000000"
+                                       placeholder="••••••"
                                        aria-describedby="mfa-confirm-help"
-                                       class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-base tracking-widest text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                       class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-center font-mono text-lg tracking-[0.65em] text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </div>
                             <p id="mfa-confirm-help" class="text-xs leading-5 text-content-muted">Six digits from your authenticator application.</p>
                             <button type="submit"
@@ -200,8 +210,8 @@
                             </button>
                         </form>
                     </section>
-                </main>
-                <aside class="min-w-0 rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
+                </div>
+                <aside class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
                        aria-labelledby="account-mfa-setup-guide">
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -210,8 +220,8 @@
                         </span>
                         <h3 id="account-mfa-setup-guide" class="text-sm font-bold text-content-primary">Enrollment Guide</h3>
                     </header>
-                    <ol class="divide-y divide-outline-subtle px-5">
-                        <li class="flex items-start gap-3 py-4">
+                    <ol class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
+                        <li class="flex flex-1 items-center gap-3 py-4">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
                                 <i data-lucide="key-round" class="h-4 w-4"></i>
@@ -221,7 +231,7 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password, or use a fresh external sign-in.</p>
                             </div>
                         </li>
-                        <li class="flex items-start gap-3 py-4">
+                        <li class="flex flex-1 items-center gap-3 py-4">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
                                 <i data-lucide="smartphone" class="h-4 w-4"></i>
@@ -231,7 +241,7 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Enter the manual key into a TOTP-compatible application.</p>
                             </div>
                         </li>
-                        <li class="flex items-start gap-3 py-4">
+                        <li class="flex flex-1 items-center gap-3 py-4">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
                                 <i data-lucide="shield-check" class="h-4 w-4"></i>
@@ -242,8 +252,8 @@
                             </div>
                         </li>
                     </ol>
-                    <div class="border-t border-outline-subtle p-5">
-                        <div class="flex items-start gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft/60 p-3">
+                    <div class="mt-auto border-t border-outline-subtle p-5">
+                        <div class="flex items-start gap-2 rounded-lg border border-outline-default bg-kaori-soft/60 p-3">
                             <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             <p class="text-xs leading-5 text-content-secondary">Your factor remains managed by KAORI; the primary identity provider stays authoritative for the initial sign-in.</p>
                         </div>
@@ -324,9 +334,16 @@
                 </aside>
             </div>
         {% endif %}
-        <div class="flex items-start gap-2 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">
-            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-            <p>MFA challenges follow the approved Access policy. Factor secrets are encrypted at rest; recovery codes are stored as non-reversible hashes.</p>
+        <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-kaori-soft/40 p-4 text-xs leading-5 text-content-secondary"
+             role="note">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="info" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-content-primary">Security Information</p>
+                <p class="mt-1">MFA challenges follow the approved Access policy. Factor secrets are encrypted at rest; recovery codes are stored as non-reversible hashes.</p>
+            </div>
         </div>
     </div>
 </section>
