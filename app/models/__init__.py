@@ -12,6 +12,7 @@ from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
+from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
 from app.models.audit import AuditEvent
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
@@ -163,6 +164,8 @@ __all__ = [
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
+    'AuthenticationMfaFactor',
+    'AuthenticationSecurityPolicy',
     'AuditEvent',
     'IdentityProvider',
     'HarborInstance',
