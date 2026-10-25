@@ -64,6 +64,41 @@ def test_overview_reuses_existing_access_tab_routes_and_never_mutates_policy() -
     assert 'csrf_token()' not in overview
 
 
+def test_kaori_canonical_posture_guide_replaces_inline_header_help() -> None:
+    source = _template()
+    overview = _overview()
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert "'authentication-assurance-posture-guide'" in overview
+    assert "'Authentication assurance posture'" in overview
+    assert "variant='guide'" in overview
+    assert "placement='right'" in overview
+    assert "aria-labelledby=\"authentication-posture-heading\"" in overview
+    assert 'Current KAORI policy and session enforcement at a glance.' not in overview
+    assert 'Review enforcement boundaries and open the appropriate policy workspace.' not in overview
+    assert 'rounded-xl border border-outline-default bg-surface-card' in overview
+
+
+def test_operational_boundary_content_is_balanced_and_separate_from_auth_logic() -> None:
+    overview = _overview()
+    area = overview.split('aria-labelledby="authentication-boundaries-heading"', 1)[1]
+    assert 'Governed Here' in area
+    assert 'Managed Elsewhere' in area
+    assert 'Controls governed in Access' in area
+    assert 'Related capability ownership' in area
+    assert area.count('<li class="flex items-start gap-3">') == 6
+    for label in (
+        'MFA assurance',
+        'Turnstile provider setup and sign-in enforcement.',
+        'Session Security',
+        'Account &amp; Authentication',
+        'Identity Providers',
+        'Separate security workstreams',
+    ):
+        assert label in area
+    assert '<form' not in area
+    assert 'hx-post=' not in area
+
+
 def test_other_security_configuration_tabs_still_present() -> None:
     source = _template()
     assert "{% elif active_tab == 'mfa' %}" in source
