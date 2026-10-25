@@ -46,11 +46,12 @@ with interval, queue and Active/Idle state on the second. The domain and
 description are not repeated in the scroll list; selected-job details
 remain authoritative. Search retains the full `JobDefinition.description`
 and domain/queue terms, while HTMX selection, URL history, independent
-scroll, and pinned result-count/Guide footer are unchanged. The pinned footer
-shows only a compact visible/total job count, the canonical Execution Boundary
-Guide (full explanation on hover/focus/touch), and a permission-gated
-Executions link with its full accessible destination label. It must stay one
-line without horizontal scrolling or duplicated boundary text.
+scroll, and pinned boundary Guide footer are unchanged. The dynamic visible/total
+job count belongs to the search header, not the navigation footer. Jobs and Data
+Lifecycle reuse the same one-line Execution Boundary label, adjacent Guide
+(prefers opening above), and permission-gated Jobs & Executions navigation
+with its full accessible destination label. Neither footer scrolls horizontally;
+the full canonical boundary remains in the Guide.
 
 Report Schedule Dispatch lists committed notification destinations as compact,
 status-labelled rows with bounded keyboard-scrollable overflow. Guarded
