@@ -13,7 +13,8 @@ REGISTRIES = {
     # workspace contracts assert no forced minimum or horizontal overflow.
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
-    '_group_registry': (1250, (18, 15, 17, 12, 12, 26)),
+    # Group actions fit inside the normal desktop Tenant Workspace; overflow is narrow-only.
+    '_group_registry': (980, (18, 15, 17, 12, 12, 26)),
     '_membership_registry': (1100, (23, 20, 14, 13, 15, 15)),
     '_namespace_access_registry': (1400, (16, 17, 13, 17, 12, 12, 13)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),

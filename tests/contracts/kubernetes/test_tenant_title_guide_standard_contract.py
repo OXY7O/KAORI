@@ -67,7 +67,7 @@ def test_every_approved_tenant_title_guide_uses_shared_variant() -> None:
 def test_capsule_initial_owner_uses_one_shared_section_guide() -> None:
     source = _read('_tenant_form.html')
     section_start = source.index('Capsule Initial Owner')
-    section_end = source.index('Existing Capsule Tenant? Use Discovery', section_start)
+    section_end = source.index('form_field.label_row("Description")', section_start)
     capsule_section = source[section_start:section_end]
 
     assert capsule_section.count("'capsule-initial-owner-guide-tip'") == 1

@@ -1250,14 +1250,16 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
     assert 'name="capsule_owner_subject"' in form
     assert '<option value="capsule">Capsule</option>' in form
     assert 'capability checked on submit' not in form
-    assert 'capsule-owner-kind-tip' in form
-    assert 'capsule-owner-subject-tip' in form
-    assert 'Owner Subject is required for every Owner Kind.' in form
+    assert 'capsule-owner-kind-tip' not in form
+    assert 'capsule-owner-subject-tip' not in form
+    assert "'capsule-initial-owner-guide-tip'" in form
+    assert 'Owner Subject must match the identity recognized by Kubernetes authentication.' in form
     assert 'User example — alice@example.com' in form
     assert 'Group example — oidc:org:platform-team' in form
     assert 'ServiceAccount example — system:serviceaccount:platform:deployer' in form
     assert 'Required for Capsule provider ownership; separate from KAORI Memberships.' in form
-    assert 'Existing Capsule Tenant? Use Discovery → Adoption.' in form
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in form
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
     assert 'Capsule capability and admission are validated when Add Tenant is submitted.' in form
     assert 'tenant_setup_provider.js' in page
 
