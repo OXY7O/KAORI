@@ -177,3 +177,27 @@ The final visual QA checks both columns have aligned top and bottom
 edges, warning tone is legible in light/dark mode, the impact sentence
 fits naturally at normal desktop widths, and keyboard focus plus Save,
 acknowledgement, and Guide remain functional.
+
+
+## MFA Assurance Policy iconography refinement (#3189 UAT feedback)
+
+The MFA policy administration tab follows the same KAORI Violet iconography
+hierarchy already used in the Access workspace. The three committed-state
+summary tiles have distinct, **decorative** Lucide cues: shield-check for
+Current Policy, key-round for Verification Method, and log-out with the
+existing warning-semantic soft surface for Session Impact.
+
+The four enforcement-mode rows use shield-off (Disabled), shield-plus
+(Optional), shield-alert (Required Privileged), and shield-check
+(Required All); the actual current mode is still determined by
+`mfa_policy_mode` and its existing visible text/badge, never icon color alone.
+No duplicated text source, new taxonomy, status calculation, or invented
+enrollment metrics. Decorative icons must have `aria-hidden="true"`.
+
+Account Enrollment & Recovery retains **personal** enrollment ownership in
+Settings and adds compact Authenticator App and Recovery Codes descriptors;
+neither is an administrative secret viewer nor a new factor provider.
+Keep the existing policy form, acknowledgement, recovery guard, Guide,
+session revocation, responsive matched-height panels and light/dark
+semantic tokens unchanged. Confirm visual rhythm on narrow screens before
+Human Acceptance.
