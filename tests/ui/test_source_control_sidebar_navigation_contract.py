@@ -85,7 +85,6 @@ def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None
     assert "BreadcrumbItem('Choose Provider')" in breadcrumb
 
 
-
 def test_metrics_provider_chooser_stays_with_observability_navigation() -> None:
     presentation = _read('app/bootstrap/presentation.py')
     sidebar = _read('app/common/workspace_navigation.py')
