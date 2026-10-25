@@ -443,11 +443,12 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
         '_overview_performance_snapshot.html',
         '_overview_consumer_snapshot.html',
         '_overview_forecast_snapshot.html',
-        '_reconciliation.html',
         '_metrics_readiness.html',
         '_overview_evidence_context.html',
     ):
         assert partial in workspace
+    context = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_context.html')
+    assert '_reconciliation.html' in context
 
     assert 'Consumer Concentration Snapshot' in read(
         'app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html'
