@@ -124,3 +124,11 @@ The approved Access → Authentication Security surface retains the **existing**
 Statuses MUST derive from committed KAORI MFA and Bot policies; provider adapter registration/configuration alone never proves live vendor health or a user's enrollment. No invented trend/chart/coverage metric or backend mutation is introduced by this visual change. Keep two Hero-context helper sentences compact enough for single-line desktop presentation, but allow natural wrapping on small viewports. Reuse existing Violet semantic colors, border/surface tokens, responsive grids and accessible route-backed links. Do not fork the shared Hero or card macros.
 
 Acceptance requires Dev Container screenshot QA at desktop and mobile in light/dark mode, tab URL/HTMX/accessibility regression checks, exact source SHA, and human review. Official staging/main admission remains HOLD.
+
+## Authentication Assurance Overview visual UAT follow-up (#3166)
+
+Operator screenshot refinement reuses `components/info_tip.html::render(..., variant='guide')` directly beside the **Authentication Assurance Posture** heading. Contextual description moves into the existing accessible hover/focus/click Info Tip rather than a permanent subtitle. The section must not clip the shared popover; its header, posture values and status badge remain visible without opening help.
+
+The **Security Control Summaries** subtitle is removed while all three committed-state controls and existing tab destinations stay unchanged. **Operational Boundaries** now uses balanced, aligned three-row semantic content per column for governed Access controls and related Settings/Identity Provider/security workstream ownership. Preserve the visible scope labels; never move mandatory status/error information into a tooltip.
+
+This change is presentation-only: no authentication admission, policy update, provider verification, database migration, permission or audit logic modification. Review at desktop/mobile and in both themes using the standard Info Tip controller, plus existing Access Final Lock, `djlint` and scoped pytest contracts.
