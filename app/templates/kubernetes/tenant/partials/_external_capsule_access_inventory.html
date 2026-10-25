@@ -1,3 +1,5 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="external-capsule-access-heading">
     <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4">
@@ -57,19 +59,81 @@
             <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Committed' if latest_capsule_inspection else 'Not inspected' }}</p>
         </div>
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-            <p class="text-xs text-content-muted">Recent Evidence</p>
-            <p class="mt-1 text-sm font-semibold text-content-primary">{{ recent_external_capsule_access|length }} shown</p>
+            <p class="text-xs text-content-muted">{{ 'Matching Evidence' if access_evidence_filters.search or access_evidence_filters.status else 'Committed Evidence' }}</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_pagination.total_items }} records</p>
         </div>
     </div>
-    <div class="space-y-3 border-t border-outline-subtle px-5 py-4">
-        <div>
-            <h4 class="text-sm font-semibold text-content-primary">Inspection Evidence</h4>
-            <p class="mt-1 text-xs text-content-muted">Latest committed observations for the governed provider scope.</p>
+    {% set evidence_registry_id = 'tenant-capsule-evidence-registry' %}
+    {% set evidence_loading_id = 'tenant-capsule-evidence-loading' %}
+    {% set evidence_query_params = {
+        'section': 'access-grants',
+        'access_inventory_view': 'capsule',
+        'access_evidence_search': access_evidence_filters.search,
+        'access_evidence_status': access_evidence_filters.status
+    } %}
+    <section id="{{ evidence_registry_id }}"
+             class="min-w-0 border-t border-outline-subtle"
+             aria-label="Capsule committed inspection evidence">
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <div class="min-w-0">
+                <h4 class="text-sm font-semibold text-content-primary">Inspection Evidence</h4>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Committed inspection history. Expand a row only when evidence detail is needed.
+                </p>
+            </div>
+            {% if access_evidence_filters.search or access_evidence_filters.status %}
+                {{ registry_ui.clear_filters_link('tenant.tenants',
+                    evidence_registry_id,
+                    evidence_loading_id,
+                    access_evidence_pagination.per_page,
+                    table_ui.action_classes(),
+                    query_params={'section': 'access-grants', 'access_inventory_view': 'capsule'},
+                    page_param='access_evidence_page',
+                    per_page_param='access_evidence_per_page') }}
+            {% endif %}
+        </header>
+        <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+            {% call registry_ui.filter_form('tenant.tenants',
+                evidence_registry_id,
+                evidence_loading_id,
+                access_evidence_pagination.per_page,
+                page_param='access_evidence_page',
+                per_page_param='access_evidence_per_page',
+                aria_label='Filter Capsule inspection evidence') %}
+                <input type="hidden" name="section" value="access-grants">
+                <input type="hidden" name="access_inventory_view" value="capsule">
+                <div>
+                    <label for="capsule-access-evidence-status"
+                           class="{{ table_ui.filter_label_classes() }}">Status</label>
+                    <select id="capsule-access-evidence-status"
+                            name="access_evidence_status"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All Statuses</option>
+                        <option value="observed"
+                                {% if access_evidence_filters.status == 'observed' %}selected{% endif %}>Observed</option>
+                        <option value="review_required"
+                                {% if access_evidence_filters.status == 'review_required' %}selected{% endif %}>Review Required</option>
+                    </select>
+                </div>
+                <div class="min-w-0">
+                    <label for="capsule-access-evidence-search"
+                           class="{{ table_ui.filter_label_classes() }}">Search</label>
+                    {{ table_ui.search_field('access_evidence_search',
+                        access_evidence_filters.search,
+                        'Tenant ID or event summary',
+                        id='capsule-access-evidence-search') }}
+                </div>
+            {% endcall %}
         </div>
-        {% if recent_external_capsule_access %}
-            {% for event in recent_external_capsule_access %}
+        <div id="{{ evidence_loading_id }}"
+             class="htmx-indicator px-5 py-2 text-xs text-content-muted"
+             role="status"
+             aria-live="polite">Refreshing committed evidence…</div>
+        <div class="space-y-2 px-5 py-4">
+            {% if access_evidence_rows %}
+                {% for event in access_evidence_rows %}
                 {% set evidence = event.metadata_json or {} %}
-                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                <article class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5 sm:px-4">
                     <div class="flex flex-wrap items-start justify-between gap-2">
                         <div>
                             <p class="text-xs font-semibold text-content-primary">Capsule Tenant · {{ evidence.tenant_id }}</p>
@@ -143,18 +207,34 @@
                         </div>
                     </details>
                 </article>
-            {% endfor %}
-        {% else %}
-            <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-7 text-center">
+                {% endfor %}
+            {% else %}
+                <div class="flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center sm:min-h-52 sm:py-12">
                 <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="scan-search" class="h-5 w-5"></i>
                 </span>
-                <p class="text-sm font-semibold text-content-primary">No committed external-access inspection yet.</p>
-                <p class="max-w-2xl text-xs leading-5 text-content-muted">Select a governed Capsule Tenant and run Inspect External Access. No identities are imported and no RBAC or ownership is changed.</p>
-            </div>
-        {% endif %}
-    </div>
+                <p class="text-sm font-semibold text-content-primary">
+                    {{ 'No matching inspections found.' if access_evidence_filters.search or access_evidence_filters.status else 'No committed external-access inspection yet.' }}
+                </p>
+                <p class="mx-auto max-w-xl text-xs leading-6 text-content-muted">
+                    {{ 'Change the evidence filters to see more committed observations.' if access_evidence_filters.search or access_evidence_filters.status else 'Select a governed Capsule Tenant and inspect explicitly. No identities are imported and no RBAC or ownership is changed.' }}
+                </p>
+                </div>
+            {% endif %}
+        </div>
+        {{ registry_ui.footer('tenant.tenants',
+            evidence_registry_id,
+            evidence_loading_id,
+            access_evidence_pagination,
+            evidence_query_params,
+            access_evidence_pagination.allowed_per_page,
+            resource_label='Observations',
+            rows_aria_label='Observations per page',
+            control_name='capsule-access-evidence',
+            page_param='access_evidence_page',
+            per_page_param='access_evidence_per_page') }}
+    </section>
     {% if recent_capsule_access_drift %}
         <div class="border-t border-outline-subtle px-5 py-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest committed Access Drift findings</p>
