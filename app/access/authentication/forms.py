@@ -42,3 +42,10 @@ class ChangePasswordForm(FlaskForm):
     )
 
     submit_password = SubmitField('Update Password')
+
+
+class MfaChallengeForm(FlaskForm):
+    verification_code = StringField(
+        'Authenticator or Recovery Code', validators=[DataRequired(), Length(min=6, max=64)]
+    )
+    submit = SubmitField('Verify & Sign In')
