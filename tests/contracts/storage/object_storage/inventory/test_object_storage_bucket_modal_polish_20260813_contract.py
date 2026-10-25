@@ -41,3 +41,41 @@ def test_bucket_detail_keeps_operational_guidance_without_card_gallery() -> None
     assert "operational_callout.render('Inventory Boundary'" in detail
     assert "operational_callout.render('Recommended Action'" in detail
     assert 'operational_section_card.render(' not in detail
+
+
+def test_bucket_detail_header_and_section_labels_follow_kubernetes_inventory_standard() -> None:
+    table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    host = read('app/templates/storage/object_storage/inventory/buckets/index.html')
+
+    assert 'Compare bucket and container records; view provider evidence in Details.' in table
+    assert 'Committed Object Storage Inventory snapshot · No live provider API query.' in host
+    assert "detail.workspace_header(detail_description, 'container'," in detail
+    assert 'context_items=[' in detail
+    assert "'label': bucket.system_name" in detail
+    assert "'label': bucket.provider_label" in detail
+    assert "'label': bucket.native_type_label" in detail
+    assert 'compact=true) %}' in detail
+    k8s_storage_detail = read('app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html')
+    assert 'context_items=[' in k8s_storage_detail
+    assert 'detail.inventory_title(item.name, compact=true)' in k8s_storage_detail
+    assert 'detail.inventory_title(bucket.name, compact=true)' in detail
+    assert 'detail.header_identity_row()' in detail
+    assert "status_indicator_label(bucket.protection.label, bucket.protection.tone, size='detail')" in detail
+
+    # A badge must be backed by the corresponding committed field, never a synthetic Healthy state.
+    badges = (
+        "'Identity & Location', 'badge-info', bucket.native_type_label",
+        "'Snapshot Context', 'clock-3', bucket.snapshot_status_label, 'status'",
+        "'Capacity & Usage', 'chart-no-axes-column', bucket.usage_state.label, 'status'",
+        "'Data Protection', 'shield-check', bucket.protection.label, 'status'",
+        "'Lifecycle & Access', 'git-branch', bucket.access_policy.label, 'status'",
+        "'Provider Context', 'database-zap', bucket.provider_label",
+        'section.title, section.icon, bucket.provider_label',
+    )
+    for section in badges:
+        assert section in detail
+    assert detail.count("badge_size='detail', stretch=false, density='compact'") == 7
+    assert "bucket.provider_detail_sections" in detail
+    assert "detail.inventory_row('Quota', bucket.quota.label)" in detail
+    assert 'whitespace-nowrap' not in table
