@@ -436,8 +436,9 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert 'data-analytics-preserve-tab' in read(
         'app/templates/storage/object_storage/analytics/partials/_controls.html'
     )
-    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
+    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Alerts'):
         assert f"'{label}'" in workspace
+    assert "('evidence', 'Data & Evidence', 'list-checks')" in workspace
     for partial in (
         '_overview_capacity_snapshot.html',
         '_overview_performance_snapshot.html',
@@ -494,9 +495,9 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     assert 'partials/_performance_workspace.html' in index
     assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity_workspace
     assert 'data-analytics-tabset-id="object-storage-performance-content"' in performance_workspace
-    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Evidence'):
+    for label in ('Summary', 'Usage Trend', 'Quota & Buckets'):
         assert f"'{label}'" in capacity_workspace
-    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
+    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity'):
         assert f"'{label}'" in performance_workspace
 
     assert 'data-analytics-preserve-tab' in controls
@@ -522,20 +523,20 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert 'partials/_alerts_workspace.html' in index
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
-    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence'):
+    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method'):
         assert f"'{label}'" in forecast_workspace
     assert 'Linear baseline · planning signal only' in forecast_methodology
     assert "'Forecast Posture'" in hero_posture
     assert "'Forecast Outlook'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-top-consumers-content"' in consumer_workspace
-    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Evidence'):
+    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records'):
         assert f"'{label}'" in consumer_workspace
     assert "'Consumer Posture'" in hero_posture
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations', 'Evidence'):
+    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations'):
         assert f"'{label}'" in alerts_workspace
     assert "'Alert Posture'" in hero_posture
     assert "'Active Alert State'" in hero_posture
