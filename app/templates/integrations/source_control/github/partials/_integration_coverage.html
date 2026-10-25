@@ -124,10 +124,24 @@
                             {% set empty_state_icon = "route" %}
                             {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
                             {% set empty_state_title = "No GitHub Repository Coverage Matches the Filters" if coverage_has_active_filters else ("No Repositories in Committed Coverage" if coverage_observed else "No GitHub Repository Coverage Observed") %}
-                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else ("No active repository grants in the latest committed inventory." if coverage_observed else "Register and validate a GitHub App, then collect repository evidence.") %}
-                            {% set empty_state_action_url = url_for('github_source.new_connection') if available and uat_workspace_enabled and not coverage_has_active_filters else none %}
-                            {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
-                            {% set empty_state_action_icon = "plus" %}
+                            {% if coverage_has_active_filters %}
+                                {% set empty_state_description = "Adjust the coverage filters to find another repository." %}
+                                {% set empty_state_action_url = none %}
+                                {% set empty_state_action_label = none %}
+                            {% elif coverage_observed %}
+                                {% set empty_state_description = "No active repository grants in the latest committed inventory." %}
+                                {% set empty_state_action_url = url_for('github_source.index', tab='registry') if registered else none %}
+                                {% set empty_state_action_label = "View Connections" if empty_state_action_url else none %}
+                            {% elif registered %}
+                                {% set empty_state_description = "Complete Full Validation, then Sync Repositories to commit repository access evidence." %}
+                                {% set empty_state_action_url = url_for('github_source.index', tab='registry') %}
+                                {% set empty_state_action_label = "View Connections" %}
+                            {% else %}
+                                {% set empty_state_description = "Register and validate a GitHub App, then collect repository evidence." %}
+                                {% set empty_state_action_url = url_for('github_source.new_connection') if available and uat_workspace_enabled else none %}
+                                {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
+                            {% endif %}
+                            {% set empty_state_action_icon = "database-zap" if registered else "plus" %}
                             {% set empty_state_min_height = "min-h-[210px]" %}
                             {% include "components/states/_empty_state.html" %}
                         </td>
