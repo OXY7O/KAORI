@@ -164,9 +164,7 @@ def test_all_six_integration_domains_share_an_icon_free_workspace_introduction()
     # semantic markup rather than independent provider-specific headers.
     assert 'integration_ui.workspace_section_intro(' in provider_tabs
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared
-    intro_macro = shared.split('macro workspace_section_intro', 1)[1].split(
-        '{%- endmacro %}', 1
-    )[0]
+    intro_macro = shared.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
     assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in intro_macro
     assert 'palette_icon(' not in intro_macro
     for route in (
@@ -195,7 +193,7 @@ def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> No
     assert 'integration_ui.section_header(' in tabs
     assert '"Integration Workspace"' in tabs
     assert '"Switch between integration coverage and registered connections."' in tabs
-    assert 'Provider Connections &amp; Coverage' in tabs
+    assert 'Provider Connections & Coverage' in tabs
     assert 'title_extra=workspace_guide' in tabs
 
 
