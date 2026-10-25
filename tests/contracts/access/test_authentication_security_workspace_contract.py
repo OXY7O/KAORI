@@ -22,7 +22,12 @@ def test_authentication_security_uses_existing_access_navigation_and_rbac() -> N
     assert "'access.authentication_security.index'," in navigation
     assert "if endpoint.startswith('access.authentication_security.')" in breadcrumb
     assert "@permission_required('identity_providers.view')" in routes
-    assert "if request.headers.get('HX-Request') == 'true'" in routes
+    # Request dispatch remains conditionally HTMX-targeted; do not require
+    # a single-line string representation of Ruff-formatted Python.
+    assert "request.headers.get('HX-Request') == 'true'" in routes
+    assert "request.headers.get('HX-Target') == 'authentication-security-page'" in routes
+    assert "return render_template('access/authentication_security/partials/_page_content.html', **context)" in routes
+    assert "return render_template('access/authentication_security/index.html', **context)" in routes
 
 
 def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> None:

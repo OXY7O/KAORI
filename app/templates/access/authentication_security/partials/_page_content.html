@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 <div id="authentication-security-page" class="space-y-6">
@@ -44,7 +45,7 @@
                     'required_privileged': 'Required · Privileged',
                     'required_all': 'Required · All Users'
                 }.get(mfa_policy_mode, 'Unrecognized Policy') %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                <section class="rounded-xl border border-outline-default bg-surface-card"
                          aria-labelledby="authentication-posture-heading">
                     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
                         <div class="flex min-w-0 items-center gap-3">
@@ -53,9 +54,23 @@
                                 <i data-lucide="shield-check" class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0">
-                                <h2 id="authentication-posture-heading"
-                                    class="text-base font-semibold text-content-primary">Authentication Assurance Posture</h2>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Current KAORI policy and session enforcement at a glance.</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 id="authentication-posture-heading"
+                                        class="text-base font-semibold text-content-primary">Authentication Assurance Posture</h2>
+                                    {{ info_tip.render(
+                                        'authentication-assurance-posture-guide',
+                                        'Authentication assurance posture',
+                                        'Summarizes committed KAORI policy and session-enforcement boundaries.',
+                                        [
+                                            'MFA — committed policy governs the second-factor challenge after primary sign-in.',
+                                            'Bot Protection — Turnstile verification is enforced only when the policy is enabled.',
+                                            'Session Security — generation-based admission revokes previously issued login sessions.',
+                                            'Configured adapters do not establish external provider availability or individual enrollment.'
+                                        ],
+                                        placement='right',
+                                        variant='guide'
+                                    ) }}
+                                </div>
                             </div>
                         </div>
                         {{ table_label.status_indicator_label('Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled', 'info' if mfa_active or bot_active else 'unknown') }}
@@ -113,12 +128,9 @@
                     </footer>
                 </section>
                 <section class="space-y-3" aria-labelledby="authentication-control-summary-heading">
-                    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
-                        <div>
-                            <h2 id="authentication-control-summary-heading"
-                                class="text-base font-semibold text-content-primary">Security Control Summaries</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Review enforcement boundaries and open the appropriate policy workspace.</p>
-                        </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 id="authentication-control-summary-heading"
+                            class="text-base font-semibold text-content-primary">Security Control Summaries</h2>
                     </div>
                     <div class="grid gap-4 xl:grid-cols-3">
                         <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -220,32 +232,77 @@
                               aria-hidden="true">
                             <i data-lucide="route" class="h-4 w-4"></i>
                         </span>
-                        <div>
-                            <h2 id="authentication-boundaries-heading"
-                                class="text-sm font-semibold text-content-primary">Operational Boundaries</h2>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Understand what this workspace governs and where related actions belong.</p>
-                        </div>
+                        <h2 id="authentication-boundaries-heading"
+                            class="text-sm font-semibold text-content-primary">Operational Boundaries</h2>
                     </header>
                     <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
-                        <div class="space-y-3 bg-surface-card p-5 lg:p-6">
+                        <article class="flex min-w-0 flex-col bg-surface-card p-5 lg:p-6">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                </span>
                                 <h3 class="text-sm font-semibold text-content-primary">Governed Here</h3>
                             </div>
-                            <p class="text-sm leading-6 text-content-secondary">MFA assurance policy, Turnstile activation and session security posture are administered or reviewed under Access.</p>
-                            <p class="text-xs leading-5 text-content-muted">Challenges follow committed policy. KAORI records security activity without storing authentication tokens in audit evidence.</p>
-                        </div>
-                        <div class="space-y-3 bg-surface-card p-5 lg:p-6">
+                            <ul class="mt-4 flex flex-1 flex-col gap-3" aria-label="Controls governed in Access">
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="check-circle-2" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">MFA assurance</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Second-factor policy and challenge requirements.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="check-circle-2" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Bot Protection</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Turnstile provider setup and sign-in enforcement.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="check-circle-2" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Session Security</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Login generation and revocation assurance.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </article>
+                        <article class="flex min-w-0 flex-col bg-surface-card p-5 lg:p-6">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="network" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="network" class="h-4 w-4"></i>
+                                </span>
                                 <h3 class="text-sm font-semibold text-content-primary">Managed Elsewhere</h3>
                             </div>
-                            <p class="text-sm leading-6 text-content-secondary">Users enroll authenticators in Settings. Primary login sources are registered under Identity Providers.</p>
-                            <p class="text-xs leading-5 text-content-muted">Idle/absolute session timeouts and remote session inventory remain separate qualification workstreams.</p>
-                        </div>
+                            <ul class="mt-4 flex flex-1 flex-col gap-3" aria-label="Related capability ownership">
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="arrow-up-right" class="mt-1 h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Account &amp; Authentication</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Users enroll authenticators and manage recovery codes in Settings.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="arrow-up-right" class="mt-1 h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Identity Providers</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Primary Local, LDAP, and browser SSO source registration.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <i data-lucide="arrow-up-right" class="mt-1 h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Separate security workstreams</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">Idle/absolute timeouts and remote session inventory.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </article>
                     </div>
                 </section>
-            {% elif active_tab == 'mfa' %}
+                        {% elif active_tab == 'mfa' %}
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-base font-semibold text-content-primary">Multi-Factor Authentication</h2>
