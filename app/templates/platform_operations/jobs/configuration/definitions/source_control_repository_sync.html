@@ -11,6 +11,8 @@
     ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', 'Canonical JobExecution evidence')
 ] %}
 {% set overview_notice = "GitHub is planned until provider admission. Synchronization requires an explicitly validated installation. Incomplete scans preserve committed evidence and do not imply deletion. Scheduling is disabled by default." %}
+{% set overview_notice_short = "Validated GitHub App required; incomplete scans preserve evidence, and scheduling remains off by default." %}
+{% set execution_safety_short = "Admitted GitHub App grants required; incomplete scans retain history and scheduling remains off by default." %}
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
