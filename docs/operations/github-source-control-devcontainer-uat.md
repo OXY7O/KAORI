@@ -1258,3 +1258,43 @@ python scripts/verify_sidebar_navigation_standard.py
 UAT only. UI/browser and executable quality evidence plus Human Acceptance remain
 pending; official Developer Check, Full Admission, `kaori/staging`, `main` and
 release remain HOLD.
+
+
+## 2026-10-26 — #3266 Connection Edit & concise permissions Human UAT
+
+Operator's screenshots show long permission descriptions wrapping in the GitHub
+modal; the reviewed GitHub Configure Connection CTA incorrectly opened GitHub.
+This correction reuses the **Kubernetes Edit Connection** pattern and shared
+`_provider_edit_hero.html`, returning to KAORI's own installation-scoped edit
+page. Minimal modal descriptions and warning copy fit desktop single-line space,
+while narrow layouts may wrap naturally without horizontal overflow.
+
+**Edit authority and security:** The registered connection's canonical name,
+environment, description and enabled status can be saved through a Flask-WTF
+CSRF-protected POST, still requiring the existing `integrations.manage` and
+local-super-admin UAT gate. GitHub App ID, Installation ID and account identity
+are provider-owned, read-only binding identifiers. Shared encrypted App PEM and
+webhook secret are neither displayed nor modified by this bounded edit; rekeying
+a shared App affects multiple installations and needs separate rotation design
+and UAT authority. Save emits a sanitized operational activity event.
+
+**Readiness:** Name/description-only edits retain existing validated readiness.
+Changing environment or enabled status clears stale Full Validation evidence
+and returns readiness to `validation_required`; historical committed repository
+and revision evidence is preserved. The operator must explicitly run Full
+Validation again, then independently authorize repository synchronization.
+
+**UAT sequence:** GitHub Registry → Manage → Configuration → Configure Connection
+must open KAORI's Edit GitHub Connection screen. Verify prefilled canonical
+name/environment/description/enable flag and read-only App/Installation/Account
+IDs. Save a description-only change and confirm redirect, audit, and unchanged
+readiness. Try a duplicate name and invalid environment; ensure no changes
+commit. Change enabled/environment on an authorized disposable installation
+and confirm Validation Required with no automatic provider mutation. Verify
+CSRF and unauthorized direct GET/POST fail closed. Run local Ruff, djLint,
+focused pytest, navigation verifiers and relevant Playwright light/dark/mobile
+tests, record exact-SHA evidence, and await explicit Human Acceptance.
+
+Earlier source guidance in this guide describing the external GitHub
+installed-apps link is **superseded** by this new internal KAORI Edit route.
+Official Developer Check, Full Admission, staging/main, release remain HOLD.

@@ -16,6 +16,13 @@ from sqlalchemy import or_
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.integrations.source_control.repository_inventory import read_installation_inventory
+from app.integrations.source_control.source_control.providers.github.application.forms import (
+    GitHubAppConnectionEditForm,
+)
+from app.integrations.source_control.source_control.providers.github.registration import (
+    update_github_connection_configuration,
+)
+from app.platform_operations.notifications.service import record_operational_activity
 from app.integrations.source_control.source_control.providers.github.job_admission import (
     enqueue_github_app_job,
 )
@@ -100,6 +107,58 @@ def detail(installation_id: int) -> ResponseReturnValue:
             .order_by(SourceWebhookDelivery.received_at.desc()).limit(5).all()
         ), action_form=FlaskForm(),
         feedback=request.args.get('feedback', ''),
+    )
+
+
+@github_uat_bp.route('/installations/<int:installation_id>/edit', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def edit_connection(installation_id: int) -> ResponseReturnValue:
+    """Guarded KAORI connection edit; GitHub-owned identities and secrets are immutable."""
+    installation = _installation_or_404(installation_id)
+    canonical = installation.integration_instance
+    if canonical is None:
+        abort(409)
+    form = GitHubAppConnectionEditForm(obj=canonical) if request.method == 'GET' else GitHubAppConnectionEditForm()
+    message = None
+
+    if form.validate_on_submit():
+        try:
+            invalidated = update_github_connection_configuration(
+                installation,
+                name=str(form.name.data or ''),
+                environment=str(form.environment.data or ''),
+                description=form.description.data,
+                enabled=bool(form.enabled.data),
+            )
+        except ValueError as exc:
+            message = str(exc)
+        else:
+            record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='source_control_connection_updated',
+                status='success',
+                title='GitHub Connection Updated',
+                message='Canonical GitHub connection configuration was updated.',
+                detail=(
+                    'Environment or enabled state changed; run Full Validation before operational use.'
+                    if invalidated
+                    else 'Descriptive settings saved; existing validation evidence retained.'
+                ),
+                action_url=url_for('github_source_uat.detail', installation_id=installation.id),
+                metadata={
+                    'installation_id': installation.id,
+                    'integration_instance_id': canonical.id,
+                    'readiness_invalidated': invalidated,
+                },
+                queue_feedback=True,
+            )
+            return redirect(url_for(
+                'github_source_uat.detail', installation_id=installation.id,
+                feedback='configuration_updated' if not invalidated else 'configuration_revalidation_required',
+            ))
+    return _response(
+        'integrations/source_control/github/edit.html',
+        installation=installation, canonical=canonical, form=form, message=message,
     )
 
 

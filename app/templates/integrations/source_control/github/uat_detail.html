@@ -15,7 +15,9 @@
         "validation_queued": "Full Validation requested through canonical JobExecution.",
         "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
         "sync_queued": "Repository reconciliation requested through canonical JobExecution.",
-        "sync_blocked": "Repository sync blocked. Verify Full Validation, worker readiness and installation access."
+        "sync_blocked": "Repository sync blocked. Verify Full Validation, worker readiness and installation access.",
+        "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
+        "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
     } %}
     {% set initial_tab = 'validation' if feedback in ['validation_queued', 'validation_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration') %}
     <div class="kaori-integration-semantic space-y-6"
@@ -174,14 +176,11 @@
                                     {{ ui.palette_icon('info', 'info', size='xs') }}
                                     <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
                                 </div>
-                                <a href="https://github.com/settings/installations"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
+                                <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
                                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                                   title="Configure installation grants on GitHub. Organization installations are managed in organization settings.">
+                                   title="Edit this GitHub connection in KAORI.">
                                     <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                                     Configure Connection
-                                    <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                 </a>
                             </footer>
                         </section>
@@ -246,7 +245,8 @@
                             {% for delivery in deliveries %}
                                 <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">{{ delivery.event_type|replace('_', ' ') |title }}
+                                        <p class="text-sm font-semibold text-content-primary">
+                                            {{ delivery.event_type|replace('_', ' ') |title }}
                                             {% if delivery.action %} · {{ delivery.action }}{% endif %}
                                         </p>
                                         <p class="mt-1 text-xs text-content-muted">{{ delivery.received_at }} · Attempt {{ delivery.attempt_count }} · Job #{{ delivery.dispatched_job_execution_id or "Not linked" }}</p>

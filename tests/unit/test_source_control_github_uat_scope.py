@@ -240,18 +240,15 @@ def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -
     root = Path(__file__).resolve().parents[2]
     detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
     github = (
-        root
-        / 'app/templates/integrations/source_control/github/partials/_minimum_validation_permissions.html'
+        root / 'app/templates/integrations/source_control/github/partials/_minimum_validation_permissions.html'
     ).read_text()
     kubernetes = (
         root
         / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
     ).read_text()
-    readiness = (
-        root / 'app/integrations/source_control/source_control/providers/github/readiness.py'
-    ).read_text()
+    readiness = (root / 'app/integrations/source_control/source_control/providers/github/readiness.py').read_text()
 
-    assert "partials/_minimum_validation_permissions.html" in detail
+    assert 'partials/_minimum_validation_permissions.html' in detail
     assert 'data-kaori-github-minimum-validation-permissions' in github
     assert 'data-kaori-github-permission-modal' in github
     assert 'components/workspace_tabs.html' in github
@@ -275,9 +272,116 @@ def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -
     assert '"secrets": "read"' not in github
     assert 'form.private_key_pem' not in github
     assert 'form.webhook_secret' not in github
-    assert 'https://github.com/settings/installations' in detail
-    assert 'rel="noopener noreferrer"' in detail
+    assert "url_for('github_source_uat.edit_connection', installation_id=installation.id)" in detail
+    assert 'https://github.com/settings/installations' not in detail
     assert 'Configure Connection' in detail
     assert "url_for('github_source.new_connection')" not in detail
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
     assert 'GitHub permission changes require fresh Full Validation' in detail
+
+
+def test_github_connection_edit_follows_existing_guarded_provider_pattern() -> None:
+    root = Path(__file__).resolve().parents[2]
+    routes = (
+        root / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+    ).read_text()
+    edit = (root / 'app/templates/integrations/source_control/github/edit.html').read_text()
+    registration = (
+        root / 'app/integrations/source_control/source_control/providers/github/registration.py'
+    ).read_text()
+    forms = (
+        root / 'app/integrations/source_control/source_control/providers/github/application/forms.py'
+    ).read_text()
+
+    assert "@github_uat_bp.route('/installations/<int:installation_id>/edit', methods=['GET', 'POST'])" in routes
+    assert "@permission_required('integrations.manage')\ndef edit_connection(" in routes
+    assert "installation = _installation_or_404(installation_id)" in routes
+    assert 'form.validate_on_submit()' in routes
+    assert 'update_github_connection_configuration(' in routes
+    assert "event_type='source_control_connection_updated'" in routes
+    assert 'provider_edit_hero.render(' in edit
+    assert 'form.hidden_tag()' in edit
+    assert 'GitHubAppConnectionEditForm' in forms
+    assert 'form.private_key_pem' not in edit
+    assert 'form.webhook_secret' not in edit
+    assert 'installation.native_app_id' in edit
+    assert 'installation.native_installation_id' in edit
+    assert 'installation.account.native_account_id' in edit
+    assert "canonical.readiness_status = 'validation_required'" in registration
+    assert "metadata.pop('github_validation', None)" in registration
+    assert 'installation.github_app_credential' not in edit
+
+
+def test_github_edit_metadata_and_provider_identity_do_not_leak_or_mutate(monkeypatch) -> None:
+    from app.integrations.source_control.source_control.providers.github import registration
+
+    canonical = SimpleNamespace(
+        id=21, integration_type='source_control', provider_key='github',
+        adapter_key='github_rest_v3', name='Old Name', environment='development',
+        description='Old', enabled=True, readiness_status='ready', health_status='healthy',
+        last_checked_at='yesterday', last_error=None,
+        metadata_json={'github_validation': {'capability_states': {'source_revision': 'permission_verified'}},
+                       'provider_label': 'GitHub'},
+    )
+    installation = SimpleNamespace(
+        id=7, provider_key='github', host_key='github.com', integration_instance_id=21,
+        integration_instance=canonical, native_app_id='123', native_installation_id='456',
+    )
+    commits = []
+    query = SimpleNamespace(filter_by=lambda **_: SimpleNamespace(first=lambda: canonical))
+    monkeypatch.setattr(registration, 'IntegrationInstance', SimpleNamespace(query=query))
+    monkeypatch.setattr(
+        registration, 'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'), rollback=lambda: None)),
+    )
+
+    invalidated = registration.update_github_connection_configuration(
+        installation, name='Renamed', environment='development', description='Updated', enabled=True,
+    )
+    assert not invalidated
+    assert canonical.readiness_status == 'ready'
+    assert canonical.metadata_json['github_validation']
+    assert (installation.native_app_id, installation.native_installation_id) == ('123', '456')
+
+    invalidated = registration.update_github_connection_configuration(
+        installation, name='Renamed', environment='production', description='Updated', enabled=False,
+    )
+    assert invalidated
+    assert canonical.readiness_status == 'validation_required'
+    assert canonical.health_status is None
+    assert canonical.last_checked_at is None
+    assert 'github_validation' not in canonical.metadata_json
+    assert canonical.metadata_json['provider_label'] == 'GitHub'
+    assert (installation.native_app_id, installation.native_installation_id) == ('123', '456')
+    assert len(commits) == 2
+
+
+def test_github_edit_rejects_duplicate_name_and_invalid_environment(monkeypatch) -> None:
+    from app.integrations.source_control.source_control.providers.github import registration
+
+    canonical = SimpleNamespace(
+        id=21, integration_type='source_control', provider_key='github',
+        adapter_key='github_rest_v3', name='Original', environment='development',
+        description=None, enabled=True,
+    )
+    installation = SimpleNamespace(
+        provider_key='github', host_key='github.com', integration_instance_id=21,
+        integration_instance=canonical,
+    )
+    commits = []
+    query = SimpleNamespace(filter_by=lambda **_: SimpleNamespace(first=lambda: SimpleNamespace(id=33)))
+    monkeypatch.setattr(registration, 'IntegrationInstance', SimpleNamespace(query=query))
+    monkeypatch.setattr(
+        registration, 'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'), rollback=lambda: None)),
+    )
+    with pytest.raises(ValueError, match='already exists'):
+        registration.update_github_connection_configuration(
+            installation, name='Duplicate', environment='development', description=None, enabled=True,
+        )
+    with pytest.raises(ValueError, match='Environment'):
+        registration.update_github_connection_configuration(
+            installation, name='Valid Name', environment='invalid', description=None, enabled=True,
+        )
+    assert canonical.name == 'Original'
+    assert commits == []
