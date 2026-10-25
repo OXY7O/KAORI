@@ -50,7 +50,6 @@ def test_github_provider_action_uses_shared_provider_selector():
     assert 'workspace_endpoint: integrations.source_control' in taxonomy
 
 
-
 def test_provider_chooser_resolves_domain_from_matrix() -> None:
     from app.integrations.navigation import provider_selector_domain
 
@@ -79,9 +78,11 @@ def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None
     assert 'active_capability_override=' in presentation
     assert 'integration_selector_label=' in presentation
     assert "resolved_endpoint == 'integrations.choose_integration_provider'" in sidebar_model
-    assert "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}" in breadcrumb
+    assert (
+        "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}"
+        in breadcrumb
+    )
     assert "BreadcrumbItem('Choose Provider')" in breadcrumb
-
 
 
 def test_metrics_provider_chooser_stays_with_observability_navigation() -> None:

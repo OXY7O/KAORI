@@ -218,7 +218,7 @@ def test_metrics_provider_selector_inherits_approved_shared_chooser() -> None:
     assert "'secondary_label': 'Query Language'" in routes
     assert "'protocol': provider.query_language.upper()" in routes
     assert "'lifecycle': admitted_kinds[provider.key].lifecycle" in routes
-    assert "if admitted_kinds[provider.key].available" in routes
+    assert 'if admitted_kinds[provider.key].available' in routes
     assert "domain=get_domain_definition('observability')" in routes
     assert "integration_type='metrics_source'" in routes
     assert "guide_title='Metrics Provider Selection'" in routes
@@ -317,7 +317,7 @@ def test_provider_cards_preserve_section_guide_without_field_question_icons() ->
     assert 'info_tip.render("adapter-" ~ integration_type' not in selector
     assert 'info_tip.render("protocol-" ~ integration_type' not in selector
     assert '<dt class="text-xs font-semibold text-content-muted">Adapter</dt>' in selector
-    assert '<dt class="text-xs font-semibold text-content-muted">Protocol</dt>' in selector
+    assert 'provider.secondary_label|default("Protocol")' in selector
     assert 'integration_ui.palette_icon("layers-3", "brand", size="lg")' in selector
 
     # Compact text fits desktop grid without forcing clipping on phones.
