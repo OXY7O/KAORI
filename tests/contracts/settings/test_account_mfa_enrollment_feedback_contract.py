@@ -35,7 +35,7 @@ def test_unknown_failure_cannot_leak_sensitive_exception_details() -> None:
 def test_existing_route_distinguishes_expired_form_and_service_errors() -> None:
     routes = (Path(__file__).resolve().parents[3] / 'app/settings/routes.py').read_text(encoding='utf-8')
     assert "validate_csrf(request.form.get('csrf_token'))" in routes
-    assert "if not login_fresh():" in routes
+    assert 'if not login_fresh():' in routes
     assert "if action in {'begin', 'regenerate'} and user.auth_source == 'database':" in routes
     assert 'mfa_setup_secret = begin_mfa_enrollment(user)' in routes
     assert 'except ValidationError:' in routes

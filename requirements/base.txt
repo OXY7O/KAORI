@@ -58,6 +58,7 @@ pydyf==0.12.1
 pyphen==0.17.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
+qrcode==8.2
 PyYAML==6.0.3
 redis==6.4.0
 requests-oauthlib==2.0.0

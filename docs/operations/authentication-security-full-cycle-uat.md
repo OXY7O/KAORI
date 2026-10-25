@@ -334,3 +334,17 @@ At the reviewed Dev Container SHA check the three marked corrections: (1) MFA he
 Verify the confirmation input uses `tracking-widest` (Settings Final Lock approved) and still submits a single six-digit `verification_code` with keyboard/autocomplete and native validation. Check desktop/mobile, light/dark, screen reader label, Guide and all three existing MFA action POST forms, then run `djlint --check app/templates/settings/account/partials/_mfa.html`, `python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_settings_final_lock_contract.py`, and `python scripts/verify_settings_final_lock.py` at the exact reviewed SHA.
 
 Do **not** mark Generate Setup Key functional UAT passed merely because the layout and contract render: backend safe feedback is tracked separately in #3251, with real local-user sign-in/password and DB evidence still required. Never screenshot generated setup keys or recovery codes.
+
+
+## MFA personal enrollment QR and native toast checkpoint (#3261)
+
+Before browser UAT, install pinned Python requirements (e.g. `python -m pip install -r requirements/base.txt` inside the Dev Container) and confirm exact holding SHA. No database migration is added.
+
+1. On a fresh signed-in local UAT identity, open Settings → Account & Authentication → MFA. Enter current password and Generate Setup Key. The resulting state should be **Setup Pending**, not Enrolled. Verify a **top-right success Operational Toast** with committed Activity Audit indicator and **no generic inline info strip**. Activity Audit should have exactly the existing `mfa_enrollment_started` event, not a duplicate.
+2. The one-time response must display both **Scan QR Code** and **Manual Setup Key**. Confirm the QR is an inline PNG data image that works with a TOTP-compatible authenticator and matches the manual key. Scan directly in-browser; **do not screenshot or paste the QR or manual secret into tickets/logs/test artifacts**. DevTools response should include `Cache-Control: no-store`, `Pragma: no-cache` and `Referrer-Policy: no-referrer`. No network request to an external QR site and no provisioning URI in browser URL.
+3. Reload GET: setup image and manual secret must **not** reappear; pending state alone may remain. Regenerate if a key or QR has been exposed. Setup expires per the existing MFA service TTL.
+4. Enter the authenticator's valid six-digit code, select Verify & Enable MFA. Confirm MFA is enabled only after verification, the success toast appears, and newly issued recovery codes are shown exactly once (never screenshot them).
+5. For invalid password, expired CSRF/stale login, wrong OTP and DB error: show a safe error toast with no QR, no leaked secret, no fake successful audit or Notification Deck item. For recovered users, regenerate codes and check one-time semantics.
+6. Test normal full-page POST and HTMX response when used, mobile/light/dark and accessibility. Run scoped Ruff/djlint/pytest, Settings Final Lock and sidebar standard at exact SHA. A source check alone is not human functional acceptance.
+
+Keep official Developer Check, Full Admission, staging/main and release HOLD until operator acceptance.

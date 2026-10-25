@@ -56,3 +56,25 @@
         {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}
+
+{% if mfa_toast %}
+    {% with
+        status=mfa_toast.status,
+        title=mfa_toast.title,
+        message=mfa_toast.message,
+        detail=mfa_toast.detail,
+        view_url=mfa_toast.view_url,
+        action_label=mfa_toast.action_label,
+        action_icon=mfa_toast.action_icon,
+        completed_label=mfa_toast.completed_label,
+        activity_audit_saved=mfa_toast.activity_audit_saved,
+        activity_audit_expected=mfa_toast.activity_audit_expected|default(mfa_toast.activity_audit_saved),
+        notification_deck_visible=mfa_toast.notification_deck_visible|default(false),
+        feedback_id=mfa_toast.feedback_id|default(None),
+        auto_dismiss_ms=mfa_toast.auto_dismiss_ms|default(None),
+        delivery=mfa_toast.delivery|default('toast'),
+        toast_oob=true
+        %}
+        {% include "components/operational_toast.html" %}
+    {% endwith %}
+{% endif %}

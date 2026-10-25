@@ -30,6 +30,17 @@ class TotpEnrollment:
     provisioning_uri: str = field(repr=False)
 
 
+def totp_provisioning_uri(secret: str, *, account_label: str, issuer: str = 'KAORI') -> str:
+    """Canonical RFC 6238 URI for an already-generated secret, never a remote QR request."""
+    if not account_label or len(account_label) > 255 or not issuer or len(issuer) > 100:
+        raise ValueError('Invalid TOTP enrollment identity.')
+    label = quote(f'{issuer}:{account_label}', safe='')
+    return (
+        f'otpauth://totp/{label}?secret={secret}&issuer={quote(issuer, safe="")}'
+        f'&algorithm=SHA1&digits={TOTP_DIGITS}&period=30'
+    )
+
+
 def start_totp_enrollment(*, account_label: str, issuer: str = 'KAORI') -> TotpEnrollment:
     """Generate setup material with the same verifier as the active service."""
     if not account_label or len(account_label) > 255 or not issuer or len(issuer) > 100:
@@ -38,12 +49,10 @@ def start_totp_enrollment(*, account_label: str, issuer: str = 'KAORI') -> TotpE
     encrypted = encrypt_credential(secret)
     if not encrypted:
         raise RuntimeError('TOTP factor encryption is unavailable.')
-    label = quote(f'{issuer}:{account_label}', safe='')
-    uri = (
-        f'otpauth://totp/{label}?secret={secret}&issuer={quote(issuer, safe="")}'
-        f'&algorithm=SHA1&digits={TOTP_DIGITS}&period=30'
+    return TotpEnrollment(
+        encrypted_secret=encrypted,
+        provisioning_uri=totp_provisioning_uri(secret, account_label=account_label, issuer=issuer),
     )
-    return TotpEnrollment(encrypted_secret=encrypted, provisioning_uri=uri)
 
 
 def verify_totp(encrypted_secret: str, value: str, *, at_time: int | None = None) -> bool:
