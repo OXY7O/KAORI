@@ -326,7 +326,9 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     shared_header = read('app/templates/integrations/components/_workspace.html')
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
     assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in shared_header
-    assert 'palette_icon(' not in shared_header.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert (
+        'palette_icon(' not in shared_header.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
+    )
     assert 'title_extra=None' in shared_header
     assert '{% if title_extra %}{{ title_extra }}{% endif %}' in shared_header
     assert 'title_extra=workspace_guide' in tabs
