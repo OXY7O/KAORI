@@ -337,7 +337,12 @@ def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() 
     assert "current_user.has_permission('jobs.view')" in jobs
     assert 'x-text="visibleJobCount"' in jobs
     assert 'jobs-configuration-catalog-guide' in jobs
-    assert 'overflow-x-auto whitespace-nowrap' in jobs
-    assert 'aria-label="Job configuration execution boundary and navigation"' in jobs
-    assert 'ml-auto inline-flex shrink-0' in jobs
-    assert 'border-l border-outline-subtle pl-2' in jobs
+    footer = jobs.split('<footer ', 1)[1].split('</footer>', 1)[0]
+    assert 'flex shrink-0 items-center justify-between gap-2' in footer
+    assert 'overflow-x-auto' not in footer
+    assert 'tabindex="0"' not in footer
+    assert '<span class="sr-only">Jobs shown:</span>' in footer
+    assert 'aria-label="Open Jobs & Executions"' in footer
+    assert 'Executions' in footer
+    assert 'Open Jobs &amp; Executions' not in footer
+    assert 'Execution Boundary' in footer  # Canonical Guide still owns the full boundary.

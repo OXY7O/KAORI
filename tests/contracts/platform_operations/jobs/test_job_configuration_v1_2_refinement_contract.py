@@ -39,7 +39,7 @@ def test_job_configuration_copy_is_compact_and_planned_catalog_is_removed() -> N
     assert 'Serve the last successful result during refresh or source failure.' not in materialization
 
 
-def test_policy_timeline_and_delivery_channel_cards_use_clear_surfaces() -> None:
+def test_policy_timeline_and_delivery_channels_use_approved_compact_rows() -> None:
     for relative in (
         'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
         'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
@@ -49,5 +49,9 @@ def test_policy_timeline_and_delivery_channel_cards_use_clear_surfaces() -> None
         assert 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in source
 
     report = _read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
-    assert 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' in report
-    assert 'article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"' not in report
+    assert 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in report
+    assert 'max-h-64 divide-y divide-outline-subtle overflow-y-auto' in report
+    assert 'flex min-w-0 items-center justify-between gap-3 px-4 py-2.5' in report
+    assert "table_label.status_label(channel.status, channel.tone, none, 'detail')" in report
+    assert 'No delivery channels configured.' in report
+    assert 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report

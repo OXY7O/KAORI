@@ -491,8 +491,14 @@ def main() -> int:
         ):
             errors.append(f'Job Configuration clear Policy Timeline surface missing: {relative}')
     report_schedule = read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
-    if 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report_schedule:
-        errors.append('Report delivery-channel cards must use the clear KAORI card surface')
+    if (
+        'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in report_schedule
+        or 'max-h-64 divide-y divide-outline-subtle overflow-y-auto' not in report_schedule
+        or 'flex min-w-0 items-center justify-between gap-3 px-4 py-2.5' not in report_schedule
+        or 'No delivery channels configured.' not in report_schedule
+        or "table_label.status_label(channel.status, channel.tone, none, 'detail')" not in report_schedule
+    ):
+        errors.append('Report delivery channels must use approved bounded status rows')
 
     namespace_table = read(
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
