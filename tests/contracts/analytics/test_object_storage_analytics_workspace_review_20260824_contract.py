@@ -211,8 +211,8 @@ def test_object_storage_overview_capacity_trend_is_chart_centered() -> None:
     )
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
     assert "analysis_surface.role_icon_classes('status' if loop.last else 'brand'" in trend
-    assert "for label, value, helper, icon in compact_metrics" in trend
-    assert 'analysis_surface.metric_grid_classes(4)' in trend  # Forecast keeps original summary.
+    assert 'for label, value, helper, icon in compact_metrics' in trend
+    assert 'analysis_surface.metric_grid_classes(4)' not in trend  # Both Overview trends reuse three shared signal cells.
     assert 'h-[260px] sm:h-[280px]' in trend
     assert "else 'h-[340px]'" in trend
     assert 'data-object-storage-trend-interpretation' in trend
@@ -283,7 +283,9 @@ def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -
         'alert_origin.resolved_label',
     ):
         assert source_field in evidence
-    assert 'Open Evidence Details' in workspace
+    assert 'Additional Evidence Context' in workspace
+    assert workspace.index('partials/_metrics_readiness.html') < workspace.index('partials/_evidence_boundary.html')
+    assert workspace.index('partials/_evidence_boundary.html') < workspace.index('partials/_overview_evidence_snapshot.html')
     assert "snapshot.label|default('Unavailable')" in evidence
     assert 'Request and error metrics never fall back to Inventory.' in evidence
     assert 'Unobserved evidence remains Unknown.' in evidence
@@ -316,3 +318,57 @@ def test_object_storage_analytics_overview_headings_and_trend_description_align(
     assert 'bg-surface-card p-4 sm:p-5' in trend
     assert 'sm:grid-cols-3' in trend
     assert 'compact_forecast_overview' in trend
+
+def test_object_storage_overview_consumer_reading_is_compact_and_unknown_safe() -> None:
+    consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
+
+    assert "'Top bucket holds '" in consumers
+    assert "' of known usage.'" in consumers
+    assert "'No bucket usage evidence available.'" in consumers
+    assert 'concentration_reading' in consumers
+    assert 'whitespace-nowrap' not in consumers
+    assert "url_for('analytics.object_storage_top_consumers'" in consumers
+
+
+def test_object_storage_forecast_uses_capacity_v2_summary_and_distinct_history() -> None:
+    forecast = read('app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+
+    assert 'data-object-storage-forecast-compact' in forecast
+    assert 'data-object-storage-forecast-facts' in forecast
+    assert 'data-object-storage-forecast-baseline' in forecast
+    assert 'grid gap-x-8 gap-y-5 sm:grid-cols-3' in forecast
+    assert 'metric_grid_classes(4)' not in forecast
+    for field in (
+        'metrics.forecast_display.projected_7d',
+        'metrics.forecast_display.projected_30d',
+        'metrics.forecast_display.days_to_capacity',
+        'metrics.forecast_display.growth_per_day',
+        'forecast_materialization.label',
+        'forecast_materialization.tone',
+        'metrics.forecast_posture.detail',
+    ):
+        assert field in forecast
+    assert "object_storage_trend_mode = 'forecast'" in forecast
+    assert "url_for('analytics.object_storage_forecast'" in forecast
+    assert 'Historical Growth / Day' in trend
+    assert 'trend_summary.growth_per_day_display' in trend
+    assert 'data-object-storage-projection-points' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'compact_overview_trend' in trend
+    assert 'sm:grid-cols-3' in trend
+    assert 'partials/_overview_forecast_snapshot.html' in workspace
+
+
+def test_object_storage_evidence_shows_full_contract_as_primary_content() -> None:
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+
+    primary_contract = workspace.index('partials/_metrics_readiness.html')
+    primary_boundary = workspace.index('partials/_evidence_boundary.html')
+    optional_preview = workspace.index('partials/_overview_evidence_snapshot.html')
+    assert primary_contract < primary_boundary < optional_preview
+    assert '<details' in workspace and '<summary' in workspace
+    assert 'data-object-storage-evidence-details' in workspace
+    assert 'Additional Evidence Context' in workspace
+    assert 'partials/_reconciliation.html' in workspace
