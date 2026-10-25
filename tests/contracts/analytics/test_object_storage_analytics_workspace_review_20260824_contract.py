@@ -175,3 +175,37 @@ def test_provider_alert_records_clear_filters_precedes_persistent_source_context
     assert "alert_table.severity != 'all'" in source
     assert "alert_table.state != 'all'" in source
     assert 'hx-target="#object-storage-alert-records"' in source
+
+def test_object_storage_overview_capacity_trend_is_summary_first() -> None:
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    overview = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+    script = read('app/static/js/storage/object_storage/analytics.js')
+
+    assert "page_key == 'overview' and trend_mode == 'usage'" in trend
+    assert 'data-object-storage-overview-trend-summary' in trend
+    assert 'analysis_surface.metric_grid_classes(4)' in trend
+    assert 'analysis_surface.metric_cell_classes()' in trend
+    for label, source in (
+        ('Current Usage', 'metrics.usage_total_display'),
+        ('Window Change', 'trend_summary.delta_display'),
+        ('Growth / Day', 'trend_summary.growth_per_day_display'),
+        ('Direction', 'trend_summary.direction_label'),
+    ):
+        assert label in trend
+        assert source in trend
+
+    panel = trend.split('{% if trend %}', 1)[1]
+    assert panel.index('data-object-storage-overview-trend-summary') < panel.index(
+        'data-object-storage-chart-container'
+    )
+    assert "h-[260px] sm:h-[280px]" in trend
+    assert "else 'h-[340px]'" in trend
+    assert "{% elif trend_mode != 'performance' %}" in trend
+    assert 'data-object-storage-trend-interpretation' in trend
+    assert 'Inventory is point-in-time, not a growth forecast.' in trend
+    assert "partials/_trend.html" in overview
+    assert 'data-object-storage-trend-points' in trend
+    assert 'data-object-storage-secondary-trend-points' in trend
+    assert 'data-object-storage-projection-points' in trend
+    assert 'data-object-storage-chart\\n                        role="img"' in trend
+    assert 'beginAtZero: true' in script
