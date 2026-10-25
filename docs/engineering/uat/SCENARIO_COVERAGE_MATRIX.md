@@ -14,19 +14,21 @@
 
 **Operations Center UAT addendum (2026-10-25; #3115):** Operator accepted the bounded Jobs Configuration, Data Lifecycle and Operations Overview visual/function paths after incremental screenshot feedback. Previous operator tests included 29 focused Jobs/Lifecycle pytest PASS with Platform Operations Final Lock v2.2 93 templates PASS on an earlier candidate; the final Overview refinement received 9 focused pytest PASS, djLint PASS and Ruff check/format PASS. This is **human UI acceptance**, not 13 newly attributed machine Scenario-ID PASS results. No exact-ID browser trace/role-fault synthetic run was supplied. Guarded recovery/provider mutations, negative cross-permission tests, intentional disabled features and full responsive matrix remain **NOT RUN / BLOCKED as applicable**. Official Developer Check, Full Admission, staging/main promotion HOLD.
 
+**Kubernetes TLS Rotation human UAT (2026-10-25; #3107/#3116):** The operator accepted the bounded single-rotation negative/positive workflow and revised Bulk TLS confirmation UI. Evidence includes single Secret fingerprint provider read-back, both certificate mismatch and SAN negatives, two-target bulk validation, updated modal screenshot, `djlint --check` PASS and **8 presentation contract pytest PASS** on holding SHA `4f5f098214d40296037ad6e941f65626c8ad0df4`. New `UAT-KOP-006`–`009` author precise reusable requirements. **Bulk apply/provider read-back, no-PATCH keyboard dismissal, file/target invalidation, full viewport/theme matrix and security fault injection are NOT RUN by Scenario ID.** No machine scenario PASS is inferred; full admission HOLD.
+
 ## Coverage accounting
 
 | Measure | Grounded assessment |
 | --- | --- |
-| Written case procedures | **129/129** across 20 Gherkin files and case register |
+| Written case procedures | **133/133** across 20 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
-| Scenario IDs with inspected source assertions | **24/129** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
-| Scenario IDs without individual assertion-level review | **105/129**; includes 13 newly authored Operations Center IDs and does not prove equivalent tests are absent |
-| Newly expanded for domain-owner review | **115**; not yet approved by owning capability |
-| IDs referenced by the #1728 pilot execution manifest | **4/129**, source references, NOT RUN |
-| Remaining #1728 pilot execution-manifest mapping | **125/129 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
-| Confirmed full machine UAT PASS | **0/129 attributed to this catalog checkpoint** |
-| Human acceptance | **0/129 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
+| Scenario IDs with inspected source assertions | **24/133** of the original IDs (14 first-wave + 9 supplemental + UIX-006); 7 new IDs have preliminary source pointers but no complete scenario audit |
+| Scenario IDs without individual assertion-level review | **109/133**; includes 13 newly authored Operations Center IDs and does not prove equivalent tests are absent |
+| Newly expanded for domain-owner review | **119**; not yet approved by owning capability |
+| IDs referenced by the #1728 pilot execution manifest | **4/133**, source references, NOT RUN |
+| Remaining #1728 pilot execution-manifest mapping | **129/133 not selected** into four-case pilot; independent of 24 assertion reviews, not proof equivalent tests are absent |
+| Confirmed full machine UAT PASS | **0/133 attributed to this catalog checkpoint** |
+| Human acceptance | **0/133 attributed to this catalog checkpoint; manual #746 acceptance is recorded separately** |
 
 **Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references include seven exact test nodes verified in their **separate** owning source branches; these remain **NOT RUN**, not four passing UAT scenarios. See [pilot manifest-to-test traceability](../KAORI_UAT_TEST_MAPPING_AUDIT.md#exact-pilot-manifest-to-test-traceability--2026-10-16).
 
@@ -88,6 +90,10 @@
 | `UAT-KOP-003` | Medium | UI | [Gherkin](features/kop-kubernetes-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KOP-004` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-KOP-005` | High | Non-UI | [Gherkin](features/kop-kubernetes-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-KOP-006` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | HUMAN SINGLE READ-BACK: screenshot, Kubernetes SHA-256 fingerprint PASS, validation code paths exist; no ID-specific pytest/Playwright result | NOT RUN / PENDING |
+| `UAT-KOP-007` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | HUMAN NEGATIVES: mismatched private key and uncovered SAN blocked; no exact-ID mutation-denial test result | NOT RUN / PENDING |
+| `UAT-KOP-008` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | HUMAN PARTIAL: 2 targets validated and scoped modal shown; BULK APPLY and provider read-back unobserved | NOT RUN / PENDING |
+| `UAT-KOP-009` | Medium | UI | [Gherkin](features/kop-kubernetes-operations.feature) | HUMAN VISUAL ACCEPTED #3116; djlint PASS and 8 presentation pytest PASS at holding SHA 4f5f098; Cancel/Escape/backdrop/focus/invalidation not mapped per ID | NOT RUN / PENDING |
 | `UAT-OST-001` | Medium | Both | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OST-002` | High | Both | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OST-003` | Medium | UI | [Gherkin](features/ost-object-storage.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -168,8 +174,8 @@
 
 ## Closure before gate
 
-1. Obtain domain-owner review of the 115 newly expanded written procedures against current approved KAORI standards and admitted source routes.
-2. Map all 129 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
+1. Obtain domain-owner review of the 119 newly expanded written procedures against current approved KAORI standards and admitted source routes.
+2. Map all 133 Scenario IDs to actually executable pytest/Playwright node IDs and check assertions, roles, fixtures and cleanup; source-only contracts are not browser/provider coverage.
 3. Integrate #1725 standards, #1738 catalog, #1726 Playwright and #1727 non-UI test branches into a controlled exact candidate, including synchronizing the stacked #1728 branch with this updated #1738 tree.
 4. After the explicit CI/CD hold is lifted, run Developer Check and admission as required, then governed UAT with JUnit, screenshot/trace, committed/provider read-back and a separate human decision.
 5. Treat any mandatory SKIP/NOT RUN/FAIL, missing provider authorization, or misleading fake-provider PASS as unresolved. No automatic release readiness is inferred.
