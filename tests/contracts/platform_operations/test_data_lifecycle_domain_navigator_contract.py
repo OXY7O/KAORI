@@ -33,7 +33,7 @@ def test_search_header_and_execution_footer_stay_outside_scroll_region() -> None
     source = read()
     search = source.index('id="data-lifecycle-domain-search"')
     list_start = source.index('x-ref="domainList"')
-    footer = source.index('<footer class="flex flex-wrap items-center')
+    footer = source.index('<footer class="flex shrink-0 items-center')
     assert search < list_start < footer
     assert 'xl:h-full xl:overflow-y-auto xl:overscroll-contain' in source
     assert 'xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col' in source
@@ -78,12 +78,14 @@ def test_execution_boundary_uses_canonical_guide_and_permission_scoped_jobs_link
     assert "info_tip.render('data-lifecycle-execution-boundary'," in source
     guide = source.split("info_tip.render('data-lifecycle-execution-boundary',", 1)[1].split('}}', 1)[0]
     assert "variant='guide'" in guide
-    assert "placement='right'" in guide
+    assert "placement='top'" in guide
     assert 'Lifecycle policy and archive evidence stay in Data Lifecycle.' in source
     assert 'Execution Boundary' in source
     assert "{% if current_user.has_permission('jobs.view') %}" in source
     assert "url_for('jobs.executions')" in source
-    assert 'Open Jobs &amp; Executions' in source
+    assert 'Jobs &amp; Executions' in source
+    assert 'aria-label="Open Jobs & Executions"' in source
+    assert 'title="Execution Boundary"' in source
 
 
 def test_desktop_nav_is_height_matched_to_policy_without_scroll_driving_grid_height() -> None:
@@ -94,7 +96,7 @@ def test_desktop_nav_is_height_matched_to_policy_without_scroll_driving_grid_hei
     assert 'xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col' in source
     assert 'xl:min-h-0 xl:flex-1 xl:overflow-hidden' in source
     assert 'xl:h-full xl:overflow-y-auto xl:overscroll-contain' in source
-    assert 'xl:shrink-0' in source
+    assert '<footer class="flex shrink-0 items-center justify-between gap-2' in source
     assert 'xl:max-h-[min(65dvh,36rem)]' not in source
     assert 'xl:col-span-8' in source
     assert '<main class="min-w-0 xl:col-span-8">' in source
@@ -125,9 +127,22 @@ def test_compact_footer_and_search_are_anchored_above_and_below_only_list() -> N
     search = left.index('id="data-lifecycle-domain-search"')
     list_start = left.index('x-ref="domainList"')
     list_end = left.index('</nav>')
-    footer = left.index('<footer class="flex flex-wrap items-center')
+    footer = left.index('<footer class="flex shrink-0 items-center')
     assert search < list_start < list_end < footer
     assert "info_tip.render('data-lifecycle-execution-boundary'," in left
     assert "current_user.has_permission('jobs.view')" in left
     assert 'xl:overflow-y-auto' not in left[:list_start]
     assert 'xl:overflow-y-auto' not in left[list_end:]
+
+def test_boundary_footer_top_placement_uses_canonical_viewport_safe_controller() -> None:
+    source = read()
+    controller = (ROOT / 'app/static/js/info_tips.js').read_text(encoding='utf-8')
+    assert "placement='top'" in source
+    assert "const preferAbove = placement === 'top'" in controller
+    assert 'triggerRect.top - triggerGap - previewRect.height' in controller
+    assert 'if (preferAbove && top < viewportMargin)' in controller
+    assert 'top = triggerRect.bottom + triggerGap' in controller
+    assert "const openDialog = root.closest('dialog[open]')" in controller
+    assert "document.addEventListener('focusin'" in controller
+    assert "document.addEventListener('pointerover'" in controller
+    assert 'Math.max(top, viewportMargin)' in controller

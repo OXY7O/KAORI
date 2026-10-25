@@ -32,7 +32,11 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'overflow-x-auto' not in footer
     assert 'overflow-y-auto' not in footer
     assert 'whitespace-nowrap' in footer
-    assert '<span class="sr-only">Jobs shown:</span>' in footer
+    assert '<span class="sr-only">Jobs shown:</span>' in template.split('<footer ', 1)[0]
+    assert 'x-text="visibleJobCount"' not in footer
+    assert 'title="Execution Boundary"' in footer
+    assert "placement='top'" in footer
+    assert 'Jobs &amp; Executions' in footer
     assert 'aria-label="Open Jobs & Executions"' in footer
     assert 'visibleJobCount' in template
     assert 'x-text="visibleJobCount"' in template

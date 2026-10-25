@@ -331,18 +331,29 @@ def test_report_channels_use_bounded_accessible_collection_without_mutating_disp
 def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() -> None:
     jobs = _read('app/templates/platform_operations/jobs/configuration/_workspace.html')
     lifecycle = _read('app/templates/platform_operations/data_lifecycle/index.html')
-    for component in ('Execution Boundary', "url_for('jobs.executions')", "variant='guide'"):
-        assert component in jobs
-        assert component in lifecycle
     assert "current_user.has_permission('jobs.view')" in jobs
-    assert 'x-text="visibleJobCount"' in jobs
     assert 'jobs-configuration-catalog-guide' in jobs
-    footer = jobs.split('<footer ', 1)[1].split('</footer>', 1)[0]
-    assert 'flex shrink-0 items-center justify-between gap-2' in footer
-    assert 'overflow-x-auto' not in footer
-    assert 'tabindex="0"' not in footer
-    assert '<span class="sr-only">Jobs shown:</span>' in footer
-    assert 'aria-label="Open Jobs & Executions"' in footer
-    assert 'Executions' in footer
-    assert 'Open Jobs &amp; Executions' not in footer
-    assert 'Execution Boundary' in footer  # Canonical Guide still owns the full boundary.
+    assert 'data-lifecycle-execution-boundary' in lifecycle
+
+    job_footer = jobs.split('<footer ', 1)[1].split('</footer>', 1)[0]
+    lifecycle_footer = lifecycle.split('<footer ', 1)[1].split('</footer>', 1)[0]
+    for footer in (job_footer, lifecycle_footer):
+        for component in (
+            'flex shrink-0 items-center justify-between gap-2',
+            'flex min-w-0 items-center gap-1.5',
+            'title="Execution Boundary"',
+            "placement='top'",
+            "variant='guide'",
+            'Jobs &amp; Executions',
+            'aria-label="Open Jobs & Executions"',
+            "current_user.has_permission('jobs.view')",
+            "url_for('jobs.executions')",
+        ):
+            assert component in footer
+        assert 'overflow-x-auto' not in footer
+        assert 'overflow-y-auto' not in footer
+        assert 'flex-wrap' not in footer
+
+    assert '<span class="sr-only">Jobs shown:</span>' in jobs
+    assert 'x-text="visibleJobCount"' in jobs.split('<footer ', 1)[0]
+    assert 'x-text="visibleJobCount"' not in job_footer

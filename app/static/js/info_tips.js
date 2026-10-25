@@ -55,14 +55,21 @@
         const previewRect = preview.getBoundingClientRect()
         const placement = root.dataset.kaoriInfoTipPlacement || 'left'
 
-        let left = placement === 'right' ? triggerRect.left : triggerRect.right - previewRect.width
+        const preferAbove = placement === 'top'
+        let left = placement === 'right' || preferAbove ? triggerRect.left : triggerRect.right - previewRect.width
         left = Math.min(
             Math.max(left, viewportMargin),
             Math.max(viewportMargin, window.innerWidth - previewRect.width - viewportMargin)
         )
 
-        let top = triggerRect.bottom + triggerGap
-        if (top + previewRect.height > window.innerHeight - viewportMargin) {
+        // Footer Guides prefer an above-trigger preview; other placements keep
+        // the original below-first behavior and viewport-aware upward flip.
+        let top = preferAbove
+            ? triggerRect.top - triggerGap - previewRect.height
+            : triggerRect.bottom + triggerGap
+        if (preferAbove && top < viewportMargin) {
+            top = triggerRect.bottom + triggerGap
+        } else if (!preferAbove && top + previewRect.height > window.innerHeight - viewportMargin) {
             top = triggerRect.top - triggerGap - previewRect.height
         }
         top = Math.min(

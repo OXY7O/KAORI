@@ -8,8 +8,14 @@
            aria-label="Job Configuration catalog">
         <section class="flex max-h-[28rem] min-h-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:absolute xl:inset-0 xl:max-h-none">
             <div class="shrink-0 border-b border-outline-subtle p-3">
-                <label for="job-configuration-catalog-search"
-                       class="text-xs font-semibold text-content-secondary">Search Registered Jobs</label>
+                <div class="flex items-center justify-between gap-2">
+                    <label for="job-configuration-catalog-search"
+                           class="text-xs font-semibold text-content-secondary">Search Registered Jobs</label>
+                    <span class="shrink-0 text-xs font-medium tabular-nums text-content-muted">
+                        <span class="sr-only">Jobs shown:</span>
+                        <span x-text="visibleJobCount">{{ job_catalog|length }}</span>/{{ job_catalog|length }} jobs
+                    </span>
+                </div>
                 <div class="relative mt-2">
                     <i data-lucide="search"
                        class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-content-muted"></i>
@@ -75,15 +81,16 @@
                 </div>
             </nav>
             <footer class="flex shrink-0 items-center justify-between gap-2 border-t border-outline-subtle bg-surface-subtle px-3 py-2.5 sm:px-4">
-                <div class="flex min-w-0 items-center gap-2">
-                    <span class="shrink-0 text-xs font-semibold tabular-nums text-content-secondary">
-                        <span class="sr-only">Jobs shown:</span>
-                        <span x-text="visibleJobCount">{{ job_catalog|length }}</span>/{{ job_catalog|length }}
-                    </span>
+                <div class="flex min-w-0 items-center gap-1.5">
+                    <i data-lucide="list-checks"
+                       class="h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent"
+                       aria-hidden="true"></i>
+                    <span class="min-w-0 truncate text-xs font-semibold text-content-secondary"
+                          title="Execution Boundary">Execution Boundary</span>
                     {{ info_tip.render('jobs-configuration-catalog-guide',
                                         'Execution Boundary',
                                         'Jobs configuration controls saved policy and manual dispatch. Worker runtime, retries and cancellation remain authoritative in Jobs & Executions; lifecycle archive and retention belong to Data Lifecycle.',
-                                        placement='right',
+                                        placement='top',
                                         variant='guide') }}
                 </div>
                 {% if current_user.has_permission('jobs.view') %}
@@ -91,7 +98,7 @@
                        class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus dark:text-kaori-accent"
                        aria-label="Open Jobs & Executions">
                         <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        Executions
+                        Jobs &amp; Executions
                     </a>
                 {% endif %}
             </footer>
