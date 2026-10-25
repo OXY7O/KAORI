@@ -22,6 +22,34 @@ In the Dev Container running this UAT branch, sign in as an active local super-a
 
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
+## 2026-10-25 — Source Control Ruff/djLint gate remediation
+
+**Authority:** #3099, scoped formatting follow-up to #3094. Operator's
+Dev Container log (before #3099) recorded **33 passed in 4.70s**
+for the six Source Control unit/contract suites and **PASS** for
+`verify_integration_domain_navigation.py`. Source check results:
+
+| Gate | Observed before correction | Scoped change |
+| --- | --- | --- |
+| Ruff check | **FAIL**, 3 × I001 | Remove extra blank after import block in three UI test files |
+| Ruff format --check | **FAIL**, 2 files | Apply exact quote and one-line assertion formatting |
+| djLint --check | **FAIL**, four GitHub templates | Apply exact operator-reported djLint formatting hunks; shared domain template untouched |
+| Focused pytest | **PASS**, 33 tests | Test logic unchanged |
+| Integration navigation verifier | **PASS** | Provider routing unchanged |
+
+**Scope:** only existing Source Control contract/test source and four
+GitHub Jinja templates were formatted. No new page/route, provider,
+credential, database, webhook or privilege change. The operator's complete
+djLint diff was applied with exact original-line matching to avoid
+guessing at indentation or modifying unrelated HTML. No custom
+validator or CSS patch.
+
+**Evidence disposition:** source diff/reconciliation PASS; rerun the
+existing Ruff, djLint, pytest and integration navigation checks on the
+resulting holding SHA. **Do not claim executable PASS before that run.**
+The separate Runtime Overview fixed-shell navigation #3097 has its own
+Playwright/visual UAT requirement and is not closed by formatting.
+
 ## 2026-10-25 — Runtime Overview cross-domain navigation scroll
 
 **Finding / authority:** issue #3097, after Source Control UI review. The

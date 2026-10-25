@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -15,7 +14,7 @@ def test_source_control_reuses_canonical_integration_templates() -> None:
     assert 'loading_bar.render(' in workspace
     assert 'registry_ui.filter_form(' in workspace
     assert "domain.key == 'source_control'" in workspace
-    assert "workspace_tabs = [workspace_tabs[0]]" in workspace
+    assert 'workspace_tabs = [workspace_tabs[0]]' in workspace
     assert 'Source Control Connections' in workspace
     assert 'Review Source Control provider requirements and readiness.' in workspace
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -33,9 +32,7 @@ def test_github_workspace_retains_source_control_sidebar_active_state():
 
 def test_source_control_breadcrumb_and_kernel_owner_match():
     breadcrumb = _read('app/common/navigation.py')
-    module = _read(
-        'app/integrations/source_control/source_control/providers/github/kernel_contract.py'
-    )
+    module = _read('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
     assert "'integrations.source_control': 'Source Control'" in breadcrumb
     assert "'github_source.'" in module
     assert "'github_source_uat.'" in module
@@ -50,4 +47,4 @@ def test_github_provider_action_uses_existing_registration_workspace():
     assert "workspace_endpoint='github_source.new_connection'" in module
     assert 'GitHub · First Provider' not in workspace
     assert 'GitHub · Open Provider' not in workspace
-    assert "workspace_endpoint: integrations.source_control" in taxonomy
+    assert 'workspace_endpoint: integrations.source_control' in taxonomy
