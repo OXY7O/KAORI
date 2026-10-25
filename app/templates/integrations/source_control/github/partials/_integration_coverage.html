@@ -1,0 +1,159 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="github-integration-coverage"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="github-integration-coverage-title"
+         data-kaori-github-coverage>
+    {% set coverage_clear_url = url_for('github_source.index',
+            tab='coverage',
+            q=selected_query,
+            environment=selected_environment,
+            readiness=selected_readiness,
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page) %}
+    {% set coverage_clear_action = registry_ui.clear_filters_action(
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#github-integration-coverage',
+            indicator='#github-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='github-integration-coverage'
+        ) if coverage_has_active_filters else '' %}
+    {{ provider_registry.registry_header("GitHub Repository Coverage",
+        "Review repository access and validation evidence committed for each GitHub App installation.",
+        "route",
+        "github-coverage-loading",
+        title_id="github-integration-coverage-title",
+        action_html=coverage_clear_action,
+        result_count=coverage_pagination.total_items) }}
+    <div class="{{ integration_ui.filter_region_classes() }}">
+        <form id="github-coverage-filter-form"
+              method="get"
+              action="{{ url_for('github_source.index') }}"
+              hx-get="{{ url_for('github_source.index') }}"
+              hx-target="#github-integration-coverage"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
+              hx-indicator="#github-coverage-loading"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="coverage">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="q" value="{{ selected_query }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="readiness" value="{{ selected_readiness }}">
+            <input type="hidden" name="page" value="{{ pagination.page }}">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("github-coverage-search", "coverage_q", selected_coverage_query, "Repository or installation", label="Search Repository") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("github-coverage-environment", "coverage_environment", selected_coverage_environment, "Environment", coverage_environment_options, "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("github-coverage-status", "coverage_status", selected_coverage_status, "Coverage", coverage_status_options, "All Coverage States") }}
+            </div>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ provider_registry.asset_coverage_table_classes() }}">
+            {{ provider_registry.asset_coverage_colgroup() }}
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Installation</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Access</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Evidence Coverage</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for grant, repository, installation, connection, collection in coverage_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon("git-branch", "brand") }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ repository.full_name or repository.name or "Repository Identity Pending" }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ repository.default_branch or "Default branch not observed" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ connection.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Installation {{ installation.native_installation_id }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ connection.environment|replace("_", " ")|title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ "Enabled" if connection.enabled else "Disabled" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(grant.access_status or "unknown", display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">Committed installation grant</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(collection.coverage or "unknown", display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">{{ "Full Validation ready" if connection.readiness_status == "ready" else "Full Validation required" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            {% if uat_workspace_enabled %}
+                                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
+                                   class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    View Details
+                                </a>
+                            {% else %}
+                                <span class="text-xs text-content-muted">Restricted</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "route" %}
+                            {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No GitHub Repository Coverage Matches the Filters" if coverage_has_active_filters else ("No Repositories in Committed Coverage" if coverage_observed else "No GitHub Repository Coverage Observed") %}
+                            {% set empty_state_description = "Adjust the coverage filters to find another repository." if coverage_has_active_filters else ("The latest committed inventory contains no current repository grants; GitHub remains authoritative." if coverage_observed else "Register a GitHub App, complete Full Validation and commit repository access evidence to establish coverage.") %}
+                            {% set empty_state_action_url = url_for('github_source.new_connection') if available and uat_workspace_enabled and not coverage_has_active_filters else none %}
+                            {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set coverage_query_params = {
+            "tab": "coverage",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(coverage_pagination,
+        "github_source.index",
+        "#github-integration-coverage",
+        "#github-coverage-loading",
+        coverage_query_params,
+        item_label="Repositories",
+        swap="outerHTML",
+        page_param="coverage_page",
+        per_page_param="coverage_per_page") }}
+</section>

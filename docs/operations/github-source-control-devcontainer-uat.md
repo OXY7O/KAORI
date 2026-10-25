@@ -859,3 +859,99 @@ python scripts/verify_sidebar_navigation_standard.py
 **Validation boundary:** GitHub source/diff inspection is not executable
 Dev Container QA or Human Acceptance. Official Developer Check, Full
 Admission, `kaori/staging`, main, and release/tag remain HOLD.
+
+
+## 2026-10-25 — #3177 Coverage parity correction before GitHub App registration
+
+**Human visual authority:** The operator compared approved Kubernetes Integration
+Coverage (table + search/filter + status + five-row pagination) with the
+GitHub Coverage tab created in #3179 (three KPI cards and information box).
+The latter was rejected as **UI inconsistency / Visual UAT FAIL**.
+Do not create a different coverage layout for Source Control: only the
+domain-specific columns and evidence semantics may differ.
+
+**Implementation:** GitHub Coverage now reuses the existing Kubernetes
+coverage template archetype and shared components:
+`_provider_registry.registry_header/search_field/select_field/
+asset_coverage_table_classes/asset_coverage_colgroup/pagination_footer`,
+`table.html`, `table_registry.html`, `_semantic_status.html`,
+`_workspace.html` and `components/states/_empty_state.html`.
+The six columns are **Repository, Installation, Environment, Access,
+Evidence Coverage, Actions**, with a separate query and paging state
+(`coverage_q`, `coverage_environment`, `coverage_status`,
+`coverage_page`, `coverage_per_page`) and default **5 rows**.
+The existing **Connection Registry** remains independently filtered and
+paginated; HTMX swaps target the section that owns the controls.
+
+**Evidence boundary:** Rows are sourced only from joined, current
+`SourceRepositoryGrant` / `SourceRepository` /
+`SourceInstallation` / `IntegrationInstance` and
+`SourceRepositoryCollectionState` with
+`committed_generation > 0`. This is **not** a live GitHub repository API
+read, a trial App Test Connection, nor a proxy for complete repository access.
+The coverage field is the committed collection's explicit coverage;
+access reflects the stored grant status; readiness reflects Full Validation.
+When no collection has committed a generation, the standard table + empty
+state say **No GitHub Repository Coverage Observed**. If an existing
+committed collection has zero active grants, the empty state instead says
+**No Repositories in Committed Coverage**. Unregistered GitHub Apps
+must never create synthetic repository rows.
+
+**Access:** Only an existing authorized local Dev Container UAT super-admin
+can see a per-installation View Details link; existing
+`github_source_uat.detail` resource guard remains authoritative.
+No new endpoint, webhook, credential or provider mutation introduced.
+
+**Related QA repair:** Operator evidence on prior #3179 SHA: Ruff Check
+PASS; Ruff Format FAIL for `application/routes.py` and GitHub UI contract;
+djLint FAIL for GitHub `index.html` and `_connection_registry.html`;
+pytest **28 PASS / 1 FAIL** because a stale test demanded a direct
+`components/page_hero.html` import instead of using shared
+`provider_front.hero`; both navigation verifiers PASS.
+The old KPI-only coverage markup was replaced with the accepted table
+archetype, registry djLint diffs applied, route Ruff formatting corrected,
+and UI contracts changed to assert shared ownership. These are **source
+changes, not a claim that new SHA QA has passed**.
+
+### Exact candidate Dev Container checks
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+python -m ruff format --check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py
+djlint --check \
+  app/templates/integrations/source_control/github/index.html \
+  app/templates/integrations/source_control/github/partials/_connection_registry.html \
+  app/templates/integrations/source_control/github/partials/_integration_coverage.html
+python -m pytest -q -p no:cacheprovider \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/contracts/integrations/test_provider_registry_pagination_contract.py \
+  tests/contracts/integrations/test_integration_domain_navigation_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human UAT before registration:** open
+**Integrations → Source Control → GitHub → Integration Coverage** at
+1440×900 and 390×844, light/dark. Confirm familiar Kubernetes-style
+six-column table, Environment/Coverage filters and Search, pagination
+Showing 0–0 of 0 and Rows 5 when no committed grants, inline empty state
+within table, correct active tab/sidebar, keyboard/touch controls,
+no horizontal viewport overflow. Switching tabs and filtering must not
+destroy the independent Connection Registry filters or pagination.
+Zero grants before registration must **not** be displayed as Ready.
+After actual registration and subsequent synchronization, verify source
+identity, effective grant status and committed collection coverage with
+read-only evidence. GitHub App creation/test/save UAT remains independently
+open; no credentials or proofs in QA screenshots/logs.
+
+**No official admission:** Developer Check, Full Admission, `kaori/staging`,
+main promotion, deployment/release and production mutations remain HOLD.
+Human Acceptance **PENDING** until exact-SHA executable checks and
+operator visual review.

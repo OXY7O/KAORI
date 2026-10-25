@@ -15,7 +15,9 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     landing = _source('app/templates/integrations/source_control/github/index.html')
     form = _source('app/templates/integrations/source_control/github/form.html')
     workspace = _source('app/templates/integrations/partials/_domain_workspace.html')
-    assert 'components/page_hero.html' in landing
+    provider_hero = _source('app/templates/integrations/components/_provider_frontpage.html')
+    assert 'provider_front.hero(' in landing
+    assert 'components/page_hero.html' in provider_hero
     assert 'integrations/components/_provider_frontpage.html' in landing
     assert 'integrations/components/_provider_registration_hero.html' in form
     assert 'integrations/components/_workspace.html' in form
@@ -25,7 +27,7 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
     assert "workspace_endpoint='github_source.index'" in kernel
     assert '<style' not in landing and '<style' not in form
-    assert 'text-kaori-primary' in landing
+    assert 'integration_tabs.render("github"' in landing
     assert 'integrations/components/_provider_registration_actions.html' in form
     assert 'components/operational_toggle.html' in form
     assert 'integrations/components/_provider_registration_context.html' in form
@@ -70,7 +72,6 @@ def test_connection_test_stays_inline_and_registration_is_proof_gated() -> None:
     assert 'components/operational_toast.html' in partial
     assert 'toast_oob=true' in partial
     assert 'operational_callout.render(' not in partial
-
 
 
 def test_named_register_action_survives_shared_operation_loading_state() -> None:
@@ -158,9 +159,9 @@ def test_planned_provider_does_not_fake_inventory_zero_or_ready() -> None:
     landing = _source('app/templates/integrations/source_control/github/index.html')
     assert 'total = ready = grants = None' in routes
     assert 'if available:' in routes
-    assert 'if available:' in routes
     assert 'Not Observed' in routes
-    assert 'Repository Evidence Not Yet Observed' in landing
+    coverage = _source('app/templates/integrations/source_control/github/partials/_integration_coverage.html')
+    assert 'No GitHub Repository Coverage Observed' in coverage
     assert 'integration_tabs.render("github"' in landing
     assert 'provider_front.hero(' in landing
 
@@ -191,7 +192,7 @@ def test_source_control_selects_provider_then_opens_existing_registration() -> N
     assert "url_for('github_source.index')" in form  # Shared Back to Registry.
     assert "return redirect(url_for('github_source.index', tab='registry'))" in routes  # Post-save.
     assert 'integration_tabs.render("github"' in index
-    assert 'Manage GitHub Installations' in index
+    assert 'integrations/source_control/github/partials/_integration_coverage.html' in index
 
 
 def test_source_control_operational_templates_have_no_temporary_uat_copy() -> None:
@@ -229,17 +230,68 @@ def test_github_connection_registry_reuses_existing_integration_surface() -> Non
     assert 'provider_registry.pagination_footer(' in registry
     assert 'components/states/_empty_state.html' in registry
     assert 'integration_status(' in registry
-    assert "github_source_uat.detail" in registry
+    assert 'github_source_uat.detail' in registry
     assert 'if uat_workspace_enabled and installation' in registry
     assert 'data-kaori-github-connection-registry' in registry
-    assert "request.headers.get('HX-Target') == 'github-connection-registry'" in routes
+    assert "if target == 'github-connection-registry':" in routes
     assert "'integrations/source_control/github/partials/_connection_registry.html'" in routes
     assert 'paginate_query(' in routes
     assert "requested_per_page = request.args.get('per_page', 5, type=int) or 5" in routes
-    assert "integration_type='source_control', provider_key='github'" in routes
+    assert "integration_type='source_control'," in routes
+    assert "provider_key='github'," in routes
     assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
     assert 'if available:' in routes
     assert 'require_uat_access()' in routes
     assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
     assert 'queue_feedback=True' in routes
     assert '<style' not in registry and '<script' not in registry
+
+
+def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() -> None:
+    github = _source('app/templates/integrations/source_control/github/partials/_integration_coverage.html')
+    kubernetes = _source(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/'
+        'kubernetes/partials/_integration_coverage.html'
+    )
+    routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+
+    for shared_pattern in (
+        'provider_registry.registry_header(',
+        'integration_ui.filter_region_classes()',
+        'provider_registry.search_field(',
+        'provider_registry.select_field(',
+        'provider_registry.asset_coverage_table_classes()',
+        'provider_registry.asset_coverage_colgroup()',
+        'integration_status(',
+        'provider_registry.pagination_footer(',
+        'components/states/_empty_state.html',
+    ):
+        assert shared_pattern in github and shared_pattern in kubernetes
+
+    for column in ('Repository', 'Installation', 'Environment', 'Access', 'Evidence Coverage', 'Actions'):
+        assert f'>{column}</th>' in github
+    assert 'hx-target="#github-integration-coverage"' in github
+    assert 'hx-swap="outerHTML"' in github
+    assert 'name="coverage_page"' in github
+    assert 'name="coverage_per_page"' in github
+    assert '"coverage_page"' in github and '"coverage_per_page"' in github
+    assert 'No GitHub Repository Coverage Observed' in github
+    assert 'Register Connection' in github
+    assert 'if uat_workspace_enabled' in github
+    assert '<style' not in github and '<script' not in github
+
+    assert "requested_coverage_page = request.args.get('coverage_page', 1, type=int) or 1" in routes
+    assert "requested_coverage_per_page = request.args.get('coverage_per_page', 5, type=int) or 5" in routes
+    assert "SourceRepositoryCollectionState.committed_generation > 0" in routes
+    assert "'coverage_observed': committed_collections > 0" in routes
+    assert 'No Repositories in Committed Coverage' in github
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
+    assert "SourceInstallation.provider_key == 'github'" in routes
+    assert "SourceRepository.host_key == 'github.com'" in routes
+    assert 'coverage_rows, coverage_pagination = paginate_query(' in routes
+    assert "if target == 'github-integration-coverage':" in routes
+    assert 'selected_coverage_query or selected_coverage_environment or selected_coverage_status' in routes
+    assert "selected_coverage_environment" in routes
+    assert "selected_coverage_status" in routes
+    assert 'integrations/source_control/github/partials/_integration_coverage.html' in routes
+    assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
