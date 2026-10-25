@@ -14,6 +14,8 @@ The approved Tenant destinations are:
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
 - **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
 
+On **Tenant → Overview**, **Operational Attention & Activity** is one canonical Operational Section Card with separate accessible Needs Attention and Recent Tenant Activity lanes. Both draw from bounded committed KAORI projections (maximum three rows per preview); severity/event count labels describe **displayed rows only**, not global findings or historical event totals. The shared card header links to canonical Intelligence Recommendations, while the activity lane links to Tenant Operations → Activity. On smaller screens the lanes stack; both remain independently meaningful when empty. No live Kubernetes call, reconciliation, notification, or audit mutation occurs from opening this overview.
+
 ### Cluster prerequisite and committed-read boundary
 
 Tenant follows the shared #894 Provider Prerequisite Blocking contract while preserving #774 committed-read behavior.
