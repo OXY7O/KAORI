@@ -52,6 +52,14 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
     assert "'Update Safety Contract', 'Active safeguards for this update.'" in update
     assert 'Controls that stay active while the live object is edited.' not in update
     assert 'Check exact name and RBAC without DELETE.' in delete
+    target = (ROOT / 'app/templates/kubernetes/operations/configmaps/_delete_target.html').read_text(
+        encoding='utf-8'
+    )
+    modal = (ROOT / 'app/templates/components/destructive_confirmation_modal.html').read_text(
+        encoding='utf-8'
+    )
+    assert "won't restart workloads; Pods may fail" in target
+    assert "Delete uses validated target and resourceVersion; Cancel keeps it unchanged." in modal
     assert 'Only explicitly checked TLS Secrets can be updated; all unselected targets remain untouched.' in rotation
     assert 'Validate the uploaded certificate pair and every selected TLS Secret before applying an update.' in rotation
     assert "workflow_control('Controlled Bulk TLS Rotation'" in rotation
