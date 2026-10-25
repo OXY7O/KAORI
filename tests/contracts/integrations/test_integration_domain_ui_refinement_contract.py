@@ -100,6 +100,7 @@ def test_domain_registry_clear_filters_stays_on_header_right() -> None:
     header = registry.split('{% call registry_ui.filter_form(', 1)[0]
 
     assert 'Provider Registry Filters' in header
+    assert header.index('Provider Registry Filters') < header.index('registry_ui.clear_filters_link(')
     assert '{% if provider_filters_active %}' in header
     assert 'registry_ui.clear_filters_link(' in header
     assert 'lead=false' in header  # Avoid shared macro default order-first.
