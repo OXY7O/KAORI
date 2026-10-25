@@ -129,3 +129,56 @@ def test_source_control_action_selects_provider_before_registration() -> None:
     assert 'url_for('integrations.choose_integration_provider', integration_type=item.key)' in workspace
     assert 'Open {{ item.runtime_label }}' in workspace
     assert "'Source Control Connections' if domain.key == 'source_control'" in workspace
+
+
+def test_all_integration_domains_select_provider_before_registration() -> None:
+    routes = read('app/integrations/routes.py')
+    workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+    picker = read('app/templates/integrations/provider_selector.html')
+    matrix = read('app/definitions/catalogs/integrations/provider_matrix.yaml')
+
+    assert "@integrations_bp.get('/providers/<string:integration_type>')" in routes
+    assert "@permission_required('integrations.manage')" in routes
+    assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
+    assert "provider_kinds(integration_type)" in routes
+    assert "if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS" in routes
+
+    for domain in ('orchestration', 'observability', 'storage', 'registry', 'secrets_management', 'source_control'):
+        assert f'domain_key: {domain}' in matrix
+    for target in (
+        "'cluster.add_cluster'",
+        "'alertmanager.new_instance'",
+        "'minio.new_instance'",
+        "'harbor.new_instance'",
+        "'vault.new_instance'",
+        "'github_source.new_connection'",
+    ):
+        assert target in routes
+
+    assert "redirect(url_for('integrations.select_metrics_source_provider'))" in routes
+    assert 'data-kaori-provider-selector' in picker
+    assert "if provider.registration_url" in picker
+    assert "Register {{ provider.label }}" in picker
+    assert 'components/info_tip.html' in picker
+    assert "url_for(domain.workspace_endpoint)" in picker
+
+
+def test_provider_overviews_share_provider_first_registration_contract() -> None:
+    provider_landing_pages = {
+        'object_storage': 'app/templates/integrations/storage/object_storage/providers/minio/index.html',
+        'registry': 'app/templates/integrations/registry/providers/harbor/index.html',
+        'secrets_pki': 'app/templates/integrations/secrets_management/vault/index.html',
+        'container_orchestrator': (
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'alert_source': 'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html',
+        'source_control': 'app/templates/integrations/source_control/github/index.html',
+    }
+    for integration_type, path in provider_landing_pages.items():
+        assert 'integrations.choose_integration_provider' in read(path), integration_type
+        assert f'integration_type="{integration_type}"' in read(path) or (
+            f"integration_type='{integration_type}'" in read(path)
+        )
+
+    metrics_landing = read('app/templates/integrations/observability/metrics_source/frontpage.html')
+    assert 'integrations.select_metrics_source_provider' in metrics_landing
