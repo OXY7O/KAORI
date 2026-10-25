@@ -14,11 +14,24 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user, login_required
+from flask_login import current_user, login_fresh, login_required
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.security.credentials import CredentialEncryptionError
 
 from app.access.authentication.forms import ChangePasswordForm
+from app.access.authentication.mfa.service import (
+    MfaVerificationError,
+    begin_mfa_enrollment,
+    confirm_mfa_enrollment,
+    mfa_enrolled,
+    mfa_policy_mode,
+    regenerate_mfa_recovery_codes,
+    verify_mfa_challenge,
+)
+from app.models.authentication_security import AuthenticationMfaFactor
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -193,7 +206,7 @@ def account():
     user = cast(User, current_user._get_current_object())
     is_htmx = bool(request.headers.get('HX-Request'))
     active_tab = (request.args.get('tab') or 'profile').strip().lower()
-    if active_tab not in {'profile', 'activity', 'credentials'}:
+    if active_tab not in {'profile', 'activity', 'credentials', 'mfa'}:
         active_tab = 'profile'
 
     password_form = ChangePasswordForm()
@@ -202,7 +215,7 @@ def account():
     password_feedback: dict[str, str] | None = None
     password_toast: dict[str, Any] | None = None
     notification_changed = False
-    if password_form.is_submitted():
+    if password_form.is_submitted() and active_tab != 'mfa':
         active_tab = 'credentials'
         result = process_password_change(
             user=user,
@@ -217,6 +230,47 @@ def account():
         if result.saved and not is_htmx:
             return redirect(url_for('settings.account', tab='credentials'))
 
+    mfa_feedback: str | None = None
+    mfa_setup_secret: str | None = None
+    mfa_recovery_codes: list[str] | None = None
+    if active_tab == 'mfa' and request.method == 'POST':
+        action = str(request.form.get('mfa_action') or '')
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+            if not login_fresh():
+                raise MfaVerificationError('Sign in again before changing MFA.')
+            if action in {'begin', 'regenerate'} and user.auth_source == 'database':
+                password = str(request.form.get('current_password') or '')
+                if not password or not user.check_password(password):
+                    raise MfaVerificationError('Your current password was not accepted.')
+            if action == 'begin':
+                mfa_setup_secret = begin_mfa_enrollment(user)
+                mfa_feedback = 'Enter this setup key in an authenticator app, then confirm one code.'
+            elif action == 'confirm':
+                mfa_recovery_codes = confirm_mfa_enrollment(
+                    user, str(request.form.get('verification_code') or '')
+                )
+                mfa_feedback = 'MFA enabled. Save your recovery codes now; they are shown only once.'
+            elif action == 'regenerate':
+                verify_mfa_challenge(user, str(request.form.get('verification_code') or ''))
+                mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
+                mfa_feedback = 'Recovery codes regenerated. Previous unused codes are invalid.'
+            else:
+                raise MfaVerificationError('Unsupported MFA operation.')
+        except (ValidationError, MfaVerificationError):
+            mfa_feedback = 'MFA request was not accepted. Check your credentials and verification code.'
+        except (CredentialEncryptionError, SQLAlchemyError):
+            mfa_feedback = 'MFA configuration is temporarily unavailable.'
+            current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
+
+    mfa_factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id).first()
+    mfa_state = {
+        'enrolled': mfa_enrolled(user.id),
+        'enrollment_pending': bool(mfa_factor is not None and not mfa_factor.enabled),
+        'policy_mode': mfa_policy_mode(),
+        'recovery_count': len(mfa_factor.recovery_hashes or []) if mfa_factor is not None and mfa_factor.enabled else 0,
+    }
+
     identity_context = build_user_identity_context(user)
     recent_login_events = recent_authentication_events(user.id)
     activity_summary = authentication_activity_summary(recent_login_events)
@@ -227,6 +281,10 @@ def account():
         'can_change_password': can_change_password,
         'password_feedback': password_feedback,
         'password_toast': password_toast,
+        'mfa_state': mfa_state,
+        'mfa_setup_secret': mfa_setup_secret,
+        'mfa_recovery_codes': mfa_recovery_codes,
+        'mfa_feedback': mfa_feedback,
         'identity_context': identity_context,
         'recent_login_events': recent_login_events,
         'activity_summary': activity_summary,
@@ -234,6 +292,8 @@ def account():
     }
     template_name = 'settings/account/partials/_page_content.html' if is_htmx else 'settings/account/index.html'
     response = make_response(render_template(template_name, **context))
+    if mfa_setup_secret is not None or mfa_recovery_codes is not None:
+        response.headers['Cache-Control'] = 'no-store'
     if notification_changed:
         response.headers['HX-Trigger'] = json.dumps(
             {
