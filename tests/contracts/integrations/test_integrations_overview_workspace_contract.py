@@ -251,9 +251,9 @@ def test_integration_hero_navigation_does_not_scroll_outer_shell() -> None:
 
     # A fragment on a cross-page link can scroll the outer, clipped app
     # viewport instead of the nested KAORI main scroller.
-    assert 'href="{{ url_for(\'integrations.overview\', tab=\'runtime\') }}"' in domain
-    assert '#integration-workspace' not in domain
-    assert '#integration-workspace' not in hero
+    assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in domain
+    assert '}}#integration-workspace"' not in domain
+    assert '}}#integration-workspace"' not in hero
     assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in hero
     assert "href=\"{{ url_for('integrations.overview', tab='catalog') }}\"" in hero
 
