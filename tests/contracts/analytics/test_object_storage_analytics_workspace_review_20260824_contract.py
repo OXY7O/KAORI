@@ -418,7 +418,7 @@ def test_object_storage_overview_guides_and_performance_family_parity() -> None:
         assert tip_id in source
         assert "variant='guide'" in source
         assert "placement='right'" in source
-    assert '{% if compact_forecast_overview %}' in trend
+    assert '{% elif compact_forecast_overview %}' in trend
 
     for partial in (performance, consumers, alerts):
         assert 'analysis_surface.snapshot_shell_classes()' in partial
@@ -441,6 +441,7 @@ def test_object_storage_overview_guides_and_performance_family_parity() -> None:
 
 def test_object_storage_overview_modified_templates_pass_jinja_parser() -> None:
     jinja = Environment()
+    jinja.filters['user_datetime'] = lambda value, fallback='Unavailable': str(value) if value else fallback
     paths = (
         'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html',
         'app/templates/storage/object_storage/analytics/partials/_overview_performance_snapshot.html',
