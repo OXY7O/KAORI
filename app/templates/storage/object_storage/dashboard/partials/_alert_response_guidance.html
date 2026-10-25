@@ -1,11 +1,11 @@
 {% import "components/operational_alert_response.html" as alert_response %}
 {% import "components/operational_section_card.html" as operational_section_card %}
-{% set alert_response_steps = [('scan-search', 'Validate', 'Confirm the selected system, committed snapshot freshness, and alert-source evidence before acting on the signal.'), ('list-filter', 'Triage', 'Rank severity and blast radius, identify the affected bucket or request path, and establish an accountable owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate capacity, request, growth, provider-state, and related alert evidence to test the suspected cause.'), ('shield-check', 'Respond', 'Run the approved storage response for the confirmed scope within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm alert recovery, request-path health, storage availability, and capacity signals remain stable after the response.'), ('clipboard-check', 'Record', 'Capture the decision, action, verification result, and follow-up evidence so the operational outcome remains auditable.')] %}
+{% set alert_response_steps = [('scan-search', 'Validate', 'Confirm scope, committed snapshot freshness, and alert-source evidence.'), ('list-filter', 'Triage', 'Rank severity, blast radius, affected bucket or request path, and owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate capacity, requests, growth, provider state, and alerts.'), ('shield-check', 'Respond', 'Run the approved storage response for the confirmed scope within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm alert recovery, request health, storage availability, and capacity.'), ('clipboard-check', 'Record', 'Record decisions, actions, verification, and follow-up evidence.')] %}
 {% if dashboard.alerts.available and dashboard.alerts.total > 0 %}
     {{ alert_response.render('Meaning, triage order, and controlled response flow for active Object Storage alerts.',
         alert_response_steps,
         'Controlled Object Storage Alert Response Flow',
-        'Potential active impact. Start incident triage and establish storage ownership.',
+        'Potential impact. Start triage and assign ownership.',
         'Emerging capacity or availability risk.',
         'Low-risk operational signal. Validate relevance, recurrence, and scope.') }}
 {% else %}

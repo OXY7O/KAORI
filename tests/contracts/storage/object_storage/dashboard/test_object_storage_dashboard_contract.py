@@ -344,10 +344,32 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'components/operational_alert_response.html' in response
     assert 'Alert Interpretation & Response' in shared_response
     assert 'Controlled Response Flow' in shared_response
+    # Shorten domain-owned guidance only; preserve the six canonical flow steps.
+    for guidance in (
+        'Confirm scope, committed snapshot freshness, and alert-source evidence.',
+        'Rank severity, blast radius, affected bucket or request path, and owner.',
+        'Correlate capacity, requests, growth, provider state, and alerts.',
+        'Confirm alert recovery, request health, storage availability, and capacity.',
+        'Record decisions, actions, verification, and follow-up evidence.',
+    ):
+        assert guidance in response
+        assert len(guidance) <= 76
+    assert "'Potential impact. Start triage and assign ownership.'" in response
     assert 'components/numbered_governance_steps.html' in shared_response
     assert 'components/operational_flow_steps.html' not in response
     assert 'components/operational_recommendation_cards.html' in actions
     assert 'Recommended Actions' in shared_recommendations
+    # Both domains already use the same renderer; lock its existing 2-line
+    # preview and ellipsized source without trimming committed action content.
+    assert "source_icon='database'" in actions
+    assert "source_icon='database'" in kubernetes_actions
+    for token in (
+        'line-clamp-2 break-words text-sm font-semibold leading-5',
+        'mt-2 line-clamp-2 text-xs leading-5 text-content-muted',
+        'title="{{ action.title }}"',
+        '<span class="truncate">{{ action.source }}</span>',
+    ):
+        assert token in shared_recommendations
     assert 'kubernetes/dashboard/partials/_recommended_actions.html' in kubernetes_signals
     assert 'dashboard-recommended-actions' in kubernetes_actions
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
