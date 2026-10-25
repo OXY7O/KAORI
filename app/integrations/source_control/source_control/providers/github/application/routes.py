@@ -38,16 +38,19 @@ from app.integrations.source_control.source_control.providers.github.webhook_inb
 )
 from app.integrations.source_control.uat_access import local_super_admin, require_uat_access, uat_enabled
 from app.models.integration import IntegrationInstance
-from app.models.source_control import SourceInstallation, SourceRepositoryGrant
+from app.models.source_control import (
+    SourceInstallation,
+    SourceRepository,
+    SourceRepositoryCollectionState,
+    SourceRepositoryGrant,
+)
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
 from app.security.credentials import CredentialEncryptionError
 
-github_source_bp = Blueprint(
-    'github_source', __name__, url_prefix='/integrations/source-control/github'
-)
+github_source_bp = Blueprint('github_source', __name__, url_prefix='/integrations/source-control/github')
 
 
 def _available() -> bool:
@@ -68,7 +71,7 @@ def _notification() -> dict:
 @github_source_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
-    """Provider registry and coverage exclusively from committed KAORI state."""
+    """Read the GitHub connection and repository coverage from committed KAORI state."""
     available = _available()
     uat_workspace_enabled = available and uat_enabled() and local_super_admin(current_user)
     active_tab = request.args.get('tab', 'coverage').strip()
@@ -81,33 +84,98 @@ def index() -> ResponseReturnValue:
     requested_page = request.args.get('page', 1, type=int) or 1
     requested_per_page = request.args.get('per_page', 5, type=int) or 5
 
+    selected_coverage_query = request.args.get('coverage_q', '').strip()[:120]
+    selected_coverage_environment = request.args.get('coverage_environment', '').strip()[:40]
+    selected_coverage_status = request.args.get('coverage_status', '').strip()[:40]
+    requested_coverage_page = request.args.get('coverage_page', 1, type=int) or 1
+    requested_coverage_per_page = request.args.get('coverage_per_page', 5, type=int) or 5
+
     if available:
         base = IntegrationInstance.query.filter_by(
-            integration_type='source_control', provider_key='github',
+            integration_type='source_control',
+            provider_key='github',
         )
         total = base.count()
-        ready = base.filter_by(
-            enabled=True, lifecycle_status='active', readiness_status='ready'
-        ).count()
-        grants = (
-            SourceRepositoryGrant.query.join(
+        ready = base.filter_by(enabled=True, lifecycle_status='active', readiness_status='ready').count()
+
+        # Only committed generations with effective-dated grants are coverage
+        # evidence. A tested/registered installation alone is not inventory.
+        coverage_base = (
+            db.session.query(
+                SourceRepositoryGrant,
+                SourceRepository,
                 SourceInstallation,
-                SourceInstallation.id == SourceRepositoryGrant.installation_id,
+                IntegrationInstance,
+                SourceRepositoryCollectionState,
+            )
+            .join(SourceRepository, SourceRepository.id == SourceRepositoryGrant.repository_id)
+            .join(SourceInstallation, SourceInstallation.id == SourceRepositoryGrant.installation_id)
+            .join(IntegrationInstance, IntegrationInstance.id == SourceInstallation.integration_instance_id)
+            .join(
+                SourceRepositoryCollectionState,
+                SourceRepositoryCollectionState.installation_id == SourceInstallation.id,
             )
             .filter(
+                SourceRepositoryGrant.valid_until.is_(None),
+                SourceRepositoryCollectionState.committed_generation > 0,
                 SourceInstallation.provider_key == 'github',
                 SourceInstallation.host_key == 'github.com',
-                SourceRepositoryGrant.valid_until.is_(None),
+                SourceRepository.provider_key == 'github',
+                SourceRepository.host_key == 'github.com',
+                IntegrationInstance.integration_type == 'source_control',
+                IntegrationInstance.provider_key == 'github',
             )
-            .count()
         )
+        grants = coverage_base.count()
+
+        coverage_query = coverage_base
+        if selected_coverage_query:
+            coverage_term = f'%{selected_coverage_query}%'
+            coverage_query = coverage_query.filter(
+                or_(
+                    SourceRepository.full_name.ilike(coverage_term),
+                    SourceRepository.name.ilike(coverage_term),
+                    IntegrationInstance.name.ilike(coverage_term),
+                    SourceInstallation.native_installation_id.ilike(coverage_term),
+                )
+            )
+        if selected_coverage_environment:
+            coverage_query = coverage_query.filter(
+                IntegrationInstance.environment == selected_coverage_environment
+            )
+        if selected_coverage_status:
+            coverage_query = coverage_query.filter(
+                SourceRepositoryCollectionState.coverage == selected_coverage_status
+            )
+        coverage_rows, coverage_pagination = paginate_query(
+            coverage_query.order_by(
+                SourceRepository.full_name.asc(),
+                SourceInstallation.id.asc(),
+                SourceRepositoryGrant.id.asc(),
+            ),
+            page=requested_coverage_page,
+            per_page=requested_coverage_per_page,
+        )
+        coverage_environment_options = [
+            item[0]
+            for item in coverage_base.with_entities(IntegrationInstance.environment).distinct().all()
+            if item[0]
+        ]
+        coverage_status_options = [
+            item[0]
+            for item in coverage_base.with_entities(SourceRepositoryCollectionState.coverage).distinct().all()
+            if item[0]
+        ]
+
         query = base
         if selected_query:
             term = f'%{selected_query}%'
-            query = query.filter(or_(
-                IntegrationInstance.name.ilike(term),
-                IntegrationInstance.description.ilike(term),
-            ))
+            query = query.filter(
+                or_(
+                    IntegrationInstance.name.ilike(term),
+                    IntegrationInstance.description.ilike(term),
+                )
+            )
         if selected_environment:
             query = query.filter(IntegrationInstance.environment == selected_environment)
         if selected_readiness:
@@ -124,29 +192,28 @@ def index() -> ResponseReturnValue:
                 SourceInstallation.provider_key == 'github',
                 SourceInstallation.host_key == 'github.com',
             ).all()
-            if rows else []
+            if rows
+            else []
         )
-        installation_by_instance = {
-            row.integration_instance_id: row for row in installations
-        }
+        installation_by_instance = {row.integration_instance_id: row for row in installations}
         environment_options = [
-            item[0] for item in base.with_entities(
-                IntegrationInstance.environment
-            ).distinct().all() if item[0]
+            item[0] for item in base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
         ]
         readiness_options = [
-            item[0] for item in base.with_entities(
-                IntegrationInstance.readiness_status
-            ).distinct().all() if item[0]
+            item[0] for item in base.with_entities(IntegrationInstance.readiness_status).distinct().all() if item[0]
         ]
     else:
-        # Planned/disabled providers cannot fabricate a ready or empty inventory.
+        # No provider admission means the inventory is not observed, not ready.
         total = ready = grants = None
         rows = []
         pagination = pagination_payload(build_pagination_window(total_items=0))
         installation_by_instance = {}
         environment_options = []
         readiness_options = []
+        coverage_rows = []
+        coverage_pagination = pagination_payload(build_pagination_window(total_items=0))
+        coverage_environment_options = []
+        coverage_status_options = []
 
     context = {
         'available': available,
@@ -167,19 +234,27 @@ def index() -> ResponseReturnValue:
         'selected_readiness': selected_readiness,
         'environment_options': sorted(environment_options),
         'readiness_options': sorted(readiness_options),
-        'registry_has_active_filters': bool(
-            selected_query or selected_environment or selected_readiness
+        'registry_has_active_filters': bool(selected_query or selected_environment or selected_readiness),
+        'coverage_rows': coverage_rows,
+        'coverage_pagination': coverage_pagination,
+        'selected_coverage_query': selected_coverage_query,
+        'selected_coverage_environment': selected_coverage_environment,
+        'selected_coverage_status': selected_coverage_status,
+        'coverage_environment_options': sorted(coverage_environment_options),
+        'coverage_status_options': sorted(coverage_status_options),
+        'coverage_has_active_filters': bool(
+            selected_coverage_query or selected_coverage_environment or selected_coverage_status
         ),
         'uat_workspace_enabled': uat_workspace_enabled,
         'notification_context': _notification(),
     }
-    if (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-Target') == 'github-connection-registry'
-    ):
-        return _respond('integrations/source_control/github/partials/_connection_registry.html', **context)
+    if request.headers.get('HX-Request') == 'true':
+        target = request.headers.get('HX-Target')
+        if target == 'github-connection-registry':
+            return _respond('integrations/source_control/github/partials/_connection_registry.html', **context)
+        if target == 'github-integration-coverage':
+            return _respond('integrations/source_control/github/partials/_integration_coverage.html', **context)
     return _respond('integrations/source_control/github/index.html', **context)
-
 
 @github_source_bp.route('/connections/new', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
@@ -208,9 +283,7 @@ def new_connection() -> ResponseReturnValue:
             if action == 'test':
                 observation = test_connection(values)
                 verified_scope = observation.repository_selection
-                test_proof = issue_github_registration_proof(
-                    user_id=int(current_user.id), values=values
-                )
+                test_proof = issue_github_registration_proof(user_id=int(current_user.id), values=values)
                 message = (
                     'GitHub App installation verified. This is not Full Validation; '
                     'no repository inventory has been committed.'
@@ -229,17 +302,19 @@ def new_connection() -> ResponseReturnValue:
                     # the live GitHub installation identity recheck on save.
                     save_tested_connection(values)
                     record_operational_activity(
-                        user_id=int(current_user.id), event_type='source_control_connection_registered',
-                        status='success', title='GitHub App Connection Registered',
+                        user_id=int(current_user.id),
+                        event_type='source_control_connection_registered',
+                        status='success',
+                        title='GitHub App Connection Registered',
                         message='Installation identity was verified and registered.',
                         detail='Run Full Validation before consuming Source Control evidence.',
-                        action_url=url_for('github_source.index'), queue_feedback=True,
+                        action_url=url_for('github_source.index'),
+                        queue_feedback=True,
                     )
                     return redirect(url_for('github_source.index', tab='registry'))
         except (GitHubProviderError, ValueError, CredentialEncryptionError):
             message = (
-                'GitHub App connection could not be verified. '
-                'Review App identity, installation scope and credentials.'
+                'GitHub App connection could not be verified. Review App identity, installation scope and credentials.'
             )
         except SQLAlchemyError:
             message = 'GitHub App connection could not be saved. Review integration configuration.'
@@ -270,8 +345,11 @@ def new_connection() -> ResponseReturnValue:
 
     response = _respond(
         'integrations/source_control/github/form.html',
-        form=form, available=available, message=message,
-        verified_scope=verified_scope, notification_context=_notification(),
+        form=form,
+        available=available,
+        message=message,
+        verified_scope=verified_scope,
+        notification_context=_notification(),
     )
     if registration_rejected:
         response.status_code = 409
@@ -313,16 +391,22 @@ def receive_signed_webhook() -> ResponseReturnValue:
     if not isinstance(native_id, int) or isinstance(native_id, bool) or native_id <= 0:
         abort(400)
 
-    candidates = SourceInstallation.query.filter_by(
-        host_key='github.com', provider_key='github',
-        native_installation_id=str(native_id),
-    ).limit(2).all()
+    candidates = (
+        SourceInstallation.query.filter_by(
+            host_key='github.com',
+            provider_key='github',
+            native_installation_id=str(native_id),
+        )
+        .limit(2)
+        .all()
+    )
     if len(candidates) != 1:
         abort(401)
     try:
         claim_verified_delivery(
             installation=candidates[0],
-            payload=payload, headers=request.headers,
+            payload=payload,
+            headers=request.headers,
             session=db.session,
         )
         db.session.commit()
