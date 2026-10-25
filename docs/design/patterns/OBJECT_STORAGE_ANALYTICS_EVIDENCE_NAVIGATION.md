@@ -36,3 +36,49 @@ Human-approved design review #3235; implementation issue #3260. This governs **O
 Validate one central tab; five domains without duplicate Evidence tabs; context status/source and link with `system_id`, `time_range`, `tab=evidence`; Capacity reconciliation disclosure; Forecast worker metadata; Alerts fallback detail; missing/partial states. Validate 6h and 24h, narrow/desktop and light/dark, keyboard/hover, real HTTP 200, and source formatting/pytest. This document does not equate static contract success with completed browser UAT.
 
 Workstream delivery: issue #3260 → branch/commit → review PR to temporary `kaori/review/staging-uat` → operator UAT/acceptance. Official CI/CD, Full Admission, promotion and release remain on HOLD pending explicit user approval.
+
+## Gherkin — UAT acceptance scenarios (pending operator execution)
+
+```gherkin
+Feature: Central Object Storage Analytics Data & Evidence
+
+  Scenario: Data & Evidence exists only on Overview
+    Given an Object Storage system has committed Inventory and Analytics evidence
+    When I open Analytics Overview
+    Then I see one "Data & Evidence" tab
+    And its view includes metric contract, source authority, readiness, and reconciliation
+    When I open Capacity, Performance, Top Consumers, Forecast, or Alerts
+    Then I do not see a generic "Evidence" tab in those five workspaces
+    And I see the contextual committed evidence state and source
+
+  Scenario: Domain link selects the correct system and analysis window
+    Given I selected an Object Storage system and a 6h time range
+    When I activate "View Data & Evidence" from any owning workspace
+    Then Analytics Overview opens with the same system identity
+    And the selected 6h window is preserved
+    And "Data & Evidence" is selected by the existing tab controller
+
+  Scenario: Domain-specific evidence is preserved
+    Given I open Capacity Summary
+    When I expand "Inventory & Operational Reconciliation"
+    Then committed Inventory and operational comparison are available
+    Given I open Forecast Worker & Method
+    Then I see the committed worker generation status and methodology
+    Given I open Alerts Overview
+    When I expand "Alert Source & Lifecycle Details"
+    Then I can distinguish Alertmanager lifecycle evidence from narrower Metrics Source ALERTS fallback
+    And KAORI anomaly signals remain independent of provider-alert records
+
+  Scenario: Unavailable evidence never becomes fabricated healthy data
+    Given a source has no samples, is stale, or a worker query failed
+    When I review any Object Storage Analytics workspace and the central Evidence view
+    Then source-specific Unknown, partial, stale, or failed status remains visible
+    And I do not see missing evidence represented as zero or Healthy
+
+  Scenario: Accessible and responsive operation
+    Given I am using keyboard navigation in light or dark mode
+    When I select a content tab, a domain evidence link, or a collapsed source detail
+    Then focus and selection state remain visible
+    And the content remains usable at desktop and narrow widths
+    And page requests do not raise a Jinja error or HTTP 500
+```
