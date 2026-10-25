@@ -81,3 +81,43 @@ Factor security remains governed by the Access MFA policy and the
 restricted post-primary challenge; UI availability does not imply that
 every user's MFA policy is enabled. Do not disclose QR/manual secrets or
 recovery codes in Activity Audit. Full browser acceptance pending.
+
+
+## Personal MFA enrollment workspace visual refinement (#3228)
+
+Settings → Account & Authentication → Multi-Factor Authentication reuses the
+approved **Account Profile & Access** full-width header/status presentation and
+**Credential Management** natural-height action/context composition. It does
+not introduce a separate Settings page, another sidebar capability, a custom
+form controller, or a new visual component family.
+
+- A single **icon + title + canonical Info Tip Guide + state indicator** owns
+  the MFA header. The three compact posture cards show the committed
+  individual factor state, the Access-owned MFA policy, and actual remaining
+  recovery-code count. Do not confuse `Factor Enrolled` with MFA policy
+  enforcement or count all enrolled users.
+- On unenrolled/pending accounts, the **left 7/12 action column** contains
+  Step 01 (generate manual setup key) and Step 02 (verify six-digit TOTP); the
+  **right 5/12 context column** describes the same three-step onboarding and
+  primary-provider/KAORI authority boundary. On enrolled accounts the same
+  action/context pattern hosts recovery-code regeneration and its warning.
+  Panels naturally stack on narrow screens.
+- Password controls are limited to `max-w-md`, enrollment TOTP confirmation
+  to `max-w-[15rem]`, and recovery-code verification to `max-w-sm` with
+  `w-full` inside each bounded container. Do not stretch six-digit controls
+  to full desktop width, force nowrap, or invent a QR generator.
+- The existing self-service server routes and form values (`begin`,
+  `confirm`, `regenerate`, `current_password`, `verification_code`, CSRF)
+  retain ownership; required `login_fresh()`, local-password and external
+  provider guardrails are unchanged. Setup key and one-use recovery-code
+  responses remain transient and marked `Cache-Control: no-store`.
+- Use KAORI Violet semantic surfaces, shared `table_label` and title Guide,
+  real Lucide icons with accessible text, visible validation feedback, light/
+  dark themes and Settings Final Lock's **nonvisual** HTMX loading status.
+  Do not introduce visible loading/progress bars.
+
+Acceptance is scoped automated contract + Settings Final Lock, djlint, then
+human screenshot UAT for not-enrolled/pending/enrolled/recovery views in
+desktop/mobile and both themes. Human factor/challenge enrollment acceptance
+remains separate; no migration or authentication backend change for this
+redesign.
