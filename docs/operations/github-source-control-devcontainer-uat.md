@@ -533,3 +533,100 @@ with real secrets belongs to authorized functional UAT; redact evidence.
 **Executable QA and Human Visual Acceptance on this new SHA:** PENDING.
 Official Developer Check, Full Admission, `kaori/staging`/main promotion,
 release/tag and infrastructure mutation remain HOLD.
+
+
+## 2026-10-25 — #3164 GitHub App connection-test proof admission
+
+**Authority:** Human UAT explicitly superseded the prior UI-only registration
+pattern in #3145 after viewing the accepted Kubernetes provider form. The
+GitHub App footer must show the canonical **Connection Test Required**
+status, with **Register Connection disabled until a successful Test Connection**
+for the exact form values. Registration must enforce this rule server-side.
+
+**Implementation:**
+- GitHub Test Connection uses the existing `/integrations/source-control/github/connections/new`
+  route via HTMX to avoid re-rendering or clearing user-entered PEM/webhook
+  secret from the live browser form. It sends the same CSRF-protected Flask-WTF
+  fields and action=test; server response is a sanitized, inline KAORI
+  success/error callout and an `HX-Trigger` containing only a signed proof.
+- Proof issuance is possible only after the real GitHub App installation
+  probe succeeds. Token is issued with `itsdangerous.URLSafeTimedSerializer`,
+  GitHub-specific salt, 10-minute maximum age, invoking user ID, and an
+  application-keyed HMAC-SHA256 fingerprint of **all form values**, including
+  the secret fields. The token never serializes PEM, webhook secret,
+  access tokens, or unkeyed credential hashes.
+- Alpine uses the existing Kubernetes-style `connectionVerified`
+  state and shared `_provider_registration_actions.html` footer. Any input
+  or change to the form invalidates the local proof and disables Register;
+  a new successful test emits `github-connection-tested`, restoring proof.
+- Server Save now rejects missing, expired, tampered, cross-user and
+  changed-configuration proofs with 409 (no persistence); when valid, the
+  existing `save_tested_connection` performs a fresh live GitHub installation
+  validation before writing a **validation_required** connection. A proof
+  never implies Full Validation or committed repository inventory.
+- Right Registration Flow copy is shortened to fit one line at the
+  reviewed desktop width: `Register a tested GitHub App.`,
+  `Save, then run Full Validation.`, `Test verifies identity and scope.`.
+  Small viewports wrap naturally without clipping.
+- No webhook flags, migration, provider admission, JobExecution or
+  external provider mutation changed.
+
+**Important security and lifecycle distinction:** The proof is a short-lived
+successful **pre-save test**, not a provider access token or substitute for
+KAORI Full Validation. After proof expiry, the backend blocks registration
+even if the client still displays a success status. Page reload resets
+client-side test state. Save does not trust client-side Alpine state.
+
+### Focused exact-SHA Dev Container checks
+
+```bash
+git rev-parse HEAD
+git status --short
+python -m ruff check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  app/integrations/source_control/source_control/providers/github/application/registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/unit/test_source_control_github_registration_proof.py
+python -m ruff format --check \
+  app/integrations/source_control/source_control/providers/github/application/routes.py \
+  app/integrations/source_control/source_control/providers/github/application/registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/unit/test_source_control_github_registration_proof.py
+djlint --check \
+  app/templates/integrations/source_control/github/form.html \
+  app/templates/integrations/source_control/github/partials/_connection_test_result.html
+python -m pytest -q -p no:cacheprovider \
+  tests/unit/test_source_control_github_registration_proof.py \
+  tests/ui/test_source_control_github_app_onboarding_contract.py \
+  tests/ui/test_source_control_sidebar_navigation_contract.py \
+  tests/unit/test_source_control_github_kernel_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Human Functional + Visual UAT (redacted test GitHub App only):**
+1. Fresh form: footer displays Connection Test Required; Register Connection
+   is disabled. No proof is issued by GET.
+2. Invalid form or bad GitHub App credentials: Test returns a sanitized error
+   in-page, no secret reflection, no issued proof, Register stays disabled.
+3. Successful Test: inline success, status becomes Connection Verified, Register
+   becomes active. Inspect network only for absence of raw credential material
+   in response body, `HX-Trigger` and proof; submitting form naturally still
+   sends the entered credentials to the authorized KAORI endpoint.
+4. Edit any field (including App ID, installation/account IDs, name,
+   environment, description, PEM, webhook secret, enabled checkbox):
+   proof clears and Register becomes disabled until retested.
+5. Forge direct Save POST without proof, invalid proof, a proof for different
+   values/user, or expired proof: server refuses registration; no canonical
+   identity is saved. Verify with authorized testing evidence.
+6. With matching valid proof, Save MUST independently revalidate live grants
+   before writing a connection. Success does not mark readiness as Ready;
+   Full Validation remains a separate step.
+7. Review 1440×900 and 390×844 in both themes, keyboard focus and touch:
+   aligned shared header/footer/actions, concise flow descriptions, no card
+   overflow, no stale credential in rendered response.
+
+**Source/merge checks and local executable/Human UAT are separate.** Do not
+claim a clean gate or Human Acceptance before exact-SHA Dev Container output.
+Official Developer Check, Full Admission, staging/main promotion and release
+remain **HOLD**.
