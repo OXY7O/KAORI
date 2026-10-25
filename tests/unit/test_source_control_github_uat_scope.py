@@ -10,6 +10,7 @@ from flask import Flask
 from werkzeug.exceptions import Forbidden, NotFound
 
 from app.integrations.source_control import uat_access
+from app.integrations.source_control.source_control.providers.github import kernel_contract
 
 
 def _actor(*, admin=True, source='database', permitted=True):
@@ -133,4 +134,64 @@ def test_github_uat_detail_exposes_only_committed_delivery_job_links():
     assert 'delivery.processing_state' in detail
     assert 'delivery.payload_sha256' not in detail
     assert 'delivery.repository_native_id_hint' not in detail
-    assert 'page_hero.context_card(' in detail
+    assert 'integrations/components/_provider_detail_posture.html' in detail
+    assert 'provider_detail_posture.render(' in detail
+    assert 'components/framed_workspace_tabs.html' in detail
+    assert 'framed_workspace_tabs.render(' in detail
+
+
+@pytest.mark.parametrize(
+    ('admin', 'expected'),
+    [
+        (True, '/integrations/source-control/github/uat/installations/321'),
+        (False, '/integrations/source-control/github/'),
+    ],
+)
+def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_uat(
+    monkeypatch, admin, expected
+):
+    app = Flask(__name__)
+    app.add_url_rule(
+        '/integrations/source-control/github/uat/installations/<int:installation_id>',
+        endpoint='github_source_uat.detail',
+        view_func=lambda installation_id: str(installation_id),
+    )
+    app.add_url_rule(
+        '/integrations/source-control/github/',
+        endpoint='github_source.index',
+        view_func=lambda: 'GitHub Integrations',
+    )
+    monkeypatch.setattr(kernel_contract, 'current_user', _actor(admin=admin))
+    with app.test_request_context('/integrations/source-control'):
+        assert kernel_contract._detail_url(SimpleNamespace(id=321), '') == expected
+
+
+def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secrets():
+    root = Path(__file__).resolve().parents[2]
+    detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
+    kernel = (
+        root / 'app/integrations/source_control/source_control/providers/github/kernel_contract.py'
+    ).read_text()
+
+    assert "url_for('github_source_uat.detail', installation_id=record.id)" in kernel
+    assert 'local_super_admin(current_user)' in kernel
+    assert "return url_for('github_source.index')" in kernel
+    for title in ('Configuration', 'Validation & Capabilities', 'Runtime & History', 'Inventory & Lifecycle'):
+        assert title in detail
+    assert "integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory']" in detail
+    assert 'provider_detail_posture.render(' in detail
+    assert 'framed_workspace_tabs.render(' in detail
+    assert "url_for('github_source.index', tab='registry')" in detail
+    assert 'GitHub Full Validation' in detail
+    assert 'action_form.hidden_tag()' in detail
+    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
+    assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in detail
+    assert "readiness != 'ready'" in detail
+    assert 'integrations/source_control/github/_inventory_table.html' in detail
+    assert 'delivery.dispatched_job_execution_id' in detail
+    assert 'delivery.processing_state' in detail
+    assert 'canonical.environment' in detail
+    assert 'installation.native_installation_id' in detail
+    assert 'form.private_key_pem' not in detail
+    assert 'form.webhook_secret' not in detail
+    assert 'credential.private_key' not in detail
