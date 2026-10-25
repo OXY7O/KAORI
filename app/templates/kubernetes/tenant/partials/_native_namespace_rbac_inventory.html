@@ -1,3 +1,5 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="external-native-access-heading"
          data-external-native-access-inventory>
@@ -45,7 +47,7 @@
         {% endif %}
     </div>
     {% set latest_native_inspection = recent_external_native_access[0] if recent_external_native_access else none %}
-    <div class="grid gap-3 bg-surface-hover/40 px-5 py-4 sm:grid-cols-3"
+    <div class="grid gap-3 bg-surface-hover px-5 py-4 sm:grid-cols-3"
          aria-label="Native RBAC inspection snapshot">
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
             <p class="text-xs text-content-muted">Provider Authority</p>
