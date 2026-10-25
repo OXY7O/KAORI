@@ -211,3 +211,38 @@ def test_normal_login_audit_still_describes_a_user_session() -> None:
     assert context['target_name'] == 'local-test'
     assert context['source_label'] == 'Authentication provider'
     assert next(value['value'] for value in context['context_items'] if value['label'] == 'Action') == 'Sign in'
+
+
+def test_committed_mfa_event_keeps_actor_policy_delta_and_session_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.access.authentication.mfa import audit as mfa_audit
+
+    actor = SimpleNamespace(id=27)
+    snapshot = SimpleNamespace(
+        key='user:27',
+        label='KAORI Test Admin',
+        as_json=lambda: {'schema': 'activity_actor.v1', 'key': 'user:27'},
+    )
+    monkeypatch.setattr(mfa_audit, 'actor_snapshot_for_user', lambda _actor: snapshot)
+    with _submit(_app(), 'optional'):
+        session['auth_session_ref'] = 'opaque-correlation-only'
+        event = mfa_audit.stage_authentication_security_event(
+            actor,
+            action='mfa_policy_changed',
+            authenticated=True,
+            success=True,
+            previous_mode='disabled',
+            next_mode='optional',
+        )
+        assert event.title == 'MFA Policy Changed'
+        assert event.event_type == 'authentication'
+        assert event.category_key == 'access'
+        assert event.actor_key == 'user:27'
+        assert event.metadata_json['access_action'] == 'mfa_policy_changed'
+        assert event.metadata_json['previous_policy_mode'] == 'disabled'
+        assert event.metadata_json['new_policy_mode'] == 'optional'
+        assert event.metadata_json['session_reference'] == 'opaque-correlation-only'
+        assert 'verification_code' not in event.metadata_json
+        assert 'totp_secret' not in event.metadata_json
+        assert 'recovery_code' not in event.metadata_json
