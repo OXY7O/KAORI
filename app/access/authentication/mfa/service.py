@@ -1,26 +1,28 @@
 """Encrypted TOTP enrollment, one-use recovery and replay-resistant MFA checks.
 
-RFC 6238 is implemented by cryptography's vetted TOTP primitive. KAORI never
-reimplements OTP cryptography and never sends secrets to external QR endpoints.
+TOTP and recovery primitives are owned by the already approved PyOTP factor
+adapter. KAORI never implements TOTP cryptography or posts QR secrets to a web service.
 """
 
 from __future__ import annotations
 
-import base64
-import secrets
 from datetime import UTC, datetime, timedelta
 
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.twofactor import InvalidToken
-from cryptography.hazmat.primitives.twofactor.totp import TOTP
 from sqlalchemy.exc import SQLAlchemyError
-from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.access.authentication.mfa.audit import stage_authentication_security_event
+from app.access.authentication.mfa.factors import (
+    accepted_totp_step,
+    generate_recovery_codes,
+    hash_recovery_code,
+    recovery_code_match,
+    start_totp_enrollment,
+)
 from app.access.authentication.mfa.policy import MfaPolicyDecision, evaluate_mfa_policy
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
 from app.models.user import User
+from app.security.credentials import decrypt_credential
 
 ENROLLMENT_TTL = timedelta(minutes=10)
 MFA_CHALLENGE_TTL_SECONDS = 300
@@ -46,30 +48,13 @@ def mfa_decision(user: User) -> MfaPolicyDecision:
     )
 
 
-def _totp(secret: str) -> TOTP:
-    try:
-        key = base64.b32decode(secret, casefold=False)
-    except (ValueError, base64.binascii.Error) as exc:
-        raise MfaVerificationError('MFA factor is unavailable.') from exc
-    return TOTP(key, 6, hashes.SHA1(), 30)
-
-
-def _accepted_step(
-    secret: str, code: str, *, last_accepted_step: int | None, now: datetime
-) -> int | None:
-    if not isinstance(code, str) or len(code) != 6 or not code.isascii() or not code.isdecimal():
-        return None
-    current_step = int(now.timestamp()) // 30
-    verifier = _totp(secret)
-    for step in (current_step - 1, current_step, current_step + 1):
-        if step <= (last_accepted_step if last_accepted_step is not None else -1):
-            continue
-        try:
-            verifier.verify(code.encode('ascii'), step * 30)
-        except InvalidToken:
-            continue
-        return step
-    return None
+def _accepted_step(secret: str, code: str, *, last_accepted_step: int | None, now: datetime) -> int | None:
+    return accepted_totp_step(
+        secret,
+        code,
+        last_accepted_step=last_accepted_step,
+        timestamp=int(now.timestamp()),
+    )
 
 
 def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
@@ -77,9 +62,12 @@ def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
     if mfa_enrolled(user.id):
         raise MfaVerificationError('MFA is already enrolled.')
     existing = AuthenticationMfaFactor.query.filter_by(user_id=user.id).with_for_update().first()
-    secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
+    enrollment = start_totp_enrollment(account_label=user.username)
+    secret = decrypt_credential(enrollment.encrypted_secret)
+    if secret is None:
+        raise MfaVerificationError('MFA enrollment encryption is unavailable.')
     factor = existing if existing is not None else AuthenticationMfaFactor(user_id=user.id)
-    factor.totp_secret = secret
+    factor.totp_secret = enrollment.encrypted_secret
     factor.enabled = False
     factor.last_accepted_step = None
     factor.recovery_hashes = []
@@ -111,8 +99,8 @@ def confirm_mfa_enrollment(user: User, code: str, *, authenticated: bool = True)
     accepted = _accepted_step(factor.totp_secret, code, last_accepted_step=None, now=now)
     if accepted is None:
         raise MfaVerificationError('Verification code was not accepted.')
-    recovery = [secrets.token_hex(8).upper() for _ in range(8)]
-    factor.recovery_hashes = [generate_password_hash(value) for value in recovery]
+    recovery = list(generate_recovery_codes())
+    factor.recovery_hashes = [hash_recovery_code(value) for value in recovery]
     factor.last_accepted_step = accepted
     factor.enabled = True
     factor.enrolled_at = now
@@ -144,14 +132,10 @@ def verify_mfa_challenge(user: User, submitted: str, *, authenticated: bool = Fa
         factor.last_accepted_step = accepted
     else:
         kind = 'recovery'
-        remaining: list[str] | None = None
-        for index, stored_hash in enumerate(factor.recovery_hashes or []):
-            if check_password_hash(stored_hash, submitted.upper()):
-                remaining = [x for i, x in enumerate(factor.recovery_hashes) if i != index]
-                break
-        if remaining is None:
+        used_digest = recovery_code_match(submitted, factor.recovery_hashes or [])
+        if used_digest is None:
             raise MfaVerificationError('Verification code was not accepted.')
-        factor.recovery_hashes = remaining
+        factor.recovery_hashes = [digest for digest in factor.recovery_hashes if digest != used_digest]
     db.session.add(stage_authentication_security_event(
         user, action='mfa_challenge_verified', authenticated=authenticated, success=True,
     ))
@@ -168,8 +152,8 @@ def regenerate_mfa_recovery_codes(user: User) -> list[str]:
     factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id, enabled=True).with_for_update().first()
     if factor is None:
         raise MfaVerificationError('MFA is not enrolled.')
-    codes = [secrets.token_hex(8).upper() for _ in range(8)]
-    factor.recovery_hashes = [generate_password_hash(value) for value in codes]
+    codes = list(generate_recovery_codes())
+    factor.recovery_hashes = [hash_recovery_code(value) for value in codes]
     db.session.add(stage_authentication_security_event(
         user, action='mfa_recovery_regenerated', authenticated=True, success=True,
     ))
