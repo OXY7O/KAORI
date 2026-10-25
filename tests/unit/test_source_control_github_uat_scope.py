@@ -15,15 +15,19 @@ from app.integrations.source_control.source_control.providers.github import kern
 
 def _actor(*, admin=True, source='database', permitted=True):
     return SimpleNamespace(
-        is_authenticated=True, is_active=True, is_super_admin=admin,
-        auth_source=source, has_permission=lambda _: permitted,
+        is_authenticated=True,
+        is_active=True,
+        is_super_admin=admin,
+        auth_source=source,
+        has_permission=lambda _: permitted,
     )
 
 
 def test_available_provider_needs_no_uat_env_flag(monkeypatch):
     app = Flask(__name__)
     monkeypatch.setattr(
-        uat_access, 'provider_kind',
+        uat_access,
+        'provider_kind',
         lambda *_: SimpleNamespace(available=True),
     )
     with app.app_context():
@@ -33,17 +37,23 @@ def test_available_provider_needs_no_uat_env_flag(monkeypatch):
 def test_planned_provider_blocks_uat(monkeypatch):
     app = Flask(__name__)
     monkeypatch.setattr(
-        uat_access, 'provider_kind',
+        uat_access,
+        'provider_kind',
         lambda *_: SimpleNamespace(available=False),
     )
     with app.app_context():
         assert not uat_access.uat_enabled()
 
 
-@pytest.mark.parametrize('user', [
-    _actor(admin=False), _actor(source='sso'), _actor(permitted=False),
-    SimpleNamespace(is_authenticated=False, is_super_admin=True, auth_source='database'),
-])
+@pytest.mark.parametrize(
+    'user',
+    [
+        _actor(admin=False),
+        _actor(source='sso'),
+        _actor(permitted=False),
+        SimpleNamespace(is_authenticated=False, is_super_admin=True, auth_source='database'),
+    ],
+)
 def test_only_local_authorized_super_admin_can_access_uat(user):
     assert not uat_access.local_super_admin(user)
 
@@ -73,18 +83,15 @@ def test_fails_closed_for_non_admin_when_enabled(monkeypatch):
 
 def test_uat_routes_are_isolated_and_do_not_call_github_during_get():
     root = Path(__file__).resolve().parents[2]
-    file = root / (
-        'app/integrations/source_control/source_control/providers/github/'
-        'application/uat_routes.py'
-    )
+    file = root / ('app/integrations/source_control/source_control/providers/github/application/uat_routes.py')
     source = file.read_text()
     assert "url_prefix='/integrations/source-control/github/uat'" in source
-    assert "require_uat_access()" in source
-    assert "read_installation_inventory(" in source
-    assert "enqueue_github_app_job(" in source
-    assert "enqueue_source_repository_sync(" in source
+    assert 'require_uat_access()' in source
+    assert 'read_installation_inventory(' in source
+    assert 'enqueue_github_app_job(' in source
+    assert 'enqueue_source_repository_sync(' in source
     assert "@permission_required('integrations.manage')" in source
-    assert "FlaskForm().validate_on_submit()" in source
+    assert 'FlaskForm().validate_on_submit()' in source
     assert "trigger_type='uat'" in source
     assert 'GitHubAppClient' not in source
     assert 'requests.get(' not in source
@@ -108,7 +115,6 @@ def test_uat_templates_keep_committed_unknown_vs_zero_and_htmx_pagination():
     assert '<style' not in inventory and '<style' not in detail
 
 
-
 def test_live_registration_is_restricted_before_credentials_are_read():
     root = Path(__file__).resolve().parents[2]
     source = root.joinpath(
@@ -125,9 +131,7 @@ def test_github_uat_detail_exposes_only_committed_delivery_job_links():
     routes = root.joinpath(
         'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
     ).read_text()
-    detail = root.joinpath(
-        'app/templates/integrations/source_control/github/uat_detail.html'
-    ).read_text()
+    detail = root.joinpath('app/templates/integrations/source_control/github/uat_detail.html').read_text()
     assert 'filter_by(installation_id=installation.id)' in routes
     assert 'SourceWebhookDelivery.received_at.desc()' in routes
     assert 'delivery.dispatched_job_execution_id' in detail
@@ -147,9 +151,7 @@ def test_github_uat_detail_exposes_only_committed_delivery_job_links():
         (False, '/integrations/source-control/github/'),
     ],
 )
-def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_uat(
-    monkeypatch, admin, expected
-):
+def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_uat(monkeypatch, admin, expected):
     app = Flask(__name__)
     app.add_url_rule(
         '/integrations/source-control/github/uat/installations/<int:installation_id>',
@@ -169,9 +171,7 @@ def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_ua
 def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secrets():
     root = Path(__file__).resolve().parents[2]
     detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
-    kernel = (
-        root / 'app/integrations/source_control/source_control/providers/github/kernel_contract.py'
-    ).read_text()
+    kernel = (root / 'app/integrations/source_control/source_control/providers/github/kernel_contract.py').read_text()
 
     provider_rows = (root / 'app/templates/integrations/partials/_domain_workspace.html').read_text()
     domain_service = (root / 'app/integrations/domain_service.py').read_text()
@@ -185,7 +185,7 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     assert "integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory']" in detail
     assert 'provider_detail_posture.render(' in detail
     assert 'framed_workspace_tabs.render(' in detail
-    assert "url_for('github_source.index', tab='registry')" in detail
+    assert 'url_for("github_source.index", tab="registry")' in detail
     assert 'GitHub Full Validation' in detail
     assert 'action_form.hidden_tag()' in detail
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
@@ -199,3 +199,37 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     assert 'form.private_key_pem' not in detail
     assert 'form.webhook_secret' not in detail
     assert 'credential.private_key' not in detail
+
+
+def test_github_configuration_reuses_approved_connection_contract_and_operational_context() -> None:
+    root = Path(__file__).resolve().parents[2]
+    detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
+    kubernetes = (
+        root
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    ).read_text()
+    shared = (
+        root / 'app/templates/integrations/components/_provider_operational_context.html'
+    ).read_text()
+
+    assert '"Committed grants only"' in detail
+    assert 'Committed evidence, not installation selection' not in detail
+    assert 'data-kaori-connection-contract-v2' in detail
+    assert 'data-kaori-connection-summary' in detail
+    assert 'data-kaori-connection-evidence' in detail
+    assert "ui.section_header('file-key-2'," in detail
+    assert "action_html=github_connection_status" in detail
+    assert 'xl:grid-cols-4' in detail
+    assert "ui.palette_icon('waypoints', 'brand', size='sm')" in detail
+    assert "table_label.metadata_label('GitHub REST API v3', 'git-branch')" in detail
+    assert "operational_context.render(" in detail
+    assert "('Synchronize', 'Commit repository grants" in detail
+    assert "installation.native_app_id" in detail
+    assert "installation.native_installation_id" in detail
+    assert "installation.repository_scope|title" in detail
+    assert "inventory.total is not none else 'Not Observed'" in detail
+    assert "integration_status(readiness, display='indicator')" in detail
+    assert "integrations/components/_provider_operational_context.html" in detail
+    assert "operational_context.render(" in kubernetes
+    assert 'data-kaori-provider-operational-context' in shared
+    assert '<style' not in detail
