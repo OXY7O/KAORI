@@ -6,7 +6,8 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% block title %}Choose {{ domain.label }} Provider · KAORI{% endblock title %}
 {% block dashboard_content %}
-    <div class="kaori-integration-semantic space-y-6" data-kaori-provider-selector>
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-provider-selector>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -14,20 +15,20 @@
                         <h1 class="{{ page_hero.title_classes() }}">Choose Provider</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Select a provider to configure a new connection.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("package-search", available_count ~ (" Available Provider" if available_count == 1 else " Available Providers")) }}
-                            {{ page_hero.meta_label("shield-check", "Provider-Owned Registration") }}
+                            {{ page_hero.meta_label("package-search", available_count ~ (" Available Provider" if available_count == 1 else " Available Providers") ) }}
+                            {{ page_hero.meta_label('shield-check', 'Provider-Owned Registration') }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="{{ domain.label }} registration boundary">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header("Registration Context", "Provider-Owned Setup", "layers-3") }}
+                        {{ page_hero.context_header('Registration Context', 'Provider-Owned Setup', 'layers-3') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric("package-search", "Available", available_count, "Eligible for registration") }}
                             {{ page_hero.context_metric("layers-3", "Capability", domain.label, "KAORI integration domain", "text-sm font-semibold leading-6") }}
                         </div>
-                        {{ page_hero.context_info("shield-check", "Adapters own validation and runtime.") }}
+                        {{ page_hero.context_info('shield-check', 'Adapters own validation and runtime.') }}
                     </div>
                 </aside>
             </div>
@@ -35,12 +36,15 @@
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-label="{{ domain.label }} provider selection">
             <header class="flex flex-wrap items-center justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-base font-semibold text-content-primary">Choose a Provider</h2>
-                        {{ info_tip.render("provider-choices-" ~ integration_type, "Provider Registration", "Only admitted providers can register a connection. Planned providers remain visible as roadmap entries without an operational adapter or registration endpoint.", placement="right", variant="guide") }}
+                <div class="flex min-w-0 items-center gap-3">
+                    {{ integration_ui.palette_icon("layers-3", "brand", size="lg") }}
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Choose a Provider</h2>
+                            {{ info_tip.render("provider-choices-" ~ integration_type, "Provider Registration", "Only admitted providers can register a connection. Planned providers remain visible as roadmap entries without an operational adapter or registration endpoint.", placement="right", variant="guide") }}
+                        </div>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Choose an available provider to open its registration form.</p>
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Choose an available provider to open its registration form.</p>
                 </div>
                 <a href="{{ url_for(domain.workspace_endpoint) }}"
                    class="{{ action_button.classes('secondary') }}">
@@ -61,11 +65,11 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-base font-semibold text-content-primary">{{ provider.label }}</h3>
                                         {% if provider.registration_url %}
-                                            {{ table_label.status_label("Available", "normal") }}
+                                            {{ table_label.status_label('Available', 'normal') }}
                                         {% elif provider.lifecycle == 'planned' %}
-                                            {{ table_label.status_label("Planned", "unknown") }}
+                                            {{ table_label.status_label('Planned', 'unknown') }}
                                         {% else %}
-                                            {{ table_label.status_label("Not Available", "unknown") }}
+                                            {{ table_label.status_label('Not Available', 'unknown') }}
                                         {% endif %}
                                     </div>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">
@@ -79,25 +83,23 @@
                             </div>
                             <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">
                                 {% if provider.lifecycle == 'planned' %}
-                                    Provider support is planned. No registration or runtime is available.
+                                    Registration is not yet available.
                                 {% else %}
                                     Open provider-owned configuration and validate the connection.
                                 {% endif %}
                             </p>
                             <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
                                 <div class="min-w-0">
-                                    <dt class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">
-                                        <span>Adapter</span>
-                                        {{ info_tip.render("adapter-" ~ integration_type ~ "-" ~ provider.key, "Provider Adapter", "An adapter implements the external provider contract. Planned providers do not have an operational adapter; KAORI must not report readiness until admitted.", placement="right") }}
-                                    </dt>
-                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">{{ provider.adapter }}</dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Adapter</dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                        {{ provider.adapter }}
+                                    </dd>
                                 </div>
                                 <div class="min-w-0">
-                                    <dt class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">
-                                        <span>Protocol</span>
-                                        {{ info_tip.render("protocol-" ~ integration_type ~ "-" ~ provider.key, "Provider Protocol", "This field identifies the provider connection protocol when defined. Planned integration details are not a validated connection contract.", placement="right") }}
-                                    </dt>
-                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">{{ provider.protocol }}</dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Protocol</dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                        {{ provider.protocol }}
+                                    </dd>
                                 </div>
                             </dl>
                             <div class="mt-auto pt-5">
