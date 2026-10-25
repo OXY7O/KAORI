@@ -370,6 +370,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     'access': (
         ('users.', 'users'),
         ('identity_providers.', 'identity_providers'),
+        ('access.authentication_security.', 'authentication_security'),
         ('access.roles.', 'roles'),
         ('access.permissions.', 'permissions'),
         ('access.activity_audit.', 'activity_audit'),
