@@ -46,7 +46,11 @@ def test_bulk_tls_external_apply_buttons_follow_the_same_validated_form() -> Non
     template = _template()
     form_end = template.index('</form>', template.index('id="tls-secret-update-form"'))
     external_actions = template[form_end:]
-    apply_buttons = re.findall(r'<button\\b[^>]*\\bdata-validation-apply\\b[^>]*>', external_actions, re.DOTALL)
+    apply_buttons = [
+        button
+        for button in re.findall(r'<button\b[^>]*>', external_actions, re.DOTALL)
+        if re.search(r'(?<![\w-])data-validation-apply(?=\s|>)', button)
+    ]
 
     assert len(apply_buttons) == 2  # Primary Update Selected and confirmation-modal Update Selected.
     assert all('data-validation-form="tls-secret-update-form"' in button for button in apply_buttons)
