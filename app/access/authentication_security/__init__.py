@@ -28,8 +28,7 @@ def active_security_tab(requested: str | None) -> str:
 def index():
     active_tab = active_security_tab(request.args.get('tab'))
     tabs = tuple(
-        (key, label, icon, url_for('access.authentication_security.index', tab=key))
-        for key, label, icon in _TABS
+        (key, label, icon, url_for('access.authentication_security.index', tab=key)) for key, label, icon in _TABS
     )
     context = {
         'active_tab': active_tab,
@@ -37,6 +36,9 @@ def index():
         'mfa_modes': tuple(mode.value for mode in MfaPolicyMode),
         'bot_providers': bot_provider_definitions(),
     }
-    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-Target') == 'authentication-security-page':
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'authentication-security-page'
+    ):
         return render_template('access/authentication_security/partials/_page_content.html', **context)
     return render_template('access/authentication_security/index.html', **context)
