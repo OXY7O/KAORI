@@ -925,6 +925,7 @@ def get_provider_access_evidence_registry_context(
     status_value = status if status in {'observed', 'review_required'} else ''
     query = AuditEvent.query.filter(AuditEvent.target_type == target_types[provider])
     total_committed = query.count()
+    total_review_required = query.filter(AuditEvent.metadata_json['status'].as_string() == 'review_required').count()
     if status_value:
         query = query.filter(AuditEvent.metadata_json['status'].as_string() == status_value)
     if search_value:
@@ -942,6 +943,7 @@ def get_provider_access_evidence_registry_context(
     )
     return {
         'access_evidence_total': total_committed,
+        'access_evidence_review_required': total_review_required,
         'access_evidence_rows': rows,
         'access_evidence_pagination': pagination,
         'access_evidence_filters': {'search': search_value, 'status': status_value},

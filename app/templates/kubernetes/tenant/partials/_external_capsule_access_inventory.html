@@ -1,3 +1,5 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
@@ -48,7 +50,7 @@
         {% endif %}
     </div>
     {% set latest_capsule_inspection = recent_external_capsule_access[0] if recent_external_capsule_access else none %}
-    <div class="grid gap-3 bg-surface-hover px-5 py-4 sm:grid-cols-3"
+    <div class="grid gap-3 bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-4"
          aria-label="Capsule inspection snapshot">
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
             <p class="text-xs text-content-muted">Provider Authority</p>
@@ -61,6 +63,10 @@
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
             <p class="text-xs text-content-muted">Committed Evidence</p>
             <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_total }} records</p>
+        </div>
+        <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
+            <p class="text-xs text-content-muted">Review Required</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_review_required }} records</p>
         </div>
     </div>
     {% set evidence_registry_id = 'tenant-capsule-evidence-registry' %}
@@ -129,100 +135,86 @@
              class="htmx-indicator px-5 py-2 text-xs text-content-muted"
              role="status"
              aria-live="polite">Refreshing committed evidence…</div>
-        <div class="space-y-2 px-5 py-4">
-            {% if access_evidence_rows %}
-                {% for event in access_evidence_rows %}
-                    {% set evidence = event.metadata_json or {} %}
-                    <article class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5 sm:px-4">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div class="min-w-0 flex-1">
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[1050px] table-fixed xl:min-w-0') }}">
+                <caption class="sr-only">Capsule committed inspection evidence with actions opening separate details.</caption>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Observed At</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">External Bindings</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Provider Owners</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">KAORI-labelled</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Status</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for event in access_evidence_rows %}
+                        {% set evidence = event.metadata_json or {} %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
                                 <p class="truncate text-xs font-semibold text-content-primary"
-                               title="{{ evidence.tenant_id }}">Capsule Tenant · {{ evidence.tenant_id }}</p>
-                                <p class="mt-1 text-xs text-content-muted">
-                                    {{ event.created_at|user_datetime }} · {{ evidence.external_count }} external bindings · {{ evidence.owner_count }} provider owners
-                                    · {{ evidence.kaori_count }} KAORI-labelled bindings
-                                </p>
-                            </div>
-                            {{ table_label.status_label('Review Required' if evidence.status == 'review_required' else 'Observed',
-                                                    'warning' if evidence.status == 'review_required' else 'info') }}
-                        </div>
-                        {% if can_manage %}
-                            <form method="post"
-                                  action="{{ url_for('tenant.analyze_capsule_external_access_route') }}"
-                                  class="mt-3">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="access_inventory_view" value="capsule">
-                                <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
-                                <button type="submit"
-                                        class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
-                                    <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    Analyze Access Drift
-                                </button>
-                            </form>
-                        {% endif %}
-                        <details class="group mt-3 border-t border-outline-subtle pt-2">
-                            <summary class="inline-flex cursor-pointer items-center gap-2 rounded-md text-xs font-medium text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                Inspect principal and provider evidence
-                            </summary>
-                            <div class="mt-2 space-y-3 text-xs text-content-secondary">
-                                <p>
-                                    Provider UID: <span class="break-all font-mono">{{ evidence.provider_uid }}</span>
-                                    · resourceVersion {{ evidence.resource_version }}
-                                </p>
-                                {% for owner in evidence.owners %}
-                                    <p>Capsule owner · {{ owner.kind }} / {{ owner.name }}</p>
-                                {% endfor %}
-                                {% for binding in evidence.bindings %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-2.5">
-                                        <p class="font-semibold text-content-primary">{{ binding.cluster_role_name or 'Unknown ClusterRole' }}</p>
-                                        <p class="mt-1">
-                                            {{ binding.source }} · {{ binding.ownership|title }}
-                                            · {{ binding.governance|replace('_', ' ') |title }}
-                                        </p>
-                                        {% for subject in binding.subjects %}
-                                            <p class="mt-1 break-all font-mono">
-                                                {{ subject.kind }} · {{ subject.name }}
-                                                {% if subject.namespace %}
-                                                    <span>· {{ subject.namespace }}</span>
-                                                {% endif %}
-                                            </p>
-                                        {% endfor %}
-                                        {% if can_manage and binding.ownership == 'external' %}
-                                            <form method="post"
-                                                  action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
-                                                  class="mt-2">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <input type="hidden" name="access_inventory_view" value="capsule">
-                                                <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
-                                                <input type="hidden" name="binding_index" value="{{ loop.index0 }}">
-                                                <button type="submit"
-                                                        class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
-                                                    <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                    Review Profile Match
-                                                </button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </details>
-                    </article>
-                {% endfor %}
-            {% else %}
-                <div class="flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center sm:min-h-52 sm:py-12">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="scan-search" class="h-5 w-5"></i>
-                    </span>
-                    <p class="text-sm font-semibold text-content-primary">
-                        {{ 'No matching inspections found.' if access_evidence_filters.search or access_evidence_filters.status else 'No committed external-access inspection yet.' }}
-                    </p>
-                    <p class="mx-auto max-w-xl text-xs leading-6 text-content-muted">
-                        {{ 'Change the evidence filters to see more committed observations.' if access_evidence_filters.search or access_evidence_filters.status else 'Select a governed Capsule Tenant and inspect explicitly. No identities are imported and no RBAC or ownership is changed.' }}
-                    </p>
-                </div>
-            {% endif %}
+                                   title="{{ evidence.tenant_id }}">Capsule Tenant</p>
+                                <p class="mt-1 truncate font-mono text-xs text-content-muted"
+                                   title="{{ evidence.tenant_id }}">{{ evidence.tenant_id }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-xs text-content-secondary">
+                                {{ event.created_at|user_datetime }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} text-sm tabular-nums">{{ evidence.external_count }}</td>
+                            <td class="{{ table_ui.cell_classes() }} text-sm tabular-nums">{{ evidence.owner_count }}</td>
+                            <td class="{{ table_ui.cell_classes() }} text-sm tabular-nums">{{ evidence.kaori_count }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label('Review Required' if evidence.status == 'review_required' else 'Observed',
+                                               'warning' if evidence.status == 'review_required' else 'info') }}</td>
+                            <td class="{{ table_ui.cell_classes(action=true) }}">
+                                <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="tenant-capsule-evidence-{{ event.id }}"
+                                            aria-controls="tenant-capsule-evidence-{{ event.id }}"
+                                            aria-haspopup="dialog"
+                                            class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        Inspect
+                                    </button>
+                                    {% if can_manage %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.analyze_capsule_external_access_route') }}"
+                                              class="inline-flex">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="access_inventory_view" value="capsule">
+                                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                            <button type="submit"
+                                                    aria-label="Analyze Access Drift for {{ evidence.tenant_id }}"
+                                                    class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
+                                                <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Analyze Drift
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="p-0">
+                                <div class="flex min-h-44 flex-col items-center justify-center gap-3 bg-surface-hover px-5 py-10 text-center sm:min-h-52 sm:py-12">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                        <i data-lucide="scan-search" class="h-5 w-5"></i>
+                                    </span>
+                                    <p class="text-sm font-semibold text-content-primary">
+                                        {{ 'No matching inspections found.' if access_evidence_filters.search or access_evidence_filters.status else 'No committed external-access inspection yet.' }}
+                                    </p>
+                                    <p class="mx-auto max-w-xl text-xs leading-6 text-content-muted">
+                                        {{ 'Change the evidence filters to see more committed observations.' if access_evidence_filters.search or access_evidence_filters.status else 'Select a governed Capsule Tenant and inspect explicitly. No identities are imported and no RBAC or ownership is changed.' }}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {{ registry_ui.footer('tenant.tenants',
             evidence_registry_id,
@@ -235,20 +227,169 @@
             control_name='capsule-access-evidence',
             page_param='access_evidence_page',
             per_page_param='access_evidence_per_page') }}
+        {# Existing native dialog pattern; no provider calls on dialog open. #}
+        {% for event in access_evidence_rows %}
+            {% set evidence = event.metadata_json or {} %}
+            <dialog id="tenant-capsule-evidence-{{ event.id }}"
+                    data-kaori-native-dialog
+                    aria-labelledby="tenant-capsule-evidence-{{ event.id }}-title"
+                    class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-2xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+                <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden">
+                    <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">Capsule committed observation</p>
+                            <h2 id="tenant-capsule-evidence-{{ event.id }}-title"
+                                class="mt-1 text-base font-semibold text-content-primary">Inspect principal and provider evidence</h2>
+                            <p class="mt-1 break-all font-mono text-xs text-content-muted">{{ evidence.tenant_id }}</p>
+                        </div>
+                        <button type="button"
+                                data-kaori-dialog-close
+                                aria-label="Close Capsule observation"
+                                class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                            Close
+                        </button>
+                    </header>
+                    <div class="min-h-0 space-y-4 overflow-y-auto bg-surface-page p-4 sm:p-5">
+                        <div class="grid gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3 sm:grid-cols-2">
+                            <div>
+                                <p class="text-xs text-content-muted">Observed At</p>
+                                <p class="mt-1 text-xs font-semibold text-content-primary">{{ event.created_at|user_datetime }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-content-muted">Inspection Status</p>
+                                <div class="mt-1">{{ table_label.status_label('Review Required' if evidence.status == 'review_required' else 'Observed',
+                                               'warning' if evidence.status == 'review_required' else 'info') }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-2 space-y-3 text-xs text-content-secondary">
+                            <p>
+                                Provider UID: <span class="break-all font-mono">{{ evidence.provider_uid }}</span>
+                                · resourceVersion {{ evidence.resource_version }}
+                            </p>
+                            <h3 class="text-sm font-semibold text-content-primary">Observed Capsule Owners</h3>
+                            {% for owner in evidence.owners %}
+                                <p>Capsule owner · {{ owner.kind }} / {{ owner.name }}</p>
+                            {% else %}
+                                <p class="text-xs text-content-muted">No provider owners recorded in this observation.</p>
+                            {% endfor %}
+                            <h3 class="text-sm font-semibold text-content-primary">Provider Bindings</h3>
+                            {% for binding in evidence.bindings %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-2.5">
+                                    <p class="font-semibold text-content-primary">{{ binding.cluster_role_name or 'Unknown ClusterRole' }}</p>
+                                    <p class="mt-1">
+                                        {{ binding.source }} · {{ binding.ownership|title }}
+                                        · {{ binding.governance|replace('_', ' ') |title }}
+                                    </p>
+                                    {% for subject in binding.subjects %}
+                                        <p class="mt-1 break-all font-mono">
+                                            {{ subject.kind }} · {{ subject.name }}
+                                            {% if subject.namespace %}
+                                                <span>· {{ subject.namespace }}</span>
+                                            {% endif %}
+                                        </p>
+                                    {% else %}
+                                <p class="rounded-lg border border-dashed border-outline-default bg-surface-card p-4 text-xs text-content-muted">
+                                    No provider bindings observed in the committed inspection.
+                                </p>
+                            {% endfor %}
+                                    {% if can_manage and binding.ownership == 'external' %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
+                                              class="mt-2">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="access_inventory_view" value="capsule">
+                                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                            <input type="hidden" name="binding_index" value="{{ loop.index0 }}">
+                                            <button type="submit"
+                                                    class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
+                                                <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Review Profile Match
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs leading-5 text-content-muted">
+                            Committed provider observation only. Opening this dialog does not reverify effective Kubernetes access.
+                        </p>
+                    </div>
+                </section>
+            </dialog>
+        {% endfor %}
     </section>
     {% if recent_capsule_access_drift %}
-        <div class="border-t border-outline-subtle px-5 py-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest committed Access Drift findings</p>
-            <div class="mt-3 space-y-2">
-                {% for event in recent_capsule_access_drift %}
-                    {% set evidence = event.metadata_json or {} %}
-                    <details class="group rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                        <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-xs font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <span>{{ evidence.finding_count }} finding(s) · Tenant {{ evidence.tenant_id }}</span>
-                            {{ table_label.status_label(evidence.severity|title,
-                                                        'critical' if evidence.severity == 'critical' else 'warning'
-                                                        if evidence.severity == 'warning' else 'info') }}
-                        </summary>
+        <section class="border-t border-outline-subtle"
+                 aria-labelledby="tenant-capsule-access-drift-title">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h4 id="tenant-capsule-access-drift-title"
+                    class="text-sm font-semibold text-content-primary">Latest Committed Access Drift Findings</h4>
+                <p class="mt-1 text-xs text-content-muted">Declaration correlation only; no automatic remediation.</p>
+            </header>
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[730px] table-fixed xl:min-w-0') }}">
+                    <caption class="sr-only">Latest committed Capsule access drift findings; inspect for details.</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[38%]">Tenant</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Findings</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Observed At</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Severity</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for event in recent_capsule_access_drift %}
+                            {% set evidence = event.metadata_json or {} %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                    <p class="truncate font-mono text-xs text-content-primary"
+                                       title="{{ evidence.tenant_id }}">{{ evidence.tenant_id }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} text-xs tabular-nums">{{ evidence.finding_count }}</td>
+                                <td class="{{ table_ui.cell_classes() }} text-xs text-content-muted">{{ event.created_at|user_datetime }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_label(evidence.severity|title,
+                                        'critical' if evidence.severity == 'critical'
+                                        else 'warning' if evidence.severity == 'warning' else 'info') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="tenant-capsule-drift-{{ event.id }}"
+                                            aria-controls="tenant-capsule-drift-{{ event.id }}"
+                                            aria-haspopup="dialog"
+                                            class="{{ table_ui.action_classes() }}">View Findings</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% for event in recent_capsule_access_drift %}
+                {% set evidence = event.metadata_json or {} %}
+                <dialog id="tenant-capsule-drift-{{ event.id }}"
+                        data-kaori-native-dialog
+                        aria-labelledby="tenant-capsule-drift-{{ event.id }}-title"
+                        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+                    <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden">
+                        <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4">
+                            <div class="min-w-0">
+                                <h2 id="tenant-capsule-drift-{{ event.id }}-title"
+                                    class="text-base font-semibold text-content-primary">Committed Access Drift Findings</h2>
+                                <p class="mt-1 break-all font-mono text-xs text-content-muted">{{ evidence.tenant_id }}</p>
+                            </div>
+                            <button type="button"
+                                    data-kaori-dialog-close
+                                    aria-label="Close Access Drift findings"
+                                    class="{{ table_ui.action_classes() }} shrink-0">
+                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                                Close
+                            </button>
+                        </header>
+                        <div class="min-h-0 space-y-3 overflow-y-auto bg-surface-page p-4 sm:p-5">
+                            <p class="text-xs text-content-secondary">{{ evidence.finding_count }} committed finding(s), observed {{ event.created_at|user_datetime }}.</p>
                         <div class="mt-2 space-y-2 border-t border-outline-subtle pt-2">
                             {% for finding in evidence.findings %}
                                 <p class="text-xs leading-5 text-content-secondary">
@@ -274,10 +415,11 @@
                                 </form>
                             {% endif %}
                         </div>
-                    </details>
-                {% endfor %}
-            </div>
-        </div>
+                        </div>
+                    </section>
+                </dialog>
+            {% endfor %}
+        </section>
     {% endif %}
     {% if recent_capsule_access_remediation %}
         {% set all_access_remediation = recent_capsule_access_remediation %}

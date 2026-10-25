@@ -30,5 +30,5 @@ def test_external_capsule_access_drift_uses_committed_evidence_not_live_reconcil
 
     assert "'recent_capsule_access_drift'" in context
     assert 'Analyze Access Drift' in template
-    assert 'Latest committed Access Drift findings' in template
+    assert 'Latest Committed Access Drift Findings' in template
     assert 'Effective RBAC was not reverified' in template
