@@ -1192,3 +1192,69 @@ status remains **Validation Required** before Full Validation and
 inventory remains **Not Observed / Unknown** before authorized Sync.
 No further GitHub App change, secret display or real provider call is
 required for this purely visual review.
+
+## 2026-10-26 — #3246 GitHub permission guidance parity (Human UAT)
+
+The GitHub installation **Configuration → Connection Contract → Operational Context**
+now includes **Minimum Validation GitHub Permission Example**, reusing the accepted
+Kubernetes modal composition and shared integrated workspace tab component.
+The two modal tabs distinguish:
+
+- **Baseline Validation Permissions:** repository `metadata: read` and
+  `contents: read`, required by `readiness.py` for exact source revision
+  readiness. GitHub installation selection governs which repositories are granted.
+- **Optional Governance Permissions:** read-only `pull_requests`, `actions`,
+  `checks`, `deployments` for specifically enabled capabilities, not mandatory
+  for core connection readiness. Administrative, Secrets and write grants are
+  deliberately absent; privileged operations need their own GitHub-side approval.
+
+Both panels show a copyable GitHub App permission JSON example; the examples
+are **not current observed permissions** and the copy action does not alter
+GitHub, KAORI credentials, Full Validation or committed repository inventory.
+
+The **Configure Connection** button links to GitHub's installed-app management
+entrypoint `https://github.com/settings/installations` in a separate tab.
+This is explicitly provider-side configuration, **not** an unimplemented
+KAORI edit form. For organization-owned installations, navigate to GitHub
+organization **Settings → GitHub Apps → Configure**. GitHub remains authoritative
+for installation/repository grants; changes require renewed Full Validation
+and separately authorized repository synchronization in KAORI. A first-party
+KAORI edit/credential-rotation flow is **not implemented in this UAT scope**.
+
+### Guided visual and interaction QA
+
+1. In Dev Container, sign in as an active local super-admin with
+   `integrations.manage`; navigate **Integrations → Source Control → GitHub →
+   Connection Registry → Manage → Configuration**. Use a registered,
+   non-production test installation. No live provider mutation is required.
+2. Under **Operational Context**, inspect the new two-column minimum permission
+   summary. Confirm footer **Configure Connection** is visible, aligned with the
+   lifecycle caution and opens GitHub's installed-app settings in a new tab.
+3. Click **Open Permission Examples**. Verify baseline tab default, accessible
+   dialog title, responsive code scrolling, Copy Baseline JSON, Optional Governance
+   Permissions tab, Copy Optional JSON, and Close/X/Escape/outside-to-close.
+   Check focus return to the trigger. Do not grant scopes during visual QA.
+4. Repeat at 1440×900 and 390×844 in light and dark modes, keyboard-only. Verify
+   no content clipping, hidden controls, accidental form submissions or false
+   indication of provider validation. Browser evidence remains **NOT RUN**
+   until actual Dev Container execution.
+5. Confirm Full Validation and Synchronize operations keep their existing separate
+   CSRF-protected POSTs, and committed inventory remains Unknown until real
+   synchronization. No token, PEM, webhook secret or installation credential
+   may appear in page/JSON examples/screenshots.
+
+Focused candidate checks (run on exact UAT SHA):
+
+```bash
+python -m ruff check tests/unit/test_source_control_github_uat_scope.py
+python -m ruff format --check tests/unit/test_source_control_github_uat_scope.py
+djlint --check app/templates/integrations/source_control/github/uat_detail.html app/templates/integrations/source_control/github/partials/_minimum_validation_permissions.html
+python -m pytest -q -p no:cacheprovider tests/unit/test_source_control_github_uat_scope.py tests/ui/test_source_control_github_app_onboarding_contract.py tests/ui/test_source_control_integration_workspace_contract.py tests/contracts/integrations/test_provider_detail_lifecycle_parity_contract.py
+python scripts/verify_integration_domain_navigation.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+**Authority:** #3246 (open), prior merged #3252. This is temporary holding-branch
+UAT only. UI/browser and executable quality evidence plus Human Acceptance remain
+pending; official Developer Check, Full Admission, `kaori/staging`, `main` and
+release remain HOLD.

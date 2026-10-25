@@ -61,7 +61,8 @@ def test_only_local_authorized_super_admin_can_access_uat(user):
 def test_fails_closed_before_resource_discovery(monkeypatch):
     app = Flask(__name__)
     monkeypatch.setattr(
-        uat_access, 'provider_kind',
+        uat_access,
+        'provider_kind',
         lambda *_: SimpleNamespace(available=False),
     )
     with app.app_context():
@@ -72,7 +73,8 @@ def test_fails_closed_before_resource_discovery(monkeypatch):
 def test_fails_closed_for_non_admin_when_enabled(monkeypatch):
     app = Flask(__name__)
     monkeypatch.setattr(
-        uat_access, 'provider_kind',
+        uat_access,
+        'provider_kind',
         lambda *_: SimpleNamespace(available=True),
     )
     monkeypatch.setattr(uat_access, 'current_user', _actor(admin=False))
@@ -208,9 +210,7 @@ def test_github_configuration_reuses_approved_connection_contract_and_operationa
         root
         / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
     ).read_text()
-    shared = (
-        root / 'app/templates/integrations/components/_provider_operational_context.html'
-    ).read_text()
+    shared = (root / 'app/templates/integrations/components/_provider_operational_context.html').read_text()
 
     assert '"Committed grants only"' in detail
     assert 'Committed evidence, not installation selection' not in detail
@@ -218,19 +218,66 @@ def test_github_configuration_reuses_approved_connection_contract_and_operationa
     assert 'data-kaori-connection-summary' in detail
     assert 'data-kaori-connection-evidence' in detail
     assert "ui.section_header('file-key-2'," in detail
-    assert "action_html=github_connection_status" in detail
+    assert 'action_html=github_connection_status' in detail
     assert 'xl:grid-cols-4' in detail
     assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in detail
     assert "ui.palette_icon('waypoints', 'brand', size='sm')" in detail
     assert "table_label.metadata_label('GitHub REST API v3', 'git-branch')" in detail
-    assert "operational_context.render(" in detail
+    assert 'operational_context.render(' in detail
     assert "('Synchronize', 'Commit repository grants" in detail
-    assert "installation.native_app_id" in detail
-    assert "installation.native_installation_id" in detail
-    assert "installation.repository_scope|title" in detail
+    assert 'installation.native_app_id' in detail
+    assert 'installation.native_installation_id' in detail
+    assert 'installation.repository_scope|title' in detail
     assert "inventory.total is not none else 'Not Observed'" in detail
     assert "integration_status(readiness, display='indicator')" in detail
-    assert "integrations/components/_provider_operational_context.html" in detail
-    assert "operational_context.render(" in kubernetes
+    assert 'integrations/components/_provider_operational_context.html' in detail
+    assert 'operational_context.render(' in kubernetes
     assert 'data-kaori-provider-operational-context' in shared
     assert '<style' not in detail
+
+
+def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -> None:
+    root = Path(__file__).resolve().parents[2]
+    detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
+    github = (
+        root
+        / 'app/templates/integrations/source_control/github/partials/_minimum_validation_permissions.html'
+    ).read_text()
+    kubernetes = (
+        root
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    ).read_text()
+    readiness = (
+        root / 'app/integrations/source_control/source_control/providers/github/readiness.py'
+    ).read_text()
+
+    assert "partials/_minimum_validation_permissions.html" in detail
+    assert 'data-kaori-github-minimum-validation-permissions' in github
+    assert 'data-kaori-github-permission-modal' in github
+    assert 'components/workspace_tabs.html' in github
+    assert 'components/workspace_tabs.html' in kubernetes
+    assert "prefix='github-minimum-permissions'" in github
+    assert "('baseline', 'Baseline Validation Permissions', 'shield-check')" in github
+    assert "('governance', 'Optional Governance Permissions', 'key-round')" in github
+    assert "copyText('baselinePermissions', 'baseline')" in github
+    assert "copyText('governancePermissions', 'governance')" in github
+    assert 'aria-modal="true"' in github
+    assert 'aria-labelledby="github-minimum-permissions-title"' in github
+    assert 'closeModal()' in github
+    assert 'navigator.clipboard?.writeText' in github
+    assert '"metadata": "read"' in github
+    assert '"contents": "read"' in github
+    for capability in ('pull_requests', 'actions', 'checks', 'deployments'):
+        assert f'"{capability}": "read"' in github
+        assert f"'{capability}'" in readiness
+    assert "'source_revision': frozenset({'metadata', 'contents'})" in readiness
+    assert '"administration": "write"' not in github
+    assert '"secrets": "read"' not in github
+    assert 'form.private_key_pem' not in github
+    assert 'form.webhook_secret' not in github
+    assert 'https://github.com/settings/installations' in detail
+    assert 'rel="noopener noreferrer"' in detail
+    assert 'Configure Connection' in detail
+    assert "url_for('github_source.new_connection')" not in detail
+    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
+    assert 'GitHub permission changes require fresh Full Validation' in detail

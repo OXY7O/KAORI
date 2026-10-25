@@ -42,35 +42,34 @@
                                 "shield-check",
                                 "Full Validation",
                                 readiness|replace("_", " ") |title,
-                                "Produced by provider validation",
-                                "git-branch",
-                                "Committed Repository Grants",
-                                inventory.total if inventory.total is not none else "Unknown",
-                                "Committed grants only",
-                                url_for("github_source.index", tab="registry"),
-                                primary_action_label="Review Validation",
-                                primary_action_tab="validation",
-                                show_primary_action=true,
-                                posture_key="github") }}
+                "Produced by provider validation",
+                "git-branch",
+                "Committed Repository Grants",
+                inventory.total if inventory.total is not none else "Unknown",
+                "Committed grants only",
+                url_for("github_source.index", tab="registry"),
+                primary_action_label="Review Validation",
+                primary_action_tab="validation",
+                show_primary_action=true,
+                posture_key="github") }}
             </div>
         </section>
         {% if feedback in feedback_map %}
             {{ operational_callout.render("Connection Operation",
-                feedback_map[feedback],
-                icon="info",
-                tone="warning" if feedback in ['validation_blocked', 'sync_blocked'] else "info",
-                variant="semantic") }}
+                        feedback_map[feedback],
+                        icon="info",
+                        tone="warning" if feedback in ['validation_blocked', 'sync_blocked'] else "info",
+                        variant="semantic") }}
         {% endif %}
-        <section id="github-detail-tabs"
-                 class="{{ ui.section_shell_classes() }}">
+        <section id="github-detail-tabs" class="{{ ui.section_shell_classes() }}">
             {{ framed_workspace_tabs.render([
                         ('configuration', 'Configuration', 'settings-2', canonical.environment|replace('_', ' ') |title),
-                        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ') |title),
-                        ('runtime', 'Runtime & History', 'activity', 'Jobs & Deliveries'),
-                        ('inventory', 'Inventory & Lifecycle', 'database', (inventory.total|string) if inventory.total is not none else 'Unknown')
-                    ],
-                    prefix='github',
-                    aria_label='GitHub Connection Domains') }}
+            ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ') |title),
+            ('runtime', 'Runtime & History', 'activity', 'Jobs & Deliveries'),
+            ('inventory', 'Inventory & Lifecycle', 'database', (inventory.total|string) if inventory.total is not none else 'Unknown')
+            ],
+            prefix='github',
+            aria_label='GitHub Connection Domains') }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="github-panel-configuration"
                      role="tabpanel"
@@ -78,11 +77,13 @@
                      x-show="activeTab === 'configuration'">
                     <div class="space-y-4 font-sans" data-kaori-connection-contract-v2>
                         <section class="{{ ui.section_shell_classes() }} overflow-hidden">
-                            {% set github_connection_status %}{{ integration_status(readiness, display='text') }}{% endset %}
+                            {% set github_connection_status %}
+                                {{ integration_status(readiness, display='text') }}
+                            {% endset %}
                             {{ ui.section_header('file-key-2',
-                                'Connection Contract',
-                                'Canonical identity, installation access, provider authority, and operational ownership for this GitHub connection.',
-                                action_html=github_connection_status) }}
+                                                        'Connection Contract',
+                                                        'Canonical identity, installation access, provider authority, and operational ownership for this GitHub connection.',
+                                                        action_html=github_connection_status) }}
                             <section aria-labelledby="github-connection-summary-title"
                                      data-kaori-connection-summary>
                                 <h3 id="github-connection-summary-title" class="sr-only">Connection Summary</h3>
@@ -92,11 +93,13 @@
                                         ('Environment', canonical.environment|replace('_', ' ') |title, 'Coverage and policy context'),
                                         ('GitHub App ID', installation.native_app_id, 'GitHub-owned App identity'),
                                         ('Installation ID', installation.native_installation_id, 'GitHub-owned installation scope')
-                                    ] %}
+                                        ] %}
                                         <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                                             <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</dt>
                                             <dd class="mt-1.5 truncate text-sm font-semibold text-content-primary"
-                                                title="{{ value }}">{{ value }}</dd>
+                                                title="{{ value }}">
+                                                {{ value }}
+                                            </dd>
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
                                         </div>
                                     {% endfor %}
@@ -160,19 +163,26 @@
                                         </div>
                                     </dl>
                                 </section>
-                                {% set github_operational_flow = [
-                                    ('Configure', 'Set connection identity, GitHub App installation, and least-privilege access.', 'settings-2'),
-                                    ('Validate', 'Verify installation identity, granted permissions, and provider readiness.', 'badge-check'),
-                                    ('Observe', 'Retain canonical JobExecution and authorized runtime evidence.', 'activity'),
-                                    ('Synchronize', 'Commit repository grants and exact source revisions after validation.', 'refresh-cw')
-                                ] %}
+                                {% set github_operational_flow = [('Configure', 'Set connection identity, GitHub App installation, and least-privilege access.', 'settings-2'), ('Validate', 'Verify installation identity, granted permissions, and provider readiness.', 'badge-check'), ('Observe', 'Retain canonical JobExecution and authorized runtime evidence.', 'activity'), ('Synchronize', 'Commit repository grants and exact source revisions after validation.', 'refresh-cw')] %}
                                 {{ operational_context.render('GitHub owns repositories, installation grants, branches, and workflow execution. KAORI governs connection identity, committed evidence, correlation, and audit.',
-                                    github_operational_flow,
-                                    ['GitHub App', installation.repository_scope|title, 'Committed Evidence']) }}
+                                                                github_operational_flow,
+                                                                ['GitHub App', installation.repository_scope|title, 'Committed Evidence']) }}
+                                {% include 'integrations/source_control/github/partials/_minimum_validation_permissions.html' %}
                             </div>
-                            <footer class="flex items-start gap-2.5 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
-                                {{ ui.palette_icon('info', 'info', size='xs') }}
-                                <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
+                            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                <div class="flex items-start gap-2.5">
+                                    {{ ui.palette_icon('info', 'info', size='xs') }}
+                                    <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
+                                </div>
+                                <a href="https://github.com/settings/installations"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                   title="Configure installation grants on GitHub. Organization installations are managed in organization settings.">
+                                    <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                    Configure Connection
+                                    <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                </a>
                             </footer>
                         </section>
                     </div>
@@ -202,9 +212,9 @@
                                 </form>
                             </div>
                             {{ operational_callout.render("Validation Boundary",
-                                "Full Validation runs as an admitted canonical JobExecution. It checks provider access but does not commit repository inventory.",
-                                icon="shield-check",
-                                tone="info") }}
+                                                        "Full Validation runs as an admitted canonical JobExecution. It checks provider access but does not commit repository inventory.",
+                                                        icon="shield-check",
+                                                        tone="info") }}
                         </div>
                     </section>
                 </div>
@@ -236,7 +246,9 @@
                             {% for delivery in deliveries %}
                                 <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">{{ delivery.event_type|replace('_', ' ') |title }}{% if delivery.action %} · {{ delivery.action }}{% endif %}</p>
+                                        <p class="text-sm font-semibold text-content-primary">{{ delivery.event_type|replace('_', ' ') |title }}
+                                            {% if delivery.action %} · {{ delivery.action }}{% endif %}
+                                        </p>
                                         <p class="mt-1 text-xs text-content-muted">{{ delivery.received_at }} · Attempt {{ delivery.attempt_count }} · Job #{{ delivery.dispatched_job_execution_id or "Not linked" }}</p>
                                     </div>
                                     {{ integration_status(delivery.processing_state, display='indicator') }}
