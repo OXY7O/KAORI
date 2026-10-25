@@ -70,12 +70,23 @@ def test_bulk_tls_confirmation_reuses_native_dialog_and_current_checked_target_s
     assert 'x-for="target in selectedTargets.slice(0, 3)"' in template
     assert 'x-text="selectedCount - 3"' in template
     assert 'Existing TLS material will be replaced' in template
-    assert 'No automatic rollback is provided.' in template
+    assert 'no automatic rollback.' in template
     assert 'action_button.classes(\'secondary\')' in template
     assert 'action_button.classes(\'primary\')' in template
     assert '@htmx:before-request="$refs.bulkConfirmDialog?.close()"' in template
     assert 'updateModal' not in template
     assert 'x-show="updateModal"' not in template
+
+
+def test_bulk_tls_confirmation_explanations_are_compact_on_desktop() -> None:
+    template = _template()
+    dialog = template.split('<dialog id="bulk-tls-rotation-confirm-dialog"', 1)[1].split('</dialog>', 1)[0]
+
+    assert 'Apply the validated TLS pair to the selected Secrets.' in dialog
+    assert 'Replaces <span class="font-semibold">tls.crt</span> and <span class="font-semibold">tls.key</span>; no automatic rollback.' in dialog
+    assert 'KAORI rechecks the pair, coverage, and target identity.' in dialog
+    # Desktop keeps the three selected notes on one line; mobile may wrap.
+    assert dialog.count('sm:whitespace-nowrap') == 3
 
 
 def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
