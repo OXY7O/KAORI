@@ -4,8 +4,7 @@ from typing import Any
 
 from app.integrations.kernel.registry import registry
 from app.integrations.provider_matrix import provider_kinds
-from app.integrations.taxonomy import get_domain_definition
-from app.integrations.taxonomy import ordered_domain_definitions
+from app.integrations.taxonomy import get_domain_definition, ordered_domain_definitions
 
 
 def _endpoint_matches(endpoint: str, prefix: str) -> bool:
