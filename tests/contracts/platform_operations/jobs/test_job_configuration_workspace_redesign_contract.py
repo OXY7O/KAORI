@@ -131,7 +131,7 @@ def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() ->
     assert 'title="{{ active_job.progress_process }}"' in activity
     assert 'title="{{ active_job.progress_detail }}"' in activity
     assert 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]' in activity
-    assert "items=[definition.safety_summary]" in overview
+    assert 'items=[definition.safety_summary]' in overview
     assert 'jobs-selected-safety-' in overview
     for key, source in templates.items():
         assert 'overview_notice_short' in source, key
@@ -164,6 +164,7 @@ def test_materialization_one_line_copy_retains_policy_and_safety() -> None:
     assert 'policy_form.enabled(' in source
     assert 'policy_form.stale_grace_minutes(' in source
     assert 'policy_form.freshness_minutes(' in source
+
 
 def test_job_policy_cards_have_guidance_without_mutating_policy_controls() -> None:
     folder = 'app/templates/platform_operations/jobs/configuration/definitions/'
@@ -202,7 +203,7 @@ def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() 
     activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
     assert 'jobs-selected-safety-' in overview
     assert "variant='guide'" in overview
-    assert "items=[definition.safety_summary]" in overview
+    assert 'items=[definition.safety_summary]' in overview
     assert overview.index('jobs-selected-safety-') < overview.index('selected_description|default')
     assert 'jobs-overview-safety-' not in overview
     assert 'info_tip.render(' not in activity
