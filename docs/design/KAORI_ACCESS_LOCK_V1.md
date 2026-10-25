@@ -91,3 +91,11 @@ Framed tabs, scoped result counts, read-only modal, source permissions,
 GET/HTMX filters and archive ownership are unchanged. Visual QA for
 hover/focus, screen-reader trigger naming, mobile, zoom and light/dark
 remains a separate DevContainer acceptance gate.
+
+## Authentication Security extension (AUTH-UI-01 / #3138)
+
+A bounded, read-only **Access → Authentication Security** workspace is added after Identity Providers without replacing the final-locked Access navigation, RBAC or UI primitives. It uses the existing KAORI Violet Hero, query-backed `workspace_tabs.render_query_tabs`, server-owned GET/HTMX partial, `identity_providers.view` read access, and standard tabs for Overview, Multi-Factor Authentication, Bot Protection and Session Security.
+
+**Source-only readiness** is never misrepresented as enabled security posture: the MFA policy kernel (#3133) is not an enrolled/verified second-factor challenge; the Turnstile verification kernel (#3136) is not a registered provider instance or an enforced browser login challenge. No admin enable toggles, client secret handling, new login runtime, new RBAC permissions, or new provider catalog are activated through this read-only page.
+
+Future MFA self-service belongs to Settings → Account & Authentication (#562/#3134); controlled provider instance and policy administration under this Access capability remain blocked by #3137 until admission and operator UAT. Preserve canonical responsive/light-dark/a11y/loading, scoped permission checks and progressive navigation.
