@@ -78,7 +78,7 @@ Capture exact SHA and full stdout/stderr, including migration graph and DB-head 
 1. In Access → Authentication Security → MFA, set **Optional** with explicit session-revocation acknowledgement. Sign in again if policy change revoked your session.
 2. Open Settings → Account & Authentication → MFA. Click **Generate Setup Key**. Local users must enter their current password; external accounts require a fresh authenticated session.
 3. Store the displayed manual Base32 setup key only in the test authenticator. Do not screenshot it or retain it in Activity Audit. The setup expires after ten minutes.
-4. Confirm a six-digit TOTP. A factor is active only after this confirmation. Save eight one-time recovery codes (plaintext shown once). Capture **redacted** evidence with the codes and setup secret hidden.
+4. Confirm a six-digit TOTP. A factor is active only after this confirmation. Save ten one-time recovery codes (plaintext shown once). Capture **redacted** evidence with the codes and setup secret hidden.
 5. Log out, sign in again through Local DB; expect a restricted **Verify Your Sign In** challenge before authenticated app access and before generation issuance.
 6. Enter an incorrect code; no authorized page should be accessible, and the event should show a failed MFA challenge without impersonating an authenticated actor.
 7. Enter a valid *new* TOTP (a code already consumed during enrollment cannot be replayed). Expect authenticated access. Verify one successful sign-in and distinct MFA verification audit events.
