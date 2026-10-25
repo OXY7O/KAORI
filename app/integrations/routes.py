@@ -169,8 +169,11 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
         {
             'key': kind.key,
             'label': kind.label,
-            'adapter': kind.adapter_key.replace('_', ' ').title(),
-            'protocol': kind.protocol.replace('_', ' ').upper(),
+            'adapter': (
+                'Not implemented' if kind.adapter_key == 'not_implemented' else kind.adapter_key.replace('_', ' ').title()
+            ),
+            'protocol': 'Not defined' if kind.protocol == 'not_defined' else kind.protocol.replace('_', ' ').upper(),
+            'lifecycle': kind.lifecycle,
             'available': kind.available,
             'registration_url': (
                 url_for(_PROVIDER_REGISTRATION_ENDPOINTS[(kind.integration_type, kind.key)])
