@@ -153,7 +153,7 @@ def login():
         result = (
             authenticate(username, password)
             if bot_verified
-            else AuthResult(False, 'access_not_permitted', source='database',
+            else AuthResult(False, 'bot_challenge_failed', source='database',
                             message='Bot verification was not accepted. Complete a new challenge.')
         )
 
