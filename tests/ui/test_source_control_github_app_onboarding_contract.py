@@ -21,7 +21,7 @@ def test_onboarding_reuses_shared_kaori_components_not_new_css() -> None:
     assert 'integrations/components/_workspace.html' in form
     assert 'integration_ui.section_shell_classes()' in form
     assert "domain.key == 'source_control'" in workspace
-    assert 'url_for('integrations.choose_integration_provider', integration_type=item.key)' in workspace
+    assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
     kernel = _source('app/integrations/source_control/source_control/providers/github/kernel_contract.py')
     assert "workspace_endpoint='github_source.index'" in kernel
     assert '<style' not in landing and '<style' not in form
