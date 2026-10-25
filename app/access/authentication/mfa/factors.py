@@ -1,19 +1,21 @@
-"""MFA factor primitives using vetted PyOTP; no credential/session issuance here.
+"""Compatibility factor primitives built on KAORI's canonical cryptography TOTP.
 
-Persistence, enrollment activation and login admission are owned by MFA-02
-workflows. This module never accepts a browser assertion of prior verification.
+Full enrollment, persistence, replay protection and admission remain governed
+by mfa.service. Never introduce a second cryptographic OTP implementation.
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import secrets
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from urllib.parse import quote
 
-import pyotp
-
+from app.access.authentication.mfa.service import _accepted_step, _totp
 from app.security.credentials import decrypt_credential, encrypt_credential
 
 RECOVERY_CODE_BYTES = 16
@@ -29,36 +31,39 @@ class TotpEnrollment:
 
 
 def start_totp_enrollment(*, account_label: str, issuer: str = 'KAORI') -> TotpEnrollment:
-    """Return encrypted factor material; do not log or persist QR URI in audit."""
+    """Generate setup material with the same verifier as the active service."""
     if not account_label or len(account_label) > 255 or not issuer or len(issuer) > 100:
         raise ValueError('Invalid TOTP enrollment identity.')
-    secret = pyotp.random_base32()
+    secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
     encrypted = encrypt_credential(secret)
     if not encrypted:
         raise RuntimeError('TOTP factor encryption is unavailable.')
-    uri = pyotp.TOTP(secret, digits=TOTP_DIGITS).provisioning_uri(name=account_label, issuer_name=issuer)
+    label = quote(f'{issuer}:{account_label}', safe='')
+    uri = (
+        f'otpauth://totp/{label}?secret={secret}&issuer={quote(issuer, safe="")}'
+        f'&algorithm=SHA1&digits={TOTP_DIGITS}&period=30'
+    )
     return TotpEnrollment(encrypted_secret=encrypted, provisioning_uri=uri)
 
 
 def verify_totp(encrypted_secret: str, value: str, *, at_time: int | None = None) -> bool:
-    """Validate exactly six ASCII digits, with a bounded +/- one-step window."""
-    if not isinstance(value, str) or len(value) != TOTP_DIGITS or not value.isascii() or not value.isdecimal():
-        return False
+    """Use canonical bounded verifier; browser-provided proof is never trusted."""
     secret = decrypt_credential(encrypted_secret)
     if not secret:
         return False
-    return bool(pyotp.TOTP(secret, digits=TOTP_DIGITS).verify(value, for_time=at_time, valid_window=1))
+    timestamp = int(at_time) if at_time is not None else int(datetime.now(UTC).timestamp())
+    return _accepted_step(
+        secret, value, last_accepted_step=None, now=datetime.fromtimestamp(timestamp, UTC)
+    ) is not None
 
 
 def generate_recovery_codes(*, count: int = RECOVERY_CODE_COUNT) -> tuple[str, ...]:
-    """One-time display: persist only hashes, never raw recovery codes."""
     if not 1 <= count <= RECOVERY_CODE_COUNT:
         raise ValueError('Invalid recovery code count.')
     return tuple(secrets.token_hex(RECOVERY_CODE_BYTES) for _ in range(count))
 
 
 def hash_recovery_code(code: str) -> str:
-    """High-entropy random codes permit an SHA-256 digest; no username salt."""
     if not isinstance(code, str) or len(code) != RECOVERY_CODE_BYTES * 2:
         raise ValueError('Invalid recovery code format.')
     if not all(char in '0123456789abcdef' for char in code):
@@ -67,7 +72,6 @@ def hash_recovery_code(code: str) -> str:
 
 
 def recovery_code_match(code: str, issued_hashes: Iterable[str]) -> str | None:
-    """Return the digest to atomically consume, never a bearer recovery code."""
     try:
         digest = hash_recovery_code(code)
     except ValueError:
