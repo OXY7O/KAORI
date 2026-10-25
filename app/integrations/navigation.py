@@ -63,7 +63,10 @@ def build_integration_navigation_context(
                 active_domain_key = module.domain_key
                 break
 
-    if current_endpoint == 'integrations.choose_integration_provider' and selected_domain_key in {d.key for d in domains}:
+    if (
+        current_endpoint == 'integrations.choose_integration_provider'
+        and selected_domain_key in {domain.key for domain in domains}
+    ):
         active_domain_key = selected_domain_key
 
     overview_active = current_endpoint == 'integrations.overview'
