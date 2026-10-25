@@ -114,7 +114,7 @@
                                         <p class="mt-1 text-xs leading-5 text-content-muted">GitHub owns App identity, installation grants, and repository selection.</p>
                                     </div>
                                 </div>
-                                <div class="grid gap-4 md:grid-cols-2">
+                                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                     {% for field in [form.app_id, form.installation_id, form.account_id] %}
                                         <div class="min-w-0">
                                             <label for="{{ field.id }}"
