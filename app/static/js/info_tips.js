@@ -64,9 +64,7 @@
 
         // Footer Guides prefer an above-trigger preview; other placements keep
         // the original below-first behavior and viewport-aware upward flip.
-        let top = preferAbove
-            ? triggerRect.top - triggerGap - previewRect.height
-            : triggerRect.bottom + triggerGap
+        let top = preferAbove ? triggerRect.top - triggerGap - previewRect.height : triggerRect.bottom + triggerGap
         if (preferAbove && top < viewportMargin) {
             top = triggerRect.bottom + triggerGap
         } else if (!preferAbove && top + previewRect.height > window.innerHeight - viewportMargin) {
