@@ -233,3 +233,46 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert 'registry_metrics_readiness(identity)' in presentation
     assert 'RegistryCollectionState' in presentation
     assert 'RegistryWebhookEndpoint' in presentation
+
+
+def test_every_provider_integration_overview_inherits_canonical_title_guide() -> None:
+    shared = read('app/templates/integrations/components/_provider_frontpage.html')
+    tip = read('app/templates/components/info_tip.html')
+    pages = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
+        'app/templates/integrations/observability/metrics_source/frontpage.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/index.html',
+        'app/templates/integrations/registry/providers/harbor/index.html',
+        'app/templates/integrations/secrets_management/vault/index.html',
+        'app/templates/integrations/source_control/github/index.html',
+    )
+
+    assert 'components/info_tip.html' in shared
+    assert shared.count('info_tip.render(') == 1
+    assert '"provider-overview-" ~ (title|lower|replace(" ", "-"))' in shared
+    assert 'title ~ " Guide"' in shared
+    assert 'items=overview_guide_items' in shared
+    assert 'placement="right", variant="guide"' in shared
+    for token in (
+        'contract_title',
+        'contract_description',
+        'resolution_title',
+        'resolution_description',
+        'authority_title',
+        'authority_description',
+    ):
+        assert token in shared
+    assert 'data-kaori-info-tip-trigger' in tip
+    assert 'data-kaori-info-tip-variant' in tip
+
+    for path in pages:
+        page = read(path)
+        assert 'integrations/components/_provider_frontpage.html' in page, path
+        assert page.count('provider_front.overview(') == 1, path
+        assert 'info_tip.render(' not in page, path
+
+    github = read('app/templates/integrations/source_control/github/index.html')
+    assert 'Register GitHub Apps with governed Source Control evidence.' in github
+    assert 'whitespace-nowrap' not in github
+    assert 'line-clamp' not in github

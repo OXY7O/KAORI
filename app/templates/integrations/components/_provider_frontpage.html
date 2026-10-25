@@ -1,5 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None, secondary_register_url=None, secondary_register_label=None, register_label='Register Connection', association_label='Consumer Bindings', association_description='Governed consumer associations') -%}
     {% set denominator = ready_total if ready_total is not none else registered_count %}
@@ -59,7 +60,15 @@
                     <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    {% set overview_guide_items = [
+                            contract_title ~ ": " ~ contract_description,
+                            resolution_title ~ ": " ~ resolution_description,
+                            authority_title ~ ": " ~ authority_description
+                        ] %}
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                        {{ info_tip.render("provider-overview-" ~ (title|lower|replace(" ", "-")), title ~ " Guide", description, items=overview_guide_items, placement="right", variant="guide") }}
+                    </div>
                     <p class="mt-1 max-w-5xl text-sm leading-6 text-content-secondary">{{ description }}</p>
                 </div>
             </div>
