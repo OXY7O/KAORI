@@ -104,13 +104,13 @@ def test_domain_registry_clear_filters_stays_on_header_right() -> None:
     assert '{% if provider_filters_active %}' in header
     assert 'registry_ui.clear_filters_link(' in header
     assert 'lead=false' in header  # Avoid shared macro default order-first.
-    assert "table_ui.action_classes()" in header
-    assert "query_params=provider_clear_query" in header
+    assert 'table_ui.action_classes()' in header
+    assert 'query_params=provider_clear_query' in header
     assert "page_param='provider_page'" in header
     assert "per_page_param='provider_per_page'" in header
 
     # Keep existing canonical GET/HTMX/reset, Rows and conditional visibility.
-    assert "clear_filters_action(clear_url," in clear_action
+    assert 'clear_filters_action(clear_url,' in clear_action
     assert "sync='closest section:replace'" in clear_action
     assert 'lead=lead' in clear_action
     assert "'binding_per_page': binding_per_page" in workspace

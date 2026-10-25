@@ -48,11 +48,32 @@ workspace action, and Clear Filters order/conditional/HTMX query semantics.
 Previous contracts verify shared UI primitives but did **not** enforce all
 three criteria, so they cannot be claimed as pre-existing passes.
 
-**Evidence state: Source diff/contract authored; executable QA and updated
-browser Human UAT pending.** Recheck the exact candidate SHA and ensure
-empty state, active search reset and returning to the provider entrypoint
-function in light/dark and desktop/mobile widths. No provider credentials or
-jobs are needed for this review.
+**2026-10-25 operator Dev Container evidence:** source fixes are visible in
+the supplied **desktop** screenshot: compact one-line Hero description,
+**Clear Filters** at the right of the header with an active search, and only
+one **Open Source Control** action. The user also supplied these checks:
+
+- `ruff check` on the focused UI contract: **PASS**.
+- `ruff format --check`: **FAIL** — three string-quote adjustments required
+  in the contract file, with exact formatter diff provided.
+- Focused Integration domain/navigation/pagination/Source Control contract
+  pytest: **19 passed in 2.33s**.
+- `djlint --check` on the two shared Integration templates: **PASS** —
+  0 files would be updated.
+- `scripts/verify_definition_registry.py`: **PASS** — Definition Registry
+  v1.1 (61 rules, 67 permissions, 19 jobs, 6 integration domains, 36 provider
+  capabilities and the existing qualification/compatibility catalog).
+
+The three exact Ruff quote edits were committed under #3085. **Executable
+post-fix Ruff format verification is PENDING** on the resulting holding SHA.
+The pasted operator output did not include a same-run `git rev-parse HEAD`,
+so do not attribute its 19 tests to an unverified exact SHA.
+
+**Remaining scoped Human UAT:** verify actual Clear Filters **click** resets
+the active search while preserving Rows=5, confirm **Open Source Control**
+navigation, and check light/dark plus narrow/mobile layout. Their behavior
+must not be declared Human PASS from the single screenshot or source review.
+No GitHub App credentials or background provider jobs are needed.
 
 ```bash
 git rev-parse HEAD
