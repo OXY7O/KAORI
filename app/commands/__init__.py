@@ -1,6 +1,7 @@
 from flask import Flask
 
 from app.commands.admin import bootstrap_admin, reset_admin_password
+from app.commands.authentication_security import disable_bot_protection, reset_user_mfa
 from app.commands.integrations import refresh_integration_runtime_command
 from app.commands.rbac import seed_rbac
 from app.commands.reports import run_report_schedules
@@ -10,6 +11,8 @@ from app.commands.retention import archive_retention
 def register_commands(app: Flask) -> None:
     app.cli.add_command(bootstrap_admin)
     app.cli.add_command(reset_admin_password)
+    app.cli.add_command(disable_bot_protection)
+    app.cli.add_command(reset_user_mfa)
     app.cli.add_command(seed_rbac)
     app.cli.add_command(run_report_schedules)
     app.cli.add_command(archive_retention)
