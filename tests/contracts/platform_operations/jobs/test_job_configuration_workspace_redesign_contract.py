@@ -341,7 +341,7 @@ def test_jobs_catalog_footer_follows_data_lifecycle_boundary_guidance_pattern() 
     assert 'flex shrink-0 items-center justify-between gap-2' in footer
     assert 'overflow-x-auto' not in footer
     assert 'tabindex="0"' not in footer
-    assert 'aria-label="Visible registered jobs"' in footer
+    assert '<span class="sr-only">Jobs shown:</span>' in footer
     assert 'aria-label="Open Jobs & Executions"' in footer
     assert 'Executions' in footer
     assert 'Open Jobs &amp; Executions' not in footer
