@@ -27,7 +27,13 @@ def test_registered_jobs_catalog_scrolls_independently_like_data_lifecycle() -> 
     assert 'max-h-[28rem]' in template
     assert 'xl:absolute xl:inset-0 xl:max-h-none' in template
     assert 'shrink-0 border-b border-outline-subtle p-3' in template
-    assert 'footer class="flex shrink-0 flex-wrap items-center' in template
+    assert 'footer class="flex shrink-0 items-center justify-between gap-2' in template
+    footer = template.split('<footer ', 1)[1].split('</footer>', 1)[0]
+    assert 'overflow-x-auto' not in footer
+    assert 'overflow-y-auto' not in footer
+    assert 'whitespace-nowrap' in footer
+    assert 'aria-label="Visible registered jobs"' in footer
+    assert 'aria-label="Open Jobs & Executions"' in footer
     assert 'visibleJobCount' in template
     assert 'x-text="visibleJobCount"' in template
     assert 'No matching jobs' in template
