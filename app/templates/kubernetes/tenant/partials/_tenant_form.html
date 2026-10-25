@@ -86,27 +86,30 @@
                       aria-hidden="true">
                     <i data-lucide="waypoints" class="h-4 w-4"></i>
                 </span>
-                <div>
-                    <p class="text-xs font-semibold text-content-primary">Capsule Initial Owner</p>
+                <div class="min-w-0">
+                    <span class="inline-flex min-h-7 flex-wrap items-center gap-1.5">
+                        <span class="text-xs font-semibold text-content-primary">Capsule Initial Owner</span>
+                        {{ info_tip.render('capsule-initial-owner-guide-tip',
+                                            'Capsule initial owner',
+                                            'Select the principal type and exact authenticated subject Capsule will use as the initial Tenant owner.',
+                                            [
+                                            'Owner Kind: User — an individual identity.',
+                                            'Owner Kind: Group — a shared identity-provider or Kubernetes group.',
+                                            'Owner Kind: ServiceAccount — a Kubernetes service account identity.',
+                                            'Owner Subject must match the identity recognized by Kubernetes authentication.',
+                                            'User example — alice@example.com',
+                                            'Group example — oidc:org:platform-team',
+                                            'ServiceAccount example — system:serviceaccount:platform:deployer'
+                                            ],
+                                            placement='right', variant='guide') }}
+                    </span>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
                         Required for Capsule provider ownership; separate from KAORI Memberships.
                     </p>
                 </div>
             </div>
             <label class="block">
-                <span class="inline-flex min-h-6 items-center gap-1.5">
-                    <span class="text-xs font-semibold text-content-primary">Owner Kind</span>
-                    {{ info_tip.render('capsule-owner-kind-tip',
-                                        'Capsule owner kind',
-                                        'Select the principal type Capsule records as the initial Tenant owner.',
-                                        [
-                                        'User — an individual identity.',
-                                        'Group — a shared identity-provider or Kubernetes group.',
-                                        'ServiceAccount — a Kubernetes service account identity.',
-                                        'Owner Subject is required for every Owner Kind.'
-                                        ],
-                                        placement='right') }}
-                </span>
+                {{ form_field.label_row("Owner Kind") }}
                 <select name="capsule_owner_kind"
                         data-capsule-owner-control
                         disabled
@@ -117,19 +120,7 @@
                 </select>
             </label>
             <label class="block">
-                <span class="inline-flex min-h-6 items-center gap-1.5">
-                    <span class="text-xs font-semibold text-content-primary">Owner Subject</span>
-                    {{ info_tip.render('capsule-owner-subject-tip',
-                                        'Capsule owner subject',
-                                        'Use the exact subject identity recognized by the Kubernetes authentication path.',
-                                        [
-                                        'User example — alice@example.com',
-                                        'Group example — oidc:org:platform-team',
-                                        'ServiceAccount example — system:serviceaccount:platform:deployer',
-                                        'The value is required for every Owner Kind.'
-                                        ],
-                                        placement='right') }}
-                </span>
+                {{ form_field.label_row("Owner Subject") }}
                 <input name="capsule_owner_subject"
                        data-capsule-owner-control
                        disabled
