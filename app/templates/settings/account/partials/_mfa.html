@@ -11,24 +11,23 @@
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="account-mfa-heading" class="text-base font-bold text-content-primary">Multi-Factor Authentication</h2>
-                    {{ info_tip.render(
-                        'account-mfa-enrollment-guide',
-                        'Personal authenticator enrollment',
-                        'Your identity provider verifies primary credentials; KAORI governs the additional authenticator challenge.',
-                        [
-                            'Enroll and confirm a six-digit code before the factor becomes active.',
-                            'Security policy determines when a verified factor is required for sign-in.',
-                            'Recovery codes are single-use and visible only when issued.'
-                        ],
-                        placement='right',
-                        variant='guide'
-                    ) }}
+                    <h2 id="account-mfa-heading"
+                        class="text-base font-bold text-content-primary">Multi-Factor Authentication</h2>
+                    {{ info_tip.render('account-mfa-enrollment-guide',
+                                        'Personal authenticator enrollment',
+                                        'Your identity provider verifies primary credentials; KAORI governs the additional authenticator challenge.',
+                                        [
+                                        'Enroll and confirm a six-digit code before the factor becomes active.',
+                                        'Security policy determines when a verified factor is required for sign-in.',
+                                        'Recovery codes are single-use and visible only when issued.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
                 </div>
                 <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
             </div>
         </div>
-        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled'), 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
+        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') , 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
     </header>
     <div class="space-y-6 p-5 xl:p-6">
         <section aria-label="Account MFA security posture"
@@ -54,7 +53,7 @@
                     </span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-muted">Security Policy</p>
-                        <p class="mt-1 text-base font-bold text-content-primary">{{ mfa_state.policy_mode|replace('_', ' ')|title }}</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">{{ mfa_state.policy_mode|replace('_', ' ') |title }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Set by Access → Authentication Security.</p>
                     </div>
                 </article>
@@ -76,7 +75,9 @@
         {% if mfa_feedback %}
             <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-hover p-4 text-sm text-content-primary"
                  role="status">
-                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="info"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
                 <p>{{ mfa_feedback }}</p>
             </div>
         {% endif %}
@@ -113,7 +114,8 @@
                                   aria-hidden="true">1</span>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-kaori-primary">STEP 01</p>
-                                <h3 id="account-mfa-step-one" class="mt-0.5 text-base font-bold text-content-primary">Generate Setup Key</h3>
+                                <h3 id="account-mfa-step-one"
+                                    class="mt-0.5 text-base font-bold text-content-primary">Generate Setup Key</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Generate a manual setup key; enrollment stays inactive until you confirm a code.</p>
                             </div>
                         </div>
@@ -149,7 +151,9 @@
                         {% if mfa_setup_secret %}
                             <div class="mt-5 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="key-round" class="h-4 w-4 text-status-warning-text" aria-hidden="true"></i>
+                                    <i data-lucide="key-round"
+                                       class="h-4 w-4 text-status-warning-text"
+                                       aria-hidden="true"></i>
                                     <h4 class="text-sm font-bold text-status-warning-text">Manual Authenticator Setup Key</h4>
                                 </div>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Enter this key manually in your authenticator. It is displayed for this response only.</p>
@@ -164,7 +168,8 @@
                                   aria-hidden="true">2</span>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-kaori-primary">STEP 02</p>
-                                <h3 id="account-mfa-step-two" class="mt-0.5 text-base font-bold text-content-primary">Verify Your Authenticator</h3>
+                                <h3 id="account-mfa-step-two"
+                                    class="mt-0.5 text-base font-bold text-content-primary">Verify Your Authenticator</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Confirm a fresh six-digit code to activate the factor.</p>
                             </div>
                         </div>
@@ -201,7 +206,8 @@
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
                         <i data-lucide="list-checks" class="h-5 w-5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                         <div class="min-w-0">
-                            <h3 id="account-mfa-setup-guide" class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
+                            <h3 id="account-mfa-setup-guide"
+                                class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Four steps to protect your account.</p>
                         </div>
                     </header>
@@ -252,7 +258,8 @@
                             <i data-lucide="key-round" class="h-4 w-4"></i>
                         </span>
                         <div>
-                            <h3 id="account-mfa-regenerate-title" class="text-sm font-bold text-content-primary">Regenerate Recovery Codes</h3>
+                            <h3 id="account-mfa-regenerate-title"
+                                class="text-sm font-bold text-content-primary">Regenerate Recovery Codes</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Replace all remaining recovery codes after verifying your identity.</p>
                         </div>
                     </div>
@@ -299,15 +306,20 @@
                               aria-hidden="true">
                             <i data-lucide="shield-alert" class="h-4 w-4"></i>
                         </span>
-                        <h3 id="mfa-recovery-boundary" class="text-sm font-bold text-content-primary">Recovery Security</h3>
+                        <h3 id="mfa-recovery-boundary"
+                            class="text-sm font-bold text-content-primary">Recovery Security</h3>
                     </header>
                     <div class="space-y-4 p-5">
                         <div class="flex items-start gap-3">
-                            <i data-lucide="key-round" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="key-round"
+                               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
                             <p class="text-sm leading-6 text-content-secondary">Current-password verification and a valid authenticator or recovery code are required.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                            <i data-lucide="shield-alert"
+                               class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
+                               aria-hidden="true"></i>
                             <p class="text-sm leading-6 text-content-secondary">Regeneration invalidates all previously unused recovery codes.</p>
                         </div>
                         <p class="border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">Save the replacement codes immediately when shown. KAORI cannot redisplay their plaintext values.</p>
