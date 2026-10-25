@@ -85,6 +85,22 @@ The first four jobs currently use the existing `inventory` queue and remain inde
 Global **Sync All Inventory** dispatches `artifact_registry.inventory.sync` only. Heavy security evidence must
 not extend the inventory correctness path; Harbor vulnerability detail is refreshed only for new/changed scan evidence.
 
+## Shared Kubernetes Schedule Policy UI
+
+The approved **Kubernetes Inventory Sync** policy is the presentation baseline
+for scheduled Jobs. The canonical Jinja macro file
+`app/templates/platform_operations/jobs/configuration/_schedule_policy.html`
+owns the Violet policy header/status, accessible scheduled switch, bounded
+interval input and validation, optional scheduler timeline and Save Policy
+footer. Normal scheduled domains import the same macros; domain-specific
+recovery, report-delivery choices, provider eligibility and policy values
+remain in their owning templates/services.
+
+This is **presentation reuse**, not a new scheduler or policy authority.
+CSRF, per-job configure permission, disabled fields, canonical JobPolicy,
+HTMX target and persisted scheduling decisions retain existing ownership.
+Manual-only tasks must not be given a misleading scheduler switch.
+
 ## Compact Job Configuration Evidence
 
 Jobs → Configuration uses the existing `_job_overview.html` and

@@ -99,8 +99,10 @@ def test_job_configuration_one_line_helpers_preserve_source_evidence() -> None:
     assert 'same execution and audit trail' in activity
     assert 'whitespace-nowrap' in activity
     for source in (inventory, tenant, storage):
-        assert 'block truncate text-xs leading-5' in source
-        assert 'title=' in source
+        assert 'schedule_policy.controls(' in source
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    assert 'block truncate text-xs leading-5' in shared
+    assert 'title="{{ helper }}"' in shared
     assert 'Guarded Recovery Boundary' in storage
     assert "variant='guide'" in storage
     assert 'Two complete reads required; mismatches preserve committed records.' in storage
@@ -190,10 +192,9 @@ def test_job_policy_cards_have_guidance_without_mutating_policy_controls() -> No
         assert 'Saved policy takes effect on the next scheduler cycle.' in source
     for name in registry_templates:
         source = _read(folder + name)
-        assert 'Saved policy changes take effect without restarting Celery Beat.' in source
+        assert 'schedule_policy.controls(' in source
+        assert 'schedule_policy.footer(' in source
         assert 'policy_form.hidden_tag()' in source
-        assert 'policy_form.enabled(' in source
-        assert 'policy_form.interval_minutes(' in source
 
     registry_analytics = _read(folder + 'artifact_registry_analytics_refresh.html')
     assert 'execution_safety_short' in registry_analytics
@@ -214,3 +215,29 @@ def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() 
     assert 'title="{{ active_job.progress_detail }}"' in activity
     assert 'progress_bar.job_progress(active_job' in activity
     assert "url_for('jobs.run_now', job_key=definition.key)" in activity
+
+def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> None:
+    base = 'app/templates/platform_operations/jobs/configuration/definitions/'
+    templates = (
+        'inventory_sync.html',
+        'tenant_sync.html',
+        'object_storage_inventory_sync.html',
+        'artifact_registry_inventory_sync.html',
+        'artifact_registry_security_sync.html',
+        'artifact_registry_governance_sync.html',
+        'artifact_registry_runtime_correlation.html',
+        'report_schedule.html',
+        'tls_certificate_sync.html',
+        'source_control_repository_sync.html',
+    )
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    for block in ('header', 'controls', 'timeline', 'footer'):
+        assert '{% macro ' + block + '(' in shared
+    for filename in templates:
+        source = _read(base + filename)
+        for block in ('header', 'controls', 'footer'):
+            assert 'schedule_policy.' + block + '(' in source, filename
+        assert 'policy_form.hidden_tag()' in source
+        assert '_job_overview.html' in source
+        assert '_execution_activity.html' in source
+

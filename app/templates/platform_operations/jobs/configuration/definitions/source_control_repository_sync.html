@@ -1,5 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "platform_operations/jobs/configuration/_schedule_policy.html" as schedule_policy %}
 {% set definition = selected_job.definition %}
 {% set policy = selected_job.policy %}
 {% set can_configure = current_user.has_permission('jobs.configure') and current_user.has_permission(definition.configure_permission) %}
@@ -13,40 +14,26 @@
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
-        <header class="border-b border-outline-subtle bg-surface-hover p-5 sm:px-6">
-            <h3 class="text-base font-semibold text-content-primary">Repository Reconciliation Policy</h3>
-            <p class="mt-1 text-xs leading-5 text-content-muted">
-                Only admitted GitHub App installations with verified repository access are eligible.
-            </p>
-        </header>
+        {{ schedule_policy.header('Repository Reconciliation Policy',
+            'Only admitted GitHub App installations with verified access are eligible.',
+            policy) }}
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-target="#job-configuration-workspace"
               hx-swap="outerHTML">
             {{ policy_form.hidden_tag() }}
-            <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
-                <label class="flex items-center justify-between gap-3 rounded-xl border border-outline-subtle p-4">
-                    <span class="text-sm font-medium text-content-primary">Enable Automatic Repository Reconciliation</span>
-                    {{ policy_form.enabled(class_="h-5 w-5 accent-kaori-primary", disabled=not can_configure) }}
-                </label>
-                <div class="rounded-xl border border-outline-subtle p-4">
-                    <label for="{{ policy_form.interval_minutes.id }}"
-                           class="block text-sm font-medium text-content-primary">Interval (minutes)</label>
-                    {{ policy_form.interval_minutes(class_="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary", min=definition.minimum_interval_minutes, max=definition.maximum_interval_minutes, disabled=not can_configure) }}
-                    {% for error in policy_form.interval_minutes.errors %}
-                        <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
-                    {% endfor %}
-                    {% if policy_error %}<p class="mt-1 text-xs text-status-critical-text">{{ policy_error }}</p>{% endif %}
-                </div>
+            <div class="space-y-5 p-5 sm:p-6">
+                {{ schedule_policy.controls(policy_form, definition, can_configure,
+                'Automatic Repository Reconciliation',
+                'Sync authorized GitHub repositories when due.',
+                icon='git-branch',
+                interval_label='Execution Interval',
+                policy_error=policy_error|default(none)) }}
+                {{ schedule_policy.timeline(policy) }}
             </div>
-            <footer class="flex justify-end border-t border-outline-subtle bg-surface-hover p-4 sm:px-6">
-                {% if can_configure %}
-                    <button type="submit" class="{{ action_button.classes('primary') }}">Save Policy</button>
-                {% else %}
-                    <span class="text-xs text-content-muted">View Only</span>
-                {% endif %}
-            </footer>
+            {{ schedule_policy.footer(can_configure,
+                'Only verified GitHub App installations are eligible; incomplete scans preserve committed evidence.') }}
         </form>
     </section>
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
