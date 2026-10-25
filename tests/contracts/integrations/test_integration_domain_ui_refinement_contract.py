@@ -182,3 +182,22 @@ def test_provider_overviews_share_provider_first_registration_contract() -> None
 
     metrics_landing = read('app/templates/integrations/observability/metrics_source/frontpage.html')
     assert 'integrations.select_metrics_source_provider' in metrics_landing
+
+
+def test_metrics_provider_selector_uses_compact_hero_and_shared_info_tips() -> None:
+    selector = read('app/templates/integrations/observability/metrics_source/provider_selector.html')
+    routes = read('app/integrations/routes.py')
+    tooltips = read('app/templates/components/info_tip.html')
+
+    assert "Adapters own validation and runtime." in selector
+    assert "Choose a provider here; adapter, query language, validation" not in selector
+    assert 'info_tip.render("metrics-selector-guide"' in selector
+    assert 'info_tip.render("metrics-adapter-" ~ provider.key' in selector
+    assert 'info_tip.render("metrics-query-" ~ provider.key' in selector
+    assert 'variant="guide"' in selector
+    assert 'data-kaori-info-tip-trigger' in tooltips
+    assert 'sm:grid-cols-2' in selector
+    assert 'hover:border-brand-outline' in selector
+    assert 'href="{{ provider.registration_url }}"' in selector
+    assert 'Register {{ provider.label }}' in selector
+    assert "url_for('integrations.register_metrics_source', provider_key=provider.key)" in routes
