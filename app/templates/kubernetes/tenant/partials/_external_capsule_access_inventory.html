@@ -263,9 +263,13 @@
                                 Provider UID: <span class="break-all font-mono">{{ evidence.provider_uid }}</span>
                                 · resourceVersion {{ evidence.resource_version }}
                             </p>
+                            <h3 class="text-sm font-semibold text-content-primary">Observed Capsule Owners</h3>
                             {% for owner in evidence.owners %}
                                 <p>Capsule owner · {{ owner.kind }} / {{ owner.name }}</p>
+                            {% else %}
+                                <p class="text-xs text-content-muted">No provider owners recorded in this observation.</p>
                             {% endfor %}
+                            <h3 class="text-sm font-semibold text-content-primary">Provider Bindings</h3>
                             {% for binding in evidence.bindings %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-2.5">
                                     <p class="font-semibold text-content-primary">{{ binding.cluster_role_name or 'Unknown ClusterRole' }}</p>
@@ -280,7 +284,11 @@
                                                 <span>· {{ subject.namespace }}</span>
                                             {% endif %}
                                         </p>
-                                    {% endfor %}
+                                    {% else %}
+                                <p class="rounded-lg border border-dashed border-outline-default bg-surface-card p-4 text-xs text-content-muted">
+                                    No provider bindings observed in the committed inspection.
+                                </p>
+                            {% endfor %}
                                     {% if can_manage and binding.ownership == 'external' %}
                                         <form method="post"
                                               action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
