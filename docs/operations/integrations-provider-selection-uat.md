@@ -32,11 +32,24 @@ without actionable registration. Notification Channels retain the established
 channel-type chooser and channel-specific form workflow rather than being
 incorrectly modeled as infrastructure-provider matrix entries.
 
-The domain CTA uses the reusable provider selector
+**Current read-first navigation (#3207; supersedes the old Open CTA):**
+The shared domain workspace **Open [integration]** action navigates directly
+to the provider-owned `IntegrationModule.workspace_endpoint` and its
+Coverage/Connection Registry, including empty states before registration.
+A separate **Add Connection** action invokes the reusable provider selector
 `integrations.choose_integration_provider`. Registration actions in the
-provider frontpages likewise go to the selector, not straight to credential
-forms. Provider overview/registry, saved connections, bindings, and all
-operational routes remain independent and unchanged.
+provider frontpages likewise keep their existing provider-first selector
+journey, not a shortcut directly to credentials. The sidebar remains
+capability-first; no product-specific routing branches are introduced.
+Provider overview/registry, saved connections, bindings, permission and
+operational semantics remain independent and unchanged.
+
+All canonical provider landing pages also reuse
+`components/integration_workspace_tabs.html`, whose shared header now
+renders **Integration Workspace** and **Review committed coverage and
+registered provider connections.** above the existing two-tab surface.
+Historical navigation checks below that say **Open → Choose Provider**
+describe earlier candidates and must now be executed via **Add Connection**.
 
 ## Metrics Source provider chooser visual refinement (#3112)
 
@@ -69,12 +82,16 @@ djlint --check \
 
 ## Functional Dev Container UAT
 
-1. For each of the six Integration domain pages, use its **Open** action.
+1. For each of the six Integration domain pages, use **Open**.
+   Verify it lands directly on the provider-owned Integration Overview with
+   Coverage/Connection Registry, without passing through Add Connection.
+   Confirm the shared Integration Workspace title and short description
+   appear above the provider tabs, even with zero registered connections.
+2. Use the separate **Add Connection** action for each integration type.
    Verify the selector lists matrix providers, makes only available choices
-   actionable, and does not send users directly to a registration form.
-2. For Observability check both Metrics Source (Prometheus, Thanos Query)
-   and Alert Source (Alertmanager). Choose each available provider and
-   confirm its **existing** registration page opens.
+   actionable, and does not skip the provider chooser. In Observability,
+   check both Metrics Source (Prometheus, Thanos Query) and Alert Source
+   (Alertmanager); each available provider opens its existing form.
 3. For Storage choose MinIO; for Registry choose Harbor; for Orchestration
    choose Kubernetes; for Secrets Management choose Vault; for Source Control
    choose GitHub. Verify **Back to Integrations** and the provider selection
@@ -119,6 +136,12 @@ djlint --check \
 Container results and browser Human Acceptance are **pending**. No official
 CI/CD/Developer Check/Full Admission, promotion to `kaori/staging` or main,
 deployment, tag, or release until explicitly authorized.
+
+**Historical UAT context:** Sections #3119/#3126 below preserve the
+original operator observations. Where they prescribe **Open → Choose
+Provider**, use **Add Connection → Choose Provider** on the current
+holding branch (#3207). Do not revert direct workspace entry merely to
+satisfy a historical screenshot.
 
 ## 2026-10-25 — #3119 sidebar and chooser visual follow-up
 
