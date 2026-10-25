@@ -142,13 +142,12 @@ def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() ->
         assert 'policy_form.hidden_tag()' in source or key == 'alert'
     for key in ('kv', 'issuer', 'stored'):
         source = templates[key]
-        assert 'grid items-stretch gap-4' in source
-        assert 'min-h-[7rem]' in source
-        assert 'block truncate text-sm' in source
+        assert 'schedule_policy.header(' in source
+        assert 'schedule_policy.controls(' in source
+        assert 'schedule_policy.timeline(policy)' in source
+        assert 'schedule_policy.footer(' in source
         assert 'Saved policy takes effect on the next scheduler cycle.' in source
-        assert 'definition.minimum_interval_minutes' in source
-        assert 'policy_form.enabled(' in source
-        assert 'policy_form.interval_minutes(' in source
+        assert 'policy_form.hidden_tag()' in source
     assert 'worker-only HMAC' in templates['alert']
     assert 'no_store/imported certificates are not enumerable' in templates['stored']
     assert 'Over 64 stored certificates blocks collection' in templates['stored']
@@ -158,14 +157,18 @@ def test_materialization_one_line_copy_retains_policy_and_safety() -> None:
     source = _read('app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html')
     definition = _read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
     assert 'lg:grid-cols-12 lg:items-stretch' in source
-    assert 'min-h-[7rem]' in source
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    assert 'min-h-[7rem]' in shared
     assert 'min-h-[9rem]' in source
     assert 'Run snapshot refreshes from the saved policy.' in source
     assert 'Keep the last successful snapshot available.' in source
     assert 'object_storage.analytics.materialize' in source
     assert 'execution_safety_short' in source
     assert 'The last usable snapshot remains available inside the stale-grace window.' in definition
-    assert 'policy_form.enabled(' in source
+    assert 'schedule_policy.toggle(' in source
+    assert 'schedule_policy.interval(' in source
+    assert 'schedule_policy.header(' in source
+    assert 'schedule_policy.footer(' in source
     assert 'policy_form.stale_grace_minutes(' in source
     assert 'policy_form.freshness_minutes(' in source
 
@@ -183,12 +186,11 @@ def test_job_policy_cards_have_guidance_without_mutating_policy_controls() -> No
     )
     for name in vault_templates:
         source = _read(folder + name)
-        assert 'border-kaori-primary/20 bg-kaori-soft' in source
-        assert 'min-h-[7rem]' in source
+        assert 'schedule_policy.header(' in source
+        assert 'schedule_policy.controls(' in source
+        assert 'schedule_policy.timeline(policy)' in source
+        assert 'schedule_policy.footer(' in source
         assert 'policy_form.hidden_tag()' in source
-        assert 'policy_form.enabled(' in source
-        assert 'policy_form.interval_minutes(' in source
-        assert 'disabled=not can_configure' in source
         assert 'Saved policy takes effect on the next scheduler cycle.' in source
     for name in registry_templates:
         source = _read(folder + name)
@@ -241,3 +243,28 @@ def test_shared_kubernetes_schedule_ui_is_used_by_normal_scheduled_jobs() -> Non
         assert '_job_overview.html' in source
         assert '_execution_activity.html' in source
 
+def test_all_specialized_jobs_reuse_policy_primitives_without_losing_domain_fields() -> None:
+    base = 'app/templates/platform_operations/jobs/configuration/definitions/'
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    assert '{% macro toggle(' in shared
+    assert '{% macro interval(' in shared
+    assert '{% macro manual_header(' in shared
+    assert 'policy_form.enabled(' in shared
+    assert 'policy_form.interval_minutes(' in shared
+    for filename in (
+        'secrets_pki_inventory_sync.html',
+        'secrets_pki_pki_sync.html',
+        'secrets_pki_stored_cert_sync.html',
+    ):
+        source = _read(base + filename)
+        assert 'schedule_policy.controls(' in source
+        assert 'policy_form.hidden_tag()' in source
+    materialization = _read(base + '_materialization_job.html')
+    assert 'schedule_policy.toggle(' in materialization
+    assert 'schedule_policy.interval(' in materialization
+    assert 'policy_form.freshness_minutes(' in materialization
+    assert 'policy_form.stale_grace_minutes(' in materialization
+    assert '{% block materialization_options %}' in materialization
+    manual_only = _read(base + 'vault_alert_observation.html')
+    assert 'schedule_policy.manual_header(' in manual_only
+    assert 'policy_form.enabled(' not in manual_only

@@ -92,9 +92,14 @@ for scheduled Jobs. The canonical Jinja macro file
 `app/templates/platform_operations/jobs/configuration/_schedule_policy.html`
 owns the Violet policy header/status, accessible scheduled switch, bounded
 interval input and validation, optional scheduler timeline and Save Policy
-footer. Normal scheduled domains import the same macros; domain-specific
-recovery, report-delivery choices, provider eligibility and policy values
-remain in their owning templates/services.
+footer. Normal scheduled domains import the same macros. Vault KV v2, public issuer
+and stored certificate schedules also use this component without relaxing
+mount approval, public-only evidence, source limits or the RBAC boundary.
+Analytics and Forecast use the same switch and interval primitives while
+retaining freshness, stale fallback and precomputed time-range controls.
+Vault Alert Source uses the shared manual-only header, without an automatic
+scheduler switch. Domain-specific recovery, report-delivery choices,
+provider eligibility and policy values remain in their owning templates/services.
 
 This is **presentation reuse**, not a new scheduler or policy authority.
 CSRF, per-job configure permission, disabled fields, canonical JobPolicy,
