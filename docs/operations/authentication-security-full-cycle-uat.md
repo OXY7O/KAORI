@@ -271,3 +271,42 @@ Access → Authentication Security → Multi-Factor Authentication tab:
 Run the approved MFA tab contract, global Access lock, sidebar and djlint
 checks on the exact review SHA. The icon change does **not** constitute
 functional MFA enrolment/challenge UAT acceptance.
+
+
+## Settings Account MFA self-service visual checkpoint (#3228)
+
+This is a UI refinement for the **personal** MFA enrollment tab in Settings;
+it does not change the Access administrator policy controls.
+
+Before testing enrollment, confirm the selected account's actual MFA state
+(Not Enrolled, Setup Pending, or Factor Enrolled), policy, and recovery-code
+count. Compare the tab with sibling Account Profile, Authentication Activity,
+and Credential Management: the same icon/header, compact posture cards and
+responsive natural-height 7/5 action/context grammar must be visible.
+
+1. On a local unenrolled UAT account, **Step 01** provides a constrained
+   password field and Generate Setup Key. After a correct password, verify
+   the manually provisioned secret appears only in the response and is
+   marked no-store; never capture it in screenshots or CI artifacts.
+2. **Step 02** provides a compact six-digit code field with numeric mobile
+   keypad attributes, visible helper and Verify & Enable MFA. Invalid OTP
+   must not enable the factor; a valid fresh OTP must commit enrollment.
+3. For an external identity, the form omits the local-password control and
+   shows fresh-provider-sign-in guidance. Server-side freshness enforcement
+   remains authoritative.
+4. Upon enrollment, the workspace displays a recovery-code regeneration
+   action with constrained credentials and separate recovery-security context.
+   Codes issued after confirmation or regeneration appear once only with a
+   persistent warning; previously unused codes become invalid when rotated.
+5. Verify desktop (1440-wide), narrow mobile (375-wide), light/dark,
+   keyboard-only tab sequence, accessible field names, and no horizontal
+   overflow. The Settings shared HTMX tab and nonvisual loading status
+   remain intact; no new visible progress indicator.
+6. Validate `djlint --check app/templates/settings/account/partials/_mfa.html`,
+   focused `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`,
+   `python scripts/verify_settings_final_lock.py`, and existing
+   authentication factor regression tests at exact source SHA.
+
+Do not record factor seeds, real OTPs, recovery codes, cookies or raw user
+credentials as visual/Audit evidence. UI source readiness does not prove
+human MFA challenge/recovery UAT PASS. Official CI/CD admission remains HOLD.
