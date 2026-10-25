@@ -357,7 +357,7 @@ def test_object_storage_forecast_uses_capacity_v2_summary_and_distinct_history()
         'metrics.forecast_posture.detail',
     ):
         assert field in forecast
-    assert "object_storage_trend_mode = 'forecast'" in forecast
+    assert 'object_storage_trend_mode = "forecast"' in forecast
     assert "url_for('analytics.object_storage_forecast'" in forecast
     assert 'Historical Growth / Day' in trend
     assert 'trend_summary.growth_per_day_display' in trend
@@ -380,6 +380,7 @@ def test_object_storage_evidence_shows_full_contract_as_primary_content() -> Non
     assert 'Additional Evidence Context' in workspace
     assert 'partials/_reconciliation.html' in workspace
 
+
 def test_object_storage_analytics_templates_compile_before_http_render() -> None:
     jinja = Environment()
     for relative in (
@@ -392,3 +393,60 @@ def test_object_storage_analytics_templates_compile_before_http_render() -> None
 
     # Flask's 500 originated during Jinja compilation, not from committed metrics.
     jinja.from_string(read('app/templates/storage/object_storage/analytics/partials/_trend.html'))
+
+
+def test_object_storage_overview_guides_and_performance_family_parity() -> None:
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+    performance = read('app/templates/storage/object_storage/analytics/partials/_overview_performance_snapshot.html')
+    consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
+    alerts = read('app/templates/storage/object_storage/analytics/partials/_overview_alerts_snapshot.html')
+    forecast = read('app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+
+    targets = (
+        (workspace, 'object-storage-analytics-overview-workspace-guide'),
+        (performance, 'object-storage-request-path-snapshot-guide'),
+        (consumers, 'object-storage-consumer-concentration-snapshot-guide'),
+        (forecast, 'object-storage-forecast-snapshot-guide'),
+        (trend, 'object-storage-overview-forecast-trend-guide'),
+        (alerts, 'object-storage-provider-alerts-anomaly-snapshot-guide'),
+    )
+    for source, tip_id in targets:
+        assert 'components/info_tip.html' in source
+        assert 'info_tip.render(' in source
+        assert tip_id in source
+        assert "variant='guide'" in source
+        assert "placement='right'" in source
+    assert "{% if compact_forecast_overview %}" in trend
+
+    for partial in (performance, consumers, alerts):
+        assert 'analysis_surface.snapshot_shell_classes()' in partial
+        assert 'analysis_surface.metric_grid_classes(4)' in partial
+        assert 'analysis_surface.metric_cell_classes()' in partial
+        assert 'analysis_surface.metric_icon_classes(' in partial
+        assert 'border-t border-outline-subtle px-5 py-4 sm:px-6' in partial
+        assert 'bg-kaori-primary px-4' in partial
+        assert 'items-center sm:justify-between' in partial
+
+    assert 'analysis_surface.interpretation_grid_classes()' not in consumers
+    assert 'analysis_surface.interpretation_callout(' not in consumers
+    assert 'concentration_reading' in consumers
+    assert 'No bucket usage evidence available.' in consumers
+    assert 'overview_alerts.evidence_available' in alerts
+    assert 'overview_alerts.degraded' in alerts
+    assert 'source.resolved_label' in alerts
+    assert 'overview_alerts.anomaly_count' in alerts
+
+
+def test_object_storage_overview_modified_templates_pass_jinja_parser() -> None:
+    jinja = Environment()
+    paths = (
+        'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_performance_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_alerts_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html',
+        'app/templates/storage/object_storage/analytics/partials/_trend.html',
+    )
+    for path in paths:
+        jinja.from_string(read(path))

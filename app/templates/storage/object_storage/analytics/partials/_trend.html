@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% set trend_mode = object_storage_trend_mode|default('performance' if page_key == 'performance' else ('forecast' if page_key == 'forecast' else 'usage')) %}
 {% set trend = metrics.request_trend|default([]) if trend_mode == 'performance' else (metrics.forecast_history|default([]) if trend_mode == 'forecast' else metrics.usage_trend|default([])) %}
 {% set secondary_trend = metrics.error_trend|default([]) if trend_mode == 'performance' else [] %}
@@ -23,15 +24,28 @@
                        class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">
-                        {% if trend_mode == 'performance' %}
-                            Request &amp; Error Trend
-                        {% elif trend_mode == 'forecast' %}
-                            Storage Usage Forecast
-                        {% else %}
-                            Storage Usage Trend
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">
+                            {% if trend_mode == 'performance' %}
+                                Request &amp; Error Trend
+                            {% elif trend_mode == 'forecast' %}
+                                Storage Usage Forecast
+                            {% else %}
+                                Storage Usage Trend
+                            {% endif %}
+                        </h2>
+                        {% if compact_forecast_overview %}
+                        {{ info_tip.render('object-storage-overview-forecast-trend-guide',
+                                                'Storage Usage Forecast Guide',
+                                                'The observed history and dashed 30-day projection have different evidence roles.',
+                                                items=[
+                                                'Solid history reflects committed observed samples; the dashed segment is a worker projection.',
+                                                'Window Change and Historical Growth / Day describe only the observed history.',
+                                                'Do not equate projected capacity demand with a current provider alert.',
+                                                ],
+                                                placement='right', variant='guide') }}
                         {% endif %}
-                    </h2>
+                    </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                         {% if trend_mode == 'forecast' %}
                             Committed forecast history is solid; the linear 30-day projection is dashed.

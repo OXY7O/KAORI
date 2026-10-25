@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}"
          data-object-storage-forecast-compact>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -8,7 +9,18 @@
                     <i data-lucide="chart-spline" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Forecast Snapshot</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Forecast Snapshot</h2>
+                        {{ info_tip.render('object-storage-forecast-snapshot-guide',
+                                                'Forecast Snapshot Guide',
+                                                'Projection values come from the committed forecasting-worker snapshot.',
+                                                items=[
+                                                'Projected 7d and 30d are planning estimates, not observed current usage.',
+                                                'Capacity ETA applies only when the worker has a positive growth estimate.',
+                                                'Forecast Worker Growth / Day may differ from the historical window rate shown in the trend.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Committed 30-day planning evidence from the forecasting worker.</p>
                 </div>
             </div>
