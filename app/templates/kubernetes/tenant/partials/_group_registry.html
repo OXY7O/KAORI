@@ -9,6 +9,7 @@
 {% set loading_id = "tenant-group-registry-loading" %}
 {% set query_params = {
     'section': 'memberships',
+    'membership_view': 'groups',
     'group_tenant_id': group_filters.tenant_id,
     'group_enabled': group_filters.enabled,
     'group_search': group_filters.search
@@ -22,7 +23,7 @@
                         loading_id,
                         group_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'section': 'memberships'},
+            query_params={'section': 'memberships', 'membership_view': 'groups'},
             page_param='group_page',
             per_page_param='group_per_page'
             ) }}
@@ -60,6 +61,7 @@
             per_page_param='group_per_page'
             ) %}
             <input type="hidden" name="section" value="memberships">
+            <input type="hidden" name="membership_view" value="groups">
             <div>
                 <label for="group-tenant-filter"
                        class="{{ table_ui.filter_label_classes() }}">Tenant</label>
@@ -94,7 +96,7 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1250px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">
             <caption class="sr-only">Tenant group registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -116,7 +118,8 @@
                                title="{{ group.tenant.name }}">{{ group.tenant.name }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <code class="text-xs text-content-secondary">{{ group.subject_name }}</code>
+                            <code class="block min-w-0 max-w-full truncate text-xs text-content-secondary"
+                                  title="{{ group.subject_name }}">{{ group.subject_name }}</code>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label('Enabled' if group.enabled else 'Disabled', 'normal' if group.enabled else 'warning') }}
@@ -126,7 +129,7 @@
                                title="{{ group.updated_at|user_datetime }}">{{ group.updated_at|user_datetime }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
-                            <div class="flex min-w-[15rem] flex-wrap justify-end gap-2">
+                            <div class="flex min-w-0 flex-wrap justify-end gap-2">
                                 <button type="button"
                                         data-tenant-group-edit-open
                                         data-tenant-group-edit-url="{{ url_for('tenant.edit_tenant_group_route', group_id=group.id) }}"
@@ -149,6 +152,7 @@
                                           hx-indicator="#tenant-admin-loading"
                                           hx-disabled-elt="find button"
                                           class="inline-flex">
+                                        <input type="hidden" name="membership_view" value="groups">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button id="tenant-group-retire-submit-{{ group.id }}"
                                                 type="submit"
@@ -177,6 +181,7 @@
                                           hx-indicator="#tenant-admin-loading"
                                           hx-disabled-elt="find button"
                                           class="inline-flex">
+                                        <input type="hidden" name="membership_view" value="groups">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit"
                                                 {% if not can_manage %}disabled aria-disabled="true"{% endif %}
@@ -235,7 +240,8 @@
               hx-swap="outerHTML show:none focus-scroll:false"
               hx-indicator="#tenant-admin-loading"
               hx-disabled-elt="find button">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="membership_view" value="groups">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <header class="flex items-start gap-3 border-b border-outline-subtle px-5 py-4">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">

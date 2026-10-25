@@ -280,6 +280,8 @@ def _tenant_section_redirect(section: str):
         return response
 
     if request.headers.get('HX-Request') != 'true':
+        if resolved_section == 'memberships':
+            return redirect(url_for('tenant.tenants', section=resolved_section, membership_view=_membership_registry_view()))
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
     context = _tenant_workspace_context(include_sync=False)
@@ -302,6 +304,10 @@ def _tenant_section_redirect(section: str):
     response = make_response(rendered)
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Pragma'] = 'no-cache'
+    if resolved_section == 'memberships':
+        response.headers['HX-Replace-Url'] = url_for(
+            'tenant.tenants', section=resolved_section, membership_view=_membership_registry_view()
+        )
     return response
 
 
@@ -354,8 +360,14 @@ def _discovery_section_context() -> dict[str, Any]:
     )
 
 
+def _membership_registry_view() -> str:
+    """One URL-owned registry view; reject unexpected query/form values."""
+    return 'groups' if request.values.get('membership_view') == 'groups' else 'memberships'
+
+
 def _memberships_section_context() -> dict[str, Any]:
     return {
+        'active_membership_view': _membership_registry_view(),
         **get_membership_registry_context(
             page=_query_int('membership_page'),
             per_page=_query_int('membership_per_page', 5),

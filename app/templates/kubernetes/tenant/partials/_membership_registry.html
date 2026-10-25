@@ -6,6 +6,7 @@
 {% set loading_id = "tenant-membership-registry-loading" %}
 {% set query_params = {
     'section': 'memberships',
+    'membership_view': 'memberships',
     'membership_tenant_id': membership_filters.tenant_id,
     'membership_principal_type': membership_filters.principal_type,
     'membership_status': membership_filters.status,
@@ -20,7 +21,7 @@
                         loading_id,
                         membership_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'section': 'memberships'},
+            query_params={'section': 'memberships', 'membership_view': 'memberships'},
             page_param='membership_page',
             per_page_param='membership_per_page'
             ) }}
@@ -58,6 +59,7 @@
             per_page_param='membership_per_page'
             ) %}
             <input type="hidden" name="section" value="memberships">
+            <input type="hidden" name="membership_view" value="memberships">
             <div>
                 <label for="membership-tenant-filter"
                        class="{{ table_ui.filter_label_classes() }}">Tenant</label>

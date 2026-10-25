@@ -177,6 +177,48 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     assert 'paginate_query(' in read_model
 
 
+def test_membership_registries_use_nested_url_owned_content_tabs_without_desktop_overflow() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+
+    assert 'components/content_tabs.html' in workspace
+    assert "content_tabs.render_links('tenant-membership-registries'" in workspace
+    assert "('memberships', 'Membership Registry'" in workspace
+    assert "('groups', 'Tenant Group Registry'" in workspace
+    assert "membership_view='groups'" in workspace
+    assert "membership_view='memberships'" in workspace
+    assert "active_membership_view == 'groups'" in workspace
+    assert "hx_target='#tenant-admin-workspace'" in workspace
+    assert "hx_select='#tenant-admin-workspace'" in workspace
+    assert "hx_push_url='true'" in workspace
+    assert workspace.count('partials/_membership_registry.html') == 1
+    assert workspace.count('partials/_group_registry.html') == 1
+    assert 'name="membership_view" value="groups"' in workspace
+
+    assert "def _membership_registry_view() -> str:" in routes
+    assert "request.values.get('membership_view') == 'groups'" in routes
+    assert "'active_membership_view': _membership_registry_view()" in routes
+    assert "response.headers['HX-Replace-Url']" in routes
+
+    for registry, selected in ((membership, 'memberships'), (groups, 'groups')):
+        assert "'membership_view': '" + selected + "'" in registry
+        assert 'name="membership_view" value="' + selected + '"' in registry
+        assert 'registry_ui.filter_form' in registry
+        assert 'registry_ui.footer' in registry
+        assert 'registry_ui.clear_filters_link' in registry
+
+    assert "table_ui.table_classes('min-w-[980px] !table-fixed')" in groups
+    assert 'min-w-[1250px]' not in groups
+    assert 'title="{{ group.subject_name }}"' in groups
+    assert 'overflow-x-auto' in groups
+    assert 'name="membership_view" value="groups"' in groups
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in setup
+    assert "'capsule-initial-owner-guide-tip'" in setup
+
+
 def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
