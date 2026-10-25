@@ -95,6 +95,62 @@ at one narrow viewport and light/dark; browser Back should return to
 Source Control. Official CI/CD, Full Admission and staging/main promotion
 remain HOLD.
 
+## 2026-10-25 — #3207 Read-first provider workspace entry (supersedes Open CTA only)
+
+**Human UAT correction:** The prior #3106 provider-first registration contract
+is **still valid for Add Connection**, but the old shared `Open [provider]`
+domain CTA incorrectly sent the operator through Choose Provider before
+allowing access to the already-built Integration Coverage/Connection Registry.
+The user confirmed this is confusing when no connection exists, because a
+read-only overview must not require starting a mutation/registration journey.
+
+Current canonical navigation for all Integration domains:
+
+- **Integrations → Source Control → Open Source Control** opens
+  `github_source.index` directly, with overview and coverage/registry
+  available even when zero connections exist. Other domains similarly use
+  the provider-owned `IntegrationModule.workspace_endpoint` exposed through
+  `_integration_type_row` (Kubernetes, Metrics, Alertmanager, MinIO, Harbor,
+  Vault). No new provider route, hardcoded product routing or permission
+  bypass is introduced.
+- **Integrations → Source Control → Add Connection** invokes
+  `integrations.choose_integration_provider(integration_type='source_control')`,
+  then GitHub provider selection and the source-owned registration form.
+  This continues #3106's mandatory provider-first **registration** workflow.
+- Existing provider Hero **Register Connection** keeps its current
+  provider-owned/selector behavior; normal operational pages read committed
+  KAORI state, not mandatory live API reads.
+- `components/integration_workspace_tabs.html` renders the existing shared
+  section header **Integration Workspace** with the concise description
+  **Review committed coverage and registered provider connections.** above
+  its Coverage and Connection Registry tabs across seven provider landing pages.
+  Shared framed tabs, Alpine state, HTMX, default pagination and accessibility
+  stay authoritative.
+- Sidebar remains capability/domain first; the new Open navigation does
+  not add provider-level sidebar items or change active state/breadcrumbs.
+
+This **supersedes the `Open Source Control → Choose Provider` implication
+in the historical #3106 section below**, while preserving that section's
+`Add Connection → Choose Provider → registration` requirement. Prior
+`#3094` direct registration-first entry is not reinstated.
+
+The same UAT report includes Ruff Check/Format and djLint PASS plus focused
+pytest **45 passed / 1 failed**, where the failing source assertion
+hardcoded a djLint-sensitive Guide ID. The scoped regression contract now
+checks the stable identifier prefix independently of formatting. That prior
+test count is not evidence for the updated SHA.
+
+**Dev Container UAT:** after pulling holding, click Source Control in the
+sidebar, then Open Source Control (not Add) and verify that GitHub Overview
+and Coverage/Registry open with 0 results and a legitimate empty state.
+Go back and click Add Connection to confirm the GitHub/Bitbucket/GitLab
+provider selector still appears; do not enter secrets for navigation-only
+QA. Repeat Open vs Add on Orchestration, Observability (Metrics/Alert),
+Storage, Registry, and Secrets Management. Verify 1440×900/mobile,
+light/dark, section header above tabs and keyboard/touch navigation.
+The old GitHub Test→Register→Toast→Redirect functional UAT remains
+independent and pending. Official CI/CD and Full Admission remain HOLD.
+
 ## 2026-10-25 — Current approved provider-first navigation (#3106)
 
 The current approved registration journey is **Integrations → Source Control
