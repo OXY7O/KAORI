@@ -480,8 +480,7 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     assert 'title="{{ action.title }}"' in recommendations
     assert (
         'class="line-clamp-2 break-words text-sm font-semibold leading-5 '
-        'text-content-primary transition-colors group-hover:text-kaori-primary"'
-        in recommendations
+        'text-content-primary transition-colors group-hover:text-kaori-primary"' in recommendations
     )
     assert '{{ action.title }}</p>' in recommendations
     assert 'mt-2 line-clamp-2 text-xs leading-5 text-content-muted' in recommendations
@@ -489,7 +488,7 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     # contain the generated utility so the browser actually limits the title.
     assert '.line-clamp-2{-webkit-line-clamp:2;' in read('app/static/css/output.css')
     assert "'.line-clamp-2{-webkit-line-clamp:2;'" in read('scripts/verify_css_build.mjs')
-    assert "detail=action.rule_key" in recommendations
+    assert 'detail=action.rule_key' in recommendations
     assert '<span class="truncate">{{ action.source }}</span>' in recommendations
 
     kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
