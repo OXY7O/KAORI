@@ -14,7 +14,7 @@ def test_provider_kernel_descriptor_reuses_existing_integration_types():
     assert module.integration_type == 'source_control'
     assert module.domain_key == 'source_control'
     assert module.capability_key == 'source_control'
-    assert module.workspace_endpoint == 'github_source.index'
+    assert module.workspace_endpoint == 'github_source.new_connection'
     assert module.workspace_endpoint != module.domain.workspace_endpoint
     assert module.operation_queues['runtime.validate'] == 'integration-validation'
     assert module.operation_queues['runtime.health'] == 'integration-runtime'
@@ -45,8 +45,10 @@ def test_failure_recorder_sanitizes_provider_exception():
     from types import SimpleNamespace
 
     canonical = SimpleNamespace(
-        last_error=None, readiness_status='validation_required',
-        health_status=None, last_checked_at=None,
+        last_error=None,
+        readiness_status='validation_required',
+        health_status=None,
+        last_checked_at=None,
     )
     record = SimpleNamespace(integration_instance=canonical)
     kernel_contract._record_failure(record, RuntimeError('credential-leak-example'))
@@ -68,8 +70,6 @@ def test_provider_workspace_resolves_to_distinct_github_landing_url():
     app.register_blueprint(github_source_bp)
     with app.test_request_context():
         assert url_for(kernel_contract.integration_module.workspace_endpoint) == (
-            '/integrations/source-control/github/'
+            '/integrations/source-control/github/connections/new'
         )
-        assert url_for(kernel_contract.integration_module.workspace_endpoint) != (
-            '/integrations/source-control'
-        )
+        assert url_for(kernel_contract.integration_module.workspace_endpoint) != ('/integrations/source-control')
