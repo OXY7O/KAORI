@@ -1547,6 +1547,7 @@ def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    capacity_registry = read('app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html')
     table_standard = read('docs/design/components/TABLE_AND_LABEL.md')
     status_dialog_standard = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
 
@@ -1556,7 +1557,7 @@ def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
 
     assert 'tenant-registry-status-tip' in registry
     assert 'tenant-discovery-status-tip' in discovery
-    assert 'allocation-budget-status-tip' in capacity
+    assert 'allocation-budget-status-tip' in capacity_registry
     assert 'Do not repeat generic' in table_standard
     assert 'outside the table scroll container' in table_standard
     assert 'do **not** use a repeated per-row Status Detail trigger' in status_dialog_standard

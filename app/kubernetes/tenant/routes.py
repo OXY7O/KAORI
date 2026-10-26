@@ -426,7 +426,25 @@ def resource_profiles():
     )
 
     capacity_search = str(request.args.get('capacity_search') or '').strip()
+    allocation_view = str(request.args.get('allocation_view') or 'overview').strip().lower()
+    if allocation_view not in {'overview', 'budget'}:
+        allocation_view = 'overview'
+    context['active_allocation_view'] = allocation_view
+    capacity_environment = str(request.args.get('capacity_environment') or '').strip().lower()
+    capacity_state = str(request.args.get('capacity_state') or '').strip()
+    capacity_evidence = str(request.args.get('capacity_evidence') or '').strip().lower()
+    capacity_resource = str(request.args.get('capacity_resource') or '').strip()
+    if capacity_resource not in {'', 'cpu', 'memory_bytes', 'pods', 'storage_bytes'}:
+        capacity_resource = ''
     capacity_rows = list(context.get('capacity_governance') or [])
+    context['capacity_environment_options'] = sorted(
+        {str(item['cluster'].environment).strip() for item in capacity_rows if item['cluster'].environment}
+    )
+    context['capacity_state_options'] = sorted({str(item['state']) for item in capacity_rows if item.get('state')})
+    context['capacity_evidence_options'] = sorted(
+        {str(item.get('snapshot_state') or 'unknown') for item in capacity_rows}
+    )
+    context['capacity_resource'] = capacity_resource
 
     # Read-only cluster visual projection uses the same committed #654 summaries
     # already resolved for this page. Only one cluster's Tenant contributions are
@@ -445,7 +463,7 @@ def resource_profiles():
     context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
     allocation_search = str(request.args.get('allocation_search') or '').strip()
     context['allocation_search'] = allocation_search
-    if active_view == 'capacity' and selected is not None:
+    if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:
         bars = build_tenant_allocation_bars(selected)
         context['allocation_overview'] = {
             'cluster': selected['cluster'],
@@ -461,11 +479,23 @@ def resource_profiles():
         context['allocation_tenant_rows'] = tenant_rows
         context['allocation_tenant_matches'] = len(tenant_rows)
     if capacity_search:
-        needle = capacity_search.lower()
+        needle = capacity_search.casefold()
         capacity_rows = [
             item
             for item in capacity_rows
-            if needle in str(item['cluster'].name).lower() or needle in str(item['cluster'].environment).lower()
+            if needle in str(item['cluster'].name).casefold()
+            or needle in str(item['cluster'].environment).casefold()
+        ]
+    if capacity_environment:
+        capacity_rows = [
+            item for item in capacity_rows if str(item['cluster'].environment).lower() == capacity_environment
+        ]
+    if capacity_state:
+        capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]
+    if capacity_evidence:
+        capacity_rows = [
+            item for item in capacity_rows
+            if str(item.get('snapshot_state') or 'unknown').lower() == capacity_evidence
         ]
     capacity_items, capacity_pagination = paginate_sequence(
         capacity_rows,
@@ -479,7 +509,13 @@ def resource_profiles():
         str(item['cluster'].id): build_tenant_allocation_bars(item) for item in capacity_items
     }
     context['capacity_pagination'] = capacity_pagination
-    context['capacity_filters'] = {'search': capacity_search}
+    context['capacity_filters'] = {
+        'search': capacity_search,
+        'environment': capacity_environment,
+        'state': capacity_state,
+        'evidence': capacity_evidence,
+        'resource': capacity_resource,
+    }
 
     return render_template(
         'kubernetes/tenant/resource_profiles.html',

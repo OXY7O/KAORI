@@ -1,0 +1,207 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% set capacity_registry_id = "capacity-budget-registry" %}
+{% set capacity_loading_id = "capacity-budget-loading" %}
+{% set capacity_query_params = {
+    'view': 'capacity',
+    'allocation_view': 'budget',
+    'capacity_search': capacity_filters.search,
+    'capacity_environment': capacity_filters.environment,
+    'capacity_state': capacity_filters.state,
+    'capacity_evidence': capacity_filters.evidence,
+    'capacity_resource': capacity_filters.resource,
+    'allocation_cluster_id': allocation_cluster_id
+} %}
+<section id="{{ capacity_registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}"
+         aria-label="Allocation Budget registry">
+    {% set header_actions %}
+        {% if capacity_filters.search or capacity_filters.environment or capacity_filters.state or capacity_filters.evidence or capacity_filters.resource %}
+            {{ registry_ui.clear_filters_link('tenant.resource_profiles',
+                capacity_registry_id,
+                capacity_loading_id,
+                capacity_pagination.per_page,
+                table_ui.action_classes(),
+                query_params={'view': 'capacity', 'allocation_view': 'budget', 'allocation_cluster_id': allocation_cluster_id},
+                page_param='capacity_page',
+                per_page_param='capacity_per_page') }}
+        {% endif %}
+    {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('allocation-budget-status-tip',
+            'Allocation Budget status',
+            'Cluster posture is derived from committed Budget, requests, and remaining Headroom.',
+            [
+                'Unknown capacity evidence is never treated as free headroom.',
+                'CPU, Memory and Pods represent request commitments, not actual usage.',
+                'Storage is a logical admission ceiling, not physical backend free space.'
+            ],
+            placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('chart-no-axes-combined',
+        'Allocation Budget',
+        'Committed capacity by cluster and resource, with direct budget, allocation, headroom and evidence visibility.',
+        capacity_loading_id,
+        'Refreshing Allocation Budget',
+        none,
+        none,
+        header_actions=header_actions,
+        title_extra=title_info,
+        result_count=capacity_pagination.total_items) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.resource_profiles',
+            capacity_registry_id,
+            capacity_loading_id,
+            capacity_pagination.per_page,
+            page_param='capacity_page',
+            per_page_param='capacity_per_page') %}
+            <input type="hidden" name="view" value="capacity">
+            <input type="hidden" name="allocation_view" value="budget">
+            <input type="hidden" name="allocation_cluster_id" value="{{ allocation_cluster_id }}">
+            <div>
+                <label for="capacity-budget-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('capacity_search', capacity_filters.search, 'Cluster name or environment', id='capacity-budget-search') }}
+            </div>
+            <div>
+                <label for="capacity-environment-filter" class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="capacity-environment-filter"
+                        name="capacity_environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for environment in capacity_environment_options %}
+                        <option value="{{ environment|lower }}"
+                                {% if capacity_filters.environment == environment|lower %}selected{% endif %}>{{ environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="capacity-state-filter" class="{{ table_ui.filter_label_classes() }}">Capacity State</label>
+                <select id="capacity-state-filter"
+                        name="capacity_state"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for state in capacity_state_options %}
+                        <option value="{{ state }}"
+                                {% if capacity_filters.state == state %}selected{% endif %}>{{ state }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="capacity-evidence-filter" class="{{ table_ui.filter_label_classes() }}">Evidence</label>
+                <select id="capacity-evidence-filter"
+                        name="capacity_evidence"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Evidence</option>
+                    {% for state in capacity_evidence_options %}
+                        <option value="{{ state|lower }}"
+                                {% if capacity_filters.evidence == state|lower %}selected{% endif %}>{{ state|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="capacity-resource-filter" class="{{ table_ui.filter_label_classes() }}">Resource</label>
+                <select id="capacity-resource-filter"
+                        name="capacity_resource"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Resources</option>
+                    <option value="cpu" {% if capacity_filters.resource == 'cpu' %}selected{% endif %}>CPU Requests</option>
+                    <option value="memory_bytes" {% if capacity_filters.resource == 'memory_bytes' %}selected{% endif %}>Memory Requests</option>
+                    <option value="pods" {% if capacity_filters.resource == 'pods' %}selected{% endif %}>Pod Slots</option>
+                    <option value="storage_bytes" {% if capacity_filters.resource == 'storage_bytes' %}selected{% endif %}>Logical Storage</option>
+                </select>
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1000px] !table-fixed') }}">
+            <caption class="sr-only">Committed request capacity, budget, headroom and evidence for each Ready Kubernetes cluster and resource.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Cluster / Evidence</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Resource</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Budget</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Committed</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Headroom</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Allocation</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in capacity_governance %}
+                    {% set state_tone = 'normal' if item.state == 'Healthy' else ('critical' if item.state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning') %}
+                    {% set bars = capacity_budget_bars.get(item.cluster.id|string, []) %}
+                    {% set visible_bars = bars if not capacity_filters.resource else bars|selectattr('key', 'equalto', capacity_filters.resource)|list %}
+                    {% for bar in visible_bars %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            {% if loop.first %}
+                                <th scope="rowgroup"
+                                    rowspan="{{ visible_bars|length }}"
+                                    class="{{ table_ui.cell_classes() }} min-w-0 align-top text-left">
+                                    {{ table_ui.cluster_identity(item.cluster.name, item.cluster.environment) }}
+                                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                        {{ table_label.status_label(item.state, state_tone) }}
+                                        {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|replace('_', ' ')|title,
+                                            'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
+                                    </div>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ item.committed_namespace_count }} committed Namespace{{ '' if item.committed_namespace_count == 1 else 's' }}
+                                    </p>
+                                </th>
+                            {% endif %}
+                            <th scope="row" class="{{ table_ui.cell_classes() }} min-w-0 align-middle text-left">
+                                <p class="text-xs font-semibold text-content-primary">{{ bar.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    {{ 'Logical admission ceiling' if bar.key == 'storage_bytes' else 'Governed request commitment' }}
+                                </p>
+                                {% if bar.shortfall %}
+                                    <p class="mt-1 text-xs font-semibold text-status-critical-text">Over budget by {{ bar.shortfall }}</p>
+                                {% endif %}
+                            </th>
+                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums">{{ bar.budget }}</td>
+                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums">{{ bar.committed }}</td>
+                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums {{ 'text-status-critical-text' if bar.shortfall else 'text-content-primary' }}">{{ bar.headroom }}</td>
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                {% if bar.known and item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh'] %}
+                                    <p class="text-xs font-semibold tabular-nums text-content-primary">{{ bar.percent }}% committed</p>
+                                    {{ progress_bar.stacked_bar(bar.percent,
+                                        bar.free_percent,
+                                        'mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
+                                        'h-full bg-kaori-primary',
+                                        'h-full bg-kaori-primary/20',
+                                        label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
+                                {% else %}
+                                    {{ table_label.status_label('Evidence Unavailable' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] else bar.state,
+                                        'warning' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] or bar.state == 'Unknown' else 'info') }}
+                                    <p class="mt-1 text-xs text-content-muted">Ratio unavailable</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "server-off" %}
+                            {% set empty_state_title = "No Matching Clusters" %}
+                            {% set empty_state_description = "Adjust the filters or check committed Ready Kubernetes cluster evidence." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ registry_ui.footer('tenant.resource_profiles',
+        capacity_registry_id,
+        capacity_loading_id,
+        capacity_pagination,
+        capacity_query_params,
+        capacity_pagination.allowed_per_page,
+        resource_label='Clusters',
+        rows_aria_label='Allocation Budget clusters per page',
+        control_name='capacity-budget',
+        page_param='capacity_page',
+        per_page_param='capacity_per_page') }}
+</section>

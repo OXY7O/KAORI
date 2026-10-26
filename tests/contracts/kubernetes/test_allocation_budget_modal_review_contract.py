@@ -1,4 +1,4 @@
-"""UAT REVIEW(2): Allocation Budget dialog header and information footer."""
+"""UAT REVIEW: Allocation Budget is a full registry tab, not a per-cluster modal."""
 
 from pathlib import Path
 
@@ -7,48 +7,52 @@ from jinja2 import Environment
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_allocation_budget_header_labels_and_fixed_info_footer() -> None:
-    source = (ROOT / 'app/templates/kubernetes/tenant/partials/_capacity_governance.html').read_text(encoding='utf-8')
-    Environment(autoescape=True).parse(source)
-
-    dialog = source.split('<dialog id="{{ dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
-    header = dialog.split('<header ', 1)[1].split('</header>', 1)[0]
-    scroll_body, footer = dialog.split('<footer ', 1)
-
-    assert 'id="{{ dialog_id }}-title"' in header
-    # Screenshot #3 reference: icon then inline cluster title/state,
-    # explanatory text next, and metadata chips as the final header row.
-    assert 'data-lucide="chart-no-axes-combined"' in header
-    assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft' in header
-    assert 'flex min-w-0 flex-wrap items-center gap-2' in header
-    assert header.index('{{ item.cluster.name }}') < header.index('table_label.status_label(item.state, state_tone)')
-    assert header.index('table_label.status_label(item.state, state_tone)') < header.index(
-        'id="{{ dialog_id }}-description"'
+def test_allocation_budget_uses_full_canonical_table_in_query_backed_tab() -> None:
+    parent = (ROOT / 'app/templates/kubernetes/tenant/partials/_capacity_governance.html').read_text(
+        encoding='utf-8'
     )
-    assert header.index('id="{{ dialog_id }}-description"') < header.index('aria-label="Allocation Budget context"')
-    assert "table_label.metadata_label('Allocation Budget', icon='chart-no-axes-combined')" in header
-    assert "table_label.metadata_label('Request commitment', icon='gauge')" in header
-    assert 'item.cluster.environment|title' in header
-    assert 'Allocation Budget</p>' not in header
-
-    assert 'min-h-0 overflow-y-auto bg-surface-page p-4 text-left sm:p-5' in scroll_body
-    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in scroll_body
-    for value in ('bar.budget', 'bar.committed', 'bar.headroom'):
-        assert value in scroll_body
-    assert 'progress_bar.stacked_bar(bar.percent,' in scroll_body
-
-    assert 'aria-label="Allocation Budget information footer"' in footer
-    assert 'flex shrink-0 flex-col gap-2' in footer
-    assert 'px-4 py-2.5 sm:flex-row' in footer
-    assert 'item.committed_namespace_count' in footer
-    assert 'No governed namespaces' in footer
-    assert 'Storage is logical admission capacity.' in footer
-    assert 'data-lucide="info"' in footer
-    assert 'data-kaori-dialog-close' in footer
-    assert 'aria-label="Close Allocation Budget"' in footer
-    assert 'class="{{ table_ui.action_classes() }} ml-auto shrink-0"' in footer
-    assert dialog.count('data-kaori-dialog-close') == 2
-    assert dialog.index('</div>\n                                        <footer') > dialog.index(
-        'min-h-0 overflow-y-auto'
+    registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html').read_text(
+        encoding='utf-8'
     )
-    assert 'hx-post' not in dialog
+    Environment(autoescape=True).parse(parent)
+    Environment(autoescape=True).parse(registry)
+
+    assert 'workspace_tabs.render_query_tabs(' in parent
+    assert "active_allocation_view == 'budget'" in parent
+    assert 'tenant-capacity-allocation-tabs' in parent
+    assert '_allocation_budget_registry.html' in parent
+    assert '_tenant_allocation_overview.html' in parent
+
+    assert 'Allocation Budget' in registry
+    assert 'table_ui.inventory_block_header(' in registry
+    assert 'components/table_registry.html' in registry
+    assert 'registry_ui.filter_form(' in registry
+    assert 'registry_ui.clear_filters_link(' in registry
+    assert 'registry_ui.footer(' in registry
+    assert 'capacity-budget-registry' in registry
+    assert 'capacity-budget-loading' in registry
+    assert "table_ui.table_classes('min-w-[1000px] !table-fixed')" in registry
+    assert 'rowspan="{{ visible_bars|length }}"' in registry
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in registry
+    assert 'item.snapshot_state' in registry
+    for value in ('bar.budget', 'bar.committed', 'bar.headroom', 'bar.percent', 'bar.free_percent'):
+        assert value in registry
+    assert 'progress_bar.stacked_bar(bar.percent,' in registry
+    assert 'Ratio unavailable' in registry
+    assert 'Over budget by {{ bar.shortfall }}' in registry
+    assert 'storage_bytes' in registry
+    assert 'Storage is a logical admission ceiling' in registry
+
+    for option in (
+        'capacity_search',
+        'capacity_environment',
+        'capacity_state',
+        'capacity_evidence',
+        'capacity_resource',
+    ):
+        assert option in registry
+
+    assert '<dialog' not in registry
+    assert 'View More' not in registry
+    assert 'hx-post' not in registry
+    assert 'data-kaori-native-dialog' not in registry

@@ -39,6 +39,7 @@
                   hx-sync="this:replace"
                   class="flex w-full flex-wrap items-end gap-2 sm:w-auto">
                 <input type="hidden" name="view" value="capacity">
+                <input type="hidden" name="allocation_view" value="overview">
                 {% if capacity_filters.search %}
                     <input type="hidden"
                            name="capacity_search"
@@ -396,6 +397,7 @@
                                   role="search"
                                   class="w-full">
                                 <input type="hidden" name="view" value="capacity">
+                <input type="hidden" name="allocation_view" value="overview">
                                 <input type="hidden"
                                        name="allocation_cluster_id"
                                        value="{{ allocation_cluster_id }}">
