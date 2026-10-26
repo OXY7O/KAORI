@@ -24,6 +24,7 @@ def tabs() -> dict[str, str]:
         "{% else %}\n                {{ assurance.render(",
         1,
     )
+    session = 'assurance.render(' + session
     return {'overview': overview, 'mfa': mfa, 'bot': bot, 'sessions': session}
 
 
@@ -59,7 +60,8 @@ def test_each_tab_starts_with_single_governed_summary() -> None:
         assert tab.count('assurance.render(') == 1, name
         assert marker in tab
         assert 'variant=\'guide\'' in tab
-        assert tab.index('assurance.render(') < tab.index('data-auth-bot-layout=') if name == 'bot' else True
+        if name == 'bot':
+            assert tab.index('assurance.render(') < tab.index('data-auth-bot-layout=')
     assert 'Authentication Assurance Posture' in data['overview']
     assert 'MFA Assurance Policy' in data['mfa']
     assert 'Bot Protection' in data['bot']
