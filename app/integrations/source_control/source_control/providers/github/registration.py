@@ -85,9 +85,9 @@ def test_connection(values: GitHubConnectionInput) -> InstallationReadiness:
     app_id, installation_id, account_id = _verified_ids(values)
     _validate_name(values.name)
     _validate_configuration(values)
-    return GitHubAppClient(
-        app_id=app_id, private_key_pem=values.private_key_pem
-    ).validate_installation(installation_id, account_id)
+    return GitHubAppClient(app_id=app_id, private_key_pem=values.private_key_pem).validate_installation(
+        installation_id, account_id
+    )
 
 
 def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
@@ -104,15 +104,14 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
     app_id, installation_id, account_id = _verified_ids(values)
     observed = test_connection(values)
     if (
-        str(observed.app_id) != app_id or str(observed.installation_id) != installation_id
+        str(observed.app_id) != app_id
+        or str(observed.installation_id) != installation_id
         or str(observed.account_id) != account_id
         or observed.repository_selection not in {'all', 'selected'}
     ):
         raise GitHubProviderError('GitHub App connection evidence does not match the requested installation.')
 
-    duplicate = IntegrationInstance.query.filter_by(
-        integration_type='source_control', name=name
-    ).first()
+    duplicate = IntegrationInstance.query.filter_by(integration_type='source_control', name=name).first()
     if duplicate is not None:
         raise ValueError('A Source Control connection with that name already exists.')
     previous_installation = SourceInstallation.query.filter_by(
@@ -125,22 +124,20 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         raise ValueError('GitHub App installation is already registered.')
 
     try:
-        app_credential = GitHubAppCredential.query.filter_by(
-            host_key='github.com', native_app_id=app_id
-        ).first()
+        app_credential = GitHubAppCredential.query.filter_by(host_key='github.com', native_app_id=app_id).first()
         if app_credential is not None:
             if (
                 not app_credential.enabled
                 or not _same_secret(app_credential.private_key_pem, values.private_key_pem)
                 or not _same_secret(app_credential.webhook_secret, values.webhook_secret)
             ):
-                raise GitHubProviderError(
-                    'GitHub App credential differs from the existing protected registration.'
-                )
+                raise GitHubProviderError('GitHub App credential differs from the existing protected registration.')
         else:
             app_credential = GitHubAppCredential(
-                host_key='github.com', native_app_id=app_id,
-                private_key_pem=values.private_key_pem, webhook_secret=values.webhook_secret,
+                host_key='github.com',
+                native_app_id=app_id,
+                private_key_pem=values.private_key_pem,
+                webhook_secret=values.webhook_secret,
                 enabled=True,
             )
             db.session.add(app_credential)
@@ -151,7 +148,9 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         ).first()
         if account is None:
             account = SourceAccount(
-                provider_key='github', host_key='github.com', native_account_id=account_id,
+                provider_key='github',
+                host_key='github.com',
+                native_account_id=account_id,
                 account_type=observed.account_type,
             )
             db.session.add(account)
@@ -160,10 +159,15 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
             account.account_type = observed.account_type
 
         identity = IntegrationInstance(
-            integration_type='source_control', provider_key='github', adapter_key='github_rest_v3',
-            name=name, environment=str(values.environment or '').strip() or None,
-            description=values.description, enabled=bool(values.enabled),
-            lifecycle_status='active', readiness_status='validation_required',
+            integration_type='source_control',
+            provider_key='github',
+            adapter_key='github_rest_v3',
+            name=name,
+            environment=str(values.environment or '').strip() or None,
+            description=values.description,
+            enabled=bool(values.enabled),
+            lifecycle_status='active',
+            readiness_status='validation_required',
             health_status=None,
             metadata_json={
                 'provider_label': 'GitHub',
@@ -176,11 +180,16 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
         db.session.add(identity)
         db.session.flush()
         installation = SourceInstallation(
-            integration_instance_id=identity.id, provider_key='github',
-            host_key='github.com', native_app_id=app_id, native_installation_id=installation_id,
-            account_id=account.id, github_app_credential_id=app_credential.id,
+            integration_instance_id=identity.id,
+            provider_key='github',
+            host_key='github.com',
+            native_app_id=app_id,
+            native_installation_id=installation_id,
+            account_id=account.id,
+            github_app_credential_id=app_credential.id,
             repository_scope=observed.repository_selection,
-            grant_status='unknown', last_observed_at=observed.observed_at,
+            grant_status='unknown',
+            last_observed_at=observed.observed_at,
         )
         db.session.add(installation)
         db.session.commit()

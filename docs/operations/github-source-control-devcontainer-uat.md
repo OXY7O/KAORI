@@ -1298,3 +1298,70 @@ tests, record exact-SHA evidence, and await explicit Human Acceptance.
 Earlier source guidance in this guide describing the external GitHub
 installed-apps link is **superseded** by this new internal KAORI Edit route.
 Official Developer Check, Full Admission, staging/main, release remain HOLD.
+
+
+## 2026-10-26 — #3271 Protected GitHub App credential rotation (Dev Container UAT)
+
+**Supersedes #3266's metadata-only edit limitation**: operators do not need
+to delete/re-register an existing GitHub connection to replace a compromised
+or rotated **GitHub App private key (PEM)** or **webhook secret**. The native App,
+Installation and Account IDs remain immutable because they are GitHub-owned
+source identities referenced by KAORI historical committed evidence. To connect
+a different installation, register a distinct connection and retire/deactivate
+the old one through its governed lifecycle; do not transplant repository history.
+
+The **Edit GitHub Connection** screen uses the approved Kubernetes
+`_provider_edit_hero.html` and existing GitHub **Test Connection → verified
+short-lived proof → Save Changes** flow. The Hero caption is concise for
+desktop and wraps safely for mobile. Existing App credentials are **never
+rehydrated** into edit HTML; blank PEM / webhook secret fields mean retain the
+existing encrypted values.
+
+When replacement fields are populated, Test Connection runs an installation-
+scoped authenticated GitHub App probe against the **same** bound App/Installation/
+Account IDs and issues a requesting-user/form/secret-fingerprint-bound proof.
+Saving requires that fresh proof and repeats the live GitHub installation check
+before storing the encrypted replacement. If form fields change after testing,
+the proof is invalidated. **Webhook secret validity cannot be verified via the
+GitHub REST installation API**; Test Connection validates App/installation only.
+Because a GitHub App credential can serve several SourceInstallations, rotating
+either credential resets previous Full Validation/readiness of all connections
+bound to that shared App; their existing committed repository grant and revision
+evidence is retained as historical data, not silently re-assigned.
+
+No registration webhook, secret, token, PEM or raw provider response is stored
+in JobExecution, returned from GET, redisplayed on failed POST, or placed in
+operational event metadata. Editing name/description alone stays offline and
+retains readiness. Changing environment/enabled/credential returns impacted
+connections to Validation Required.
+
+### Dev Container UAT requirements
+
+1. Pull the current `kaori/review/staging-uat` holding SHA and review
+   **Source Control → GitHub → Connection Registry → Manage → Configuration →
+   Configure Connection**. At 1440×900 check the one-line Hero subtitle;
+   repeat at 390×844 and light/dark without forced nowrap.
+2. Open existing disposable installation. Confirm App ID/Installation ID/Account
+   ID read-only and both credential replacement fields blank, with no protected
+   value rendered in HTML/DOM.
+3. Metadata-only Save requires no GitHub network call and retains readiness.
+   For key rotation, paste a valid GitHub App PEM for the *same App*, Test
+   Connection, then Save Changes. Confirm audit, encrypted replacement and
+   `validation_required` status; no source-grant history rewrite. Webhook
+   secret-only replacement likewise requires Test and affects the shared App.
+4. Negative tests: Save replacement without Test, stale/tampered/cross-user
+   proof, test failed for mismatched installation or PEM, invalid webhook
+   secret/length, unauthorized local identity, CSRF failure, and duplicate
+   name all reject without modifying current protected credentials. Test first
+   then change any field before Save must invalidate proof.
+5. With two disposable installations referencing the same GitHub App credential,
+   verify a rotation resets **both** readineses. Run Full Validation separately
+   afterward. Repository synchronization is an independent approved operation.
+6. Run existing Ruff/DjLint/pytest/navigation gates and browser accessibility
+   checks against the exact merged SHA; record logs/screenshots and explicit
+   Human Acceptance. Earlier operator QA at #3266: Ruff import FAIL,
+   Ruff Format FAIL (4 files), djLint FAIL (edit template), focused pytest
+   **46 passed**, integration/sidebar verifiers PASS on an earlier SHA only.
+
+No official Developer Check, Full Admission, staging/main promotion or release
+until the operator explicitly authorizes the next gate.
