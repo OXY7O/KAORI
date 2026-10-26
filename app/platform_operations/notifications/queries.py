@@ -96,9 +96,7 @@ def _user_job_query(user_id: int):
     )
 
 
-def _approval_work_inbox_projections(
-    user_id: int,
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+def _approval_work_inbox_projections(user_id: int) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Read fail-closed, independently authoritative Work Inbox projections."""
     # Tenant handoff has one authoritative committed approval, not one
     # Notification per candidate approver. Reuse the shared Work Inbox surface
