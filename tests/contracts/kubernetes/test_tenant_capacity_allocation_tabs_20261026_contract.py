@@ -38,19 +38,19 @@ def test_budget_cluster_registry_expands_reusable_resource_evidence() -> None:
     for source in (registry, detail, overview):
         Environment(autoescape=True).parse(source)
 
-    assert "components/details/_expandable_row.html" in registry
+    assert 'components/details/_expandable_row.html' in registry
     assert 'detail_row.toggle_button(' in registry
     assert 'detail_row.static_detail_row(' in registry
     assert "open_label='View Details'" in registry
     assert "close_label='Hide Details'" in registry
-    assert "detail_row.static_detail_row(detail_row_id, detail_target_id, 5" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5' in registry
     assert '_allocation_budget_detail.html' in registry
     assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in registry
     for label in ('Cluster / Environment', 'Capacity State', 'Evidence', 'Namespaces', 'Actions'):
         assert label in registry
-    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in registry
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in registry
     assert "bars|selectattr('key', 'equalto', capacity_filters.resource)|list" in registry
-    assert "table_ui.cluster_identity(item.cluster.name, item.cluster.environment)" in registry
+    assert 'table_ui.cluster_identity(item.cluster.name, item.cluster.environment)' in registry
     assert 'item.committed_namespace_count' in registry
     assert 'rowspan=' not in registry
     assert 'min-w-[1000px]' not in registry

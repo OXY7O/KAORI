@@ -916,8 +916,15 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'registry_ui.filter_form(' in budget
     assert 'registry_ui.footer(' in budget
     assert 'registry_ui.clear_filters_link(' in budget
-    for field in ('capacity_page', 'capacity_per_page', 'capacity_search', 'capacity_environment',
-                  'capacity_state', 'capacity_evidence', 'capacity_resource'):
+    for field in (
+        'capacity_page',
+        'capacity_per_page',
+        'capacity_search',
+        'capacity_environment',
+        'capacity_state',
+        'capacity_evidence',
+        'capacity_resource',
+    ):
         assert field in budget
     assert 'name="allocation_view" value="budget"' in budget
     assert 'table_ui.inventory_block_header(' in budget
@@ -987,7 +994,13 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert 'data-dialog-target="{{ budget_guide_dialog_id }}"' in overview
     assert 'data-kaori-native-dialog' in overview
 
-    for query_name in ('capacity_search', 'capacity_environment', 'capacity_state', 'capacity_evidence', 'capacity_resource'):
+    for query_name in (
+        'capacity_search',
+        'capacity_environment',
+        'capacity_state',
+        'capacity_evidence',
+        'capacity_resource',
+    ):
         assert f"request.args.get('{query_name}')" in routes
         assert query_name in budget
     assert "context['active_allocation_view'] = allocation_view" in routes
@@ -1332,7 +1345,7 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
     assert "'allocation_page'" not in routes
     assert "'allocation_per_page'" not in routes
-    assert "if active_view == 'capacity' and selected is not None:" in routes
+    assert "if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:" in routes
     assert 'get_resource_profile_workspace_context()' in routes
     assert 'build_capacity_governance_summaries' in capacity
 
@@ -1650,6 +1663,7 @@ def test_allocation_comparison_preserves_all_sixteen_frozen_and_proposed_dimensi
     assert "'limits': profile.limit_defaults_json or {}" in registry
     assert "'storage_policy': getattr(profile, 'storage_policy_json', {}) or {}" in registry
 
+
 def test_allocation_technical_details_use_canonical_accessible_expandables() -> None:
     """#2985 supersedes obsolete vertical tabs with existing Native disclosure."""
     from jinja2 import Environment
@@ -1661,19 +1675,20 @@ def test_allocation_technical_details_use_canonical_accessible_expandables() -> 
     for source in (template, cutover, shared):
         Environment(autoescape=True).parse(source)
     assert 'components/view_more_content.html' in shared
-    assert "data-tenant-profile-coverage=\"native_kubernetes\"" in shared
+    assert 'data-tenant-profile-coverage="native_kubernetes"' in shared
     for label in ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults', 'Advanced Controls'):
         assert f"'{label}'" in shared
     assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in shared
     assert 'data-tenant-allocation-advanced-empty' in shared
-    assert "data-tenant-allocation-detail-tab" not in template
-    assert "const detailTabs" not in script
+    assert 'data-tenant-allocation-detail-tab' not in template
+    assert 'const detailTabs' not in script
     assert "selectDetail('objects')" not in script
     assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
     assert 'data-tenant-allocation-change-namespace' in template
-    assert "data-tenant-allocation-change-profile" in template
+    assert 'data-tenant-allocation-change-profile' in template
     assert 'data-tenant-allocation-highlight-count' in template
     assert 'data-tenant-allocation-highlight-count' in cutover
+
 
 def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
@@ -1682,7 +1697,9 @@ def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() ->
     page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     service = read('app/kubernetes/tenant/service.py')
 
-    assert 'Placement capability preflight; not verified provider execution.' in read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
+    assert 'Placement capability preflight; not verified provider execution.' in read(
+        'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
+    )
     assert 'This preview never approves or applies changes.' in template
     assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
     assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
@@ -1747,6 +1764,7 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert "cell.classList.toggle('text-kaori-primary', differs)" in script
     assert 'Read-only comparison. Capacity admission' in shared
 
+
 def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> None:
     from jinja2 import Environment
 
@@ -1781,7 +1799,9 @@ def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> Non
     # Icons convey navigation hierarchy only; the governed contract is still
     # read from the same frozen and versioned quota bindings.
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
-    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in read('app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html')
+    assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in read(
+        'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
+    )
     assert "url_for('tenant.change_namespace_allocation_route')" in template
     assert 'name="csrf_token"' in template
     assert 'Preflight &amp; Apply' in template
@@ -1897,7 +1917,7 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'grid gap-3 border-t' not in exposure
     assert 'sm:grid-cols-2' not in exposure
 
-    budget = overview.split('How allocation budgets work', 1)[1].split('</details>', 1)[0]
+    budget = overview.split('<dialog id="{{ budget_guide_dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
     assert budget.index('Request budget formula') < budget.index('Logical storage policy')
     assert budget.index('Logical storage policy') < budget.index('ResourceQuota boundary')
     assert 'tenant-allocation-budget-formula-heading' in budget
@@ -1916,7 +1936,10 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'ResourceQuota enforces limits but does not reserve resources on Kubernetes nodes.' in budget
     assert 'data-lucide="database"' in budget
     assert 'sm:grid-cols-2' in budget
-    assert 'group-open:rotate-180' in overview
+    assert 'data-dialog-target="{{ budget_guide_dialog_id }}"' in overview
+    assert 'id="{{ budget_guide_dialog_id }}"' in overview
+    assert 'data-kaori-native-dialog' in overview
+    assert 'group-open:rotate-180' not in overview
     assert 'allocation_overview.bars' in overview
     assert "exposure.display[field ~ '_committed']" in overview
     assert "exposure.display[field ~ '_threshold']" in overview
@@ -1933,16 +1956,28 @@ def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() 
         Environment(autoescape=True).parse(source)
     assert tenant.count("coverage_comparison.capsule_sections('capsule_tenant_resource_quotas'") == 2
     assert shared.count("coverage_comparison.capsule_sections('capsule_global_resource_quota'") == 1
-    assert "{% macro capsule_sections(authority, advanced_controls={})" in comparison
-    for category in ('Basic Resources', 'Storage Guardrails', 'Object Limits',
-                     'Container Defaults', 'Advanced Controls'):
+    assert '{% macro capsule_sections(authority, advanced_controls={})' in comparison
+    for category in (
+        'Basic Resources',
+        'Storage Guardrails',
+        'Object Limits',
+        'Container Defaults',
+        'Advanced Controls',
+    ):
         assert f"'{category}'" in comparison
     # Per-PVC policy is a non-governed row *within* Storage Guardrails.
     assert '· Per-PVC Policy' in comparison
     for key in (
-        'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
-        'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
-        'configmaps', 'secrets',
+        'requests.cpu',
+        'limits.cpu',
+        'requests.memory',
+        'limits.memory',
+        'pods',
+        'requests.storage',
+        'persistentvolumeclaims',
+        'services',
+        'configmaps',
+        'secrets',
     ):
         assert f"'{key}'" in comparison
     assert 'data-tenant-quota-metric-side="{{ side }}"' in comparison
@@ -1972,9 +2007,16 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     dimension_block = preview.split('const dimensions = [', 1)[1].split('        ]', 1)[0]
     entries = re.findall(r"^\s*\['([^']+)', '([^']+)'\],?$", dimension_block, re.MULTILINE)
     assert [key for key, _label in entries] == [
-        'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
-        'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
-        'configmaps', 'secrets',
+        'requests.cpu',
+        'limits.cpu',
+        'requests.memory',
+        'limits.memory',
+        'pods',
+        'requests.storage',
+        'persistentvolumeclaims',
+        'services',
+        'configmaps',
+        'secrets',
     ]
     assert "form.querySelectorAll('[data-tenant-quota-metric-side]')" in preview
     assert 'cell.dataset.tenantQuotaMetricKey' in preview
@@ -2012,15 +2054,14 @@ def test_shared_native_capsule_profile_coverage_matches_canonical_contract() -> 
             targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
             for target in targets:
                 if isinstance(target, ast.Name) and target.id in (
-                    '_PROFILE_QUOTA_FIELDS', '_PROFILE_LIMIT_FIELDS', '_PROFILE_STORAGE_FIELDS'
+                    '_PROFILE_QUOTA_FIELDS',
+                    '_PROFILE_LIMIT_FIELDS',
+                    '_PROFILE_STORAGE_FIELDS',
                 ):
                     symbols[target.id] = ast.literal_eval(stmt.value)
 
     quota = set(symbols['_PROFILE_QUOTA_FIELDS'].values())
-    limit_fields = {
-        'limits.' + '.'.join(parts)
-        for parts in symbols['_PROFILE_LIMIT_FIELDS'].values()
-    }
+    limit_fields = {'limits.' + '.'.join(parts) for parts in symbols['_PROFILE_LIMIT_FIELDS'].values()}
     storage_fields = {'storage_policy.' + key for key in symbols['_PROFILE_STORAGE_FIELDS'].values()}
     assert len(quota) == 10 and len(limit_fields) == 4 and len(storage_fields) == 2
 
@@ -2057,11 +2098,9 @@ def test_capsule_profile_unsupported_mutation_guard_is_not_just_copy() -> None:
     assert 'Object.keys(profile.storage_policy || {}).length > 0' in js
     assert 'Object.keys(profile.limits || {}).length > 0' in js
     assert "requestedUnsupported.push('Per-PVC Policy')" in js
-    assert "apply.disabled = blocked" in js
+    assert 'apply.disabled = blocked' in js
     assert 'kaoriInitiallyDisabled' in js
-    assert js.count(
-        'renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)'
-    ) == 3
+    assert js.count('renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)') == 3
     assert tenant_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 2
     assert grq_governance.count('_validate_resource_profile_base_controls(profile, tenant)') == 1
     assert "'capsule': {" in controls
@@ -2082,33 +2121,31 @@ def test_capsule_advanced_placement_capability_preflight_is_committed_and_fail_c
 
     assert "'capsule_advanced_profile_preflight': capsule_advanced_preflight" in registry
     assert "if tenant.provider_key == 'capsule'" in registry
-    assert "capsule_capabilities = {" in registry
-    assert "_tenant_capability_statuses(tenant)" in registry
-    assert "evaluate_resource_profile_advanced_controls(" in registry
+    assert 'capsule_capabilities = {' in registry
+    assert '_tenant_capability_statuses(tenant)' in registry
+    assert 'evaluate_resource_profile_advanced_controls(' in registry
     assert "provider_key='capsule'" in registry
     assert "'requested': bool(value.get('requested'))" in registry
     assert "'state': str(value.get('state') or 'unknown')" in registry
     assert "'reason': str(value.get('reason') or '')" in registry
     assert "'label': str(value.get('label') or key)" in registry
-    assert "if profile.advanced_controls_json" in registry
+    assert 'if profile.advanced_controls_json' in registry
 
     assert 'id="tenant-capsule-advanced-profile-preflight"' in page
     assert '{{ capsule_advanced_profile_preflight|tojson }}' in page
     assert "const committedEvaluations = readJson('tenant-capsule-advanced-profile-preflight')" in script
-    assert "const evaluation = committedEvaluations?.[tenantId]?.[profileId] || {}" in script
+    assert 'const evaluation = committedEvaluations?.[tenantId]?.[profileId] || {}' in script
     assert "preflight?.state === 'enabled' && preflight.requested === true" in script
     assert "'Available · Capability preflight'" in script
     assert "'Committed provider capability evidence unavailable.'" in script
-    assert "requestedUnsupported.push(preflight?.label || key)" in script
-    assert script.count(
-        'renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)'
-    ) == 3
+    assert 'requestedUnsupported.push(preflight?.label || key)' in script
+    assert script.count('renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)') == 3
     assert 'apply.disabled = blocked' in script
     assert "apply.dataset.kaoriInitiallyDisabled === 'true'" in script
-    assert "profile?.advanced_controls || {}" in script
+    assert 'profile?.advanced_controls || {}' in script
 
     # The data is pre-evaluated from committed state; ordinary UI render is read-only.
-    assert "get_namespace_registry_context(" in read('app/kubernetes/tenant/routes.py')
+    assert 'get_namespace_registry_context(' in read('app/kubernetes/tenant/routes.py')
     assert 'data-tenant-capsule-advanced-preview="{{ control_key }}"' in read(
         'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
     )
@@ -2127,9 +2164,13 @@ def test_native_technical_coverage_compact_summary_and_cutover_journey() -> None
 
     section = comparison.split('{% macro native_sections(', 1)[1].split('{%- endmacro %}', 1)[0]
     assert 'data-tenant-native-coverage-summary' in section
-    for label, value in [('Basic Resources', '5'), ('Storage Guardrails', '4'),
-                         ('Object Limits', '3'), ('Container Defaults', '4'),
-                         ('Advanced Controls', 'Gated')]:
+    for label, value in [
+        ('Basic Resources', '5'),
+        ('Storage Guardrails', '4'),
+        ('Object Limits', '3'),
+        ('Container Defaults', '4'),
+        ('Advanced Controls', 'Gated'),
+    ]:
         assert f"('{label}', '{value}'" in section
     assert section.count('dense=true') == 2
     assert "open_by_default=key == 'basic'" in section
@@ -2160,11 +2201,18 @@ def test_namespace_quota_default_details_use_compact_four_card_read_only_grid() 
     for group in ('Compute Limits', 'Storage Policy', 'Object Limits', 'Container Defaults'):
         assert f"'{group}'" in source
     for key in (
-        'limits_cpu', 'limits_memory', 'persistentvolumeclaims',
-        'pvc_min_storage', 'pvc_max_storage',
-        'services', 'configmaps', 'secrets',
-        'default_request_cpu', 'default_cpu',
-        'default_request_memory', 'default_memory',
+        'limits_cpu',
+        'limits_memory',
+        'persistentvolumeclaims',
+        'pvc_min_storage',
+        'pvc_max_storage',
+        'services',
+        'configmaps',
+        'secrets',
+        'default_request_cpu',
+        'default_cpu',
+        'default_request_memory',
+        'default_memory',
     ):
         assert f"('{key}', " in source
     assert 'data-tenant-namespace-resource-field="{{ field }}"' in source
@@ -2173,5 +2221,5 @@ def test_namespace_quota_default_details_use_compact_four_card_read_only_grid() 
     assert 'border-t border-outline-subtle pt-2' in source
     assert "form.querySelectorAll('[data-tenant-quota-default-card] [data-tenant-value-display]')" in script
     assert "if (cell.textContent.trim() === '—' && profile) cell.textContent = 'Not managed'" in script
-    assert "const profile = profiles[profileSelect?.value] || null" in script
+    assert 'const profile = profiles[profileSelect?.value] || null' in script
     assert 'renderAdvancedControls()' in script

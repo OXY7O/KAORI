@@ -37,7 +37,7 @@ def test_allocation_budget_uses_canonical_cluster_registry_and_expandable_detail
     assert 'detail_row.toggle_button(' in registry
     assert 'detail_row.static_detail_row(' in registry
     assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in registry
-    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in registry
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in registry
     assert 'item.snapshot_state' in registry
 
     assert 'Committed Allocation Evidence' in detail
