@@ -18,15 +18,23 @@ from app.extensions.db import db
 class PKIIssuerIdentity(db.Model):
     __tablename__ = 'secrets_pki_issuer_identities'
     __table_args__ = (
-        UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount', 'provider_issuer_id',
-                         name='uq_secrets_pki_issuer_source'),
-        Index('ix_secrets_pki_issuer_scope', 'integration_instance_id', 'provider_namespace',
-              'mount', 'last_observed_at'),
+        UniqueConstraint(
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'provider_issuer_id',
+            name='uq_secrets_pki_issuer_source',
+        ),
+        Index(
+            'ix_secrets_pki_issuer_scope', 'integration_instance_id', 'provider_namespace', 'mount', 'last_observed_at'
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False, index=True,
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)
@@ -34,7 +42,8 @@ class PKIIssuerIdentity(db.Model):
     observation_status: Mapped[str] = mapped_column(String(30), nullable=False, default='observed')
     last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     certificates: Mapped[list[PKIPublicCertificateObservation]] = relationship(
-        'PKIPublicCertificateObservation', back_populates='issuer',
+        'PKIPublicCertificateObservation',
+        back_populates='issuer',
         order_by='PKIPublicCertificateObservation.id',
         passive_deletes=True,
     )
@@ -43,14 +52,15 @@ class PKIIssuerIdentity(db.Model):
 class PKIPublicCertificateObservation(db.Model):
     __tablename__ = 'secrets_pki_public_certificates'
     __table_args__ = (
-        UniqueConstraint('issuer_identity_id', 'fingerprint_sha256',
-                         name='uq_secrets_pki_public_cert_issuer_fp'),
+        UniqueConstraint('issuer_identity_id', 'fingerprint_sha256', name='uq_secrets_pki_public_cert_issuer_fp'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     issuer_identity_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey('secrets_pki_issuer_identities.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        String(36),
+        ForeignKey('secrets_pki_issuer_identities.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     fingerprint_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     serial_hex: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -63,20 +73,24 @@ class PKIPublicCertificateObservation(db.Model):
     last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     issuer: Mapped[PKIIssuerIdentity] = relationship(
-        'PKIIssuerIdentity', back_populates='certificates',
+        'PKIIssuerIdentity',
+        back_populates='certificates',
     )
 
 
 class PKIIssuerCollectionState(db.Model):
     __tablename__ = 'secrets_pki_pki_collection_states'
     __table_args__ = (
-        UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount',
-                         name='uq_secrets_pki_pki_collection_scope'),
+        UniqueConstraint(
+            'integration_instance_id', 'provider_namespace', 'mount', name='uq_secrets_pki_pki_collection_scope'
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False, index=True,
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)

@@ -82,12 +82,7 @@ def _require_audit_event_manual_admission(
         raise PermissionError('AuditEvent archival requires an authorized manual requester.')
 
     stored = get_policy('audit_event')
-    if (
-        stored is None
-        or not stored.enabled
-        or stored.operation_mode != 'archive_only'
-        or stored.schedule_enabled
-    ):
+    if stored is None or not stored.enabled or stored.operation_mode != 'archive_only' or stored.schedule_enabled:
         raise PermissionError('AuditEvent requires a persisted, enabled, unscheduled Archive Only policy.')
 
     requester = db.session.get(User, triggered_by_user_id, populate_existing=True)

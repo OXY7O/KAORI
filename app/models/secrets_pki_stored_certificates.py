@@ -13,15 +13,27 @@ from app.extensions.db import db
 class PKIStoredCertificateObservation(db.Model):
     __tablename__ = 'secrets_pki_stored_cert_observations'
     __table_args__ = (
-        UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount', 'serial_hex',
-                         name='uq_secrets_pki_stored_cert_source_serial'),
-        Index('ix_secrets_pki_stored_cert_scope', 'integration_instance_id',
-              'provider_namespace', 'mount', 'last_observed_at'),
+        UniqueConstraint(
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'serial_hex',
+            name='uq_secrets_pki_stored_cert_source_serial',
+        ),
+        Index(
+            'ix_secrets_pki_stored_cert_scope',
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'last_observed_at',
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False, index=True,
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)
@@ -36,14 +48,16 @@ class PKIStoredCertificateObservation(db.Model):
 class PKIStoredCertificateCollectionState(db.Model):
     __tablename__ = 'secrets_pki_stored_cert_collection_states'
     __table_args__ = (
-        UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount',
-                         name='uq_secrets_pki_stored_cert_collection_scope'),
+        UniqueConstraint(
+            'integration_instance_id', 'provider_namespace', 'mount', name='uq_secrets_pki_stored_cert_collection_scope'
+        ),
         Index('ix_spki_stored_cert_state_instance', 'integration_instance_id'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False,
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
+        nullable=False,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)

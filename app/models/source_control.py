@@ -26,9 +26,7 @@ class SourceAccount(db.Model):
     """Provider-native organization/user identity independent of an App grant."""
 
     __tablename__ = 'source_control_accounts'
-    __table_args__ = (
-        UniqueConstraint('provider_key', 'host_key', 'native_account_id', name='uq_sc_account_native'),
-    )
+    __table_args__ = (UniqueConstraint('provider_key', 'host_key', 'native_account_id', name='uq_sc_account_native'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     provider_key: Mapped[str] = mapped_column(String(80), nullable=False, default='github')
@@ -44,9 +42,7 @@ class GitHubAppCredential(db.Model):
     """Shared App-level encrypted credential; never normalized source inventory."""
 
     __tablename__ = 'source_control_github_app_credentials'
-    __table_args__ = (
-        UniqueConstraint('host_key', 'native_app_id', name='uq_sc_github_app_credential'),
-    )
+    __table_args__ = (UniqueConstraint('host_key', 'native_app_id', name='uq_sc_github_app_credential'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     host_key: Mapped[str] = mapped_column(String(255), nullable=False, default='github.com')
@@ -70,7 +66,10 @@ class SourceInstallation(db.Model):
     __table_args__ = (
         UniqueConstraint('integration_instance_id', name='uq_sc_installation_connection'),
         UniqueConstraint(
-            'provider_key', 'host_key', 'native_app_id', 'native_installation_id',
+            'provider_key',
+            'host_key',
+            'native_app_id',
+            'native_installation_id',
             name='uq_sc_installation_native',
         ),
     )
@@ -98,7 +97,8 @@ class SourceInstallation(db.Model):
     integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance')
     github_app_credential: Mapped[GitHubAppCredential | None] = relationship('GitHubAppCredential')
     grants: Mapped[list[SourceRepositoryGrant]] = relationship(
-        'SourceRepositoryGrant', back_populates='installation',
+        'SourceRepositoryGrant',
+        back_populates='installation',
         order_by='SourceRepositoryGrant.valid_from.desc()',
     )
 
@@ -137,11 +137,12 @@ class SourceRepositoryGrant(db.Model):
     __tablename__ = 'source_control_repository_grants'
     __table_args__ = (
         UniqueConstraint('installation_id', 'repository_id', 'valid_from', name='uq_sc_grant_transition'),
-        CheckConstraint(
-            'valid_until IS NULL OR valid_until > valid_from', name='ck_sc_grant_valid_window'
-        ),
+        CheckConstraint('valid_until IS NULL OR valid_until > valid_from', name='ck_sc_grant_valid_window'),
         Index(
-            'uq_sc_grant_current', 'installation_id', 'repository_id', unique=True,
+            'uq_sc_grant_current',
+            'installation_id',
+            'repository_id',
+            unique=True,
             postgresql_where=text('valid_until IS NULL'),
             sqlite_where=text('valid_until IS NULL'),
         ),
@@ -160,9 +161,7 @@ class SourceRepositoryGrant(db.Model):
     valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    installation: Mapped[SourceInstallation] = relationship(
-        'SourceInstallation', back_populates='grants'
-    )
+    installation: Mapped[SourceInstallation] = relationship('SourceInstallation', back_populates='grants')
     repository: Mapped[SourceRepository] = relationship('SourceRepository')
 
 
@@ -170,9 +169,7 @@ class SourceRevision(db.Model):
     """Sparse exact commit identity, scoped to its canonical repository."""
 
     __tablename__ = 'source_control_revisions'
-    __table_args__ = (
-        UniqueConstraint('repository_id', 'commit_sha', name='uq_sc_revision_repo_sha'),
-    )
+    __table_args__ = (UniqueConstraint('repository_id', 'commit_sha', name='uq_sc_revision_repo_sha'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int] = mapped_column(
@@ -188,9 +185,7 @@ class SourceReference(db.Model):
     """Current branch/tag pointer, with separately preserved observed transitions."""
 
     __tablename__ = 'source_control_references'
-    __table_args__ = (
-        UniqueConstraint('repository_id', 'full_ref', name='uq_sc_ref_repo_name'),
-    )
+    __table_args__ = (UniqueConstraint('repository_id', 'full_ref', name='uq_sc_ref_repo_name'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int] = mapped_column(
@@ -211,9 +206,7 @@ class SourceReferenceTransition(db.Model):
     """Observation history; a ref movement is never a new source revision."""
 
     __tablename__ = 'source_control_reference_transitions'
-    __table_args__ = (
-        UniqueConstraint('reference_id', 'observed_at', name='uq_sc_ref_transition_observation'),
-    )
+    __table_args__ = (UniqueConstraint('reference_id', 'observed_at', name='uq_sc_ref_transition_observation'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     reference_id: Mapped[int] = mapped_column(
@@ -223,13 +216,12 @@ class SourceReferenceTransition(db.Model):
         ForeignKey('source_control_revisions.id', ondelete='RESTRICT'), nullable=True
     )
     transition_state: Mapped[str] = mapped_column(String(30), nullable=False)
-    provider_changed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    provider_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     reference: Mapped[SourceReference] = relationship('SourceReference')
     target_revision: Mapped[SourceRevision | None] = relationship('SourceRevision')
+
 
 class SourceWebhookDelivery(db.Model):
     """Trusted transport dedup only; never committed GitHub workflow evidence.
@@ -275,8 +267,7 @@ class SourceRepositoryCollectionState(db.Model):
 
     __tablename__ = 'source_control_repository_collection_states'
     __table_args__ = (
-        CheckConstraint('next_generation >= committed_generation',
-                        name='ck_sc_collection_generation_order'),
+        CheckConstraint('next_generation >= committed_generation', name='ck_sc_collection_generation_order'),
         Index('ix_sc_collection_status', 'status', 'last_committed_at'),
     )
 

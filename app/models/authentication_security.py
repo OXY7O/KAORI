@@ -35,9 +35,7 @@ class AuthenticationMfaFactor(db.Model):
     __table_args__ = (db.UniqueConstraint('user_id', name='uq_auth_mfa_user'),)
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True
-    )
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     totp_secret: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     recovery_hashes: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)

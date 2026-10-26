@@ -483,8 +483,7 @@ def resource_profiles():
         capacity_rows = [
             item
             for item in capacity_rows
-            if needle in str(item['cluster'].name).casefold()
-            or needle in str(item['cluster'].environment).casefold()
+            if needle in str(item['cluster'].name).casefold() or needle in str(item['cluster'].environment).casefold()
         ]
     if capacity_environment:
         capacity_rows = [
@@ -494,8 +493,7 @@ def resource_profiles():
         capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]
     if capacity_evidence:
         capacity_rows = [
-            item for item in capacity_rows
-            if str(item.get('snapshot_state') or 'unknown').lower() == capacity_evidence
+            item for item in capacity_rows if str(item.get('snapshot_state') or 'unknown').lower() == capacity_evidence
         ]
     capacity_items, capacity_pagination = paginate_sequence(
         capacity_rows,
@@ -2139,7 +2137,9 @@ def cutover_capsule_shared_allocation_route():
                 'operation': 'capsule_shared_allocation_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation'))
+    return redirect(
+        url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation')
+    )
 
 
 @tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')

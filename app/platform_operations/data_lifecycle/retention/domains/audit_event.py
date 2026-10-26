@@ -5,6 +5,7 @@ adapter intentionally omits free-form metadata, network identifiers, and
 actor reconstruction until producer-by-producer security/retention authority
 (#2891) and verified compaction (#2892) have been admitted.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator

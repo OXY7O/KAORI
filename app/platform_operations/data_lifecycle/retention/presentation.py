@@ -149,9 +149,7 @@ def build_data_lifecycle_context(
     poll_once: bool = False,
 ) -> dict[str, Any]:
     allowed_audit_event = _can_govern_audit_event()
-    supported = tuple(sorted(
-        name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event
-    ))
+    supported = tuple(sorted(name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event))
     if selected_domain == 'audit_event' and not allowed_audit_event:
         abort(403, description='AuditEvent source governance access is not admitted.')
     if archive_domain == 'audit_event' and not allowed_audit_event:
@@ -348,7 +346,7 @@ def _domain_label(name: str) -> str:
         'alert_incident': 'Alert Incidents',
         'tenant_audit_evidence': 'Tenant Audit Evidence',
         'notification_delivery': 'Notification Delivery',
-        'audit_event': 'Administrative Audit Events', 
+        'audit_event': 'Administrative Audit Events',
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -464,8 +462,7 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'icon': 'shield-check',
                 'label': 'Source Permission Boundary',
                 'description': (
-                    'Other AuditEvent producers remain authoritative; archive export is held '
-                    'for security review.'
+                    'Other AuditEvent producers remain authoritative; archive export is held for security review.'
                 ),
             },
         ),
