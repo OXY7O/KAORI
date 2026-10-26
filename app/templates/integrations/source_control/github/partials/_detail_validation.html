@@ -1,5 +1,6 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
@@ -33,7 +34,16 @@
         icon='scan-search',
         loading_id='github-validation-loading',
         loading_active=validation_job and validation_job.is_active,
-        loading_label='Running GitHub Full Validation'
+        loading_label='Running GitHub Full Validation',
+        title_extra=info_tip.render('github-full-validation-guide',
+            'GitHub Full Validation',
+            'Full Validation verifies installation identity and read grants through an admitted JobExecution.',
+            [
+                'GitHub remains authoritative for actual permissions.',
+                'Readiness does not imply synchronized repository inventory or exact source SHA.',
+                'Synchronize repositories separately after validation.'
+            ],
+            placement='right')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}"
@@ -70,7 +80,7 @@
         'Provider Ready' if provider_ready else ('Validation Required' if not validation_observed else 'Review Required Permissions'),
         'Metadata and Contents read permissions are verified.' if provider_ready else ('No committed Full Validation evidence yet.' if not validation_observed else 'Current readiness or required permission coverage needs review.'),
         'normal' if provider_ready else ('info' if not validation_observed else 'critical'),
-        'GitHub owns grants; KAORI commits inventory and SHA after sync.',
+        'GitHub owns permissions; KAORI commits inventory and exact source revisions after synchronization.',
         next_action
         ) }}
         {% if provider_ready %}

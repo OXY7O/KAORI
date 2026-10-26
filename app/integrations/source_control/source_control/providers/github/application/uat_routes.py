@@ -526,6 +526,7 @@ def runtime_jobs(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/partials/_runtime_jobs.html',
         installation=installation,
+        runtime_table_embedded=True,
         **_runtime_context(installation),
     )
 
@@ -539,6 +540,7 @@ def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/partials/_runtime_deliveries.html',
         installation=installation,
+        runtime_table_embedded=True,
         **_runtime_context(installation),
     )
 

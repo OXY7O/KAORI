@@ -32,6 +32,17 @@
         </div>
         {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
     </header>
+    {% if runtime_table_embedded|default(false) and delivery_state %}
+        <div class="flex justify-end border-b border-outline-subtle px-4 py-2.5">
+            {{ registry_ui.clear_filters_action(
+                url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'),
+                table_ui.action_classes(),
+                hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_per_page=delivery_pagination.per_page),
+                target='#github-runtime-deliveries',
+                indicator='#github-runtime-deliveries-loading'
+            ) }}
+        </div>
+    {% endif %}
     <form method="get"
           action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime') }}"
           hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id) }}"

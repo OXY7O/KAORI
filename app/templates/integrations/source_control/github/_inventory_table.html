@@ -29,10 +29,11 @@
         {{ loading_bar.render('github-inventory-loading', label='Refreshing committed repository registry') }}
     </header>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes() }}">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Committed GitHub repository inventory for this installation.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Repository</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Access</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Default Branch</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Exact SHA</th>

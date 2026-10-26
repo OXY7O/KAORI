@@ -153,7 +153,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert 'build_capability_registry_view(' in routes
     assert 'distinguish_unverified=True' in routes
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
-    assert 'def _validation_job_for(canonical)' in routes
+    assert 'def _validation_job_for(canonical, *, operation:' in routes
     assert 'get_active_validation_task_id(' in routes
     assert 'def validation_status(installation_id: int, task_id: str)' in routes
     assert 'validate_snapshot_access(' in routes
