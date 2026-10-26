@@ -39,6 +39,17 @@
                 <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                 View Reconciliation
             </button>
+        {% elif page_key == 'alerts' %}
+            <button type="button"
+                    data-kaori-dialog-open
+                    data-object-storage-alert-source-modal-trigger
+                    data-dialog-target="object-storage-alert-source-dialog"
+                    aria-haspopup="dialog"
+                    aria-controls="object-storage-alert-source-dialog"
+                    class="{{ evidence_action_classes }}">
+                <i data-lucide="radio-tower" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                View Alert Source
+            </button>
         {% endif %}
         <a href="{{ url_for('analytics.object_storage_overview', system_id=system.id, time_range=selected_time_range, tab='evidence') }}"
            class="{{ evidence_action_classes }}"
