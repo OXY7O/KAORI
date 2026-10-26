@@ -144,6 +144,11 @@ def test_access_grant_and_credential_actions_are_in_expanded_evidence() -> None:
     assert 'one_time_secret.request_dialog' in read('_credential_registry.html')
 
 
+def test_access_grant_expanded_detail_compiles_as_jinja() -> None:
+    """Reject malformed template statements before they reach the Tenant page."""
+    Environment(autoescape=True).parse(read('_access_grant_row_detail.html'))
+
+
 def test_access_grant_detail_has_compact_context_and_right_aligned_actions() -> None:
     detail = read('_access_grant_row_detail.html')
     group = read('_group_registry.html')
