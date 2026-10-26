@@ -169,6 +169,26 @@ def test_capacity_trend_and_quota_guides_reuse_shared_component_roles() -> None:
     assert "query_params['bucket_quota_pressure']" in service
 
 
+def test_capacity_bucket_header_uses_shared_icon_and_right_aligned_clear_filters() -> None:
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    header = table.split('</header>', 1)[0]
+    filter_form = table.split('<form id="object-storage-bucket-table-filter"', 1)[1].split('</form>', 1)[0]
+
+    assert "page_key == 'capacity'" in header
+    assert 'table_ui.block_icon_classes()' in header
+    assert 'data-lucide="boxes"' in header
+    assert 'Bucket Capacity Records' in header
+    assert 'table_label.result_count(' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'items-center justify-end' in header
+    assert 'lead=false' in header
+    assert 'registry_ui.clear_filters_action(' not in filter_form
+    assert 'bucket_q' in filter_form
+    assert 'bucket_quota_state' in filter_form
+    assert 'bucket_quota_pressure' in filter_form
+    assert 'bucket_per_page' in filter_form
+
+
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
     context = read(f'{PARTIALS}/_overview_evidence_context.html')
     reconciliation = read(f'{PARTIALS}/_reconciliation.html')
