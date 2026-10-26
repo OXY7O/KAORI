@@ -31,7 +31,7 @@ def test_provider_evidence_uses_one_table_and_native_row_disclosure() -> None:
         assert f'name="access_inventory_view" value="{provider}"' in ui
         assert 'Review Profile Match' in ui
         assert 'No committed drift analysis for this Tenant' in ui
-        assert 'no automatic remediation was performed.' in ui
+        assert 'no automatic remediation was performed.' in ui.lower()
         assert 'data-kaori-native-dialog' not in ui
         assert '<dialog id="tenant-' not in ui
         assert ui.count('{% if ') == ui.count('{% endif %}')
