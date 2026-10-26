@@ -958,9 +958,7 @@ def get_provider_access_evidence_registry_context(
         latest_ids = (
             db.session.query(
                 AuditEvent.id.label('audit_event_id'),
-                func.row_number()
-                .over(partition_by=tenant_key, order_by=AuditEvent.id.desc())
-                .label('row_number'),
+                func.row_number().over(partition_by=tenant_key, order_by=AuditEvent.id.desc()).label('row_number'),
             )
             .filter(
                 AuditEvent.target_type == drift_types[provider],
@@ -969,16 +967,11 @@ def get_provider_access_evidence_registry_context(
             .subquery()
         )
         drift_events = (
-            AuditEvent.query.join(
-                latest_ids, AuditEvent.id == latest_ids.c.audit_event_id
-            )
+            AuditEvent.query.join(latest_ids, AuditEvent.id == latest_ids.c.audit_event_id)
             .filter(latest_ids.c.row_number == 1)
             .all()
         )
-        drift_by_tenant = {
-            str((event.metadata_json or {}).get('tenant_id')): event
-            for event in drift_events
-        }
+        drift_by_tenant = {str((event.metadata_json or {}).get('tenant_id')): event for event in drift_events}
     return {
         'access_evidence_drift_by_tenant': drift_by_tenant,
         'access_evidence_total': total_committed,
