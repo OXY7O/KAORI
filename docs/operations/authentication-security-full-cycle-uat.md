@@ -348,3 +348,42 @@ Before browser UAT, install pinned Python requirements (e.g. `python -m pip inst
 6. Test normal full-page POST and HTMX response when used, mobile/light/dark and accessibility. Run scoped Ruff/djlint/pytest, Settings Final Lock and sidebar standard at exact SHA. A source check alone is not human functional acceptance.
 
 Keep official Developer Check, Full Admission, staging/main and release HOLD until operator acceptance.
+
+## MFA stacked guide and paired enrollment forms — visual UAT (#3228, 2026-10-26)
+
+This checkpoint supersedes earlier **enrollment-layout-only** expectations
+that the four-step guide is a right-hand column next to two vertically stacked
+forms. The accepted visual reference places:
+
+1. The **How to Activate MFA** guide immediately below the three authoritative
+   status cards, across the full content width, ordered 1→4 in a single row at
+   wide desktop; 2×2 on medium widths and vertically on narrow screens.
+2. **Step 01 Generate Setup Key** on the left and **Step 02 Verify Your
+   Authenticator** on the right in the same balanced desktop row; cards stack
+   on mobile with no horizontal overflow or clipped form controls.
+3. The QR/manual key within Step 01 only after a successful fresh-session POST;
+   the single 6-digit code and Verify & Enable MFA remain in Step 02. A success
+   toast is shown without an extra inline success strip. Existing enrolled
+   recovery regeneration layout remains unchanged.
+
+**Developer check:** record work-branch SHA and holding-branch tested SHA
+separately. Run `djlint --check app/templates/settings/account/partials/_mfa.html`,
+`ruff check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`,
+`ruff format --check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`,
+`python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py tests/contracts/settings/test_settings_final_lock_contract.py`,
+`python scripts/verify_settings_final_lock.py`, and
+`python scripts/verify_sidebar_navigation_standard.py`.
+Rebuild the existing frontend if its configured template-content workflow
+requires it, and use the existing Playwright/Visual QA harness with responsive
+and theme coverage rather than adding a new test runner.
+
+**Human browser UAT:** check desktop 1440×900 and 1280×800, tablet 768×1024,
+and mobile 390×844/360×800; light/dark; keyboard-only focus; fresh enrollment
+and pending behavior. On a safe disposable identity, verify valid and invalid
+TOTP, wrong current password, retry/stale session, proper one-time QR/recovery
+visibility, meaningful toast, audit correlation, and no duplicate audit event.
+For *visual* evidence use the sanitized pending/non-secret rendering (or redact
+the entire QR and key area before storing screenshots); never retain genuine
+QR, manual seed, OTP or recovery codes in issue or CI artifacts.
+Classify local execution as PASS/FAIL/BLOCKED/NOT RUN at its actual SHA;
+no automatic Human Acceptance or official admission.

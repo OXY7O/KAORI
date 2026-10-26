@@ -95,10 +95,83 @@
             </section>
         {% endif %}
         {% if not mfa_state.enrolled %}
-            <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch"
-                 data-account-mfa-enrollment-layout="action-context">
-                <div class="min-w-0 space-y-4 xl:col-span-7">
-                    <section class="rounded-xl border border-outline-default bg-surface-card p-5"
+            <div class="space-y-4"
+                 data-account-mfa-enrollment-layout="guide-over-steps">
+                <aside class="rounded-xl border border-outline-default bg-surface-card"
+                       aria-labelledby="account-mfa-setup-guide"
+                       data-account-mfa-guide="single-panel">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                        <i data-lucide="list-checks"
+                           class="h-5 w-5 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <h3 id="account-mfa-setup-guide"
+                                class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Four steps to protect your account.</p>
+                        </div>
+                    </header>
+                    <ol class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">1</span>
+                                <i data-lucide="key-round"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Generate a setup key</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password or use a fresh external sign-in.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">2</span>
+                                <i data-lucide="smartphone"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Add an authenticator app</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Scan the QR code or enter the setup key into a compatible TOTP application.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">3</span>
+                                <i data-lucide="shield-check"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Verify the six-digit code</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Submit a fresh code to enable your factor.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">4</span>
+                                <i data-lucide="key-round"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Save recovery codes</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Keep the one-time codes in a private, secure location.</p>
+                            </div>
+                        </li>
+                    </ol>
+                    <p class="mt-auto border-t border-outline-subtle px-5 py-4 text-xs leading-5 text-content-muted">
+                        <span class="font-semibold text-content-primary">Need help?</span>
+                        If setup fails, sign in again and confirm your current password.
+                    </p>
+                </aside>
+                <div class="grid gap-4 xl:grid-cols-2 xl:items-stretch"
+                     data-account-mfa-steps="paired">
+                    <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5"
                              aria-labelledby="account-mfa-step-one">
                         <div class="flex items-start gap-3">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-kaori-primary text-lg font-bold text-white"
@@ -176,7 +249,7 @@
                             </section>
                         {% endif %}
                     </section>
-                    <section class="rounded-xl border border-outline-default bg-surface-card p-5"
+                    <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5"
                              aria-labelledby="account-mfa-step-two">
                         <div class="flex items-start gap-3">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-kaori-primary text-lg font-bold text-white"
@@ -215,62 +288,6 @@
                         </form>
                     </section>
                 </div>
-                <aside class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
-                       aria-labelledby="account-mfa-setup-guide"
-                       data-account-mfa-guide="single-panel">
-                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-                        <i data-lucide="list-checks"
-                           class="h-5 w-5 shrink-0 text-kaori-primary"
-                           aria-hidden="true"></i>
-                        <div class="min-w-0">
-                            <h3 id="account-mfa-setup-guide"
-                                class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Four steps to protect your account.</p>
-                        </div>
-                    </header>
-                    <ol class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
-                        <li class="flex flex-1 items-center gap-3 py-4">
-                            <i data-lucide="key-round"
-                               class="h-5 w-5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Generate a setup key</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password or use a fresh external sign-in.</p>
-                            </div>
-                        </li>
-                        <li class="flex flex-1 items-center gap-3 py-4">
-                            <i data-lucide="smartphone"
-                               class="h-5 w-5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Add an authenticator app</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Enter the setup key into a compatible TOTP application.</p>
-                            </div>
-                        </li>
-                        <li class="flex flex-1 items-center gap-3 py-4">
-                            <i data-lucide="shield-check"
-                               class="h-5 w-5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Verify the six-digit code</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Submit a fresh code to enable your factor.</p>
-                            </div>
-                        </li>
-                        <li class="flex flex-1 items-center gap-3 py-4">
-                            <i data-lucide="key-round"
-                               class="h-5 w-5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Save recovery codes</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Keep the one-time codes in a private, secure location.</p>
-                            </div>
-                        </li>
-                    </ol>
-                    <p class="mt-auto border-t border-outline-subtle px-5 py-4 text-xs leading-5 text-content-muted">
-                        <span class="font-semibold text-content-primary">Need help?</span>
-                        If setup fails, sign in again and confirm your current password.
-                    </p>
-                </aside>
             </div>
         {% else %}
             <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
