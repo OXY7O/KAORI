@@ -194,9 +194,9 @@ def test_forecast_records_partial_owns_its_macros_when_rendered_directly_by_htmx
 
     assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in records
     assert 'analysis_surface.evidence_shell_classes()' in records
-    assert "def object_storage_bucket_forecast_table()" in routes
+    assert 'def object_storage_bucket_forecast_table()' in routes
     assert "'storage/object_storage/analytics/partials/_bucket_forecast_table.html'" in routes
-    assert "get_object_storage_bucket_forecast_table_context(request.args)" in routes
+    assert 'get_object_storage_bucket_forecast_table_context(request.args)' in routes
     Environment().parse(records)
 
 
@@ -208,13 +208,13 @@ def test_forecast_clear_filters_remains_accessible_before_and_after_htmx_respons
     header = records.split('</header>', 1)[0]
     assert "forecast_table.watch != 'all'" in records
     assert "forecast_table.history_state != 'all'" in records
-    assert "forecast_table.search" in records
+    assert 'forecast_table.search' in records
     assert "class=\"{{ 'flex' if filters_active else 'hidden' }}" in header
     assert 'data-kaori-forecast-clear-filters' in header
     assert 'registry_ui.clear_filters_action(' in header
     assert 'lead=false' in header
     assert 'forecast_bucket_per_page=forecast_table.pagination.per_page' in header
-    assert "history_window=selected_forecast_history_window" in header
+    assert 'history_window=selected_forecast_history_window' in header
     assert "target='#object-storage-bucket-forecast-table-panel'" in header
     assert "indicator='#object-storage-bucket-forecast-table-loading-indicator'" in header
 
@@ -226,7 +226,7 @@ def test_forecast_clear_filters_remains_accessible_before_and_after_htmx_respons
     assert "document.addEventListener('change', (event) => {" in script
     assert "document.addEventListener('input', (event) => {" in script
     assert 'syncForecastClearFilters(target)' in script
-    assert "query_params: dict[str, object]" in view
+    assert 'query_params: dict[str, object]' in view
     assert "'forecast_bucket_per_page': per_page" in view
 
 
