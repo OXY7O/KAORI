@@ -400,7 +400,6 @@ def test_provider_alert_records_and_source_dialog_use_compact_kaori_information_
         Environment().parse(template)
 
 
-
 def test_capacity_trend_and_quota_guides_reuse_shared_component_roles() -> None:
     trend = read(f'{PARTIALS}/_trend.html')
     pressure = read(f'{PARTIALS}/_capacity_pressure.html')
@@ -599,6 +598,61 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
     ):
         jinja.from_string(read(f'{PARTIALS}/{filename}'))
     jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
+
+
+def test_performance_trend_and_forecast_records_use_canonical_kaori_guides() -> None:
+    trend = read(f'{PARTIALS}/_trend.html')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+
+    for template, guide in (
+        (trend, 'object-storage-performance-request-error-trend-guide'),
+        (records, 'object-storage-bucket-forecast-records-guide'),
+    ):
+        assert 'components/info_tip.html' in template
+        assert guide in template
+        assert "variant='guide'" in template
+        assert "placement='right'" in template
+        assert template.count(guide) == 1
+        Environment().parse(template)
+
+    assert "{% if trend_mode == 'performance' %}" in trend
+    assert 'Request &amp; Error Trend' in trend
+    assert 'Request and error rates are separate committed historical signals' in trend
+    assert 'Uncollected or unavailable request-path metrics must remain Unknown' in trend
+    assert 'object-storage-overview-usage-trend-guide' in trend
+    assert 'object-storage-overview-forecast-trend-guide' in trend
+    assert 'object-storage-storage-usage-forecast-' in trend
+    assert 'data-object-storage-secondary-trend-points' in trend
+
+    header = records.split('</header>', 1)[0]
+    assert 'Bucket Forecast Records' in header
+    assert "table_label.result_count(forecast_table.pagination.total_items)" in header
+    assert 'Forecast Ready requires usable committed history' in header
+    assert 'Forecast Watch and quota ETA are worker planning signals' in header
+    assert 'data-kaori-object-storage-bucket-forecast-table' in records
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'hx-target="#object-storage-bucket-forecast-table-panel"' in records
+    assert 'record_pagination.render(' in records
+
+
+def test_top_consumers_evidence_helpers_remain_compact_and_source_bound() -> None:
+    storage = read(f'{PARTIALS}/_top_consumers_storage.html')
+    activity = read(f'{PARTIALS}/_top_consumers_activity.html')
+
+    assert 'consumer.quota_observed_count|default(0)' in storage
+    assert 'consumer.bucket_count|default(0)' in storage
+    assert 'consumer.quota_not_configured_count|default(0)' in storage
+    assert 'observed ·' in storage
+    assert 'Not Configured' in storage
+    assert 'xl:whitespace-nowrap' in storage
+    assert 'have an observed quota state; ' not in storage
+
+    assert 'Error ratio guides triage, not root cause; check Performance first.' in activity
+    assert 'Error ratio is a triage signal, not root cause.' not in activity
+    assert 'Reliability Boundary' in activity
+    assert 'analysis_surface.interpretation_callout(' in activity
+    for template in (storage, activity):
+        Environment().parse(template)
 
 
 def test_top_consumers_titles_use_canonical_violet_kaori_guides() -> None:
