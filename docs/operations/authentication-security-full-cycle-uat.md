@@ -596,3 +596,22 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 If `djlint --check` still reports the inherited macro/markup layout diff, review and apply only the standard `djlint --reformat` output on the existing file in the Dev Container, inspect its diff and re-run original gates. Do not disable checks or infer pass from structurally balanced tags. Official admission/kaori/staging/main remains HOLD pending user visual acceptance.
+
+## Bot Protection unified controls hub — exact-SHA Visual/Security UAT (#3356, 2026-10-26)
+
+Verify the current holding SHA in **Access → Authentication Security → Bot Protection**. The separate **Bot Protection** posture summary remains above a small external text-only **Bot Protection Controls** title and one-line subtitle (no heading icon). The title must occur *before* and label a **single bounded container** holding **Protection Configuration** and **Activation & Safety** side by side at desktop 3:2 (unchanged internals), then stacking on smaller widths. No additional global white workspace wrapper or inner-level duplicate title should appear. Compare spacing, border/radius, card hierarchy and Violet semantic surfaces with the already accepted MFA unified controls section.
+
+Inspect 1440/1280/1150/1024/768/390/360 widths, both light/dark themes, 200% zoom, keyboard order, heading semantics, focus rings, no horizontal clipping, mobile stacking and equal-height appearance. Manager retains genuine CSRF-protected Save Bot Protection form; viewer sees read-only explanation. Protection Mode only offers Disabled/Always. Existing Test Turnstile is present **only** if permissions and complete configuration allow it; no fake readiness/success when unconfigured. Check provider config saving while Disabled, real one-use Siteverify test, proof freshness limited to one hour and unchanged credentials, Always fail-closed and independently approved administrator recovery using authorized UAT accounts; do not expose site secret, Turnstile token, passwords, recovery codes or session cookies in evidence. Three Activation & Safety steps, context cards and bottom provider-authority/recovery footer stay intact.
+
+Previous operator evidence (older SHA): focused **53 pytest PASS**, Access Final Lock PASS, Sidebar Standard PASS; Ruff/Ruff Format previously PASS and **djlint --check still FAIL** on broad existing Jinja formatting in `_page_content.html`. This is NOT new-SHA QA. Run the standard commands below at the new holding commit. If djlint still fails, review/apply only the existing formatter `djlint --reformat` and rerun unchanged gates; no custom validator or bypass.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Collect each command's **actual** exit status, redacted screenshots, Visual QA and explicit Human Acceptance. Official Full Admission, `kaori/staging`, `main`, and release remain HOLD.

@@ -38,6 +38,39 @@ def test_bot_tab_has_committed_posture_cards_and_shared_guide() -> None:
     assert 'xl:col-span-2' in tab
 
 
+def test_bot_controls_have_external_text_heading_and_one_harmonized_hub() -> None:
+    tab = bot_tab()
+    assert tab.count('data-auth-security-bot-stack="true"') == 1
+    assert tab.count('data-auth-security-bot-intro="above-card"') == 1
+    assert tab.count('data-auth-security-bot-hub="true"') == 1
+    intro = tab.split('data-auth-security-bot-intro="above-card"', 1)[1].split('</header>', 1)[0]
+    assert 'Bot Protection Controls' in intro
+    assert 'data-lucide=' not in intro
+    assert '<span' not in intro
+    assert (
+        'Configure Cloudflare Turnstile, verify the provider, and review activation safeguards in one workspace.'
+        in intro
+    )
+    assert tab.index('data-auth-security-bot-intro="above-card"') < tab.index(
+        'data-auth-security-bot-hub="true"'
+    )
+    assert tab.index('data-auth-security-bot-hub="true"') < tab.index(
+        'data-auth-bot-layout="configuration-safety"'
+    )
+    assert 'aria-labelledby="auth-security-bot-controls-heading"' in tab
+    assert 'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm' in tab
+    assert tab.index('data-auth-bot-layout="configuration-safety"') < tab.index('Protection Configuration')
+    assert tab.index('Protection Configuration') < tab.index('Activation &amp; Safety')
+    assert tab.count('data-auth-bot-layout="configuration-safety"') == 1
+    assert 'grid items-stretch gap-4 xl:grid-cols-5' in tab
+    assert 'xl:col-span-3' in tab and 'xl:col-span-2' in tab
+    assert 'data-auth-bot-activation-layout="balanced"' in tab
+    assert 'data-auth-bot-form="configuration"' in tab
+    assert 'data-auth-bot-form="verification-test"' in tab
+    assert 'class="cf-turnstile"' in tab
+    assert 'data-auth-bot-step-context="safety"' in tab
+
+
 def test_bot_configuration_retains_only_supported_modes_and_safe_mutation() -> None:
     tab = bot_tab()
     assert 'Protection Configuration' in tab
