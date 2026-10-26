@@ -72,9 +72,7 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
         )
     elif source['family'] == AuthProviderFamily.DIRECTORY.value:
         credential_owner = identity_provider.display_name if identity_provider is not None else 'LDAP directory'
-        credential_detail = (
-            'Directory verifies passwords; KAORI manages identity links and access.'
-        )
+        credential_detail = 'Directory verifies passwords; KAORI manages identity links and access.'
     elif source['family'] == AuthProviderFamily.SSO.value:
         credential_owner = identity_provider.display_name if identity_provider is not None else source['label']
         credential_detail = (

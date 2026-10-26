@@ -140,7 +140,12 @@ def test_channel(channel: NotificationChannel, *, base_url: str = '') -> Deliver
 
 def send_channel_preview_message(channel: NotificationChannel, message: NotificationMessage) -> DeliveryResult:
     """Send an operator-requested preview without changing channel validation state."""
-    if channel.lifecycle_state != 'active' or not channel.enabled or not channel.configured or channel.test_status != 'success':
+    if (
+        channel.lifecycle_state != 'active'
+        or not channel.enabled
+        or not channel.configured
+        or channel.test_status != 'success'
+    ):
         return DeliveryResult(
             False, 'Notification Channel must be enabled, configured, and validated before Send Test.'
         )
@@ -148,7 +153,9 @@ def send_channel_preview_message(channel: NotificationChannel, message: Notifica
 
 
 def notification_channel_summary() -> dict[str, Any]:
-    channels = NotificationChannel.query.filter_by(lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
+    channels = (
+        NotificationChannel.query.filter_by(lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
+    )
     enabled = [channel for channel in channels if channel.enabled]
     eligible = [channel for channel in enabled if channel.configured and channel.test_status == 'success']
     operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
@@ -197,8 +204,7 @@ def notification_overview_metrics() -> dict[str, Any]:
     for status in ('sent', 'failed', 'queued', 'skipped'):
         outcomes.setdefault(status, 0)
     recent = (
-        NotificationDelivery.query
-        .order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
+        NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
         .limit(5)
         .all()
     )
@@ -212,12 +218,16 @@ def notification_overview_metrics() -> dict[str, Any]:
                 'channel_name': delivery.channel.name,
                 'event_label': event_type_label(delivery.event_type),
                 'status_label': {
-                    'sent': 'Delivered', 'failed': 'Failed',
-                    'queued': 'Queued', 'skipped': 'Skipped',
+                    'sent': 'Delivered',
+                    'failed': 'Failed',
+                    'queued': 'Queued',
+                    'skipped': 'Skipped',
                 }.get(delivery.status, 'Unknown'),
                 'status_tone': {
-                    'sent': 'normal', 'failed': 'warning',
-                    'queued': 'info', 'skipped': 'unknown',
+                    'sent': 'normal',
+                    'failed': 'warning',
+                    'queued': 'info',
+                    'skipped': 'unknown',
                 }.get(delivery.status, 'unknown'),
                 'created_at': delivery.created_at,
             }
@@ -266,9 +276,7 @@ def get_notification_channels_payload(
     )
     normalized_delivery_domain = str(delivery_domain or '').strip()
     normalized_delivery_domain = (
-        normalized_delivery_domain
-        if normalized_delivery_domain in {item['value'] for item in domain_options()}
-        else ''
+        normalized_delivery_domain if normalized_delivery_domain in {item['value'] for item in domain_options()} else ''
     )
     normalized_delivery_severity = str(delivery_severity or '').strip().lower()
     normalized_delivery_severity = (
@@ -362,7 +370,12 @@ def get_notification_channels_payload(
 
 
 def _channel_registry_page(
-    *, page: int, per_page: int, search: str = '', provider: str = '', state: str = '',
+    *,
+    page: int,
+    per_page: int,
+    search: str = '',
+    provider: str = '',
+    state: str = '',
     lifecycle: str = 'active',
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationChannel.query.filter_by(lifecycle_state=lifecycle)
@@ -458,7 +471,11 @@ def dispatch_alert_notification(
     """Deliver one first-seen active alert per channel/event identity."""
     severity = _normalize_severity(alert.get('severity'))
     event_key = _event_key(domain=domain, asset_key=asset_key, alert=alert)
-    channels = NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
+    channels = (
+        NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active')
+        .order_by(NotificationChannel.id.asc())
+        .all()
+    )
     stats = {'eligible': 0, 'sent': 0, 'failed': 0, 'retried': 0, 'duplicate': 0, 'skipped': 0}
     max_attempts = notification_delivery_max_attempts()
     for channel in channels:
@@ -541,7 +558,9 @@ def dispatch_matching_notification_event(*, event: NotificationEvent) -> dict[st
     """Deliver one governed event to every validated channel that explicitly allows it."""
     channel_ids = [
         channel.id
-        for channel in NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
+        for channel in NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active')
+        .order_by(NotificationChannel.id.asc())
+        .all()
         if _channel_matches_event(
             channel,
             domain=event.domain,
@@ -559,7 +578,11 @@ def list_event_channel_options(
     severity: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return configured channel instances for one consumer event contract."""
-    channels = NotificationChannel.query.filter_by(lifecycle_state='active').order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
+    channels = (
+        NotificationChannel.query.filter_by(lifecycle_state='active')
+        .order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
+        .all()
+    )
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
@@ -847,7 +870,8 @@ def _record_delivery_outcome(
         delay = result.retry_after_seconds
         delivery.next_retry_at = (
             attempted_at + timedelta(seconds=max(notification_delivery_retry_delay_seconds(), delay))
-            if delay is not None else None
+            if delay is not None
+            else None
         )
         channel.last_delivery_status = 'failed'
     db.session.commit()

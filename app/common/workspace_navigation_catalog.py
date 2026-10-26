@@ -184,12 +184,18 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         section='Infrastructure',
         capabilities=(
             WorkspaceCapabilityDefinition(
-                'overview', 'Overview', 'layout-dashboard',
-                'source_control.overview', ('integrations.manage',),
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'source_control.overview',
+                ('integrations.manage',),
             ),
             WorkspaceCapabilityDefinition(
-                'repositories', 'Repositories', 'folder-git-2',
-                'source_control.repositories', ('integrations.manage',),
+                'repositories',
+                'Repositories',
+                'folder-git-2',
+                'source_control.repositories',
+                ('integrations.manage',),
             ),
         ),
     ),
@@ -206,8 +212,7 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'inventory', 'Inventory', 'boxes', 'secrets_pki.inventory', ('secrets_pki.view',)
             ),
             WorkspaceCapabilityDefinition(
-                'lifecycle', 'Lifecycle & Assurance', 'shield-check',
-                'secrets_pki.lifecycle', ('secrets_pki.view',)
+                'lifecycle', 'Lifecycle & Assurance', 'shield-check', 'secrets_pki.lifecycle', ('secrets_pki.view',)
             ),
         ),
     ),

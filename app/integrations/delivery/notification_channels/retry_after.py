@@ -3,6 +3,7 @@
 Only the canonical HTTP Retry-After header is used: no provider response body,
 error URL, credentials, or untrusted headers are persisted in delivery evidence.
 """
+
 from __future__ import annotations
 
 import math

@@ -196,9 +196,16 @@ def retire(channel_id: int) -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', **{
-        **_channel_return_query(), 'channel_lifecycle': 'retired',
-    }))
+    return redirect(
+        url_for(
+            'notification_channels.index',
+            tab='channels',
+            **{
+                **_channel_return_query(),
+                'channel_lifecycle': 'retired',
+            },
+        )
+    )
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')

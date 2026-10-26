@@ -97,9 +97,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         schedule['source-control-signed-delivery-recovery'] = {
             'task': 'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries',
             'schedule': crontab(minute='*/5'),
-            'options': {
-                'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
-            },
+            'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
         }
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
