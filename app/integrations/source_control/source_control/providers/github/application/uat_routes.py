@@ -744,7 +744,9 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
     detail_url = url_for('github_source_uat.detail', installation_id=installation_id, tab='inventory')
     feedback_status = 'info'
     feedback_title = 'Repository Sync Queued'
-    feedback_message = 'Repository synchronization was requested. Review committed inventory after the worker completes.'
+    feedback_message = (
+        'Repository synchronization was requested. Review committed inventory after the worker completes.'
+    )
     try:
         enqueue_source_repository_sync(
             requested_by_user_id=int(current_user.id),
@@ -790,9 +792,7 @@ def delete_connection(installation_id: int) -> ResponseReturnValue:
         abort(409)
     if canonical.lifecycle_status != 'active':
         abort(409)
-    guard = provider_deletion_guard(
-        integration_type='source_control', integration_instance_id=canonical.id
-    )
+    guard = provider_deletion_guard(integration_type='source_control', integration_instance_id=canonical.id)
     if guard.blocked:
         record_operational_activity(
             user_id=int(current_user.id),

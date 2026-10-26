@@ -147,6 +147,7 @@ def test_unqualified_installation_is_rejected(read_db, identity):
 
 def test_no_live_provider_request_in_read_projection():
     from pathlib import Path
+
     source = (
         Path(__file__).resolve().parents[2] / 'app/integrations/source_control/repository_inventory.py'
     ).read_text()
@@ -154,7 +155,6 @@ def test_no_live_provider_request_in_read_projection():
     assert 'GitHubAppClient' not in source
     assert 'access_tokens' not in source
     assert 'integration_instance_id' not in source.split('def read_installation_inventory(')[1]
-
 
 
 def test_exact_sha_is_a_committed_optional_projection_not_a_live_lookup(read_db):

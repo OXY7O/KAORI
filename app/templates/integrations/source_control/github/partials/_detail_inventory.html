@@ -14,19 +14,20 @@
         'Review committed repository grants, revision freshness, provider authority, and lifecycle guardrails.',
         icon='database',
         title_extra=info_tip.render('github-inventory-lifecycle-guide',
-            'GitHub Repository Inventory & Lifecycle',
-            'KAORI displays committed installation-scoped repository grants, exact revisions, and lifecycle boundaries.',
-            [
-                'Unknown means no committed complete collection, not zero repositories.',
-                'GitHub remains authoritative for grants; KAORI does not revoke access here.',
-                'Installation replacement preserves separate predecessor evidence.'
-            ],
-            placement='right', variant='guide')
+        'GitHub Repository Inventory & Lifecycle',
+        'KAORI displays committed installation-scoped repository grants, exact revisions, and lifecycle boundaries.',
+        [
+        'Unknown means no committed complete collection, not zero repositories.',
+        'GitHub remains authoritative for grants; KAORI does not revoke access here.',
+        'Installation replacement preserves separate predecessor evidence.'
+        ],
+        placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
             {{ action_form.hidden_tag() }}
-            <button type="submit" class="{{ action_button.classes('primary') }}"
+            <button type="submit"
+                    class="{{ action_button.classes('primary') }}"
                     {% if not can_sync %}disabled{% endif %}>
                 <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                 Sync Repositories
@@ -51,7 +52,7 @@
                 ('Coverage', inventory.coverage|replace('_', ' ')|title, 'Latest committed collection scope' if committed else 'Not yet committed', 'scan-search', 'normal' if committed else 'unknown'),
                 ('Snapshot Freshness', inventory.collected_at or 'Not Observed', 'Last successful committed collection', 'clock', 'info'),
                 ('Connection Lifecycle', 'Active' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Registration state; synchronization needs Full Validation', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
-            ] %}
+                ] %}
                 <article class="min-w-0 bg-surface-card p-4 sm:p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
@@ -64,7 +65,8 @@
                 </article>
             {% endfor %}
         </div>
-        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2" data-kaori-inventory-lifecycle-boundary>
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
+             data-kaori-inventory-lifecycle-boundary>
             <section class="bg-surface-card px-4 py-4 sm:px-5">
                 <div class="flex items-start gap-3">
                     {{ ui.palette_icon('shield-check', 'brand', size='sm') }}
