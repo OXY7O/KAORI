@@ -82,10 +82,7 @@ def test_product_overview_preserves_verified_zero_unknown_and_degraded_history(c
     assert scope['uncollected_count'] == 1
     assert not scope['has_more']
     assert scope['latest_committed_at'] is not None
-    by_native_id = {
-        item['installation'].native_installation_id: item
-        for item in scope['installations']
-    }
+    by_native_id = {item['installation'].native_installation_id: item for item in scope['installations']}
     assert by_native_id['100']['observed_count'] == 0
     assert by_native_id['100']['committed']
     assert by_native_id['200']['observed_count'] is None
@@ -126,10 +123,12 @@ def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
         routes,
         'build_source_control_overview',
         lambda: {
-            'installations': ({
-                'installation': SimpleNamespace(id=11),
-                'connection': SimpleNamespace(name='Authorized installation'),
-            },),
+            'installations': (
+                {
+                    'installation': SimpleNamespace(id=11),
+                    'connection': SimpleNamespace(name='Authorized installation'),
+                },
+            ),
             'has_more': False,
         },
     )
@@ -184,9 +183,7 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     root = Path(__file__).resolve().parents[2]
     overview = (root / 'app/templates/source_control/overview.html').read_text()
     inventory = (root / 'app/templates/source_control/repositories.html').read_text()
-    reusable = (
-        root / 'app/templates/integrations/source_control/github/_inventory_table.html'
-    ).read_text()
+    reusable = (root / 'app/templates/integrations/source_control/github/_inventory_table.html').read_text()
     for text in (overview, inventory):
         assert 'components/page_hero.html' in text
         assert 'components/operational_section_card.html' in text
