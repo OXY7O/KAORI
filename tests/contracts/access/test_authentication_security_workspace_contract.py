@@ -96,9 +96,7 @@ def test_authentication_security_workspace_does_not_wrap_its_standard_cards() ->
 def test_overview_governance_copy_stays_concise_without_truncation() -> None:
     page = source('app/templates/access/authentication_security/partials/_page_content.html')
     component = source('app/templates/access/authentication_security/partials/_assurance_summary.html')
-    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
-        "{% elif active_tab == 'mfa' %}", 1
-    )[0]
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
     for copy in (
         'Cloudflare validates Turnstile.',
         'New logins revoke old sessions.',
@@ -112,6 +110,32 @@ def test_overview_governance_copy_stays_concise_without_truncation() -> None:
     assert 'text-ellipsis' not in component
     assert 'overflow-hidden text-ellipsis' not in component
     assert 'md:grid-cols-2 xl:grid-cols-4' in component
+
+
+def test_overview_control_areas_and_operational_boundaries_share_one_section() -> None:
+    page = source('app/templates/access/authentication_security/partials/_page_content.html')
+    Environment().parse(page)
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
+    assert overview.count('data-auth-security-overview-hub="true"') == 1
+    assert 'id="auth-security-control-areas-heading"' in overview
+    assert 'Authentication Security Control Areas' in overview
+    assert 'Review authentication controls and ownership boundaries in one workspace.' in overview
+    assert overview.index('assurance.render(') < overview.index('data-auth-security-overview-hub="true"')
+    assert overview.index('auth-security-control-areas-heading') < overview.index('Review MFA Policy')
+    assert overview.index('Review Session Security') < overview.index('authentication-boundaries-heading')
+    assert '<section aria-label="Authentication security controls">' in overview
+    assert '<section class="border-t border-outline-subtle"' in overview
+    assert 'class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"' not in overview
+    for text in ('Operational Boundaries', 'Governed Here', 'Managed Elsewhere'):
+        assert text in overview
+    for target in ('mfa', 'bot', 'sessions'):
+        assert f"tab='{target}'" in overview
+    assert overview.count('Review MFA Policy') == 1
+    assert overview.count('Review Bot Protection') == 1
+    assert overview.count('Review Session Security') == 1
+    assert 'data-auth-security-workspace="flat"' in page
+    assert 'workspace_tabs.render_navigation(' in page
+    assert page.count('assurance.render(') == 4
 
 
 def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
