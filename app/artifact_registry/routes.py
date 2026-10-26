@@ -37,6 +37,7 @@ from app.artifact_registry.presentation import (
 )
 from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.presentation_topology import build_dependency_topology
+from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id
 from app.artifact_registry.security.cve_impact import build_cve_runtime_impact
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
@@ -66,20 +67,6 @@ OVERVIEW_SECTION_TEMPLATES = {
     'signals': 'artifact_registry/partials/_overview_signals.html',
     'reporting': 'artifact_registry/partials/_overview_reporting.html',
 }
-
-
-def _overview_provider_id() -> int | None:
-    """Treat malformed explicit scope IDs as unavailable, not All Providers."""
-    raw = request.args.get('provider_id')
-    if raw is None or not raw.strip():
-        return None
-    try:
-        provider_id = int(raw)
-    except (TypeError, ValueError):
-        abort(404)
-    if provider_id < 1:
-        abort(404)
-    return provider_id
 
 
 @artifact_registry_bp.get('/')
@@ -121,20 +108,6 @@ def inventory() -> ResponseReturnValue:
         'artifact_registry/inventory.html',
         inventory=build_inventory_overview(),
     )
-
-
-def _inventory_source_id() -> int | None:
-    """An invalid explicit Registry source filter must not expand to all providers."""
-    raw = request.args.get('source_id')
-    if raw is None or not raw.strip():
-        return None
-    try:
-        source_id = int(raw)
-    except (TypeError, ValueError):
-        abort(404)
-    if source_id < 1:
-        abort(404)
-    return source_id
 
 
 def _inventory_resource_response(resource: str) -> ResponseReturnValue:
