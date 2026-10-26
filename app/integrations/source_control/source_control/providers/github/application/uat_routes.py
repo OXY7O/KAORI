@@ -20,6 +20,7 @@ from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.deletion import provider_deletion_guard
 from app.integrations.source_control.repository_inventory import read_installation_inventory
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
     github_capability_context,
@@ -52,6 +53,7 @@ from app.integrations.source_control.sync_jobs import (
 from app.integrations.source_control.uat_access import require_uat_access
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import validate_snapshot_access, validation_poll_response
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution
 from app.models.source_control import SourceInstallation, SourceWebhookDelivery
 from app.platform_operations.notifications.service import record_operational_activity
@@ -306,7 +308,14 @@ def _render_runtime_content(
 def index() -> ResponseReturnValue:
     require_uat_access()
     records = (
-        SourceInstallation.query.filter_by(provider_key='github', host_key='github.com')
+        SourceInstallation.query.join(
+            IntegrationInstance, SourceInstallation.integration_instance_id == IntegrationInstance.id
+        )
+        .filter(
+            SourceInstallation.provider_key == 'github',
+            SourceInstallation.host_key == 'github.com',
+            IntegrationInstance.lifecycle_status == 'active',
+        )
         .order_by(SourceInstallation.id)
         .limit(50)
         .all()
@@ -361,6 +370,8 @@ def edit_connection(installation_id: int) -> ResponseReturnValue:
     if canonical is None:
         abort(409)
     form = GitHubAppConnectionEditForm(obj=canonical) if request.method == 'GET' else GitHubAppConnectionEditForm()
+    if request.method == 'POST' and canonical.lifecycle_status != 'active':
+        abort(409)
     action = str(request.form.get('action') or '').strip() if request.method == 'POST' else ''
     inline_test = request.headers.get('HX-Request') == 'true' and action == 'test'
     message = None
@@ -727,9 +738,13 @@ def validation_status(installation_id: int, task_id: str) -> ResponseReturnValue
 @github_uat_bp.post('/installations/<int:installation_id>/sync')
 @permission_required('integrations.manage')
 def synchronize(installation_id: int) -> ResponseReturnValue:
-    _installation_or_404(installation_id)
+    installation = _installation_or_404(installation_id)
     if not FlaskForm().validate_on_submit():
         abort(400)
+    detail_url = url_for('github_source_uat.detail', installation_id=installation_id, tab='inventory')
+    feedback_status = 'info'
+    feedback_title = 'Repository Sync Queued'
+    feedback_message = 'Repository synchronization was requested. Review committed inventory after the worker completes.'
     try:
         enqueue_source_repository_sync(
             requested_by_user_id=int(current_user.id),
@@ -737,5 +752,89 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
             installation_record_id=installation_id,
         )
     except (NoEligibleSourceControlTargets, RuntimeError, ValueError):
-        return redirect(url_for('github_source_uat.detail', installation_id=installation_id, feedback='sync_blocked'))
-    return redirect(url_for('github_source_uat.detail', installation_id=installation_id, feedback='sync_queued'))
+        feedback_status = 'warning'
+        feedback_title = 'Repository Sync Blocked'
+        feedback_message = 'Repository synchronization could not start. Review Full Validation and worker readiness.'
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='source_control_repository_sync_' + ('queued' if feedback_status == 'info' else 'blocked'),
+        status=feedback_status,
+        title=feedback_title,
+        message=feedback_message,
+        action_url=detail_url,
+        metadata={
+            'source_installation_id': installation.id,
+            'integration_instance_id': installation.integration_instance_id,
+            'feedback_delivery': 'toast',
+        },
+        queue_feedback=True,
+    )
+    return redirect(detail_url)
+
+
+@github_uat_bp.post('/installations/<int:installation_id>/delete')
+@permission_required('integrations.manage')
+def delete_connection(installation_id: int) -> ResponseReturnValue:
+    """Retire a KAORI connection without deleting provider or committed evidence."""
+    installation = _installation_or_404(installation_id)
+    if not FlaskForm().validate_on_submit():
+        abort(400)
+    canonical = installation.integration_instance
+    if (
+        canonical is None
+        or canonical.id != installation.integration_instance_id
+        or canonical.integration_type != 'source_control'
+        or canonical.provider_key != 'github'
+        or canonical.adapter_key != 'github_rest_v3'
+    ):
+        abort(409)
+    if canonical.lifecycle_status != 'active':
+        abort(409)
+    guard = provider_deletion_guard(
+        integration_type='source_control', integration_instance_id=canonical.id
+    )
+    if guard.blocked:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='source_control_connection_deletion_blocked',
+            status='warning',
+            title='Connection Deletion Blocked',
+            message='Active KAORI jobs still reference this GitHub connection. Finish them before deleting it.',
+            action_url=url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory'),
+            metadata={
+                'source_installation_id': installation.id,
+                'integration_instance_id': canonical.id,
+                'active_jobs': guard.active_jobs,
+                'feedback_delivery': 'toast',
+            },
+            queue_feedback=True,
+        )
+        return redirect(url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory'))
+
+    former_name = canonical.name
+    try:
+        IntegrationBinding.query.filter_by(integration_instance_id=canonical.id).update(
+            {'enabled': False}, synchronize_session=False
+        )
+        canonical.enabled = False
+        canonical.lifecycle_status = 'retired'
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        abort(409)
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='source_control_connection_retired',
+        status='success',
+        title='GitHub Connection Deleted',
+        message='The connection was removed from active KAORI use. GitHub permissions and committed history were preserved.',
+        metadata={
+            'source_installation_id': installation.id,
+            'integration_instance_id': canonical.id,
+            'connection_name': former_name,
+            'feedback_delivery': 'toast',
+        },
+        queue_feedback=True,
+    )
+    return redirect(url_for('github_source_uat.index'))

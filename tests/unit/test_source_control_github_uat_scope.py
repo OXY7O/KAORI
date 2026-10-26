@@ -896,3 +896,20 @@ def test_github_successor_runtime_import_contract() -> None:
 
     assert callable(build_successor_connection_input)
     assert github_uat_bp.name == 'github_source_uat'
+
+
+def test_github_deletion_is_guarded_and_retains_source_evidence():
+    source = (
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+    ).read_text()
+    delete = source.split('def delete_connection(installation_id: int)', 1)[1]
+    assert "@github_uat_bp.post('/installations/<int:installation_id>/delete')" in source
+    assert "@permission_required('integrations.manage')" in source
+    assert '_installation_or_404(installation_id)' in delete
+    assert 'FlaskForm().validate_on_submit()' in delete
+    assert "integration_type='source_control'" in delete
+    assert 'guard.blocked' in delete
+    assert "canonical.lifecycle_status = 'retired'" in delete
+    assert "canonical.enabled = False" in delete
+    assert 'db.session.delete(' not in delete

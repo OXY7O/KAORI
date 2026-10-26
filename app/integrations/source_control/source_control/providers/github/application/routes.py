@@ -94,6 +94,7 @@ def index() -> ResponseReturnValue:
         base = IntegrationInstance.query.filter_by(
             integration_type='source_control',
             provider_key='github',
+            lifecycle_status='active',
         )
         total = base.count()
         ready = base.filter_by(enabled=True, lifecycle_status='active', readiness_status='ready').count()
@@ -124,6 +125,7 @@ def index() -> ResponseReturnValue:
                 SourceRepository.host_key == 'github.com',
                 IntegrationInstance.integration_type == 'source_control',
                 IntegrationInstance.provider_key == 'github',
+                IntegrationInstance.lifecycle_status == 'active',
             )
         )
         grants = coverage_base.count()
@@ -142,6 +144,7 @@ def index() -> ResponseReturnValue:
                 SourceInstallation.host_key == 'github.com',
                 IntegrationInstance.integration_type == 'source_control',
                 IntegrationInstance.provider_key == 'github',
+                IntegrationInstance.lifecycle_status == 'active',
             )
             .count()
         )
