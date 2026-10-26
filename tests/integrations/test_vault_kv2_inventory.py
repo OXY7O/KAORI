@@ -17,7 +17,8 @@ def client(monkeypatch):
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
     return VaultClient(
         endpoint='https://vault.example.internal:8200',
-        role_id='reader', secret_id='test-only-secret-id',
+        role_id='reader',
+        secret_id='test-only-secret-id',
     )
 
 
@@ -32,7 +33,9 @@ def _detail(version: int = 2):
             'versions': {
                 '1': {'created_time': '2026-09-01T00:00:00Z', 'deletion_time': '', 'destroyed': False},
                 str(version): {
-                    'created_time': '2026-09-02T00:00:00Z', 'deletion_time': '', 'destroyed': False,
+                    'created_time': '2026-09-02T00:00:00Z',
+                    'deletion_time': '',
+                    'destroyed': False,
                 },
             },
         },
@@ -53,7 +56,8 @@ def test_collect_kv2_only_requests_metadata_and_discards_unknown_fields(client, 
         if path == '/v1/kv/metadata/service' and method == 'LIST':
             return 200, {'data': {'keys': ['database']}}
         if method == 'GET' and path in {
-            '/v1/kv/metadata/root-secret', '/v1/kv/metadata/service/database',
+            '/v1/kv/metadata/root-secret',
+            '/v1/kv/metadata/service/database',
         }:
             return 200, _detail()
         raise AssertionError('Unexpected Vault operation.')
@@ -112,8 +116,7 @@ def test_fails_bounded_scan_before_fetching_oversized_collection(client, monkeyp
 def test_rejects_version_evidence_above_bound_without_truncation():
     data = _detail()
     data['data']['versions'] = {
-        str(index): {'created_time': '', 'deletion_time': '', 'destroyed': False}
-        for index in range(1, 103)
+        str(index): {'created_time': '', 'deletion_time': '', 'destroyed': False} for index in range(1, 103)
     }
     with pytest.raises(VaultProviderError, match='bounded'):
         _safe_metadata(mount='kv', path='a', body=data)
@@ -121,19 +124,27 @@ def test_rejects_version_evidence_above_bound_without_truncation():
 
 def test_rejects_invalid_nested_listing_without_logging_secret_path(client, monkeypatch):
     monkeypatch.setattr(client, 'login', lambda: 'token')
-    monkeypatch.setattr(client, '_request', lambda path, **kwargs: (
-        200, {'data': {'keys': ['../secret']}},
-    ))
+    monkeypatch.setattr(
+        client,
+        '_request',
+        lambda path, **kwargs: (
+            200,
+            {'data': {'keys': ['../secret']}},
+        ),
+    )
     with pytest.raises(VaultProviderError) as raised:
         collect_kv2_metadata(client, mount='kv')
     assert '../secret' not in str(raised.value)
 
 
-@pytest.mark.parametrize('raw,expected', [
-    ('', ()),
-    ('secret', ('secret',)),
-    ('secret, teams/credentials', ('secret', 'teams/credentials')),
-])
+@pytest.mark.parametrize(
+    'raw,expected',
+    [
+        ('', ()),
+        ('secret', ('secret',)),
+        ('secret, teams/credentials', ('secret', 'teams/credentials')),
+    ],
+)
 def test_explicit_kv2_mount_allowlist(raw, expected):
     from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
         parse_approved_kv2_mounts,
@@ -142,10 +153,16 @@ def test_explicit_kv2_mount_allowlist(raw, expected):
     assert parse_approved_kv2_mounts(raw) == expected
 
 
-@pytest.mark.parametrize('raw', [
-    'secret,secret', 'secret?token=x', '../secret', 'secret%2fdata',
-    'one,two,three,four,five,six,seven,eight,nine',
-])
+@pytest.mark.parametrize(
+    'raw',
+    [
+        'secret,secret',
+        'secret?token=x',
+        '../secret',
+        'secret%2fdata',
+        'one,two,three,four,five,six,seven,eight,nine',
+    ],
+)
 def test_rejects_unsafe_or_unbounded_kv2_scope(raw):
     from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
         parse_approved_kv2_mounts,
@@ -175,7 +192,7 @@ def test_missing_security_posture_does_not_default_to_false(field):
         _safe_metadata(mount='kv', path='secret', body=data)
 
 
-@pytest.mark.parametrize('bad_value', [True, 1.5, '1.5', '٢', -1, 2**31, '9'*20])
+@pytest.mark.parametrize('bad_value', [True, 1.5, '1.5', '٢', -1, 2**31, '9' * 20])
 def test_invalid_kv2_version_number_never_truncates_or_overflows(bad_value):
     data = _detail()
     data['data']['current_version'] = bad_value

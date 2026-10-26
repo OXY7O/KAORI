@@ -179,6 +179,4 @@ def test_target_specific_old_job_remains_eligible_after_many_other_cluster_jobs(
     ]
     scoped = [job for job in unrelated + [old_target] if _job_applies_to_cluster(job, 'cluster-a')]
     assert scoped == [old_target]
-    assert _successful_job_evidence_times(scoped, ['cluster-a']) == {
-        'cluster-a': now - timedelta(days=2)
-    }
+    assert _successful_job_evidence_times(scoped, ['cluster-a']) == {'cluster-a': now - timedelta(days=2)}

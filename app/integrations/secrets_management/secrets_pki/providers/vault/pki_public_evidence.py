@@ -102,7 +102,11 @@ def _issuer_name(raw: object) -> str | None:
 
 
 def _parse_certificate(raw: object) -> tuple[x509.Certificate, PublicCertificateEvidence]:
-    if not isinstance(raw, str) or not raw.startswith('-----BEGIN CERTIFICATE-----') or len(raw) > MAX_CERTIFICATE_PEM_BYTES:
+    if (
+        not isinstance(raw, str)
+        or not raw.startswith('-----BEGIN CERTIFICATE-----')
+        or len(raw) > MAX_CERTIFICATE_PEM_BYTES
+    ):
         raise VaultProviderError('Vault PKI public certificate is missing or out of bounds.')
     try:
         cert = x509.load_pem_x509_certificate(raw.encode('ascii'))
@@ -169,7 +173,8 @@ def collect_pki_public_issuers(client: VaultClient, *, mount: str) -> PKIIssuerC
             raise VaultProviderError('Vault PKI issuer metadata is malformed.')
         name = _issuer_name(info.get('issuer_name'))
         response_status, payload = client._request(
-            f'/v1/{mount_name}/issuer/{issuer_id}/json', token=token,
+            f'/v1/{mount_name}/issuer/{issuer_id}/json',
+            token=token,
         )
         evidence = payload.get('data')
         if response_status != 200 or not isinstance(evidence, dict):
@@ -179,12 +184,14 @@ def collect_pki_public_issuers(client: VaultClient, *, mount: str) -> PKIIssuerC
         if not isinstance(chain, list) or len(chain) > MAX_CHAIN_CERTIFICATES:
             raise VaultProviderError('Vault PKI issuer chain is malformed or too large.')
         chain_fingerprints = tuple(_parse_certificate(item)[1].fingerprint_sha256 for item in chain)
-        records.append(PKIIssuerEvidence(
-            issuer_id=issuer_id,
-            issuer_name=name,
-            certificate=certificate,
-            chain_fingerprints=chain_fingerprints,
-        ))
+        records.append(
+            PKIIssuerEvidence(
+                issuer_id=issuer_id,
+                issuer_name=name,
+                certificate=certificate,
+                chain_fingerprints=chain_fingerprints,
+            )
+        )
     return PKIIssuerCollection(
         mount=mount_name,
         observed_at=datetime.now(UTC),

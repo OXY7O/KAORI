@@ -51,7 +51,8 @@ def publish_default_branch_revision(
     """
     _admitted(installation)
     if (
-        installation.id is None or installation.account is None
+        installation.id is None
+        or installation.account is None
         or evidence.installation_id != installation.id
         or evidence.observed_at.tzinfo is None
         or _SHA1.fullmatch(evidence.commit_sha) is None
@@ -60,7 +61,8 @@ def publish_default_branch_revision(
         raise RepositoryGenerationError('Exact branch evidence is invalid or mis-scoped.')
     repo = session.get(SourceRepository, evidence.repository_id, with_for_update=True)
     if (
-        repo is None or repo.provider_key != 'github'
+        repo is None
+        or repo.provider_key != 'github'
         or repo.host_key != installation.host_key
         or repo.native_repository_id != evidence.native_repository_id
         or repo.account_id != installation.account.id
@@ -83,10 +85,12 @@ def publish_default_branch_revision(
         raise RepositoryGenerationError('Current installation grant no longer authorizes this revision.')
 
     ref = session.execute(
-        select(SourceReference).where(
+        select(SourceReference)
+        .where(
             SourceReference.repository_id == repo.id,
             SourceReference.full_ref == evidence.full_ref,
-        ).with_for_update()
+        )
+        .with_for_update()
     ).scalar_one_or_none()
     if ref is not None and ref.last_observed_at is not None:
         if _utc(ref.last_observed_at) > evidence.observed_at:
@@ -102,7 +106,8 @@ def publish_default_branch_revision(
     ).scalar_one_or_none()
     if revision is None:
         revision = SourceRevision(
-            repository_id=repo.id, commit_sha=evidence.commit_sha,
+            repository_id=repo.id,
+            commit_sha=evidence.commit_sha,
             last_observed_at=evidence.observed_at,
         )
         session.add(revision)
@@ -114,8 +119,10 @@ def publish_default_branch_revision(
     moved = created or ref.current_revision_id != revision.id
     if ref is None:
         ref = SourceReference(
-            repository_id=repo.id, full_ref=evidence.full_ref,
-            state='observed', current_revision_id=revision.id,
+            repository_id=repo.id,
+            full_ref=evidence.full_ref,
+            state='observed',
+            current_revision_id=revision.id,
             last_observed_at=evidence.observed_at,
         )
         session.add(ref)
@@ -126,11 +133,13 @@ def publish_default_branch_revision(
         ref.last_observed_at = evidence.observed_at
 
     if moved:
-        session.add(SourceReferenceTransition(
-            reference_id=ref.id,
-            target_revision_id=revision.id,
-            transition_state='observed' if created else 'moved',
-            observed_at=evidence.observed_at,
-        ))
+        session.add(
+            SourceReferenceTransition(
+                reference_id=ref.id,
+                target_revision_id=revision.id,
+                transition_state='observed' if created else 'moved',
+                observed_at=evidence.observed_at,
+            )
+        )
     session.commit()
     return moved

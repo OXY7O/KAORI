@@ -31,26 +31,31 @@ def staged(monkeypatch):
         'app.security.credentials._configured_secrets',
         lambda: ('unit-test-github-webhook-ledger-key',),
     )
-    monkeypatch.setattr(
-        webhook_inbox, 'provider_kind', lambda *_: SimpleNamespace(available=True)
-    )
+    monkeypatch.setattr(webhook_inbox, 'provider_kind', lambda *_: SimpleNamespace(available=True))
     engine = create_engine('sqlite+pysqlite:///:memory:')
-    IntegrationInstance.metadata.create_all(bind=engine, tables=[
-        IntegrationInstance.__table__,
-        SourceAccount.__table__,
-        GitHubAppCredential.__table__,
-        SourceInstallation.__table__,
-        SourceWebhookDelivery.__table__,
-    ])
+    IntegrationInstance.metadata.create_all(
+        bind=engine,
+        tables=[
+            IntegrationInstance.__table__,
+            SourceAccount.__table__,
+            GitHubAppCredential.__table__,
+            SourceInstallation.__table__,
+            SourceWebhookDelivery.__table__,
+        ],
+    )
     with Session(engine) as session:
         app = GitHubAppCredential(
-            host_key='github.com', native_app_id='42',
-            private_key_pem='test-not-real-pem', webhook_secret=_SECRET,
+            host_key='github.com',
+            native_app_id='42',
+            private_key_pem='test-not-real-pem',
+            webhook_secret=_SECRET,
             enabled=True,
         )
         account = SourceAccount(
-            host_key='github.com', provider_key='github',
-            native_account_id='78', account_type='Organization',
+            host_key='github.com',
+            provider_key='github',
+            native_account_id='78',
+            account_type='Organization',
         )
         session.add_all((app, account))
         session.flush()
@@ -58,19 +63,25 @@ def staged(monkeypatch):
         identities = []
         for i in (1, 2):
             canonical = IntegrationInstance(
-                integration_type='source_control', name=f'GitHub {i}',
-                provider_key='github', adapter_key='github_rest_v3',
-                lifecycle_status='active', readiness_status='validation_required',
+                integration_type='source_control',
+                name=f'GitHub {i}',
+                provider_key='github',
+                adapter_key='github_rest_v3',
+                lifecycle_status='active',
+                readiness_status='validation_required',
                 enabled=True,
             )
             session.add(canonical)
             session.flush()
             instance = SourceInstallation(
                 integration_instance_id=canonical.id,
-                provider_key='github', host_key='github.com',
-                native_app_id='42', native_installation_id=str(i),
+                provider_key='github',
+                host_key='github.com',
+                native_app_id='42',
+                native_installation_id=str(i),
                 github_app_credential_id=app.id,
-                account_id=account.id, repository_scope='selected',
+                account_id=account.id,
+                repository_scope='selected',
                 grant_status='unknown',
             )
             session.add(instance)
@@ -85,11 +96,14 @@ def staged(monkeypatch):
 
 
 def _payload(installation: int = 1, *, repo: int = 100) -> bytes:
-    return json.dumps({
-        'installation': {'id': installation},
-        'repository': {'id': repo},
-        'action': 'completed',
-    }, separators=(',', ':')).encode()
+    return json.dumps(
+        {
+            'installation': {'id': installation},
+            'repository': {'id': repo},
+            'action': 'completed',
+        },
+        separators=(',', ':'),
+    ).encode()
 
 
 def _headers(payload: bytes) -> dict[str, str]:
@@ -147,8 +161,10 @@ def test_same_uuid_with_different_signed_payload_is_rejected(staged):
     changed = _payload(repo=4)
     with pytest.raises(GitHubWebhookError, match='different content'):
         webhook_inbox.claim_verified_delivery(
-            installation=installation, payload=changed,
-            headers=_headers(changed), session=session,
+            installation=installation,
+            payload=changed,
+            headers=_headers(changed),
+            session=session,
         )
 
 
@@ -157,8 +173,10 @@ def test_identical_github_delivery_id_is_qualified_by_installation(staged):
     for installation in (first, second):
         payload = _payload(installation=int(installation.native_installation_id))
         claim = webhook_inbox.claim_verified_delivery(
-            installation=installation, payload=payload,
-            headers=_headers(payload), session=session,
+            installation=installation,
+            payload=payload,
+            headers=_headers(payload),
+            session=session,
         )
         assert claim.newly_staged
         session.commit()
@@ -182,22 +200,18 @@ def test_other_installation_is_denied_even_when_hmac_valid(staged):
     payload = _payload(installation=2)
     with pytest.raises(GitHubWebhookError, match='does not match'):
         webhook_inbox.claim_verified_delivery(
-            installation=installation, payload=payload,
-            headers=_headers(payload), session=session
+            installation=installation, payload=payload, headers=_headers(payload), session=session
         )
     assert session.execute(select(SourceWebhookDelivery)).scalars().all() == []
 
 
 def test_planned_provider_rejects_before_authenticated_ingress(staged, monkeypatch):
     session, (installation, _) = staged
-    monkeypatch.setattr(
-        webhook_inbox, 'provider_kind', lambda *_: SimpleNamespace(available=False)
-    )
+    monkeypatch.setattr(webhook_inbox, 'provider_kind', lambda *_: SimpleNamespace(available=False))
     payload = _payload()
     with pytest.raises(GitHubWebhookError, match='not been admitted'):
         webhook_inbox.claim_verified_delivery(
-            installation=installation, payload=payload,
-            headers=_headers(payload), session=session
+            installation=installation, payload=payload, headers=_headers(payload), session=session
         )
 
 
@@ -208,8 +222,7 @@ def test_revoked_connection_denies_inbox(staged):
     payload = _payload()
     with pytest.raises(GitHubWebhookError, match='not eligible'):
         webhook_inbox.claim_verified_delivery(
-            installation=installation, payload=payload,
-            headers=_headers(payload), session=session
+            installation=installation, payload=payload, headers=_headers(payload), session=session
         )
 
 
@@ -220,7 +233,8 @@ def test_ledger_schema_includes_unique_scope_and_no_raw_body():
     assert not {'raw_payload', 'private_key_pem', 'authorization', 'token'} & keys
     assert any(
         set(constraint.columns.keys()) == {'installation_id', 'delivery_id'}
-        for constraint in table.constraints if hasattr(constraint, 'columns')
+        for constraint in table.constraints
+        if hasattr(constraint, 'columns')
     )
 
 
@@ -228,8 +242,8 @@ def test_inbox_does_not_dispatch_before_commit():
     from pathlib import Path
 
     source = (
-        Path(__file__).resolve().parents[2] /
-        'app/integrations/source_control/source_control/providers/github/webhook_inbox.py'
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/webhook_inbox.py'
     ).read_text()
     assert 'apply_async' not in source
     assert 'db.session.commit' not in source

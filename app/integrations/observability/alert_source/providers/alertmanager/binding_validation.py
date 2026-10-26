@@ -55,8 +55,7 @@ def validate_binding(
                 binding,
                 profile_key=profile.profile_key,
                 message=(
-                    'Vault Alert Source binding is missing an eligible canonical '
-                    'instance or exact identity selector.'
+                    'Vault Alert Source binding is missing an eligible canonical instance or exact identity selector.'
                 ),
                 commit=commit,
             )
@@ -145,8 +144,11 @@ def validate_binding(
         'missing_required_capabilities': list(missing_required),
         'sample_alert_names': [] if binding.asset_type == 'vault_instance' else _sample_alert_names(alerts),
         'identity_observed': (
-            vault_sample['identity_observed'] if binding.asset_type == 'vault_instance' and vault_sample is not None
-            else bool(alerts) if binding.asset_type != 'global' else True
+            vault_sample['identity_observed']
+            if binding.asset_type == 'vault_instance' and vault_sample is not None
+            else bool(alerts)
+            if binding.asset_type != 'global'
+            else True
         ),
         **(
             {'vault_alert_sample': vault_sample}

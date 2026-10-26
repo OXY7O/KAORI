@@ -423,9 +423,7 @@ def get_reveal_page_context(
                 SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc()
             )
         else:
-            pending_query = pending_query.order_by(
-                SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()
-            )
+            pending_query = pending_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
         pending_requests, pending_window = paginate_query(
             pending_query,
             page=pending_pagination.page,
@@ -826,8 +824,7 @@ def reveal_secret_value(request_id: str, *, user_id: int, audit_action_url: str 
             status='success',
             title='Secret value revealed',
             message=(
-                f'{record.key_name} was revealed once for {window_seconds} seconds. '
-                'The value was not stored by KAORI.'
+                f'{record.key_name} was revealed once for {window_seconds} seconds. The value was not stored by KAORI.'
             ),
             action_url=audit_action_url,
             action_label='Open Protected Secret Reveal',
@@ -838,9 +835,7 @@ def reveal_secret_value(request_id: str, *, user_id: int, audit_action_url: str 
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
-        raise ValueError(
-            'Mandatory Activity Audit could not be committed. The Secret value was not returned.'
-        ) from exc
+        raise ValueError('Mandatory Activity Audit could not be committed. The Secret value was not returned.') from exc
 
     return RevealedSecretValue(
         request_id=record.id,

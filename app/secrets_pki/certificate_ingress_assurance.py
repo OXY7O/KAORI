@@ -12,9 +12,15 @@ from typing import Literal
 
 IngressEvidenceState = Literal['ready', 'partial', 'stale', 'not_collected', 'blocked']
 IngressReferenceStatus = Literal['observed', 'not_observed', 'unknown']
-_VALID_COVERAGE = frozenset({
-    'fully_covered', 'partial', 'uncovered', 'no_declared_hosts', 'not_reported',
-})
+_VALID_COVERAGE = frozenset(
+    {
+        'fully_covered',
+        'partial',
+        'uncovered',
+        'no_declared_hosts',
+        'not_reported',
+    }
+)
 _MAX_MATCHING_TLS_SECRETS = 1500
 
 
@@ -52,7 +58,9 @@ class IngressTLSAssurance:
 
 
 def assess_ingress_reference(
-    *, matches: tuple[IngressTLSReference, ...], mapping_state: IngressEvidenceState,
+    *,
+    matches: tuple[IngressTLSReference, ...],
+    mapping_state: IngressEvidenceState,
 ) -> IngressTLSAssurance:
     """Only count actual references and declared-host coverage when mapping is Ready."""
     if mapping_state not in {'ready', 'partial', 'stale', 'not_collected', 'blocked'}:
@@ -64,7 +72,8 @@ def assess_ingress_reference(
 
     referenced = sum(1 for item in matches if item.has_ingress_reference)
     covered = sum(
-        1 for item in matches
+        1
+        for item in matches
         if item.has_ingress_reference
         and item.coverage_state == 'fully_covered'
         and item.declared_host_count > 0
@@ -72,5 +81,7 @@ def assess_ingress_reference(
     )
     return IngressTLSAssurance(
         'observed' if referenced else 'not_observed',
-        'ready', referenced, covered,
+        'ready',
+        referenced,
+        covered,
     )

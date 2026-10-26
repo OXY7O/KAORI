@@ -30,9 +30,15 @@ def store():
     )
     db.init_app(app)
     tables = [
-        Role.__table__, Permission.__table__, RolePermission.__table__,
-        User.__table__, IntegrationInstance.__table__, IntegrationBinding.__table__,
-        ScopeAccessPolicy.__table__, ScopeAccessPolicyRevision.__table__, AlertCase.__table__,
+        Role.__table__,
+        Permission.__table__,
+        RolePermission.__table__,
+        User.__table__,
+        IntegrationInstance.__table__,
+        IntegrationBinding.__table__,
+        ScopeAccessPolicy.__table__,
+        ScopeAccessPolicyRevision.__table__,
+        AlertCase.__table__,
     ]
     with app.app_context():
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
@@ -43,29 +49,41 @@ def store():
         role = Role(name='vault_case_viewer', display_name='Vault Case Viewer', is_active=True)
         db.session.add_all([role, *permissions])
         db.session.flush()
-        db.session.add_all([
-            RolePermission(role_id=role.id, permission_id=item.id) for item in permissions
-        ])
+        db.session.add_all([RolePermission(role_id=role.id, permission_id=item.id) for item in permissions])
         actor = User(username='viewer', email='viewer@example.invalid', role_id=role.id)
         requester = User(username='requester', email='requester@example.invalid')
         approver = User(username='approver', email='approver@example.invalid')
         vault = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault', adapter_key='test',
-            name='Approved Vault', enabled=True, lifecycle_status='active',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='test',
+            name='Approved Vault',
+            enabled=True,
+            lifecycle_status='active',
         )
         other = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault', adapter_key='test',
-            name='Other Vault', enabled=True, lifecycle_status='active',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='test',
+            name='Other Vault',
+            enabled=True,
+            lifecycle_status='active',
         )
         source = IntegrationInstance(
-            integration_type='alert_source', provider_key='alertmanager', adapter_key='test',
-            name='Alert Source', enabled=True, lifecycle_status='active',
+            integration_type='alert_source',
+            provider_key='alertmanager',
+            adapter_key='test',
+            name='Alert Source',
+            enabled=True,
+            lifecycle_status='active',
         )
         db.session.add_all([actor, requester, approver, vault, other, source])
         db.session.flush()
         binding = IntegrationBinding(
-            integration_instance_id=source.id, asset_type='vault_instance',
-            asset_key=str(vault.id), enabled=True,
+            integration_instance_id=source.id,
+            asset_type='vault_instance',
+            asset_key=str(vault.id),
+            enabled=True,
             validation_profile='vault-alerts-v1',
             selector_json={
                 'matchers': [
@@ -76,8 +94,13 @@ def store():
         db.session.add(binding)
         db.session.commit()
         ids = SimpleNamespace(
-            actor=actor.id, requester=requester.id, approver=approver.id,
-            vault=vault.id, other=other.id, source=source.id, binding=binding.id,
+            actor=actor.id,
+            requester=requester.id,
+            approver=approver.id,
+            vault=vault.id,
+            other=other.id,
+            source=source.id,
+            binding=binding.id,
         )
         try:
             yield app, ids
@@ -98,15 +121,19 @@ def _grant(ids, *, level='instance', at=AT, other=False, state='active'):
     )
     db.session.add(policy)
     db.session.flush()
-    db.session.add(ScopeAccessPolicyRevision(
-        policy_id=policy.id, revision_number=1, lifecycle_status=state,
-        effective_from=at - timedelta(hours=1),
-        effective_until=at + timedelta(hours=1),
-        requested_by_user_id=ids.requester,
-        approved_by_user_id=ids.approver if state == 'active' else None,
-        approved_at=at - timedelta(minutes=5) if state == 'active' else None,
-        change_reason='operational_access',
-    ))
+    db.session.add(
+        ScopeAccessPolicyRevision(
+            policy_id=policy.id,
+            revision_number=1,
+            lifecycle_status=state,
+            effective_from=at - timedelta(hours=1),
+            effective_until=at + timedelta(hours=1),
+            requested_by_user_id=ids.requester,
+            approved_by_user_id=ids.approver if state == 'active' else None,
+            approved_at=at - timedelta(minutes=5) if state == 'active' else None,
+            change_reason='operational_access',
+        )
+    )
     db.session.commit()
     return policy
 
@@ -115,13 +142,16 @@ def _case(ids, *, vault_id=None, key=None, foreign=False):
     case_key = key or 'vault-alert:' + 'a' * 64
     case = AlertCase(
         case_key=case_key,
-        source_type='provider_alert', source_ref=case_key,
+        source_type='provider_alert',
+        source_ref=case_key,
         domain='registry' if foreign else 'secrets_pki',
         asset_type='vault_instance',
         asset_key=str(ids.vault if vault_id is None else vault_id),
         asset_name='SHOULD-NOT-RENDER-PROVIDER-NAME',
         alert_name='SHOULD-NOT-RENDER-RAW-ALERT',
-        severity='warning', source_state='firing', workflow_state='open',
+        severity='warning',
+        source_state='firing',
+        workflow_state='open',
         routing_state='suppressed',
         routing_override_reason='policy_ineligible',
         labels_json={},
@@ -138,23 +168,40 @@ def _case(ids, *, vault_id=None, key=None, foreign=False):
 
 def test_explicit_active_instance_grant_admits_without_mount_inheritance(store):
     _app, ids = store
-    assert evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
-    ).status == 'deny'
+    assert (
+        evaluate_exact_vault_instance_case_scope(
+            actor_user_id=ids.actor,
+            instance_id=ids.vault,
+            now=AT,
+        ).status
+        == 'deny'
+    )
     _grant(ids, level='vault_mount')
-    assert evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
-    ).status == 'deny'
+    assert (
+        evaluate_exact_vault_instance_case_scope(
+            actor_user_id=ids.actor,
+            instance_id=ids.vault,
+            now=AT,
+        ).status
+        == 'deny'
+    )
     _grant(ids)
     decision = evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
+        actor_user_id=ids.actor,
+        instance_id=ids.vault,
+        now=AT,
     )
     assert decision.allowed
     assert decision.instance_id == ids.vault
     assert decision.actor_id == ids.actor
-    assert evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.other, now=AT,
-    ).status == 'deny'
+    assert (
+        evaluate_exact_vault_instance_case_scope(
+            actor_user_id=ids.actor,
+            instance_id=ids.other,
+            now=AT,
+        ).status
+        == 'deny'
+    )
 
 
 def test_revoked_expired_or_ambiguous_instance_policy_denies(store):
@@ -164,19 +211,28 @@ def test_revoked_expired_or_ambiguous_instance_policy_denies(store):
     current.lifecycle_status = 'revoked'
     db.session.commit()
     assert not evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
+        actor_user_id=ids.actor,
+        instance_id=ids.vault,
+        now=AT,
     ).allowed
     current.lifecycle_status = 'active'
     current.effective_until = AT - timedelta(minutes=1)
     db.session.commit()
     assert not evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
+        actor_user_id=ids.actor,
+        instance_id=ids.vault,
+        now=AT,
     ).allowed
     current.effective_until = AT + timedelta(hours=1)
     _grant(ids)
-    assert evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
-    ).reason == 'ambiguous_scope'
+    assert (
+        evaluate_exact_vault_instance_case_scope(
+            actor_user_id=ids.actor,
+            instance_id=ids.vault,
+            now=AT,
+        ).reason
+        == 'ambiguous_scope'
+    )
 
 
 def test_global_superuser_without_role_is_not_scoped_implicitly(store):
@@ -187,7 +243,9 @@ def test_global_superuser_without_role_is_not_scoped_implicitly(store):
     db.session.commit()
     _grant(ids)
     assert not evaluate_exact_vault_instance_case_scope(
-        actor_user_id=ids.actor, instance_id=ids.vault, now=AT,
+        actor_user_id=ids.actor,
+        instance_id=ids.vault,
+        now=AT,
     ).allowed
 
 
@@ -201,10 +259,17 @@ def test_case_projection_is_strictly_safe_and_source_qualified(store):
     public = result['rows'][0]
     assert public['public_id'] == case.public_id
     assert public['title'] == 'Vault Alertmanager source condition'
-    assert not any(value in repr(public) for value in (
-        'SHOULD-NOT-RENDER', 'vault-alert:', 'source_binding_id',
-        'a' * 64, 'labels', 'evidence_json',
-    ))
+    assert not any(
+        value in repr(public)
+        for value in (
+            'SHOULD-NOT-RENDER',
+            'vault-alert:',
+            'source_binding_id',
+            'a' * 64,
+            'labels',
+            'evidence_json',
+        )
+    )
 
 
 def test_one_bad_case_blocks_entire_source_population(store):
@@ -233,7 +298,8 @@ def test_existing_generic_mutation_api_denies_vault_case_by_public_id(store):
     case = _case(ids)
     invoked = []
     output = apply_case_mutation(
-        case.public_id, operation=lambda row: invoked.append(row.id),
+        case.public_id,
+        operation=lambda row: invoked.append(row.id),
     )
     assert output is None
     assert not invoked
@@ -266,7 +332,8 @@ def test_audit_failure_blocks_case_projection(store, monkeypatch):
     _grant(ids)
     monkeypatch.setattr(workspace, 'current_user', SimpleNamespace(id=ids.actor))
     monkeypatch.setattr(
-        workspace, 'stage_operational_activity',
+        workspace,
+        'stage_operational_activity',
         lambda **_kw: (_ for _ in ()).throw(RuntimeError('audit-store-offline')),
     )
     with app.test_request_context(f'/vault-cases?instance_id={ids.vault}'):
@@ -298,18 +365,22 @@ def test_reuse_violet_components_no_provider_case_mutations_in_templates():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    list_html = (
-        root / 'app/templates/intelligence/partials/_vault_provider_cases.html'
-    ).read_text(encoding='utf-8')
-    detail_html = (
-        root / 'app/templates/intelligence/partials/_vault_provider_case_details.html'
-    ).read_text(encoding='utf-8')
+    list_html = (root / 'app/templates/intelligence/partials/_vault_provider_cases.html').read_text(encoding='utf-8')
+    detail_html = (root / 'app/templates/intelligence/partials/_vault_provider_case_details.html').read_text(
+        encoding='utf-8'
+    )
     assert 'components/page_hero.html' in list_html
     assert 'components/table_primitives.html' in list_html
     assert 'components/states/_blocked_state.html' in list_html
     assert 'vault_case_details' in list_html
-    for forbidden in ('apply_case_mutation', 'resume_routing', 'source_ref',
-                      'evidence_json', 'case.case_key', 'case.labels_json'):
+    for forbidden in (
+        'apply_case_mutation',
+        'resume_routing',
+        'source_ref',
+        'evidence_json',
+        'case.case_key',
+        'case.labels_json',
+    ):
         assert forbidden not in list_html + detail_html
 
 
@@ -340,9 +411,7 @@ def test_case_audit_must_commit_after_case_query_not_before():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    code = (
-        root / 'app/intelligence/alert_intelligence/vault_case_workspace.py'
-    ).read_text(encoding='utf-8')
+    code = (root / 'app/intelligence/alert_intelligence/vault_case_workspace.py').read_text(encoding='utf-8')
     section = code.split('def _admit_read(', 1)[1].split('def _safe_case(', 1)[0]
     assert 'stage_operational_activity(' in section
     assert 'db.session.commit()' not in section

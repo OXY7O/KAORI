@@ -19,8 +19,12 @@ from app.models.vault import VaultInstance
 
 def _client(values: VaultConnectionInput) -> VaultClient:
     return VaultClient(
-        endpoint=values.endpoint, namespace=values.namespace, auth_mount=values.auth_mount,
-        role_id=values.role_id, secret_id=values.secret_id, timeout=values.timeout,
+        endpoint=values.endpoint,
+        namespace=values.namespace,
+        auth_mount=values.auth_mount,
+        role_id=values.role_id,
+        secret_id=values.secret_id,
+        timeout=values.timeout,
     )
 
 
@@ -54,17 +58,19 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
     else:
         instance = existing
         identity = instance.integration_instance
-    changed = existing is None or any((
-        instance.endpoint != endpoint,
-        instance.namespace != values.namespace,
-        instance.auth_mount != mount,
-        instance.role_id != values.role_id,
-        instance.secret_id != values.secret_id,
-        instance.timeout != values.timeout,
-        list(instance.kv2_mounts or ()) != approved_mounts,
-        list(instance.pki_mounts or ()) != approved_pki_mounts,
-        bool(instance.pki_stored_certs_enabled) != bool(values.pki_stored_certs_enabled),
-    ))
+    changed = existing is None or any(
+        (
+            instance.endpoint != endpoint,
+            instance.namespace != values.namespace,
+            instance.auth_mount != mount,
+            instance.role_id != values.role_id,
+            instance.secret_id != values.secret_id,
+            instance.timeout != values.timeout,
+            list(instance.kv2_mounts or ()) != approved_mounts,
+            list(instance.pki_mounts or ()) != approved_pki_mounts,
+            bool(instance.pki_stored_certs_enabled) != bool(values.pki_stored_certs_enabled),
+        )
+    )
     identity.name = values.name
     identity.description = values.description
     identity.environment = values.environment

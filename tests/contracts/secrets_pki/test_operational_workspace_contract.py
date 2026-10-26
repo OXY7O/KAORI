@@ -41,19 +41,24 @@ def _source(index, mounts=('secret',), namespace=''):
 
 def _state(index, mount='secret', *, count=0, status='ready', committed=True, namespace=''):
     return SimpleNamespace(
-        integration_instance_id=index, mount=mount, provider_namespace=namespace,
-        observed_count=count, status=status,
+        integration_instance_id=index,
+        mount=mount,
+        provider_namespace=namespace,
+        observed_count=count,
+        status=status,
         last_committed_at=datetime(2026, 10, 22, tzinfo=UTC) if committed else None,
     )
 
 
 def _patch_sources(monkeypatch, sources, states):
     monkeypatch.setattr(
-        presentation, 'VaultInstance',
+        presentation,
+        'VaultInstance',
         SimpleNamespace(id=SimpleNamespace(asc=lambda: None), integration_instance=object(), query=_Query(sources)),
     )
     monkeypatch.setattr(
-        presentation, 'SecretInventoryCollectionState',
+        presentation,
+        'SecretInventoryCollectionState',
         SimpleNamespace(
             integration_instance_id=SimpleNamespace(in_=lambda _ids: None),
             provider_namespace=None,
@@ -112,10 +117,14 @@ def test_partial_or_stale_observation_does_not_claim_complete_readiness(monkeypa
 
 
 def test_retired_mount_history_is_excluded_from_active_inventory_counts(monkeypatch):
-    _patch_sources(monkeypatch, [_source(1)], [
-        _state(1, count=1),
-        _state(1, mount='retired', count=800),
-    ])
+    _patch_sources(
+        monkeypatch,
+        [_source(1)],
+        [
+            _state(1, count=1),
+            _state(1, mount='retired', count=800),
+        ],
+    )
     summary = presentation.build_secrets_pki_operational_summary()
     assert summary['observed_secret_count'] == 1
 

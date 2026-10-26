@@ -33,8 +33,11 @@ def assess_installation_readiness(evidence: InstallationReadiness) -> GitHubRead
     """Assess permission coverage conservatively; never fabricate validation."""
     if evidence.repository_selection not in {'all', 'selected'}:
         return GitHubReadinessAssessment(
-            status='blocked', capability_states={}, repository_scope='unknown',
-            coverage_hint='unverified', reason='Repository grant scope is unknown.',
+            status='blocked',
+            capability_states={},
+            repository_scope='unknown',
+            coverage_hint='unverified',
+            reason='Repository grant scope is unknown.',
         )
     permissions = frozenset(evidence.permission_names)
     states = {

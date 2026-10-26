@@ -18,9 +18,7 @@ def _fingerprint(values: VaultConnectionInput) -> str:
     # The encrypted SecretID is carried separately; never sign or expose plaintext.
     fields = asdict(values)
     fields.pop('secret_id')
-    return hashlib.sha256(
-        json.dumps(fields, sort_keys=True, separators=(',', ':')).encode('utf-8')
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(fields, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
 def _serializer() -> URLSafeTimedSerializer:
@@ -31,10 +29,13 @@ def issue_proof(values: VaultConnectionInput, user_id: int) -> str:
     encrypted = encrypt_credential(values.secret_id)
     if not encrypted:
         raise ValueError('AppRole SecretID cannot be empty.')
-    return _serializer().dumps({
-        'uid': int(user_id), 'fingerprint': _fingerprint(values),
-        'encrypted_secret_id': encrypted,
-    })
+    return _serializer().dumps(
+        {
+            'uid': int(user_id),
+            'fingerprint': _fingerprint(values),
+            'encrypted_secret_id': encrypted,
+        }
+    )
 
 
 def verified_secret(proof: str, values: VaultConnectionInput, user_id: int) -> str | None:
@@ -46,7 +47,8 @@ def verified_secret(proof: str, values: VaultConnectionInput, user_id: int) -> s
     except (BadSignature, SignatureExpired):
         return None
     if int(data.get('uid', 0)) != user_id or not hmac.compare_digest(
-        str(data.get('fingerprint') or ''), _fingerprint(values),
+        str(data.get('fingerprint') or ''),
+        _fingerprint(values),
     ):
         return None
     secret = decrypt_credential(str(data.get('encrypted_secret_id') or ''))

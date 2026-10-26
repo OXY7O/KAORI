@@ -33,23 +33,30 @@ class ScopeAccessPolicy(db.Model):
             name='ck_access_scope_policy_exact_target',
         ),
         CheckConstraint(
-            "current_revision > 0", name='ck_access_scope_policy_revision',
+            'current_revision > 0',
+            name='ck_access_scope_policy_revision',
         ),
         Index(
             'ix_access_scope_policy_principal_target',
-            'principal_user_id', 'permission_key', 'integration_instance_id',
+            'principal_user_id',
+            'permission_key',
+            'integration_instance_id',
             'scope_level',
         ),
     )
 
     id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid4()),
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid4()),
     )
     principal_user_id: Mapped[int] = mapped_column(
-        ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+        ForeignKey('users.id', ondelete='RESTRICT'),
+        nullable=False,
     )
     permission_key: Mapped[str] = mapped_column(
-        String(120), ForeignKey('permissions.key', ondelete='RESTRICT'),
+        String(120),
+        ForeignKey('permissions.key', ondelete='RESTRICT'),
         nullable=False,
     )
     integration_instance_id: Mapped[int] = mapped_column(
@@ -60,18 +67,25 @@ class ScopeAccessPolicy(db.Model):
     provider_namespace: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mount: Mapped[str | None] = mapped_column(String(160), nullable=True)
     current_revision: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1,
+        Integer,
+        nullable=False,
+        default=1,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
 
     revisions: Mapped[list[ScopeAccessPolicyRevision]] = relationship(
-        'ScopeAccessPolicyRevision', back_populates='policy',
+        'ScopeAccessPolicyRevision',
+        back_populates='policy',
         order_by='ScopeAccessPolicyRevision.revision_number',
         lazy='selectin',
     )
@@ -87,15 +101,17 @@ class ScopeAccessPolicyRevision(db.Model):
     __tablename__ = 'access_scope_policy_revisions'
     __table_args__ = (
         UniqueConstraint(
-            'policy_id', 'revision_number', name='uq_access_scope_policy_revision',
+            'policy_id',
+            'revision_number',
+            name='uq_access_scope_policy_revision',
         ),
         CheckConstraint(
-            "lifecycle_status IN ('draft', 'active', 'suspended',"
-            " 'revoked', 'expired', 'withdrawn')",
+            "lifecycle_status IN ('draft', 'active', 'suspended', 'revoked', 'expired', 'withdrawn')",
             name='ck_access_scope_revision_state',
         ),
         CheckConstraint(
-            'revision_number > 0', name='ck_access_scope_revision_number',
+            'revision_number > 0',
+            name='ck_access_scope_revision_number',
         ),
         CheckConstraint(
             'effective_until > effective_from',
@@ -103,41 +119,53 @@ class ScopeAccessPolicyRevision(db.Model):
         ),
         CheckConstraint(
             "lifecycle_status <> 'active' OR"
-            " (approved_by_user_id IS NOT NULL AND approved_at IS NOT NULL"
-            " AND approved_by_user_id <> requested_by_user_id)",
+            ' (approved_by_user_id IS NOT NULL AND approved_at IS NOT NULL'
+            ' AND approved_by_user_id <> requested_by_user_id)',
             name='ck_access_scope_revision_approved',
         ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     policy_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey('access_scope_policies.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        String(36),
+        ForeignKey('access_scope_policies.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
     lifecycle_status: Mapped[str] = mapped_column(
-        String(24), nullable=False, default='draft',
+        String(24),
+        nullable=False,
+        default='draft',
     )
     effective_from: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
     )
     effective_until: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
     )
     requested_by_user_id: Mapped[int] = mapped_column(
-        ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+        ForeignKey('users.id', ondelete='RESTRICT'),
+        nullable=False,
     )
     approved_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey('users.id', ondelete='RESTRICT'), nullable=True,
+        ForeignKey('users.id', ondelete='RESTRICT'),
+        nullable=True,
     )
     approved_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     change_reason: Mapped[str] = mapped_column(String(160), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
     )
 
     policy: Mapped[ScopeAccessPolicy] = relationship(
-        'ScopeAccessPolicy', back_populates='revisions',
+        'ScopeAccessPolicy',
+        back_populates='revisions',
     )

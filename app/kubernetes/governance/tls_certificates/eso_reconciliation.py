@@ -75,7 +75,10 @@ def _recent(value: datetime, *, now: datetime) -> bool:
 
 
 def normalize_eso_readback(
-    resource: object, *, cluster_id: str, observed_at: datetime,
+    resource: object,
+    *,
+    cluster_id: str,
+    observed_at: datetime,
 ) -> ESOReadback | None:
     """Normalize only typed ExternalSecret identity and coherent Ready status.
 
@@ -91,7 +94,8 @@ def normalize_eso_readback(
     if (
         resource.get('kind') != 'ExternalSecret'
         or resource.get('apiVersion') not in {'external-secrets.io/v1', 'external-secrets.io/v1beta1'}
-        or not isinstance(metadata, Mapping) or not isinstance(status, Mapping)
+        or not isinstance(metadata, Mapping)
+        or not isinstance(status, Mapping)
     ):
         return None
     uid = _uid(metadata.get('uid'))
@@ -102,12 +106,17 @@ def normalize_eso_readback(
     observed_generation = status.get('observedGeneration')
     synced_version = status.get('syncedResourceVersion')
     if (
-        uid is None or namespace is None or generation is None
+        uid is None
+        or namespace is None
+        or generation is None
         or (observed_generation is not None and _generation(observed_generation) != generation)
-        or not isinstance(synced_version, str) or not 0 < len(synced_version) <= 128
+        or not isinstance(synced_version, str)
+        or not 0 < len(synced_version) <= 128
         or synced_version != synced_version.strip()
-        or refreshed is None or refreshed > observation
-        or not isinstance(conditions, list) or not 1 <= len(conditions) <= 16
+        or refreshed is None
+        or refreshed > observation
+        or not isinstance(conditions, list)
+        or not 1 <= len(conditions) <= 16
     ):
         return None
     ready = [item for item in conditions if isinstance(item, Mapping) and item.get('type') == 'Ready']
@@ -117,12 +126,19 @@ def normalize_eso_readback(
     if condition_generation is not None and _generation(condition_generation) != generation:
         return None
     return ESOReadback(
-        cluster_id, namespace, uid, generation, ready[0]['status'] == 'True', refreshed, observation,
+        cluster_id,
+        namespace,
+        uid,
+        generation,
+        ready[0]['status'] == 'True',
+        refreshed,
+        observation,
     )
 
 
 def qualify_eso_reconciliation(
-    receipt: ESOReadback | None, *,
+    receipt: ESOReadback | None,
+    *,
     target_cluster_id: str,
     target_namespace: str,
     target_secret_uid: str | None,
@@ -143,21 +159,36 @@ def qualify_eso_reconciliation(
     """
     instant, target_time, identity_time = _time(now), _time(target_observed_at), _time(current_identity_observed_at)
     if (
-        instant is None or receipt is None or target_time is None or identity_time is None
-        or controller_source_state != 'ready' or tls_source_state != 'ready'
-        or receipt.cluster_id != target_cluster_id or receipt.namespace != target_namespace
-        or not _scope(target_cluster_id) or not _scope(target_namespace)
-        or not all(_recent(item, now=instant) for item in (
-            receipt.observed_at, receipt.refreshed_at, target_time, identity_time,
-        ))
-        or target_time < receipt.refreshed_at or identity_time < target_time
+        instant is None
+        or receipt is None
+        or target_time is None
+        or identity_time is None
+        or controller_source_state != 'ready'
+        or tls_source_state != 'ready'
+        or receipt.cluster_id != target_cluster_id
+        or receipt.namespace != target_namespace
+        or not _scope(target_cluster_id)
+        or not _scope(target_namespace)
+        or not all(
+            _recent(item, now=instant)
+            for item in (
+                receipt.observed_at,
+                receipt.refreshed_at,
+                target_time,
+                identity_time,
+            )
+        )
+        or target_time < receipt.refreshed_at
+        or identity_time < target_time
     ):
         return ESOAssessment('unknown')
     uid, current_uid = _uid(target_secret_uid), _uid(current_secret_uid)
     fingerprint = target_fingerprint_sha256
     if (
-        uid is None or uid != current_uid
-        or not isinstance(fingerprint, str) or len(fingerprint) != 64
+        uid is None
+        or uid != current_uid
+        or not isinstance(fingerprint, str)
+        or len(fingerprint) != 64
         or any(char not in '0123456789abcdef' for char in fingerprint)
     ):
         return ESOAssessment('unknown')
@@ -167,5 +198,7 @@ def qualify_eso_reconciliation(
     if not receipt.ready:
         return ESOAssessment('not_ready', immutable_target_correlated=True)
     return ESOAssessment(
-        'reconciled_candidate', controller_reconciliation_observed=True, immutable_target_correlated=True,
+        'reconciled_candidate',
+        controller_reconciliation_observed=True,
+        immutable_target_correlated=True,
     )

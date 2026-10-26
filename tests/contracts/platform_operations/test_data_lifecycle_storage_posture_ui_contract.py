@@ -33,14 +33,21 @@ def storage_source() -> str:
     ],
 )
 def test_posture_tone_requires_matching_evidence_for_success(
-    status: str, verified_at: str | None, expected_tone: str,
+    status: str,
+    verified_at: str | None,
+    expected_tone: str,
 ) -> None:
     source = storage_source()
     # Exercise the actual three Jinja state expressions from the template.
     state = '\n'.join(source.splitlines()[2:5]) + '\n{{ storage_tone }}'
-    rendered = Environment().from_string(state).render(
-        lifecycle={'storage': {'status': status, 'last_verified_at': verified_at}},
-    ).strip()
+    rendered = (
+        Environment()
+        .from_string(state)
+        .render(
+            lifecycle={'storage': {'status': status, 'last_verified_at': verified_at}},
+        )
+        .strip()
+    )
     assert rendered == expected_tone
 
 
@@ -73,17 +80,29 @@ def test_archive_target_and_execution_cards_have_balanced_responsive_geometry() 
     assert 'class="grid gap-x-5 gap-y-3 p-4 sm:grid-cols-2"' in source
     assert 'sm:col-span-2' in source
     for label in (
-        'Archive Target Contract', 'Execution Contract',
-        'Provider', 'Location', 'Endpoint', 'Bucket', 'Worker Queue',
-        'Dispatcher', 'Scheduled Run', 'Failure Recovery',
-        'Purge Batch Limit', 'Worker Isolation',
+        'Archive Target Contract',
+        'Execution Contract',
+        'Provider',
+        'Location',
+        'Endpoint',
+        'Bucket',
+        'Worker Queue',
+        'Dispatcher',
+        'Scheduled Run',
+        'Failure Recovery',
+        'Purge Batch Limit',
+        'Worker Isolation',
     ):
         assert label in source
     for field in (
-        'lifecycle.storage.provider_label', 'lifecycle.storage.location',
-        'lifecycle.storage.endpoint_label', 'lifecycle.storage.bucket',
-        'lifecycle.queue_name', 'lifecycle.worker.count',
-        'lifecycle.scheduler_enabled', 'lifecycle.purge_batch_size',
+        'lifecycle.storage.provider_label',
+        'lifecycle.storage.location',
+        'lifecycle.storage.endpoint_label',
+        'lifecycle.storage.bucket',
+        'lifecycle.queue_name',
+        'lifecycle.worker.count',
+        'lifecycle.scheduler_enabled',
+        'lifecycle.purge_batch_size',
     ):
         assert field in source
 
@@ -96,12 +115,14 @@ def test_source_cleanup_is_explicitly_conditional_on_governance() -> None:
     assert "table_label.status_label('Cleanup Gated', 'info', 'shield-check')" in source
     assert 'Delete only rows inside the verified boundary.' not in source
 
+
 def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() -> None:
     source = storage_source()
     Environment().parse(source)
     # Four KPIs share a segmented strip, rather than four bordered boxes.
     summary = source.split('<section class="border-b border-outline-subtle pb-4"', 1)[1].split(
-        '</section>', 1,
+        '</section>',
+        1,
     )[0]
     assert 'xl:divide-x xl:divide-outline-subtle' in summary
     for label in ('Storage Readiness', 'Worker Readiness', 'Last Verified', 'Archive Format'):
@@ -111,7 +132,8 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
     # Two parent contracts own the only prominent outlines.
     assert source.count('rounded-xl border border-outline-default') == 2
     execution = source.split('id="archive-execution-contract-title"', 1)[1].split(
-        '</section>', 1,
+        '</section>',
+        1,
     )[0]
     assert 'border-b border-outline-subtle pb-3' in execution
     assert 'rounded-lg border' not in execution
@@ -119,11 +141,11 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
 
     # Four stages form an accessible, unboxed process strip.
     steps = source.split('id="archive-safety-boundary-title"', 1)[1].split(
-        '</section>', 1,
+        '</section>',
+        1,
     )[0]
     assert (
-        '<ol class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 '
-        'xl:gap-0 xl:divide-x xl:divide-outline-subtle">'
+        '<ol class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0 xl:divide-x xl:divide-outline-subtle">'
     ) in steps
     assert '<li class="min-w-0 xl:px-4 xl:first:pl-0 xl:last:pr-0">' in steps
     assert '</ol>' in steps
@@ -132,11 +154,8 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
     assert 'xl:divide-x' in steps
     assert 'xl:divide-outline-subtle' in steps
     assert 'divide-y' not in steps
-    assert "rounded-lg border" not in steps
-    assert (
-        'Max {{ lifecycle.purge_batch_size }} expired artifacts '
-        'per admitted run; retry on failure.'
-    ) in source
+    assert 'rounded-lg border' not in steps
+    assert ('Max {{ lifecycle.purge_batch_size }} expired artifacts per admitted run; retry on failure.') in source
     assert 'partial failures remain retryable.' not in source
 
     interpretation = source.split('aria-label="Storage interpretation"', 1)[0].splitlines()[-2]

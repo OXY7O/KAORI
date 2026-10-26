@@ -44,9 +44,7 @@ def evidence_case(provider: str) -> tuple[dict[str, object], dict[str, object], 
 @pytest.mark.parametrize('provider', ['capsule', 'native'])
 def test_matching_committed_remediation_is_presentable(provider: str) -> None:
     observation, drift, plan = evidence_case(provider)
-    assert _remediation_matches_access_observation(
-        provider=provider, observation=observation, drift=drift, plan=plan
-    )
+    assert _remediation_matches_access_observation(provider=provider, observation=observation, drift=drift, plan=plan)
 
 
 @pytest.mark.parametrize('provider', ['capsule', 'native'])
@@ -65,9 +63,7 @@ def test_matching_committed_remediation_is_presentable(provider: str) -> None:
         ('drift', 'cluster_id', 'cluster-other'),
     ],
 )
-def test_unrelated_or_stale_evidence_is_not_presented(
-    provider: str, section: str, field: str, changed: object
-) -> None:
+def test_unrelated_or_stale_evidence_is_not_presented(provider: str, section: str, field: str, changed: object) -> None:
     observation, drift, plan = evidence_case(provider)
     sources = {'observation': observation, 'drift': drift, 'plan': plan}
     sources[section][field] = changed
@@ -99,6 +95,4 @@ def test_provider_fingerprint_mismatch_is_not_presented(
 def test_capsule_fallback_observation_timestamp_is_accepted() -> None:
     observation, drift, plan = evidence_case('capsule')
     drift.pop('source_observed_at')
-    assert _remediation_matches_access_observation(
-        provider='capsule', observation=observation, drift=drift, plan=plan
-    )
+    assert _remediation_matches_access_observation(provider='capsule', observation=observation, drift=drift, plan=plan)

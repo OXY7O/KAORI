@@ -32,8 +32,7 @@ def _sidebar(monkeypatch, endpoint: str, permissions: tuple[str, ...]):
     )
     sections = nav.build_sidebar_navigation(endpoint, actor)
     return next(
-        (item for section in sections for item in section['items']
-         if item['key'] == 'integrations'),
+        (item for section in sections for item in section['items'] if item['key'] == 'integrations'),
         None,
     )
 
@@ -50,19 +49,28 @@ def test_active_sidebar_has_exactly_one_authorized_secrets_management_child(monk
     assert child['active']
     assert item['active']
     assert [entry['key'] for entry in item['children']] == [
-        'overview', 'orchestration', 'observability', 'storage',
-        'registry', 'secrets_management', 'source_control', 'notifications',
+        'overview',
+        'orchestration',
+        'observability',
+        'storage',
+        'registry',
+        'secrets_management',
+        'source_control',
+        'notifications',
     ]
 
 
-@pytest.mark.parametrize('endpoint', [
-    'vault.index',
-    'vault.new_instance',
-    'vault.detail',
-    'vault.edit_instance',
-    'vault.validate',
-    'vault.runtime_refresh',
-])
+@pytest.mark.parametrize(
+    'endpoint',
+    [
+        'vault.index',
+        'vault.new_instance',
+        'vault.detail',
+        'vault.edit_instance',
+        'vault.validate',
+        'vault.runtime_refresh',
+    ],
+)
 def test_vault_provider_pages_keep_domain_sidebar_highlight(monkeypatch, endpoint):
     item = _sidebar(monkeypatch, endpoint, ('integrations.manage',))
     assert item is not None and item['active']
@@ -70,24 +78,32 @@ def test_vault_provider_pages_keep_domain_sidebar_highlight(monkeypatch, endpoin
     assert selected == ['secrets_management']
 
 
-@pytest.mark.parametrize('endpoint', [
-    'integrations.overview', 'integrations.registry',
-    'integrations.storage', 'notification_channels.index',
-])
+@pytest.mark.parametrize(
+    'endpoint',
+    [
+        'integrations.overview',
+        'integrations.registry',
+        'integrations.storage',
+        'notification_channels.index',
+    ],
+)
 def test_other_integration_navigation_remains_distinct(monkeypatch, endpoint):
     item = _sidebar(monkeypatch, endpoint, ('integrations.manage',))
     assert item is not None
-    assert not any(
-        child['key'] == 'secrets_management' and child['active']
-        for child in item['children']
-    )
+    assert not any(child['key'] == 'secrets_management' and child['active'] for child in item['children'])
 
 
-@pytest.mark.parametrize('permissions', [
-    (), ('secrets_pki.view',), ('secrets_pki.sync',),
-])
+@pytest.mark.parametrize(
+    'permissions',
+    [
+        (),
+        ('secrets_pki.view',),
+        ('secrets_pki.sync',),
+    ],
+)
 def test_no_integration_permission_cannot_see_provider_registration_menu(
-    monkeypatch, permissions,
+    monkeypatch,
+    permissions,
 ):
     assert _sidebar(monkeypatch, 'vault.index', permissions) is None
 
@@ -102,15 +118,13 @@ def test_domain_matches_registry_taxonomy_without_vendor_specific_menu():
     assert "@integrations_bp.get('/secrets-management')" in routes
     segment = routes.split("@integrations_bp.get('/secrets-management')", 1)[1]
     assert "@permission_required('integrations.manage')" in segment[:110]
-    assert "def secrets_management()" in segment[:220]
-    taxonomy = (
-        ROOT / 'app/definitions/catalogs/integrations/taxonomy.yaml'
-    ).read_text(encoding='utf-8')
+    assert 'def secrets_management()' in segment[:220]
+    taxonomy = (ROOT / 'app/definitions/catalogs/integrations/taxonomy.yaml').read_text(encoding='utf-8')
     assert 'key: secrets_management' in taxonomy
     assert 'workspace_endpoint: integrations.secrets_management' in taxonomy
-    provider = (
-        ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/__init__.py'
-    ).read_text(encoding='utf-8')
+    provider = (ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/__init__.py').read_text(
+        encoding='utf-8'
+    )
     assert "navigation_endpoint_prefixes=('vault.',)" in provider
     assert "domain_key='secrets_management'" in provider
 

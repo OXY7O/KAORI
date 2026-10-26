@@ -30,25 +30,33 @@ def stub_sources(monkeypatch):
     events = []
     monkeypatch.setattr(view, 'build_stored_pki_validity_posture', lambda: _validity())
     monkeypatch.setattr(
-        view, 'pki_public_readiness',
-        lambda: {'state': 'committed', 'label': 'Issuer Committed', 'approved_mounts': 2,
-                 'committed_mounts': 2, 'observed_issuers': 4},
+        view,
+        'pki_public_readiness',
+        lambda: {
+            'state': 'committed',
+            'label': 'Issuer Committed',
+            'approved_mounts': 2,
+            'committed_mounts': 2,
+            'observed_issuers': 4,
+        },
     )
     monkeypatch.setattr(
-        view, 'stored_pki_certificate_readiness',
-        lambda: {'state': 'committed', 'label': 'Stored Committed',
-                 'observed_certificates': 10},
+        view,
+        'stored_pki_certificate_readiness',
+        lambda: {'state': 'committed', 'label': 'Stored Committed', 'observed_certificates': 10},
     )
     monkeypatch.setattr(
-        view, 'build_certificate_delivery_overlap',
-        lambda **kw: (events.append(kw) or {'status': 'partial', 'label': 'Partial TLS'}),
+        view,
+        'build_certificate_delivery_overlap',
+        lambda **kw: events.append(kw) or {'status': 'partial', 'label': 'Partial TLS'},
     )
     return events
 
 
 def test_certificates_evidence_and_cross_domain_permission(stub_sources):
     denied = view.build_pki_evidence_workspace(
-        kind='certificates', can_view_kubernetes_tls=False,
+        kind='certificates',
+        can_view_kubernetes_tls=False,
     )
     assert denied['delivery'] is None
     assert stub_sources == []
@@ -56,7 +64,8 @@ def test_certificates_evidence_and_cross_domain_permission(stub_sources):
     assert denied['metrics'][2]['value'] == 2
 
     allowed = view.build_pki_evidence_workspace(
-        kind='certificates', can_view_kubernetes_tls=True,
+        kind='certificates',
+        can_view_kubernetes_tls=True,
     )
     assert allowed['delivery']['status'] == 'partial'
     assert stub_sources == [{'authorized_to_view_kubernetes_tls': True}]
@@ -66,7 +75,8 @@ def test_pki_issuer_and_stored_sources_are_separately_qualified(stub_sources, mo
     state = view.build_pki_evidence_workspace(kind='pki')
     assert [item['value'] for item in state['metrics']] == [2, 2, 4, 10]
     monkeypatch.setattr(
-        view, 'pki_public_readiness',
+        view,
+        'pki_public_readiness',
         lambda: {'state': 'stale', 'label': 'Partial/Stale', 'observed_issuers': 100},
     )
     other = view.build_pki_evidence_workspace(kind='pki')
@@ -115,10 +125,15 @@ def test_workspace_routes_reuse_role_permission_and_violet_shell():
     assert 'components/states/_blocked_state.html' in html
     assert "if validity.status == 'ready'" in html
     assert 'if can_view_kubernetes_tls and delivery is not none' in html
-    assert "data-lucide" not in html  # Existing shared primitives own icons.
+    assert 'data-lucide' not in html  # Existing shared primitives own icons.
     for unsafe in (
-        'certificate.pem', 'cert.private_key', 'item.secret_value',
-        'item.path', 'item.issuer_serial', 'item.cn', 'item.san',
+        'certificate.pem',
+        'cert.private_key',
+        'item.secret_value',
+        'item.path',
+        'item.issuer_serial',
+        'item.cn',
+        'item.san',
     ):
         assert unsafe not in html
 

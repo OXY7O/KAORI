@@ -1,4 +1,5 @@
 """Retry-After behavioral contract (no network or provider secrets)."""
+
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
 from pathlib import Path

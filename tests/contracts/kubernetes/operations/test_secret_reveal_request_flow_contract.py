@@ -49,7 +49,10 @@ def test_protected_reveal_flow_matches_backend_policy_order() -> None:
 def test_approved_request_links_back_to_step_up_when_session_is_not_verified() -> None:
     request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
-    assert "url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='reveal-session-step-up')" in request_status
+    assert (
+        "url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='reveal-session-step-up')"
+        in request_status
+    )
     assert 'data-reveal-step-up-trigger' in request_status
     assert 'Verify Session' in request_status
     assert 'Reauthenticate first' not in request_status
@@ -76,7 +79,6 @@ def test_reveal_step_up_keeps_password_and_action_on_one_control_baseline() -> N
     assert 'current_user.is_external' in step_up
 
 
-
 def test_verify_session_action_focuses_password_after_htmx_table_replacement() -> None:
     table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
@@ -96,22 +98,22 @@ def test_verify_session_action_focuses_password_after_htmx_table_replacement() -
 
     # Delegate after HTMX swaps rather than attaching handlers to replaced rows.
     assert "document.addEventListener('click', navigateToStepUp)" in js
-    assert "event.target.closest(stepUpTriggerSelector)" in js
-    assert "link.closest(rootSelector)" in js
+    assert 'event.target.closest(stepUpTriggerSelector)' in js
+    assert 'link.closest(rootSelector)' in js
     assert "querySelector('#reveal-session-step-up')" in js
     assert "querySelector('[data-reveal-step-up-password]')" in js
     assert "target.closest('[data-kaori-main-scroll]')" in js
-    assert "bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return" in js
-    assert "Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding)" in js
+    assert 'bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return' in js
+    assert 'Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding)' in js
     assert "main.scrollTo({ top: next, behavior: 'auto' })" in js
     assert "target.scrollIntoView({ behavior: 'auto', block: 'nearest' })" in js
     assert "behavior: 'smooth'" not in js
-    assert "focusTarget.focus({ preventScroll: true })" in js
+    assert 'focusTarget.focus({ preventScroll: true })' in js
     assert "url.searchParams.set('reveal_view', 'mine')" in js
     assert "window.history.replaceState(window.history.state, '', url)" in js
-    assert "if (!target || !panel || panel.hidden) return" in js
+    assert 'if (!target || !panel || panel.hidden) return' in js
     assert "window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })" in js
-    assert "test_verify_session_link_focuses_step_up_after_htmx_replacement" in browser
+    assert 'test_verify_session_link_focuses_step_up_after_htmx_replacement' in browser
 
 
 def test_verify_session_scroll_stays_in_kaori_main_viewport() -> None:
@@ -121,14 +123,14 @@ def test_verify_session_scroll_stays_in_kaori_main_viewport() -> None:
 
     assert 'data-kaori-main-scroll' in layout
     assert "target.closest('[data-kaori-main-scroll]')" in js
-    assert "if (bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return" in js
-    assert "const limit = Math.max(0, main.scrollHeight - main.clientHeight)" in js
-    assert "Math.max(0, Math.min(limit," in js
+    assert 'if (bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return' in js
+    assert 'const limit = Math.max(0, main.scrollHeight - main.clientHeight)' in js
+    assert 'Math.max(0, Math.min(limit,' in js
     assert "main.scrollTo({ top: next, behavior: 'auto' })" in js
     assert "target.scrollIntoView({ behavior: 'auto', block: 'nearest' })" in js
-    assert "focusTarget.focus({ preventScroll: true })" in js
+    assert 'focusTarget.focus({ preventScroll: true })' in js
     assert "behavior: 'smooth'" not in js
-    assert "test_verify_session_does_not_overscroll_kaori_main_viewport" in browser
+    assert 'test_verify_session_does_not_overscroll_kaori_main_viewport' in browser
 
 
 def test_approved_request_cta_uses_bounded_focused_navigation_instead_of_native_hash_scroll() -> None:
@@ -145,14 +147,14 @@ def test_approved_request_cta_uses_bounded_focused_navigation_instead_of_native_
     assert 'class="{{ table_ui.action_classes() }}"' in requests
     assert "const approvedRequestsTriggerSelector = '[data-reveal-approved-requests-trigger]'" in workspace_js
     assert "document.addEventListener('click', navigateToApprovedRequest)" in workspace_js
-    assert "event.target.closest(approvedRequestsTriggerSelector)" in workspace_js
+    assert 'event.target.closest(approvedRequestsTriggerSelector)' in workspace_js
     assert "panel.querySelector('[data-reveal-once-action]')" in workspace_js
     assert "panel.querySelector('#my-secret-reveal-requests')" in workspace_js
-    assert "event.preventDefault()" in workspace_js
-    assert "showWithinMainScroll(target)" in workspace_js
-    assert "target.focus({ preventScroll: true })" in workspace_js
+    assert 'event.preventDefault()' in workspace_js
+    assert 'showWithinMainScroll(target)' in workspace_js
+    assert 'target.focus({ preventScroll: true })' in workspace_js
     assert "window.history.replaceState(window.history.state, '', url)" in workspace_js
-    assert "test_continue_to_approved_requests_scrolls_only_main_and_focuses_action" in browser
+    assert 'test_continue_to_approved_requests_scrolls_only_main_and_focuses_action' in browser
 
 
 def test_requester_approval_notification_opens_exact_owned_request_and_preserves_step_up() -> None:
@@ -167,12 +169,12 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     requester_notification = decision.split('create_notification(', 1)[1].split(
         'metadata=_reveal_request_metadata(record)', 1
     )[0]
-    assert "my_request_id=record.id" in requester_notification
+    assert 'my_request_id=record.id' in requester_notification
     assert "_anchor='my-secret-reveal-requests'" not in requester_notification
     assert "my_request_id=request.args.get('my_request_id', '')" in routes
 
     # Ownership is a prerequisite to exact request selection, not a fallback.
-    assert 'my_request_id: str = \'\'' in service
+    assert "my_request_id: str = ''" in service
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in service
     assert 'my_query = my_query.filter(SecretRevealRequest.id == focus_id)' in service
     assert service.index('query.filter_by(requester_user_id=user_id)') < service.index(
@@ -194,7 +196,7 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert 'value="{{ my_reveal_focus_id }}"' in step_up
     assert 'A request from your notification is selected below.' in step_up
     assert "linked_request_id = (request.form.get('my_request_id') or '').strip()" in routes
-    assert "if len(linked_request_id) > 80:" in routes
+    assert 'if len(linked_request_id) > 80:' in routes
     assert 'return redirect(return_url)' in routes
     assert '**Requester decision deep links:**' in docs
 

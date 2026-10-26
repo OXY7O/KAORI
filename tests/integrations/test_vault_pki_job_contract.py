@@ -20,12 +20,17 @@ def test_registered_pki_job_is_isolated_and_default_disabled():
 
 
 def test_pki_dispatch_passes_only_canonical_instance_ids(monkeypatch):
-    monkeypatch.setattr(pki_sync_jobs, 'build_vault_pki_targets', lambda: [
-        {'integration_instance_id': 42},
-    ])
+    monkeypatch.setattr(
+        pki_sync_jobs,
+        'build_vault_pki_targets',
+        lambda: [
+            {'integration_instance_id': 42},
+        ],
+    )
     monkeypatch.setattr(pki_sync_jobs, 'enqueue_canonical_job', lambda **kwargs: (kwargs, True))
     dispatched, created = pki_sync_jobs.enqueue_vault_pki_sync(
-        requested_by_user_id=4, trigger_type='manual',
+        requested_by_user_id=4,
+        trigger_type='manual',
     )
     assert created
     assert dispatched['task_kwargs']['targets'] == [{'integration_instance_id': 42}]
@@ -41,8 +46,11 @@ def test_pki_dispatch_passes_only_canonical_instance_ids(monkeypatch):
 def test_invalid_and_unapproved_pki_mounts_are_not_auto_discovered(monkeypatch):
     def instance(number, *, mounts=('pki',), eligible=True):
         identity = SimpleNamespace(
-            id=number, integration_type='secrets_pki', provider_key='vault',
-            enabled=True, lifecycle_status='active',
+            id=number,
+            integration_type='secrets_pki',
+            provider_key='vault',
+            enabled=True,
+            lifecycle_status='active',
             readiness_status='ready' if eligible else 'validation_required',
         )
         return SimpleNamespace(id=number, integration_instance=identity, pki_mounts=list(mounts))
@@ -63,7 +71,8 @@ def test_invalid_and_unapproved_pki_mounts_are_not_auto_discovered(monkeypatch):
             ]
 
     monkeypatch.setattr(
-        pki_sync_jobs, 'VaultInstance',
+        pki_sync_jobs,
+        'VaultInstance',
         SimpleNamespace(id=SimpleNamespace(asc=lambda: None), query=FakeQuery()),
     )
     assert pki_sync_jobs.build_vault_pki_targets() == [{'integration_instance_id': 1}]

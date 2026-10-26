@@ -33,23 +33,26 @@ def coverage_store():
 
 def _instance(*, kind='secrets_pki', provider='vault', enabled=True, lifecycle='active'):
     row = IntegrationInstance(
-        integration_type=kind, provider_key=provider, adapter_key='test',
+        integration_type=kind,
+        provider_key=provider,
+        adapter_key='test',
         name=f'{kind}-{provider}-{IntegrationInstance.query.count()}',
-        enabled=enabled, lifecycle_status=lifecycle,
+        enabled=enabled,
+        lifecycle_status=lifecycle,
     )
     db.session.add(row)
     db.session.flush()
     return row
 
 
-def _binding(source, vault, *, status='ready', profile='vault-telemetry-v1',
-             at=AT, enabled=True, key=None):
+def _binding(source, vault, *, status='ready', profile='vault-telemetry-v1', at=AT, enabled=True, key=None):
     row = IntegrationBinding(
         integration_instance_id=source.id,
         asset_type='vault_instance',
         asset_key=str(vault.id) if key is None else key,
         binding_role='primary',
-        enabled=enabled, validation_profile=profile,
+        enabled=enabled,
+        validation_profile=profile,
         validation_status=status,
         last_validated_at=at,
     )
@@ -87,12 +90,15 @@ def test_metrics_and_alert_identity_bindings_qualify_independently(coverage_stor
     assert posture['alerts']['status'] == 'qualified'
 
 
-@pytest.mark.parametrize('status,profile,at', [
-    ('validation_required', 'vault-telemetry-v1', AT),
-    ('ready', 'wrong-profile', AT),
-    ('ready', 'vault-telemetry-v1', AT - timedelta(days=2)),
-    ('ready', 'vault-telemetry-v1', AT + timedelta(minutes=1)),
-])
+@pytest.mark.parametrize(
+    'status,profile,at',
+    [
+        ('validation_required', 'vault-telemetry-v1', AT),
+        ('ready', 'wrong-profile', AT),
+        ('ready', 'vault-telemetry-v1', AT - timedelta(days=2)),
+        ('ready', 'vault-telemetry-v1', AT + timedelta(minutes=1)),
+    ],
+)
 def test_unverified_or_stale_metrics_are_not_qualified(coverage_store, status, profile, at):
     vault, metrics = _instance(), _instance(kind='metrics_source')
     _binding(metrics, vault, status=status, profile=profile, at=at)
@@ -143,10 +149,10 @@ def test_template_replaces_static_unbound_claims():
 
     root = Path(__file__).resolve().parents[2]
     source = (root / 'app/templates/secrets_pki/overview.html').read_text(encoding='utf-8')
-    assert "binding_coverage.metrics.label" in source
-    assert "binding_coverage.alerts.label" in source
-    assert "Metrics Source Not Bound" not in source
-    assert "Alert Evidence Not Bound" not in source
+    assert 'binding_coverage.metrics.label' in source
+    assert 'binding_coverage.alerts.label' in source
+    assert 'Metrics Source Not Bound' not in source
+    assert 'Alert Evidence Not Bound' not in source
 
 
 def test_partial_fleet_coverage_is_not_full_qualification(coverage_store):
@@ -173,16 +179,18 @@ def test_excessive_source_bindings_fail_closed(coverage_store):
     vault = _instance()
     for _ in range(101):
         metrics = _instance(kind='metrics_source')
-        db.session.add(IntegrationBinding(
-            integration_instance_id=metrics.id,
-            asset_type='vault_instance',
-            asset_key=str(vault.id),
-            binding_role='primary',
-            enabled=True,
-            validation_profile='vault-telemetry-v1',
-            validation_status='ready',
-            last_validated_at=AT,
-        ))
+        db.session.add(
+            IntegrationBinding(
+                integration_instance_id=metrics.id,
+                asset_type='vault_instance',
+                asset_key=str(vault.id),
+                binding_role='primary',
+                enabled=True,
+                validation_profile='vault-telemetry-v1',
+                validation_status='ready',
+                last_validated_at=AT,
+            )
+        )
     db.session.commit()
     posture = build_vault_binding_coverage(now=AT)
     assert posture['metrics']['status'] == 'blocked'

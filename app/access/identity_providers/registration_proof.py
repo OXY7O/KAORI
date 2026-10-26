@@ -49,9 +49,7 @@ def issue_registration_proof(*, form: IdentityProviderForm, user_id: int) -> str
     return _serializer().dumps({'user_id': int(user_id), 'fingerprint': _form_fingerprint(form)})
 
 
-def verify_registration_proof(
-    *, token: str | None, form: IdentityProviderForm, user_id: int
-) -> tuple[bool, str]:
+def verify_registration_proof(*, token: str | None, form: IdentityProviderForm, user_id: int) -> tuple[bool, str]:
     if not token:
         return False, 'Run Test Connection before saving this identity provider.'
     try:

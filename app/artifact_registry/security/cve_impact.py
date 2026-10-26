@@ -74,9 +74,9 @@ def build_cve_runtime_impact(
         findings.with_entities(func.count(func.distinct(RegistryScanSnapshot.artifact_id))).scalar() or 0
     )
 
-    matching_artifact_ids = findings.with_entities(
-        RegistryScanSnapshot.artifact_id.label('artifact_id')
-    ).distinct().subquery()
+    matching_artifact_ids = (
+        findings.with_entities(RegistryScanSnapshot.artifact_id.label('artifact_id')).distinct().subquery()
+    )
     bindings = RegistryWorkloadBinding.query.filter(
         RegistryWorkloadBinding.artifact_id.in_(select(matching_artifact_ids.c.artifact_id))
     )

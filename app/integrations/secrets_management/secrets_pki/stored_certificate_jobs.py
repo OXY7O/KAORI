@@ -19,10 +19,15 @@ def build_stored_certificate_targets() -> list[dict[str, int]]:
     """Separate operator opt-in for certificate enumeration from issuer reads."""
     candidates = build_vault_pki_targets()
     return [
-        item for item in candidates
-        if (provider := VaultInstance.query.filter_by(
-            integration_instance_id=item['integration_instance_id'],
-        ).first()) is not None and provider.pki_stored_certs_enabled
+        item
+        for item in candidates
+        if (
+            provider := VaultInstance.query.filter_by(
+                integration_instance_id=item['integration_instance_id'],
+            ).first()
+        )
+        is not None
+        and provider.pki_stored_certs_enabled
     ]
 
 
@@ -60,20 +65,25 @@ def enqueue_stored_certificate_sync(*, requested_by_user_id: int | None, trigger
 
 
 def dispatch_stored_certificate_sync(
-    *, requested_by_user_id: int | None, trigger_type: str,
+    *,
+    requested_by_user_id: int | None,
+    trigger_type: str,
     parameters: dict | None = None,
 ) -> RegisteredJobDispatchResult:
     try:
         job, created = enqueue_stored_certificate_sync(
-            requested_by_user_id=requested_by_user_id, trigger_type=trigger_type,
+            requested_by_user_id=requested_by_user_id,
+            trigger_type=trigger_type,
         )
     except NoEligibleVaultPKITargets as exc:
         return RegisteredJobDispatchResult(status='blocked', message=str(exc))
     return RegisteredJobDispatchResult(
         status='queued' if created else 'reused',
-        message='Stored Vault PKI certificate collection queued.' if created
+        message='Stored Vault PKI certificate collection queued.'
+        if created
         else 'Joined active stored Vault PKI certificate collection.',
-        job=job, created=created,
+        job=job,
+        created=created,
     )
 
 
@@ -85,20 +95,25 @@ def build_stored_certificate_sync_context(policy: JobPolicy) -> dict:
         targets = []
         diagnostic = 'Vault PKI provider scope exceeds bounded worker capacity.'
     jobs = JobExecution.query.filter_by(
-        job_type='secrets_pki_stored_certificates', operation=OPERATION,
+        job_type='secrets_pki_stored_certificates',
+        operation=OPERATION,
     )
     recent = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
-    active = jobs.filter(
-        JobExecution.status.in_(ACTIVE_JOB_STATUSES),
-        JobExecution.completed_at.is_(None),
-    ).order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+    active = (
+        jobs.filter(
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+            JobExecution.completed_at.is_(None),
+        )
+        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
+        .first()
+    )
     registered = VaultInstance.query.count()
     eligible = len(targets)
     return {
         'registered_system_count': registered,
         'eligible_system_count': eligible,
         'eligible_target_count': eligible,
-        'blocked_system_count': max(registered-eligible, 0),
+        'blocked_system_count': max(registered - eligible, 0),
         'diagnostics': [diagnostic] if diagnostic else [],
         'interval_label': present_interval(policy.interval_minutes),
         'latest_job': present_job_execution(recent[0]) if recent else None,

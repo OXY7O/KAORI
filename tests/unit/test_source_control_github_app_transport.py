@@ -74,7 +74,7 @@ class FakeResponse:
 
     def iter_content(self, *, chunk_size: int):
         for start in range(0, len(self.body), chunk_size):
-            yield self.body[start:start + chunk_size]
+            yield self.body[start : start + chunk_size]
 
     def close(self):
         self.closed = True
@@ -112,10 +112,18 @@ def test_fixed_https_origin_no_proxy_no_redirect_and_bounded_response():
     assert args['headers']['X-GitHub-Api-Version']
 
 
-@pytest.mark.parametrize('path', [
-    'https://evil.example', '//evil.example', '/a//b', '/a?evil=1', '/a#x',
-    '/repos/owner/repo', '/app/installations/123/access_tokens',
-])
+@pytest.mark.parametrize(
+    'path',
+    [
+        'https://evil.example',
+        '//evil.example',
+        '/a//b',
+        '/a?evil=1',
+        '/a#x',
+        '/repos/owner/repo',
+        '/app/installations/123/access_tokens',
+    ],
+)
 def test_arbitrary_endpoint_or_query_not_accepted(path):
     with pytest.raises(GitHubProviderError):
         _safe_json_request('GET', path, bearer='token')
@@ -125,8 +133,9 @@ def test_redirects_and_large_json_are_fail_closed():
     for response in [FakeResponse(302), FakeResponse(200, raw=b'x' * 262_145)]:
         session = FakeSession([response])
         with pytest.raises(GitHubProviderError):
-            _safe_json_request('GET', '/app/installations/1', bearer='token',
-                               session_factory=lambda session=session: session)
+            _safe_json_request(
+                'GET', '/app/installations/1', bearer='token', session_factory=lambda session=session: session
+            )
         assert response.closed and session.closed
 
 
@@ -140,8 +149,11 @@ def test_permission_escalation_rejected_before_network(private_key_pem):
 def test_account_mismatch_and_revocation_block_installation_probe(private_key_pem):
     _, pem = private_key_pem
     sample = {
-        'id': 5, 'app_id': 3, 'repository_selection': 'selected',
-        'account': {'id': 99, 'type': 'Organization'}, 'permissions': {'metadata': 'read'},
+        'id': 5,
+        'app_id': 3,
+        'repository_selection': 'selected',
+        'account': {'id': 99, 'type': 'Organization'},
+        'permissions': {'metadata': 'read'},
     }
     for sample_delta in [{'account': {'id': 98}}, {'suspended_at': '2026-01-01T00:00:00Z'}]:
         session = FakeSession([FakeResponse(200, {**sample, **sample_delta})])
@@ -154,18 +166,31 @@ def test_account_mismatch_and_revocation_block_installation_probe(private_key_pe
 def test_valid_selected_installation_metadata_probe_has_no_inventory_side_effect(private_key_pem):
     _, pem = private_key_pem
     expiry = (datetime.now(UTC) + timedelta(minutes=50)).isoformat()
-    session = FakeSession([
-        FakeResponse(200, {
-            'id': 5, 'app_id': 3, 'account': {'id': 99, 'type': 'Organization'},
-            'suspended_at': None, 'repository_selection': 'selected',
-            'permissions': {'metadata': 'read', 'contents': 'read'},
-        }),
-        FakeResponse(201, {
-            'token': 'ghs-test', 'expires_at': expiry,
-            'permissions': {'metadata': 'read'}, 'repository_selection': 'selected',
-        }),
-        FakeResponse(200, {'total_count': 7, 'repositories': [{'id': 4}]}),
-    ])
+    session = FakeSession(
+        [
+            FakeResponse(
+                200,
+                {
+                    'id': 5,
+                    'app_id': 3,
+                    'account': {'id': 99, 'type': 'Organization'},
+                    'suspended_at': None,
+                    'repository_selection': 'selected',
+                    'permissions': {'metadata': 'read', 'contents': 'read'},
+                },
+            ),
+            FakeResponse(
+                201,
+                {
+                    'token': 'ghs-test',
+                    'expires_at': expiry,
+                    'permissions': {'metadata': 'read'},
+                    'repository_selection': 'selected',
+                },
+            ),
+            FakeResponse(200, {'total_count': 7, 'repositories': [{'id': 4}]}),
+        ]
+    )
     # Each new Session comes from the same stub; its stream queue advances.
     client = GitHubAppClient(app_id=3, private_key_pem=pem, session_factory=lambda: session)
     result = client.validate_installation(5, 99)
@@ -180,5 +205,6 @@ def test_valid_selected_installation_metadata_probe_has_no_inventory_side_effect
 
 def test_token_repr_never_displays_token():
     from app.integrations.source_control.source_control.providers.github.transport import InstallationToken
+
     token = InstallationToken('ghs-sensitive', datetime.now(UTC), {'metadata': 'read'}, 'selected')
     assert 'ghs-sensitive' not in repr(token)

@@ -103,26 +103,34 @@ def _approved(decision: ScopedRegistryDecision | None, *, actor_id: int, now: da
     except (ValueError, TypeError, AttributeError):
         return False
     return bool(
-        type(actor_id) is int and actor_id > 0
-        and type(decision.actor_id) is int and decision.actor_id == actor_id
-        and type(decision.instance_id) is int and decision.instance_id > 0
+        type(actor_id) is int
+        and actor_id > 0
+        and type(decision.actor_id) is int
+        and decision.actor_id == actor_id
+        and type(decision.instance_id) is int
+        and decision.instance_id > 0
         and decision.permission_allowed is True
         and decision.resource_allowed is True
         and decision.decision_authority == 'resource_scope_policy'
         and reference == decision.policy_reference
-        and at is not None and end is not None
+        and at is not None
+        and end is not None
         and timedelta(0) <= now - at <= timedelta(minutes=5)
         and now < end <= at + timedelta(minutes=15)
         and isinstance(decision.provider_namespace, str)
         and len(decision.provider_namespace) <= 255
-        and isinstance(decision.mount, str) and 0 < len(decision.mount) <= 160
+        and isinstance(decision.mount, str)
+        and 0 < len(decision.mount) <= 160
     )
 
 
 def _schema_ready() -> bool:
     required = {
-        'integration_instances', 'vault_instances', 'secrets_pki_secret_identities',
-        'secrets_pki_inventory_collection_states', 'secrets_pki_secret_representations',
+        'integration_instances',
+        'vault_instances',
+        'secrets_pki_secret_identities',
+        'secrets_pki_inventory_collection_states',
+        'secrets_pki_secret_representations',
         'secrets_pki_secret_versions',
     }
     return required.issubset(set(inspect(db.engine).get_table_names()))
@@ -151,31 +159,48 @@ def read_scoped_secret_registry(
         if not _schema_ready():
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         source = db.session.execute(
-            select(IntegrationInstance.id, IntegrationInstance.enabled, IntegrationInstance.lifecycle_status,
-                   IntegrationInstance.readiness_status, VaultInstance.namespace, VaultInstance.kv2_mounts)
+            select(
+                IntegrationInstance.id,
+                IntegrationInstance.enabled,
+                IntegrationInstance.lifecycle_status,
+                IntegrationInstance.readiness_status,
+                VaultInstance.namespace,
+                VaultInstance.kv2_mounts,
+            )
             .join(VaultInstance, VaultInstance.integration_instance_id == IntegrationInstance.id)
-            .where(IntegrationInstance.id == decision.instance_id,
-                   IntegrationInstance.integration_type == 'secrets_pki',
-                   IntegrationInstance.provider_key == 'vault')
+            .where(
+                IntegrationInstance.id == decision.instance_id,
+                IntegrationInstance.integration_type == 'secrets_pki',
+                IntegrationInstance.provider_key == 'vault',
+            )
         ).one_or_none()
         if (
-            source is None or not source.enabled or source.lifecycle_status != 'active'
-            or source.readiness_status != 'ready' or (source.namespace or '') != decision.provider_namespace
+            source is None
+            or not source.enabled
+            or source.lifecycle_status != 'active'
+            or source.readiness_status != 'ready'
+            or (source.namespace or '') != decision.provider_namespace
             or decision.mount not in parse_approved_kv2_mounts(','.join(source.kv2_mounts or ()))
         ):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         state = db.session.execute(
-            select(SecretInventoryCollectionState.status, SecretInventoryCollectionState.observed_count,
-                   SecretInventoryCollectionState.last_observed_at, SecretInventoryCollectionState.last_committed_at)
-            .where(SecretInventoryCollectionState.integration_instance_id == decision.instance_id,
-                   SecretInventoryCollectionState.provider_namespace == decision.provider_namespace,
-                   SecretInventoryCollectionState.mount == decision.mount)
+            select(
+                SecretInventoryCollectionState.status,
+                SecretInventoryCollectionState.observed_count,
+                SecretInventoryCollectionState.last_observed_at,
+                SecretInventoryCollectionState.last_committed_at,
+            ).where(
+                SecretInventoryCollectionState.integration_instance_id == decision.instance_id,
+                SecretInventoryCollectionState.provider_namespace == decision.provider_namespace,
+                SecretInventoryCollectionState.mount == decision.mount,
+            )
         ).one_or_none()
         if state is None or state.status != 'ready' or type(state.observed_count) is not int:
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         source_at, committed_at = _persisted_time(state.last_observed_at), _persisted_time(state.last_committed_at)
         if (
-            source_at is None or committed_at is None
+            source_at is None
+            or committed_at is None
             or not 0 <= state.observed_count <= _MAX_RECORDS
             or not timedelta(0) <= instant - source_at <= _FRESHNESS
             or not timedelta(0) <= instant - committed_at <= _FRESHNESS
@@ -202,30 +227,42 @@ def read_scoped_secret_registry(
             .order_by(SecretProviderRepresentation.id.asc())
             .limit(_MAX_RECORDS + 1)
         ).all()
-        if len(selected) != state.observed_count or any(_persisted_time(row.last_observed_at) != source_at for row in selected):
+        if len(selected) != state.observed_count or any(
+            _persisted_time(row.last_observed_at) != source_at for row in selected
+        ):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
-        chosen = selected[(page - 1) * per_page:page * per_page]
+        chosen = selected[(page - 1) * per_page : page * per_page]
         if not chosen:
             return ScopedSecretPage('ready', len(selected), page, per_page, ())
         representation_ids = [row.id for row in chosen]
-        observed_versions = dict(db.session.execute(
-            select(SecretVersionObservation.representation_id, func.count(SecretVersionObservation.id))
-            .where(SecretVersionObservation.representation_id.in_(representation_ids),
-                   SecretVersionObservation.last_observed_at == state.last_observed_at)
-            .group_by(SecretVersionObservation.representation_id)
-        ).all())
+        observed_versions = dict(
+            db.session.execute(
+                select(SecretVersionObservation.representation_id, func.count(SecretVersionObservation.id))
+                .where(
+                    SecretVersionObservation.representation_id.in_(representation_ids),
+                    SecretVersionObservation.last_observed_at == state.last_observed_at,
+                )
+                .group_by(SecretVersionObservation.representation_id)
+            ).all()
+        )
         if any(not 1 <= observed_versions.get(row.id, 0) <= 100 for row in chosen):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         return ScopedSecretPage(
-            'ready', len(selected), page, per_page,
-            tuple(ScopedSecretRow(
-                secret_identity_id=row.secret_identity_id,
-                current_version=row.current_version,
-                observed_version_count=observed_versions[row.id],
-                logical_lifecycle=row.lifecycle_status,
-                cas_required=row.cas_required,
-                last_observed_at=source_at,
-            ) for row in chosen),
+            'ready',
+            len(selected),
+            page,
+            per_page,
+            tuple(
+                ScopedSecretRow(
+                    secret_identity_id=row.secret_identity_id,
+                    current_version=row.current_version,
+                    observed_version_count=observed_versions[row.id],
+                    logical_lifecycle=row.lifecycle_status,
+                    cas_required=row.cas_required,
+                    last_observed_at=source_at,
+                )
+                for row in chosen
+            ),
         )
     except (SQLAlchemyError, ValueError, TypeError, AttributeError):
         return _denied(page=page, per_page=per_page, status='source_unavailable')
@@ -264,7 +301,8 @@ def read_governed_scoped_secret_registry(
         )
         if (
             not admission.allowed
-            or admission.policy_ref is None or admission.revision is None
+            or admission.policy_ref is None
+            or admission.revision is None
             or admission.expires_at is None
         ):
             db.session.rollback()

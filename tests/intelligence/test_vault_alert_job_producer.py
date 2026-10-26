@@ -108,9 +108,7 @@ def test_job_catalog_is_existing_manual_only_configuration():
     assert definition.queue_name == 'inventory'
     assert definition.execute_permission == 'jobs.execute'
     assert definition.domain_execute_permission == 'secrets_pki.sync'
-    assert definition.dispatcher_path == (
-        'app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations'
-    )
+    assert definition.dispatcher_path == ('app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations')
 
 
 def test_eligible_target_list_is_only_exact_vault_binding(store):
@@ -133,16 +131,20 @@ def test_disabled_provider_binding_and_duplicate_source_never_dispatch(store):
     assert vault_jobs.build_vault_alert_observation_targets() == []
     binding.enabled = True
     second_source = _instance('alert_source', 'alertmanager')
-    db.session.add(AlertmanagerInstance(
-        integration_instance_id=second_source.id,
-        endpoint='https://other.example.invalid',
-    ))
-    db.session.add(IntegrationBinding(
-        integration_instance_id=second_source.id,
-        asset_type='vault_instance',
-        asset_key=str(vault.id),
-        enabled=True,
-    ))
+    db.session.add(
+        AlertmanagerInstance(
+            integration_instance_id=second_source.id,
+            endpoint='https://other.example.invalid',
+        )
+    )
+    db.session.add(
+        IntegrationBinding(
+            integration_instance_id=second_source.id,
+            asset_type='vault_instance',
+            asset_key=str(vault.id),
+            enabled=True,
+        )
+    )
     db.session.commit()
     assert vault_jobs.build_vault_alert_observation_targets() == []
 
@@ -163,12 +165,14 @@ def test_dispatch_is_manual_only_and_deduplicated_via_canonical_admission(monkey
         lambda **kw: (calls.append(kw) or SimpleNamespace(id=17), True),
     )
     blocked = vault_jobs.dispatch_vault_alert_observations(
-        requested_by_user_id=3, trigger_type='scheduled',
+        requested_by_user_id=3,
+        trigger_type='scheduled',
     )
     assert blocked.status == 'blocked'
     assert not calls
     result = vault_jobs.dispatch_vault_alert_observations(
-        requested_by_user_id=3, trigger_type='manual',
+        requested_by_user_id=3,
+        trigger_type='manual',
     )
     assert result.status == 'queued'
     assert result.created is True
@@ -182,13 +186,16 @@ def test_dispatch_is_manual_only_and_deduplicated_via_canonical_admission(monkey
     assert 'PRIVATE' not in repr(job)
 
 
-@pytest.mark.parametrize('secret', [
-    '',
-    'deadbeef',
-    'not-even-hex-' + 'a' * 64,
-    'a' * 63,
-    'a' * 129,
-])
+@pytest.mark.parametrize(
+    'secret',
+    [
+        '',
+        'deadbeef',
+        'not-even-hex-' + 'a' * 64,
+        'a' * 63,
+        'a' * 129,
+    ],
+)
 def test_worker_correlation_secret_is_fail_closed(monkeypatch, secret):
     monkeypatch.setenv('KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX', secret)
     assert vault_jobs._worker_key() is None
@@ -202,9 +209,13 @@ def test_worker_key_requires_approved_hex_only(monkeypatch):
 def test_provider_response_commits_only_opaque_evidence(store, monkeypatch):
     vault, _source_identity, _provider, binding = _source()
     filters_seen = []
-    monkeypatch.setattr(vault_jobs, 'build_client', lambda _provider: SimpleNamespace(
-        get_alerts=lambda **kwargs: (filters_seen.append(kwargs['filters']) or [_alert(vault.id)]),
-    ))
+    monkeypatch.setattr(
+        vault_jobs,
+        'build_client',
+        lambda _provider: SimpleNamespace(
+            get_alerts=lambda **kwargs: filters_seen.append(kwargs['filters']) or [_alert(vault.id)],
+        ),
+    )
     output = vault_jobs.observe_vault_alert_binding(binding.id, key=KEY)
     assert output == 'qualified'
     assert filters_seen == [[f'vault_instance="{vault.id}"']]
@@ -219,17 +230,25 @@ def test_provider_response_commits_only_opaque_evidence(store, monkeypatch):
 
 def test_provider_failure_invalidates_previous_source_without_raw_error(store, monkeypatch):
     vault, _source_identity, _provider, binding = _source()
-    monkeypatch.setattr(vault_jobs, 'build_client', lambda _provider: SimpleNamespace(
-        get_alerts=lambda **_kw: [_alert(vault.id)],
-    ))
+    monkeypatch.setattr(
+        vault_jobs,
+        'build_client',
+        lambda _provider: SimpleNamespace(
+            get_alerts=lambda **_kw: [_alert(vault.id)],
+        ),
+    )
     assert vault_jobs.observe_vault_alert_binding(binding.id, key=KEY) == 'qualified'
 
     def denied(**_kwargs):
         raise RuntimeError('PRIVATE/SECRET/PATH token://credential')
 
-    monkeypatch.setattr(vault_jobs, 'build_client', lambda _provider: SimpleNamespace(
-        get_alerts=denied,
-    ))
+    monkeypatch.setattr(
+        vault_jobs,
+        'build_client',
+        lambda _provider: SimpleNamespace(
+            get_alerts=denied,
+        ),
+    )
     assert vault_jobs.observe_vault_alert_binding(binding.id, key=KEY) == 'unavailable'
     snapshot = AlertSignalSnapshot.query.one()
     assert snapshot.status == 'failed'
@@ -242,9 +261,13 @@ def test_foreign_alert_source_blocks_snapshot_no_secret_leak(store, monkeypatch)
     vault, _source_identity, _provider, binding = _source()
     wrong = _alert(vault.id)
     wrong['labels']['vault_instance'] = '999'
-    monkeypatch.setattr(vault_jobs, 'build_client', lambda _provider: SimpleNamespace(
-        get_alerts=lambda **_kwargs: [wrong],
-    ))
+    monkeypatch.setattr(
+        vault_jobs,
+        'build_client',
+        lambda _provider: SimpleNamespace(
+            get_alerts=lambda **_kwargs: [wrong],
+        ),
+    )
     assert vault_jobs.observe_vault_alert_binding(binding.id, key=KEY) == 'blocked'
     snapshot = AlertSignalSnapshot.query.one()
     assert snapshot.status == 'failed'
@@ -254,12 +277,18 @@ def test_foreign_alert_source_blocks_snapshot_no_secret_leak(store, monkeypatch)
 
 def test_missing_canonical_job_does_not_invoke_provider_or_worker_context(monkeypatch):
     monkeypatch.setattr(
-        vault_jobs, 'JobExecutionContext',
+        vault_jobs,
+        'JobExecutionContext',
         lambda *_a: pytest.fail('No job identity must not create a context'),
     )
-    assert vault_jobs.run_vault_alert_observation_job(
-        task_id='unregistered', job_execution_id=None, binding_ids=[44],
-    )['status'] == 'blocked'
+    assert (
+        vault_jobs.run_vault_alert_observation_job(
+            task_id='unregistered',
+            job_execution_id=None,
+            binding_ids=[44],
+        )['status']
+        == 'blocked'
+    )
 
 
 def test_no_automatic_or_alertcase_mutation_path_in_registered_job():
@@ -314,11 +343,14 @@ def _patch_job_boundary(monkeypatch, job):
 
     monkeypatch.setattr(vault_jobs, 'JobExecutionContext', FakeContext)
     monkeypatch.setattr(
-        vault_jobs, 'db',
-        SimpleNamespace(session=SimpleNamespace(
-            get=lambda _cls, _id: job,
-            rollback=lambda: None,
-        )),
+        vault_jobs,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                get=lambda _cls, _id: job,
+                rollback=lambda: None,
+            )
+        ),
     )
     return results
 
@@ -331,11 +363,14 @@ def test_manual_job_worker_rejects_scheduler_actor_and_cancel_requested(monkeypa
     ):
         _patch_job_boundary(monkeypatch, job)
         monkeypatch.setattr(
-            vault_jobs, 'build_vault_alert_observation_targets',
+            vault_jobs,
+            'build_vault_alert_observation_targets',
             lambda: pytest.fail('Unauthorized source must not be selected'),
         )
         output = vault_jobs.run_vault_alert_observation_job(
-            task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+            task_id='task-id-1',
+            job_execution_id=31,
+            binding_ids=[41],
         )
         assert output['status'] == 'blocked'
 
@@ -343,15 +378,19 @@ def test_manual_job_worker_rejects_scheduler_actor_and_cancel_requested(monkeypa
 def test_changed_target_is_terminal_failure_without_provider_call(monkeypatch):
     records = _patch_job_boundary(monkeypatch, _fake_canonical_job())
     monkeypatch.setattr(
-        vault_jobs, 'build_vault_alert_observation_targets',
+        vault_jobs,
+        'build_vault_alert_observation_targets',
         lambda: (_ for _ in ()).throw(vault_jobs.NoEligibleVaultAlertSources('no valid scope')),
     )
     monkeypatch.setattr(
-        vault_jobs, 'observe_vault_alert_binding',
+        vault_jobs,
+        'observe_vault_alert_binding',
         lambda *_a, **_kw: pytest.fail('Invalid target must not query provider'),
     )
     output = vault_jobs.run_vault_alert_observation_job(
-        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+        task_id='task-id-1',
+        job_execution_id=31,
+        binding_ids=[41],
     )
     assert output['status'] == 'failed'
     assert records == [('fail', 'Vault Alert Source target admission changed.')]
@@ -362,11 +401,14 @@ def test_missing_worker_key_fails_job_without_polling(monkeypatch):
     monkeypatch.setattr(vault_jobs, 'build_vault_alert_observation_targets', lambda: [41])
     monkeypatch.setattr(vault_jobs, '_worker_key', lambda: None)
     monkeypatch.setattr(
-        vault_jobs, 'observe_vault_alert_binding',
+        vault_jobs,
+        'observe_vault_alert_binding',
         lambda *_a, **_kw: pytest.fail('Missing worker key must not query provider'),
     )
     output = vault_jobs.run_vault_alert_observation_job(
-        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+        task_id='task-id-1',
+        job_execution_id=31,
+        binding_ids=[41],
     )
     assert output['status'] == 'failed'
     assert records == [('fail', 'Vault alert correlation secret is unavailable.')]
@@ -378,7 +420,9 @@ def test_admitted_job_returns_only_sanitized_counts(monkeypatch):
     monkeypatch.setattr(vault_jobs, '_worker_key', lambda: KEY)
     monkeypatch.setattr(vault_jobs, 'observe_vault_alert_binding', lambda _id, *, key: 'qualified')
     output = vault_jobs.run_vault_alert_observation_job(
-        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+        task_id='task-id-1',
+        job_execution_id=31,
+        binding_ids=[41],
     )
     assert output == {
         'status': 'success',

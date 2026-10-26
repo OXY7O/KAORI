@@ -16,13 +16,21 @@ def test_all_safe_vault_operational_endpoints_are_registered():
     urls = ROUTES.read_text(encoding='utf-8')
     guide = RUNBOOK.read_text(encoding='utf-8')
     for slug in (
-        '', 'inventory', 'registry', 'lifecycle', 'certificates', 'pki',
-        'expiration', 'leases', 'consumers', 'governance',
+        '',
+        'inventory',
+        'registry',
+        'lifecycle',
+        'certificates',
+        'pki',
+        'expiration',
+        'leases',
+        'consumers',
+        'governance',
         'analytics/certificates',
     ):
         pattern = f"@secrets_pki_bp.get('/{slug}')"
         assert pattern in urls
-        assert "/secrets-pki/" + slug in guide
+        assert '/secrets-pki/' + slug in guide
         assert "@permission_required('secrets_pki.view')" in urls.split(pattern, 1)[1][:115]
 
 
@@ -31,9 +39,9 @@ def test_alertcase_path_is_exact_not_invented():
     code = ALERT_ROUTES.read_text(encoding='utf-8')
     assert "url_prefix='/intelligence/alert-intelligence'" in code
     assert "@alert_intelligence_bp.get('/vault-cases')" in code
-    assert "/intelligence/alert-intelligence/vault-cases" in guide
-    assert "KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED" in guide
-    assert "must be absent/false" in guide
+    assert '/intelligence/alert-intelligence/vault-cases' in guide
+    assert 'KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED' in guide
+    assert 'must be absent/false' in guide
 
 
 def test_manual_vault_jobs_in_guide_exist_in_canonical_catalog():
@@ -75,8 +83,12 @@ def test_uat_documents_do_not_assert_unexecuted_pass():
         encoding='utf-8',
     )
     for phrase in (
-        'Not Tested', 'Not Materialized', 'human acceptance',
-        'No Secret value', 'qualified zero', 'HOLD',
+        'Not Tested',
+        'Not Materialized',
+        'human acceptance',
+        'No Secret value',
+        'qualified zero',
+        'HOLD',
     ):
         assert phrase.casefold() in guide.casefold()
     assert 'canonical #724 policy evaluator still absent' not in matrix

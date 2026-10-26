@@ -91,9 +91,7 @@ def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -
         view_func=lambda cve_id: cve_id,
     )
     page = pagination_payload(build_pagination_window(total_items=12, page=2, per_page=5))
-    with app.test_request_context(
-        '/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'
-    ):
+    with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'):
         rendered = render_template_string(
             """{% import "components/table_registry.html" as registry %}
 {{ registry.footer('artifact_registry.security_cve_impact',
@@ -138,9 +136,7 @@ def test_cve_impact_runtime_footer_keeps_other_table_page() -> None:
         view_func=lambda cve_id: cve_id,
     )
     page = pagination_payload(build_pagination_window(total_items=12, page=3, per_page=5))
-    with app.test_request_context(
-        '/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'
-    ):
+    with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'):
         rendered = render_template_string(
             """{% import "components/table_registry.html" as registry %}
 {{ registry.footer('artifact_registry.security_cve_impact',

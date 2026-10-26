@@ -16,10 +16,13 @@ def test_secrets_pki_has_one_provider_neutral_welcome_shortcut():
 def test_welcome_secret_entry_is_permission_gated():
     shortcut = next(item for item in WELCOME_SHORTCUT_DEFINITIONS if item['title'] == 'Secrets & PKI')
     assert resolve_welcome_target(shortcut['targets'], lambda permission: False) is None
-    assert resolve_welcome_target(
-        shortcut['targets'],
-        lambda permission: permission == 'secrets_pki.view',
-    ) == 'secrets_pki.overview'
+    assert (
+        resolve_welcome_target(
+            shortcut['targets'],
+            lambda permission: permission == 'secrets_pki.view',
+        )
+        == 'secrets_pki.overview'
+    )
 
 
 def test_provider_specific_cards_are_not_duplicated_at_workspace_level():

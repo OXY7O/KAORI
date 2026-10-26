@@ -1021,7 +1021,9 @@ def get_provider_access_evidence_registry_context(
         latest_plan_ids = (
             db.session.query(
                 AuditEvent.id.label('audit_event_id'),
-                func.row_number().over(partition_by=AuditEvent.target_id, order_by=AuditEvent.id.desc()).label('row_number'),
+                func.row_number()
+                .over(partition_by=AuditEvent.target_id, order_by=AuditEvent.id.desc())
+                .label('row_number'),
             )
             .filter(
                 AuditEvent.target_type == 'kubernetes_tenant_access_remediation_plan',

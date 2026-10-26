@@ -38,7 +38,8 @@ def _aware(value: datetime) -> datetime:
 
 def _hex(value: str, *, maximum: int) -> str:
     if (
-        not isinstance(value, str) or not 1 <= len(value) <= maximum
+        not isinstance(value, str)
+        or not 1 <= len(value) <= maximum
         or any(char not in '0123456789abcdef' for char in value)
     ):
         raise ValueError('PKI public serial/fingerprint is malformed.')
@@ -47,7 +48,8 @@ def _hex(value: str, *, maximum: int) -> str:
 
 def _validate(snapshot: StoredCertificateCollection) -> None:
     if (
-        snapshot.complete is not True or snapshot.coverage != 'vault_stored_only'
+        snapshot.complete is not True
+        or snapshot.coverage != 'vault_stored_only'
         or not 0 <= len(snapshot.certificates) <= MAX_STORED_CERTIFICATES
         or len(parse_approved_pki_mounts(snapshot.mount)) != 1
     ):
@@ -70,15 +72,14 @@ def _validate(snapshot: StoredCertificateCollection) -> None:
 
 
 def commit_stored_pki_certificates(
-    integration_instance_id: int, evidence: StoredCertificateCollection,
+    integration_instance_id: int,
+    evidence: StoredCertificateCollection,
 ) -> StoredCertificateCommitSummary:
     """One complete authorized mount commit; never infer unlisted certificate revocation."""
     _validate(evidence)
     try:
         identity = db.session.execute(
-            select(IntegrationInstance)
-            .where(IntegrationInstance.id == integration_instance_id)
-            .with_for_update()
+            select(IntegrationInstance).where(IntegrationInstance.id == integration_instance_id).with_for_update()
         ).scalar_one_or_none()
         provider = db.session.execute(
             select(VaultInstance)
@@ -86,27 +87,32 @@ def commit_stored_pki_certificates(
             .with_for_update(of=VaultInstance)
         ).scalar_one_or_none()
         if (
-            identity is None or provider is None
+            identity is None
+            or provider is None
             or identity.integration_type != 'secrets_pki'
             or identity.provider_key != 'vault'
             or identity.lifecycle_status != 'active'
-            or not identity.enabled or identity.readiness_status != 'ready'
+            or not identity.enabled
+            or identity.readiness_status != 'ready'
             or not provider.pki_stored_certs_enabled
             or evidence.mount not in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
         ):
             raise ValueError('Stored Vault PKI source is not eligible for committed reconciliation.')
         namespace = provider.namespace or ''
         state = db.session.execute(
-            select(PKIStoredCertificateCollectionState).where(
+            select(PKIStoredCertificateCollectionState)
+            .where(
                 PKIStoredCertificateCollectionState.integration_instance_id == integration_instance_id,
                 PKIStoredCertificateCollectionState.provider_namespace == namespace,
                 PKIStoredCertificateCollectionState.mount == evidence.mount,
-            ).with_for_update()
+            )
+            .with_for_update()
         ).scalar_one_or_none()
         if state is None:
             state = PKIStoredCertificateCollectionState(
                 integration_instance_id=integration_instance_id,
-                provider_namespace=namespace, mount=evidence.mount,
+                provider_namespace=namespace,
+                mount=evidence.mount,
             )
             db.session.add(state)
             db.session.flush()
@@ -115,13 +121,19 @@ def commit_stored_pki_certificates(
             raise ValueError('Out-of-order stored PKI observation cannot replace newer evidence.')
         if not evidence.certificates and (state.observed_stored_certificate_count or 0) > 0:
             raise ValueError('Unexpected empty stored certificate list cannot erase committed history.')
-        rows = db.session.execute(
-            select(PKIStoredCertificateObservation).where(
-                PKIStoredCertificateObservation.integration_instance_id == integration_instance_id,
-                PKIStoredCertificateObservation.provider_namespace == namespace,
-                PKIStoredCertificateObservation.mount == evidence.mount,
-            ).with_for_update()
-        ).scalars().all()
+        rows = (
+            db.session.execute(
+                select(PKIStoredCertificateObservation)
+                .where(
+                    PKIStoredCertificateObservation.integration_instance_id == integration_instance_id,
+                    PKIStoredCertificateObservation.provider_namespace == namespace,
+                    PKIStoredCertificateObservation.mount == evidence.mount,
+                )
+                .with_for_update()
+            )
+            .scalars()
+            .all()
+        )
         by_serial = {item.serial_hex: item for item in rows}
         observed: set[str] = set()
         for source in evidence.certificates:
@@ -132,7 +144,8 @@ def commit_stored_pki_certificates(
             if entry is None:
                 entry = PKIStoredCertificateObservation(
                     integration_instance_id=integration_instance_id,
-                    provider_namespace=namespace, mount=evidence.mount,
+                    provider_namespace=namespace,
+                    mount=evidence.mount,
                     serial_hex=serial,
                     fingerprint_sha256=certificate.fingerprint_sha256,
                     valid_from=_aware(certificate.valid_from),
@@ -181,12 +194,14 @@ def mark_stored_pki_certificates_failed(integration_instance_id: int, mount: str
             return
         state = PKIStoredCertificateCollectionState.query.filter_by(
             integration_instance_id=integration_instance_id,
-            provider_namespace=provider.namespace or '', mount=mount,
+            provider_namespace=provider.namespace or '',
+            mount=mount,
         ).first()
         if state is None:
             state = PKIStoredCertificateCollectionState(
                 integration_instance_id=integration_instance_id,
-                provider_namespace=provider.namespace or '', mount=mount,
+                provider_namespace=provider.namespace or '',
+                mount=mount,
             )
             db.session.add(state)
         state.status = 'stale' if state.last_committed_at else 'failed'

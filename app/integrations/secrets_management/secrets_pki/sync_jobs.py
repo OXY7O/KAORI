@@ -45,7 +45,9 @@ def build_vault_inventory_targets() -> list[dict[str, int]]:
 
 
 def enqueue_vault_inventory_sync(
-    *, requested_by_user_id: int | None, trigger_type: str,
+    *,
+    requested_by_user_id: int | None,
+    trigger_type: str,
 ):
     from app.integrations.secrets_management.secrets_pki.tasks import sync_vault_inventory_task
 

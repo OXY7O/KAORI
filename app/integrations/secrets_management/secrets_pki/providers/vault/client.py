@@ -32,8 +32,14 @@ class VaultClient:
     """Scoped read-only Vault observations; AppRole login is the sole authentication write."""
 
     def __init__(
-        self, *, endpoint: str, role_id: str, secret_id: str, namespace: str | None = None,
-        auth_mount: str = 'approle', timeout: int = 5,
+        self,
+        *,
+        endpoint: str,
+        role_id: str,
+        secret_id: str,
+        namespace: str | None = None,
+        auth_mount: str = 'approle',
+        timeout: int = 5,
     ) -> None:
         self.endpoint = validate_vault_endpoint(endpoint)
         self.role_id = str(role_id)
@@ -46,8 +52,9 @@ class VaultClient:
         if not self.role_id or not self.secret_id:
             raise VaultProviderError('Vault AppRole RoleID and SecretID are required.')
 
-    def _request(self, path: str, *, method: str = 'GET', token: str | None = None,
-                 payload: dict[str, str] | None = None) -> tuple[int, dict[str, Any]]:
+    def _request(
+        self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, str] | None = None
+    ) -> tuple[int, dict[str, Any]]:
         if not path.startswith('/v1/') or '//' in path or '?' in path:
             raise VaultProviderError('Unsupported Vault API request.')
         headers = {'Accept': 'application/json'}
@@ -60,12 +67,18 @@ class VaultClient:
             with requests.Session() as session:
                 session.trust_env = False
                 response = session.request(
-                    method, self.endpoint + path, headers=headers, json=payload, timeout=self.timeout,
+                    method,
+                    self.endpoint + path,
+                    headers=headers,
+                    json=payload,
+                    timeout=self.timeout,
                     verify=os.getenv('INTEGRATION_VAULT_CA_BUNDLE', '').strip() or True,
                     allow_redirects=False,
                 )
         except requests.RequestException as exc:
-            raise VaultProviderError('Vault TLS connection or request failed; verify approved egress and CA trust.') from exc
+            raise VaultProviderError(
+                'Vault TLS connection or request failed; verify approved egress and CA trust.'
+            ) from exc
         if response.is_redirect or response.status_code in {301, 302, 303, 307, 308}:
             raise VaultProviderError('Vault API redirects are not permitted.')
         # Never echo server error bodies: they can contain secret paths.
@@ -101,7 +114,8 @@ class VaultClient:
 
     def login(self) -> str:
         status, data = self._request(
-            f'/v1/auth/{self.auth_mount}/login', method='POST',
+            f'/v1/auth/{self.auth_mount}/login',
+            method='POST',
             payload={'role_id': self.role_id, 'secret_id': self.secret_id},
         )
         auth = data.get('auth')
@@ -120,7 +134,8 @@ class VaultClient:
         if status != 200 or not isinstance(data.get('data'), dict):
             raise VaultProviderError('Vault AppRole token lookup-self is unavailable.')
         return {
-            'connected': True, 'version': health['version'],
+            'connected': True,
+            'version': health['version'],
             'health_status': health['status'],
             'response_time_ms': int((perf_counter() - started) * 1000),
         }
@@ -136,12 +151,13 @@ class VaultClient:
         if status != 200 or not isinstance(data.get('data'), dict):
             raise VaultProviderError('Vault AppRole token lookup-self is unavailable.')
         mounts_status, mounts_data = self._request('/v1/sys/mounts', token=token)
-        mounts = 'available' if mounts_status == 200 and isinstance(mounts_data.get('data'), dict) else (
-            'permission_unavailable' if mounts_status in {403, 404} else 'unavailable'
+        mounts = (
+            'available'
+            if mounts_status == 200 and isinstance(mounts_data.get('data'), dict)
+            else ('permission_unavailable' if mounts_status in {403, 404} else 'unavailable')
         )
         return {
             'health': health,
             'mount_metadata': mounts,
             'response_time_ms': int((perf_counter() - started) * 1000),
         }
-

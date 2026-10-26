@@ -561,16 +561,16 @@ def mfa_challenge():
             if codes is not None:
                 # Proof has become active. Revalidate the account and create
                 # the ONLY authenticated session for this completed flow.
-                result = enforce_login_admission(
-                    AuthResult(True, 'success', source=str(pending['source']), user=user)
-                )
+                result = enforce_login_admission(AuthResult(True, 'success', source=str(pending['source']), user=user))
                 if not result.success:
                     session.pop(MFA_PENDING_SESSION_KEY, None)
                     return redirect(url_for('auth.login'))
                 try:
                     _complete_successful_login(
-                        result, remember_requested=bool(pending.get('remember')),
-                        next_url=pending.get('next_url'), mfa_verified=True,
+                        result,
+                        remember_requested=bool(pending.get('remember')),
+                        next_url=pending.get('next_url'),
+                        mfa_verified=True,
                     )
                 except (SQLAlchemyError, AuthSessionError):
                     session.pop(MFA_PENDING_SESSION_KEY, None)
@@ -583,7 +583,9 @@ def mfa_challenge():
                 return response
         return render_template(
             'access/authentication/mfa_enrollment.html',
-            form=form, setup_secret=setup_secret, error=enrollment_error,
+            form=form,
+            setup_secret=setup_secret,
+            error=enrollment_error,
         )
     error = None
     if form.validate_on_submit():
@@ -596,24 +598,28 @@ def mfa_challenge():
         except MfaVerificationError:
             error = 'The verification code was not accepted.'
             record_authentication_activity(
-                action='login', username=user.username, source=str(pending['source']),
-                result='failed', reason='mfa_challenge_failed', user=user,
+                action='login',
+                username=user.username,
+                source=str(pending['source']),
+                result='failed',
+                reason='mfa_challenge_failed',
+                user=user,
             )
         except SQLAlchemyError:
             error = 'Authentication is temporarily unavailable.'
         else:
             # Recheck current source and account state after consuming one-time
             # proof. This is the only point that issues an authenticated cookie.
-            result = enforce_login_admission(
-                AuthResult(True, 'success', source=str(pending['source']), user=user)
-            )
+            result = enforce_login_admission(AuthResult(True, 'success', source=str(pending['source']), user=user))
             if not result.success:
                 session.pop(MFA_PENDING_SESSION_KEY, None)
                 return redirect(url_for('auth.login'))
             try:
                 response = _complete_successful_login(
-                    result, remember_requested=bool(pending.get('remember')),
-                    next_url=pending.get('next_url'), mfa_verified=True,
+                    result,
+                    remember_requested=bool(pending.get('remember')),
+                    next_url=pending.get('next_url'),
+                    mfa_verified=True,
                 )
             except (SQLAlchemyError, AuthSessionError):
                 session.pop(MFA_PENDING_SESSION_KEY, None)

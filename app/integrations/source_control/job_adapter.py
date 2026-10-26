@@ -33,12 +33,14 @@ def dispatch_source_repositories(
     if raw is not None:
         if isinstance(raw, bool) or not str(raw).isascii() or not str(raw).isdecimal():
             return RegisteredJobDispatchResult(
-                status='blocked', message='Invalid Source Control installation scope.',
+                status='blocked',
+                message='Invalid Source Control installation scope.',
             )
         installation_id = int(raw)
         if installation_id <= 0:
             return RegisteredJobDispatchResult(
-                status='blocked', message='Invalid Source Control installation scope.',
+                status='blocked',
+                message='Invalid Source Control installation scope.',
             )
     try:
         job, created = enqueue_source_repository_sync(
@@ -52,9 +54,11 @@ def dispatch_source_repositories(
         status='queued' if created else 'reused',
         message=(
             'Source Control repository reconciliation was queued.'
-            if created else 'Joined an active Source Control repository reconciliation.'
+            if created
+            else 'Joined an active Source Control repository reconciliation.'
         ),
-        job=job, created=created,
+        job=job,
+        created=created,
     )
 
 
@@ -75,7 +79,9 @@ def build_source_repositories_context(policy: JobPolicy) -> dict[str, Any]:
         job_query.filter(
             JobExecution.status.in_(ACTIVE_JOB_STATUSES),
             JobExecution.completed_at.is_(None),
-        ).order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+        )
+        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
+        .first()
     )
     status = {
         'label': 'Execution Active' if active else ('Ready' if eligible else 'Blocked'),
@@ -83,9 +89,11 @@ def build_source_repositories_context(policy: JobPolicy) -> dict[str, Any]:
         'icon': 'loader-circle' if active else ('circle-check' if eligible else 'shield-alert'),
         'description': (
             'Canonical inventory worker is reconciling eligible GitHub installation grants.'
-            if active else (
+            if active
+            else (
                 'GitHub installations are admitted and eligible.'
-                if eligible else 'No admitted and validated GitHub App installation is available.'
+                if eligible
+                else 'No admitted and validated GitHub App installation is available.'
             )
         ),
     }

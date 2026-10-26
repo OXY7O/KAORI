@@ -62,12 +62,16 @@ def evaluate_exact_vault_scope(
     This read-only result is a *precondition*, not an exportable permit.
     """
     if (
-        type(actor_user_id) is not int or actor_user_id <= 0
-        or type(instance_id) is not int or instance_id <= 0
+        type(actor_user_id) is not int
+        or actor_user_id <= 0
+        or type(instance_id) is not int
+        or instance_id <= 0
         or permission_key != _SENSITIVE_PERMISSION
         or not isinstance(provider_namespace, str)
-        or not isinstance(mount, str) or not mount
-        or len(provider_namespace) > 255 or len(mount) > 160
+        or not isinstance(mount, str)
+        or not mount
+        or len(provider_namespace) > 255
+        or len(mount) > 160
         or '*' in mount
     ):
         return ScopeAdmission('deny', 'invalid_scope')
@@ -78,7 +82,9 @@ def evaluate_exact_vault_scope(
     try:
         actor = db.session.get(User, actor_user_id)
         if (
-            actor is None or not actor.is_active or actor.role_record is None
+            actor is None
+            or not actor.is_active
+            or actor.role_record is None
             or not actor.role_record.is_active
             or permission_key not in actor.role_record.permission_keys()
         ):
@@ -86,17 +92,16 @@ def evaluate_exact_vault_scope(
             return ScopeAdmission('deny', 'permission_required')
         source = db.session.get(IntegrationInstance, instance_id)
         if (
-            source is None or source.integration_type != 'secrets_pki'
+            source is None
+            or source.integration_type != 'secrets_pki'
             or source.provider_key != 'vault'
-            or not source.enabled or source.lifecycle_status != 'active'
+            or not source.enabled
+            or source.lifecycle_status != 'active'
             or source.readiness_status != 'ready'
         ):
             return ScopeAdmission('deny', 'source_unqualified')
         vault = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
-        if (
-            vault is None or (vault.namespace or '') != provider_namespace
-            or mount not in (vault.kv2_mounts or ())
-        ):
+        if vault is None or (vault.namespace or '') != provider_namespace or mount not in (vault.kv2_mounts or ()):
             return ScopeAdmission('deny', 'source_unqualified')
 
         query = (
@@ -127,7 +132,8 @@ def evaluate_exact_vault_scope(
                 revisions = revisions.with_for_update(of=ScopeAccessPolicyRevision)
             current = revisions.first()
             if (
-                current is None or current.lifecycle_status != 'active'
+                current is None
+                or current.lifecycle_status != 'active'
                 or current.approved_by_user_id is None
                 or current.approved_by_user_id == current.requested_by_user_id
                 or current.approved_at is None
@@ -136,8 +142,12 @@ def evaluate_exact_vault_scope(
             starts, ends = _timestamp(current.effective_from), _timestamp(current.effective_until)
             approved = _timestamp(current.approved_at)
             if (
-                starts is None or ends is None or approved is None
-                or starts > instant or instant >= ends or approved > instant
+                starts is None
+                or ends is None
+                or approved is None
+                or starts > instant
+                or instant >= ends
+                or approved > instant
             ):
                 continue
             approved_matches.append((policy, current, ends))
@@ -146,15 +156,17 @@ def evaluate_exact_vault_scope(
         if len(approved_matches) == 1:
             policy, current, ends = approved_matches[0]
             return ScopeAdmission(
-                'allow', 'exact_approved_grant',
-                actor_id=actor_user_id, instance_id=instance_id,
-                policy_ref=policy.id, revision=current.revision_number,
+                'allow',
+                'exact_approved_grant',
+                actor_id=actor_user_id,
+                instance_id=instance_id,
+                policy_ref=policy.id,
+                revision=current.revision_number,
                 expires_at=ends,
             )
         return ScopeAdmission('deny', 'scope_grant_required')
     except (SQLAlchemyError, ValueError, TypeError, AttributeError):
         return ScopeAdmission('unavailable', 'policy_evidence_unavailable')
-
 
 
 def evaluate_exact_vault_instance_case_scope(
@@ -176,17 +188,19 @@ def evaluate_exact_vault_instance_case_scope(
     try:
         actor = db.session.get(User, actor_user_id)
         if (
-            actor is None or not actor.is_active or actor.role_record is None
+            actor is None
+            or not actor.is_active
+            or actor.role_record is None
             or not actor.role_record.is_active
-            or not {'secrets_pki.view', 'intelligence.view'}.issubset(
-                actor.role_record.permission_keys()
-            )
+            or not {'secrets_pki.view', 'intelligence.view'}.issubset(actor.role_record.permission_keys())
         ):
             return ScopeAdmission('deny', 'permission_required')
         source = db.session.get(IntegrationInstance, instance_id)
         if (
-            source is None or source.integration_type != 'secrets_pki'
-            or source.provider_key != 'vault' or not source.enabled
+            source is None
+            or source.integration_type != 'secrets_pki'
+            or source.provider_key != 'vault'
+            or not source.enabled
             or source.lifecycle_status != 'active'
         ):
             return ScopeAdmission('deny', 'source_unqualified')
@@ -209,12 +223,17 @@ def evaluate_exact_vault_instance_case_scope(
             return ScopeAdmission('deny', 'ambiguous_scope')
         approved: list[tuple[ScopeAccessPolicy, ScopeAccessPolicyRevision, datetime]] = []
         for policy in policies:
-            revision = ScopeAccessPolicyRevision.query.filter(
-                ScopeAccessPolicyRevision.policy_id == policy.id,
-                ScopeAccessPolicyRevision.revision_number == policy.current_revision,
-            ).with_for_update(of=ScopeAccessPolicyRevision).first()
+            revision = (
+                ScopeAccessPolicyRevision.query.filter(
+                    ScopeAccessPolicyRevision.policy_id == policy.id,
+                    ScopeAccessPolicyRevision.revision_number == policy.current_revision,
+                )
+                .with_for_update(of=ScopeAccessPolicyRevision)
+                .first()
+            )
             if (
-                revision is None or revision.lifecycle_status != 'active'
+                revision is None
+                or revision.lifecycle_status != 'active'
                 or revision.approved_by_user_id is None
                 or revision.approved_by_user_id == revision.requested_by_user_id
             ):
@@ -223,8 +242,12 @@ def evaluate_exact_vault_instance_case_scope(
             end = _timestamp(revision.effective_until)
             approval = _timestamp(revision.approved_at)
             if (
-                start is None or end is None or approval is None
-                or start > instant or instant >= end or approval > instant
+                start is None
+                or end is None
+                or approval is None
+                or start > instant
+                or instant >= end
+                or approval > instant
             ):
                 continue
             approved.append((policy, revision, end))
@@ -232,9 +255,13 @@ def evaluate_exact_vault_instance_case_scope(
             return ScopeAdmission('deny', 'ambiguous_scope' if approved else 'scope_grant_required')
         policy, revision, end = approved[0]
         return ScopeAdmission(
-            'allow', 'exact_approved_instance_grant',
-            actor_id=actor_user_id, instance_id=instance_id,
-            policy_ref=policy.id, revision=revision.revision_number, expires_at=end,
+            'allow',
+            'exact_approved_instance_grant',
+            actor_id=actor_user_id,
+            instance_id=instance_id,
+            policy_ref=policy.id,
+            revision=revision.revision_number,
+            expires_at=end,
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return ScopeAdmission('unavailable', 'policy_evidence_unavailable')

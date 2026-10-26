@@ -48,8 +48,13 @@ def _instance(kind='secrets_pki', *, enabled=True, provider=None):
 
 def _sample(*, status='qualified', observed=2):
     rows = {
-        'observed_rows': observed, 'firing': observed, 'suppressed': 0,
-        'unprocessed': 0, 'critical': observed, 'warning': 0, 'info': 0,
+        'observed_rows': observed,
+        'firing': observed,
+        'suppressed': 0,
+        'unprocessed': 0,
+        'critical': observed,
+        'warning': 0,
+        'info': 0,
     }
     return {
         'status': status,
@@ -68,7 +73,9 @@ def _binding(source, vault, *, status='ready', at=AT, sample=None, key=None, sel
         validation_profile='vault-alerts-v1',
         validation_status=status,
         last_validated_at=at,
-        selector_json=selector if selector is not None else {
+        selector_json=selector
+        if selector is not None
+        else {
             'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': str(vault.id)}],
         },
         validation_evidence={
@@ -107,10 +114,18 @@ def test_qualified_binding_exposes_only_safe_population_counts(store):
     assert output['firing'] == 2
     assert output['critical'] == 2
     assert output['last_validated_at'] == AT
-    assert not any(key in repr(output).lower() for key in (
-        'vault_instance', 'selector', 'fingerprint', 'namespace',
-        'secret_path', 'token', 'serial',
-    ))
+    assert not any(
+        key in repr(output).lower()
+        for key in (
+            'vault_instance',
+            'selector',
+            'fingerprint',
+            'namespace',
+            'secret_path',
+            'token',
+            'serial',
+        )
+    )
 
 
 def test_unobserved_sample_retains_unknown_counts(store):
@@ -130,11 +145,14 @@ def test_partial_population_never_exposes_other_source_counts(store):
     assert output['observed_rows'] is None
 
 
-@pytest.mark.parametrize('status,age', [
-    ('validation_required', 0),
-    ('ready', 25),
-    ('blocked', 0),
-])
+@pytest.mark.parametrize(
+    'status,age',
+    [
+        ('validation_required', 0),
+        ('ready', 25),
+        ('blocked', 0),
+    ],
+)
 def test_unqualified_binding_does_not_expose_counts(store, status, age):
     vault, source = _instance(), _instance('alert_source')
     _binding(source, vault, status=status, at=AT - timedelta(hours=age))
@@ -142,13 +160,16 @@ def test_unqualified_binding_does_not_expose_counts(store, status, age):
     assert _result()['critical'] is None
 
 
-@pytest.mark.parametrize('sample', [
-    _sample(status='incomplete'),
-    {**_sample(), 'firing': 1000},
-    {**_sample(), 'critical': -1},
-    {**_sample(), 'observed_rows': 101, 'firing': 101, 'critical': 101},
-    {**_sample(), 'warning': True},
-])
+@pytest.mark.parametrize(
+    'sample',
+    [
+        _sample(status='incomplete'),
+        {**_sample(), 'firing': 1000},
+        {**_sample(), 'critical': -1},
+        {**_sample(), 'observed_rows': 101, 'firing': 101, 'critical': 101},
+        {**_sample(), 'warning': True},
+    ],
+)
 def test_malformed_or_incomplete_sample_is_unknown(store, sample):
     vault, source = _instance(), _instance('alert_source')
     _binding(source, vault, sample=sample)
@@ -158,9 +179,13 @@ def test_malformed_or_incomplete_sample_is_unknown(store, sample):
 
 def test_wrong_selector_fails_closed(store):
     vault, source = _instance(), _instance('alert_source')
-    _binding(source, vault, selector={
-        'matchers': [{'label': 'job', 'operator': '=~', 'value': '.*'}],
-    })
+    _binding(
+        source,
+        vault,
+        selector={
+            'matchers': [{'label': 'job', 'operator': '=~', 'value': '.*'}],
+        },
+    )
     assert _result()['status'] == 'needs_validation'
 
 
@@ -194,13 +219,15 @@ def test_dual_permission_route_never_reads_sample_for_unprivileged_actor(monkeyp
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'test-only'
     monkeypatch.setattr(
-        routes, 'current_user',
+        routes,
+        'current_user',
         SimpleNamespace(has_permission=lambda permission: permission != 'intelligence.view'),
     )
     monkeypatch.setattr(routes, 'build_secrets_pki_operational_summary', lambda: {})
     monkeypatch.setattr(routes, 'build_vault_binding_coverage', lambda: {})
     monkeypatch.setattr(
-        routes, 'build_vault_alert_source_sample_summary',
+        routes,
+        'build_vault_alert_source_sample_summary',
         lambda: pytest.fail('No Intelligence permission: source sample must never be read'),
     )
     monkeypatch.setattr(routes, 'render_template', lambda _template, **kw: kw)
@@ -216,15 +243,23 @@ def test_authorized_route_projects_safe_sample(monkeypatch):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'test-only'
     monkeypatch.setattr(
-        routes, 'current_user',
-        SimpleNamespace(has_permission=lambda permission: permission in {
-            'secrets_pki.view', 'intelligence.view',
-        }),
+        routes,
+        'current_user',
+        SimpleNamespace(
+            has_permission=lambda permission: (
+                permission
+                in {
+                    'secrets_pki.view',
+                    'intelligence.view',
+                }
+            )
+        ),
     )
     monkeypatch.setattr(routes, 'build_secrets_pki_operational_summary', lambda: {})
     monkeypatch.setattr(routes, 'build_vault_binding_coverage', lambda: {})
     monkeypatch.setattr(
-        routes, 'build_vault_alert_source_sample_summary',
+        routes,
+        'build_vault_alert_source_sample_summary',
         lambda: {'status': 'qualified', 'observed_rows': 2},
     )
     monkeypatch.setattr(routes, 'render_template', lambda _template, **kw: kw)
@@ -250,7 +285,7 @@ def test_view_reuses_canonical_dashboard_without_per_alert_detail():
     root = Path(__file__).resolve().parents[2]
     content = (root / 'app/templates/secrets_pki/overview.html').read_text(encoding='utf-8')
     assert "dashboard_workspace.controller(active_tab, 'secrets-pki-overview')" in content
-    assert "if can_view_intelligence and alert_source_sample" in content
+    assert 'if can_view_intelligence and alert_source_sample' in content
     assert "alert_source_sample.status == 'qualified'" in content
     assert 'metric_card.render' in content
     assert 'alert_source_sample.firing' in content

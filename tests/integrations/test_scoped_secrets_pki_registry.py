@@ -39,9 +39,12 @@ def registry_source():
     db.init_app(app)
     with app.app_context():
         tables = [
-            IntegrationInstance.__table__, VaultInstance.__table__,
-            SecretIdentity.__table__, SecretProviderRepresentation.__table__,
-            SecretVersionObservation.__table__, SecretInventoryCollectionState.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
+            SecretIdentity.__table__,
+            SecretProviderRepresentation.__table__,
+            SecretVersionObservation.__table__,
+            SecretInventoryCollectionState.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         provider = IntegrationInstance(
@@ -50,20 +53,36 @@ def registry_source():
             adapter_key='vault_http_v1',
             name='super-secret-provider-name',
             environment='testing',
-            enabled=True, lifecycle_status='active', readiness_status='ready',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='ready',
         )
         db.session.add(provider)
         db.session.flush()
-        db.session.add(VaultInstance(
-            integration_instance_id=provider.id, endpoint='https://vault.invalid',
-            auth_mount='approle', role_id='fixture', secret_id='fixture-value-only',
-            timeout=5, verify_ssl=True, kv2_mounts=['secret'], namespace='',
-        ))
-        db.session.add(SecretInventoryCollectionState(
-            integration_instance_id=provider.id, provider_namespace='',
-            mount='secret', status='ready', observed_count=0,
-            last_observed_at=AT, last_committed_at=AT,
-        ))
+        db.session.add(
+            VaultInstance(
+                integration_instance_id=provider.id,
+                endpoint='https://vault.invalid',
+                auth_mount='approle',
+                role_id='fixture',
+                secret_id='fixture-value-only',
+                timeout=5,
+                verify_ssl=True,
+                kv2_mounts=['secret'],
+                namespace='',
+            )
+        )
+        db.session.add(
+            SecretInventoryCollectionState(
+                integration_instance_id=provider.id,
+                provider_namespace='',
+                mount='secret',
+                status='ready',
+                observed_count=0,
+                last_observed_at=AT,
+                last_committed_at=AT,
+            )
+        )
         db.session.commit()
         try:
             yield provider.id
@@ -89,7 +108,10 @@ def _decision(provider_id):
 
 def _read(decision, *, actor_id=ACTOR_ID, page=1, per_page=5, now=None):
     return read_scoped_secret_registry(
-        decision=decision, actor_id=actor_id, page=page, per_page=per_page,
+        decision=decision,
+        actor_id=actor_id,
+        page=page,
+        per_page=per_page,
         now=now or AT + timedelta(minutes=2),
     )
 
@@ -101,18 +123,29 @@ def _add_records(provider_id, n):
         representation = SecretProviderRepresentation(
             secret_identity=SecretIdentity(lifecycle_status='discovered'),
             integration_instance_id=provider_id,
-            provider_key='vault', provider_namespace='', mount='secret',
-            path=private_path, path_sha256=sha256(private_path.encode()).hexdigest(),
-            representation_role='material_authority', observation_status='observed',
-            current_version=3, oldest_version=1, max_versions=0, cas_required=True,
+            provider_key='vault',
+            provider_namespace='',
+            mount='secret',
+            path=private_path,
+            path_sha256=sha256(private_path.encode()).hexdigest(),
+            representation_role='material_authority',
+            observation_status='observed',
+            current_version=3,
+            oldest_version=1,
+            max_versions=0,
+            cas_required=True,
             last_observed_at=AT,
         )
         db.session.add(representation)
         db.session.flush()
-        db.session.add(SecretVersionObservation(
-            representation_id=representation.id, version=3,
-            destroyed=False, last_observed_at=AT,
-        ))
+        db.session.add(
+            SecretVersionObservation(
+                representation_id=representation.id,
+                version=3,
+                destroyed=False,
+                last_observed_at=AT,
+            )
+        )
     state.observed_count = n
     db.session.commit()
 
@@ -125,17 +158,20 @@ def test_no_scope_decision_is_non_enumerating_even_if_aggregate_inventory_exists
     assert page.total_pages is None
 
 
-@pytest.mark.parametrize('change', [
-    {'permission_allowed': False},
-    {'resource_allowed': False},
-    {'decision_authority': 'unavailable'},
-    {'policy_reference': None},
-    {'actor_id': 88},
-    {'expires_at': AT - timedelta(minutes=1)},
-    {'evaluated_at': AT - timedelta(minutes=20)},
-    {'provider_namespace': 'other'},
-    {'mount': 'other-mount'},
-])
+@pytest.mark.parametrize(
+    'change',
+    [
+        {'permission_allowed': False},
+        {'resource_allowed': False},
+        {'decision_authority': 'unavailable'},
+        {'policy_reference': None},
+        {'actor_id': 88},
+        {'expires_at': AT - timedelta(minutes=1)},
+        {'evaluated_at': AT - timedelta(minutes=20)},
+        {'provider_namespace': 'other'},
+        {'mount': 'other-mount'},
+    ],
+)
 def test_missing_expired_or_wrong_scoped_authority_never_exposes_rows(registry_source, change):
     _add_records(registry_source, 1)
     result = _read(replace(_decision(registry_source), **change))

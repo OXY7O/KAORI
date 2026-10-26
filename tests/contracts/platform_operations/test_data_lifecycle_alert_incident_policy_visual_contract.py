@@ -2,6 +2,7 @@
 
 This is source/Jinja validation, not rendered-browser Visual QA or admission.
 """
+
 from pathlib import Path
 
 from jinja2 import Environment
@@ -30,7 +31,7 @@ def test_alert_incidents_coverage_is_two_by_two_without_changing_other_domains()
     coverage = source.split('<h3 class="text-base font-semibold leading-6 text-content-primary">', 1)[1]
     coverage = coverage.split('Lifecycle Coverage</h3>', 1)[1].split('{% endfor %}', 1)[0]
     assert 'sm:grid-cols-2' in coverage
-    assert "lifecycle.coverage|length == 3" in coverage
+    assert 'lifecycle.coverage|length == 3' in coverage
     assert "selected.name != 'alert_incident'" not in coverage
     assert 'xl:grid-cols-3' in coverage
     assert '{% for item in lifecycle.coverage %}' in coverage
@@ -39,7 +40,7 @@ def test_alert_incidents_coverage_is_two_by_two_without_changing_other_domains()
     assert '{{ item.description }}' in coverage
 
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
-    incident = presentation.split("'alert_incident': (", 1)[1].split("\n        ),", 1)[0]
+    incident = presentation.split("'alert_incident': (", 1)[1].split('\n        ),', 1)[0]
     for label in (
         'Closed Alert Cases',
         'Incident Timeline',

@@ -65,8 +65,11 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
         return None
     binding = db.session.get(IntegrationBinding, binding_id)
     if (
-        binding is None or not binding.enabled or binding.asset_type != 'vault_instance'
-        or binding.validation_status != 'ready' or binding.validation_profile != _PROFILE
+        binding is None
+        or not binding.enabled
+        or binding.asset_type != 'vault_instance'
+        or binding.validation_status != 'ready'
+        or binding.validation_profile != _PROFILE
     ):
         return None
     vault_id = _identity(binding.asset_key)
@@ -75,17 +78,23 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
     vault = db.session.get(IntegrationInstance, vault_id)
     source = db.session.get(IntegrationInstance, binding.integration_instance_id)
     if (
-        vault is None or vault.integration_type != 'secrets_pki' or vault.provider_key != 'vault'
-        or not vault.enabled or vault.lifecycle_status != 'active'
-        or source is None or source.integration_type != 'alert_source'
-        or source.provider_key != 'alertmanager' or not source.enabled
+        vault is None
+        or vault.integration_type != 'secrets_pki'
+        or vault.provider_key != 'vault'
+        or not vault.enabled
+        or vault.lifecycle_status != 'active'
+        or source is None
+        or source.integration_type != 'alert_source'
+        or source.provider_key != 'alertmanager'
+        or not source.enabled
         or source.lifecycle_status != 'active'
     ):
         return None
     selector = binding.selector_json
     matchers = selector.get('matchers') if isinstance(selector, dict) else None
     if (
-        not isinstance(matchers, list) or len(matchers) != 1
+        not isinstance(matchers, list)
+        or len(matchers) != 1
         or matchers[0] != {'label': 'vault_instance', 'operator': '=', 'value': binding.asset_key}
     ):
         return None
@@ -97,7 +106,8 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
         return None
     sample = evidence.get('vault_alert_sample')
     if (
-        not isinstance(sample, dict) or not isinstance(sample.get('status'), str)
+        not isinstance(sample, dict)
+        or not isinstance(sample.get('status'), str)
         or sample['status'] not in {'qualified', 'unobserved'}
     ):
         return None
@@ -160,9 +170,12 @@ def _normalize(
         severity = labels.get('severity')
         fingerprint = alert.get('fingerprint')
         if (
-            not isinstance(state, str) or state not in _STATES
-            or not isinstance(severity, str) or severity not in _SEVERITIES
-            or not isinstance(fingerprint, str) or _FINGERPRINT.fullmatch(fingerprint) is None
+            not isinstance(state, str)
+            or state not in _STATES
+            or not isinstance(severity, str)
+            or severity not in _SEVERITIES
+            or not isinstance(fingerprint, str)
+            or _FINGERPRINT.fullmatch(fingerprint) is None
         ):
             raise _UnsafeSource('Incomplete Alert Source observation.')
         start = _start_at(alert.get('startsAt'), now=now)
@@ -174,12 +187,14 @@ def _normalize(
         if handle in seen:
             raise _UnsafeSource('Duplicate alert occurrence in source response.')
         seen.add(handle)
-        entries.append({
-            'handle': handle,
-            'source_state': _STATES[state],
-            'severity': severity,
-            'starts_at': start.isoformat(),
-        })
+        entries.append(
+            {
+                'handle': handle,
+                'source_state': _STATES[state],
+                'severity': severity,
+                'starts_at': start.isoformat(),
+            }
+        )
     entries.sort(key=lambda entry: entry['handle'])
     return {'status': 'qualified', 'entries': entries}
 
@@ -208,7 +223,9 @@ def commit_vault_alert_observations(
         return {'state': 'blocked', 'observed_rows': None}
     binding, source = eligible
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=binding.asset_key,
+        signal_key=SIGNAL_KEY,
     ).first()
     if snapshot is not None and snapshot.generated_at is not None:
         previous = _persisted_utc(snapshot.generated_at)
@@ -216,12 +233,18 @@ def commit_vault_alert_observations(
             return {'state': 'replayed', 'observed_rows': None}
     try:
         normalized = _normalize(
-            alerts, vault_id=binding.asset_key, source_id=source.id, hmac_key=hmac_key, now=observed,
+            alerts,
+            vault_id=binding.asset_key,
+            source_id=source.id,
+            hmac_key=hmac_key,
+            now=observed,
         )
     except _UnsafeSource:
         if snapshot is None:
             snapshot = AlertSignalSnapshot(
-                domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+                domain='secrets_pki',
+                asset_key=binding.asset_key,
+                signal_key=SIGNAL_KEY,
             )
             db.session.add(snapshot)
         snapshot.status = 'failed'
@@ -235,7 +258,9 @@ def commit_vault_alert_observations(
         return {'state': 'blocked', 'observed_rows': None}
     if snapshot is None:
         snapshot = AlertSignalSnapshot(
-            domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+            domain='secrets_pki',
+            asset_key=binding.asset_key,
+            signal_key=SIGNAL_KEY,
         )
         db.session.add(snapshot)
     snapshot.status = 'ready'
@@ -275,11 +300,15 @@ def fail_vault_alert_observations(
         return False
     binding, _source = eligible
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=binding.asset_key,
+        signal_key=SIGNAL_KEY,
     ).first()
     if snapshot is None:
         snapshot = AlertSignalSnapshot(
-            domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+            domain='secrets_pki',
+            asset_key=binding.asset_key,
+            signal_key=SIGNAL_KEY,
         )
         db.session.add(snapshot)
     previous = _persisted_utc(snapshot.generated_at)
@@ -313,21 +342,21 @@ def read_vault_alert_observations(
         return {'state': 'unavailable', 'entries': None}
     binding, source = eligible
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=binding.asset_key, signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=binding.asset_key,
+        signal_key=SIGNAL_KEY,
     ).first()
     if snapshot is None or snapshot.status != 'ready':
         return {'state': 'unavailable', 'entries': None}
     created = _persisted_utc(snapshot.generated_at)
     expires = _persisted_utc(snapshot.expires_at)
-    if (
-        created is None or expires is None or not created <= instant <= expires
-        or expires - created != _TTL
-    ):
+    if created is None or expires is None or not created <= instant <= expires or expires - created != _TTL:
         return {'state': 'stale', 'entries': None}
     payload = snapshot.payload_json
     if (
         not isinstance(payload, dict)
-        or type(payload.get('schema_version')) is not int or payload['schema_version'] != 1
+        or type(payload.get('schema_version')) is not int
+        or payload['schema_version'] != 1
         or type(payload.get('source_binding_id')) is not int
         or payload['source_binding_id'] != binding.id
         or type(payload.get('source_integration_id')) is not int
@@ -340,25 +369,40 @@ def read_vault_alert_observations(
     if not isinstance(entries, list) or len(entries) > _MAX_ALERTS:
         return {'state': 'unavailable', 'entries': None}
     if payload['status'] == 'unobserved':
-        return {'state': 'unobserved', 'entries': None} if not entries else {
-            'state': 'unavailable', 'entries': None,
-        }
+        return (
+            {'state': 'unobserved', 'entries': None}
+            if not entries
+            else {
+                'state': 'unavailable',
+                'entries': None,
+            }
+        )
     if not entries:
         return {'state': 'unavailable', 'entries': None}
     handles: list[str] = []
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) != {
-            'handle', 'source_state', 'severity', 'starts_at',
+            'handle',
+            'source_state',
+            'severity',
+            'starts_at',
         }:
             return {'state': 'unavailable', 'entries': None}
         handle, state, severity, started = (
-            entry['handle'], entry['source_state'], entry['severity'], entry['starts_at'],
+            entry['handle'],
+            entry['source_state'],
+            entry['severity'],
+            entry['starts_at'],
         )
         if (
-            not isinstance(handle, str) or _HANDLE.fullmatch(handle) is None
-            or not isinstance(state, str) or state not in _STATES.values()
-            or not isinstance(severity, str) or severity not in _SEVERITIES
-            or not isinstance(started, str) or len(started) > 64
+            not isinstance(handle, str)
+            or _HANDLE.fullmatch(handle) is None
+            or not isinstance(state, str)
+            or state not in _STATES.values()
+            or not isinstance(severity, str)
+            or severity not in _SEVERITIES
+            or not isinstance(started, str)
+            or len(started) > 64
         ):
             return {'state': 'unavailable', 'entries': None}
         try:

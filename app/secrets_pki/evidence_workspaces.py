@@ -21,16 +21,14 @@ _WORKSPACES = {
     'pki': {
         'title': 'PKI',
         'description': (
-            'Approved public Vault PKI issuer and stored-certificate collection'
-            ' posture from committed evidence only.'
+            'Approved public Vault PKI issuer and stored-certificate collection posture from committed evidence only.'
         ),
         'icon': 'shield-check',
     },
     'expiration': {
         'title': 'Expiration',
         'description': (
-            'Current-generation X.509 expiry windows. No inferred credential'
-            ' rotation, revocation or Lease lifecycle.'
+            'Current-generation X.509 expiry windows. No inferred credential rotation, revocation or Lease lifecycle.'
         ),
         'icon': 'calendar-clock',
     },
@@ -66,22 +64,26 @@ def build_pki_evidence_workspace(
             _metric(
                 'Approved PKI Mounts',
                 public.get('approved_mounts') if public_ready else None,
-                'Configured public issuer scope only.', 'layers',
+                'Configured public issuer scope only.',
+                'layers',
             ),
             _metric(
                 'Committed PKI Mounts',
                 public.get('committed_mounts') if public_ready else None,
-                'Qualified source collection coverage.', 'database-zap',
+                'Qualified source collection coverage.',
+                'database-zap',
             ),
             _metric(
                 'Observed Public Issuers',
                 public.get('observed_issuers') if public_ready else None,
-                'Issuer metadata, not all issued certificates.', 'shield-check',
+                'Issuer metadata, not all issued certificates.',
+                'shield-check',
             ),
             _metric(
                 'Stored Public Certificates',
                 stored.get('observed_certificates') if stored_ready else None,
-                'Opted-in stored public leaf evidence only.', 'certificate',
+                'Opted-in stored public leaf evidence only.',
+                'certificate',
             ),
         ]
     elif kind == 'certificates':
@@ -94,22 +96,26 @@ def build_pki_evidence_workspace(
             _metric(
                 'Stored Public Certificates',
                 validity.get('observed_stored_certificates') if expiry_ready else None,
-                'Qualified current-generation observations.', 'certificate',
+                'Qualified current-generation observations.',
+                'certificate',
             ),
             _metric(
                 'Within Validity',
                 validity.get('within_validity_window') if expiry_ready else None,
-                'Time-window validity, not CA trust.', 'shield-check',
+                'Time-window validity, not CA trust.',
+                'shield-check',
             ),
             _metric(
                 'Expired',
                 validity.get('expired') if expiry_ready else None,
-                'Expired public X.509 validity windows.', 'calendar-x',
+                'Expired public X.509 validity windows.',
+                'calendar-x',
             ),
             _metric(
                 'Validity Unknown',
                 validity.get('unknown') if expiry_ready else None,
-                'Unknown validity remains unknown.', 'shield-question',
+                'Unknown validity remains unknown.',
+                'shield-question',
             ),
         ]
     else:
@@ -117,22 +123,26 @@ def build_pki_evidence_workspace(
             _metric(
                 'Expired',
                 validity.get('expired') if expiry_ready else None,
-                'Public stored certificates already expired.', 'calendar-x',
+                'Public stored certificates already expired.',
+                'calendar-x',
             ),
             _metric(
                 'Expires Within 7 Days',
                 validity.get('expires_within_7d') if expiry_ready else None,
-                'Current-generation 7-day window.', 'calendar-clock',
+                'Current-generation 7-day window.',
+                'calendar-clock',
             ),
             _metric(
                 'Expires in 8–30 Days',
                 validity.get('expires_8_to_30d') if expiry_ready else None,
-                'Current-generation 8–30-day window.', 'calendar-days',
+                'Current-generation 8–30-day window.',
+                'calendar-days',
             ),
             _metric(
                 'Expires After 30 Days',
                 validity.get('expires_after_30d') if expiry_ready else None,
-                'Beyond current 30-day window.', 'calendar-check',
+                'Beyond current 30-day window.',
+                'calendar-check',
             ),
         ]
 

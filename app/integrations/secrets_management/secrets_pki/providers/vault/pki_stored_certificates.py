@@ -48,7 +48,9 @@ def _serial(value: object) -> str:
 
 
 def collect_pki_stored_certificates(
-    client: VaultClient, *, mount: str,
+    client: VaultClient,
+    *,
+    mount: str,
 ) -> StoredCertificateCollection:
     """Never paginate or silently truncate an over-bound full listing."""
     try:
@@ -70,7 +72,8 @@ def collect_pki_stored_certificates(
     observations: list[StoredCertificateEvidence] = []
     for serial, normalized in zip(serials, canonical, strict=True):
         response_status, result = client._request(
-            f'/v1/{mount_name}/cert/{serial}', token=token,
+            f'/v1/{mount_name}/cert/{serial}',
+            token=token,
         )
         cert_data = result.get('data') if isinstance(result, dict) else None
         if response_status != 200 or not isinstance(cert_data, dict):
@@ -80,5 +83,7 @@ def collect_pki_stored_certificates(
             raise VaultProviderError('Vault stored certificate serial differs from public certificate.')
         observations.append(StoredCertificateEvidence(serial_hex=normalized, certificate=parsed))
     return StoredCertificateCollection(
-        mount=mount_name, observed_at=datetime.now(UTC), certificates=tuple(observations),
+        mount=mount_name,
+        observed_at=datetime.now(UTC),
+        certificates=tuple(observations),
     )

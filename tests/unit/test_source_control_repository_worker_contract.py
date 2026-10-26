@@ -14,9 +14,7 @@ def test_worker_registered_as_canonical_task_name():
 
 
 def test_worker_is_id_only_and_does_not_log_provider_exception():
-    source = Path(__file__).resolve().parents[2].joinpath(
-        'app/integrations/source_control/tasks.py'
-    ).read_text()
+    source = Path(__file__).resolve().parents[2].joinpath('app/integrations/source_control/tasks.py').read_text()
     assert 'JobExecutionContext(' in source
     assert 'synchronize_installation(db.session, installation)' in source
     assert 'db.session.rollback()' in source
@@ -31,9 +29,13 @@ def test_worker_is_id_only_and_does_not_log_provider_exception():
 
 
 def test_standard_config_template_reuses_shared_kaori_components():
-    file = Path(__file__).resolve().parents[2].joinpath(
-        'app/templates/platform_operations/jobs/configuration/definitions/'
-        'source_control_repository_sync.html'
+    file = (
+        Path(__file__)
+        .resolve()
+        .parents[2]
+        .joinpath(
+            'app/templates/platform_operations/jobs/configuration/definitions/source_control_repository_sync.html'
+        )
     )
     html = file.read_text()
     assert 'components/action_button.html' in html

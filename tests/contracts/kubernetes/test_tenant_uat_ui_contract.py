@@ -177,7 +177,7 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
 
     Environment(autoescape=True).parse(workspace)
     assert "content_tabs.render_links('namespace-provisioning'," in workspace
-    assert 'data_namespace=\'namespace-provisioning\'' in workspace
+    assert "data_namespace='namespace-provisioning'" in workspace
     assert "hx_target='#namespace-provisioning-workspace'" in workspace
     assert "hx_select='#namespace-provisioning-workspace'" in workspace
     assert "hx_push_url='true'" in workspace
@@ -232,7 +232,9 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
         body = routes.split(f'def {endpoint}(', 1)[1].split('@tenant_bp.', 1)[0]
         if endpoint.startswith('cutover_capsule_') or endpoint == 'change_capsule_tenant_quota_route':
             scope = 'shared-allocation' if endpoint == 'cutover_capsule_shared_allocation_route' else 'tenant-quota'
-            expected = f"return redirect(url_for('tenant.namespace_provisioning', view='{view}', capsule_tab='{scope}'))"
+            expected = (
+                f"return redirect(url_for('tenant.namespace_provisioning', view='{view}', capsule_tab='{scope}'))"
+            )
         else:
             expected = f"return redirect(url_for('tenant.namespace_provisioning', view='{view}'))"
         assert expected in body
@@ -249,23 +251,26 @@ def test_capsule_governance_scope_navigation_is_url_owned() -> None:
     for source in (workspace, overview):
         Environment(autoescape=True).parse(source)
     assert "content_tabs.render_links('capsule-governance-scope'," in workspace
-    assert "active_capsule_view" in workspace
-    assert "data-tenant-capsule-active-view=\"{{ active_capsule_view }}\"" in workspace
-    for key, label in [('overview', 'Overview'), ('tenant-quota', 'Tenant Quota'),
-                       ('shared-allocation', 'Shared Allocation')]:
+    assert 'active_capsule_view' in workspace
+    assert 'data-tenant-capsule-active-view="{{ active_capsule_view }}"' in workspace
+    for key, label in [
+        ('overview', 'Overview'),
+        ('tenant-quota', 'Tenant Quota'),
+        ('shared-allocation', 'Shared Allocation'),
+    ]:
         assert f"('{key}', '{label}', " in workspace
         assert f"capsule_tab='{key}'" in workspace
         assert f"active_capsule_view == '{key}'" in workspace
     assert workspace.count('_capsule_governance_overview.html') == 1
     assert workspace.count('_capsule_tenant_quota_cutover.html') == 1
     assert workspace.count('_capsule_shared_allocation_cutover.html') == 1
-    assert 'hx_target=\'#namespace-provisioning-workspace\'' in workspace
+    assert "hx_target='#namespace-provisioning-workspace'" in workspace
     assert 'data-tenant-capsule-governance-overview' in overview
-    assert "capsule_tenant_quota_managed|length" in overview
-    assert "capsule_tenant_quota_cutover_tenants|length" in overview
-    assert "capsule_shared_tenants|length" in overview
+    assert 'capsule_tenant_quota_managed|length' in overview
+    assert 'capsule_tenant_quota_cutover_tenants|length' in overview
+    assert 'capsule_shared_tenants|length' in overview
     assert "view='capsule-governance', capsule_tab='tenant-quota'" in overview
     assert "view='capsule-governance', capsule_tab='shared-allocation'" in overview
     assert "request.args.get('capsule_tab')" in routes
     assert "{'overview', 'tenant-quota', 'shared-allocation'}" in routes
-    assert "active_capsule_view=active_capsule_view" in routes
+    assert 'active_capsule_view=active_capsule_view' in routes

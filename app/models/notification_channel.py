@@ -41,9 +41,13 @@ class NotificationChannel(db.Model):
     name: Mapped[str] = mapped_column(db.String(160), nullable=False)
     provider_key: Mapped[str] = mapped_column(db.String(40), nullable=False)
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
-    lifecycle_state: Mapped[str] = mapped_column(db.String(16), nullable=False, default='active', server_default='active')
+    lifecycle_state: Mapped[str] = mapped_column(
+        db.String(16), nullable=False, default='active', server_default='active'
+    )
     retired_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    retired_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    retired_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     retirement_reason: Mapped[str | None] = mapped_column(db.String(500), nullable=True)
     credential_payload: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     destination: Mapped[str | None] = mapped_column(db.String(255), nullable=True)

@@ -22,16 +22,22 @@ _CASE_PREFIX = 'vault-alert:'
 _PROFILE = 'vault-alert-hmac-v1'
 _MAX_CASES = 100
 _CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\Z')
-_SAFE_PROVENANCE_KEYS = frozenset({
-    'correlation_profile', 'source_binding_id', 'source_integration_id',
-})
-_ACTIONS = frozenset({
-    'create_candidate',
-    'refresh_candidate',
-    'retain_unverified',
-    'review_source',
-    'review_closed_case',
-})
+_SAFE_PROVENANCE_KEYS = frozenset(
+    {
+        'correlation_profile',
+        'source_binding_id',
+        'source_integration_id',
+    }
+)
+_ACTIONS = frozenset(
+    {
+        'create_candidate',
+        'refresh_candidate',
+        'retain_unverified',
+        'review_source',
+        'review_closed_case',
+    }
+)
 
 
 def _result(status: str, *, candidates: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -118,11 +124,7 @@ def build_vault_provider_case_plan(
 
     # Key collision with another domain/asset/source must never silently
     # attach or materialize a foreign provider AlertCase.
-    collisions = (
-        AlertCase.query.filter(AlertCase.case_key.in_(proposed_keys))
-        .limit(_MAX_CASES + 1)
-        .all()
-    )
+    collisions = AlertCase.query.filter(AlertCase.case_key.in_(proposed_keys)).limit(_MAX_CASES + 1).all()
     if len(collisions) > _MAX_CASES:
         return _result('blocked')
     for case in collisions:
@@ -143,27 +145,31 @@ def build_vault_provider_case_plan(
             action = 'refresh_candidate'
         else:
             action = 'retain_unverified'
-        plan.append({
-            'action': action,
-            'case_key': case_key,
-            'severity': entry['severity'],
-            'observed_source_state': entry['source_state'],
-            'existing_case_id': prior.id if prior is not None else None,
-            'proposed_routing_state': 'suppressed',
-        })
+        plan.append(
+            {
+                'action': action,
+                'case_key': case_key,
+                'severity': entry['severity'],
+                'observed_source_state': entry['source_state'],
+                'existing_case_id': prior.id if prior is not None else None,
+                'proposed_routing_state': 'suppressed',
+            }
+        )
 
     # A fully fresh but non-exhaustive Alertmanager response cannot prove
     # resolution, including absence of a previously committed case key.
     for case_key, case in cases.items():
         if case_key not in proposed_keys and case.workflow_state != 'closed':
-            plan.append({
-                'action': 'retain_unverified',
-                'case_key': case_key,
-                'severity': case.severity,
-                'observed_source_state': 'unknown',
-                'existing_case_id': case.id,
-                'proposed_routing_state': 'suppressed',
-            })
+            plan.append(
+                {
+                    'action': 'retain_unverified',
+                    'case_key': case_key,
+                    'severity': case.severity,
+                    'observed_source_state': 'unknown',
+                    'existing_case_id': case.id,
+                    'proposed_routing_state': 'suppressed',
+                }
+            )
     if any(item['action'] not in _ACTIONS for item in plan):
         return _result('blocked')
     plan.sort(key=lambda row: row['case_key'])

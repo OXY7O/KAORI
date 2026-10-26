@@ -92,14 +92,15 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
 
     sync_state = sys.modules['app.kubernetes.governance.tls_certificates.sync_state']
     sync_state.tls_sync_stale_after = lambda interval: timedelta(minutes=int(interval) + 90)
-    sync_state.tls_sync_evidence_is_current = (
-        lambda at, *, stale_after, now: at is not None and at <= now and now - at <= stale_after
+    sync_state.tls_sync_evidence_is_current = lambda at, *, stale_after, now: (
+        at is not None and at <= now and now - at <= stale_after
     )
-    sys.modules['app.platform_operations.jobs.policies.service'].get_or_create_job_policy = (
-        lambda key: SimpleNamespace(interval_minutes=360)
+    sys.modules['app.platform_operations.jobs.policies.service'].get_or_create_job_policy = lambda key: SimpleNamespace(
+        interval_minutes=360
     )
 
     mutation = sys.modules['app.kubernetes.governance.tls_certificates.mutation']
+
     class TLSSecretIdentityError(ValueError):
         pass
 
@@ -401,7 +402,8 @@ def test_tls_preview_rejects_failed_secret_collection_with_collected_ingress(
         filter=lambda expression: SimpleNamespace(all=lambda: [record]),
     )
     updates.db.session.get = lambda model, identifier: SimpleNamespace(
-        secret_collection_status='collection_failed', ingress_mapping_status='collected',
+        secret_collection_status='collection_failed',
+        ingress_mapping_status='collected',
         collected_at=datetime.now(UTC),
     )
     result = updates.preview_uploaded_pair({}, [record.id])

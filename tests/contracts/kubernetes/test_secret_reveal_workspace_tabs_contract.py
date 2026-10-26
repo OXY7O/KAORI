@@ -137,7 +137,6 @@ def test_one_time_value_uses_protected_value_panel_and_clearing_script() -> None
     assert 'clipboard' not in panel.lower()
 
 
-
 def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     registry = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
@@ -151,7 +150,11 @@ def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     my_panel = page.split('data-secret-reveal-panel="mine"', 1)[1].split('data-secret-reveal-panel="approvals"', 1)[0]
     assert 'id="reveal-value-output"' not in new_panel
     assert my_panel.count('id="reveal-value-output"') == 1
-    assert my_panel.index('_reveal_step_up.html') < my_panel.index('id="reveal-value-output"') < my_panel.index('_reveal_request_status.html')
+    assert (
+        my_panel.index('_reveal_step_up.html')
+        < my_panel.index('id="reveal-value-output"')
+        < my_panel.index('_reveal_request_status.html')
+    )
     assert 'hx-history="false"' in my_panel
     assert 'aria-label="One-Time Secret Reveal Result"' in my_panel
     assert 'tabindex="-1"' in my_panel
@@ -161,22 +164,22 @@ def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     assert 'name="csrf_token"' in registry
     assert "item.effective_status == 'approved'" in registry
     assert 'step_up_active' in registry
-    assert "Continue to Approved Requests" in step_up
+    assert 'Continue to Approved Requests' in step_up
     assert 'href="#my-secret-reveal-requests"' in step_up
     assert 'Choose Reveal Once on an Approved request below' in step_up
 
     # Navigation and reveal output remain inside the requester workspace.
     assert "document.addEventListener('htmx:afterSwap', focusRevealResult)" in workspace_js
     assert "result?.id !== 'reveal-value-output'" in workspace_js
-    assert "if (!result.firstElementChild) return" in workspace_js
-    assert "showWithinMainScroll(result)" in workspace_js
-    assert "result.focus({ preventScroll: true })" in workspace_js
+    assert 'if (!result.firstElementChild) return' in workspace_js
+    assert 'showWithinMainScroll(result)' in workspace_js
+    assert 'result.focus({ preventScroll: true })' in workspace_js
     assert "window.addEventListener('secret-reveal:tab-changed'" in value_js
     assert "if (event.detail?.tab === 'mine') return" in value_js
     assert 'visibilitychange' in value_js and 'pagehide' in value_js
     assert 'htmx:beforeSwap' in value_js
-    assert "components/protected_value_panel.html" in result
-    assert "render_template(" in route and "'kubernetes/operations/secrets/_reveal_value.html'" in route
+    assert 'components/protected_value_panel.html' in result
+    assert 'render_template(' in route and "'kubernetes/operations/secrets/_reveal_value.html'" in route
     assert "response.headers['Cache-Control'] = 'no-store, private, max-age=0'" in route
     assert "response.headers['Referrer-Policy'] = 'no-referrer'" in route
     assert "response.headers['X-Content-Type-Options'] = 'nosniff'" in route
@@ -202,9 +205,12 @@ def test_secret_reveal_submit_uses_tab_selection_without_native_registry_anchor(
     assert "return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))" in block
     assert 'The KAORI app shell' not in block
     assert "'reveal_view': 'mine'" not in block
-    assert "return redirect(\n            url_for(\n                'kubernetes_operations.reveal_secret',\n                cluster_id=existing.cluster_id" in block
-    assert "action_url=action_url" in block
-    assert "queue_feedback=True" in block
+    assert (
+        "return redirect(\n            url_for(\n                'kubernetes_operations.reveal_secret',\n                cluster_id=existing.cluster_id"
+        in block
+    )
+    assert 'action_url=action_url' in block
+    assert 'queue_feedback=True' in block
 
 
 def test_short_step_up_guidance_and_canonical_pending_decision_actions() -> None:
@@ -212,13 +218,12 @@ def test_short_step_up_guidance_and_canonical_pending_decision_actions() -> None
     pending = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
     assert 'Session verified. Select Reveal Once on an approved request below.' in step_up
     assert 'Your session is verified. Choose Reveal Once' not in step_up
-    assert "table_ui.action_classes(destructive=true)" in pending
+    assert 'table_ui.action_classes(destructive=true)' in pending
     assert 'value="deny"' in pending
     assert 'value="approve"' in pending
     assert 'class="{{ table_ui.action_classes() }}"' in pending
     assert 'name="csrf_token"' in pending
     assert "action_button.classes('primary')" not in pending
-
 
 
 def test_secret_reveal_submit_restores_main_scroll_without_storing_sensitive_data() -> None:
@@ -230,19 +235,19 @@ def test_secret_reveal_submit_restores_main_scroll_without_storing_sensitive_dat
 
     assert 'data-reveal-request-submit-form' in form
     assert "window.sessionStorage.setItem(submittedNavigationKey, 'mine')" in script
-    assert "window.sessionStorage.removeItem(submittedNavigationKey)" in script
+    assert 'window.sessionStorage.removeItem(submittedNavigationKey)' in script
     assert "document.addEventListener('submit', markRequestNavigation)" in script
     assert "view !== 'mine'" in script
     assert "main?.scrollTo({ top: 0, behavior: 'auto' })" in script
-    assert "window.requestAnimationFrame(() => window.requestAnimationFrame(" in script
+    assert 'window.requestAnimationFrame(() => window.requestAnimationFrame(' in script
     assert 'request.form' not in script
     assert "return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))" in routes
-    assert "_notify_secret_reveal_approvers(result.request_record)" in routes
-    assert "get_secret_reveal_approvers(exclude_user_id=record.requester_user_id)" in routes
+    assert '_notify_secret_reveal_approvers(result.request_record)' in routes
+    assert 'get_secret_reveal_approvers(exclude_user_id=record.requester_user_id)' in routes
     assert "viewer.has_permission('kubernetes_secrets.approve_reveal')" in inbox
-    assert "SecretRevealRequest.requester_user_id != user_id" in inbox
+    assert 'SecretRevealRequest.requester_user_id != user_id' in inbox
     assert "SecretRevealRequest.status == 'pending'" in inbox
     assert 'value="deny"' in decisions
     assert 'value="approve"' in decisions
-    assert "table_ui.action_classes(destructive=true)" in decisions
+    assert 'table_ui.action_classes(destructive=true)' in decisions
     assert 'class="{{ table_ui.action_classes() }}"' in decisions

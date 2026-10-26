@@ -15,13 +15,16 @@ class _Session:
         return self.actor
 
 
-@pytest.mark.parametrize(('legacy', 'scoped', 'expected'), [
-    (True, 'allow', 'parity_allowed'),
-    (False, 'deny', 'parity_denied'),
-    (True, 'deny', 'legacy_allowed_scope_denied'),
-    (False, 'allow', 'legacy_denied_scope_allowed'),
-    (True, 'unavailable', 'scoped_unavailable'),
-])
+@pytest.mark.parametrize(
+    ('legacy', 'scoped', 'expected'),
+    [
+        (True, 'allow', 'parity_allowed'),
+        (False, 'deny', 'parity_denied'),
+        (True, 'deny', 'legacy_allowed_scope_denied'),
+        (False, 'allow', 'legacy_denied_scope_allowed'),
+        (True, 'unavailable', 'scoped_unavailable'),
+    ],
+)
 def test_read_only_comparison_classifies_access_delta(monkeypatch, legacy, scoped, expected):
     actor = SimpleNamespace(is_active=True, has_permission=lambda _permission: legacy)
     monkeypatch.setattr(scope_parity, 'db', SimpleNamespace(session=_Session(actor)))
@@ -31,8 +34,10 @@ def test_read_only_comparison_classifies_access_delta(monkeypatch, legacy, scope
         lambda **_k: SimpleNamespace(status=scoped, allowed=scoped == 'allow'),
     )
     finding = scope_parity.compare_scope_parity(
-        actor_user_id=11, instance_id=33,
-        provider_namespace='', mount='fixture-only-mount',
+        actor_user_id=11,
+        instance_id=33,
+        provider_namespace='',
+        mount='fixture-only-mount',
     )
     assert finding.variance == expected
     assert finding.requires_review is (expected not in {'parity_allowed', 'parity_denied'})
@@ -44,11 +49,15 @@ def test_parity_shadow_does_not_grant_or_modify_permission(monkeypatch):
     actor = SimpleNamespace(is_active=False, has_permission=lambda _permission: True)
     monkeypatch.setattr(scope_parity, 'db', SimpleNamespace(session=_Session(actor)))
     monkeypatch.setattr(
-        scope_parity, 'evaluate_exact_vault_scope',
+        scope_parity,
+        'evaluate_exact_vault_scope',
         lambda **_k: SimpleNamespace(status='deny', allowed=False),
     )
     finding = scope_parity.compare_scope_parity(
-        actor_user_id=11, instance_id=33, provider_namespace='', mount='kv',
+        actor_user_id=11,
+        instance_id=33,
+        provider_namespace='',
+        mount='kv',
     )
     assert finding.variance == 'parity_denied'
     assert not finding.baseline_allowed

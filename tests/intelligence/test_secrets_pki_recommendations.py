@@ -45,10 +45,16 @@ def _snapshot(*, expired=0, soon=0, later=0, status='ready'):
     ],
 )
 def test_qualified_population_pressure_uses_single_canonical_finding(
-    monkeypatch, expired, soon, later, expected_severity, expected_priority,
+    monkeypatch,
+    expired,
+    soon,
+    later,
+    expected_severity,
+    expected_priority,
 ):
     monkeypatch.setattr(
-        evaluator, 'build_stored_pki_validity_posture',
+        evaluator,
+        'build_stored_pki_validity_posture',
         lambda: _snapshot(expired=expired, soon=soon, later=later),
     )
     rows = evaluator.build_secrets_pki_recommendation_findings(_rules())
@@ -65,7 +71,8 @@ def test_qualified_population_pressure_uses_single_canonical_finding(
 
 
 @pytest.mark.parametrize(
-    'status', ['not_configured', 'incomplete', 'blocked', 'unavailable', 'stale'],
+    'status',
+    ['not_configured', 'incomplete', 'blocked', 'unavailable', 'stale'],
 )
 def test_unqualified_source_does_not_create_finding(monkeypatch, status):
     monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: _snapshot(expired=3, status=status))
@@ -126,12 +133,11 @@ def test_intelligence_gate_requires_both_permissions(monkeypatch, intelligence, 
 
     monkeypatch.setattr(service, 'has_request_context', lambda: True)
     monkeypatch.setattr(
-        service, 'current_user',
+        service,
+        'current_user',
         SimpleNamespace(
             is_authenticated=True,
-            has_permission=lambda permission: (
-                intelligence if permission == 'intelligence.view' else secrets
-            ),
+            has_permission=lambda permission: intelligence if permission == 'intelligence.view' else secrets,
         ),
     )
     assert service._can_view_secrets_pki_intelligence() is allowed

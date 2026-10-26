@@ -7,6 +7,7 @@ No dispatch, retry, channel lifecycle or hot cleanup reads this ledger yet.
 After a full backfill, dual-write and concurrency fencing still must be
 admitted separately. A completed page is NOT a completed global migration.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -86,7 +87,15 @@ def reconcile_delivery_identity_batch(
     cursor = int(page_rows[-1].id) if page_rows else after_id
     if not page_rows:
         return DeliveryIdentityBackfillPage(
-            high_watermark, cursor, 0, 0, 0, 0, 0, False, apply,
+            high_watermark,
+            cursor,
+            0,
+            0,
+            0,
+            0,
+            0,
+            False,
+            apply,
         )
 
     keys = [(row.channel_id, row.event_key) for row in page_rows]
@@ -109,9 +118,8 @@ def reconcile_delivery_identity_batch(
         if identity is None:
             missing_rows.append(row)
             continue
-        if (
-            identity.source_delivery_id != row.id
-            or _normalized_time(identity.first_seen_at) != _normalized_time(row.created_at)
+        if identity.source_delivery_id != row.id or _normalized_time(identity.first_seen_at) != _normalized_time(
+            row.created_at
         ):
             conflicts += 1
 
@@ -150,8 +158,10 @@ def reconcile_delivery_identity_batch(
             actual = {(item.channel_id, item.event_key): item for item in persisted}
             for row in page_rows:
                 identity = actual.get((row.channel_id, row.event_key))
-                if identity is None or identity.source_delivery_id != row.id or (
-                    _normalized_time(identity.first_seen_at) != _normalized_time(row.created_at)
+                if (
+                    identity is None
+                    or identity.source_delivery_id != row.id
+                    or (_normalized_time(identity.first_seen_at) != _normalized_time(row.created_at))
                 ):
                     raise RuntimeError('Concurrent identity conflict; rolling back backfill page.')
             db.session.commit()

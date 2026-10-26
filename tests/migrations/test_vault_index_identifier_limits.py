@@ -65,7 +65,9 @@ def test_vault_review_migration_index_names_fit_postgres_limit(name: str) -> Non
 
 @pytest.mark.parametrize(('model', 'migration', 'name'), EXPECTED)
 def test_source_owned_orm_indexes_match_upgrade_and_downgrade(
-    model: type, migration: str, name: str,
+    model: type,
+    migration: str,
+    name: str,
 ) -> None:
     ops = _migration_index_operations(ROOT / 'migrations' / 'versions' / migration)
     assert name in ops['create_index'] and name in ops['drop_index']
@@ -75,15 +77,11 @@ def test_source_owned_orm_indexes_match_upgrade_and_downgrade(
     assert [column.name for column in index.columns] == ['integration_instance_id']
     assert len(index.name.encode('utf-8')) <= postgresql.dialect().max_identifier_length
     assert all(
-        len(item.name.encode('utf-8')) <= postgresql.dialect().max_identifier_length
-        for item in model.__table__.indexes
+        len(item.name.encode('utf-8')) <= postgresql.dialect().max_identifier_length for item in model.__table__.indexes
     )
 
 
 def test_previously_failing_long_identifiers_are_not_reintroduced() -> None:
     for migration in (EXPECTED[0][1], EXPECTED[1][1]):
         ops = _migration_index_operations(ROOT / 'migrations' / 'versions' / migration)
-        assert not any(
-            len(index.encode('utf-8')) > 63
-            for names in ops.values() for index in names
-        )
+        assert not any(len(index.encode('utf-8')) > 63 for names in ops.values() for index in names)

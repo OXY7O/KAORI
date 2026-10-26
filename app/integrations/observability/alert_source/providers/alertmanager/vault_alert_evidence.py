@@ -14,8 +14,13 @@ _MAX_ALERT_ROWS = 100
 _ALLOWED_STATES = frozenset({'active', 'suppressed', 'unprocessed'})
 _ALLOWED_SEVERITIES = frozenset({'critical', 'warning', 'info'})
 _COUNT_FIELDS = (
-    'observed_rows', 'firing', 'suppressed', 'unprocessed',
-    'critical', 'warning', 'info',
+    'observed_rows',
+    'firing',
+    'suppressed',
+    'unprocessed',
+    'critical',
+    'warning',
+    'info',
 )
 
 

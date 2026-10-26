@@ -59,9 +59,11 @@ def _schema_ready() -> bool:
     try:
         inspector = inspect(db.engine)
         required = {
-            'vault_instances', 'integration_instances',
+            'vault_instances',
+            'integration_instances',
             'secrets_pki_inventory_collection_states',
-            'secrets_pki_secret_representations', 'secrets_pki_secret_versions',
+            'secrets_pki_secret_representations',
+            'secrets_pki_secret_versions',
         }
         return required.issubset(set(inspector.get_table_names()))
     except SQLAlchemyError:
@@ -91,7 +93,8 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 IntegrationInstance.readiness_status == 'ready',
             )
             .order_by(VaultInstance.id.asc())
-            .limit(_MAX_SOURCES + 1).all()
+            .limit(_MAX_SOURCES + 1)
+            .all()
         )
         if len(sources) > _MAX_SOURCES:
             return _blocked('Lifecycle Source Limit Exceeded')
@@ -114,18 +117,23 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 SecretInventoryCollectionState.last_observed_at,
                 SecretInventoryCollectionState.last_committed_at,
             )
-            .filter(SecretInventoryCollectionState.integration_instance_id.in_(
-                [int(source.integration_instance_id) for source in sources]
-            ))
-            .limit(_MAX_SCOPES + 1).all()
+            .filter(
+                SecretInventoryCollectionState.integration_instance_id.in_(
+                    [int(source.integration_instance_id) for source in sources]
+                )
+            )
+            .limit(_MAX_SCOPES + 1)
+            .all()
         )
         if len(states) > _MAX_SCOPES:
             return _blocked('Lifecycle Collection State Limit Exceeded')
         ready = {
-            (row[0], row[1], row[2]): row for row in states
+            (row[0], row[1], row[2]): row
+            for row in states
             if (row[0], row[1], row[2]) in scopes
             and row[3] == 'ready'
-            and isinstance(row[4], int) and row[4] >= 0
+            and isinstance(row[4], int)
+            and row[4] >= 0
             and (_utc(row[5]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
             and (_utc(row[6]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
             and (_utc(row[5]) or instant) <= instant
@@ -149,7 +157,8 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 ).in_(sorted(scopes)),
                 SecretProviderRepresentation.observation_status == 'observed',
             )
-            .limit(_MAX_REPRESENTATIONS + 1).all()
+            .limit(_MAX_REPRESENTATIONS + 1)
+            .all()
         )
         if len(records) > _MAX_REPRESENTATIONS:
             return _blocked('Lifecycle Representation Limit Exceeded')
@@ -164,10 +173,7 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 **dict.fromkeys(_STATES, 0),
                 'coverage': 'Committed current-generation KV v2 version metadata only',
             }
-        generations = {
-            row[0]: _utc(ready[(row[1], row[2], row[3])][5])
-            for row in records
-        }
+        generations = {row[0]: _utc(ready[(row[1], row[2], row[3])][5]) for row in records}
         if any(_utc(row[4]) != generations[row[0]] for row in records):
             return _blocked('Lifecycle Generation Mismatch', 'incomplete_evidence')
         versions = (
@@ -178,14 +184,12 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 SecretVersionObservation.last_observed_at,
             )
             .filter(SecretVersionObservation.representation_id.in_(list(generations)))
-            .limit(_MAX_VERSIONS + 1).all()
+            .limit(_MAX_VERSIONS + 1)
+            .all()
         )
         if len(versions) > _MAX_VERSIONS:
             return _blocked('Lifecycle Version Limit Exceeded')
-        current_versions = [
-            row for row in versions
-            if _utc(row[3]) == generations.get(row[0])
-        ]
+        current_versions = [row for row in versions if _utc(row[3]) == generations.get(row[0])]
         observed_representation_ids = {row[0] for row in current_versions}
         if observed_representation_ids != set(generations):
             return _blocked('Lifecycle Version Coverage Incomplete', 'incomplete_evidence')

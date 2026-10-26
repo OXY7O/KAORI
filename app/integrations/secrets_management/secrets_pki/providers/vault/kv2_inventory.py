@@ -62,7 +62,10 @@ def _segments(value: str, *, required: bool) -> tuple[str, ...]:
         raise VaultProviderError('KV v2 path exceeds the supported bound.')
     parts = tuple(raw.split('/'))
     if any(
-        not part or part in {'.', '..'} or any(char in part for char in '%?#') or '\\' in part
+        not part
+        or part in {'.', '..'}
+        or any(char in part for char in '%?#')
+        or '\\' in part
         or any(ord(char) < 32 or ord(char) == 127 for char in part)
         for part in parts
     ):
@@ -81,10 +84,7 @@ def _version_number(value: object) -> int:
         raise VaultProviderError('Invalid KV v2 version evidence.')
     if isinstance(value, int):
         number = value
-    elif (
-        isinstance(value, str) and value.isascii()
-        and value.isdecimal() and 1 <= len(value) <= 10
-    ):
+    elif isinstance(value, str) and value.isascii() and value.isdecimal() and 1 <= len(value) <= 10:
         number = int(value)
     else:
         raise VaultProviderError('Invalid KV v2 version evidence.')
@@ -130,12 +130,14 @@ def _safe_metadata(
         version = _version_number(raw_version)
         if version < 1:
             raise VaultProviderError('KV v2 version evidence is malformed.')
-        normalized.append(KV2VersionEvidence(
-            version=version,
-            created_time=_safe_timestamp(row.get('created_time')),
-            deletion_time=_safe_timestamp(row.get('deletion_time')),
-            destroyed=row.get('destroyed') is True,
-        ))
+        normalized.append(
+            KV2VersionEvidence(
+                version=version,
+                created_time=_safe_timestamp(row.get('created_time')),
+                deletion_time=_safe_timestamp(row.get('deletion_time')),
+                destroyed=row.get('destroyed') is True,
+            )
+        )
     normalized.sort(key=lambda item: item.version)
     if len({item.version for item in normalized}) != len(normalized):
         raise VaultProviderError('KV v2 metadata contains duplicate versions.')
@@ -170,7 +172,8 @@ def parse_approved_kv2_mounts(raw: str) -> tuple[str, ...]:
 
 
 def collect_kv2_metadata(
-    client: VaultClient, *,
+    client: VaultClient,
+    *,
     mount: str,
     max_secrets: int = MAX_SECRETS,
 ) -> KV2CollectionEvidence:
@@ -196,7 +199,9 @@ def collect_kv2_metadata(
         if len(directories) > MAX_SECRETS:
             raise VaultProviderError('KV v2 directory discovery exceeds the bounded scan.')
         status, response = client._request(
-            _api_path(mount_parts, prefix), method='LIST', token=token,
+            _api_path(mount_parts, prefix),
+            method='LIST',
+            token=token,
         )
         if status != 200 or not isinstance(response.get('data'), dict):
             raise VaultProviderError('Vault KV v2 metadata listing is unavailable or unauthorized.')
@@ -224,13 +229,18 @@ def collect_kv2_metadata(
             if len(seen) > max_secrets:
                 raise VaultProviderError('KV v2 metadata exceeds maximum secret count.')
             result_status, body = client._request(
-                _api_path(mount_parts, target), token=token,
+                _api_path(mount_parts, target),
+                token=token,
             )
             if result_status != 200:
                 raise VaultProviderError('Vault KV v2 metadata detail is unavailable or unauthorized.')
-            records.append(_safe_metadata(
-                mount='/'.join(mount_parts), path='/'.join(target), body=body,
-            ))
+            records.append(
+                _safe_metadata(
+                    mount='/'.join(mount_parts),
+                    path='/'.join(target),
+                    body=body,
+                )
+            )
     return KV2CollectionEvidence(
         mount='/'.join(mount_parts),
         observed_at=datetime.now(UTC),

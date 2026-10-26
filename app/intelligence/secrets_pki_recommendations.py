@@ -41,11 +41,9 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
         return []
     if (
         counts['observed_stored_certificates']
-        != counts['within_validity_window'] + counts['not_yet_valid']
-        + counts['expired'] + counts['unknown']
+        != counts['within_validity_window'] + counts['not_yet_valid'] + counts['expired'] + counts['unknown']
         or counts['within_validity_window']
-        != counts['expires_within_7d'] + counts['expires_8_to_30d']
-        + counts['expires_after_30d']
+        != counts['expires_within_7d'] + counts['expires_8_to_30d'] + counts['expires_after_30d']
     ):
         return []
     observed_at = snapshot.get('last_observed_at')

@@ -146,9 +146,7 @@ def _authenticated_viewer_client(app, monkeypatch: pytest.MonkeyPatch):
     return client
 
 
-def test_viewer_welcome_html_contains_only_permitted_workspace_cards(
-    app, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_viewer_welcome_html_contains_only_permitted_workspace_cards(app, monkeypatch: pytest.MonkeyPatch) -> None:
     """UAT-WEL-002: raw server HTML must not disclose forbidden workspace metadata."""
     client = _authenticated_viewer_client(app, monkeypatch)
     response = client.get('/welcome')
@@ -173,9 +171,7 @@ def test_viewer_welcome_html_contains_only_permitted_workspace_cards(
     assert 'aria-label="Open Settings Workspace"' in html
 
 
-def test_viewer_direct_access_overview_returns_http_403_and_safe_guidance(
-    app, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_viewer_direct_access_overview_returns_http_403_and_safe_guidance(app, monkeypatch: pytest.MonkeyPatch) -> None:
     """UAT-IAM-007: route authorization is independent of Welcome card visibility."""
     client = _authenticated_viewer_client(app, monkeypatch)
     response = client.get('/access/')

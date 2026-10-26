@@ -17,7 +17,13 @@ def upgrade() -> None:
     op.create_table(
         'vault_instances',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False, unique=True),
+        sa.Column(
+            'integration_instance_id',
+            sa.Integer(),
+            sa.ForeignKey('integration_instances.id', ondelete='CASCADE'),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column('endpoint', sa.String(length=500), nullable=False),
         sa.Column('namespace', sa.String(length=255), nullable=True),
         sa.Column('auth_mount', sa.String(length=160), nullable=False, server_default='approle'),

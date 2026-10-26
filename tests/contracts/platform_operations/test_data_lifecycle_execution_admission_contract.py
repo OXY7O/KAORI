@@ -3,6 +3,7 @@
 Only mocks / zero-eligible boundaries are used. No actual archive is written,
 no hot record deleted, no archive object removed, and no task dispatched.
 """
+
 from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -34,7 +35,8 @@ def _fake_domain(domain_name: str):
         cleanup_supported=True,
         build_policy=lambda: SimpleNamespace(enabled=True),
         inspect_boundary=lambda _policy: SimpleNamespace(
-            record_count=0, maximum_record_id=None,
+            record_count=0,
+            maximum_record_id=None,
         ),
     )
 
@@ -55,7 +57,9 @@ def test_direct_engine_requires_persisted_policy_across_every_domain(domain_name
     ):
         with pytest.raises(RuntimeError, match='persisted retention policy'):
             run_retention_archive(
-                domain_name=domain_name, trigger_type='cli', cleanup=False,
+                domain_name=domain_name,
+                trigger_type='cli',
+                cleanup=False,
             )
         lock.assert_not_called()
 
@@ -75,7 +79,9 @@ def test_direct_engine_refuses_disabled_persisted_policy(domain_name: str) -> No
     ):
         with pytest.raises(RuntimeError, match='disabled'):
             run_retention_archive(
-                domain_name=domain_name, trigger_type='cli', cleanup=False,
+                domain_name=domain_name,
+                trigger_type='cli',
+                cleanup=False,
             )
         lock.assert_not_called()
 
@@ -92,10 +98,14 @@ def test_direct_engine_refuses_disabled_persisted_policy(domain_name: str) -> No
     ],
 )
 def test_delivery_manual_archive_only_gate_precedes_archive_lock(
-    trigger: str, scheduled: bool, operation_mode: str,
+    trigger: str,
+    scheduled: bool,
+    operation_mode: str,
 ) -> None:
     stored = SimpleNamespace(
-        enabled=True, schedule_enabled=scheduled, operation_mode=operation_mode,
+        enabled=True,
+        schedule_enabled=scheduled,
+        operation_mode=operation_mode,
     )
     with (
         patch(
@@ -107,7 +117,9 @@ def test_delivery_manual_archive_only_gate_precedes_archive_lock(
     ):
         with pytest.raises(RuntimeError, match='manual Archive Only'):
             run_retention_archive(
-                domain_name='notification_delivery', trigger_type=trigger, cleanup=False,
+                domain_name='notification_delivery',
+                trigger_type=trigger,
+                cleanup=False,
             )
         lock.assert_not_called()
 
@@ -115,7 +127,9 @@ def test_delivery_manual_archive_only_gate_precedes_archive_lock(
 @pytest.mark.parametrize('trigger', ['manual', 'cli'])
 def test_delivery_safe_zero_record_manual_archive_path_remains_available(trigger: str) -> None:
     stored = SimpleNamespace(
-        enabled=True, schedule_enabled=False, operation_mode='archive_only',
+        enabled=True,
+        schedule_enabled=False,
+        operation_mode='archive_only',
     )
     with (
         patch(
@@ -129,7 +143,9 @@ def test_delivery_safe_zero_record_manual_archive_path_remains_available(trigger
         ),
     ):
         result = run_retention_archive(
-            domain_name='notification_delivery', trigger_type=trigger, cleanup=False,
+            domain_name='notification_delivery',
+            trigger_type=trigger,
+            cleanup=False,
         )
     assert result['status'] == 'no_data'
     assert result['record_count'] == 0

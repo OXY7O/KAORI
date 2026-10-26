@@ -1356,6 +1356,7 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     assert detail.count('hx-post=') == 23
     Environment().parse(detail)
 
+
 def test_native_dry_run_compact_resource_rows_and_copy_reuse_shared_behavior() -> None:
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
@@ -1369,7 +1370,7 @@ def test_native_dry_run_compact_resource_rows_and_copy_reuse_shared_behavior() -
     # Historical preview remains a disclosure and never authorizes a Release.
     assert 'data-tenant-native-dry-run-evidence' in evidence
     assert 'group-open:rotate-180' in evidence
-    assert "dry_run.plan_sha256 == handoff_plan.plan_sha256" in evidence
+    assert 'dry_run.plan_sha256 == handoff_plan.plan_sha256' in evidence
     assert 'not row.native_release_readiness.dry_run_passed' in evidence
     assert 'Historical / Not Current' in evidence
     assert 'Provider mutation: none. Release is still blocked.' in evidence
@@ -1404,7 +1405,8 @@ def test_native_platform_admin_consent_is_violet_clear_and_only_authorizes_recor
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
     form = next(
-        form for form in re.findall(r'<form\b.*?</form>', approval, flags=re.DOTALL)
+        form
+        for form in re.findall(r'<form\b.*?</form>', approval, flags=re.DOTALL)
         if 'tenant.accept_native_successor_handoff_route' in form
     )
     Environment().parse(detail)
@@ -1441,14 +1443,13 @@ def test_native_platform_admin_consent_is_violet_clear_and_only_authorizes_recor
     assert detail.count('hx-post=') == 23
 
 
-
 def test_accepted_native_handoff_uses_compact_nonmutating_workspace_rows() -> None:
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
     right = approval.split('data-release-accepted-handoff-evidence', 1)[1].split(
-        '{% if tenant.provider_key == \'capsule\' %}', 1
+        "{% if tenant.provider_key == 'capsule' %}", 1
     )[0]
     preview = approval.split('tenant.dry_run_native_release_handoff_route', 1)[1].split('</form>', 1)[0]
     Environment().parse(detail)
@@ -1491,9 +1492,7 @@ def test_expired_native_restart_action_has_compact_readonly_evidence_and_require
     expired = step.split('{% elif native_cycle.approval_expired %}', 1)[1].split(
         '{% elif native_cycle.review_expired %}', 1
     )[0]
-    form = expired.split('restart_expired_tenant_release_handoff_route', 1)[1].split(
-        '</form>', 1
-    )[0]
+    form = expired.split('restart_expired_tenant_release_handoff_route', 1)[1].split('</form>', 1)[0]
     Environment().parse(detail)
 
     assert 'data-release-restart-recheck-note' in form
@@ -1580,7 +1579,8 @@ def test_verified_native_release_finalization_uses_full_width_action_sheet() -> 
     detail = read(DETAIL)
     final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
     execution = next(
-        form for form in re.findall(r'<form\b.*?</form>', final, flags=re.DOTALL)
+        form
+        for form in re.findall(r'<form\b.*?</form>', final, flags=re.DOTALL)
         if 'data-release-native-finalize-workspace' in form
     )
     Environment().parse(detail)
@@ -1625,11 +1625,10 @@ def test_verified_handoff_next_action_copy_preserves_release_gate() -> None:
 
 def test_released_native_handback_uses_shared_embedded_action_footer() -> None:
     detail = read(DETAIL)
-    handback = detail.split('id="tenant-native-handback"', 1)[1].split(
-        'id="tenant-capsule-handback"', 1
-    )[0]
+    handback = detail.split('id="tenant-native-handback"', 1)[1].split('id="tenant-capsule-handback"', 1)[0]
     form = next(
-        element for element in re.findall(r'<form\b.*?</form>', handback, flags=re.DOTALL)
+        element
+        for element in re.findall(r'<form\b.*?</form>', handback, flags=re.DOTALL)
         if 'tenant.verify_native_successor_handback_route' in element
     )
     shared = read('app/templates/components/form_action_bar.html')

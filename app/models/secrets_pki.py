@@ -19,13 +19,19 @@ class SecretIdentity(db.Model):
     __tablename__ = 'secrets_pki_secret_identities'
 
     id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid4()),
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid4()),
     )
     lifecycle_status: Mapped[str] = mapped_column(
-        String(30), nullable=False, default='discovered',
+        String(30),
+        nullable=False,
+        default='discovered',
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -33,23 +39,32 @@ class SecretProviderRepresentation(db.Model):
     __tablename__ = 'secrets_pki_secret_representations'
     __table_args__ = (
         UniqueConstraint(
-            'integration_instance_id', 'provider_namespace', 'mount', 'path_sha256',
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'path_sha256',
             name='uq_secrets_pki_provider_representation',
         ),
         Index(
-            'ix_secrets_pki_representation_scope', 'integration_instance_id',
-            'provider_namespace', 'mount', 'last_observed_at',
+            'ix_secrets_pki_representation_scope',
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'last_observed_at',
         ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     secret_identity_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        String(36),
+        ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     integration_instance_id: Mapped[int] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        nullable=False,
+        index=True,
     )
     provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
@@ -57,10 +72,14 @@ class SecretProviderRepresentation(db.Model):
     path: Mapped[str] = mapped_column(String(1024), nullable=False)
     path_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     representation_role: Mapped[str] = mapped_column(
-        String(40), nullable=False, default='material_authority',
+        String(40),
+        nullable=False,
+        default='material_authority',
     )
     observation_status: Mapped[str] = mapped_column(
-        String(40), nullable=False, default='observed',
+        String(40),
+        nullable=False,
+        default='observed',
     )
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     oldest_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -70,22 +89,23 @@ class SecretProviderRepresentation(db.Model):
 
     secret_identity: Mapped[SecretIdentity] = relationship('SecretIdentity')
     versions: Mapped[list[SecretVersionObservation]] = relationship(
-        'SecretVersionObservation', back_populates='representation',
+        'SecretVersionObservation',
+        back_populates='representation',
         order_by='SecretVersionObservation.version',
-        cascade='all, delete-orphan', passive_deletes=True,
+        cascade='all, delete-orphan',
+        passive_deletes=True,
     )
 
 
 class SecretVersionObservation(db.Model):
     __tablename__ = 'secrets_pki_secret_versions'
-    __table_args__ = (
-        UniqueConstraint('representation_id', 'version', name='uq_secrets_pki_representation_version'),
-    )
+    __table_args__ = (UniqueConstraint('representation_id', 'version', name='uq_secrets_pki_representation_version'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     representation_id: Mapped[int] = mapped_column(
         ForeignKey('secrets_pki_secret_representations.id', ondelete='CASCADE'),
-        nullable=False, index=True,
+        nullable=False,
+        index=True,
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     provider_created_time: Mapped[str | None] = mapped_column(String(80), nullable=True)
@@ -94,7 +114,8 @@ class SecretVersionObservation(db.Model):
     last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     representation: Mapped[SecretProviderRepresentation] = relationship(
-        'SecretProviderRepresentation', back_populates='versions',
+        'SecretProviderRepresentation',
+        back_populates='versions',
     )
 
 
@@ -102,7 +123,9 @@ class SecretInventoryCollectionState(db.Model):
     __tablename__ = 'secrets_pki_inventory_collection_states'
     __table_args__ = (
         UniqueConstraint(
-            'integration_instance_id', 'provider_namespace', 'mount',
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
             name='uq_secrets_pki_inventory_scope',
         ),
         Index('ix_spki_inventory_state_instance', 'integration_instance_id'),

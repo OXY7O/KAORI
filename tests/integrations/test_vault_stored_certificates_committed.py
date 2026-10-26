@@ -34,30 +34,44 @@ DAY = datetime(2026, 10, 22, tzinfo=UTC)
 def store():
     app = Flask(__name__)
     app.config.update(
-        SECRET_KEY='test-only', SQLALCHEMY_DATABASE_URI='sqlite://',
+        SECRET_KEY='test-only',
+        SQLALCHEMY_DATABASE_URI='sqlite://',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
     )
     db.init_app(app)
     with app.app_context():
         tables = [
-            IntegrationInstance.__table__, VaultInstance.__table__,
-            PKIStoredCertificateObservation.__table__, PKIStoredCertificateCollectionState.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
+            PKIStoredCertificateObservation.__table__,
+            PKIStoredCertificateCollectionState.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         identity = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault', adapter_key='vault_http_v1',
-            name='test-stored-certs', enabled=True, readiness_status='ready',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='test-stored-certs',
+            enabled=True,
+            readiness_status='ready',
             environment='testing',
         )
         db.session.add(identity)
         db.session.flush()
-        db.session.add(VaultInstance(
-            integration_instance_id=identity.id, endpoint='https://vault.internal.invalid',
-            auth_mount='approle', role_id='metadata-only', secret_id='test-only',
-            timeout=5, verify_ssl=True, pki_mounts=['pki'],
-            pki_stored_certs_enabled=True,
-        ))
+        db.session.add(
+            VaultInstance(
+                integration_instance_id=identity.id,
+                endpoint='https://vault.internal.invalid',
+                auth_mount='approle',
+                role_id='metadata-only',
+                secret_id='test-only',
+                timeout=5,
+                verify_ssl=True,
+                pki_mounts=['pki'],
+                pki_stored_certs_enabled=True,
+            )
+        )
         db.session.commit()
         try:
             yield identity.id
@@ -68,16 +82,27 @@ def store():
 
 def _snapshot(when=DAY, *, serial='65', fingerprint='a' * 64, empty=False, complete=True):
     certificate = PublicCertificateEvidence(
-        fingerprint_sha256=fingerprint, serial_hex=serial,
-        subject='CN=internal-private-tenant', issuer='CN=not-for-ui',
-        valid_from=DAY-timedelta(days=2), valid_until=DAY+timedelta(days=100),
-        is_ca=False, self_issued=False, dns_names=('private.example',),
+        fingerprint_sha256=fingerprint,
+        serial_hex=serial,
+        subject='CN=internal-private-tenant',
+        issuer='CN=not-for-ui',
+        valid_from=DAY - timedelta(days=2),
+        valid_until=DAY + timedelta(days=100),
+        is_ca=False,
+        self_issued=False,
+        dns_names=('private.example',),
     )
     return StoredCertificateCollection(
-        mount='pki', observed_at=when,
-        certificates=() if empty else (StoredCertificateEvidence(
-            serial_hex=serial, certificate=certificate,
-        ),),
+        mount='pki',
+        observed_at=when,
+        certificates=()
+        if empty
+        else (
+            StoredCertificateEvidence(
+                serial_hex=serial,
+                certificate=certificate,
+            ),
+        ),
         complete=complete,
     )
 
@@ -86,7 +111,7 @@ def test_successful_commit_and_repeat_do_not_duplicate(store):
     initial = commit_stored_pki_certificates(store, _snapshot())
     assert initial.observed_count == 1
     assert PKIStoredCertificateObservation.query.count() == 1
-    repeated = commit_stored_pki_certificates(store, _snapshot(DAY+timedelta(minutes=1)))
+    repeated = commit_stored_pki_certificates(store, _snapshot(DAY + timedelta(minutes=1)))
     assert repeated.observed_count == 1
     assert PKIStoredCertificateObservation.query.count() == 1
     assert PKIStoredCertificateObservation.query.one().observation_status == 'observed'
@@ -107,18 +132,18 @@ def test_missing_uncommitted_is_unknown_but_real_committed_zero_is_zero(store):
 def test_unexpected_empty_after_nonempty_and_incomplete_snapshot_fail_closed(store):
     commit_stored_pki_certificates(store, _snapshot())
     with pytest.raises(ValueError, match='empty'):
-        commit_stored_pki_certificates(store, _snapshot(DAY+timedelta(minutes=1), empty=True))
+        commit_stored_pki_certificates(store, _snapshot(DAY + timedelta(minutes=1), empty=True))
     with pytest.raises(ValueError, match='incomplete'):
-        commit_stored_pki_certificates(store, _snapshot(DAY+timedelta(minutes=1), complete=False))
+        commit_stored_pki_certificates(store, _snapshot(DAY + timedelta(minutes=1), complete=False))
     assert PKIStoredCertificateObservation.query.one().observation_status == 'observed'
 
 
 def test_immutability_and_out_of_order_readback_rejected(store):
     commit_stored_pki_certificates(store, _snapshot())
     with pytest.raises(ValueError, match='Out-of-order'):
-        commit_stored_pki_certificates(store, _snapshot(DAY-timedelta(hours=1)))
+        commit_stored_pki_certificates(store, _snapshot(DAY - timedelta(hours=1)))
     with pytest.raises(ValueError, match='immutable'):
-        commit_stored_pki_certificates(store, _snapshot(DAY+timedelta(minutes=1), fingerprint='b' * 64))
+        commit_stored_pki_certificates(store, _snapshot(DAY + timedelta(minutes=1), fingerprint='b' * 64))
     assert PKIStoredCertificateObservation.query.one().fingerprint_sha256 == 'a' * 64
 
 
@@ -128,7 +153,7 @@ def test_revoked_approved_mount_cannot_commit(store):
     provider.pki_mounts = []
     db.session.commit()
     with pytest.raises(ValueError, match='not eligible'):
-        commit_stored_pki_certificates(store, _snapshot(DAY+timedelta(minutes=1)))
+        commit_stored_pki_certificates(store, _snapshot(DAY + timedelta(minutes=1)))
     assert stored_pki_certificate_readiness(instance=provider)['state'] == 'not_configured'
     assert PKIStoredCertificateObservation.query.count() == 1
 
@@ -141,9 +166,12 @@ def test_failure_marks_only_stored_source_stale_not_vault_health(store):
     assert state.last_committed_at == previous
     assert state.observed_stored_certificate_count == 1
     assert state.status == 'stale'
-    assert stored_pki_certificate_readiness(
-        instance=VaultInstance.query.filter_by(integration_instance_id=store).one(),
-    )['state'] == 'stale'
+    assert (
+        stored_pki_certificate_readiness(
+            instance=VaultInstance.query.filter_by(integration_instance_id=store).one(),
+        )['state']
+        == 'stale'
+    )
     assert db.session.get(IntegrationInstance, store).readiness_status == 'ready'
 
 
@@ -152,18 +180,31 @@ def test_provider_validation_is_separate_from_stored_cert_readiness(store):
     identity = db.session.get(IntegrationInstance, store)
     identity.readiness_status = 'validation_required'
     db.session.commit()
-    assert stored_pki_certificate_readiness(
-        instance=VaultInstance.query.filter_by(integration_instance_id=store).one(),
-    )['state'] == 'stale'
+    assert (
+        stored_pki_certificate_readiness(
+            instance=VaultInstance.query.filter_by(integration_instance_id=store).one(),
+        )['state']
+        == 'stale'
+    )
 
 
 def test_stored_cert_schema_excludes_raw_identity_and_key_material(store):
     for model in (PKIStoredCertificateObservation, PKIStoredCertificateCollectionState):
         names = {column.name for column in model.__table__.columns}
-        assert not names.intersection({
-            'subject', 'issuer', 'dns_names', 'san', 'pem', 'private_key',
-            'client_token', 'secret_id', 'raw_provider_response', 'provider_url',
-        })
+        assert not names.intersection(
+            {
+                'subject',
+                'issuer',
+                'dns_names',
+                'san',
+                'pem',
+                'private_key',
+                'client_token',
+                'secret_id',
+                'raw_provider_response',
+                'provider_url',
+            }
+        )
     commit_stored_pki_certificates(store, _snapshot())
     stored = PKIStoredCertificateObservation.query.one()
     assert 'internal-private-tenant' not in repr(stored)
@@ -176,7 +217,8 @@ def test_nonqualified_coverage_or_duplicate_evidence_rejected(store):
         commit_stored_pki_certificates(store, replace(source, coverage='all_issued'))
     with pytest.raises(ValueError, match='Duplicate'):
         commit_stored_pki_certificates(
-            store, replace(source, certificates=source.certificates + source.certificates),
+            store,
+            replace(source, certificates=source.certificates + source.certificates),
         )
 
 

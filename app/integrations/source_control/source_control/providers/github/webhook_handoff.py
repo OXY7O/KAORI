@@ -44,29 +44,34 @@ def _utc(value: datetime) -> datetime:
 
 def _lock_delivery(session: Session, record_id: int) -> SourceWebhookDelivery | None:
     return session.execute(
-        select(SourceWebhookDelivery)
-        .where(SourceWebhookDelivery.id == record_id)
-        .with_for_update(),
+        select(SourceWebhookDelivery).where(SourceWebhookDelivery.id == record_id).with_for_update(),
     ).scalar_one_or_none()
 
 
 def _mark_uncertain_or_retry(
-    session: Session, delivery_id: int, *, attempt_count: int,
+    session: Session,
+    delivery_id: int,
+    *,
+    attempt_count: int,
     unknown_dispatch: bool,
 ) -> None:
     row = _lock_delivery(session, delivery_id)
     if row is None or row.processing_state != 'dispatching' or row.attempt_count != attempt_count:
         return
     row.processing_state = (
-        'dispatch_uncertain' if unknown_dispatch
-        else 'requires_review' if row.attempt_count >= _MAX_DISPATCH_ATTEMPTS
+        'dispatch_uncertain'
+        if unknown_dispatch
+        else 'requires_review'
+        if row.attempt_count >= _MAX_DISPATCH_ATTEMPTS
         else 'retry_pending'
     )
     session.commit()
 
 
 def dispatch_committed_delivery(
-    session: Session, *, delivery_record_id: int,
+    session: Session,
+    *,
+    delivery_record_id: int,
     now: datetime | None = None,
 ) -> DeliveryHandoff:
     """Claim one persisted signed delivery, commit claim, then enqueue.
@@ -83,8 +88,11 @@ def dispatch_committed_delivery(
         raise GitHubWebhookError('Committed GitHub delivery was not found.')
     if row.processing_state not in {'received', 'retry_pending'}:
         return DeliveryHandoff(
-            row.id, row.installation_id, row.processing_state,
-            row.dispatched_job_execution_id, False,
+            row.id,
+            row.installation_id,
+            row.processing_state,
+            row.dispatched_job_execution_id,
+            False,
         )
     if (
         row.processing_state == 'retry_pending'
@@ -103,7 +111,9 @@ def dispatch_committed_delivery(
     # Verify the canonical provider/install/account authority and current
     # grant against the *committed* inbox row before any queue action.
     resolve_reconciliation_intent(
-        session=session, installation=installation, delivery_record_id=row.id,
+        session=session,
+        installation=installation,
+        delivery_record_id=row.id,
     )
     row.processing_state = 'dispatching'
     row.last_attempt_at = at
@@ -134,7 +144,10 @@ def dispatch_committed_delivery(
         # provider target admission and registered-worker preflight.
         session.rollback()
         _mark_uncertain_or_retry(
-            session, delivery_record_id, attempt_count=attempt, unknown_dispatch=False,
+            session,
+            delivery_record_id,
+            attempt_count=attempt,
+            unknown_dispatch=False,
         )
         raise
     except Exception:
@@ -142,13 +155,18 @@ def dispatch_committed_delivery(
         # Even when enqueue raises without returning, the broker may already
         # have accepted it. Treat every other exception as indeterminate.
         _mark_uncertain_or_retry(
-            session, delivery_record_id, attempt_count=attempt, unknown_dispatch=True,
+            session,
+            delivery_record_id,
+            attempt_count=attempt,
+            unknown_dispatch=True,
         )
         raise
 
 
 def flag_abandoned_dispatch(
-    session: Session, *, delivery_record_id: int,
+    session: Session,
+    *,
+    delivery_record_id: int,
     now: datetime | None = None,
 ) -> bool:
     """Surface an unknown worker outcome without scheduling a duplicate job."""

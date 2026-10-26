@@ -38,7 +38,9 @@ def test_kubernetes_administration_posture_is_factual_not_hardcoded_available() 
     assert 'administration_status_label' in page
     assert 'administration_status_tone' in page
     assert 'administration_status_detail' in presentation
-    assert 'control.status_detail' in read('app/templates/platform_operations/kubernetes/_administration_control_rows.html')
+    assert 'control.status_detail' in read(
+        'app/templates/platform_operations/kubernetes/_administration_control_rows.html'
+    )
     assert "table_label.status_label('Available', 'normal')" not in overview
     assert "table_label.status_label('1 Available Control', 'info')" not in overview
     assert 'table_label.status_indicator_label(administration_status_label, administration_status_tone)' in overview

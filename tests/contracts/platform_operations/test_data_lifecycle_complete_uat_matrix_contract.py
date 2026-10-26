@@ -3,6 +3,7 @@
 This verifies test-plan completeness, not executable PostgreSQL/Celery UAT
 or human acceptance. Runtime rows must remain NOT RUN until observed.
 """
+
 from pathlib import Path
 
 from app.platform_operations.data_lifecycle.retention.domains import DOMAIN_FACTORIES
@@ -48,8 +49,18 @@ def test_uat_includes_all_shared_safety_and_recovery_cases_without_false_pass() 
 def test_uat_preserves_existing_dependency_issues_and_no_release_admission() -> None:
     uat = (ROOT / UAT_PATH).read_text(encoding='utf-8')
     for issue in (
-        '#1569', '#1416', '#2847', '#2850', '#2868', '#2869', '#2870',
-        '#2889', '#2891', '#2892', '#2906', '#2907',
+        '#1569',
+        '#1416',
+        '#2847',
+        '#2850',
+        '#2868',
+        '#2869',
+        '#2870',
+        '#2889',
+        '#2891',
+        '#2892',
+        '#2906',
+        '#2907',
     ):
         assert issue in uat
     assert 'Official Developer Check, Full Admission and staging/main promotion' in uat

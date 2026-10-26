@@ -4,9 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 TOPOLOGY_JS = ROOT / 'app/static/js/kubernetes/inventory/topology.js'
-TOPOLOGY_TEMPLATE = (
-    ROOT / 'app/templates/kubernetes/inventory/topology/partials/_workspace.html'
-)
+TOPOLOGY_TEMPLATE = ROOT / 'app/templates/kubernetes/inventory/topology/partials/_workspace.html'
 TOPOLOGY_PATTERN = ROOT / 'docs/design/patterns/KUBERNETES_TOPOLOGY.md'
 
 
@@ -79,5 +77,5 @@ def test_dense_topology_retains_operator_pan_zoom_and_export_scope() -> None:
     assert 'exportJson = () =>' in source
     assert 'exportPng = () =>' in source
     assert 'visibleNodeRecords().map((node) => node.data())' in source
-    assert "const visibleEdges = cy" in source
-    assert "updateViewportHint(visible.nodes().length)" in source
+    assert 'const visibleEdges = cy' in source
+    assert 'updateViewportHint(visible.nodes().length)' in source

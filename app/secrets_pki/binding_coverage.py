@@ -32,8 +32,9 @@ def _utc(value: datetime | None) -> datetime | None:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
-def _family(status: str, name: str, *, sources: int | None = None,
-            configured: int | None = None, qualified: int | None = None) -> dict[str, Any]:
+def _family(
+    status: str, name: str, *, sources: int | None = None, configured: int | None = None, qualified: int | None = None
+) -> dict[str, Any]:
     label = {
         'qualified': f'{name} Binding Qualified',
         'partial': f'{name} Binding Partial',
@@ -50,8 +51,9 @@ def _family(status: str, name: str, *, sources: int | None = None,
         'configured_vault_sources': configured,
         'qualified_vault_sources': qualified,
         'coverage': (
-            f'{qualified} / {sources}' if status in {'qualified', 'partial'}
-            and qualified is not None and sources is not None else 'Not Qualified'
+            f'{qualified} / {sources}'
+            if status in {'qualified', 'partial'} and qualified is not None and sources is not None
+            else 'Not Qualified'
         ),
         'evidence_basis': 'Committed IntegrationBinding validation; not live telemetry',
     }
@@ -74,17 +76,21 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
         tables = set(inspect(db.engine).get_table_names())
         if not {'integration_instances', 'integration_bindings'}.issubset(tables):
             return _result('unavailable')
-        vault_ids = db.session.execute(
-            select(IntegrationInstance.id)
-            .where(
-                IntegrationInstance.integration_type == 'secrets_pki',
-                IntegrationInstance.provider_key == 'vault',
-                IntegrationInstance.enabled.is_(True),
-                IntegrationInstance.lifecycle_status == 'active',
+        vault_ids = (
+            db.session.execute(
+                select(IntegrationInstance.id)
+                .where(
+                    IntegrationInstance.integration_type == 'secrets_pki',
+                    IntegrationInstance.provider_key == 'vault',
+                    IntegrationInstance.enabled.is_(True),
+                    IntegrationInstance.lifecycle_status == 'active',
+                )
+                .order_by(IntegrationInstance.id)
+                .limit(_MAX_VAULT_SOURCES + 1)
             )
-            .order_by(IntegrationInstance.id)
-            .limit(_MAX_VAULT_SOURCES + 1)
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if len(vault_ids) > _MAX_VAULT_SOURCES:
             return _result('blocked')
         if not vault_ids:
@@ -98,8 +104,7 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
                 IntegrationBinding.last_validated_at,
                 IntegrationInstance.integration_type,
             )
-            .join(IntegrationInstance,
-                  IntegrationInstance.id == IntegrationBinding.integration_instance_id)
+            .join(IntegrationInstance, IntegrationInstance.id == IntegrationBinding.integration_instance_id)
             .where(
                 IntegrationBinding.asset_type == 'vault_instance',
                 IntegrationBinding.asset_key.in_([str(source_id) for source_id in vault_ids]),
@@ -120,8 +125,7 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
                 continue
             # Exact stored asset identity; never accept labels or leading-zero alias.
             groups[family][asset_key].append(
-                (str(status or ''), _utc(observed_at)
-                 if profile == _FAMILIES[family][0] else None)
+                (str(status or ''), _utc(observed_at) if profile == _FAMILIES[family][0] else None)
             )
 
         posture: dict[str, Any] = {
@@ -134,8 +138,10 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
                 # Multiple independently ready sources require explicit precedence
                 # and cannot silently be portrayed as single-source qualification.
                 matching = [
-                    1 for status, checked_at in assessments
-                    if status == 'ready' and checked_at is not None
+                    1
+                    for status, checked_at in assessments
+                    if status == 'ready'
+                    and checked_at is not None
                     and timedelta(0) <= instant - checked_at <= _FRESHNESS
                 ]
                 if len(matching) == 1:
@@ -151,18 +157,26 @@ def build_vault_binding_coverage(*, now: datetime | None = None) -> dict[str, An
             else:
                 status = 'needs_validation'
             posture['metrics' if family == 'metrics_source' else 'alerts'] = _family(
-                status, name,
-                sources=len(vault_ids), configured=configured_count,
+                status,
+                name,
+                sources=len(vault_ids),
+                configured=configured_count,
                 qualified=qualified_count,
             )
         return posture
     except (SQLAlchemyError, ValueError, TypeError, AttributeError):
         return _result('unavailable')
 
+
 # HV-12 read-only projection: last validation sample, never a live alert stream.
 _ALERT_SAMPLE_COUNTS = (
-    'observed_rows', 'firing', 'suppressed', 'unprocessed',
-    'critical', 'warning', 'info',
+    'observed_rows',
+    'firing',
+    'suppressed',
+    'unprocessed',
+    'critical',
+    'warning',
+    'info',
 )
 
 
@@ -203,7 +217,8 @@ def _qualified_alert_sample(
     # A validated binding must still have its original exact identity selector.
     matchers = selector.get('matchers') if isinstance(selector, dict) else None
     if (
-        not isinstance(matchers, list) or len(matchers) != 1
+        not isinstance(matchers, list)
+        or len(matchers) != 1
         or not isinstance(matchers[0], dict)
         or matchers[0] != {'label': 'vault_instance', 'operator': '=', 'value': asset_key}
     ):
@@ -249,21 +264,23 @@ def build_vault_alert_source_sample_summary(*, now: datetime | None = None) -> d
     if instant is None:
         return _alert_sample_result('unavailable')
     try:
-        if not {'integration_instances', 'integration_bindings'}.issubset(
-            set(inspect(db.engine).get_table_names())
-        ):
+        if not {'integration_instances', 'integration_bindings'}.issubset(set(inspect(db.engine).get_table_names())):
             return _alert_sample_result('unavailable')
-        source_ids = db.session.execute(
-            select(IntegrationInstance.id)
-            .where(
-                IntegrationInstance.integration_type == 'secrets_pki',
-                IntegrationInstance.provider_key == 'vault',
-                IntegrationInstance.enabled.is_(True),
-                IntegrationInstance.lifecycle_status == 'active',
+        source_ids = (
+            db.session.execute(
+                select(IntegrationInstance.id)
+                .where(
+                    IntegrationInstance.integration_type == 'secrets_pki',
+                    IntegrationInstance.provider_key == 'vault',
+                    IntegrationInstance.enabled.is_(True),
+                    IntegrationInstance.lifecycle_status == 'active',
+                )
+                .order_by(IntegrationInstance.id.asc())
+                .limit(_MAX_VAULT_SOURCES + 1)
             )
-            .order_by(IntegrationInstance.id.asc())
-            .limit(_MAX_VAULT_SOURCES + 1)
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if len(source_ids) > _MAX_VAULT_SOURCES:
             return _alert_sample_result('blocked')
         if not source_ids:

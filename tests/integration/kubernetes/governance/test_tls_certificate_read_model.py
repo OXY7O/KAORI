@@ -273,7 +273,8 @@ def test_incomplete_tls_collection_keeps_last_known_good_inventory(governance_re
 
 
 def test_tls_reconciliation_is_bounded_and_prunes_only_successful_generation(
-    governance_repository_app, monkeypatch,
+    governance_repository_app,
+    monkeypatch,
 ) -> None:
     from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
 
@@ -322,7 +323,8 @@ def test_tls_reconciliation_is_bounded_and_prunes_only_successful_generation(
             for index in range(110, 270)
         ]
         monkeypatch.setattr(
-            service, 'collect_tls_certificate_batch',
+            service,
+            'collect_tls_certificate_batch',
             lambda cluster, **kwargs: TLSCollectionBatch(
                 records=payloads,
                 evidence=TLSCollectionEvidence(
@@ -362,7 +364,8 @@ def test_tls_reconciliation_zero_records_prunes_only_selected_cluster(governance
             )
         db.session.commit()
         monkeypatch.setattr(
-            service, 'collect_tls_certificate_batch',
+            service,
+            'collect_tls_certificate_batch',
             lambda cluster, **kwargs: TLSCollectionBatch(
                 records=[],
                 evidence=TLSCollectionEvidence(
@@ -378,7 +381,8 @@ def test_tls_reconciliation_zero_records_prunes_only_selected_cluster(governance
 
 
 def test_tls_duplicate_identity_aborts_reconciliation_without_pruning(
-    governance_repository_app, monkeypatch,
+    governance_repository_app,
+    monkeypatch,
 ) -> None:
     from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
 
@@ -396,11 +400,14 @@ def test_tls_duplicate_identity_aborts_reconciliation_without_pruning(
         )
         db.session.commit()
         record = {
-            'namespace': 'default', 'secret_name': 'same',
-            'status': 'healthy', 'coverage_state': 'not_reported',
+            'namespace': 'default',
+            'secret_name': 'same',
+            'status': 'healthy',
+            'coverage_state': 'not_reported',
         }
         monkeypatch.setattr(
-            service, 'collect_tls_certificate_batch',
+            service,
+            'collect_tls_certificate_batch',
             lambda cluster, **kwargs: TLSCollectionBatch(
                 records=[dict(record), dict(record)],
                 evidence=TLSCollectionEvidence(

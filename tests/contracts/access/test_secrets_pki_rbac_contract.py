@@ -22,7 +22,8 @@ def test_secrets_pki_is_a_registered_capability_module():
 
 def test_operational_sync_has_safe_read_and_canonical_execution_dependencies():
     assert DEFAULT_PERMISSION_DEPENDENCIES['secrets_pki.sync'] == {
-        'secrets_pki.view', 'jobs.execute',
+        'secrets_pki.view',
+        'jobs.execute',
     }
     job = get_job_definition('secrets_pki.inventory.sync')
     assert job.configure_permission == 'integrations.manage'
@@ -44,8 +45,6 @@ def test_protected_roles_expose_metadata_read_without_auto_granting_plaintext():
 
 
 def test_metadata_permission_cannot_configure_provider_by_itself():
-    assert 'integrations.manage' not in DEFAULT_PERMISSION_DEPENDENCIES.get(
-        'secrets_pki.view', set()
-    )
+    assert 'integrations.manage' not in DEFAULT_PERMISSION_DEPENDENCIES.get('secrets_pki.view', set())
     assert 'integrations.manage' not in DEFAULT_PERMISSION_DEPENDENCIES['secrets_pki.sync']
     assert 'integrations.manage' not in DEFAULT_ROLE_PERMISSIONS['operator']

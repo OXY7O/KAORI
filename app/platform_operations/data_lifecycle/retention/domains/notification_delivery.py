@@ -76,7 +76,9 @@ class NotificationDeliveryArchiveDomain:
         )
 
     def iter_records(
-        self, boundary: ArchiveBoundary, policy: RetentionPolicy,
+        self,
+        boundary: ArchiveBoundary,
+        policy: RetentionPolicy,
     ) -> Iterator[dict[str, Any]]:
         if boundary.maximum_record_id is None or boundary.record_count <= 0:
             return

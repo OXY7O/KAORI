@@ -3,6 +3,7 @@
 This validates source/Jinja design and server guard invariants; actual
 PostgreSQL/Celery/Archive Storage and browser acceptance are separate.
 """
+
 from pathlib import Path
 
 from jinja2 import Environment
@@ -32,12 +33,14 @@ def test_manual_only_domain_hides_misleading_schedule_controls_and_auto_mode() -
     assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
     assert 'name="schedule_hour"' in ui
     assert 'name="schedule_minute"' in ui
-    assert "{{ 'Execution Mode' if selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run' }}" in ui
+    assert (
+        "{{ 'Execution Mode' if selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run' }}" in ui
+    )
     assert 'Manual Archive Only. Enable and save the policy before starting a job.' in ui
     assert 'Archive retries once; manual retry if needed. Hot records remain.' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert "selected.name in ('notification_delivery', 'audit_event')" in ui
-    assert "Manual Archive Only · No schedule" in ui
+    assert 'Manual Archive Only · No schedule' in ui
 
 
 def test_compact_status_is_single_state_dependent_element_not_trial_banner() -> None:
@@ -71,7 +74,7 @@ def test_operator_buttons_keep_csrf_rbac_htmx_toast_and_no_cleanup_button() -> N
     assert "url_for('platform_operations.data_lifecycle.preview'" in ui
     assert 'name="mode" value="archive_only"' in ui
     assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
-    assert "{% if execution_blocked %}disabled{% endif %}" in ui
+    assert '{% if execution_blocked %}disabled{% endif %}' in ui
     assert 'hx-disabled-elt="find button[type=\'submit\']"' in ui
     assert ui.count('name="csrf_token" value="{{ csrf_token() }}"') == 3
     assert "current_user.has_permission('platform_operations.manage_data_lifecycle')" in ui
@@ -79,7 +82,7 @@ def test_operator_buttons_keep_csrf_rbac_htmx_toast_and_no_cleanup_button() -> N
     assert "if domain_name == 'audit_event':" in read(
         'app/platform_operations/data_lifecycle/retention/service.py',
     )
-    assert "_check_audit_event_governance(domain_name, user_id)" in service
+    assert '_check_audit_event_governance(domain_name, user_id)' in service
     assert "domain_name not in {'notification_delivery', 'audit_event'}" in service
     assert 'OperationalDeliveryPolicy.DECK_ON_FAILURE' in service
     assert "'feedback_delivery': 'toast'" in service

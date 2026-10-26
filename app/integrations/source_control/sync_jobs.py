@@ -52,7 +52,8 @@ def _eligible(installation: SourceInstallation) -> bool:
 
 
 def build_source_repository_targets(
-    *, installation_record_id: int | None = None,
+    *,
+    installation_record_id: int | None = None,
 ) -> list[dict[str, int]]:
     """Fail closed for provider not admitted, excessive scope or stale grants."""
     if not provider_kind('source_control', 'github').available:
@@ -71,9 +72,7 @@ def build_source_repository_targets(
 
     rows = SourceInstallation.query.order_by(SourceInstallation.id).limit(MAX_INSTALLATIONS + 1).all()
     if len(rows) > MAX_INSTALLATIONS:
-        raise NoEligibleSourceControlTargets(
-            'Source Control installations exceed the bounded reconciliation limit.'
-        )
+        raise NoEligibleSourceControlTargets('Source Control installations exceed the bounded reconciliation limit.')
     return [{'installation_id': int(row.id)} for row in rows if _eligible(row)]
 
 
@@ -98,14 +97,10 @@ def enqueue_source_repository_sync(
     if trigger_type not in {'scheduled', 'on_demand', 'recovery', 'uat'}:
         raise ValueError('Unsupported Source Control inventory trigger.')
     if trigger_type in {'on_demand', 'recovery'} and requested_by_user_id is not None:
-        raise NoEligibleSourceControlTargets(
-            'Provider-triggered refresh does not accept an end-user actor bypass.'
-        )
+        raise NoEligibleSourceControlTargets('Provider-triggered refresh does not accept an end-user actor bypass.')
     targets = build_source_repository_targets(installation_record_id=installation_record_id)
     if not targets:
-        raise NoEligibleSourceControlTargets(
-            'No admitted, Ready GitHub App installation is eligible for inventory.'
-        )
+        raise NoEligibleSourceControlTargets('No admitted, Ready GitHub App installation is eligible for inventory.')
     scoped_id = installation_record_id if installation_record_id is not None else None
     scope = f'installation:{scoped_id}' if scoped_id is not None else 'all'
     return enqueue_canonical_job(

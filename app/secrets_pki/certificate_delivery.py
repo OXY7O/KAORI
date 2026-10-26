@@ -13,7 +13,10 @@ from typing import Literal
 
 SourceState = Literal['ready', 'partial', 'stale', 'not_collected', 'not_configured', 'blocked']
 CorrelationState = Literal[
-    'overlap_observed', 'no_overlap_observed', 'incomplete_evidence', 'source_unknown',
+    'overlap_observed',
+    'no_overlap_observed',
+    'incomplete_evidence',
+    'source_unknown',
 ]
 _VALID_STATES = frozenset({'ready', 'partial', 'stale', 'not_collected', 'not_configured', 'blocked'})
 _MAX_SOURCE_FINGERPRINTS = 1500
@@ -44,9 +47,11 @@ class CertificateDeliveryOverlap:
 
 
 def assess_certificate_overlap(
-    *, vault_fingerprints: tuple[str, ...],
+    *,
+    vault_fingerprints: tuple[str, ...],
     tls_fingerprints: tuple[str, ...],
-    vault_state: SourceState, kubernetes_state: SourceState,
+    vault_state: SourceState,
+    kubernetes_state: SourceState,
 ) -> CertificateDeliveryOverlap:
     """Aggregate two separately authorized committed evidence sets.
 
@@ -66,8 +71,13 @@ def assess_certificate_overlap(
         or (kubernetes_state == 'stale' and not tls_fingerprints)
     ):
         return CertificateDeliveryOverlap(
-            'source_unknown', vault_state, kubernetes_state,
-            None, None, None, 'stored_vault_certs_vs_committed_kubernetes_tls',
+            'source_unknown',
+            vault_state,
+            kubernetes_state,
+            None,
+            None,
+            None,
+            'stored_vault_certs_vs_committed_kubernetes_tls',
         )
     overlaps = sources.intersection(targets)
     matches = sum(1 for fp in targets if fp in sources)
@@ -78,7 +88,11 @@ def assess_certificate_overlap(
     else:
         state = 'no_overlap_observed'
     return CertificateDeliveryOverlap(
-        state, vault_state, kubernetes_state,
-        len(sources), len(overlaps), matches,
+        state,
+        vault_state,
+        kubernetes_state,
+        len(sources),
+        len(overlaps),
+        matches,
         'stored_vault_certs_vs_committed_kubernetes_tls',
     )

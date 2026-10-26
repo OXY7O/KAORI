@@ -55,7 +55,8 @@ def _require_admitted_installation(installation: SourceInstallation) -> int:
 
 
 def enqueue_github_app_job(
-    installation: SourceInstallation, *,
+    installation: SourceInstallation,
+    *,
     operation: _JobOperation,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:

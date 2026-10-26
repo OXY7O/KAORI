@@ -40,11 +40,15 @@ def test_endpoint_fails_closed_when_allowlist_missing(monkeypatch):
         validate_vault_endpoint('https://vault.example.internal:8200')
 
 
-@pytest.mark.parametrize('url', [
-    'http://vault.example.internal:8200', 'https://alice:secret@vault.example.internal:8200',
-    'https://vault.example.internal:8200/v1/sys/health',
-    'https://vault.example.internal:8200?token=anything',
-])
+@pytest.mark.parametrize(
+    'url',
+    [
+        'http://vault.example.internal:8200',
+        'https://alice:secret@vault.example.internal:8200',
+        'https://vault.example.internal:8200/v1/sys/health',
+        'https://vault.example.internal:8200?token=anything',
+    ],
+)
 def test_endpoint_rejects_insecure_or_malformed(url, approved):
     with pytest.raises(ValueError):
         validate_vault_endpoint(url)
@@ -56,15 +60,30 @@ def test_mount_cannot_be_arbitrary_path():
             validate_auth_mount(value)
 
 
-@pytest.mark.parametrize('status,expected', [(200, 'active'), (429, 'standby'), (473, 'performance_standby'),
-                                              (472, 'dr_secondary'), (503, 'sealed'), (501, 'uninitialized')])
+@pytest.mark.parametrize(
+    'status,expected',
+    [
+        (200, 'active'),
+        (429, 'standby'),
+        (473, 'performance_standby'),
+        (472, 'dr_secondary'),
+        (503, 'sealed'),
+        (501, 'uninitialized'),
+    ],
+)
 def test_vault_health_preserves_status(monkeypatch, approved, status, expected):
     monkeypatch.setattr(
-        requests.Session, 'request',
-        lambda self, method, url, **kwargs: FakeResponse(status, {
-            'initialized': status != 501, 'sealed': status == 503,
-            'standby': status == 429, 'version': '2.2.0',
-        }),
+        requests.Session,
+        'request',
+        lambda self, method, url, **kwargs: FakeResponse(
+            status,
+            {
+                'initialized': status != 501,
+                'sealed': status == 503,
+                'standby': status == 429,
+                'version': '2.2.0',
+            },
+        ),
     )
     client = VaultClient(endpoint='https://vault.example.internal:8200', role_id='reader', secret_id='sensitive')
     assert client.health()['status'] == expected
@@ -98,8 +117,11 @@ def test_approle_token_remains_transient(monkeypatch, approved):
 
 
 def test_vault_failure_never_returns_provider_error_body(monkeypatch, approved):
-    monkeypatch.setattr(requests.Session, 'request', lambda self, method, url, **kwargs:
-                        FakeResponse(403, {'errors': ['secret/path/hidden']}))
+    monkeypatch.setattr(
+        requests.Session,
+        'request',
+        lambda self, method, url, **kwargs: FakeResponse(403, {'errors': ['secret/path/hidden']}),
+    )
     client = VaultClient(endpoint='https://vault.example.internal:8200', role_id='reader', secret_id='sensitive')
     with pytest.raises(VaultProviderError) as exc:
         client.test_connection()
@@ -111,8 +133,16 @@ def test_registration_proof_bound_to_exact_secret_and_user():
     app.config['SECRET_KEY'] = 'testing-only'
     app.config['INTEGRATION_CREDENTIAL_KEY'] = 'credential-test-only'
     values = VaultConnectionInput(
-        'Vault Prod', 'production', None, 'https://vault.example.internal:8200', None,
-        'approle', 'reader', 'never-store-in-proof', 5, True,
+        'Vault Prod',
+        'production',
+        None,
+        'https://vault.example.internal:8200',
+        None,
+        'approle',
+        'reader',
+        'never-store-in-proof',
+        5,
+        True,
     )
     with app.app_context():
         proof = issue_proof(values, 42)

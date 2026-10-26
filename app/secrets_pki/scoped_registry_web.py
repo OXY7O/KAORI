@@ -22,8 +22,12 @@ _MAX_PAGE = 40  # The committed scope itself caps at 200, with pages of five.
 
 def _canonical_positive(raw: str) -> int | None:
     if (
-        not isinstance(raw, str) or not raw or not raw.isascii()
-        or not raw.isdecimal() or raw.startswith('0') or len(raw) > 10
+        not isinstance(raw, str)
+        or not raw
+        or not raw.isascii()
+        or not raw.isdecimal()
+        or raw.startswith('0')
+        or len(raw) > 10
     ):
         return None
     number = int(raw)
@@ -55,7 +59,8 @@ def _resolve_scope(*, actor_id: int, instance_id: int, policy_ref: str) -> tuple
             or row.integration_instance_id != instance_id
             or row.scope_level != 'vault_mount'
             or not isinstance(row.provider_namespace, str)
-            or not isinstance(row.mount, str) or not row.mount
+            or not isinstance(row.mount, str)
+            or not row.mount
         ):
             return None
         return row.provider_namespace, row.mount
@@ -71,7 +76,9 @@ def scoped_registry_response() -> ResponseReturnValue:
     if not instance_raw and not policy_raw:
         return render_template(
             'secrets_pki/scoped_registry.html',
-            instance_id=None, scope_ref=None, registry=None,
+            instance_id=None,
+            scope_ref=None,
+            registry=None,
         )
     instance_id = _canonical_positive(instance_raw)
     scope_ref = _canonical_uuid(policy_raw)
@@ -82,7 +89,9 @@ def scoped_registry_response() -> ResponseReturnValue:
     if type(actor_id) is not int or actor_id < 1:
         abort(404)
     internal_scope = _resolve_scope(
-        actor_id=actor_id, instance_id=instance_id, policy_ref=scope_ref,
+        actor_id=actor_id,
+        instance_id=instance_id,
+        policy_ref=scope_ref,
     )
     if internal_scope is None:
         db.session.rollback()
@@ -101,5 +110,7 @@ def scoped_registry_response() -> ResponseReturnValue:
     # Only opaque IDs and allowlisted safe row properties reach the template.
     return render_template(
         'secrets_pki/scoped_registry.html',
-        instance_id=instance_id, scope_ref=scope_ref, registry=result,
+        instance_id=instance_id,
+        scope_ref=scope_ref,
+        registry=result,
     )

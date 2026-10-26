@@ -43,18 +43,29 @@ def store():
 
 def _source():
     vault = IntegrationInstance(
-        integration_type='secrets_pki', provider_key='vault',
-        adapter_key='test', name='Vault Test', enabled=True, lifecycle_status='active',
+        integration_type='secrets_pki',
+        provider_key='vault',
+        adapter_key='test',
+        name='Vault Test',
+        enabled=True,
+        lifecycle_status='active',
     )
     source = IntegrationInstance(
-        integration_type='alert_source', provider_key='alertmanager',
-        adapter_key='test', name='Alertmanager Test', enabled=True, lifecycle_status='active',
+        integration_type='alert_source',
+        provider_key='alertmanager',
+        adapter_key='test',
+        name='Alertmanager Test',
+        enabled=True,
+        lifecycle_status='active',
     )
     db.session.add_all([vault, source])
     db.session.flush()
     binding = IntegrationBinding(
-        integration_instance_id=source.id, asset_type='vault_instance',
-        asset_key=str(vault.id), enabled=True, validation_profile='vault-alerts-v1',
+        integration_instance_id=source.id,
+        asset_type='vault_instance',
+        asset_key=str(vault.id),
+        enabled=True,
+        validation_profile='vault-alerts-v1',
         validation_status='ready',
         selector_json={
             'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': str(vault.id)}],
@@ -73,7 +84,8 @@ def _source():
 def _alert(vault, *, fp='aabbccddeeff1234', state='active', severity='warning'):
     return {
         'labels': {
-            'vault_instance': str(vault.id), 'severity': severity,
+            'vault_instance': str(vault.id),
+            'severity': severity,
             'alertname': 'SECRET/PATH/must-not-appear',
         },
         'annotations': {'summary': 'PRIVATE-KEY-AND-SECRET-PATH'},
@@ -85,8 +97,11 @@ def _alert(vault, *, fp='aabbccddeeff1234', state='active', severity='warning'):
 
 def _commit(binding, alerts, *, now=AT):
     return commit_vault_alert_observations(
-        binding_id=binding.id, alerts=alerts, hmac_key=KEY,
-        observed_at=now, now=now,
+        binding_id=binding.id,
+        alerts=alerts,
+        hmac_key=KEY,
+        observed_at=now,
+        now=now,
     )
 
 
@@ -96,11 +111,16 @@ def _plan(binding, *, now=AT):
 
 def _case(vault, source, binding, case_key, *, closed=False, **updates):
     case = AlertCase(
-        case_key=case_key, source_type='provider_alert',
-        source_ref=case_key, domain='secrets_pki',
-        asset_type='vault_instance', asset_key=str(vault.id),
-        asset_name='Approved Vault', alert_name='Sanitized Vault source alert',
-        severity='warning', source_state='firing',
+        case_key=case_key,
+        source_type='provider_alert',
+        source_ref=case_key,
+        domain='secrets_pki',
+        asset_type='vault_instance',
+        asset_key=str(vault.id),
+        asset_name='Approved Vault',
+        alert_name='Sanitized Vault source alert',
+        severity='warning',
+        source_state='firing',
         workflow_state='closed' if closed else 'open',
         routing_state='suppressed',
         routing_override_reason='policy_ineligible',
@@ -229,11 +249,17 @@ def test_provenance_changed_after_binding_rotation_blocks(store):
     vault, source, binding = _source()
     _commit(binding, [_alert(vault)])
     key = _plan(binding)['candidates'][0]['case_key']
-    _case(vault, source, binding, key, evidence_json={
-        'correlation_profile': 'vault-alert-hmac-v1',
-        'source_binding_id': binding.id + 100,
-        'source_integration_id': source.id,
-    })
+    _case(
+        vault,
+        source,
+        binding,
+        key,
+        evidence_json={
+            'correlation_profile': 'vault-alert-hmac-v1',
+            'source_binding_id': binding.id + 100,
+            'source_integration_id': source.id,
+        },
+    )
     assert _plan(binding)['status'] == 'blocked'
 
 
@@ -269,17 +295,24 @@ def test_over_budget_historical_case_population_is_blocked(store):
     _commit(binding, [_alert(vault)])
     for number in range(101):
         key = f'vault-alert:{number:064x}'
-        db.session.add(AlertCase(
-            case_key=key, source_type='provider_alert', source_ref=key,
-            domain='secrets_pki', asset_type='vault_instance', asset_key=str(vault.id),
-            asset_name='Vault', alert_name='Opaque source case',
-            routing_state='suppressed',
-            evidence_json={
-                'correlation_profile': 'vault-alert-hmac-v1',
-                'source_binding_id': binding.id,
-                'source_integration_id': source.id,
-            },
-        ))
+        db.session.add(
+            AlertCase(
+                case_key=key,
+                source_type='provider_alert',
+                source_ref=key,
+                domain='secrets_pki',
+                asset_type='vault_instance',
+                asset_key=str(vault.id),
+                asset_name='Vault',
+                alert_name='Opaque source case',
+                routing_state='suppressed',
+                evidence_json={
+                    'correlation_profile': 'vault-alert-hmac-v1',
+                    'source_binding_id': binding.id,
+                    'source_integration_id': source.id,
+                },
+            )
+        )
     db.session.commit()
     assert _plan(binding)['status'] == 'blocked'
     assert AlertCase.query.count() == 101

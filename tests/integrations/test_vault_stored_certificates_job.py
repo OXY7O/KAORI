@@ -22,15 +22,18 @@ def test_registered_stored_pki_job_is_separate_and_manual_by_default():
 
 def test_stored_cert_job_task_payload_contains_no_mount_or_serial(monkeypatch):
     monkeypatch.setattr(
-        stored_certificate_jobs, 'build_stored_certificate_targets',
+        stored_certificate_jobs,
+        'build_stored_certificate_targets',
         lambda: [{'integration_instance_id': 14}],
     )
     monkeypatch.setattr(
-        stored_certificate_jobs, 'enqueue_canonical_job',
+        stored_certificate_jobs,
+        'enqueue_canonical_job',
         lambda **kwargs: (kwargs, True),
     )
     dispatched, created = stored_certificate_jobs.enqueue_stored_certificate_sync(
-        requested_by_user_id=7, trigger_type='manual',
+        requested_by_user_id=7,
+        trigger_type='manual',
     )
     assert created is True
     assert dispatched['queue_name'] == 'inventory'
@@ -46,7 +49,8 @@ def test_no_approved_pki_target_blocks_enqueue(monkeypatch):
     monkeypatch.setattr(stored_certificate_jobs, 'build_vault_pki_targets', lambda: [])
     with pytest.raises(stored_certificate_jobs.NoEligibleVaultPKITargets):
         stored_certificate_jobs.enqueue_stored_certificate_sync(
-            requested_by_user_id=7, trigger_type='manual',
+            requested_by_user_id=7,
+            trigger_type='manual',
         )
 
 
@@ -75,42 +79,59 @@ def test_task_does_not_treat_partial_mount_success_as_complete(monkeypatch):
             self.result = 'canceled'
 
     identity = SimpleNamespace(
-        integration_type='secrets_pki', provider_key='vault',
-        enabled=True, lifecycle_status='active', readiness_status='ready',
+        integration_type='secrets_pki',
+        provider_key='vault',
+        enabled=True,
+        lifecycle_status='active',
+        readiness_status='ready',
     )
     provider = SimpleNamespace(integration_instance=identity, pki_mounts=['a', 'b'], pki_stored_certs_enabled=True)
     monkeypatch.setattr(
-        tasks, 'VaultInstance',
-        SimpleNamespace(query=SimpleNamespace(filter_by=lambda **kwargs: SimpleNamespace(
-            first=lambda: provider,
-        ))),
+        tasks,
+        'VaultInstance',
+        SimpleNamespace(
+            query=SimpleNamespace(
+                filter_by=lambda **kwargs: SimpleNamespace(
+                    first=lambda: provider,
+                )
+            )
+        ),
     )
     monkeypatch.setattr(tasks, 'JobExecutionContext', Context)
     monkeypatch.setattr(tasks, 'build_client', lambda _: object())
     # The collector is imported locally, so override the source module.
     from app.integrations.secrets_management.secrets_pki.providers.vault import pki_stored_certificates
+
     monkeypatch.setattr(
-        pki_stored_certificates, 'collect_pki_stored_certificates',
+        pki_stored_certificates,
+        'collect_pki_stored_certificates',
         lambda _client, *, mount: (
-            SimpleNamespace(mount=mount) if mount == 'a'
+            SimpleNamespace(mount=mount)
+            if mount == 'a'
             else (_ for _ in ()).throw(ValueError('private-provider-serial'))
         ),
     )
     from app.integrations.secrets_management.secrets_pki import commit_stored_certificates
+
     monkeypatch.setattr(
-        commit_stored_certificates, 'commit_stored_pki_certificates',
+        commit_stored_certificates,
+        'commit_stored_pki_certificates',
         lambda *_args: SimpleNamespace(observed_count=2),
     )
     failed = []
     monkeypatch.setattr(
-        commit_stored_certificates, 'mark_stored_pki_certificates_failed',
+        commit_stored_certificates,
+        'mark_stored_pki_certificates_failed',
         lambda instance_id, mount: failed.append((instance_id, mount)),
     )
     monkeypatch.setattr(
-        tasks, 'db', SimpleNamespace(session=SimpleNamespace(rollback=lambda: None)),
+        tasks,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(rollback=lambda: None)),
     )
     result = tasks.sync_vault_stored_certificates_task.run(
-        targets=[{'integration_instance_id': 14}], requested_by_user_id=7,
+        targets=[{'integration_instance_id': 14}],
+        requested_by_user_id=7,
     )
     assert result['status'] == 'partial'
     assert result['committed_mounts'] == 1
@@ -121,15 +142,21 @@ def test_task_does_not_treat_partial_mount_success_as_complete(monkeypatch):
 
 def test_job_targets_require_extra_stored_cert_enumeration_approval(monkeypatch):
     monkeypatch.setattr(
-        stored_certificate_jobs, 'build_vault_pki_targets',
+        stored_certificate_jobs,
+        'build_vault_pki_targets',
         lambda: [{'integration_instance_id': 42}],
     )
     provider = SimpleNamespace(pki_stored_certs_enabled=False)
     monkeypatch.setattr(
-        stored_certificate_jobs, 'VaultInstance',
-        SimpleNamespace(query=SimpleNamespace(filter_by=lambda **kwargs: SimpleNamespace(
-            first=lambda: provider,
-        ))),
+        stored_certificate_jobs,
+        'VaultInstance',
+        SimpleNamespace(
+            query=SimpleNamespace(
+                filter_by=lambda **kwargs: SimpleNamespace(
+                    first=lambda: provider,
+                )
+            )
+        ),
     )
     assert stored_certificate_jobs.build_stored_certificate_targets() == []
     provider.pki_stored_certs_enabled = True

@@ -83,9 +83,7 @@ def load_topology_records(
     # count its eligible rows in SQL without materializing any resource ORM.
     shallow_budget = max_nodes if selection.depth == '1' else None
     parent_budget = (
-        max(max_nodes - len(clusters), 0)
-        if max_nodes is not None and selection.depth != '1'
-        else shallow_budget
+        max(max_nodes - len(clusters), 0) if max_nodes is not None and selection.depth != '1' else shallow_budget
     )
     namespaces = _load_namespaces(cluster_ids, namespace, max_nodes=parent_budget, totals=source_totals)
     parent_total = source_totals.get('namespace', len(namespaces))
@@ -227,9 +225,7 @@ def _load_pods(
     query = _namespaced_query(PodInventory, cluster_ids, namespace)
     if max_nodes is not None:
         query = _visible_namespace_query(query, PodInventory, cluster_ids)
-    ordering = (
-        PodInventory.cluster_id.asc(), PodInventory.namespace.asc(), PodInventory.pod_name.asc()
-    )
+    ordering = (PodInventory.cluster_id.asc(), PodInventory.namespace.asc(), PodInventory.pod_name.asc())
     query = query.order_by(*ordering)
     if max_nodes is None or selection.scope in {'all', 'compute'}:
         return _materialize_family(query, kind='pod', max_nodes=max_nodes, totals=totals)
@@ -250,10 +246,7 @@ def _load_pods(
         for pod_id, cluster_id, scope, labels in query.with_entities(
             PodInventory.id, PodInventory.cluster_id, PodInventory.namespace, PodInventory.labels
         ).yield_per(256):
-            if not any(
-                selector_matches(selector, labels or {})
-                for selector in selectors.get((cluster_id, scope), ())
-            ):
+            if not any(selector_matches(selector, labels or {}) for selector in selectors.get((cluster_id, scope), ())):
                 continue
             matching_total += 1
             if len(selected_ids) < max_nodes:
@@ -429,9 +422,7 @@ def _load_storage(
     volumes = query.filter(StorageInventory.storage_type == 'PersistentVolume')
     if namespace:
         referenced_claim = aliased(StorageInventory)
-        committed_claims = filter_current_generation(
-            db.session.query(referenced_claim.id), referenced_claim
-        ).filter(
+        committed_claims = filter_current_generation(db.session.query(referenced_claim.id), referenced_claim).filter(
             referenced_claim.cluster_id == StorageInventory.cluster_id,
             referenced_claim.namespace == namespace,
             referenced_claim.storage_type == 'PersistentVolumeClaim',

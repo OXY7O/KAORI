@@ -1,4 +1,5 @@
 """Guard bounded Notification Delivery ledger backfill before runtime admission."""
+
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -24,7 +25,9 @@ ROOT = Path(__file__).resolve().parents[2]
     ],
 )
 def test_identity_backfill_rejects_invalid_windows_before_database_access(
-    high_watermark: int, after_id: int, batch_size: int,
+    high_watermark: int,
+    after_id: int,
+    batch_size: int,
 ) -> None:
     with pytest.raises(ValueError):
         reconcile_delivery_identity_batch(

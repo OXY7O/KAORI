@@ -38,9 +38,7 @@ def overview() -> ResponseReturnValue:
         'secrets_pki/overview.html',
         summary=build_secrets_pki_operational_summary(),
         binding_coverage=build_vault_binding_coverage(),
-        alert_source_sample=(
-            build_vault_alert_source_sample_summary() if can_view_intelligence else None
-        ),
+        alert_source_sample=(build_vault_alert_source_sample_summary() if can_view_intelligence else None),
         active_tab=normalize_operational_tab(request.args.get('tab')),
         can_manage_integrations=current_user.has_permission('integrations.manage'),
         can_view_intelligence=can_view_intelligence,

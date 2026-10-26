@@ -49,8 +49,12 @@ def source_engine():
 def _connection(connection, name: str) -> int:
     return connection.execute(
         insert(IntegrationInstance).values(
-            name=name, integration_type='source_control', provider_key='github',
-            adapter_key='github_rest_v3', enabled=False, readiness_status='validation_required',
+            name=name,
+            integration_type='source_control',
+            provider_key='github',
+            adapter_key='github_rest_v3',
+            enabled=False,
+            readiness_status='validation_required',
         )
     ).inserted_primary_key[0]
 
@@ -58,8 +62,11 @@ def _connection(connection, name: str) -> int:
 def _account(connection, native_id: str, login: str = 'shared') -> int:
     return connection.execute(
         insert(SourceAccount).values(
-            provider_key='github', host_key='github.com', native_account_id=native_id,
-            account_type='organization', login=login,
+            provider_key='github',
+            host_key='github.com',
+            native_account_id=native_id,
+            account_type='organization',
+            login=login,
         )
     ).inserted_primary_key[0]
 
@@ -67,9 +74,14 @@ def _account(connection, native_id: str, login: str = 'shared') -> int:
 def _repository(connection, account: int, native_id: str, name: str) -> int:
     return connection.execute(
         insert(SourceRepository).values(
-            provider_key='github', host_key='github.com', native_repository_id=native_id,
-            account_id=account, name=name, full_name=f'shared/{name}',
-            provider_presence='observed', archived=False,
+            provider_key='github',
+            host_key='github.com',
+            native_repository_id=native_id,
+            account_id=account,
+            name=name,
+            full_name=f'shared/{name}',
+            provider_presence='observed',
+            archived=False,
         )
     ).inserted_primary_key[0]
 
@@ -77,10 +89,14 @@ def _repository(connection, account: int, native_id: str, name: str) -> int:
 def _installation(connection, account: int, conn_id: int, app: str, install: str) -> int:
     return connection.execute(
         insert(SourceInstallation).values(
-            integration_instance_id=conn_id, account_id=account,
-            provider_key='github', host_key='github.com',
-            native_app_id=app, native_installation_id=install,
-            repository_scope='selected', grant_status='unknown',
+            integration_instance_id=conn_id,
+            account_id=account,
+            provider_key='github',
+            host_key='github.com',
+            native_app_id=app,
+            native_installation_id=install,
+            repository_scope='selected',
+            grant_status='unknown',
         )
     ).inserted_primary_key[0]
 
@@ -95,18 +111,23 @@ def test_native_repository_identity_is_not_owner_name_or_installation(source_eng
         for installation in (first, second):
             connection.execute(
                 insert(SourceRepositoryGrant).values(
-                    installation_id=installation, repository_id=repository,
-                    access_status='granted', valid_from=observed, last_observed_at=observed,
+                    installation_id=installation,
+                    repository_id=repository,
+                    access_status='granted',
+                    valid_from=observed,
+                    last_observed_at=observed,
                 )
             )
         row = connection.execute(select(SourceRepository).where(SourceRepository.id == repository)).scalar_one()
         assert row.native_repository_id == '99'
         assert row.account_id == account
-        grants = connection.execute(
-            select(SourceRepositoryGrant.installation_id).where(
-                SourceRepositoryGrant.repository_id == repository
+        grants = (
+            connection.execute(
+                select(SourceRepositoryGrant.installation_id).where(SourceRepositoryGrant.repository_id == repository)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert sorted(grants) == sorted([first, second])
 
 
@@ -118,16 +139,21 @@ def test_duplicate_current_grant_is_rejected_but_history_is_retained(source_engi
         start = datetime(2026, 10, 22, tzinfo=UTC)
         connection.execute(
             insert(SourceRepositoryGrant).values(
-                installation_id=installation, repository_id=repository,
-                access_status='granted', valid_from=start, last_observed_at=start,
+                installation_id=installation,
+                repository_id=repository,
+                access_status='granted',
+                valid_from=start,
+                last_observed_at=start,
             )
         )
         with pytest.raises(IntegrityError):
             with connection.begin_nested():
                 connection.execute(
                     insert(SourceRepositoryGrant).values(
-                        installation_id=installation, repository_id=repository,
-                        access_status='granted', valid_from=start + timedelta(hours=1),
+                        installation_id=installation,
+                        repository_id=repository,
+                        access_status='granted',
+                        valid_from=start + timedelta(hours=1),
                         last_observed_at=start + timedelta(hours=1),
                     )
                 )
@@ -138,14 +164,23 @@ def test_duplicate_current_grant_is_rejected_but_history_is_retained(source_engi
         )
         connection.execute(
             insert(SourceRepositoryGrant).values(
-                installation_id=installation, repository_id=repository,
-                access_status='granted', valid_from=start + timedelta(hours=3),
+                installation_id=installation,
+                repository_id=repository,
+                access_status='granted',
+                valid_from=start + timedelta(hours=3),
                 last_observed_at=start + timedelta(hours=3),
             )
         )
-        assert len(connection.execute(
-            select(SourceRepositoryGrant.id).where(SourceRepositoryGrant.repository_id == repository)
-        ).scalars().all()) == 2
+        assert (
+            len(
+                connection.execute(
+                    select(SourceRepositoryGrant.id).where(SourceRepositoryGrant.repository_id == repository)
+                )
+                .scalars()
+                .all()
+            )
+            == 2
+        )
         retained = connection.execute(select(SourceRepository).where(SourceRepository.id == repository)).scalar_one()
         assert retained.provider_presence == 'observed'  # access expiry never deletes the source object
 
@@ -166,21 +201,26 @@ def test_revision_and_branch_reference_are_repository_scoped(source_engine) -> N
         assert first_revision != second_revision
         branch = connection.execute(
             insert(SourceReference).values(
-                repository_id=first, full_ref='refs/heads/main',
-                current_revision_id=first_revision, state='active',
+                repository_id=first,
+                full_ref='refs/heads/main',
+                current_revision_id=first_revision,
+                state='active',
             )
         ).inserted_primary_key[0]
         connection.execute(
             insert(SourceReferenceTransition).values(
-                reference_id=branch, target_revision_id=first_revision,
-                observed_at=now, transition_state='observed',
+                reference_id=branch,
+                target_revision_id=first_revision,
+                observed_at=now,
+                transition_state='observed',
             )
         )
-        assert connection.execute(
-            select(SourceReferenceTransition.id).where(
-                SourceReferenceTransition.reference_id == branch
-            )
-        ).scalar_one() is not None
+        assert (
+            connection.execute(
+                select(SourceReferenceTransition.id).where(SourceReferenceTransition.reference_id == branch)
+            ).scalar_one()
+            is not None
+        )
 
 
 def test_repository_native_id_unique_per_host_not_mutable_representation(source_engine) -> None:
@@ -192,8 +232,10 @@ def test_repository_native_id_unique_per_host_not_mutable_representation(source_
                 _repository(connection, account, '75', 'renamed')
         connection.execute(
             insert(SourceRepository).values(
-                provider_key='github', host_key='ghes.internal',
-                native_repository_id='75', provider_presence='unknown',
+                provider_key='github',
+                host_key='ghes.internal',
+                native_repository_id='75',
+                provider_presence='unknown',
             )
         )
 

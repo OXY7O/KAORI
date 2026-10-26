@@ -11,8 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _version(status='ready'):
     return {
-        'status': status, 'label': 'Committed KV v2 Version Evidence',
-        'observed_versions': 8, 'available': 6, 'unknown': 2,
+        'status': status,
+        'label': 'Committed KV v2 Version Evidence',
+        'observed_versions': 8,
+        'available': 6,
+        'unknown': 2,
     }
 
 
@@ -21,9 +24,11 @@ def sources(monkeypatch):
     tls_calls = []
     monkeypatch.setattr(domain, 'build_kv2_version_posture', lambda: _version())
     monkeypatch.setattr(
-        domain, 'build_certificate_delivery_overlap',
+        domain,
+        'build_certificate_delivery_overlap',
         lambda **kwargs: (
-            tls_calls.append(kwargs) or {
+            tls_calls.append(kwargs)
+            or {
                 'status': 'overlap_observed',
                 'label': 'Same Public Certificate Observed',
                 'overlapping_certificates': 3,
@@ -32,29 +37,37 @@ def sources(monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        domain, 'build_secrets_pki_operational_summary',
+        domain,
+        'build_secrets_pki_operational_summary',
         lambda: {
-            'state': 'committed', 'label': 'Committed Inventory Evidence',
-            'committed_mount_count': 2, 'observed_secret_count': 7,
+            'state': 'committed',
+            'label': 'Committed Inventory Evidence',
+            'committed_mount_count': 2,
+            'observed_secret_count': 7,
         },
     )
     monkeypatch.setattr(
-        domain, 'build_vault_binding_coverage',
+        domain,
+        'build_vault_binding_coverage',
         lambda: {
             'metrics': {
-                'status': 'qualified', 'label': 'Metrics Binding Qualified',
+                'status': 'qualified',
+                'label': 'Metrics Binding Qualified',
                 'qualified_vault_sources': 2,
             },
             'alerts': {
-                'status': 'needs_validation', 'label': 'Alert Binding Validation Required',
+                'status': 'needs_validation',
+                'label': 'Alert Binding Validation Required',
                 'qualified_vault_sources': 0,
             },
         },
     )
     monkeypatch.setattr(
-        domain, 'build_stored_pki_validity_posture',
+        domain,
+        'build_stored_pki_validity_posture',
         lambda: {
-            'status': 'ready', 'label': 'Qualified Public X.509',
+            'status': 'ready',
+            'label': 'Qualified Public X.509',
             'observed_stored_certificates': 3,
         },
     )
@@ -76,7 +89,8 @@ def test_stale_kv2_version_is_not_qualified_lease_evidence(sources, monkeypatch)
 
 def test_no_tls_permission_means_no_cross_domain_query(sources):
     view = domain.build_operational_evidence_workspace(
-        kind='consumers', can_view_kubernetes_tls=False,
+        kind='consumers',
+        can_view_kubernetes_tls=False,
     )
     assert sources == []
     assert all(item['value'] is None for item in view['metrics'])
@@ -85,7 +99,8 @@ def test_no_tls_permission_means_no_cross_domain_query(sources):
 
 def test_tls_overlap_is_not_confirmed_consumer_or_rotation(sources):
     view = domain.build_operational_evidence_workspace(
-        kind='consumers', can_view_kubernetes_tls=True,
+        kind='consumers',
+        can_view_kubernetes_tls=True,
     )
     assert sources == [{'authorized_to_view_kubernetes_tls': True}]
     assert [item['value'] for item in view['metrics']] == [None, None, 3, 2]
@@ -94,14 +109,18 @@ def test_tls_overlap_is_not_confirmed_consumer_or_rotation(sources):
 
 def test_partial_tls_evidence_cannot_produce_current_overlap_counts(sources, monkeypatch):
     monkeypatch.setattr(
-        domain, 'build_certificate_delivery_overlap',
+        domain,
+        'build_certificate_delivery_overlap',
         lambda **_kwargs: {
-            'status': 'incomplete_evidence', 'label': 'Stale TLS Overlap',
-            'overlapping_certificates': 99, 'matching_kubernetes_tls_secrets': 22,
+            'status': 'incomplete_evidence',
+            'label': 'Stale TLS Overlap',
+            'overlapping_certificates': 99,
+            'matching_kubernetes_tls_secrets': 22,
         },
     )
     view = domain.build_operational_evidence_workspace(
-        kind='consumers', can_view_kubernetes_tls=True,
+        kind='consumers',
+        can_view_kubernetes_tls=True,
     )
     assert all(item['value'] is None for item in view['metrics'])
 
@@ -115,18 +134,21 @@ def test_governance_qualifies_sources_independently(sources):
 
 def test_governance_unknown_never_renders_false_healthy_zero(sources, monkeypatch):
     monkeypatch.setattr(
-        domain, 'build_secrets_pki_operational_summary',
+        domain,
+        'build_secrets_pki_operational_summary',
         lambda: {'state': 'partial', 'label': 'Incomplete', 'committed_mount_count': 10},
     )
     monkeypatch.setattr(
-        domain, 'build_vault_binding_coverage',
+        domain,
+        'build_vault_binding_coverage',
         lambda: {
             'metrics': {'status': 'partial', 'qualified_vault_sources': 1},
             'alerts': {'status': 'unavailable', 'qualified_vault_sources': 0},
         },
     )
     monkeypatch.setattr(
-        domain, 'build_stored_pki_validity_posture',
+        domain,
+        'build_stored_pki_validity_posture',
         lambda: {'status': 'stale', 'observed_stored_certificates': 3},
     )
     view = domain.build_operational_evidence_workspace(kind='governance')
@@ -156,10 +178,16 @@ def test_templates_use_violet_shared_components_and_no_sensitive_fields():
     assert 'components/operational_metric_card.html' in html
     assert 'components/operational_section_card.html' in html
     assert "metric.value if metric.value is not none else 'Not Qualified'" in html
-    assert "secrets_pki.lifecycle" in html
+    assert 'secrets_pki.lifecycle' in html
     for forbidden in (
-        'row.path', 'row.secret_value', 'lease.provider_id', 'client_token',
-        'private_key', 'item.namespace', 'policy.mount', 'item.case_key',
+        'row.path',
+        'row.secret_value',
+        'lease.provider_id',
+        'client_token',
+        'private_key',
+        'item.namespace',
+        'policy.mount',
+        'item.case_key',
     ):
         assert forbidden not in html
 

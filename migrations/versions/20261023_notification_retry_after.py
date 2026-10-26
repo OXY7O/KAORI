@@ -6,6 +6,7 @@ Revises: 20261023_sc_webhook_job_link
 Existing rows retain NULL and the legacy global backoff semantics.
 Recovery remains disabled by default; no worker or provider send is enabled.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

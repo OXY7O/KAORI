@@ -37,28 +37,41 @@ def stored_cert_source():
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         provider = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault',
-            adapter_key='vault_http_v1', name='private-issuer-name',
-            environment='testing', enabled=True, lifecycle_status='active',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='private-issuer-name',
+            environment='testing',
+            enabled=True,
+            lifecycle_status='active',
             readiness_status='ready',
         )
         db.session.add(provider)
         db.session.flush()
-        db.session.add_all([
-            VaultInstance(
-                integration_instance_id=provider.id,
-                endpoint='https://vault.invalid', auth_mount='approle',
-                role_id='fixture', secret_id='test-secret-id',
-                timeout=5, verify_ssl=True, pki_mounts=['pki'],
-                pki_stored_certs_enabled=True,
-            ),
-            PKIStoredCertificateCollectionState(
-                integration_instance_id=provider.id, provider_namespace='',
-                mount='pki', status='ready',
-                observed_stored_certificate_count=0,
-                last_observed_at=AT, last_committed_at=AT,
-            ),
-        ])
+        db.session.add_all(
+            [
+                VaultInstance(
+                    integration_instance_id=provider.id,
+                    endpoint='https://vault.invalid',
+                    auth_mount='approle',
+                    role_id='fixture',
+                    secret_id='test-secret-id',
+                    timeout=5,
+                    verify_ssl=True,
+                    pki_mounts=['pki'],
+                    pki_stored_certs_enabled=True,
+                ),
+                PKIStoredCertificateCollectionState(
+                    integration_instance_id=provider.id,
+                    provider_namespace='',
+                    mount='pki',
+                    status='ready',
+                    observed_stored_certificate_count=0,
+                    last_observed_at=AT,
+                    last_committed_at=AT,
+                ),
+            ]
+        )
         db.session.commit()
         try:
             yield provider.id
@@ -76,15 +89,19 @@ def _add_cert(provider_id, *, valid_from, valid_until, observation=AT, current=T
         integration_instance_id=provider_id,
     ).one()
     number = PKIStoredCertificateObservation.query.count() + 1
-    db.session.add(PKIStoredCertificateObservation(
-        integration_instance_id=provider_id,
-        provider_namespace='', mount='pki',
-        serial_hex=format(number, 'x'),
-        fingerprint_sha256=format(number, '064x'),
-        valid_from=valid_from, valid_until=valid_until,
-        observation_status='observed' if current else 'not_observed',
-        last_observed_at=observation,
-    ))
+    db.session.add(
+        PKIStoredCertificateObservation(
+            integration_instance_id=provider_id,
+            provider_namespace='',
+            mount='pki',
+            serial_hex=format(number, 'x'),
+            fingerprint_sha256=format(number, '064x'),
+            valid_from=valid_from,
+            valid_until=valid_until,
+            observation_status='observed' if current else 'not_observed',
+            last_observed_at=observation,
+        )
+    )
     if current:
         state.observed_stored_certificate_count += 1
     db.session.commit()
@@ -100,14 +117,20 @@ def test_committed_empty_is_zero_but_not_comprehensive_issuance(stored_cert_sour
     assert not result['endpoint_serving_verified']
 
 
-@pytest.mark.parametrize(('offset_before', 'offset_after', 'expected'), [
-    (-10, 20, 'within_validity_window'),
-    (10, 20, 'not_yet_valid'),
-    (-20, -10, 'expired'),
-    (20, -10, 'unknown'),
-])
+@pytest.mark.parametrize(
+    ('offset_before', 'offset_after', 'expected'),
+    [
+        (-10, 20, 'within_validity_window'),
+        (10, 20, 'not_yet_valid'),
+        (-20, -10, 'expired'),
+        (20, -10, 'unknown'),
+    ],
+)
 def test_public_validity_window_classified_without_claiming_trust(
-    stored_cert_source, offset_before, offset_after, expected,
+    stored_cert_source,
+    offset_before,
+    offset_after,
+    expected,
 ):
     _add_cert(
         stored_cert_source,
@@ -214,15 +237,20 @@ def test_overbound_observed_count_is_never_partial_healthy(stored_cert_source):
     assert _read()['status'] == 'incomplete'
 
 
-@pytest.mark.parametrize(('days_until_expiry', 'expected'), [
-    (1, 'expires_within_7d'),
-    (7, 'expires_within_7d'),
-    (8, 'expires_8_to_30d'),
-    (30, 'expires_8_to_30d'),
-    (31, 'expires_after_30d'),
-])
+@pytest.mark.parametrize(
+    ('days_until_expiry', 'expected'),
+    [
+        (1, 'expires_within_7d'),
+        (7, 'expires_within_7d'),
+        (8, 'expires_8_to_30d'),
+        (30, 'expires_8_to_30d'),
+        (31, 'expires_after_30d'),
+    ],
+)
 def test_exclusive_pki_expiry_horizons_are_computed_from_qualified_public_metadata(
-    stored_cert_source, days_until_expiry, expected,
+    stored_cert_source,
+    days_until_expiry,
+    expected,
 ):
     instant = AT + timedelta(minutes=5)
     _add_cert(
@@ -233,9 +261,18 @@ def test_exclusive_pki_expiry_horizons_are_computed_from_qualified_public_metada
     result = _read()
     assert result['status'] == 'ready'
     assert result[expected] == 1
-    assert sum(result[band] for band in (
-        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
-    )) == result['within_validity_window'] == 1
+    assert (
+        sum(
+            result[band]
+            for band in (
+                'expires_within_7d',
+                'expires_8_to_30d',
+                'expires_after_30d',
+            )
+        )
+        == result['within_validity_window']
+        == 1
+    )
     assert result['last_observed_at'] is not None
     assert 'private-issuer-name' not in repr(result)
     assert 'test-secret-id' not in repr(result)
@@ -250,9 +287,14 @@ def test_unqualified_pki_never_exposes_expiration_band_zeros(stored_cert_source)
     result = _read()
     assert result['status'] == 'incomplete'
     assert result['last_observed_at'] is None
-    assert all(result[band] is None for band in (
-        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
-    ))
+    assert all(
+        result[band] is None
+        for band in (
+            'expires_within_7d',
+            'expires_8_to_30d',
+            'expires_after_30d',
+        )
+    )
 
 
 def test_not_yet_valid_and_expired_never_counted_as_upcoming(stored_cert_source):
@@ -269,9 +311,18 @@ def test_not_yet_valid_and_expired_never_counted_as_upcoming(stored_cert_source)
     result = _read()
     assert result['not_yet_valid'] == 1
     assert result['expired'] == 1
-    assert sum(result[band] for band in (
-        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
-    )) == 0
+    assert (
+        sum(
+            result[band]
+            for band in (
+                'expires_within_7d',
+                'expires_8_to_30d',
+                'expires_after_30d',
+            )
+        )
+        == 0
+    )
+
 
 def test_exact_expiry_instant_is_expired_not_upcoming(stored_cert_source):
     instant = AT + timedelta(minutes=5)

@@ -14,10 +14,19 @@ UID_SECRET = '12345678-1234-4234-8234-123456789abc'
 UID_OWNER = '12345678-1234-4234-8234-123456789abd'
 
 
-def owner(kind='ExternalSecret', *, version='external-secrets.io/v1beta1',
-          uid=UID_OWNER, controller=True, name='secret-name-can-be-sensitive'):
+def owner(
+    kind='ExternalSecret',
+    *,
+    version='external-secrets.io/v1beta1',
+    uid=UID_OWNER,
+    controller=True,
+    name='secret-name-can-be-sensitive',
+):
     return SimpleNamespace(
-        kind=kind, api_version=version, uid=uid, controller=controller,
+        kind=kind,
+        api_version=version,
+        uid=uid,
+        controller=controller,
         name=name,
     )
 
@@ -26,8 +35,10 @@ def tls_secret(*, references=None, uid=UID_SECRET):
     return SimpleNamespace(
         type='kubernetes.io/tls',
         metadata=SimpleNamespace(
-            namespace='team-private', name='credential-material',
-            uid=uid, owner_references=references,
+            namespace='team-private',
+            name='credential-material',
+            uid=uid,
+            owner_references=references,
         ),
         data={},
     )
@@ -47,9 +58,11 @@ def test_supported_owner_uid_is_safe_candidate_not_source_proof():
 
 def test_cert_manager_certificate_is_candidate_without_claiming_vault_source():
     item = normalize_tls_controller_owner(
-        tls_secret(references=[
-            owner('Certificate', version='cert-manager.io/v1'),
-        ]).metadata,
+        tls_secret(
+            references=[
+                owner('Certificate', version='cert-manager.io/v1'),
+            ]
+        ).metadata,
     )
     assert item == [{'kind': 'Certificate', 'api_group': 'cert-manager.io', 'uid': UID_OWNER}]
 
@@ -63,14 +76,17 @@ def test_other_owner_kind_and_noncontroller_reference_never_establish_candidate(
         assert normalize_tls_controller_owner(tls_secret(references=references).metadata) == []
 
 
-@pytest.mark.parametrize('references', [
-    [owner(uid='../../secrets')],
-    [owner(version='unapproved/v1')],
-    [owner(kind='Certificate', version='external-secrets.io/v1')],
-    [owner(), owner()],
-    [owner(uid=UID_OWNER.upper().replace('-', ''))],
-    [owner()] * 9,
-])
+@pytest.mark.parametrize(
+    'references',
+    [
+        [owner(uid='../../secrets')],
+        [owner(version='unapproved/v1')],
+        [owner(kind='Certificate', version='external-secrets.io/v1')],
+        [owner(), owner()],
+        [owner(uid=UID_OWNER.upper().replace('-', ''))],
+        [owner()] * 9,
+    ],
+)
 def test_ambiguous_untrusted_or_overbound_owner_cannot_be_treated_as_absent(references):
     assert normalize_tls_controller_owner(tls_secret(references=references).metadata) is None
 
@@ -82,13 +98,15 @@ def test_legacy_missing_owner_metadata_is_a_qualified_no_candidate_not_origin_pr
     assert validate_committed_controller_owners(None) is None
 
 
-@pytest.mark.parametrize('stored', [
-    {'kind': 'ExternalSecret'},
-    [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': 'private/path'}],
-    [{'kind': 'Certificate', 'api_group': 'external-secrets.io', 'uid': UID_OWNER}],
-    [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': UID_OWNER,
-      'name': 'sensitive'}],
-    [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': UID_OWNER}] * 2,
-])
+@pytest.mark.parametrize(
+    'stored',
+    [
+        {'kind': 'ExternalSecret'},
+        [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': 'private/path'}],
+        [{'kind': 'Certificate', 'api_group': 'external-secrets.io', 'uid': UID_OWNER}],
+        [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': UID_OWNER, 'name': 'sensitive'}],
+        [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': UID_OWNER}] * 2,
+    ],
+)
 def test_malformed_committed_reference_never_counts_as_controller(stored):
     assert validate_committed_controller_owners(stored) is None

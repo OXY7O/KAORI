@@ -13,8 +13,13 @@ def validate_vault_endpoint(value: str) -> str:
     except ValueError as exc:
         raise ValueError('Vault endpoint is invalid.') from exc
     if (
-        url.scheme != 'https' or not url.hostname or url.username or url.password
-        or url.query or url.fragment or url.path not in {'', '/'}
+        url.scheme != 'https'
+        or not url.hostname
+        or url.username
+        or url.password
+        or url.query
+        or url.fragment
+        or url.path not in {'', '/'}
     ):
         raise ValueError('Vault requires an HTTPS origin without path, query or credentials.')
     host = url.hostname.lower().rstrip('.')
@@ -31,7 +36,14 @@ def validate_vault_endpoint(value: str) -> str:
             parsed_port = parsed.port
         except ValueError:
             continue
-        if parsed.scheme == 'https' and parsed.hostname and not parsed.path.strip('/') and not parsed.query and not parsed.fragment and not parsed.username:
+        if (
+            parsed.scheme == 'https'
+            and parsed.hostname
+            and not parsed.path.strip('/')
+            and not parsed.query
+            and not parsed.fragment
+            and not parsed.username
+        ):
             h = parsed.hostname.lower().rstrip('.')
             allowed.add(f'https://{h}' + (f':{parsed_port}' if parsed_port is not None and parsed_port != 443 else ''))
     if origin not in allowed:

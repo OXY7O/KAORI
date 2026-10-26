@@ -61,8 +61,10 @@ def _native_id(value: Any) -> str:
 
 
 def _bounded_name(value: Any, limit: int) -> str:
-    if not isinstance(value, str) or not 1 <= len(value) <= limit or any(
-        ord(char) < 32 or ord(char) == 127 for char in value
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= limit
+        or any(ord(char) < 32 or ord(char) == 127 for char in value)
     ):
         raise GitHubProviderError('GitHub repository naming evidence is malformed.')
     return value
@@ -95,9 +97,14 @@ def _parse_repository(raw: Any, account_native_id: str) -> RepositoryObservation
     if archived is not None and not isinstance(archived, bool):
         raise GitHubProviderError('GitHub repository archive status is malformed.')
     return RepositoryObservation(
-        native_id=native_id, owner_native_id=owner_id, owner_login=login,
-        name=name, full_name=full_name, default_branch=branch,
-        visibility=visibility, archived=archived,
+        native_id=native_id,
+        owner_native_id=owner_id,
+        owner_login=login,
+        name=name,
+        full_name=full_name,
+        default_branch=branch,
+        visibility=visibility,
+        archived=archived,
     )
 
 
@@ -105,9 +112,12 @@ def _validate_page(raw: dict[str, Any], expected: int | None) -> tuple[int, list
     count = raw.get('total_count')
     records = raw.get('repositories')
     if (
-        isinstance(count, bool) or not isinstance(count, int) or count < 0
+        isinstance(count, bool)
+        or not isinstance(count, int)
+        or count < 0
         or (expected is not None and count != expected)
-        or not isinstance(records, list) or len(records) > PAGE_SIZE
+        or not isinstance(records, list)
+        or len(records) > PAGE_SIZE
     ):
         raise GitHubProviderError('GitHub installation repository pagination is incomplete or inconsistent.')
     return count, records
@@ -129,9 +139,7 @@ def collect_installation_repositories(
         raise GitHubProviderError('GitHub installation account has no committed identity.')
     client = client or build_client_for_installation(installation)
     account_native_id = installation.account.native_account_id
-    detail = client.installation_detail(
-        installation.native_installation_id, account_native_id
-    )
+    detail = client.installation_detail(installation.native_installation_id, account_native_id)
     account = detail['account']
     scope = detail['repository_selection']
     if scope != installation.repository_scope:

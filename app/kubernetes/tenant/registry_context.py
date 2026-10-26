@@ -1116,14 +1116,9 @@ def get_namespace_registry_context(
     # Capsule capability preview is based on committed Tenant evidence only.
     # Never fetch the external provider merely to render an operational form.
     capsule_tenants = [
-        tenant
-        for tenant in base_context['namespace_registry_tenant_options']
-        if tenant.provider_key == 'capsule'
+        tenant for tenant in base_context['namespace_registry_tenant_options'] if tenant.provider_key == 'capsule'
     ]
-    capsule_capabilities = {
-        str(tenant.id): _tenant_capability_statuses(tenant)
-        for tenant in capsule_tenants
-    }
+    capsule_capabilities = {str(tenant.id): _tenant_capability_statuses(tenant) for tenant in capsule_tenants}
     capsule_advanced_preflight = {
         str(tenant.id): {
             str(profile.id): {
