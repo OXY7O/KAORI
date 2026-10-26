@@ -7,7 +7,7 @@
     the viewport so card/table overflow cannot clip the guidance.
 
   Explicit title-level variant='guide' uses the same popover controller.
-  Inline/field-level tips remain icon-only unless explicitly customized.
+  Inline/field-level tips remain icon-only with the information glyph, never a question-mark icon.
 
   Info Tips are read-only contextual help. Confirmation, workflow actions,
   destructive acknowledgement, and security decisions use their owning
@@ -27,7 +27,7 @@
                 aria-describedby="{{ id }}-tooltip"
                 aria-label="{{ 'Open guide: ' if guide_variant else 'More information about ' }}{{ title }}"
                 class="{% if button_text %}{{ button_classes if button_classes else action_button.classes('secondary') }}{% elif guide_variant %}inline-flex min-h-7 cursor-help items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand-outline bg-kaori-soft px-2.5 py-1 text-xs font-semibold leading-4 text-kaori-primary-dark transition-colors hover:border-kaori-primary hover:bg-kaori-soft hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus dark:text-kaori-accent{% else %}inline-flex h-6 w-6 cursor-help items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus{% endif %}">
-            <i data-lucide="{{ 'info' if guide_variant else 'circle-help' }}"
+            <i data-lucide="info"
                class="h-3.5 w-3.5 shrink-0"
                aria-hidden="true"></i>
             {% if guide_variant %}
