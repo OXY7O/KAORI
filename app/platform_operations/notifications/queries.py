@@ -232,8 +232,8 @@ def get_activity_center_context(
         for notification in inbox_notifications
     ]
 
-    tenant_approval_inbox, secret_reveal_inbox, secret_reveal_requester_inbox = (
-        _approval_work_inbox_projections(user_id)
+    tenant_approval_inbox, secret_reveal_inbox, secret_reveal_requester_inbox = _approval_work_inbox_projections(
+        user_id
     )
 
     # Actionable work is derived from committed request state; it is not
