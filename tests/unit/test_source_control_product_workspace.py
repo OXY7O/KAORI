@@ -98,7 +98,7 @@ def test_product_overview_preserves_verified_zero_unknown_and_degraded_history(c
     assert 'repository_total' not in scope
 
 
-@pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1'])
+@pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1', '9' * 64])
 def test_repository_scope_rejects_malformed_installation_id_without_query(monkeypatch, value):
     app = Flask(__name__)
     monkeypatch.setattr(routes, 'require_uat_access', lambda: None)
