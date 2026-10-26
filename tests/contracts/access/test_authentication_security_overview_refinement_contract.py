@@ -75,7 +75,7 @@ def test_kaori_canonical_posture_guide_replaces_inline_header_help() -> None:
     assert "'Authentication assurance posture'" in overview
     assert "variant='guide'" in overview
     assert "placement='right'" in overview
-    assert "aria-labelledby=\"authentication-posture-heading\"" in overview
+    assert 'aria-labelledby="authentication-posture-heading"' in overview
     assert 'Current KAORI policy and session enforcement at a glance.' not in overview
     assert 'Review enforcement boundaries and open the appropriate policy workspace.' not in overview
     assert 'rounded-xl border border-outline-default bg-surface-card' in overview
