@@ -51,7 +51,8 @@ def test_budget_shows_complete_committed_resource_table_not_a_detail_modal() -> 
         assert label in registry
     for field in ('bar.budget', 'bar.committed', 'bar.headroom', 'bar.shortfall', 'bar.percent'):
         assert field in registry
-    assert "bar.state, 'warning' if bar.state == 'Unknown' else 'info'" in registry
+    assert "item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh']" in registry
+    assert "'Evidence Unavailable' if item.state == 'Unknown'" in registry
     assert 'Ratio unavailable' in registry
     assert 'progress_bar.stacked_bar(bar.percent,' in registry
     assert '<dialog' not in registry

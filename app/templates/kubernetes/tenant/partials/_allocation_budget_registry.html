@@ -164,7 +164,7 @@
                             <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums">{{ bar.committed }}</td>
                             <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums {{ 'text-status-critical-text' if bar.shortfall else 'text-content-primary' }}">{{ bar.headroom }}</td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
-                                {% if bar.known %}
+                                {% if bar.known and item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh'] %}
                                     <p class="text-xs font-semibold tabular-nums text-content-primary">{{ bar.percent }}% committed</p>
                                     {{ progress_bar.stacked_bar(bar.percent,
                                         bar.free_percent,
@@ -173,7 +173,8 @@
                                         'h-full bg-kaori-primary/20',
                                         label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
                                 {% else %}
-                                    {{ table_label.status_label(bar.state, 'warning' if bar.state == 'Unknown' else 'info') }}
+                                    {{ table_label.status_label('Evidence Unavailable' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] else bar.state,
+                                        'warning' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] or bar.state == 'Unknown' else 'info') }}
                                     <p class="mt-1 text-xs text-content-muted">Ratio unavailable</p>
                                 {% endif %}
                             </td>
