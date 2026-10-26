@@ -329,7 +329,6 @@ def fail_vault_alert_observations(
     return True
 
 
-
 def _qualified_snapshot_payload(
     payload: object, *, binding: IntegrationBinding, source: IntegrationInstance
 ) -> dict[str, Any] | None:
