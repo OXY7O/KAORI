@@ -85,10 +85,10 @@
                         variant='guide'
                     )
                 ) }}
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-                         aria-labelledby="auth-security-control-areas-heading"
-                         data-auth-security-overview-hub="true">
-                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 lg:px-6">
+                <div class="space-y-4"
+                     data-auth-security-overview-stack="true">
+                    <header class="flex items-start gap-3"
+                            data-auth-security-control-intro="above-card">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="layout-grid" class="h-5 w-5"></i>
@@ -96,10 +96,13 @@
                         <div class="min-w-0">
                             <h2 id="auth-security-control-areas-heading"
                                 class="text-base font-semibold text-content-primary">Authentication Security Control Areas</h2>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Review authentication controls and ownership boundaries in one workspace.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Review authentication controls, ownership boundaries, and related access workspaces.</p>
                         </div>
                     </header>
-                    <div class="p-4 lg:p-5">
+                    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                             aria-labelledby="auth-security-control-areas-heading"
+                             data-auth-security-overview-hub="true">
+                        <div class="p-4 lg:p-5">
                         <section aria-label="Authentication security controls">
                     <div class="grid gap-4 xl:grid-cols-3">
                         <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -195,18 +198,23 @@
                     </div>
                         </section>
                     </div>
-                    <section class="border-t border-outline-subtle"
-                             aria-labelledby="authentication-boundaries-heading">
-                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 lg:px-6">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="route" class="h-4 w-4"></i>
-                        </span>
-                        <h2 id="authentication-boundaries-heading"
-                            class="text-sm font-semibold text-content-primary">Operational Boundaries</h2>
-                    </header>
-                    <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
-                        <article class="flex min-w-0 flex-col bg-surface-card p-5 lg:p-6">
+                        <section class="border-t border-outline-subtle bg-surface-hover"
+                                 aria-labelledby="authentication-boundaries-heading"
+                                 data-auth-security-boundaries="harmonized">
+                            <div class="px-4 py-5 lg:px-5">
+                                <header class="flex items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="route" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h3 id="authentication-boundaries-heading"
+                                            class="text-sm font-semibold text-content-primary">Operational Boundaries</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Where security controls are governed and related account services are managed.</p>
+                                    </div>
+                                </header>
+                                <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <article class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 lg:p-5">
                             <div class="flex items-center gap-2">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
@@ -238,7 +246,7 @@
                                 </li>
                             </ul>
                         </article>
-                        <article class="flex min-w-0 flex-col bg-surface-card p-5 lg:p-6">
+                        <article class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 lg:p-5">
                             <div class="flex items-center gap-2">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
@@ -270,9 +278,11 @@
                                 </li>
                             </ul>
                         </article>
-                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </section>
-                </section>
+                </div>
             {% elif active_tab == 'mfa' %}
                 {% set current_mfa_label = {
                     'disabled': 'Disabled',
