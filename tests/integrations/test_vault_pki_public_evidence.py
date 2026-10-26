@@ -10,12 +10,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
-    VaultClient, VaultProviderError,
+    VaultClient,
+    VaultProviderError,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
-    MAX_ISSUERS, collect_pki_public_issuers,
+    MAX_ISSUERS,
+    collect_pki_public_issuers,
 )
-
 
 ISSUER_ID = '1ae8ce9d-2f70-0761-a465-8c9840a247a2'
 

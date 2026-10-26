@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.integrations.source_control.source_control.providers.github import registration, readiness
+from app.integrations.source_control.source_control.providers.github import readiness, registration
 from app.integrations.source_control.source_control.providers.github.transport import (
     GitHubProviderError,
     InstallationReadiness,

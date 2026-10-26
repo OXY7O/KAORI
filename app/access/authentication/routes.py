@@ -592,7 +592,7 @@ def mfa_challenge():
         pending['attempts'] += 1
         session[MFA_PENDING_SESSION_KEY] = pending
         try:
-            kind = verify_mfa_challenge(user, str(form.verification_code.data or ''))
+            verify_mfa_challenge(user, str(form.verification_code.data or ''))
         except MfaVerificationError:
             error = 'The verification code was not accepted.'
             record_authentication_activity(

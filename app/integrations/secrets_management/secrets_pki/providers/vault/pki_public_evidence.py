@@ -16,7 +16,8 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
-    VaultClient, VaultProviderError,
+    VaultClient,
+    VaultProviderError,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
     validate_auth_mount,

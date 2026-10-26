@@ -1,7 +1,7 @@
 """Secrets & PKI Lifecycle direct-route permission and source ownership contract."""
 
-from types import SimpleNamespace
 from pathlib import Path
+
 
 import pytest
 from flask import Flask

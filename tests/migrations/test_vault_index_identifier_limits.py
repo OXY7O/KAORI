@@ -15,7 +15,6 @@ from sqlalchemy.dialects import postgresql
 from app.models.secrets_pki import SecretInventoryCollectionState
 from app.models.secrets_pki_stored_certificates import PKIStoredCertificateCollectionState
 
-
 ROOT = Path(__file__).resolve().parents[2]
 REVISION_FILES = (
     '20261022_vault_provider.py',

@@ -19,8 +19,8 @@ from app.integrations.delivery.notification_channels.providers.form_support impo
     DenyRedirects,
     credential_map,
 )
-from app.models.notification_channel import NotificationChannel
 from app.integrations.delivery.notification_channels.retry_after import parse_retry_after
+from app.models.notification_channel import NotificationChannel
 
 _SLACK_HOSTS = {'hooks.slack.com', 'hooks.slack-gov.com'}
 _SLACK_PATH = re.compile(r'/services/[A-Za-z0-9]+/[A-Za-z0-9]+/[A-Za-z0-9_-]+\Z')

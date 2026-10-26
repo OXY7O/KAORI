@@ -21,8 +21,8 @@ from app.integrations.source_control.sync_jobs import (
     NoEligibleSourceControlTargets,
     enqueue_source_repository_sync,
 )
-from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.models.source_control import SourceInstallation, SourceWebhookDelivery
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 
 _MAX_DISPATCH_ATTEMPTS = 3
 _RETRY_DELAY = timedelta(minutes=5)

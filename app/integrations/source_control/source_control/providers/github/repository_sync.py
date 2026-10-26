@@ -29,7 +29,9 @@ from app.integrations.source_control.source_control.providers.github.repository_
 )
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
 from app.models.source_control import (
-    SourceInstallation, SourceRepository, SourceRepositoryGrant,
+    SourceInstallation,
+    SourceRepository,
+    SourceRepositoryGrant,
 )
 
 

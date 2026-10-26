@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Literal
+from collections.abc import Sequence
 
 from sqlalchemy.exc import SQLAlchemyError
 

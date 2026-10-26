@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.integrations.source_control.source_control.providers.github import default_branch
 from app.integrations.source_control.source_control.providers.github.transport import (
-    GitHubProviderError, InstallationToken,
+    GitHubProviderError,
+    InstallationToken,
 )
 from app.models.integration import IntegrationInstance
 from app.models.source_control import (

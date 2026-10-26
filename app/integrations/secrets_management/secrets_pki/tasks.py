@@ -7,7 +7,8 @@ from celery import shared_task
 
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.commit_inventory import (
-    commit_kv2_inventory, mark_kv2_inventory_failed,
+    commit_kv2_inventory,
+    mark_kv2_inventory_failed,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.adapter import build_client
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
@@ -16,7 +17,8 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_invento
 )
 from app.models.vault import VaultInstance
 from app.platform_operations.jobs.execution import (
-    JobCancellationRequested, JobExecutionContext,
+    JobCancellationRequested,
+    JobExecutionContext,
 )
 
 
@@ -250,7 +252,8 @@ def sync_vault_stored_certificates_task(
 ) -> dict[str, int | str]:
     """Read only stored public certs; task args/results contain no serial or PEM."""
     from app.integrations.secrets_management.secrets_pki.commit_stored_certificates import (
-        commit_stored_pki_certificates, mark_stored_pki_certificates_failed,
+        commit_stored_pki_certificates,
+        mark_stored_pki_certificates_failed,
     )
     from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
         parse_approved_pki_mounts,

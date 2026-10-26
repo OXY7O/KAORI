@@ -7,7 +7,8 @@ from typing import Any
 import requests
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
-    validate_auth_mount, validate_vault_endpoint,
+    validate_auth_mount,
+    validate_vault_endpoint,
 )
 
 

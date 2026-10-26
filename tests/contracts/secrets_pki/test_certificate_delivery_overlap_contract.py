@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.secrets_pki.certificate_delivery import assess_certificate_overlap
 from app.secrets_pki import certificate_delivery_read_model as read_model
+from app.secrets_pki.certificate_delivery import assess_certificate_overlap
 
 FINGERPRINT_A = 'a' * 64
 FINGERPRINT_B = 'b' * 64

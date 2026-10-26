@@ -9,7 +9,8 @@ import pytest
 
 from app.integrations.source_control.source_control.providers.github import repository_discovery as discovery
 from app.integrations.source_control.source_control.providers.github.transport import (
-    GitHubProviderError, InstallationToken,
+    GitHubProviderError,
+    InstallationToken,
 )
 
 

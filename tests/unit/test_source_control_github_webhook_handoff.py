@@ -12,8 +12,8 @@ from types import SimpleNamespace
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import webhook_handoff
-from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 
 
 class FakeSession:

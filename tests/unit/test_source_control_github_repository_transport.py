@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import transport

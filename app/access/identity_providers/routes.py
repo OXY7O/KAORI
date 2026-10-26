@@ -34,12 +34,12 @@ from app.access.identity_providers.provisioning import (
     assign_provider_choices,
     provision_external_identity,
 )
-from app.access.identity_providers.registration_proof import issue_registration_proof, verify_registration_proof
 from app.access.identity_providers.provisioning_proof import (
     ProjectionProofError,
     issue_projection_proof,
     verify_projection_proof,
 )
+from app.access.identity_providers.registration_proof import issue_registration_proof, verify_registration_proof
 from app.access.identity_providers.repository import get_identity_provider
 from app.access.identity_providers.service import (
     ProviderIdentityRebindError,

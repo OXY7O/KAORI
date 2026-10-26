@@ -1,7 +1,11 @@
 from datetime import UTC, datetime
 
 from app.integrations.kernel.registry import (
-    IntegrationImplementation, IntegrationModule, canonical_model_loader, model_loader, registry,
+    IntegrationImplementation,
+    IntegrationModule,
+    canonical_model_loader,
+    model_loader,
+    registry,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.adapter import runtime_adapter
 from app.models.vault import VaultInstance

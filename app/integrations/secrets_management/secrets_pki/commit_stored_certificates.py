@@ -12,11 +12,13 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_
     parse_approved_pki_mounts,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_stored_certificates import (
-    MAX_STORED_CERTIFICATES, StoredCertificateCollection,
+    MAX_STORED_CERTIFICATES,
+    StoredCertificateCollection,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_stored_certificates import (
-    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
 

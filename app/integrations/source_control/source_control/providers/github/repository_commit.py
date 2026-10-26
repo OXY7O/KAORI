@@ -17,7 +17,6 @@ from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.repository_discovery import (
     RepositoryCollection,
 )
-from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
 from app.models.source_control import (
     SourceInstallation,
     SourceRepository,

@@ -12,8 +12,8 @@ from app.intelligence.alert_signals.vault_source import commit_vault_alert_obser
 from app.models.alert_ops import AlertCase, AlertCaseEvent
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.audit import AuditEvent
-from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.identity import ExternalIdentityLink, IdentityProvider
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User

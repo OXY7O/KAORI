@@ -7,10 +7,14 @@ import requests
 from flask import Flask
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import (
+    issue_proof,
+    verified_secret,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient, VaultProviderError
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
-    validate_auth_mount, validate_vault_endpoint,
+    validate_auth_mount,
+    validate_vault_endpoint,
 )
 
 

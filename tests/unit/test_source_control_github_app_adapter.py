@@ -9,7 +9,8 @@ import pytest
 
 from app.integrations.source_control.source_control.providers.github import adapter
 from app.integrations.source_control.source_control.providers.github.transport import (
-    GitHubProviderError, InstallationReadiness,
+    GitHubProviderError,
+    InstallationReadiness,
 )
 
 

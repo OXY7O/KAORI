@@ -9,17 +9,20 @@ from flask import Flask
 
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.commit_stored_certificates import (
-    commit_stored_pki_certificates, mark_stored_pki_certificates_failed,
+    commit_stored_pki_certificates,
+    mark_stored_pki_certificates_failed,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
     PublicCertificateEvidence,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_stored_certificates import (
-    StoredCertificateCollection, StoredCertificateEvidence,
+    StoredCertificateCollection,
+    StoredCertificateEvidence,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_stored_certificates import (
-    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
 from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness

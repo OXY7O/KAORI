@@ -34,7 +34,7 @@ def main() -> int:
     shared_side_drawer_js = read('app/static/js/side_drawer.js')
     shared_side_drawer = read('app/templates/components/side_drawer.html')
     shared_action_button = read('app/templates/components/action_button.html')
-    channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
     confirmation = read('app/templates/components/destructive_confirmation_modal.html')
