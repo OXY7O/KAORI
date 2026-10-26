@@ -750,7 +750,8 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     assert 'button_classes if button_classes else action_button.classes' in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
-    assert 'data-lucide="info"' in component
+    assert "'user-check' if action_variant else 'info'" in component
+    assert "variant == 'action' and button_text" in component
     assert 'circle-help' not in component
     assert 'never a question-mark icon' in component
 
