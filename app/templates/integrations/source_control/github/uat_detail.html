@@ -14,13 +14,15 @@
     {% set feedback_map = {
         "validation_queued": "Full Validation requested through canonical JobExecution.",
         "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
+        "runtime_queued": "Runtime Refresh requested through canonical JobExecution.",
+        "runtime_blocked": "Runtime Refresh could not start. Review worker readiness and installation authorization.",
         "sync_queued": "Repository reconciliation requested through canonical JobExecution.",
         "sync_blocked": "Repository sync blocked. Verify Full Validation, worker readiness and installation access.",
         "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
         "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
     } %}
     {% set requested_tab = request.args.get('tab', '') %}
-    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration')) %}
+    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('runtime' if feedback in ['runtime_queued', 'runtime_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration'))) %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-github-installation-detail
          x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], '{{ initial_tab }}', 'github-detail-tabs')"
@@ -61,7 +63,7 @@
             {{ operational_callout.render("Connection Operation",
                         feedback_map[feedback],
                         icon="info",
-                        tone="warning" if feedback in ['validation_blocked', 'sync_blocked'] else "info",
+                        tone="warning" if feedback in ['validation_blocked', 'runtime_blocked', 'sync_blocked'] else "info",
                         variant="semantic") }}
         {% endif %}
         <section id="github-detail-tabs" class="{{ ui.section_shell_classes() }}">
@@ -200,67 +202,14 @@
                      x-show="activeTab === 'runtime'"
                      x-cloak
                      class="space-y-4">
-                    <section class="{{ ui.section_shell_classes() }}">
-                        {{ ui.section_header('history', 'Recent Jobs', 'Canonical JobExecution results for this installation') }}
-                        <div class="divide-y divide-outline-subtle">
-                            {% for job in jobs %}
-                                <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
-                                    <div class="min-w-0">
-                                        <p class="font-semibold text-content-primary">{{ job.operation|replace('_', ' ') |title }}</p>
-                                        <p class="mt-1 text-xs text-content-muted">#{{ job.id }} · {{ job.created_at }} · {{ job.queue_name }}</p>
-                                    </div>
-                                    {{ integration_status(job.status, display='indicator') }}
-                                </div>
-                            {% else %}
-                                <p class="p-5 text-sm text-content-muted">No JobExecution evidence yet.</p>
-                            {% endfor %}
-                        </div>
-                    </section>
-                    <section class="{{ ui.section_shell_classes() }}">
-                        {{ ui.section_header('webhook', 'Signed Webhook Deliveries', 'Committed transport receipts, not repository collection evidence') }}
-                        <div class="divide-y divide-outline-subtle">
-                            {% for delivery in deliveries %}
-                                <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">
-                                            {{ delivery.event_type|replace('_', ' ') |title }}
-                                            {% if delivery.action %} · {{ delivery.action }}{% endif %}
-                                        </p>
-                                        <p class="mt-1 text-xs text-content-muted">{{ delivery.received_at }} · Attempt {{ delivery.attempt_count }} · Job #{{ delivery.dispatched_job_execution_id or "Not linked" }}</p>
-                                    </div>
-                                    {{ integration_status(delivery.processing_state, display='indicator') }}
-                                </div>
-                            {% else %}
-                                <p class="p-5 text-sm text-content-muted">No signed webhook delivery has been committed for this installation.</p>
-                            {% endfor %}
-                        </div>
-                    </section>
+                    {% include "integrations/source_control/github/partials/_detail_runtime.html" %}
                 </div>
                 <div id="github-panel-inventory"
                      role="tabpanel"
                      aria-labelledby="github-tab-inventory"
                      x-show="activeTab === 'inventory'"
                      x-cloak>
-                    <section class="{{ ui.section_shell_classes() }}">
-                        {{ ui.section_header('database', 'Repository Inventory & Lifecycle', 'Committed grants, exact default-branch SHA, and collection freshness') }}
-                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-primary">Repository Collection</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Collect repository access only after Full Validation succeeds.</p>
-                            </div>
-                            <form method="post"
-                                  action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
-                                {{ action_form.hidden_tag() }}
-                                <button type="submit"
-                                        {% if readiness != 'ready' %}disabled{% endif %}
-                                        class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
-                                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                                    Sync Repositories
-                                </button>
-                            </form>
-                        </div>
-                        {% include "integrations/source_control/github/_inventory_table.html" %}
-                    </section>
+                    {% include "integrations/source_control/github/partials/_detail_inventory.html" %}
                 </div>
             </div>
         </section>

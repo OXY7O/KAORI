@@ -1,93 +1,118 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set page_sizes = [5, 10, 25, 50] %}
+{% set total_pages = ((inventory.total + inventory.per_page - 1) // inventory.per_page) if inventory.total else 1 %}
 <div id="source-control-inventory"
-     class="space-y-4 p-5 sm:p-6"
+     class="min-w-0"
+     data-kaori-github-inventory-registry
      aria-live="polite"
      hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page, per_page=inventory.per_page) }}"
      hx-trigger="every 15s"
      hx-target="#source-control-inventory"
      hx-swap="outerHTML">
-    <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-content-secondary">
-        <div>
-            <span class="font-semibold text-content-primary">Coverage: {{ inventory.coverage|replace('_', ' ')|title }}</span>
-            <span class="mx-2">·</span>
-            {{ inventory.collection_status|replace('_', ' ')|title }}
-            <span class="mx-2">·</span>
-            Selection {{ inventory.selection_scope|title }}
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-start gap-3">
+            {{ ui.palette_icon('blocks', 'brand', size='sm') }}
+            <div>
+                <h3 class="text-base font-semibold text-content-primary">Committed Repository Registry</h3>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Exact default-branch SHA and grant state come only from the committed installation snapshot.</p>
+            </div>
         </div>
-        <div>Last committed: {{ inventory.collected_at or "Not observed" }}</div>
+        <div class="flex flex-wrap gap-2">
+            {{ integration_status('ready' if inventory.total is not none else 'not_observed', inventory.collection_status|replace('_', ' ')|title, display='text') }}
+            {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ (inventory.coverage|replace('_', ' ')|title), display='text') }}
+            {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Scope: ' ~ (inventory.selection_scope|replace('_', ' ')|title), display='text') }}
+        </div>
+        {{ loading_bar.render('github-inventory-loading', label='Refreshing committed repository registry') }}
+    </header>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes() }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Access</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Default Branch</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Exact SHA</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% if inventory.total is none %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = 'database' %}
+                            {% set empty_state_title = 'Inventory Not Yet Observed' %}
+                            {% set empty_state_description = 'Run Full Validation, then Sync Repositories. Unknown does not mean zero repositories.' %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% elif inventory.total == 0 %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = 'folder-open' %}
+                            {% set empty_state_title = 'No Repositories in Verified Scope' %}
+                            {% set empty_state_description = 'Zero repositories was confirmed by a committed complete collection.' %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% elif not inventory.rows %}
+                    <tr>
+                        <td colspan="5" class="p-5 text-center text-sm text-content-muted">No rows on this page. Select an earlier page.</td>
+                    </tr>
+                {% else %}
+                    {% for row in inventory.rows %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="font-semibold text-content-primary">{{ row.full_name or 'Unknown repository' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ 'Archived' if row.archived else (row.visibility|title if row.visibility else 'Visibility unknown') }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.access_status, row.access_status|replace('_', ' ')|title, display='indicator') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ row.default_branch or 'Unknown' }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <code class="text-xs" title="{{ row.exact_default_branch_sha or 'Unobserved' }}">{{ (row.exact_default_branch_sha or 'Unknown')|truncate(16, True) }}</code>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ row.revision_observed_at or row.observed_at or 'Not Observed' }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
     </div>
-    {% if inventory.total is none %}
-        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-6 text-center">
-            <p class="text-sm font-semibold text-content-primary">Inventory not yet observed</p>
-            <p class="mt-2 text-xs text-content-secondary">
-                Run Full Validation, then Sync Repositories. An uncollected inventory is not zero repositories.
-            </p>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <span>{{ inventory.total if inventory.total is not none else 'Unknown' }} committed grant rows · Page {{ inventory.page }}</span>
+            <form method="get"
+                  action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory') }}"
+                  hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id) }}"
+                  hx-target="#source-control-inventory"
+                  hx-swap="outerHTML"
+                  hx-indicator="#github-inventory-loading"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="page" value="1">
+                <label for="github-inventory-per-page">Rows</label>
+                <select name="per_page" id="github-inventory-per-page"
+                        data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                    {% for size in page_sizes %}
+                        <option value="{{ size }}" {% if inventory.per_page == size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </form>
         </div>
-    {% elif not inventory.rows %}
-        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-6 text-center">
-            <p class="text-sm font-semibold text-content-primary">
-                {{ "No repositories in the verified installation scope" if inventory.total == 0 else "No rows on this page" }}
-            </p>
-            <p class="mt-2 text-xs text-content-secondary">
-                {{ "Zero is based on a previously committed complete GitHub scan." if inventory.total == 0 else "Select an earlier page to see committed repository grants." }}
-            </p>
-        </div>
-    {% else %}
-        <div class="overflow-x-auto rounded-lg border border-outline-subtle">
-            <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
-                <thead class="bg-surface-hover text-xs font-semibold text-content-muted">
-                    <tr>
-                        <th scope="col" class="px-3 py-3">Repository</th>
-                        <th scope="col" class="px-3 py-3">Access</th>
-                        <th scope="col" class="px-3 py-3">Default Branch</th>
-                        <th scope="col" class="px-3 py-3">Exact SHA</th>
-                        <th scope="col" class="px-3 py-3">Observed</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-outline-subtle">
-                {% for row in inventory.rows %}
-                    <tr>
-                        <td class="px-3 py-3 font-semibold text-content-primary">
-                            {{ row.full_name or "Unknown repository" }}
-                            {% if row.archived %}<span class="block text-xs font-normal text-content-muted">Archived</span>{% endif %}
-                        </td>
-                        <td class="px-3 py-3 text-content-secondary">{{ row.access_status|replace('_', ' ')|title }}</td>
-                        <td class="px-3 py-3 text-content-secondary">{{ row.default_branch or "Unknown" }}</td>
-                        <td class="px-3 py-3 font-mono text-xs text-content-secondary"
-                            title="{{ row.exact_default_branch_sha or 'Unobserved' }}">
-                            {{ (row.exact_default_branch_sha or "Unknown")|truncate(16, True) }}
-                        </td>
-                        <td class="px-3 py-3 text-xs text-content-secondary">
-                            {{ row.revision_observed_at or row.observed_at or "Not observed" }}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
-    <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-content-secondary">
-        <span>{{ inventory.total if inventory.total is not none else "Unknown" }} committed grant rows · Page {{ inventory.page }}</span>
-        <div class="flex flex-wrap items-center gap-2">
-            {% for size in [5, 10, 25, 50] %}
-                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, page=1, per_page=size) }}"
-                   hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=1, per_page=size) }}"
-                   hx-target="#source-control-inventory" hx-swap="outerHTML"
-                   class="rounded border border-outline-default px-2 py-1 hover:bg-surface-hover {% if inventory.per_page == size %}font-bold text-kaori-primary{% endif %}">
-                    {{ size }}
-                </a>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Repository Registry pagination">
+            {% for label, page, enabled in [('Previous', inventory.page - 1, inventory.page > 1), ('Next', inventory.page + 1, inventory.total is not none and inventory.page * inventory.per_page < inventory.total)] %}
+                {% if enabled %}
+                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory', page=page, per_page=inventory.per_page) }}"
+                       hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=page, per_page=inventory.per_page) }}"
+                       hx-target="#source-control-inventory" hx-swap="outerHTML"
+                       hx-indicator="#github-inventory-loading"
+                       class="{{ pagination_ui.navigation_classes(false) }}">{{ label }}</a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">{{ label }}</span>
+                {% endif %}
             {% endfor %}
-            {% if inventory.page > 1 %}
-                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, page=inventory.page - 1, per_page=inventory.per_page) }}"
-                   hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page - 1, per_page=inventory.per_page) }}"
-                   hx-target="#source-control-inventory" hx-swap="outerHTML"
-                   class="rounded border border-outline-default px-3 py-1 hover:bg-surface-hover">Previous</a>
-            {% endif %}
-            {% if inventory.total is not none and inventory.page * inventory.per_page < inventory.total %}
-                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, page=inventory.page + 1, per_page=inventory.per_page) }}"
-                   hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page + 1, per_page=inventory.per_page) }}"
-                   hx-target="#source-control-inventory" hx-swap="outerHTML"
-                   class="rounded border border-outline-default px-3 py-1 hover:bg-surface-hover">Next</a>
-            {% endif %}
-        </div>
-    </div>
+        </nav>
+    </footer>
 </div>

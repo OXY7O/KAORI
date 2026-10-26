@@ -17,8 +17,9 @@ from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.integrations.capability_registry import build_capability_registry_view
+from app.common.pagination import paginate_query
 from app.extensions.db import db
+from app.integrations.capability_registry import build_capability_registry_view
 from app.integrations.source_control.repository_inventory import read_installation_inventory
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
     github_capability_context,
@@ -92,10 +93,10 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     return {'inventory': inventory, 'installation': installation}
 
 
-def _validation_job_for(canonical) -> dict | None:
+def _validation_job_for(canonical, *, operation: str = 'full_validation') -> dict | None:
     task_id = get_active_validation_task_id(
         integration_type='source_control',
-        operation='full_validation',
+        operation=operation,
         integration_instance_id=canonical.id,
     )
     return build_validation_snapshot(task_id) if task_id else None
@@ -134,6 +135,81 @@ def _capability_context(canonical) -> dict:
     return context
 
 
+def _runtime_context(installation: SourceInstallation) -> dict:
+    """Bounded, installation-scoped committed JobExecution and delivery evidence."""
+    job_status = request.args.get('job_status', '').strip()
+    delivery_state = request.args.get('delivery_state', '').strip()
+    allowed_jobs = {
+        'queued', 'running', 'retrying', 'cancel_requested', 'succeeded',
+        'partially_succeeded', 'failed', 'canceled', 'expired',
+    }
+    allowed_delivery = {'received', 'queued', 'processing', 'processed', 'completed', 'failed', 'ignored'}
+    if job_status not in allowed_jobs:
+        job_status = ''
+    if delivery_state not in allowed_delivery:
+        delivery_state = ''
+    jobs_query = JobExecution.query.filter(
+        JobExecution.integration_type == 'source_control',
+        or_(
+            JobExecution.integration_instance_id == installation.integration_instance_id,
+            JobExecution.scope_key == f'installation:{installation.id}',
+        )
+    ).order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+    if job_status:
+        jobs_query = jobs_query.filter(JobExecution.status == job_status)
+    jobs, job_pagination = paginate_query(
+        jobs_query,
+        page=request.args.get('job_page', 1, type=int),
+        per_page=request.args.get('job_per_page', 5, type=int),
+    )
+    delivery_query = SourceWebhookDelivery.query.filter_by(installation_id=installation.id)
+    if delivery_state:
+        delivery_query = delivery_query.filter(SourceWebhookDelivery.processing_state == delivery_state)
+    deliveries, delivery_pagination = paginate_query(
+        delivery_query.order_by(SourceWebhookDelivery.received_at.desc(), SourceWebhookDelivery.id.desc()),
+        page=request.args.get('delivery_page', 1, type=int),
+        per_page=request.args.get('delivery_per_page', 5, type=int),
+    )
+    last_refresh = (
+        JobExecution.query.filter_by(
+            integration_type='source_control',
+            integration_instance_id=installation.integration_instance_id,
+            operation='runtime_refresh',
+        )
+        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+        .first()
+    )
+    return {
+        'jobs': jobs,
+        'job_pagination': job_pagination,
+        'job_status': job_status,
+        'deliveries': deliveries,
+        'delivery_pagination': delivery_pagination,
+        'delivery_state': delivery_state,
+        'last_runtime_refresh': last_refresh,
+        'runtime_refresh_job': _validation_job_for(installation.integration_instance, operation='runtime_refresh'),
+    }
+
+
+def _render_runtime_content(
+    installation: SourceInstallation, *, runtime_refresh_job=None, runtime_feedback: str = ''
+) -> ResponseReturnValue:
+    canonical = installation.integration_instance
+    if canonical is None:
+        abort(409)
+    context = _runtime_context(installation)
+    if runtime_refresh_job is not None:
+        context['runtime_refresh_job'] = runtime_refresh_job
+    return _response(
+        'integrations/source_control/github/partials/_detail_runtime.html',
+        installation=installation,
+        canonical=canonical,
+        action_form=FlaskForm(),
+        runtime_feedback=runtime_feedback,
+        **context,
+    )
+
+
 @github_uat_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
@@ -157,30 +233,13 @@ def detail(installation_id: int) -> ResponseReturnValue:
     canonical = installation.integration_instance
     if canonical is None:
         abort(409)
-    jobs = (
-        JobExecution.query.filter(
-            or_(
-                JobExecution.integration_instance_id == installation.integration_instance_id,
-                JobExecution.scope_key == f'installation:{installation.id}',
-            )
-        )
-        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-        .limit(5)
-        .all()
-    )
     return _response(
         'integrations/source_control/github/uat_detail.html',
         **_inventory_context(installation),
         canonical=canonical,
         **_capability_context(canonical),
         validation_job=_validation_job_for(canonical),
-        jobs=jobs,
-        deliveries=(
-            SourceWebhookDelivery.query.filter_by(installation_id=installation.id)
-            .order_by(SourceWebhookDelivery.received_at.desc())
-            .limit(5)
-            .all()
-        ),
+        **_runtime_context(installation),
         action_form=FlaskForm(),
         feedback=request.args.get('feedback', ''),
     )
@@ -455,6 +514,73 @@ def inventory_table(installation_id: int) -> ResponseReturnValue:
         return redirect(url_for('github_source_uat.detail', installation_id=installation_id, **request.args))
     return _response('integrations/source_control/github/_inventory_table.html', **context)
 
+
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/runtime/jobs')
+@permission_required('integrations.manage')
+def runtime_jobs(installation_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(url_for('github_source_uat.detail', installation_id=installation_id, tab='runtime'))
+    return _response(
+        'integrations/source_control/github/partials/_runtime_jobs.html',
+        installation=installation,
+        **_runtime_context(installation),
+    )
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/runtime/deliveries')
+@permission_required('integrations.manage')
+def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(url_for('github_source_uat.detail', installation_id=installation_id, tab='runtime'))
+    return _response(
+        'integrations/source_control/github/partials/_runtime_deliveries.html',
+        installation=installation,
+        **_runtime_context(installation),
+    )
+
+
+@github_uat_bp.post('/installations/<int:installation_id>/runtime/refresh')
+@permission_required('integrations.manage')
+def runtime_refresh(installation_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    if not FlaskForm().validate_on_submit():
+        abort(400)
+    try:
+        job, _created = enqueue_github_app_job(
+            installation,
+            operation='runtime_refresh',
+            requested_by_user_id=int(current_user.id),
+        )
+    except (GitHubProviderError, RuntimeError, ValueError):
+        if request.headers.get('HX-Request') == 'true':
+            return _render_runtime_content(installation, runtime_feedback='blocked')
+        return redirect(
+            url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_blocked')
+        )
+    if request.headers.get('HX-Request') == 'true':
+        return _render_runtime_content(installation, runtime_refresh_job=job)
+    return redirect(
+        url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_queued')
+    )
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/runtime/refresh/status/<string:task_id>')
+@permission_required('integrations.manage')
+def runtime_refresh_status(installation_id: int, task_id: str) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        integration_type='source_control',
+        integration_instance_id=installation.integration_instance_id,
+    ) or snapshot.get('operation') != 'runtime_refresh':
+        abort(404)
+    response = _render_runtime_content(installation, runtime_refresh_job=snapshot)
+    return validation_poll_response(response.get_data(as_text=True), snapshot=snapshot)
 
 @github_uat_bp.post('/installations/<int:installation_id>/validate')
 @permission_required('integrations.manage')

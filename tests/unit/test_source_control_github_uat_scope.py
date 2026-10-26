@@ -135,12 +135,15 @@ def test_github_uat_detail_exposes_only_committed_delivery_job_links():
         'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
     ).read_text()
     detail = root.joinpath('app/templates/integrations/source_control/github/uat_detail.html').read_text()
+    deliveries = root.joinpath(
+        'app/templates/integrations/source_control/github/partials/_runtime_deliveries.html'
+    ).read_text()
     assert 'filter_by(installation_id=installation.id)' in routes
     assert 'SourceWebhookDelivery.received_at.desc()' in routes
-    assert 'delivery.dispatched_job_execution_id' in detail
-    assert 'delivery.processing_state' in detail
-    assert 'delivery.payload_sha256' not in detail
-    assert 'delivery.repository_native_id_hint' not in detail
+    assert 'delivery.dispatched_job_execution_id' in deliveries
+    assert 'delivery.processing_state' in deliveries
+    assert 'delivery.payload_sha256' not in deliveries
+    assert 'delivery.repository_native_id_hint' not in deliveries
     assert 'integrations/components/_provider_detail_posture.html' in detail
     assert 'provider_detail_posture.render(' in detail
     assert 'components/framed_workspace_tabs.html' in detail
@@ -178,6 +181,12 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     validation = (
         root / 'app/templates/integrations/source_control/github/partials/_detail_validation.html'
     ).read_text()
+    inventory = (
+        root / 'app/templates/integrations/source_control/github/partials/_detail_inventory.html'
+    ).read_text()
+    deliveries = (
+        root / 'app/templates/integrations/source_control/github/partials/_runtime_deliveries.html'
+    ).read_text()
 
     provider_rows = (root / 'app/templates/integrations/partials/_domain_workspace.html').read_text()
     domain_service = (root / 'app/integrations/domain_service.py').read_text()
@@ -195,11 +204,13 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     assert 'GitHub Full Validation' in validation
     assert 'action_form.hidden_tag()' in validation
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
-    assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in detail
-    assert "readiness != 'ready'" in detail
-    assert 'integrations/source_control/github/_inventory_table.html' in detail
-    assert 'delivery.dispatched_job_execution_id' in detail
-    assert 'delivery.processing_state' in detail
+    assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in inventory
+    assert "readiness == 'ready'" in inventory
+    assert 'integrations/source_control/github/_inventory_table.html' in inventory
+    assert 'partials/_detail_inventory.html' in detail
+    assert 'partials/_detail_runtime.html' in detail
+    assert 'delivery.dispatched_job_execution_id' in deliveries
+    assert 'delivery.processing_state' in deliveries
     assert 'canonical.environment' in detail
     assert 'installation.native_installation_id' in detail
     assert 'form.private_key_pem' not in detail
