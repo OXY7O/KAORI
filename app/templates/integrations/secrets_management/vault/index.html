@@ -77,6 +77,9 @@
                             hx_get=url_for('vault.index', tab='registry', per_page=pagination.per_page),
                             target='#vault-connection-registry',
                             select='#vault-connection-registry',
+                            indicator='#vault-registry-loading',
+                            push_url='true',
+                            sync='closest section:replace',
                             marker='vault-connections') }}
                     {% endif %}
                 {% endset %}
@@ -92,7 +95,8 @@
                 {% endset %}
                 {{ table_ui.inventory_block_header('database', 'Vault Connection Registry',
                     'Review configured Vault endpoints, environments, readiness and observed provider health.',
-                    none, none, none, header_actions=header_actions, title_extra=header_guide,
+                    'vault-registry-loading', 'Refreshing Vault connections', none,
+                    header_actions=header_actions, title_extra=header_guide,
                     result_count=pagination.total_items) }}
                 <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                     <form method="get"
@@ -102,6 +106,8 @@
                           hx-target="#vault-connection-registry"
                           hx-select="#vault-connection-registry"
                           hx-swap="outerHTML"
+                          hx-push-url="true"
+                          hx-indicator="#vault-registry-loading"
                           hx-sync="closest section:replace"
                           data-kaori-canonical-registry-filter="vault-connections"
                           class="{{ table_ui.filter_layout_classes() }}">
@@ -199,55 +205,15 @@
                         </tbody>
                     </table>
                 </div>
-                <footer class="{{ pagination_ui.footer_classes() }}"
-                        data-kaori-canonical-registry-footer="vault-connections">
-                    <div class="{{ pagination_ui.summary_group_classes() }}">
-                        <span>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Connections</span>
-                        <form method="get"
-                              action="{{ url_for('vault.index') }}"
-                              hx-get="{{ url_for('vault.index') }}"
-                              hx-target="#vault-connection-registry"
-                              hx-select="#vault-connection-registry"
-                              hx-swap="outerHTML"
-                              class="{{ pagination_ui.rows_group_classes() }}">
-                            <input type="hidden" name="tab" value="registry">
-                            <input type="hidden" name="page" value="1">
-                            <input type="hidden" name="q" value="{{ registry_search }}">
-                            <input type="hidden" name="environment" value="{{ registry_environment }}">
-                            <input type="hidden" name="readiness" value="{{ registry_readiness }}">
-                            <label for="vault-rows">Rows</label>
-                            <select id="vault-rows"
-                                    name="per_page"
-                                    data-kaori-auto-submit
-                                    class="{{ pagination_ui.page_size_classes() }}">
-                                {% for value in pagination.allowed_per_page %}
-                                    <option value="{{ value }}"
-                                            {% if value == pagination.per_page %}selected{% endif %}>{{ value }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </div>
-                    <nav aria-label="Vault connections pagination"
-                         class="{{ pagination_ui.navigation_group_classes() }}">
-                        {% if pagination.has_prev %}
-                            <a class="{{ pagination_ui.navigation_classes() }}"
-                               href="{{ url_for('vault.index', tab='registry', page=pagination.prev_page, per_page=pagination.per_page, q=registry_search, environment=registry_environment, readiness=registry_readiness) }}">Previous</a>
-                        {% else %}
-                            <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                  aria-disabled="true">Previous</span>
-                        {% endif %}
-                        {{ pagination_ui.numeric_pages(pagination.page,
-                            pagination.total_pages,
-                            query_params={'tab': 'registry', 'per_page': pagination.per_page, 'q': registry_search, 'environment': registry_environment, 'readiness': registry_readiness}) }}
-                        {% if pagination.has_next %}
-                            <a class="{{ pagination_ui.navigation_classes() }}"
-                               href="{{ url_for('vault.index', tab='registry', page=pagination.next_page, per_page=pagination.per_page, q=registry_search, environment=registry_environment, readiness=registry_readiness) }}">Next</a>
-                        {% else %}
-                            <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                  aria-disabled="true">Next</span>
-                        {% endif %}
-                    </nav>
-                </footer>
+                {{ registry_ui.footer('vault.index',
+                    'vault-connection-registry',
+                    'vault-registry-loading',
+                    pagination,
+                    {'tab': 'registry', 'q': registry_search, 'environment': registry_environment, 'readiness': registry_readiness},
+                    pagination.allowed_per_page,
+                    resource_label='Connections',
+                    rows_aria_label='Vault connections per page',
+                    control_name='vault-connections') }}
             </section>
         {% endif %}
     {% endcall %}

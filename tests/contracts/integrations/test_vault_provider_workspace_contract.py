@@ -18,7 +18,7 @@ def test_vault_provider_landing_reuses_canonical_provider_components():
     assert 'Connection Registry' in source
     assert 'Source Qualification Boundaries' in source
     assert "url_for('vault.detail', instance_id=item.id)" in source
-    assert 'pagination_ui.numeric_pages' in source
+    assert 'registry_ui.footer(' in source
     assert 'Sensitive Secret' not in source
 
 
@@ -53,7 +53,7 @@ def test_vault_registry_uses_full_table_shared_filters_and_default_five_rows():
         'registry_ui.clear_filters_action(',
         'table_ui.title_cell(',
         'integration_status(validation_state',
-        'pagination_ui.numeric_pages(',
+        'registry_ui.footer(',
         'components/states/_empty_state.html',
     ):
         assert marker in landing
