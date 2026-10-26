@@ -8,7 +8,7 @@ This product workspace follows approved domain authority [#559](https://github.c
 - `/source-control/repositories` — explicit installation selection and committed repository grants from SC-03's existing `read_installation_inventory` (search/visibility/archive, 5/10/25/50 pagination, default 5; branch/default-branch SHA only when committed).
 - Existing GitHub integration routes remain the sole authority for validation, synchronization and mutation.
 - GET reads committed KAORI database evidence; zero means a completed observed collection returned zero, **unknown does not mean zero**. Retained prior snapshots do not certify provider health or current freshness.
-- Temporary UAT access is **local database Super Admin plus `integrations.manage`** with `require_uat_access()`. This is NOT an accepted production resource authorization model. Global/non-admin product visibility must remain denied until #724 implementation.
+- Temporary UAT access is **local database Super Admin plus `integrations.manage`**, enforced independently of GitHub provider readiness for this product workspace. Provider setup/validation/sync remain guarded by their existing integration routes. This is NOT an accepted production resource authorization model. Global/non-admin repository visibility must remain denied until #724 implementation.
 - Scoped UAT installation list has a bounded 50-row limit. The UI signals truncation; it does not advertise these sampled counts as complete organizational totals.
 
 ## Deferred Source Control product workstreams
