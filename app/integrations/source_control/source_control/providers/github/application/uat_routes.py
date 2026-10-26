@@ -522,8 +522,6 @@ def inventory_table(installation_id: int) -> ResponseReturnValue:
     return _response('integrations/source_control/github/_inventory_table.html', **context)
 
 
-
-
 @github_uat_bp.get('/installations/<int:installation_id>/runtime/jobs')
 @permission_required('integrations.manage')
 def runtime_jobs(installation_id: int) -> ResponseReturnValue:

@@ -43,7 +43,7 @@
                 'Readiness does not imply synchronized repository inventory or exact source SHA.',
                 'Synchronize repositories separately after validation.'
             ],
-            placement='right')
+            placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}"

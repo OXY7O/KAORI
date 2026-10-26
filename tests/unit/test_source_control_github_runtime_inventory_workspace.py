@@ -108,7 +108,10 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
 def test_copy_is_short_and_provider_evidence_not_overclaimed():
     validation = _read(GITHUB / 'partials/_detail_validation.html')
     assert 'Validate GitHub App identity and read permissions before repository sync.' in validation
-    assert 'GitHub owns permissions; KAORI commits inventory and exact source revisions after synchronization.' in validation
+    assert (
+        'GitHub owns permissions; KAORI commits inventory and exact source revisions after synchronization.'
+        in validation
+    )
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
     assert 'not repository synchronization or provider-side runtime history' in runtime
     assert 'registration' not in runtime.lower()
@@ -120,11 +123,11 @@ def test_github_connection_save_uses_operational_toast_not_persistent_banner():
     app = _read(ROOT / 'app/templates/layouts/app.html')
 
     assert "feedback not in ['configuration_updated', 'configuration_revalidation_required']" in detail
-    assert "'configuration_updated':" in detail
-    assert "feedback in feedback_map and feedback not in" in detail
+    assert '"configuration_updated":' in detail
+    assert 'feedback in feedback_map and feedback not in' in detail
     assert "event_type='source_control_connection_updated'" in routes
-    assert "queue_feedback=True" in routes
-    assert "components/operational_toast.html" in app
+    assert 'queue_feedback=True' in routes
+    assert 'components/operational_toast.html' in app
 
 
 def test_github_header_help_reuses_accessible_kaori_info_tip():
@@ -133,14 +136,17 @@ def test_github_header_help_reuses_accessible_kaori_info_tip():
     inventory = _read(GITHUB / 'partials/_detail_inventory.html')
     header = _read(ROOT / 'app/templates/components/connection_validation_header.html')
 
-    assert "title_extra=connection_title_tip" in detail
-    assert "github-connection-contract-guide" in detail
-    assert "github-full-validation-guide" in validation
-    assert "github-inventory-lifecycle-guide" in inventory
-    assert "components/info_tip.html" in validation
-    assert "components/info_tip.html" in inventory
-    assert "title_extra=None" in header
-    assert "if title_extra" in header
+    assert 'title_extra=connection_title_tip' in detail
+    assert 'github-connection-contract-guide' in detail
+    assert 'github-full-validation-guide' in validation
+    assert 'github-inventory-lifecycle-guide' in inventory
+    assert 'components/info_tip.html' in validation
+    assert 'components/info_tip.html' in inventory
+    assert 'title_extra=None' in header
+    assert 'if title_extra' in header
+    for source in (detail, validation, inventory):
+        assert "variant='guide'" in source
+    # KAORI title-level guidance uses the visible Guide trigger, never a bare question-mark icon.
 
 
 def test_github_runtime_history_is_one_accessible_two_tab_registry():
@@ -150,22 +156,22 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
     routes = _read(ROUTES)
     content_tabs = _read(ROOT / 'app/templates/components/content_tabs.html')
 
-    assert "content_tabs.render_links(" in runtime
-    assert "data-kaori-github-runtime-registry-tabs" in runtime
-    assert "id=\"github-runtime-evidence-registry\"" in runtime
+    assert 'content_tabs.render_links(' in runtime
+    assert 'data-kaori-github-runtime-registry-tabs' in runtime
+    assert 'id="github-runtime-evidence-registry"' in runtime
     assert "runtime_view == 'deliveries'" in runtime
-    assert "runtime_table_embedded = true" in runtime
+    assert 'runtime_table_embedded = true' in runtime
     assert runtime.count('partials/_runtime_jobs.html') == 1
     assert runtime.count('partials/_runtime_deliveries.html') == 1
-    assert "render_links(" in content_tabs
+    assert 'render_links(' in content_tabs
     for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
         assert f'data-kaori-runtime-registry-view="{kind}"' in page
         assert f"runtime_view='{kind}'" in page
-        assert "runtime_table_embedded|default(false)" in page
-        assert "components/pagination.html" in page
-        assert "components/loading_bar.html" in page
-        assert "data-kaori-auto-submit" in page
-        assert "registry_ui.clear_filters_action(" in page
+        assert 'runtime_table_embedded|default(false)' in page
+        assert 'components/pagination.html' in page
+        assert 'components/loading_bar.html' in page
+        assert 'data-kaori-auto-submit' in page
+        assert 'registry_ui.clear_filters_action(' in page
     assert routes.count('runtime_table_embedded=True') == 2
     assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
 

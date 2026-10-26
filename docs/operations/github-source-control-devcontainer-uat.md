@@ -1571,3 +1571,10 @@ release until the operator accepts this holding UAT.
 - **Evidence pending:** run executable Ruff/djLint/pytest and desktop/mobile
   light/dark/keyboard/HTMX Visual QA on exact merge SHA. This is still
   temporary holding UAT, not Human Acceptance or official CI/CD admission.
+
+
+## 2026-10-26 — #3306 KAORI title-level Guide and UAT QA regression
+
+- Connection Contract, GitHub Full Validation and Repository Inventory & Lifecycle must use the **approved title-level Guide control** (`info_tip.render(..., placement='right', variant='guide')`), not the default inline circle-help/question-mark trigger. The component remains the canonical accessible popover for pointer, keyboard and touch. Do not introduce a competing hover style.
+- Preserve connection save toast, separate authorized provider validation and inventory synchronization, and committed evidence authority. Runtime table parts retain explicit jobs/deliveries registry-view markers for UI contracts.
+- Operator Dev Container evidence on previous merge SHA reported 2 failed and 66 passed: stale success-feedback quote assertion and missing runtime registry-view markers. Both source contracts are corrected for this UAT candidate. Formatter diagnostics (Ruff and djLint) require executable recheck on its exact merge SHA; no passing result is claimed.
