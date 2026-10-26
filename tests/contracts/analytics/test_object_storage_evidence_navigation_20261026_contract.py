@@ -255,7 +255,10 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert f'data-dialog-target="{dialog_id}"' in context
     assert f'aria-controls="{dialog_id}"' in context
     assert 'View Reconciliation' in context
-    assert context.count('class="{{ evidence_action_classes }}"') == 2
+    capacity_actions = context.split("{% if page_key == 'capacity' %}", 1)[1].split(
+        "{% elif page_key == 'alerts' %}", 1
+    )[0]
+    assert capacity_actions.count('class="{{ evidence_action_classes }}"') == 1
     assert 'data-object-storage-central-evidence-link' in context
 
     assert f'<dialog id="{dialog_id}"' in capacity
