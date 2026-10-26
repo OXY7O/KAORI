@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
+from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
@@ -61,11 +62,29 @@ def _evidence(instance: VaultInstance) -> dict:
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
+    registered = query.count()
+    search = request.args.get('q', '').strip()[:80]
+    environment = request.args.get('environment', '').strip()
+    readiness_filter = request.args.get('readiness', '').strip()
+    valid_environments = {value for value, _label in ENVIRONMENTS}
+    if environment not in valid_environments:
+        environment = ''
+    if readiness_filter not in {'ready', 'validation_required', 'blocked', 'degraded'}:
+        readiness_filter = ''
+    filtered = query
+    if search:
+        filtered = filtered.filter(
+            IntegrationInstance.name.icontains(search, autoescape=True)
+            | VaultInstance.endpoint.icontains(search, autoescape=True)
+        )
+    if environment:
+        filtered = filtered.filter(IntegrationInstance.environment == environment)
+    if readiness_filter:
+        filtered = filtered.filter(IntegrationInstance.readiness_status == readiness_filter)
     instances, pagination = paginate_query(
-        query, page=request.args.get('page', 1, type=int) or 1,
+        filtered, page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    registered = query.count()
     enabled = query.filter(
         IntegrationInstance.enabled.is_(True),
         IntegrationInstance.lifecycle_status == 'active',
@@ -85,6 +104,10 @@ def index() -> ResponseReturnValue:
         attention=max(0, enabled - ready),
         disabled=max(0, registered - enabled),
         active_tab=tab if tab in {'coverage', 'registry'} else 'coverage',
+        registry_search=search,
+        registry_environment=environment,
+        registry_readiness=readiness_filter,
+        environment_options=ENVIRONMENTS,
         notification_context=_notification(),
     )
 
