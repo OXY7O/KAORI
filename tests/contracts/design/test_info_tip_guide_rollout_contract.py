@@ -105,6 +105,8 @@ GITHUB_TITLE_GUIDES = {
     'integrations/source_control/github/partials/_detail_validation.html': 'github-full-validation-guide',
     'integrations/source_control/github/partials/_detail_inventory.html': 'github-inventory-lifecycle-guide',
     'integrations/source_control/github/partials/_detail_runtime.html': 'github-runtime-health-guide',
+    'integrations/source_control/github/partials/_runtime_jobs.html': 'github-runtime-jobs-guide',
+    'integrations/source_control/github/partials/_runtime_deliveries.html': 'github-runtime-deliveries-guide',
 }
 
 
@@ -119,7 +121,7 @@ def test_github_title_guides_explicitly_render_the_labeled_guide_variant() -> No
         assert len(matching) == 1, (template, identifier)
         assert "variant='guide'" in matching[0], (template, identifier)
         assert "placement='right'" in matching[0], (template, identifier)
-        assert "button_text=" not in matching[0], (template, identifier)
+        assert 'button_text=' not in matching[0], (template, identifier)
 
     detail = _read('integrations/source_control/github/uat_detail.html')
     validation = _read('integrations/source_control/github/partials/_detail_validation.html')

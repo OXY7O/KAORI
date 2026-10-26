@@ -32,14 +32,14 @@
         loading_id='github-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         title_extra=info_tip.render('github-runtime-health-guide',
-            'GitHub Runtime Health & Diagnostics',
-            'KAORI reports committed runtime evidence for the selected GitHub App installation, independently from permission validation and repository synchronization.',
-            [
-                'Runtime Refresh checks current installation health through an admitted JobExecution.',
-                'Full Validation verifies App permissions; it does not establish runtime health.',
-                'Signed webhook deliveries are transport evidence, not synchronized repository inventory.'
-            ],
-            placement='right', variant='guide')
+        'GitHub Runtime Health & Diagnostics',
+        'KAORI reports committed runtime evidence for the selected GitHub App installation, independently from permission validation and repository synchronization.',
+        [
+        'Runtime Refresh checks current installation health through an admitted JobExecution.',
+        'Full Validation verifies App permissions; it does not establish runtime health.',
+        'Signed webhook deliveries are transport evidence, not synchronized repository inventory.'
+        ],
+        placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
@@ -62,28 +62,27 @@
     {{ provider_job_status.render(runtime_refresh_job, 'GitHub runtime refresh running', 'GitHub') }}
     {% if runtime_feedback|default('') == 'blocked' %}
         {{ operational_callout.render('Runtime Refresh Blocked',
-            'Review installation authorization, worker admission, and connection configuration before retrying.',
-            icon='shield-alert',
-            tone='warning',
-            variant='semantic') }}
+                'Review installation authorization, worker admission, and connection configuration before retrying.',
+                icon='shield-alert',
+                tone='warning',
+                variant='semantic') }}
     {% endif %}
     <div class="space-y-4 p-4 sm:p-5" data-kaori-github-runtime-layout>
-        {{ runtime_decision.render(
-            gate,
-            (health|replace('_', ' ')|title) if runtime_observed else 'Not Observed',
-            (health|replace('_', ' ')|title) if runtime_observed else 'Not Observed',
-            'Persisted Runtime Refresh evidence',
-            'Runtime Observed' if runtime_observed else 'Observation Required',
-            'Runtime health is independent from Full Validation readiness.',
-            canonical.readiness_status or 'validation_required',
-            (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title,
-            'Full Validation owns GitHub App permissions.',
-            observation_rows,
-            finding,
-            0 if runtime_observed and health == 'healthy' else 1,
-            next_action,
-            'Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
-            ) }}
+        {{ runtime_decision.render(gate,
+                (health|replace('_', ' ') |title) if runtime_observed else 'Not Observed',
+        (health|replace('_', ' ')|title) if runtime_observed else 'Not Observed',
+        'Persisted Runtime Refresh evidence',
+        'Runtime Observed' if runtime_observed else 'Observation Required',
+        'Runtime health is independent from Full Validation readiness.',
+        canonical.readiness_status or 'validation_required',
+        (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title,
+        'Full Validation owns GitHub App permissions.',
+        observation_rows,
+        finding,
+        0 if runtime_observed and health == 'healthy' else 1,
+        next_action,
+        'Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
+        ) }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  data-kaori-github-runtime-evidence>
             <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
@@ -101,7 +100,7 @@
                     ('Installation ID', installation.native_installation_id, 'Bound installation identity'),
                     ('Runtime Health', health|replace('_', ' ')|title if runtime_observed else 'Not Observed', 'Runtime Refresh only'),
                     ('Full Validation', (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Separate permission evidence')
-                ] %}
+                    ] %}
                     <article class="min-w-0 bg-surface-card p-4">
                         <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
                         <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
@@ -120,15 +119,15 @@
          class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          data-kaori-github-runtime-registry-tabs>
     {{ framed_tabs.render_navigation([
-            ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs'), job_pagination.total_items),
-            ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'), delivery_pagination.total_items)
-        ],
-        runtime_view,
-        prefix='github-runtime-history',
-        aria_label='GitHub Runtime Evidence',
-        hx_target='#github-runtime-evidence-registry',
-        hx_select='#github-runtime-evidence-registry',
-        hx_push_url='true') }}
+        ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs') , job_pagination.total_items),
+    ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'), delivery_pagination.total_items)
+    ],
+    runtime_view,
+    prefix='github-runtime-history',
+    aria_label='GitHub Runtime Evidence',
+    hx_target='#github-runtime-evidence-registry',
+    hx_select='#github-runtime-evidence-registry',
+    hx_push_url='true') }}
     <div id="github-runtime-evidence-registry-content">
         {% set runtime_table_embedded = true %}
         {% if runtime_view == 'deliveries' %}
