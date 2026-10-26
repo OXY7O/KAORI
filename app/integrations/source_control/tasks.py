@@ -26,7 +26,10 @@ from app.platform_operations.jobs.execution import JobCancellationRequested, Job
     reject_on_worker_lost=True,
 )
 def sync_source_repositories_task(
-    self, *, targets: list[dict[str, int]], requested_by_user_id: int | None,
+    self,
+    *,
+    targets: list[dict[str, int]],
+    requested_by_user_id: int | None,
     job_execution_id: int | None = None,
 ) -> dict[str, int | str]:
     context = JobExecutionContext(str(self.request.id), job_execution_id)
@@ -48,7 +51,10 @@ def sync_source_repositories_task(
 
     context.start(
         message='Preparing approved GitHub installation grants.',
-        total=total, percent=1, stage='Preparing Inventory', target='Source Control',
+        total=total,
+        percent=1,
+        stage='Preparing Inventory',
+        target='Source Control',
     )
     successes = 0
     failures = 0
@@ -58,9 +64,11 @@ def sync_source_repositories_task(
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
-                current=index - 1, total=total,
+                current=index - 1,
+                total=total,
                 percent=min(5 + 85 * (index - 1) // total, 90),
-                stage='Collecting Repository Metadata', target='GitHub Installation',
+                stage='Collecting Repository Metadata',
+                target='GitHub Installation',
             )
             try:
                 installation = db.session.get(SourceInstallation, target['installation_id'])
@@ -81,7 +89,8 @@ def sync_source_repositories_task(
                     error_code='source_control_inventory_timeout',
                 )
                 return {
-                    'status': 'failed', 'synced_installations': successes,
+                    'status': 'failed',
+                    'synced_installations': successes,
                     'failed_installations': failures + 1,
                 }
             except Exception:
@@ -90,14 +99,15 @@ def sync_source_repositories_task(
                 db.session.rollback()
                 failures += 1
             context.checkpoint(
-                current=index, total=total,
+                current=index,
+                total=total,
                 percent=min(5 + 90 * index // total, 95),
-                stage='Committing Repository Scope', target='Source Control',
+                stage='Committing Repository Scope',
+                target='Source Control',
             )
         result = {
             'status': (
-                'failed' if failures and not successes
-                else 'partial' if failures or revision_gaps else 'success'
+                'failed' if failures and not successes else 'partial' if failures or revision_gaps else 'success'
             ),
             'synced_installations': successes,
             'failed_installations': failures,
@@ -112,13 +122,15 @@ def sync_source_repositories_task(
             )
         else:
             context.succeed(
-                result_summary=result, result_type='source_control_repository_inventory',
+                result_summary=result,
+                result_type='source_control_repository_inventory',
                 partial=bool(failures or revision_gaps),
             )
         return result
     except JobCancellationRequested:
         context.canceled()
         return {
-            'status': 'canceled', 'synced_installations': successes,
+            'status': 'canceled',
+            'synced_installations': successes,
             'failed_installations': failures,
         }

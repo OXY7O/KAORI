@@ -37,7 +37,8 @@ def _admit_read(instance_id: int) -> bool:
     if type(actor_id) is not int:
         return False
     decision = evaluate_exact_vault_instance_case_scope(
-        actor_user_id=actor_id, instance_id=instance_id,
+        actor_user_id=actor_id,
+        instance_id=instance_id,
     )
     if not decision.allowed:
         db.session.rollback()
@@ -82,7 +83,8 @@ def _safe_case(case: AlertCase) -> dict[str, object]:
 def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
     metadata = case.evidence_json
     if (
-        case.domain != 'secrets_pki' or case.asset_type != 'vault_instance'
+        case.domain != 'secrets_pki'
+        or case.asset_type != 'vault_instance'
         or case.source_type != 'provider_alert'
         or case.asset_key != str(instance_id)
         or case.routing_state != 'suppressed'
@@ -93,7 +95,8 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key
-        or not isinstance(case.labels_json, dict) or case.labels_json
+        or not isinstance(case.labels_json, dict)
+        or case.labels_json
         or not isinstance(metadata, dict)
         or set(metadata) != {'correlation_profile', 'source_binding_id', 'source_integration_id'}
         or metadata.get('correlation_profile') != _PROFILE
@@ -114,7 +117,8 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         and binding.asset_type == 'vault_instance'
         and binding.asset_key == str(instance_id)
         and binding.validation_profile == 'vault-alerts-v1'
-        and binding.selector_json == {
+        and binding.selector_json
+        == {
             'matchers': [
                 {'label': 'vault_instance', 'operator': '=', 'value': str(instance_id)},
             ],
@@ -132,14 +136,16 @@ def _read_cases(*, instance_id: int, page: str) -> dict[str, object]:
                 AlertCase.asset_key == str(instance_id),
             )
             .order_by(AlertCase.last_seen_at.desc(), AlertCase.id.desc())
-            .limit(_MAX_CASES + 1).all()
+            .limit(_MAX_CASES + 1)
+            .all()
         )
-        if len(records) > _MAX_CASES or any(
-            not _case_qualified(case, instance_id=instance_id) for case in records
-        ):
+        if len(records) > _MAX_CASES or any(not _case_qualified(case, instance_id=instance_id) for case in records):
             return {'status': 'unavailable', 'rows': [], 'pagination': None}
         rows, pagination = paginate_sequence(
-            records, page=page, per_page=5, allowed_per_page=(5,),
+            records,
+            page=page,
+            per_page=5,
+            allowed_per_page=(5,),
         )
         return {
             'status': 'ready',
@@ -156,7 +162,8 @@ def vault_cases_response() -> ResponseReturnValue:
     if instance_id is None:
         return render_template(
             'intelligence/vault_provider_cases.html',
-            instance_id=None, page_data=None,
+            instance_id=None,
+            page_data=None,
         )
     if not _admit_read(instance_id):
         abort(404)
@@ -171,7 +178,8 @@ def vault_cases_response() -> ResponseReturnValue:
             abort(404)
     return render_template(
         'intelligence/vault_provider_cases.html',
-        instance_id=instance_id, page_data=result,
+        instance_id=instance_id,
+        page_data=result,
     )
 
 
@@ -193,7 +201,8 @@ def vault_case_details_response(public_id: str) -> ResponseReturnValue:
         db.session.commit()
         return render_template(
             'intelligence/vault_provider_case_details.html',
-            case=_safe_case(row), instance_id=instance_id,
+            case=_safe_case(row),
+            instance_id=instance_id,
         )
     except SQLAlchemyError:
         db.session.rollback()

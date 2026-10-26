@@ -73,9 +73,7 @@ def reserve_generation(session: Session, installation: SourceInstallation) -> Re
     This commits the reservation so no DB lock is held during pagination.
     """
     _admitted(installation)
-    state = session.get(
-        SourceRepositoryCollectionState, installation.id, with_for_update=True
-    )
+    state = session.get(SourceRepositoryCollectionState, installation.id, with_for_update=True)
     if state is None:
         state = SourceRepositoryCollectionState(
             installation_id=installation.id,
@@ -138,9 +136,7 @@ def publish_generation(
     if lease.installation_id != installation.id or lease.generation <= 0:
         raise RepositoryGenerationError('Source Control generation belongs to another installation.')
     _same_authority(installation, evidence)
-    state = session.get(
-        SourceRepositoryCollectionState, installation.id, with_for_update=True
-    )
+    state = session.get(SourceRepositoryCollectionState, installation.id, with_for_update=True)
     if (
         state is None
         or state.pending_generation != lease.generation
@@ -156,13 +152,18 @@ def publish_generation(
         account.account_type = evidence.account_type
         account.last_observed_at = evidence.observed_at
 
-    grants = session.execute(
-        select(SourceRepositoryGrant)
-        .where(
-            SourceRepositoryGrant.installation_id == installation.id,
-            SourceRepositoryGrant.valid_until.is_(None),
-        ).with_for_update()
-    ).scalars().all()
+    grants = (
+        session.execute(
+            select(SourceRepositoryGrant)
+            .where(
+                SourceRepositoryGrant.installation_id == installation.id,
+                SourceRepositoryGrant.valid_until.is_(None),
+            )
+            .with_for_update()
+        )
+        .scalars()
+        .all()
+    )
     active = {grant.repository_id: grant for grant in grants}
     repository_ids: set[int] = set()
     new_grants: list[tuple[int, str, datetime]] = []
@@ -170,11 +171,13 @@ def publish_generation(
 
     for item in evidence.repositories:
         repo = session.execute(
-            select(SourceRepository).where(
+            select(SourceRepository)
+            .where(
                 SourceRepository.provider_key == installation.provider_key,
                 SourceRepository.host_key == installation.host_key,
                 SourceRepository.native_repository_id == item.native_id,
-            ).with_for_update()
+            )
+            .with_for_update()
         ).scalar_one_or_none()
         if repo is None:
             repo = SourceRepository(
@@ -222,13 +225,15 @@ def publish_generation(
     # respecting the partial unique DB index even if SQLAlchemy reorders DML.
     session.flush()
     for repository_id, status, start in new_grants:
-        session.add(SourceRepositoryGrant(
-            installation_id=installation.id,
-            repository_id=repository_id,
-            access_status=status,
-            valid_from=start,
-            last_observed_at=observation_time,
-        ))
+        session.add(
+            SourceRepositoryGrant(
+                installation_id=installation.id,
+                repository_id=repository_id,
+                access_status=status,
+                valid_from=start,
+                last_observed_at=observation_time,
+            )
+        )
 
     state.committed_generation = lease.generation
     state.pending_generation = None
@@ -252,9 +257,7 @@ def record_generation_failure(
     """Preserve last committed evidence even when App access was revoked mid-scan."""
     if installation.id is None or lease.installation_id != installation.id:
         return False
-    state = session.get(
-        SourceRepositoryCollectionState, installation.id, with_for_update=True
-    )
+    state = session.get(SourceRepositoryCollectionState, installation.id, with_for_update=True)
     if state is None or lease.installation_id != installation.id or state.pending_generation != lease.generation:
         return False
     state.pending_generation = None

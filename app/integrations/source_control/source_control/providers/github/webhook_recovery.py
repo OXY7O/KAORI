@@ -32,9 +32,7 @@ def _record_preclaim_failure(session: Session, delivery_id: int, now: datetime) 
     that independent state when a worker or database transaction fails.
     """
     row = session.execute(
-        select(SourceWebhookDelivery)
-        .where(SourceWebhookDelivery.id == delivery_id)
-        .with_for_update(),
+        select(SourceWebhookDelivery).where(SourceWebhookDelivery.id == delivery_id).with_for_update(),
     ).scalar_one_or_none()
     if row is None or row.processing_state not in {'received', 'retry_pending'}:
         return
@@ -42,6 +40,7 @@ def _record_preclaim_failure(session: Session, delivery_id: int, now: datetime) 
     row.last_attempt_at = now
     row.processing_state = 'requires_review' if row.attempt_count >= 3 else 'retry_pending'
     session.commit()
+
 
 def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int | str]:
     """Sweep at most 25 transport envelopes; no unbounded provider lookups.
@@ -54,41 +53,49 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
         raise ValueError('Source Control webhook recovery batch must be between 1 and 25.')
     if not provider_kind('source_control', 'github').available:
         return {
-            'status': 'not_admitted', 'examined': 0, 'queued': 0,
-            'reconciled': 0, 'uncertain': 0, 'failed': 0,
+            'status': 'not_admitted',
+            'examined': 0,
+            'queued': 0,
+            'reconciled': 0,
+            'uncertain': 0,
+            'failed': 0,
         }
 
     now = datetime.now(UTC)
-    ids = list(session.scalars(
-        select(SourceWebhookDelivery.id)
-        .outerjoin(
-            JobExecution,
-            SourceWebhookDelivery.dispatched_job_execution_id == JobExecution.id,
+    ids = list(
+        session.scalars(
+            select(SourceWebhookDelivery.id)
+            .outerjoin(
+                JobExecution,
+                SourceWebhookDelivery.dispatched_job_execution_id == JobExecution.id,
+            )
+            .where(
+                or_(
+                    SourceWebhookDelivery.processing_state == 'received',
+                    and_(
+                        SourceWebhookDelivery.processing_state == 'retry_pending',
+                        or_(
+                            SourceWebhookDelivery.last_attempt_at.is_(None),
+                            SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=5),
+                        ),
+                    ),
+                    and_(
+                        SourceWebhookDelivery.processing_state == 'dispatching',
+                        SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=20),
+                    ),
+                    and_(
+                        SourceWebhookDelivery.processing_state == 'queued',
+                        or_(
+                            JobExecution.id.is_(None),
+                            JobExecution.status.in_(TERMINAL_JOB_STATUSES),
+                        ),
+                    ),
+                )
+            )
+            .order_by(SourceWebhookDelivery.received_at, SourceWebhookDelivery.id)
+            .limit(limit),
         )
-        .where(or_(
-            SourceWebhookDelivery.processing_state == 'received',
-            and_(
-                SourceWebhookDelivery.processing_state == 'retry_pending',
-                or_(
-                    SourceWebhookDelivery.last_attempt_at.is_(None),
-                    SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=5),
-                ),
-            ),
-            and_(
-                SourceWebhookDelivery.processing_state == 'dispatching',
-                SourceWebhookDelivery.last_attempt_at <= now - timedelta(minutes=20),
-            ),
-            and_(
-                SourceWebhookDelivery.processing_state == 'queued',
-                or_(
-                    JobExecution.id.is_(None),
-                    JobExecution.status.in_(TERMINAL_JOB_STATUSES),
-                ),
-            ),
-        ))
-        .order_by(SourceWebhookDelivery.received_at, SourceWebhookDelivery.id)
-        .limit(limit),
-    ))
+    )
     queued = 0
     reconciled = 0
     uncertain = 0
@@ -102,9 +109,7 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
                 state = reconcile_delivery_completion(session, delivery_record_id=delivery_id)
                 reconciled += int(state.startswith('reconciled_'))
             elif row.processing_state == 'dispatching':
-                uncertain += int(
-                    flag_abandoned_dispatch(session, delivery_record_id=delivery_id)
-                )
+                uncertain += int(flag_abandoned_dispatch(session, delivery_record_id=delivery_id))
             elif row.processing_state in {'received', 'retry_pending'}:
                 outcome = dispatch_committed_delivery(session, delivery_record_id=delivery_id)
                 queued += int(outcome.state == 'queued')
@@ -118,7 +123,10 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
                 session.rollback()
             failed += 1
     return {
-        'status': 'processed', 'examined': len(ids),
-        'queued': queued, 'reconciled': reconciled,
-        'uncertain': uncertain, 'failed': failed,
+        'status': 'processed',
+        'examined': len(ids),
+        'queued': queued,
+        'reconciled': reconciled,
+        'uncertain': uncertain,
+        'failed': failed,
     }

@@ -46,9 +46,7 @@ class CollectionOutcome:
     unchecked_revisions: int = 0
 
 
-def synchronize_installation(
-    session: Session, installation: SourceInstallation
-) -> CollectionOutcome:
+def synchronize_installation(session: Session, installation: SourceInstallation) -> CollectionOutcome:
     """Reserve -> authorized exhaustive collection -> fenced committed publish.
 
     Safe failure preserves prior committed records/counts. No retry loop,
@@ -85,19 +83,21 @@ def synchronize_installation(
     )
     # Count every eligible ref, not just the 20-item API budget. Otherwise
     # a 200-repository organization would report only one evidence gap.
-    eligible_count = int(session.scalar(
-        select(func.count()).select_from(authorized.subquery())
-    ) or 0)
+    eligible_count = int(session.scalar(select(func.count()).select_from(authorized.subquery())) or 0)
     target_ids = list(session.scalars(authorized.order_by(SourceRepository.id).limit(20)))
     committed_revisions = 0
     revision_failures = 0
     for repository_id in target_ids[:20]:
         try:
             branch = collect_default_branch_revision(
-                session, installation=installation, repository_id=repository_id,
+                session,
+                installation=installation,
+                repository_id=repository_id,
             )
             publish_default_branch_revision(
-                session, installation=installation, evidence=branch,
+                session,
+                installation=installation,
+                evidence=branch,
             )
             committed_revisions += 1
         except (GitHubProviderError, RepositoryGenerationError):

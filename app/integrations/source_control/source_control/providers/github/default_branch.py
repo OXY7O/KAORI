@@ -61,7 +61,8 @@ def collect_default_branch_revision(
         raise GitHubProviderError('Committed repository path is invalid.')
     client = build_client_for_installation(installation)
     client.installation_detail(
-        installation.native_installation_id, installation.account.native_account_id,
+        installation.native_installation_id,
+        installation.account.native_account_id,
     )
     token = client.mint_installation_token(
         installation.native_installation_id,

@@ -24,7 +24,11 @@ def recover_signed_deliveries() -> dict[str, int | str]:
     """Only an explicitly enabled maintenance policy may process deliveries."""
     if not current_app.config.get('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False):
         return {
-            'status': 'disabled', 'examined': 0, 'queued': 0,
-            'reconciled': 0, 'uncertain': 0, 'failed': 0,
+            'status': 'disabled',
+            'examined': 0,
+            'queued': 0,
+            'reconciled': 0,
+            'uncertain': 0,
+            'failed': 0,
         }
     return recover_webhook_inbox(db.session)

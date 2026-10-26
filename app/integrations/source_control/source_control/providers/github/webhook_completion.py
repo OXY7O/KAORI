@@ -28,7 +28,8 @@ _EXPECTED_OPERATION = 'sync_source_control_repositories'
 
 
 def reconcile_delivery_completion(
-    session: Session, *,
+    session: Session,
+    *,
     delivery_record_id: int,
     now: datetime | None = None,
 ) -> str:
@@ -37,16 +38,10 @@ def reconcile_delivery_completion(
     Does not dispatch jobs or read GitHub. Missing/mis-scoped/expired execution
     remains an explicit requires_review, never successful or silently retried.
     """
-    if (
-        isinstance(delivery_record_id, bool)
-        or not isinstance(delivery_record_id, int)
-        or delivery_record_id <= 0
-    ):
+    if isinstance(delivery_record_id, bool) or not isinstance(delivery_record_id, int) or delivery_record_id <= 0:
         raise ValueError('A committed Source Control delivery ID is required.')
     delivery = session.execute(
-        select(SourceWebhookDelivery)
-        .where(SourceWebhookDelivery.id == delivery_record_id)
-        .with_for_update(),
+        select(SourceWebhookDelivery).where(SourceWebhookDelivery.id == delivery_record_id).with_for_update(),
     ).scalar_one_or_none()
     if delivery is None:
         raise ValueError('The Source Control delivery is unavailable.')
@@ -58,10 +53,12 @@ def reconcile_delivery_completion(
     installation = session.get(SourceInstallation, delivery.installation_id)
     job = (
         session.get(JobExecution, delivery.dispatched_job_execution_id)
-        if delivery.dispatched_job_execution_id is not None else None
+        if delivery.dispatched_job_execution_id is not None
+        else None
     )
     if (
-        installation is None or job is None
+        installation is None
+        or job is None
         or job.job_type != _EXPECTED_JOB_TYPE
         or job.operation != _EXPECTED_OPERATION
         or job.integration_type != 'source_control'
@@ -82,17 +79,22 @@ def reconcile_delivery_completion(
 
 
 def reconcile_queued_deliveries(
-    session: Session, *, limit: int = 25, now: datetime | None = None,
+    session: Session,
+    *,
+    limit: int = 25,
+    now: datetime | None = None,
 ) -> dict[str, int]:
     """Bounded, DB-only completion refresh; independent of public ingress."""
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 25:
         raise ValueError('Source Control completion batch exceeds its bounded limit.')
-    ids = list(session.scalars(
-        select(SourceWebhookDelivery.id)
-        .where(SourceWebhookDelivery.processing_state == 'queued')
-        .order_by(SourceWebhookDelivery.received_at, SourceWebhookDelivery.id)
-        .limit(limit),
-    ))
+    ids = list(
+        session.scalars(
+            select(SourceWebhookDelivery.id)
+            .where(SourceWebhookDelivery.processing_state == 'queued')
+            .order_by(SourceWebhookDelivery.received_at, SourceWebhookDelivery.id)
+            .limit(limit),
+        )
+    )
     changed = 0
     review = 0
     for delivery_id in ids:

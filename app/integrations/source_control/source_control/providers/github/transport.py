@@ -33,10 +33,18 @@ _BRANCH_DETAIL = re.compile(
     r'(?:[A-Za-z0-9_.-]|%2F|%2B){1,765}$'
 )
 _REF_NAME = re.compile(r'[A-Za-z0-9._/+-]{1,255}')
-_READ_PERMISSIONS = frozenset({
-    'metadata', 'contents', 'pull_requests', 'actions', 'checks',
-    'deployments', 'issues', 'administration',
-})
+_READ_PERMISSIONS = frozenset(
+    {
+        'metadata',
+        'contents',
+        'pull_requests',
+        'actions',
+        'checks',
+        'deployments',
+        'issues',
+        'administration',
+    }
+)
 
 
 class GitHubProviderError(ValueError):
@@ -162,22 +170,20 @@ class GitHubAppClient:
     def _request(
         self, method: str, path: str, *, bearer: str, payload: Mapping[str, Any] | None = None
     ) -> tuple[int, dict[str, Any]]:
-        return _safe_json_request(
-            method, path, bearer=bearer, payload=payload, session_factory=self._session_factory
-        )
+        return _safe_json_request(method, path, bearer=bearer, payload=payload, session_factory=self._session_factory)
 
     def installation_detail(self, installation_id: str | int, expected_account_id: str | int) -> dict[str, Any]:
         """Check App, installation, account, suspension and repository scope."""
         installation = _id(installation_id)
         account = _id(expected_account_id)
-        status, data = self._request(
-            'GET', f'/app/installations/{installation}', bearer=self._app_jwt()
-        )
+        status, data = self._request('GET', f'/app/installations/{installation}', bearer=self._app_jwt())
         native_account = data.get('account')
         if (
-            status != 200 or data.get('id') != installation
+            status != 200
+            or data.get('id') != installation
             or data.get('app_id') != self.app_id
-            or not isinstance(native_account, dict) or native_account.get('id') != account
+            or not isinstance(native_account, dict)
+            or native_account.get('id') != account
             or data.get('suspended_at') is not None
         ):
             raise GitHubProviderError('GitHub installation or account authorization does not match.')
@@ -219,7 +225,9 @@ class GitHubAppClient:
         if selection not in {'all', 'selected'}:
             raise GitHubProviderError('GitHub installation token repository scope is unknown.')
         return InstallationToken(
-            token=token, expires_at=expiration, permissions=requested,
+            token=token,
+            expires_at=expiration,
+            permissions=requested,
             repository_selection=selection,
         )
 
@@ -230,7 +238,8 @@ class GitHubAppClient:
         if token.expires_at.astimezone(UTC) <= datetime.now(UTC) + timedelta(seconds=90):
             raise GitHubProviderError('GitHub installation token cannot complete a repository page.')
         status, result = self._request(
-            'GET', f'/installation/repositories?per_page=20&page={page}',
+            'GET',
+            f'/installation/repositories?per_page=20&page={page}',
             bearer=token.token,
         )
         if status != 200:
@@ -238,18 +247,23 @@ class GitHubAppClient:
         return result
 
     def default_branch_tip(
-        self, token: InstallationToken, owner_login: str, repo_name: str,
-        branch_name: str, native_repository_id: str,
+        self,
+        token: InstallationToken,
+        owner_login: str,
+        repo_name: str,
+        branch_name: str,
+        native_repository_id: str,
     ) -> str:
         """Resolve exact SHA, proving mutable owner/name and default ref still map to the native ID."""
         repository_path = f'/repos/{owner_login}/{repo_name}'
         if (
             _REPOSITORY_DETAIL.fullmatch(repository_path) is None
             or _REF_NAME.fullmatch(branch_name) is None
-            or branch_name.startswith('/') or branch_name.endswith('/')
-            or '..' in branch_name or '//' in branch_name
-            or any(part in {'.', '..'} or part.endswith('.lock')
-                   for part in branch_name.split('/'))
+            or branch_name.startswith('/')
+            or branch_name.endswith('/')
+            or '..' in branch_name
+            or '//' in branch_name
+            or any(part in {'.', '..'} or part.endswith('.lock') for part in branch_name.split('/'))
         ):
             raise GitHubProviderError('GitHub branch identity cannot be safely resolved.')
         native = _id(native_repository_id)
@@ -263,8 +277,10 @@ class GitHubAppClient:
             status, record = self._request('GET', repository_path, bearer=token.token)
             owner = record.get('owner')
             if (
-                status != 200 or record.get('id') != native
-                or not isinstance(owner, dict) or owner.get('login') != owner_login
+                status != 200
+                or record.get('id') != native
+                or not isinstance(owner, dict)
+                or owner.get('login') != owner_login
                 or record.get('name') != repo_name
                 or record.get('default_branch') != branch_name
             ):
@@ -275,8 +291,10 @@ class GitHubAppClient:
         commit = branch.get('commit')
         sha = commit.get('sha') if isinstance(commit, dict) else None
         if (
-            status != 200 or branch.get('name') != branch_name
-            or not isinstance(sha, str) or re.fullmatch(r'[0-9a-fA-F]{40}', sha) is None
+            status != 200
+            or branch.get('name') != branch_name
+            or not isinstance(sha, str)
+            or re.fullmatch(r'[0-9a-fA-F]{40}', sha) is None
         ):
             raise GitHubProviderError('GitHub exact branch revision is unavailable.')
         verify_repository()
@@ -288,9 +306,7 @@ class GitHubAppClient:
         """Test a provider grant with one bounded metadata-only repository probe."""
         data = self.installation_detail(installation_id, expected_account_id)
         token = self.mint_installation_token(installation_id, permissions={'metadata': 'read'})
-        status, page = self._request(
-            'GET', '/installation/repositories?per_page=1', bearer=token.token
-        )
+        status, page = self._request('GET', '/installation/repositories?per_page=1', bearer=token.token)
         count = page.get('total_count')
         repositories = page.get('repositories')
         if status != 200 or isinstance(count, bool) or not isinstance(count, int) or count < 0:
