@@ -43,9 +43,10 @@ def test_native_external_access_observer_has_explicit_read_only_authority() -> N
     assert 'tenant.observe_native_external_access_route' in ui
     assert 'name="csrf_token"' in ui
     assert 'name="tenant_id"' in ui
-    assert 'binding.ownership' in ui
-    assert 'binding.claimed_grant_marker' in ui
-    assert 'Labels indicate possible correlation' in ui
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'binding.ownership' in detail
+    assert 'binding.claimed_grant_marker' in detail
+    assert 'Labels indicate possible correlation' in detail
 
 
 def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> None:
@@ -62,4 +63,5 @@ def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> No
     assert native.count('Native Namespace RBAC Inventory') == 1
     assert 'name="access_inventory_view" value="native"' in native
     assert 'name="access_inventory_view" value="capsule"' in capsule
-    assert native.count('method="post"') >= 2
+    assert native.count('method="post"') >= 1
+    assert 'method="post"' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
