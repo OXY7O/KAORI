@@ -18,6 +18,17 @@ MAX_VAULT_SOURCES = 25
 MAX_PKI_SCOPES = 100
 
 
+def _source_requires_validation(row: VaultInstance) -> bool:
+    """Preserve the provider readiness predicate outside the aggregation decision tree."""
+    return (
+        row.integration_instance.readiness_status != 'ready'
+        or not row.integration_instance.enabled
+        or row.integration_instance.lifecycle_status != 'active'
+        or row.integration_instance.integration_type != 'secrets_pki'
+        or row.integration_instance.provider_key != 'vault'
+    )
+
+
 def pki_public_readiness(
     *,
     instance: VaultInstance | None = None,
@@ -42,14 +53,7 @@ def pki_public_readiness(
         sources = [instance]
     if len(sources) > MAX_VAULT_SOURCES:
         return _result('blocked', 'Source Limit Exceeded')
-    any_unvalidated = any(
-        row.integration_instance.readiness_status != 'ready'
-        or not row.integration_instance.enabled
-        or row.integration_instance.lifecycle_status != 'active'
-        or row.integration_instance.integration_type != 'secrets_pki'
-        or row.integration_instance.provider_key != 'vault'
-        for row in sources
-    )
+    any_unvalidated = any(_source_requires_validation(row) for row in sources)
 
     try:
         scopes = {
