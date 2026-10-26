@@ -133,6 +133,53 @@ def build_activity_retention_context(**kwargs) -> dict[str, Any]:
     return build_domain_retention_context('operational_activity', **kwargs)
 
 
+def _retention_domain_cards(
+    *,
+    supported: tuple[str, ...],
+    policies: dict[str, RetentionPolicy],
+    stored_map: dict[str, DataLifecyclePolicy],
+    posture_map: dict[str, dict[str, int]],
+    selected: str,
+    selected_preview_count: Any,
+) -> list[dict[str, Any]]:
+    """Present unchanged per-domain policy cards for the retention UI."""
+    domain_cards = []
+    for name in supported:
+        policy = policies[name]
+        stored = stored_map.get(name)
+        schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
+            name,
+            policy,
+            stored,
+        )
+        posture = posture_map.get(name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
+        domain_cards.append(
+            {
+                'name': name,
+                'label': _domain_label(name),
+                'icon': _domain_icon(name),
+                'description': _domain_description(name),
+                'source_model': get_archive_domain(name).source_model,
+                'coverage': _domain_coverage(name),
+                'coverage_note': _domain_coverage_note(name),
+                'enabled': bool(stored.enabled) if stored is not None else False,
+                'hot_retention_days': policy.retention_days,
+                'archive_retention_days': policy.archive_retention_days,
+                'batch_size': policy.batch_size,
+                'operation_mode': operation_mode,
+                'schedule_enabled': schedule_enabled,
+                'schedule_hour': schedule_hour,
+                'schedule_minute': schedule_minute,
+                'eligible_count': selected_preview_count if name == selected else None,
+                'active_count': posture['active_count'],
+                'failed_count': posture['failed_count'],
+                'total_archives': posture['total_archives'],
+                'settings': dict(policy.settings or {}),
+            }
+        )
+    return domain_cards
+
+
 def build_data_lifecycle_context(
     *,
     selected_domain: str = 'operational_activity',
@@ -185,40 +232,14 @@ def build_data_lifecycle_context(
         )
         selected_context['storage_contract'] = _build_selected_storage_contract(selected)
         selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
-        domain_cards = []
-        for name in supported:
-            policy = policies[name]
-            stored = stored_map.get(name)
-            schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
-                name,
-                policy,
-                stored,
-            )
-            posture = posture_map.get(name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
-            domain_cards.append(
-                {
-                    'name': name,
-                    'label': _domain_label(name),
-                    'icon': _domain_icon(name),
-                    'description': _domain_description(name),
-                    'source_model': get_archive_domain(name).source_model,
-                    'coverage': _domain_coverage(name),
-                    'coverage_note': _domain_coverage_note(name),
-                    'enabled': bool(stored.enabled) if stored is not None else False,
-                    'hot_retention_days': policy.retention_days,
-                    'archive_retention_days': policy.archive_retention_days,
-                    'batch_size': policy.batch_size,
-                    'operation_mode': operation_mode,
-                    'schedule_enabled': schedule_enabled,
-                    'schedule_hour': schedule_hour,
-                    'schedule_minute': schedule_minute,
-                    'eligible_count': selected_preview_count if name == selected else None,
-                    'active_count': posture['active_count'],
-                    'failed_count': posture['failed_count'],
-                    'total_archives': posture['total_archives'],
-                    'settings': dict(policy.settings or {}),
-                }
-            )
+        domain_cards = _retention_domain_cards(
+            supported=supported,
+            policies=policies,
+            stored_map=stored_map,
+            posture_map=posture_map,
+            selected=selected,
+            selected_preview_count=selected_preview_count,
+        )
         selected_context.update(context)
         selected_context['domains'] = domain_cards
         return selected_context
