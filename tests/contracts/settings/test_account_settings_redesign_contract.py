@@ -254,7 +254,7 @@ def test_provider_credential_guidance_reuses_local_visual_grammar_without_a_writ
     assert 'Sign In to KAORI' in context
     assert 'KAORI Applies Access' in context
     assert 'KAORI audits observed sign-ins, not external password resets.' in context
-    provider_flow = context.split("{% else %}\n                    {% set flow_steps = [", 1)[1]
+    provider_flow = context.split('{% else %}\n                    {% set flow_steps = [', 1)[1]
     assert "'Record Audit Event'" not in provider_flow.split('{% endif %}', 1)[0]
 
 

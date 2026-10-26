@@ -57,17 +57,22 @@ def test_full_coverage_without_reference_is_not_a_delivery_reference():
     assert result.endpoint_serving_verified is False
 
 
-@pytest.mark.parametrize('kwargs', [
-    {'coverage_state': 'served_by_endpoint'},
-    {'declared_host_count': -1},
-    {'declared_host_count': 1, 'covered_host_count': 2},
-    {'declared_host_count': True},
-    {'has_ingress_reference': 'probably'},
-])
+@pytest.mark.parametrize(
+    'kwargs',
+    [
+        {'coverage_state': 'served_by_endpoint'},
+        {'declared_host_count': -1},
+        {'declared_host_count': 1, 'covered_host_count': 2},
+        {'declared_host_count': True},
+        {'has_ingress_reference': 'probably'},
+    ],
+)
 def test_invalid_or_synthetic_ingress_evidence_is_rejected(kwargs):
     original = {
-        'has_ingress_reference': True, 'coverage_state': 'fully_covered',
-        'declared_host_count': 2, 'covered_host_count': 2,
+        'has_ingress_reference': True,
+        'coverage_state': 'fully_covered',
+        'declared_host_count': 2,
+        'covered_host_count': 2,
     }
     original.update(kwargs)
     with pytest.raises(ValueError):

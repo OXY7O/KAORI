@@ -1,6 +1,5 @@
 """Direct Secrets & PKI Analytics route requires independent capability permissions."""
 
-
 import pytest
 from flask import Flask
 from flask_login import LoginManager, UserMixin
@@ -31,11 +30,13 @@ def guarded_client(monkeypatch):
 
     app.register_blueprint(secrets_pki_routes.secrets_pki_bp)
     monkeypatch.setattr(
-        secrets_pki_routes, 'build_stored_pki_validity_posture',
+        secrets_pki_routes,
+        'build_stored_pki_validity_posture',
         lambda: {'status': 'not_configured'},
     )
     monkeypatch.setattr(
-        secrets_pki_routes, 'render_template',
+        secrets_pki_routes,
+        'render_template',
         lambda template, **_context: template,
     )
     client = app.test_client()
@@ -45,11 +46,14 @@ def guarded_client(monkeypatch):
     return app, client
 
 
-@pytest.mark.parametrize('permissions', [
-    set(),
-    {'secrets_pki.view'},
-    {'analytics.view'},
-])
+@pytest.mark.parametrize(
+    'permissions',
+    [
+        set(),
+        {'secrets_pki.view'},
+        {'analytics.view'},
+    ],
+)
 def test_unauthorized_direct_analytics_route_fails_closed(guarded_client, permissions):
     app, client = guarded_client
     app.config['TEST_PERMISSION_KEYS'] = permissions

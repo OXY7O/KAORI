@@ -41,12 +41,7 @@ def _security_sidebar(permissions: set[str], endpoint: str = 'security_posture.o
         app.add_url_rule(route, endpoint=name, view_func=lambda: 'ok')
     with app.test_request_context('/security/'):
         sections = build_sidebar_navigation(endpoint, FakeUser(permissions))
-    return [
-        item
-        for section in sections
-        for item in section['items']
-        if item['key'] == 'security_posture'
-    ]
+    return [item for section in sections for item in section['items'] if item['key'] == 'security_posture']
 
 
 def test_assurance_security_parent_is_two_levels_and_permission_filtered() -> None:
@@ -79,7 +74,7 @@ def test_security_posture_rbac_is_canonical_and_source_permissions_remain_distin
 
 def test_findings_is_bounded_read_only_and_requires_qualified_evidence() -> None:
     presentation = read('app/security_posture/presentation.py')
-    assert "SUCCESSFUL_REGISTRY_SCAN_STATUSES" in presentation
+    assert 'SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
     assert 'func.count(func.distinct(RegistryWorkloadBinding.id))' in presentation
     assert "RegistryWorkloadBinding.match_type == 'digest'" in presentation
@@ -203,7 +198,9 @@ def _renderable_posture(authorized: bool = True) -> dict:
                 'reference_binding_count': 0,
                 'observed_at': None,
             }
-        ] if authorized else [],
+        ]
+        if authorized
+        else [],
     }
 
 

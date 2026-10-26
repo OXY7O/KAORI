@@ -172,4 +172,3 @@ def test_platform_operations_workspace_description_is_compact_and_accessible() -
     assert "'description': 'Protected Kubernetes controls with readiness and authorization gates.'" not in presentation
     assert 'lg:grid-cols-3' in template
     assert 'for workspace in platform_overview.workspaces' not in presentation
-

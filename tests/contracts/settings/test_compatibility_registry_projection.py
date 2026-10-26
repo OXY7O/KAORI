@@ -97,7 +97,10 @@ def test_selected_product_qualification_pagination_preserves_independent_evidenc
 def test_registry_filter_reset_empty_and_untrusted_query_inputs_remain_bounded() -> None:
     catalog = [_sample(1), _sample(2, support='Extended · Upstream Archived')]
     filtered = build_compatibility_registry(
-        catalog, search='Provider 2', support='extended-only', page='999',
+        catalog,
+        search='Provider 2',
+        support='extended-only',
+        page='999',
     )
     assert filtered['total'] == 1
     assert filtered['page'] == 1

@@ -168,7 +168,10 @@ def test_estate_visual_density_reuses_evidence_tiles_and_preserves_readability()
     assert 'Ready or archived artifacts retained in the reporting estate.' not in source
     assert 'Contracts &amp; Automation' not in source
     catalog = read(ROOT / 'app/definitions/catalogs/reports/coverage.yaml')
-    assert 'Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.' in catalog
+    assert (
+        'Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.'
+        in catalog
+    )
 
 
 def test_overview_removes_floating_heading_icons_without_losing_operational_icons() -> None:
