@@ -19,6 +19,9 @@
             </p>
         </div>
     </header>
+    <div class="px-5" data-tenant-provider-evidence-loading>
+        {{ loading_bar.render('tenant-native-evidence-loading', label='Refreshing committed inspection evidence') }}
+    </div>
     <div class="flex min-w-0 flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-3 lg:flex-row lg:items-end lg:justify-between"
          aria-label="Native Tenant inspection controls">
         <div class="min-w-0">
@@ -103,9 +106,6 @@
                 </div>
             {% endif %}
         </header>
-        <div class="px-5" data-tenant-provider-evidence-loading>
-            {{ loading_bar.render(evidence_loading_id, label='Refreshing committed inspection evidence') }}
-        </div>
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             {% call registry_ui.filter_form('tenant.tenants',
                 evidence_registry_id,
