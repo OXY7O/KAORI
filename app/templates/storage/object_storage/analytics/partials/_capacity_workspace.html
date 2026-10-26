@@ -1,4 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
+{% import "components/info_tip.html" as info_tip %}
 {% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('recommendations', 'Recommendations', 'list-checks')] %}
 <section id="object-storage-capacity-workspace"
          data-analytics-tabset
@@ -10,7 +11,18 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Capacity &amp; Usage Workspace</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Capacity &amp; Usage Workspace</h2>
+                        {{ info_tip.render('object-storage-capacity-workspace-guide',
+                                                'Capacity & Usage Workspace Guide',
+                                                'Review committed capacity evidence by domain; these views do not directly query or modify the storage provider on page load.',
+                                                items=[
+                                                'Summary compares physical usable capacity, usage, and headroom; Reconciliation checks committed operational data against point-in-time Inventory.',
+                                                'Usage Trend describes historical sample direction; Quota & Buckets separates per-bucket governance thresholds from physical capacity.',
+                                                'Recommendations are evidence-derived guidance; use View Data & Evidence for source, freshness, and fallback details.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review physical headroom, observed usage direction, bucket quota pressure, and supporting evidence one domain at a time.</p>
                 </div>
             </div>
