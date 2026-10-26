@@ -701,7 +701,7 @@
                                           class="mt-4 space-y-3"
                                           data-auth-bot-form="verification-test">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <div class="cf-turnstile" data-sitekey="{{ bot_site_key }}" data-action="login"></div>
+                                        <div class="cf-turnstile" data-sitekey="{{ bot_site_key }}" data-action="login" data-size="compact"></div>
                                         <button type="submit"
                                                 class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                             <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
