@@ -71,9 +71,9 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     for name in ('Configure Provider', 'Test Verification', 'Enable Protection'):
         assert name in tab
     assert (
-        '{% if can_manage_authentication_security and bot_has_secret and bot_site_key and bot_hostname %}'
-        in tab
-    )
+        '{% if can_manage_authentication_security and bot_has_secret '
+        'and bot_site_key and bot_hostname %}'
+    ) in tab
     assert "url_for('access.authentication_security.test_bot_provider')" in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab
@@ -89,7 +89,9 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert 'whitespace-nowrap' not in tab
     assert 'hx-post=' not in tab
     assert 'data-auth-bot-form="configuration"' in tab
-    assert tab.index('data-auth-bot-form="configuration"') < tab.index('data-auth-bot-form="verification-test"')
+    assert tab.index('data-auth-bot-form="configuration"') < tab.index(
+        'data-auth-bot-form="verification-test"'
+    )
 
 
 def test_bot_server_admission_is_unchanged_and_proof_is_fresh() -> None:
