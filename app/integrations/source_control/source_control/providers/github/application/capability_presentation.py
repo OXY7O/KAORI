@@ -85,7 +85,18 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
         verified = bool(observed and states.get(capability.key) == 'permission_verified')
         unavailable = bool(observed and states.get(capability.key) == 'permission_unavailable')
         required = capability.key in _REQUIRED
-        label = 'Permission Verified' if verified else ('Permission Unavailable' if unavailable else 'Not Validated')
+        if verified:
+            label = 'Permission Verified'
+            status_tone = 'normal'
+            status_icon = 'circle-check'
+        elif unavailable:
+            label = 'Permission Unavailable'
+            status_tone = 'critical' if required else 'warning'
+            status_icon = 'triangle-alert'
+        else:
+            label = 'Not Validated'
+            status_tone = 'warning'
+            status_icon = 'circle-help'
         required_label = ', '.join(f'{scope}: read' for scope in sorted(permissions))
         evidence_text = (
             'The latest committed Full Validation recorded the required read permissions.'
@@ -113,8 +124,8 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
                 'available': verified,
                 'status_label': label,
                 'status_key': status_key,
-                'status_tone': 'normal' if verified else ('warning' if not observed else 'critical' if required else 'warning'),
-                'status_icon': 'circle-check' if verified else 'circle-help' if not observed else 'triangle-alert',
+                'status_tone': status_tone,
+                'status_icon': status_icon,
                 'probe': 'GitHub App installation permission assessment from committed Full Validation.',
                 'technical_checks': [{
                     'label': 'App Read Permission Contract',

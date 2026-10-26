@@ -135,9 +135,8 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
         'Not Validated',
         'View More',
         'hx-indicator="#{{ loading_id }}"',
-        "('ready' if row.available",
     ):
-        assert token in registry or token == "('ready' if row.available"
+        assert token in registry
     assert 'partials/_detail_validation.html' in detail
     assert 'data-kaori-capability-readiness' in shared_readiness
     assert "requested_tab = request.args.get('tab', '')" in detail
@@ -165,3 +164,12 @@ def test_registry_filters_search_pagination_and_unknown_status():
     assert build_capability_registry_view(
         rows, status='ready', distinguish_unverified=True,
     )['rows'] == []
+
+
+def test_github_capability_modal_preserves_unverified_semantics():
+    shared = (ROOT / 'app/templates/integrations/components/_provider_capability_detail.html').read_text()
+    registry = (TEMPLATES / 'partials/_capability_registry.html').read_text()
+    assert "row.status_key == 'unverified'" in shared
+    assert 'row.status_key == "unverified"' in registry
+    assert 'integration_status(tone, row.status_label, display="indicator")' in registry
+    assert "status_key = 'unverified'" not in registry
