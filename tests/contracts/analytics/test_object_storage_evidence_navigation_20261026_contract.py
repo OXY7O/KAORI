@@ -189,6 +189,39 @@ def test_capacity_bucket_header_uses_shared_icon_and_right_aligned_clear_filters
     assert 'bucket_per_page' in filter_form
 
 
+def test_capacity_workspace_recommendations_and_controls_use_title_level_kaori_guides() -> None:
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    recommendations = read(f'{PARTIALS}/_recommendations_workspace.html')
+    controls = read(f'{PARTIALS}/_controls.html')
+    shared = read('app/templates/analytics/components/_controls_readiness.html')
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
+
+    assert 'components/info_tip.html' in capacity
+    assert 'object-storage-capacity-workspace-guide' in capacity
+    assert 'Capacity &amp; Usage Workspace' in capacity
+    assert "placement='right', variant='guide'" in capacity
+    assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity
+    assert 'partials/_domain_evidence_context.html' in capacity
+
+    assert 'components/info_tip.html' in recommendations
+    assert 'object-storage-capacity-recommendations-guide' in recommendations
+    assert "{% if page_key == 'capacity' %}" in recommendations
+    assert '{{ recommendation_context_label }} Recommendations' in recommendations
+    assert "placement='right', variant='guide'" in recommendations
+    assert 'url_for(request.endpoint' in recommendations
+
+    assert 'object-storage-capacity-controls-readiness-guide' in controls
+    assert "if page_key == 'capacity' else ''" in controls
+    assert 'title_accessory=capacity_controls_guide' in controls
+    assert 'data-analytics-controls-readiness' in shared
+    assert "title_accessory=''" in shared
+    assert '{% if title_accessory %}' in shared
+    assert '{{ title_accessory }}' in shared
+    assert '<h2 class="mt-1 {{ table_ui.block_title_classes() }}">{{ title }}</h2>' in shared
+    assert 'hx-target="#object-storage-analytics-page"' in controls
+    assert 'object-storage-capacity-workspace-guide' not in overview
+
+
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
     context = read(f'{PARTIALS}/_overview_evidence_context.html')
     reconciliation = read(f'{PARTIALS}/_reconciliation.html')
@@ -239,5 +272,8 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_domain_evidence_context.html',
         '_overview_evidence_context.html',
         '_reconciliation.html',
+        '_controls.html',
+        '_recommendations_workspace.html',
     ):
         jinja.from_string(read(f'{PARTIALS}/{filename}'))
+    jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
