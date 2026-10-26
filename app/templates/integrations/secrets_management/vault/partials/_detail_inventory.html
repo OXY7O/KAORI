@@ -7,73 +7,136 @@
         'Review independently committed KV v2 metadata, public PKI issuers and stored certificate evidence.',
         icon='database',
         title_extra=info_tip.render('vault-inventory-evidence-guide', 'Vault Committed Inventory',
-            'Vault owns Secret values and issuance; KAORI reports source-qualified, metadata-only committed evidence.',
-            [
-                'Not Collected is not the same as a confirmed zero.',
-                'Stored PKI certificate collection requires explicit opt-in.',
-                'Secret details remain in separate authorized Secrets & PKI workspaces.'
-            ], placement='right', variant='guide')) }}
+        'Vault owns Secret values and issuance; KAORI reports source-qualified, metadata-only committed evidence.',
+        [
+        'Not Collected is not the same as a confirmed zero.',
+        'Stored PKI certificate collection requires explicit opt-in.',
+        'Secret details remain in separate authorized Secrets & PKI workspaces.'
+        ], placement='right', variant='guide') ) }}
     <div class="space-y-4 p-4 sm:p-5">
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-labelledby="vault-stored-pki-readiness">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 id="vault-stored-pki-readiness" class="text-sm font-semibold text-content-primary">PKI Stored Certificates</h3>
-                            <p class="mt-1 text-xs text-content-muted">Optional authenticated LIST /certs; only retained certificates, not total issuance or deployment.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}" class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div><dt class="text-xs text-content-muted">Evidence</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.label }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed PKI Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Observed Stored Certificates</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. no_store/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-labelledby="vault-pki-public-status">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 id="vault-pki-public-status" class="text-sm font-semibold text-content-primary">PKI Public Issuer Evidence</h3>
-                            <p class="mt-1 text-xs text-content-muted">Committed public certificate fingerprints and issuer freshness. Provider readiness does not prove PKI LIST/read access.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div><dt class="text-xs text-content-muted">Collection State</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.label }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Approved PKI Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unavailable' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed Mount Coverage</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.committed_mounts if public_pki_readiness.committed_mounts is not none else 'Not Collected' }} / {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unknown' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Observed Public Issuers</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.observed_issuers if public_pki_readiness.observed_issuers is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ public_pki_readiness.last_committed_at|user_datetime if public_pki_readiness.last_committed_at else 'Never' }}. Trust/revocation and delivered certificate status are not evaluated.</p>
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                         aria-labelledby="vault-inventory-posture-title">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <h3 id="vault-inventory-posture-title" class="text-sm font-semibold text-content-primary">KV v2 Inventory Evidence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Committed metadata only. Vault API readiness does not independently prove permission to list KV v2 metadata.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
-                               class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div><dt class="text-xs text-content-muted">Collection State</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.state|replace('_', ' ')|title }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Approved Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.approved_mount_count }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed Coverage</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.committed_mount_count }} / {{ inventory_readiness.approved_mount_count }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Last Observed Secret Records</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.observed_secret_count if inventory_readiness.observed_secret_count is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last committed: {{ inventory_readiness.last_committed_at|user_datetime if inventory_readiness.last_committed_at else 'Never' }}. Partial or stale evidence is not a zero-count or deletion claim.</p>
-                </section>
-
+        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                 aria-labelledby="vault-stored-pki-readiness">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 id="vault-stored-pki-readiness"
+                        class="text-sm font-semibold text-content-primary">PKI Stored Certificates</h3>
+                    <p class="mt-1 text-xs text-content-muted">Optional authenticated LIST /certs; only retained certificates, not total issuance or deployment.</p>
+                </div>
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}"
+                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
+                {% endif %}
+            </div>
+            <dl class="mt-4 grid gap-3 sm:grid-cols-3">
+                <div>
+                    <dt class="text-xs text-content-muted">Evidence</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ stored_cert_readiness.label }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Committed PKI Mounts</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Observed Stored Certificates</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. no_store/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
+        </section>
+        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                 aria-labelledby="vault-pki-public-status">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 id="vault-pki-public-status"
+                        class="text-sm font-semibold text-content-primary">PKI Public Issuer Evidence</h3>
+                    <p class="mt-1 text-xs text-content-muted">Committed public certificate fingerprints and issuer freshness. Provider readiness does not prove PKI LIST/read access.</p>
+                </div>
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}"
+                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
+                {% endif %}
+            </div>
+            <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <dt class="text-xs text-content-muted">Collection State</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ public_pki_readiness.label }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Approved PKI Mounts</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unavailable' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Committed Mount Coverage</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ public_pki_readiness.committed_mounts if public_pki_readiness.committed_mounts is not none else 'Not Collected' }} / {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unknown' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Observed Public Issuers</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ public_pki_readiness.observed_issuers if public_pki_readiness.observed_issuers is not none else 'Not Collected' }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-3 text-xs text-content-muted">Last commit: {{ public_pki_readiness.last_committed_at|user_datetime if public_pki_readiness.last_committed_at else 'Never' }}. Trust/revocation and delivered certificate status are not evaluated.</p>
+        </section>
+        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                 aria-labelledby="vault-inventory-posture-title">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h3 id="vault-inventory-posture-title"
+                        class="text-sm font-semibold text-content-primary">KV v2 Inventory Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed metadata only. Vault API readiness does not independently prove permission to list KV v2 metadata.</p>
+                </div>
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
+                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
+                {% endif %}
+            </div>
+            <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <dt class="text-xs text-content-muted">Collection State</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ inventory_readiness.state|replace('_', ' ') |title }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Approved Mounts</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ inventory_readiness.approved_mount_count }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Committed Coverage</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ inventory_readiness.committed_mount_count }} / {{ inventory_readiness.approved_mount_count }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Last Observed Secret Records</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ inventory_readiness.observed_secret_count if inventory_readiness.observed_secret_count is not none else 'Not Collected' }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-3 text-xs text-content-muted">Last committed: {{ inventory_readiness.last_committed_at|user_datetime if inventory_readiness.last_committed_at else 'Never' }}. Partial or stale evidence is not a zero-count or deletion claim.</p>
+        </section>
     </div>
     <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
         <div class="flex items-start gap-3">
-            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+            <i data-lucide="shield-check"
+               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+               aria-hidden="true"></i>
             <p class="text-xs leading-5 text-content-secondary">
                 Connection readiness does not prove KV v2 LIST/read, public issuer coverage, stored-certificate trust,
                 or consumer qualification. No Secret values or private key material are shown in this workspace.
