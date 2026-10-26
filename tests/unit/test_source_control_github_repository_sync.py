@@ -8,7 +8,8 @@ import pytest
 
 from app.integrations.source_control.source_control.providers.github import repository_sync
 from app.integrations.source_control.source_control.providers.github.repository_commit import (
-    RepositoryGeneration, RepositoryGenerationError,
+    RepositoryGeneration,
+    RepositoryGenerationError,
 )
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
 

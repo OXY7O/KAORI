@@ -13,8 +13,8 @@ from sqlalchemy import create_engine, insert, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.integration import IntegrationInstance
-from app.models.source_control import GitHubAppCredential
 from app.models.source_control import (
+    GitHubAppCredential,
     SourceAccount,
     SourceInstallation,
     SourceReference,
