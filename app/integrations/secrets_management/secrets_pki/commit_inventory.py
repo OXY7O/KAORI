@@ -41,6 +41,35 @@ def _aware(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
 
+def _validate_kv2_collection_evidence(evidence: KV2CollectionEvidence) -> None:
+        if not evidence.complete:
+            raise ValueError('Incomplete KV v2 evidence cannot be committed.')
+        if evidence.observed_at.tzinfo is None:
+            raise ValueError('KV v2 observed time must be timezone-aware.')
+        if not evidence.mount or len(evidence.mount) > 160:
+            raise ValueError('KV v2 mount is invalid for committed inventory.')
+        if len(evidence.records) > 200:
+            raise ValueError('KV v2 inventory exceeds the commit bound.')
+        if len({row.path for row in evidence.records}) != len(evidence.records):
+            raise ValueError('KV v2 metadata contains duplicate path identities.')
+
+
+def _is_eligible_kv2_source(
+    identity: IntegrationInstance,
+    instance: VaultInstance,
+    mount: str,
+) -> bool:
+    """Qualify the locked Vault source and currently approved KV v2 mount."""
+    return (
+        identity.integration_type == 'secrets_pki'
+        and identity.provider_key == 'vault'
+        and identity.lifecycle_status == 'active'
+        and identity.enabled
+        and identity.readiness_status == 'ready'
+        and mount in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
+    )
+
+
 def commit_kv2_inventory(
     integration_instance_id: int,
     evidence: KV2CollectionEvidence,
@@ -51,16 +80,7 @@ def commit_kv2_inventory(
     authorization, and provider access. This function enforces a second source
     eligibility boundary, a per-mount database lock and all-or-nothing commit.
     """
-    if not evidence.complete:
-        raise ValueError('Incomplete KV v2 evidence cannot be committed.')
-    if evidence.observed_at.tzinfo is None:
-        raise ValueError('KV v2 observed time must be timezone-aware.')
-    if not evidence.mount or len(evidence.mount) > 160:
-        raise ValueError('KV v2 mount is invalid for committed inventory.')
-    if len(evidence.records) > 200:
-        raise ValueError('KV v2 inventory exceeds the commit bound.')
-    if len({row.path for row in evidence.records}) != len(evidence.records):
-        raise ValueError('KV v2 metadata contains duplicate path identities.')
+    _validate_kv2_collection_evidence(evidence)
 
     # Serialize provider configuration admission with concurrent Vault edits:
     # integration identity is locked before provider row, then mount state.
@@ -75,16 +95,7 @@ def commit_kv2_inventory(
             .where(VaultInstance.integration_instance_id == integration_instance_id)
             .with_for_update(of=VaultInstance)
         ).scalar_one_or_none()
-        if (
-            identity is None
-            or instance is None
-            or identity.integration_type != 'secrets_pki'
-            or identity.provider_key != 'vault'
-            or identity.lifecycle_status != 'active'
-            or not identity.enabled
-            or identity.readiness_status != 'ready'
-            or evidence.mount not in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
-        ):
+        if identity is None or instance is None or not _is_eligible_kv2_source(identity, instance, evidence.mount):
             raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
 
         namespace = instance.namespace or ''
