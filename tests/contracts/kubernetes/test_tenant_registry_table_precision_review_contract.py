@@ -77,7 +77,7 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     assert 'hidden w-full min-w-0 lg:block' in registry
     assert 'lg:hidden' in registry
     assert '<td colspan="5"' in registry
-    assert "detail_row.static_detail_row(detail_row_id, detail_target_id, 5" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5' in registry
     assert "detail_row.toggle_button('tenant-namespace-access'" in registry
     assert '_namespace_access_detail.html' in registry
     assert 'data-tenant-namespace-access-mobile-detail' in registry
@@ -89,6 +89,34 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     assert 'credential.token' not in detail
     assert 'credential.kubeconfig' not in detail
     assert 'get(&quot;' not in registry
+
+
+def test_namespace_access_detail_has_grouped_visual_hierarchy_and_safe_provenance() -> None:
+    registry = _template('_namespace_access_registry')
+    detail = _template('_namespace_access_detail')
+    assert 'data-tenant-namespace-access-detail' in detail
+    assert 'Committed Namespace Access' in detail
+    assert 'aria-label="Access package summary"' in detail
+    assert 'Identity &amp; Authorization' in detail
+    assert 'aria-label="Identity and authorization"' in detail
+    assert 'Credential Lifecycle' in detail
+    assert 'aria-label="Credential lifecycle"' in detail
+    assert 'aria-label="Technical references"' in detail
+    assert 'Security' not in registry.split('<thead', 1)[1].split('</thead>', 1)[0]
+    assert 'No token, kubeconfig, private key, certificate, or Secret material' in detail
+    assert 'No effective access is asserted by this record.' in detail
+    assert 'table_label.status_label(' in detail
+    assert 'table_label.metadata_label(' in detail
+    assert 'access.get(\'credential_public_id\')' in detail
+    assert 'access.get(\'renewal_due_at\')|user_datetime' in detail
+    assert 'access.get(\'valid_until\')|user_datetime' in detail
+    assert 'access.get(\'approved_access_methods\') or []' in detail
+    assert 'bg-surface-elevated' in detail
+    assert 'bg-surface-hover' in detail
+    assert 'min-w-[1400px]' not in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'credential.token' not in detail
+    assert 'credential.kubeconfig' not in detail
 
 
 def test_access_grant_registry_uses_the_approved_responsive_fixed_table() -> None:
