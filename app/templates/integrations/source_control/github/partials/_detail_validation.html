@@ -2,6 +2,9 @@
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% set validation_observed = capability_summary.observed %}
 {% set validated_count = capability_summary.verified %}
 {% set total_count = capability_summary.total %}
@@ -20,23 +23,40 @@
 {% else %}
     {% set next_action = 'Synchronize repositories separately to commit grants and exact source revisions.' %}
 {% endif %}
-<section class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
+<section id="github-validation-workspace"
+         class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
          data-kaori-github-validation-workspace
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'GitHub Full Validation',
         'Validate GitHub App installation identity and read permission contracts; repository evidence is synchronized separately.',
-        icon='scan-search'
+        icon='scan-search',
+        loading_id='github-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running GitHub Full Validation'
         ) %}
         <form method="post"
-              action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}">
+              action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}"
+              hx-post="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}"
+              hx-target="#github-validation-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#github-validation-loading">
             {{ action_form.hidden_tag() }}
-            <button type="submit" class="{{ action_button.classes('primary') }}">
-                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                Run Full Validation
+            <button type="submit"
+                    {% if validation_job and validation_job.is_active %}disabled{% endif %}
+                    class="{{ action_button.classes('primary') }}">
+                <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-search' }}"
+                   class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
+                {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
             </button>
         </form>
     {% endcall %}
+    {{ validation_poller.render(validation_job and validation_job.is_active,
+            url_for('github_source_uat.validation_status', installation_id=installation.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
+            '#github-validation-workspace') }}
+    {{ provider_job_status.render(validation_job, 'GitHub validation running in worker', 'GitHub') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('GitHub Provider Readiness',
                 'Committed App permission evidence determines installation readiness.',
@@ -74,3 +94,6 @@
         {% include "integrations/source_control/github/partials/_capability_registry.html" %}
     </div>
 </section>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob('github', 'validation', readiness|replace('_', ' ')|title) }}
+{% endif %}
