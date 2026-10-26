@@ -38,7 +38,7 @@ def test_mfa_tab_uses_approved_shared_kaori_visual_components() -> None:
 def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> None:
     tab = _mfa_tab()
     assert "mfa_policy_mode == 'disabled'" in tab
-    assert '{{ current_mfa_label }}' in tab
+    assert "'Current Policy', current_mfa_label" in tab
     for mode in ('disabled', 'optional', 'required_privileged', 'required_all'):
         assert f"('{mode}'," in tab
     assert 'Committed KAORI configuration' in tab
@@ -123,7 +123,7 @@ def test_enforcement_modes_use_icon_labels_without_fake_policy_state() -> None:
         assert f"('{mode}'," in tab
         assert f"'{icon}')" in tab
     assert 'data-lucide="{{ mode_icon }}"' in tab
-    assert "if mfa_policy_mode == mode" in tab
+    assert 'if mfa_policy_mode == mode' in tab
     assert "status_indicator_label('Current', 'info')" in tab
 
 
