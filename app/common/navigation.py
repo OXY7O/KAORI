@@ -274,6 +274,11 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Runtime', 'waypoints'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
+    elif endpoint.startswith('source_control.'):
+        items = [
+            BreadcrumbItem('Source Control', 'git-branch'),
+            BreadcrumbItem('Repositories' if endpoint == 'source_control.repositories' else 'Overview'),
+        ]
     elif endpoint.startswith('secrets_pki.'):
         items = [BreadcrumbItem('Secrets & PKI', 'key-round'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
     elif endpoint.startswith('artifact_registry.'):
