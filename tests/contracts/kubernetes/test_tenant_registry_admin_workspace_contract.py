@@ -444,8 +444,8 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'detail_row.static_detail_row(' in registry
     assert '_credential_row_detail.html' in registry
     assert 'credential-more-actions-' not in registry
-    assert 'Revoke Access' in detail
     assert 'Revoke Credential' in detail
+    assert 'Invalidate access' in detail
     assert 'Suspend Credential' in detail
     assert 'Renew' in detail
     assert 'No actions' in detail
