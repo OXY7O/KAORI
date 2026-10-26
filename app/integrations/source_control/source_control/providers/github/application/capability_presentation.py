@@ -78,6 +78,25 @@ _CAPABILITIES = (
 )
 
 
+def _capability_status(*, observed: bool, state: object, required: bool) -> tuple[bool, bool, str, str, str]:
+    """Project a committed permission state without changing admission semantics."""
+    verified = bool(observed and state == 'permission_verified')
+    unavailable = bool(observed and state == 'permission_unavailable')
+    if verified:
+        label = 'Permission Verified'
+        status_tone = 'normal'
+        status_icon = 'circle-check'
+    elif unavailable:
+        label = 'Permission Unavailable'
+        status_tone = 'critical' if required else 'warning'
+        status_icon = 'triangle-alert'
+    else:
+        label = 'Not Validated'
+        status_tone = 'warning'
+        status_icon = 'circle-help'
+    return verified, unavailable, label, status_tone, status_icon
+
+
 def github_capability_context(canonical: Any) -> dict[str, Any]:
     """Project only committed Full Validation permission states, never live grants."""
     raw = canonical.metadata_json
@@ -94,21 +113,10 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for capability in _CAPABILITIES:
         permissions = _CAPABILITY_PERMISSIONS[capability.key]
-        verified = bool(observed and states.get(capability.key) == 'permission_verified')
-        unavailable = bool(observed and states.get(capability.key) == 'permission_unavailable')
         required = capability.key in _REQUIRED
-        if verified:
-            label = 'Permission Verified'
-            status_tone = 'normal'
-            status_icon = 'circle-check'
-        elif unavailable:
-            label = 'Permission Unavailable'
-            status_tone = 'critical' if required else 'warning'
-            status_icon = 'triangle-alert'
-        else:
-            label = 'Not Validated'
-            status_tone = 'warning'
-            status_icon = 'circle-help'
+        verified, unavailable, label, status_tone, status_icon = _capability_status(
+            observed=observed, state=states.get(capability.key), required=required
+        )
         required_label = ', '.join(f'{scope}: read' for scope in sorted(permissions))
         evidence_text = (
             'The latest committed Full Validation recorded the required read permissions.'
