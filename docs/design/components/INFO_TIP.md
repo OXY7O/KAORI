@@ -107,6 +107,43 @@ five-row pagination, and connection authorization are unchanged. The existing
 and viewport-portal implementation. No individual provider page may add
 another workspace Guide or a new script for this shared header.
 
+## Provider detail heading Guides — GitHub UAT reference
+
+Canonical GitHub connection detail sections use the **same title-adjacent
+Violet info + Guide control** as Tenant Membership Registry and the
+Integration Workspace. This is a labeled **Guide**, not a standalone `?`,
+circle-help, or unlabelled `i` icon:
+
+- **Connection Contract** — `integrations/source_control/github/uat_detail.html`
+  passes an `info_tip.render(..., variant='guide', placement='right')`
+  through `integrations/components/_workspace.html::section_header(title_extra=...)`.
+- **GitHub Full Validation** —
+  `integrations/source_control/github/partials/_detail_validation.html`
+  passes the same variant through
+  `components/connection_validation_header.html::render(title_extra=...)`.
+- **Repository Inventory & Lifecycle** —
+  `integrations/source_control/github/partials/_detail_inventory.html`
+  follows the same shared connection header contract.
+
+The **visible result** must contain
+`data-kaori-info-tip-variant="guide"`, the icon `data-lucide="info"`,
+and the adjacent literal label `Guide` inside the same trigger button.
+Confirm those in the **rendered DOM**, not just from template text or the
+presence of `info_tip.render`. A title-level Guide must be passed
+**explicitly**, because the shared macro's default `variant='icon'` is
+reserved for narrow field/row guidance. Keep the title and the Guide in
+the same responsive header group and outside the far-right action slot.
+
+If a Dev Container screenshot still shows an isolated `?` or `i`
+beside these titles while the current template has `variant='guide'`,
+verify the running checkout is at the **latest holding UAT SHA**, restart
+the application/template-rendering process if necessary, then reload the
+page and inspect the actual button DOM. Do not introduce local icons, CSS,
+JS or a competing hover implementation to disguise stale templates.
+The existing `info_tips.js` controls hover, focus, touch, Escape and
+viewport positioning. This provider-specific visual acceptance is distinct
+from field-level icon-only help.
+
 ## Interaction and responsive behavior
 
 Info Tip uses **one non-modal anchored popover** for every input method.

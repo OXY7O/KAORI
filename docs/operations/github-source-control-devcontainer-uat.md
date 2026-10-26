@@ -1578,3 +1578,36 @@ release until the operator accepts this holding UAT.
 - Connection Contract, GitHub Full Validation and Repository Inventory & Lifecycle must use the **approved title-level Guide control** (`info_tip.render(..., placement='right', variant='guide')`), not the default inline circle-help/question-mark trigger. The component remains the canonical accessible popover for pointer, keyboard and touch. Do not introduce a competing hover style.
 - Preserve connection save toast, separate authorized provider validation and inventory synchronization, and committed evidence authority. Runtime table parts retain explicit jobs/deliveries registry-view markers for UI contracts.
 - Operator Dev Container evidence on previous merge SHA reported 2 failed and 66 passed: stale success-feedback quote assertion and missing runtime registry-view markers. Both source contracts are corrected for this UAT candidate. Formatter diagnostics (Ruff and djLint) require executable recheck on its exact merge SHA; no passing result is claimed.
+
+
+## 2026-10-26 — #3306 Guide authority / rendered visual acceptance
+
+Reviewed the **current approved** `docs/design/components/INFO_TIP.md`,
+`KAORI_STYLING_GUIDE.md`, `REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md`,
+existing #1680 title-level Guide rollout, reference Tenant Membership Registry,
+the shared Info Tip component/controller, and design contracts.
+
+**Decision:** for a card/section title use compact Violet **info + Guide**,
+not a solitary `?` or `i`. All three GitHub detail title owners
+(Connection Contract, GitHub Full Validation and Repository Inventory &
+Lifecycle) explicitly request `variant='guide'` through the existing
+shared header title-extra slot. No new component/CSS/JS is authorized.
+
+**Source vs runtime:** a Guide literal already present in the merged
+Jinja source does not alone prove the running Dev Container served the
+same revision. Check `git rev-parse HEAD` against the UAT holding SHA,
+reload/restart the Flask process when templates are stale, and inspect
+`[data-kaori-info-tip-variant="guide"]` in the rendered DOM.
+Every guide must show both the `info` glyph and **Guide** text, support
+desktop hover, keyboard focus, touch and Escape, and work in light/dark.
+Screenshot evidence is required before Human Acceptance.
+
+**Authority drift fixed:** `INFO_TIP.md` specifies `info` for all
+inline field-level triggers, but one old executable test still expected
+`circle-help`. The test now follows the approved component/documented
+authority and rejects a question-mark icon. Added per-header-specific
+rollout tests, rather than an imprecise single substring check.
+
+No change to GitHub provider grants, JobExecution, committed evidence,
+authentication, or repository synchronization. Executable QA and
+Human Visual Acceptance remain pending on the new exact SHA.
