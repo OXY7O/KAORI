@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
@@ -102,6 +103,9 @@
                 </div>
             {% endif %}
         </header>
+        <div class="px-5" data-tenant-provider-evidence-loading>
+            {{ loading_bar.render(evidence_loading_id, label='Refreshing committed inspection evidence') }}
+        </div>
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             {% call registry_ui.filter_form('tenant.tenants',
                 evidence_registry_id,
@@ -135,10 +139,6 @@
                 </div>
             {% endcall %}
         </div>
-        <div id="{{ evidence_loading_id }}"
-             class="htmx-indicator px-5 py-2 text-xs text-content-muted"
-             role="status"
-             aria-live="polite">Refreshing committed evidence…</div>
         {% set access_provider = 'native' %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">
