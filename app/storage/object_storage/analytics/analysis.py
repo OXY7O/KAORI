@@ -230,7 +230,6 @@ def forecast_posture(growth_per_day: float | None, days_to_capacity: float | Non
     )
 
 
-
 def metric_boundary_evaluations(
     *,
     utilization: float | None,

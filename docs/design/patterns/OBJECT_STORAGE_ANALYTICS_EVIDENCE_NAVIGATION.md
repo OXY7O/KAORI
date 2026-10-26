@@ -37,7 +37,9 @@ Validate one central tab; five domains without duplicate Evidence tabs; context 
 
 Workstream delivery: issue #3260 → branch/commit → review PR to temporary `kaori/review/staging-uat` → operator UAT/acceptance. Official CI/CD, Full Admission, promotion and release remain on HOLD pending explicit user approval.
 
-## Gherkin — UAT acceptance scenarios (pending operator execution)
+## Gherkin — Object Storage Analytics UAT acceptance scenarios
+
+The operator accepted the reviewed Object Storage UI as satisfactory on **26 October 2026**, subject to later findings. This confirms the **visual review checkpoint**, not an executable step-by-step replay of every scenario below. Preserve separate gate evidence for each run, including exact branch/commit, viewport, selected system/window, source state, observed result, HTTP status, and pass/fail. Unexecuted scenarios remain **Pending**, not PASS.
 
 ```gherkin
 Feature: Central Object Storage Analytics Data & Evidence
@@ -81,6 +83,152 @@ Feature: Central Object Storage Analytics Data & Evidence
     Then focus and selection state remain visible
     And the content remains usable at desktop and narrow widths
     And page requests do not raise a Jinja error or HTTP 500
+
+  Scenario: Overview shows the committed operational health and evidence authorities
+    Given I have selected an Object Storage system with committed Inventory and Analytics snapshots
+    When I open Analytics Overview and select "Data & Evidence"
+    Then I see Metrics Source, Inventory, Alertmanager, and other applicable committed authorities
+    And I can inspect source readiness and fallback without issuing a live provider read
+    And Reconciliation shows Operational, Inventory, Drift, and evidence-based Assessment
+    And source-specific Unknown or Stale states are not displayed as Healthy
+
+  Scenario: Capacity physical headroom and quota governance remain separate
+    Given committed capacity, usage, quota and trend evidence are available
+    When I open Capacity & Usage and select "Summary"
+    Then capacity utilization and physical remaining headroom retain their committed metric sources
+    And bucket quota governance does not represent additional physical free capacity
+    And usage direction describes observed history rather than guaranteed exhaustion
+
+  Scenario: Capacity reconciliation uses the shared accessible dialog
+    Given I am in Capacity & Usage with a selected system and time range
+    When I activate "View Reconciliation" next to "View Data & Evidence"
+    Then the native modal presents the committed Operational versus Inventory comparison
+    And Drift retains the recorded Delta and Variance
+    When I close the modal with Escape or the Close control
+    Then focus returns to the invoking action
+    And the selected system and window are unchanged
+
+  Scenario: Capacity bucket filters are isolated from physical capacity calculations
+    Given I open "Quota & Buckets" with committed bucket records
+    When I filter by Bucket, Quota State and Quota Pressure
+    Then the table and result count reflect the combined filters
+    And a known Not Configured quota is not interpreted as Unknown
+    And the physical headroom and usage metrics remain unchanged
+    When I activate "Clear Filters"
+    Then the table returns to the full bucket set with the selected system, window and Rows preserved
+
+  Scenario: Performance preserves request reliability and source-qualified bucket evidence
+    Given committed Request Rate, Error Rate and traffic evidence have been materialized
+    When I open Performance and select "Request Health" or "Traffic & Trend"
+    Then success/error ratios, queues and traffic are presented as distinct operating questions
+    And "Request & Error Trend" has the canonical KAORI Guide
+    When I open "Bucket Activity" and filter Usage Context or Bucket name
+    Then request and error metrics never fall back to Inventory
+    And missing metric samples remain Unknown rather than a fabricated 0.0
+
+  Scenario: Forecast watch filters update records without removing the chart
+    Given a committed Forecast Worker result and bucket forecast history are available
+    When I open Forecast and select "Bucket Forecasts"
+    Then "Bucket Forecast Records" displays the KAORI Guide
+    And the current-versus-30-day projected usage chart is visible
+    When I choose Forecast Watch "Baseline" and History Evidence "No History"
+    Then only the forecast records are filtered and the chart remains visible
+    And "Clear Filters" restores records while preserving system, history window and Rows
+    And the forecast remains a planning signal, not an active provider alert
+
+  Scenario: Forecast readiness and unavailable materialization remain source-specific
+    Given the Forecast Worker has stale, insufficient, or unavailable evidence
+    When I open "Forecast Outlook" or "Worker & Method"
+    Then the worker generation status, history and selected method remain explicit
+    And insufficient history does not become a zero-growth projection or Healthy state
+    And opening the page does not require a live provider query
+
+  Scenario: Top Consumers keeps metric provenance across storage and request rankings
+    Given multiple committed buckets have usage, object, quota and request evidence
+    When I open Top Consumers and compare "Storage Leaders" with "Request Activity"
+    Then storage concentration and request/error activity are presented separately
+    And each metric retains its supported Metrics Source or Inventory provenance
+    And explicit "Not Configured" quotas are not interpreted as source collection failures
+
+  Scenario: Consumer Records combines filters without fabricating missing values
+    Given a bucket has observed request rate 0.0 and another has no request samples
+    When I select "Consumer Records" and filter Request Evidence "Available"
+    Then the bucket with request rate 0.0 remains included
+    And the bucket without request samples is excluded
+    When I select "Unavailable"
+    Then only buckets with unavailable request evidence match that filter
+    And Clear Filters preserves the selected Object Storage system, time range, tab and Rows
+
+  Scenario: Provider Alerts and alert-source lifecycle remain independent of KAORI anomaly evaluation
+    Given Alertmanager lifecycle evidence and KAORI operating metrics are committed
+    When I open Alerts & Anomalies and select "Provider Alerts"
+    Then provider alerts retain Alertmanager status, receiver, silence and inhibition authority
+    When I activate "View Alert Source"
+    Then a compact accessible dialog shows Selected Policy, Resolved Alert Source and Consumer
+    And Metrics Source ALERTS fallback is identified as rule-state-only evidence
+    And KAORI anomaly evaluations are not presented as provider firing alerts
+
+  Scenario: Anomaly Signals explains all four operating boundaries
+    Given the committed request error ratio is 62.5 percent
+    And committed capacity, waiting-request and node metrics are independently available or unavailable
+    When I select "Anomaly Signals" in Alerts & Anomalies
+    Then I see exactly four boundary evaluation rows
+    And the rows are Capacity Utilization, Request Error Ratio, Waiting Requests, and Offline Storage Nodes
+    And Request Error Ratio shows "62.5%" with severity "Critical"
+    And its warning boundary is 5 percent and its critical boundary is 10 percent
+    And any other boundary with missing evidence shows "Unavailable" and "Unknown"
+    And the Guide identifies this as deterministic KAORI evaluation, not advanced Intelligence correlation
+    And the evaluation does not claim root-cause diagnosis
+
+  Scenario Outline: Anomaly boundary thresholds retain their approved inclusive or strict limits
+    Given a committed "<boundary>" observation of <observed>
+    When KAORI evaluates its current operating boundary
+    Then the boundary severity is "<severity>"
+
+    Examples:
+      | boundary            | observed | severity |
+      | Capacity Utilization| 84.9     | Normal   |
+      | Capacity Utilization| 85.0     | Warning  |
+      | Capacity Utilization| 95.0     | Critical |
+      | Request Error Ratio | 4.9      | Normal   |
+      | Request Error Ratio | 5.0      | Warning  |
+      | Request Error Ratio | 10.0     | Critical |
+      | Waiting Requests    | 0        | Normal   |
+      | Waiting Requests    | 1        | Warning  |
+      | Offline Storage Nodes | 0      | Normal   |
+      | Offline Storage Nodes | 1      | Critical |
+
+  Scenario: Observed zero is Normal and never confused with missing samples
+    Given committed waiting requests and offline node observations are both zero
+    And the committed request error ratio is 0.0 percent
+    When KAORI evaluates all four operating boundaries
+    Then these three observed boundaries show "Normal" with a measured zero
+    And any boundary without committed evidence independently shows "Unknown"
+    And an observed zero remains a valid observation rather than missing evidence
+
+  Scenario: Missing anomaly evidence remains Unknown independently
+    Given only one of the four boundary metrics has a committed observation
+    When I select "Anomaly Signals"
+    Then that boundary uses its observed value and applicable severity
+    And each of the other three boundaries shows "Unknown" and "Unavailable"
+    And Alert Overview anomaly counts continue to describe triggered findings only
+
+  Scenario: Read-only Recommendations never substitute for external alert execution
+    Given committed Analytics evidence is available for Capacity, Performance, Forecast, Top Consumers or Alerts
+    When I open the corresponding "Recommendations" tab
+    Then any recommendations remain source-qualified read-only review guidance
+    And missing or stale evidence cannot produce a fabricated safe posture
+    And no action is executed against Alertmanager or the Object Storage provider
+
+  Scenario: Visual consistency and keyboard behavior across Object Storage workspaces
+    Given I use a desktop viewport of 1440 by 900 or a mobile viewport of 390 by 844
+    And I select light mode or dark mode
+    When I navigate Overview, Capacity, Performance, Forecast, Top Consumers and Alerts
+    Then canonical Violet Guides are accessible by focus, pointer and touch
+    And table filters, loading, empty states and pagination preserve their existing shared patterns
+    And long tables scroll horizontally on narrow screens without losing data
+    And dialogs support Escape, Close and focus restoration
+    And the browser reports no unexpected Jinja or HTMX HTTP errors
 ```
 
 
@@ -201,3 +349,11 @@ Feature: Central Object Storage Analytics Data & Evidence
 - The new `metric_boundary_evaluations()` builder is evaluated **only over already loaded worker-committed Object Storage Analytics metrics in `_apply_alert_snapshot_context`**, not during fresh provider access. It supports historical committed snapshots without requiring a worker backfill, schema change, provider adapter, or altering the serialized snapshot. The existing alert and anomaly source authority, materialized-worker read boundary, and critical/warning findings rollup are preserved.
 - **Architecture taxonomy:** Provider Alerts = authoritative Alertmanager lifecycle (or narrower Metrics Source ALERTS rule-state fallback). KAORI Anomaly Signals = deterministic domain-specific operating-boundary evaluations. Cross-domain intelligent correlation and diagnostic recommendations are separate, future capabilities; this view does **not** claim root cause, predictive anomaly detection, or an auto-created external alert.
 - Human UAT: test four rows/threshold edges, normal vs missing evidence, separately Unknown boundaries, existing Overview anomalous count and Recommendations unchanged, Jinja table/Guide keyboard/focus, horizontal overflow on mobile, Violet/light/dark at 1440×900; use existing Ruff, djlint and pytest gates. This workstream remains on temporary `kaori/review/staging-uat` pending explicit acceptance; Full Admission, staging/main and release/tag HOLD.
+
+
+## 26 October 2026 — Operator Object Storage UAT acceptance checkpoint (#3364)
+
+- **Human feedback:** Object Storage UI across reviewed workspaces is **OK for the current UAT scope**. This is a visual/user acceptance checkpoint, not a blanket statement that all executable quality gates, environment permutations, security validation, or Gherkin cases have passed. Later issues/reviews remain permitted and must be tracked via new or existing scoped issues.
+- **Last executable evidence before formatting-only follow-up:** operator reported `87 passed` in `13.10s` across the focused Analytics, alert-evidence and evidence-navigation tests. `ruff check` PASS; `djlint` identified formatting in `_alerts_signal_records.html` and `ruff format` identified an extra line break before `metric_boundary_evaluations`. These exact two findings are addressed under #3364, but **must be rechecked on the eventual merge SHA**. Do not claim formatter PASS until rerun.
+- The above consolidated **Gherkin scenarios are acceptance specifications, not evidence that every step has been executed**. Record exact commit, environment, selected system/time window, scenarios, screenshot/HTTP/check output, pass/fail and human sign-off in issue comments or the existing UAT evidence workflow. Preserve source ownership: provider alerts originate in Alertmanager, KAORI anomaly boundaries are committed deterministic evaluations, and cross-domain Intelligence is separate.
+- **Governance:** Temporary `kaori/review/staging-uat` only; official Full Admission, promotion PR to `kaori/staging`/main, deployment/release and tag stay **HOLD** until explicitly authorized. Project KAORI metadata and child issue #3364 relation should be reconciled before closure.

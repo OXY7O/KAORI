@@ -4,21 +4,22 @@
          data-object-storage-boundary-evaluations>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                  aria-hidden="true">
                 <i data-lucide="list-tree" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Anomaly Signal Evaluation</h2>
                     {{ info_tip.render('object-storage-anomaly-signal-evaluation-guide',
-                                            'Anomaly Signal Evaluation Guide',
-                                            'KAORI evaluates committed operational metrics against fixed Object Storage boundaries; these are not Alertmanager lifecycle events or advanced Intelligence correlations.',
-                                            items=[
-                                            'All four boundaries are shown, including Normal and Unknown, even when no warning or critical signal is triggered.',
-                                            'Thresholds use committed capacity, request error ratio, waiting requests and offline nodes; no live provider query occurs when the tab opens.',
-                                            'Provider Alerts remain owned by Alertmanager (or narrower Metrics Source ALERTS fallback). Intelligence correlation is a separate capability.',
-                                            ],
-                                            placement='right', variant='guide') }}
+                                        'Anomaly Signal Evaluation Guide',
+                                        'KAORI evaluates committed operational metrics against fixed Object Storage boundaries; these are not Alertmanager lifecycle events or advanced Intelligence correlations.',
+                                        items=[
+                                        'All four boundaries are shown, including Normal and Unknown, even when no warning or critical signal is triggered.',
+                                        'Thresholds use committed capacity, request error ratio, waiting requests and offline nodes; no live provider query occurs when the tab opens.',
+                                        'Provider Alerts remain owned by Alertmanager (or narrower Metrics Source ALERTS fallback). Intelligence correlation is a separate capability.',
+                                        ],
+                                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">
                     Review every operating boundary, observed metric, and evaluation; missing evidence stays Unknown.
@@ -56,18 +57,12 @@
                                     {{ boundary.title }}
                                 </span>
                             </th>
-                            <td class="{{ table_ui.cell_classes() }} font-semibold tabular-nums text-content-primary">
-                                {{ boundary.observed }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">
-                                {{ boundary.threshold }}
-                            </td>
+                            <td class="{{ table_ui.cell_classes() }} font-semibold tabular-nums text-content-primary">{{ boundary.observed }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ boundary.threshold }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(boundary.severity|title, boundary.severity, size='compact') }}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
-                                {{ boundary.evaluation }}
-                            </td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ boundary.evaluation }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

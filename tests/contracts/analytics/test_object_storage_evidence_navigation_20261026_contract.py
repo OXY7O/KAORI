@@ -756,3 +756,49 @@ def test_consumer_records_filters_follow_shared_kaori_table_contract() -> None:
     assert "'request_evidence': request_evidence" in service
     assert 'default=5' in service
     Environment().parse(table)
+
+
+def test_object_storage_gherkin_uat_matrix_covers_domains_and_evidence_authority() -> None:
+    standard = read('docs/design/patterns/OBJECT_STORAGE_ANALYTICS_EVIDENCE_NAVIGATION.md')
+    feature = standard.split('```gherkin', 1)[1].split('```', 1)[0]
+
+    assert 'Feature: Central Object Storage Analytics Data & Evidence' in feature
+    assert feature.count('  Scenario: ') >= 15
+    assert '  Scenario Outline: Anomaly boundary thresholds' in feature
+    for domain in (
+        'Overview',
+        'Capacity',
+        'Performance',
+        'Forecast',
+        'Top Consumers',
+        'Alerts',
+        'Anomaly Signals',
+    ):
+        assert domain in feature
+    for contract in (
+        'View Data & Evidence',
+        'View Reconciliation',
+        'View Alert Source',
+        'Metrics Source ALERTS',
+        'Clear Filters',
+        'Request Evidence',
+        'History Evidence',
+        'Not Configured',
+        'Unknown',
+        'Unavailable',
+        'Alertmanager',
+        'root-cause',
+        '1440',
+        '390',
+        'Escape',
+    ):
+        assert contract in feature
+    for signal in (
+        'Capacity Utilization',
+        'Request Error Ratio',
+        'Waiting Requests',
+        'Offline Storage Nodes',
+    ):
+        assert signal in feature
+    assert 'Human feedback:' in standard
+    assert 'must be rechecked on the eventual merge SHA' in standard
