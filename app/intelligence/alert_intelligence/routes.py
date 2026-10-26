@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -42,6 +42,12 @@ from app.intelligence.alert_intelligence.route_utils import (
 )
 from app.intelligence.alert_intelligence.route_utils import (
     index_response as _index_response,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    modal_case_htmx_request as _modal_case_htmx_request,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    modal_case_response as _modal_case_response,
 )
 from app.intelligence.alert_intelligence.route_utils import (
     optional_positive_int as _optional_positive_int,
@@ -720,36 +726,6 @@ def _case_mutation(
     if _active_records_htmx_request():
         return _active_records_response(case_id=case.public_id)
     return _redirect(tab=tab, case_id=case.public_id)
-
-
-def _modal_case_htmx_request() -> bool:
-    return request.headers.get('HX-Request') == 'true' and str(
-        request.headers.get('HX-Target') or ''
-    ).strip().startswith('alert-case-modal-content-')
-
-
-def _modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseReturnValue:
-    args = request.form.copy()
-    args['case'] = case_id
-    requested_tab = str(tab or request.form.get('tab') or 'active').strip().lower()
-    args['tab'] = 'resolved' if requested_tab == 'resolved' else 'active'
-    payload = get_alert_intelligence_payload(args)
-    if payload.get('selected_case') is None:
-        return ('Alert case unavailable.', 404)
-    template = (
-        'intelligence/partials/_alert_ops_resolved_case_modal.html'
-        if payload.get('tab') == 'resolved'
-        else 'intelligence/partials/_alert_ops_case_workspace.html'
-    )
-    response = make_response(
-        render_template(
-            template,
-            payload=payload,
-            modal_refresh=True,
-        )
-    )
-    response.headers['HX-Trigger'] = 'alertCaseChanged'
-    return response
 
 
 def _queue_intelligence_activity(
