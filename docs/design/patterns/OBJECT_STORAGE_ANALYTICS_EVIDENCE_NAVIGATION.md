@@ -178,6 +178,7 @@ Feature: Central Object Storage Analytics Data & Evidence
     And its warning boundary is 5 percent and its critical boundary is 10 percent
     And any other boundary with missing evidence shows "Unavailable" and "Unknown"
     And the Guide identifies this as deterministic KAORI evaluation, not advanced Intelligence correlation
+    And the evaluation does not claim root-cause diagnosis
 
   Scenario Outline: Anomaly boundary thresholds retain their approved inclusive or strict limits
     Given a committed "<boundary>" observation of <observed>
