@@ -167,6 +167,57 @@ def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contract
     assert 'forecast_materialization.generated_at' in worker
 
 
+def test_forecast_records_htmx_swap_does_not_destroy_unrelated_chart_canvases() -> None:
+    script = read('app/static/js/storage/object_storage/analytics.js')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    watch = read(f'{PARTIALS}/_bucket_forecasts.html')
+
+    assert "document.body.addEventListener('htmx:beforeSwap', destroyAllCharts)" not in script
+    assert "document.body.addEventListener('htmx:beforeSwap', (event) => {" in script
+    assert 'chartInsideSwap(window[chartKey], target)' in script
+    assert 'chartInsideSwap(window[bucketForecastChartKey], target)' in script
+    assert 'target === chart.canvas || target.contains?.(chart.canvas)' in script
+    assert "document.querySelector('[data-object-storage-bucket-forecast-chart-panel]')" not in script
+    assert "document.querySelector('[data-object-storage-trend-panel]')" not in script
+    assert "document.addEventListener('kaori:analytics-tab-visible'" in script
+    assert "document.body.addEventListener('htmx:afterSwap', (event) => {" in script
+
+    assert 'data-object-storage-bucket-forecast-chart-panel' in watch
+    assert 'data-object-storage-bucket-forecast-chart' in watch
+    assert 'hx-target="#object-storage-bucket-forecast-table-panel"' in records
+    assert 'hx-swap="outerHTML"' in records
+
+
+def test_forecast_clear_filters_remains_accessible_before_and_after_htmx_response() -> None:
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    script = read('app/static/js/storage/object_storage/analytics.js')
+    view = read('app/storage/object_storage/analytics/bucket_table.py')
+
+    header = records.split('</header>', 1)[0]
+    assert "forecast_table.watch != 'all'" in records
+    assert "forecast_table.history_state != 'all'" in records
+    assert "forecast_table.search" in records
+    assert "class=\"{{ 'flex' if filters_active else 'hidden' }}" in header
+    assert 'data-kaori-forecast-clear-filters' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'lead=false' in header
+    assert 'forecast_bucket_per_page=forecast_table.pagination.per_page' in header
+    assert "history_window=selected_forecast_history_window" in header
+    assert "target='#object-storage-bucket-forecast-table-panel'" in header
+    assert "indicator='#object-storage-bucket-forecast-table-loading-indicator'" in header
+
+    for field in ('forecast_q', 'forecast_watch', 'forecast_history_state'):
+        assert field in records
+        assert field in script
+    assert "action.classList.toggle('hidden', !active)" in script
+    assert "action.classList.toggle('flex', active)" in script
+    assert "document.addEventListener('change', (event) => {" in script
+    assert "document.addEventListener('input', (event) => {" in script
+    assert 'syncForecastClearFilters(target)' in script
+    assert "query_params: dict[str, object]" in view
+    assert "'forecast_bucket_per_page': per_page" in view
+
+
 def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -> None:
     analysis = read(f'{PARTIALS}/_capacity_analysis.html')
     capacity = read(f'{PARTIALS}/_capacity_workspace.html')
