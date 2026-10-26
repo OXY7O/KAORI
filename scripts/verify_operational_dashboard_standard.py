@@ -1149,6 +1149,8 @@ def verify() -> None:
         ),
         'shared reporting dashboard workspace',
     )
+    # Keep the approved six-step workflow and evidence boundary, not retired copy.
+    expected_alert_steps = ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record')
     for owner, source in (
         ('Kubernetes alert response guidance', alert_guidance),
         ('Object Storage alert response guidance', object_alert_guidance),
@@ -1156,12 +1158,21 @@ def verify() -> None:
         _require(
             source,
             (
-                'before acting on the signal',
-                'establish an accountable owner',
-                'remains auditable',
+                'components/operational_alert_response.html',
+                'alert_response_steps',
+                'alert_response.render(',
+                'committed snapshot',
+                'alert-source evidence',
+                'owner',
+                'safety guardrails',
+                'follow-up evidence',
+                *(f"'{step}'" for step in expected_alert_steps),
             ),
-            f'{owner} detailed step copy',
+            f'{owner} controlled alert workflow',
         )
+        step_positions = [source.index(f"'{step}'") for step in expected_alert_steps]
+        if step_positions != sorted(step_positions):
+            raise AssertionError(f'{owner}: controlled response steps must retain canonical order')
     _require(
         alert_summary_workspace,
         (
