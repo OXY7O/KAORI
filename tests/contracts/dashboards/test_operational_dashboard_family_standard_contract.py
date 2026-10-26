@@ -439,11 +439,11 @@ def test_alerts_summary_verifier_uses_domain_copy_and_shared_preview_cap() -> No
 
     assert 'rows[:5]' in shared
     assert 'row_token, description in (' in verifier
-    assert "f\"description='{description}'\"" in verifier
+    assert 'f"description=\'{description}\'"' in verifier
     assert "'Intelligence findings are separate.'" in verifier
     assert "empty_label='No Active Cases'" in verifier
     assert "empty_title='No Active Alert Cases'" in verifier
-    assert "row_token," in verifier
+    assert 'row_token,' in verifier
     for path, description in templates:
         assert f"description='{description}'" in read(path)
         assert f"'{description}'" in verifier
@@ -487,6 +487,18 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
     assert '.order_by(Report.created_at.desc(), Report.id.desc())' in kubernetes_builder
     assert '.limit(4)' in kubernetes_builder
     assert 'query_all(Report' not in kubernetes_builder
+
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    for token in (
+        'def _kubernetes_report_query(',
+        "Report.report_domain == 'kubernetes'",
+        'Report.cluster_id == selected_cluster_id',
+        '_kubernetes_report_query(selected_cluster_id)',
+        '.order_by(Report.created_at.desc(), Report.id.desc())',
+        '.limit(4)',
+    ):
+        assert token in verifier
+    assert "'query_all(Report' in reporting_builder" in verifier
     assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in object_service
 
     for source in (reporting_workspace, kubernetes_builder, object_service):

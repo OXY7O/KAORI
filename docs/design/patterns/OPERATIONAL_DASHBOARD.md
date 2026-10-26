@@ -130,6 +130,8 @@ The five-case bound is enforced by the shared renderer (`rows[:5]`) and domain p
 
 `Recent Report Activity` is a bounded dashboard preview of generated report artifacts. Kubernetes and Object Storage query and render at most **four** latest generated report records. The Reports workspace remains authoritative for full report history, filtering, scheduling, and retained-artifact review; dashboard summaries must not add local pagination.
 
+The Kubernetes Reporting snapshot builder uses `_kubernetes_report_query(selected_cluster_id)` to enforce `report_domain='kubernetes'` before optional cluster filtering, then orders by `Report.created_at` and `Report.id` descending and limits to four. Verifier/contract checks must protect this **domain/scope, stable ordering, and maximum preview count** rather than the retired generic `query_all(Report, selected_cluster_id, limit=4)` call. Object Storage independently enforces its own domain-scoped `limit(4)` read.
+
 - **Kubernetes Report Artifacts evidence (#2782):** the Reporting Summary's report-request count is distinct from the Data Freshness artifact reference count. Only Kubernetes-domain `ready` or `archived` Report records with nonempty `file_path` qualify as *recorded artifact references*, not as proven reachable downloads. The tile uses neutral/informational `Recorded` (not `Available`); queued/failed/requested-only records show `Not Ready`, while no report records show `Not Generated`. Actual artifact accessibility remains authoritative in the Reports Storage/Generated workspaces; do not call storage or a provider at dashboard request time.
 
 ## Data-boundary contract

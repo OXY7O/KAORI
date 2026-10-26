@@ -1275,9 +1275,18 @@ def verify() -> None:
     )
     _require(
         reporting_builder,
-        ('query_all(Report, selected_cluster_id, limit=4)',),
-        'Kubernetes Recent Report Activity builder',
+        (
+            'def _kubernetes_report_query(',
+            "Report.report_domain == 'kubernetes'",
+            'Report.cluster_id == selected_cluster_id',
+            '_kubernetes_report_query(selected_cluster_id)',
+            '.order_by(Report.created_at.desc(), Report.id.desc())',
+            '.limit(4)',
+        ),
+        'Kubernetes domain-scoped, stable, four-record Recent Report Activity builder',
     )
+    if 'query_all(Report' in reporting_builder:
+        raise AssertionError('Kubernetes Report preview must retain the domain-scoped reporting query')
     _require(
         object_reporting_summary,
         ('reporting_workspace.summary(',),
