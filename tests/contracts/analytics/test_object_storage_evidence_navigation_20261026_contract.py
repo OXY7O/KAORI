@@ -454,6 +454,8 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_capacity_workspace.html',
         '_performance_workspace.html',
         '_top_consumers_workspace.html',
+        '_top_consumers_storage.html',
+        '_top_consumers_activity.html',
         '_forecast_workspace.html',
         '_alerts_workspace.html',
         '_domain_evidence_context.html',
@@ -526,5 +528,5 @@ def test_consumer_records_filters_follow_shared_kaori_table_contract() -> None:
     assert "row.get('request_rate') is not None" in service
     assert "query_params['bucket_request_evidence'] = request_evidence" in service
     assert "'request_evidence': request_evidence" in service
-    assert "default=5" in service or 'default=5' in service
+    assert 'default=5' in service
     Environment().parse(table)
