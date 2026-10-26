@@ -36,6 +36,7 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
     assert 'Reactivation requires permission' in registry
     assert "button_text='Reactivate'" in registry
     assert "variant='action'" in registry
+    assert "trigger_icon='user-check'" in registry
     assert "button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help'" in registry
     assert 'membership-reactivate-permission-' not in registry
     assert "placement='left'" in registry
