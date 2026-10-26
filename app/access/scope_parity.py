@@ -7,9 +7,9 @@ identity. Structured diffs are internal operator evidence, not authorization.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
-from collections.abc import Sequence
 
 from sqlalchemy.exc import SQLAlchemyError
 

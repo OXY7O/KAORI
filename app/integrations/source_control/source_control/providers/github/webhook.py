@@ -10,8 +10,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from dataclasses import dataclass
 from collections.abc import Mapping
+from dataclasses import dataclass
 from uuid import UUID
 
 _MAX_WEBHOOK_BYTES = 262_144
