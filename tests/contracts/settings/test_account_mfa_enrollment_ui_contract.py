@@ -77,7 +77,6 @@ def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     assert 'autocomplete="one-time-code"' in html
 
 
-
 def test_mfa_recovery_regeneration_has_symmetric_cards_and_inline_form() -> None:
     html = source()
     recovery = html.split('data-account-mfa-recovery-layout="action-context"', 1)[1]
