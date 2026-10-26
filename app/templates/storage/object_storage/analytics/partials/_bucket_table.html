@@ -60,13 +60,15 @@
             <input type="hidden"
                    name="bucket_per_page"
                    value="{{ bucket_table.pagination.per_page }}">
-            <label for="object-storage-bucket-search">
-                <span class="{{ table_ui.filter_label_classes() }}">Search Bucket</span>
+            <div>
+                <label for="object-storage-bucket-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>
                 {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
-            </label>
+            </div>
             {% if page_key == 'capacity' %}
-                <label for="object-storage-bucket-quota-state">
-                    <span class="{{ table_ui.filter_label_classes() }}">Quota State</span>
+                <div>
+                    <label for="object-storage-bucket-quota-state"
+                           class="{{ table_ui.filter_label_classes() }}">Quota State</label>
                     <select id="object-storage-bucket-quota-state"
                             name="bucket_quota_state"
                             class="{{ table_ui.filter_select_classes() }}">
@@ -75,9 +77,10 @@
                                     {% if bucket_table.quota_state == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                </label>
-                <label for="object-storage-bucket-quota-pressure">
-                    <span class="{{ table_ui.filter_label_classes() }}">Quota Pressure</span>
+                </div>
+                <div>
+                    <label for="object-storage-bucket-quota-pressure"
+                           class="{{ table_ui.filter_label_classes() }}">Quota Pressure</label>
                     <select id="object-storage-bucket-quota-pressure"
                             name="bucket_quota_pressure"
                             class="{{ table_ui.filter_select_classes() }}">
@@ -86,7 +89,7 @@
                                     {% if bucket_table.quota_pressure == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                </label>
+                </div>
             {% endif %}
             {% if bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) %}
                 {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
