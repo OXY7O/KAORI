@@ -5,6 +5,7 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set is_ready = instance.enabled and readiness == 'ready' %}
 {% set capabilities = instance.capabilities or [] %}
+{% set capability_metadata = ['Profile · Vault AppRole' if is_ready else 'No Committed Validation'] %}
 {% set capability_metrics = [
     {'icon': 'list-checks', 'tone': 'normal', 'label': 'Observed Capabilities', 'value': capabilities|length if is_ready else '—', 'description': 'Committed Full Validation APIs; not an Inventory or PKI permission proof.'},
     {'icon': 'shield-check', 'tone': 'normal' if is_ready else 'info', 'label': 'Vault Version', 'value': instance.detected_version or 'Not Observed', 'description': 'Observed during provider validation, never inferred from registration.'},
@@ -47,7 +48,7 @@
         'Full Validation Gate',
         'Passed' if is_ready else 'Not Ready',
         100 if is_ready else 0,
-        ['Vault API · AppRole', 'Read-Only Capability Contract'],
+        capability_metadata,
         capability_metrics,
         'Provider Ready' if is_ready else 'Validation Required',
         'The provider is eligible for independent collection workflows.' if is_ready else 'Run Full Validation after correcting access and configuration.',

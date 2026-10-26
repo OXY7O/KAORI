@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/integrations/secrets_management/vault/index.html'
 ROUTES = ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/application/routes.py'
@@ -27,7 +26,7 @@ def test_provider_counts_use_canonical_enabled_and_ready_state_only():
     assert "IntegrationInstance.lifecycle_status == 'active'" in source
     assert "IntegrationInstance.readiness_status == 'ready'" in source
     assert "tab in {'coverage', 'registry'}" in source
-    assert 'per_page=request.args.get(\'per_page\', 5' in source
+    assert "per_page=request.args.get('per_page', 5" in source
 
 
 DETAIL = ROOT / 'app/templates/integrations/secrets_management/vault/detail.html'
@@ -61,11 +60,11 @@ def test_vault_registry_uses_full_table_shared_filters_and_default_five_rows():
         assert f'name="{field}"' in landing
     assert 'Apply Filters' not in landing
     assert '<noscript>' in landing
-    assert "IntegrationInstance.name.icontains(search, autoescape=True)" in routes
-    assert "VaultInstance.endpoint.icontains(search, autoescape=True)" in routes
+    assert 'IntegrationInstance.name.icontains(search, autoescape=True)' in routes
+    assert 'VaultInstance.endpoint.icontains(search, autoescape=True)' in routes
     assert "per_page=request.args.get('per_page', 5" in routes
-    assert "registered = query.count()" in routes
-    assert "filtered = query" in routes
+    assert 'registered = query.count()' in routes
+    assert 'filtered = query' in routes
 
 
 def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
@@ -73,7 +72,7 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     for tab in ('configuration', 'validation', 'runtime', 'inventory'):
         assert f'id="vault-panel-{tab}"' in detail
         assert f"activeTab === '{tab}'" in detail
-        assert f"partials/_detail_{tab}.html" in detail
+        assert f'partials/_detail_{tab}.html' in detail
     assert "['configuration', 'validation', 'runtime', 'inventory']" in detail
     assert 'components/framed_workspace_tabs.html' in detail
     assert 'id="vault-operational-evidence-title"' in detail
@@ -124,7 +123,7 @@ def test_vault_registration_reuses_actions_without_changing_proof_or_credentials
         'components/action_button.html',
         'components/info_tip.html',
         'data-kaori-vault-connection-form',
-        "form.connection_test_proof",
+        'form.connection_test_proof',
         'form.secret_id',
         'form.hidden_tag()',
         'value="test"',
@@ -132,9 +131,9 @@ def test_vault_registration_reuses_actions_without_changing_proof_or_credentials
     ):
         assert token in form
     assert 'action_button.classes(' in form
-    assert "verified_secret(proof, values, int(current_user.id))" in routes
-    assert "issue_proof(values, int(current_user.id))" in routes
-    assert "enqueue_instance_validation(" in routes
-    assert "enqueue_runtime_health_refresh(" in routes
+    assert 'verified_secret(proof, values, int(current_user.id))' in routes
+    assert 'issue_proof(values, int(current_user.id))' in routes
+    assert 'enqueue_instance_validation(' in routes
+    assert 'enqueue_runtime_health_refresh(' in routes
     assert 'IntegrationRuntimeObservation.query.filter_by(' in routes
     assert 'latest_runtime_observation=latest_runtime_observation' in routes
