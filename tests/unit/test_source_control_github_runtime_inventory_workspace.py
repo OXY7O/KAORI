@@ -92,7 +92,8 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'inventory.total is not none' in inventory
     assert 'inventory.total is none' in registry
     assert 'inventory.total == 0' in registry
-    assert "inventory.total if inventory.total is not none else 'Unknown'" in registry
+    assert 'matching_total' in registry
+    assert "inventory.total if committed else 'Unknown'" in inventory
     assert 'exact_default_branch_sha' in registry
     assert 'revision_observed_at' in registry
     assert 'components/table.html' in registry
@@ -374,3 +375,35 @@ def test_committed_repository_filters_preserve_installation_authority():
         assert f'name="{field}"' in registry
         assert f"'{field}': {field}" in registry
         assert f'{field}={field}' in registry
+
+
+def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
+    detail = _read(GITHUB / 'uat_detail.html')
+    inventory = _read(GITHUB / 'partials/_detail_inventory.html')
+    routes = _read(ROUTES)
+    modal = _read(ROOT / 'app/templates/integrations/components/_asset_owner_delete_modal.html')
+
+    assert '"sync_queued":' not in detail
+    assert '"sync_blocked":' not in detail
+    assert 'record_operational_activity(' in routes
+    assert "'feedback_delivery': 'toast'" in routes
+    assert 'Repository Sync Queued' in routes
+    assert 'Repository Sync Blocked' in routes
+    assert "return redirect(detail_url)" in routes
+    assert 'data-kaori-github-delete-connection' in inventory
+    assert 'Configure Connection</a>' not in inventory
+    assert "asset_owner_delete_modal.render(" in detail
+    assert "x-data='{ deleteModal: false" in detail
+    assert 'class="{{ action_button.classes(\'critical\') }}"' in inventory
+    assert 'Delete Connection' in inventory and 'Delete Connection' in modal
+    assert "def delete_connection(installation_id: int)" in routes
+    assert "provider_deletion_guard(" in routes
+    assert 'if not FlaskForm().validate_on_submit():' in routes
+    assert "canonical.lifecycle_status = 'retired'" in routes
+    assert "canonical.enabled = False" in routes
+    assert "IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)" in routes
+    assert 'db.session.delete(installation)' not in routes
+    assert 'db.session.delete(canonical)' not in routes
+    assert "event_type='source_control_connection_retired'" in routes
+    assert "'github_source_uat.index'" in routes
+    assert "IntegrationInstance.lifecycle_status == 'active'" in routes

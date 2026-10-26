@@ -5,7 +5,7 @@
 {% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set committed = inventory.total is not none %}
-{% set can_sync = readiness == 'ready' %}
+{% set can_sync = readiness == 'ready' and canonical.enabled and canonical.lifecycle_status == 'active' %}
 <section class="{{ ui.section_shell_classes() }} font-sans"
          data-kaori-github-inventory-lifecycle
          data-kaori-inventory-lifecycle-decision>
@@ -88,12 +88,22 @@
             <div class="flex items-start gap-3">
                 {{ ui.palette_icon('route', 'brand', size='sm') }}
                 <div>
-                    <p class="text-sm font-semibold text-content-primary">Next Lifecycle Action</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Review collection freshness and exact revisions; resynchronize after grant changes.' if committed and can_sync else ('Run Sync Repositories to commit inventory evidence.' if can_sync else 'Complete Full Validation before repository synchronization.') }}</p>
+                    <p class="text-sm font-semibold text-content-primary">Connection Lifecycle</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Delete removes this connection from active KAORI use; committed evidence and GitHub permissions are preserved.</p>
                 </div>
             </div>
-            <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
-               class="{{ action_button.classes('secondary') }}">Configure Connection</a>
+            {% if canonical.enabled and canonical.lifecycle_status == 'active' %}
+                <button type="button"
+                        @click="deleteModal = true"
+                        aria-label="Delete GitHub connection"
+                        data-kaori-github-delete-connection
+                        class="{{ action_button.classes('critical') }}">
+                    <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                    Delete Connection
+                </button>
+            {% else %}
+                {{ integration_status('disabled', 'Retired', display='text') }}
+            {% endif %}
         </div>
     </div>
 </section>

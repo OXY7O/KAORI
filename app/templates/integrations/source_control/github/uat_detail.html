@@ -2,6 +2,7 @@
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_asset_owner_delete_modal.html" as asset_owner_delete_modal %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "integrations/components/_provider_operational_context.html" as operational_context %}
@@ -17,8 +18,6 @@
         "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
         "runtime_queued": "Runtime Refresh requested through canonical JobExecution.",
         "runtime_blocked": "Runtime Refresh could not start. Review worker readiness and installation authorization.",
-        "sync_queued": "Repository reconciliation requested through canonical JobExecution.",
-        "sync_blocked": "Repository sync blocked. Verify Full Validation, worker readiness and installation access.",
         "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
         "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
     } %}
@@ -218,12 +217,16 @@
                     {% include "integrations/source_control/github/partials/_detail_runtime.html" %}
                 </div>
                 <div id="github-panel-inventory"
+                     x-data='{ deleteModal: false, deleteName: {{ canonical.name|tojson }}, deleteUrl: {{ url_for("github_source_uat.delete_connection", installation_id=installation.id)|tojson }} }'
                      role="tabpanel"
                      aria-labelledby="github-tab-inventory"
                      x-show="activeTab === 'inventory'"
                      x-cloak
                      class="space-y-4">
                     {% include "integrations/source_control/github/partials/_detail_inventory.html" %}
+                    {{ asset_owner_delete_modal.render('Delete GitHub Connection',
+                        'Removes the connection from active KAORI use. Existing repository grants, revisions, JobExecution, and audit history are retained. GitHub App permissions are not revoked.',
+                        'KAORI connection lifecycle only') }}
                 </div>
             </div>
         </section>
