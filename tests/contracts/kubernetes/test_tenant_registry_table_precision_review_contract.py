@@ -68,6 +68,8 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     registry = _template('_namespace_access_registry')
     detail = _template('_namespace_access_detail')
     assert 'min-w-[1400px]' not in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'min-w-[1400px] !table-fixed' not in registry
     assert "table_ui.table_classes('!table-fixed')" in registry
     assert _header_widths(registry) == (25, 20, 25, 15, 15)
     assert 'hidden w-full min-w-0 lg:block' in registry
