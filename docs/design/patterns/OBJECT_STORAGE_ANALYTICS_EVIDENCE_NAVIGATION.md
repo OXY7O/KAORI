@@ -112,3 +112,11 @@ Feature: Central Object Storage Analytics Data & Evidence
 - **Clear Filters** is a right-hand header action, consistent with the existing Provider Alert Records table. It reuses `registry_ui.clear_filters_action` with `lead=false`; no `order-first` is introduced in the form. The filter bar itself contains Search Bucket, Quota State, and Quota Pressure only.
 - Clear retains the canonical system/time-window/tab/Rows context and HTMX table refresh; no provider query, additional classification, or backend mutation is introduced.
 - Latest operator checkpoint before this follow-up: 36 focused pytest PASS; `djlint` formatting debt on Trend, `ruff I001` on quota filter test imports, and `ruff format` on quota filter predicate remained. Those formatter-only findings were addressed in the follow-up branch and require exact-head re-validation.
+
+## 26 October 2026 — Capacity workspace contextual Guides (#3295)
+
+- The **Capacity & Usage Workspace** heading owns a title-adjacent canonical KAORI Guide explaining the four tabs and their committed-evidence boundary. It does not duplicate the Overview Data & Evidence tab or introduce provider live queries.
+- The shared `_recommendations_workspace.html` displays a Capacity-only title-adjacent Guide for evidence-derived priority, review navigation, and missing/stale evidence; recommendation actions, cards, paging, and other domains remain unchanged.
+- **Analytics Controls & Data Readiness** reuses the existing `_controls_readiness.frame` macro with an optional `title_accessory`. Only Capacity passes a canonical Guide; other consumers continue rendering the original h2 with no layout changes. The Guide distinguishes selector scope, collection-time Metrics Source readiness, and the committed worker-materialized Analytics Snapshot.
+- The previously reported `djlint` wrap on the Capacity-only Bucket Records header icon is corrected without modifying the icon or table behavior.
+- UAT: verify all three anchored Guides at desktop 1440×900 and mobile 390×844, light/dark, hover/click/keyboard/touch and popover clipping; confirm changing system/window and switching content tabs still works. Source-readback is not a substitute for exact-head `djlint`, Jinja, pytest, or human visual acceptance.
