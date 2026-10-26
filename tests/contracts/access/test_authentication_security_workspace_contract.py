@@ -116,18 +116,32 @@ def test_overview_control_areas_and_operational_boundaries_share_one_section() -
     page = source('app/templates/access/authentication_security/partials/_page_content.html')
     Environment().parse(page)
     overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
+    assert overview.count('data-auth-security-overview-stack="true"') == 1
     assert overview.count('data-auth-security-overview-hub="true"') == 1
+    assert 'data-auth-security-control-intro="above-card"' in overview
     assert 'id="auth-security-control-areas-heading"' in overview
     assert 'Authentication Security Control Areas' in overview
-    assert 'Review authentication controls and ownership boundaries in one workspace.' in overview
-    assert overview.index('assurance.render(') < overview.index('data-auth-security-overview-hub="true"')
-    assert overview.index('auth-security-control-areas-heading') < overview.index('Review MFA Policy')
-    assert overview.index('Review Session Security') < overview.index('authentication-boundaries-heading')
+    assert (
+        'Review authentication controls, ownership boundaries, and related access workspaces.'
+        in overview
+    )
+    assert overview.index('assurance.render(') < overview.index('data-auth-security-control-intro="above-card"')
+    assert overview.index('id="auth-security-control-areas-heading"') < overview.index(
+        'data-auth-security-overview-hub="true"'
+    )
+    assert overview.index('data-auth-security-overview-hub="true"') < overview.index('Review MFA Policy')
+    assert overview.index('Review Session Security') < overview.index('data-auth-security-boundaries="harmonized"')
+    assert 'aria-labelledby="auth-security-control-areas-heading"' in overview
     assert '<section aria-label="Authentication security controls">' in overview
-    assert '<section class="border-t border-outline-subtle"' in overview
+    assert '<section class="border-t border-outline-subtle bg-surface-hover"' in overview
+    assert 'Where security controls are governed and related account services are managed.' in overview
+    assert 'class="mt-4 grid gap-4 md:grid-cols-2"' in overview
+    assert overview.count(
+        'flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 lg:p-5'
+    ) == 2
     assert 'class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"' not in overview
-    for text in ('Operational Boundaries', 'Governed Here', 'Managed Elsewhere'):
-        assert text in overview
+    for label in ('Operational Boundaries', 'Governed Here', 'Managed Elsewhere'):
+        assert label in overview
     for target in ('mfa', 'bot', 'sessions'):
         assert f"tab='{target}'" in overview
     assert overview.count('Review MFA Policy') == 1
