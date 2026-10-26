@@ -68,6 +68,58 @@ def test_each_tab_starts_with_single_governed_summary() -> None:
     assert 'Session Security' in data['sessions']
 
 
+def test_every_tab_has_shared_header_inside_single_accessible_control_hub() -> None:
+    data = tabs()
+    source = read(AUTH)
+    shared = read(SUMMARY)
+    Environment().parse(source)
+    Environment().parse(shared)
+    assert '{% macro control_header(id, title, description, status, status_tone, icon) -%}' in shared
+    assert 'data-auth-security-card-header="{{ id }}"' in shared
+    assert 'table_label.status_indicator_label(status, status_tone)' in shared
+    for name, tab in data.items():
+        key = 'session' if name == 'sessions' else name
+        intro = 'control' if name == 'overview' else key
+        hub_marker = f'data-auth-security-{key}-hub="true"'
+        intro_marker = f'data-auth-security-{intro}-intro="above-card"'
+        assert tab.count('assurance.control_header(') == 1, name
+        assert tab.count(hub_marker) == 1
+        assert intro_marker in tab
+        assert tab.index(intro_marker) < tab.index(hub_marker) < tab.index('assurance.control_header(')
+    assert source.count('assurance.render(') == 4
+    assert source.count('assurance.control_header(') == 4
+
+
+def test_control_header_statuses_come_from_committed_security_state() -> None:
+    data = tabs()
+    overview = data['overview']
+    mfa = data['mfa']
+    bot = data['bot']
+    session = data['sessions']
+    assert "'Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled'" in overview
+    assert "'Policy Active' if mfa_policy_mode != 'disabled' else 'Disabled'" in mfa
+    assert "'Enforced' if bot_mode == 'always' else 'Disabled'" in bot
+    assert "'Generation Active'" in session
+    assert "'info'" in session
+    assert "'monitor-check'" in session
+
+
+def test_session_detail_hub_describes_only_confirmed_read_only_boundaries() -> None:
+    session = tabs()['sessions']
+    assert 'Session Security Controls' in session
+    assert 'data-auth-security-session-stack="true"' in session
+    assert 'data-auth-session-boundaries="read-only"' in session
+    assert 'Governed in Access' in session
+    assert 'Outside Current Scope' in session
+    assert 'Protected requests validate the committed login generation.' in session
+    assert 'New logins and provider disablement revoke affected prior sessions.' in session
+    assert 'Idle and absolute session timeouts are not qualified as enforced controls.' in session
+    assert 'No active-device inventory or remote session registry is claimed.' in session
+    assert '<form' not in session
+    assert 'hx-post=' not in session
+    assert 'Active device count' not in session
+
+
 def test_mfa_and_bot_policy_forms_remain_server_owned_and_permission_scoped() -> None:
     mfa = tabs()['mfa']
     bot = tabs()['bot']

@@ -615,3 +615,24 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Collect each command's **actual** exit status, redacted screenshots, Visual QA and explicit Human Acceptance. Official Full Admission, `kaori/staging`, `main`, and release remain HOLD.
+
+## Four-tab shared internal headers — UAT and quality gate (#3366, 2026-10-26)
+
+On `kaori/review/staging-uat` at the **exact reviewed SHA**, verify all tabs **Overview / Multi-Factor Authentication / Bot Protection / Session Security**. Under each separate Role Registry-like committed assurance summary, the external text-only section title and explanation must remain unadorned. The bounded control box directly beneath must have the shared **icon + title + short description + committed status chip** internal header with a subtle divider, matching **Authentication Assurance Posture**. Check consistent header height, badge placement, light/dark Violet tokens, no duplicated `h2` IDs, responsive stack (sm/390/360), screenreader headings and non-truncated status values.
+
+Expected values: Overview **Controls Enabled** or **Optional Controls Disabled** from actual MFA/Bot enforcement; MFA **Policy Active/Disabled**; Bot **Enforced/Disabled**, not provider healthy; Session **Generation Active**. Overview's three detailed cards and ownership matrix, MFA's protected policy form and private recovery links, and Bot's protected provider setup plus conditional real Siteverify test, one-hour unchanged-config evidence and independent-recovery warnings must be unchanged. **Session** gains only an informative read-only hub with **Governed in Access** and **Outside Current Scope**. Verify no form, action, idle/absolute timeout enforcement claim or active-device inventory is introduced.
+
+Use manager/read-only test accounts, check HTMX tab switching/back-forward and full navigation, light/dark, 1440/1280/1150/1024/768/390/360/200%-zoom, and capture sanitized evidence. Do not expose MFA codes, Cloudflare secrets, provider tokens or cookies. Security-sensitive changes (MFA/Bot/session admission) must not be judged UAT PASS based on HTML-only smoke checks. Explicit Human Acceptance required.
+
+The operator-supplied **previous SHA** results are `ruff check` PASS, **`ruff format --check` FAIL** in `test_authentication_security_bot_tab_ux_contract.py` and `test_authentication_security_overview_refinement_contract.py`, **`djlint --check` FAIL** with extensive prior Jinja/multiline template formatting in `_page_content.html`, **54 focused pytest PASS**, Access Final Lock PASS and Sidebar Navigation Standard PASS. The two exact Ruff source changes suggested by the formatter were committed under this issue. No Ruff/pytest/djlint checks on the new SHA have been executed by the GitHub connector; `djlint` remains OPEN until run and fixed using the existing standard formatter. Do not suppress checks or infer pass.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_*contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_overview_refinement_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+If `djlint --check` still fails, use the already standard `djlint --reformat` on only the affected partial in a scoped formatter remediation work branch, review all formatting-only lines and rerun the original checks. Official Full Admission, `kaori/staging`, `main`, release remain HOLD.

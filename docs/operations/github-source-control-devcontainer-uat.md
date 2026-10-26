@@ -1721,3 +1721,43 @@ Inventory & Lifecycle. Confirm visible 16px-ish standard separation, table
 header/count/Guide, filter in-place updates, Clear Filters, empty results,
 Rows, numeric pages, full SHA tooltip, accurate date/time and accessibility.
 Then verify unobserved collection does not display a false zero.
+
+
+## 2026-10-26 — #3306 GitHub Sync toast and connection deletion lifecycle
+
+Operator screenshot exposed an obsolete full-width Connection Operation callout
+after Sync Repositories and a redundant Configure Connection action in the
+Inventory & Lifecycle footer. The admitted queue operation now records a
+truthful `Repository Sync Queued` info toast (or `Repository Sync Blocked`
+warning toast), via the existing operational activity service with
+`queue_feedback=True` and explicit toast delivery. Redirect returns to the
+Inventory tab; background success is **not** inferred from admission.
+
+The footer action now uses the existing KAORI critical Delete Connection
+button and shared asset-owner confirmation modal, requiring CSRF, the scoped
+local-admin/management boundary, and `provider_deletion_guard` to reject
+deletion while active KAORI jobs reference the connection. Deletion is
+an evidence-preserving **KAORI connection retirement**, not GitHub App
+uninstallation, provider permission revocation, repository deletion,
+credential destruction, or physical removal of canonical records.
+The canonical connection is disabled and marked `retired`; any active
+bindings are disabled, committed repository/job/audit evidence is retained.
+Active GitHub installation registry excludes retired connections; historical
+direct links remain read-only. Toast includes clear provider/evidence boundary.
+Re-registration of the exact same native installation identity is not
+automatically enabled by this retirement.
+
+Human UAT: request Sync Repositories, confirm short-lived toast and no
+blue banner; verify blocked case and Activity Audit. Open Delete Connection
+modal, cancel, then test guarded deletion with running jobs and completed
+jobs, ensure CSRF failure rejects, and confirm retirement removes only
+the connection from active listing without destroying committed evidence.
+Confirm GitHub provider grants remain unaffected. Test mobile/light-dark
+and modal keyboard accessibility. No live destructive provider mutation
+is part of this implementation.
+
+Prior supplied Dev Container QA (before this work): Ruff Check / Format,
+djLint and one stale source contract FAIL; 75 pytest PASS and one FAIL,
+plus pre-existing UI style debt across other KAORI domains. Do not
+interpret that run as a PASS for this scope. Fresh executable checks and
+Human Acceptance are required on the new holding SHA.
