@@ -112,7 +112,7 @@
                     <tr class="{{ table_ui.row_classes() }} bg-surface-card">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <div class="min-w-0">
-                                {{ table_ui.title_cell(access.get('namespace') or access.get('service_account_name') or 'Unknown Namespace', '', 'folder-tree') }}
+                                {{ table_ui.title_cell(access.get('namespace') or 'No Namespace Scope', '', 'folder-tree') }}
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
@@ -180,7 +180,7 @@
                 <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
                     <div class="min-w-0 flex-1">
                         <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
-                            {{ access.get('namespace') or access.get('service_account_name') or 'Unknown Namespace' }}
+                            {{ access.get('namespace') or 'No Namespace Scope' }}
                         </p>
                         <p class="mt-1 break-words text-xs text-content-muted">
                             {{ access.get('tenant_name') }} · {{ access.get('environment')|default('Not assigned', true)|title }}

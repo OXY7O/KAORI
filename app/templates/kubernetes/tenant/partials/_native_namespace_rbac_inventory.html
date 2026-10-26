@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
@@ -18,6 +19,9 @@
             </p>
         </div>
     </header>
+    <div class="px-5" data-tenant-provider-evidence-loading>
+        {{ loading_bar.render('tenant-native-evidence-loading', label='Refreshing committed inspection evidence') }}
+    </div>
     <div class="flex min-w-0 flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-3 lg:flex-row lg:items-end lg:justify-between"
          aria-label="Native Tenant inspection controls">
         <div class="min-w-0">
@@ -135,10 +139,6 @@
                 </div>
             {% endcall %}
         </div>
-        <div id="{{ evidence_loading_id }}"
-             class="htmx-indicator px-5 py-2 text-xs text-content-muted"
-             role="status"
-             aria-live="polite">Refreshing committed evidence…</div>
         {% set access_provider = 'native' %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">

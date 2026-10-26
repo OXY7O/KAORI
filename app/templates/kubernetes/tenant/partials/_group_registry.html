@@ -255,8 +255,10 @@
                     </p>
                 </div>
             </header>
-            <div class="space-y-5 p-5">
-                <dl class="grid gap-3 sm:grid-cols-2">
+            <div class="max-h-[calc(100dvh-12rem)] space-y-5 overflow-y-auto bg-surface-page p-5">
+                <section aria-label="Tenant information">
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Tenant Information</h3>
+                    <dl class="grid gap-3 sm:grid-cols-2">
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <dt class="text-xs font-medium text-content-muted">Tenant</dt>
                         <dd data-tenant-group-edit-tenant
@@ -271,9 +273,13 @@
                             —
                         </dd>
                     </div>
-                </dl>
-                <label class="block">
-                    {{ form_field.label_row("Group Name") }}
+                    </dl>
+                </section>
+                <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4"
+                         aria-label="Group details">
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-content-muted">Group Details</h3>
+                    <label class="block">
+                        {{ form_field.label_row("Group Name") }}
                     <input name="name"
                            data-tenant-group-edit-name
                            required
@@ -290,14 +296,18 @@
                            autocomplete="off"
                            class="{{ form_field.input_classes() }}">
                 </label>
-                <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-status-warning-soft px-4 py-3 text-status-warning-text">
+                </section>
+                <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3 text-status-warning-text">
                     <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
                           aria-hidden="true">
                         <i data-lucide="shield-alert" class="h-4 w-4"></i>
                     </span>
-                    <p class="text-xs leading-5">
-                        Changing the Kubernetes Group Subject updates the bound Group Membership identity and reconciles active Access Grants. The exact subject must still be asserted by Kubernetes authentication/IdP.
-                    </p>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold">Updating Kubernetes Group Subject</p>
+                        <p class="mt-1 text-xs leading-5">
+                            Changing this subject updates the bound Group Membership identity and reconciles active Access Grants. Kubernetes authentication/IdP remains authoritative for the asserted subject.
+                        </p>
+                    </div>
                 </div>
             </div>
             <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:justify-end">
@@ -325,5 +335,6 @@ impact_items=[
 ('history', 'Retain History', 'Existing revoked Membership, Access Grant, correlation, and audit evidence remains queryable.'),
 ('external-link', 'Leave IdP Untouched', 'KAORI does not delete or modify the authoritative external Identity Group.')
 ],
-warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.'
+warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.',
+access_chrome=true
 ) }}
