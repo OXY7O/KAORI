@@ -92,7 +92,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Delete removes this connection from active KAORI use; committed evidence and GitHub permissions are preserved.</p>
                 </div>
             </div>
-            {% if canonical.enabled and canonical.lifecycle_status == 'active' %}
+            {% if canonical.lifecycle_status == 'active' %}
                 <button type="button"
                         @click="deleteModal = true"
                         aria-label="Delete GitHub connection"

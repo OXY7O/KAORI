@@ -397,7 +397,7 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     assert 'Configure Connection</a>' not in inventory
     assert "asset_owner_delete_modal.render(" in detail
     assert "x-data='{ deleteModal: false" in detail
-    assert 'class="{{ action_button.classes(\'critical\') }}"' in inventory
+    assert "action_button.classes('critical')" in inventory
     assert 'Delete Connection' in inventory and 'Delete Connection' in modal
     assert "def delete_connection(installation_id: int)" in routes
     assert "provider_deletion_guard(" in routes
@@ -410,3 +410,7 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     assert "event_type='source_control_connection_retired'" in routes
     assert "'github_source_uat.index'" in routes
     assert "IntegrationInstance.lifecycle_status == 'active'" in routes
+    provider_routes = _read(
+        ROOT / 'app/integrations/source_control/source_control/providers/github/application/routes.py'
+    )
+    assert "lifecycle_status='active'" in provider_routes

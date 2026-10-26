@@ -315,7 +315,6 @@ def index() -> ResponseReturnValue:
             SourceInstallation.provider_key == 'github',
             SourceInstallation.host_key == 'github.com',
             IntegrationInstance.lifecycle_status == 'active',
-            IntegrationInstance.enabled.is_(True),
         )
         .order_by(SourceInstallation.id)
         .limit(50)
@@ -371,7 +370,7 @@ def edit_connection(installation_id: int) -> ResponseReturnValue:
     if canonical is None:
         abort(409)
     form = GitHubAppConnectionEditForm(obj=canonical) if request.method == 'GET' else GitHubAppConnectionEditForm()
-    if request.method == 'POST' and (not canonical.enabled or canonical.lifecycle_status != 'active'):
+    if request.method == 'POST' and canonical.lifecycle_status != 'active':
         abort(409)
     action = str(request.form.get('action') or '').strip() if request.method == 'POST' else ''
     inline_test = request.headers.get('HX-Request') == 'true' and action == 'test'
@@ -789,7 +788,7 @@ def delete_connection(installation_id: int) -> ResponseReturnValue:
         or canonical.adapter_key != 'github_rest_v3'
     ):
         abort(409)
-    if not canonical.enabled or canonical.lifecycle_status != 'active':
+    if canonical.lifecycle_status != 'active':
         abort(409)
     guard = provider_deletion_guard(
         integration_type='source_control', integration_instance_id=canonical.id
