@@ -54,5 +54,3 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(_env_int(name, default), maximum))
-
-
