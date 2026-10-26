@@ -69,7 +69,7 @@ def test_capacity_filter_pagination_preserves_rows_and_resets_out_of_range_page(
     assert result['query_params']['time_range'] == '6h'
 
 
-def test_invalid_quota_filters_fail_to_all_without_leaking_into_other_workspaces() -> None:
+def test_invalid_quota_filters_and_top_consumer_scoping_do_not_leak_to_performance() -> None:
     result = view(bucket_quota_state='invalid', bucket_quota_pressure='bogus')
     assert result['quota_state'] == result['quota_pressure'] == 'all'
     assert len(result['rows']) == 5
@@ -81,9 +81,20 @@ def test_invalid_quota_filters_fail_to_all_without_leaking_into_other_workspaces
         system=_System(),
         time_range='24h',
     )
-    assert len(other['rows']) == 5
-    assert 'bucket_quota_state' not in other['query_params']
-    assert 'bucket_quota_pressure' not in other['query_params']
+    assert [row['name'] for row in other['rows']] == ['critical']
+    assert other['query_params']['bucket_quota_state'] == 'critical'
+    assert other['query_params']['bucket_quota_pressure'] == 'critical'
+
+    performance = build_bucket_table_view(
+        ROWS,
+        {'bucket_quota_state': 'configured', 'bucket_quota_pressure': 'critical'},
+        page_key='performance',
+        system=_System(),
+        time_range='24h',
+    )
+    assert len(performance['rows']) == 5
+    assert 'bucket_quota_state' not in performance['query_params']
+    assert 'bucket_quota_pressure' not in performance['query_params']
 
 
 PERFORMANCE_ROWS = [
@@ -151,7 +162,7 @@ def test_performance_usage_context_combines_with_search_and_preserves_row_size()
     assert result['query_params']['bucket_usage_context'] == 'inventory'
 
 
-def test_performance_invalid_usage_context_and_cross_workspace_isolation() -> None:
+def test_performance_invalid_usage_context_and_top_consumer_usage_filter_isolation() -> None:
     invalid = performance_view(bucket_usage_context='unknown-option')
     assert invalid['usage_context'] == 'all'
     assert len(invalid['rows']) == 3
@@ -163,9 +174,20 @@ def test_performance_invalid_usage_context_and_cross_workspace_isolation() -> No
         system=_System(),
         time_range='6h',
     )
-    assert len(other['rows']) == 3
-    assert other['usage_context'] == 'all'
-    assert 'bucket_usage_context' not in other['query_params']
+    assert [row['name'] for row in other['rows']] == ['inventory-bucket']
+    assert other['usage_context'] == 'inventory'
+    assert other['query_params']['bucket_usage_context'] == 'inventory'
+
+    capacity = build_bucket_table_view(
+        PERFORMANCE_ROWS,
+        {'bucket_usage_context': 'inventory'},
+        page_key='capacity',
+        system=_System(),
+        time_range='6h',
+    )
+    assert len(capacity['rows']) == 3
+    assert capacity['usage_context'] == 'all'
+    assert 'bucket_usage_context' not in capacity['query_params']
 
 
 FORECAST_ROWS = [
@@ -300,30 +322,16 @@ def test_consumer_usage_context_preserves_missing_and_inventory_boundaries() -> 
         'metrics-critical',
         'no-quota',
     ]
-    assert [row['name'] for row in consumer_view(bucket_usage_context='inventory')['rows']] == [
-        'inventory-pressure'
-    ]
-    assert [row['name'] for row in consumer_view(bucket_usage_context='unavailable')['rows']] == [
-        'unknown'
-    ]
+    assert [row['name'] for row in consumer_view(bucket_usage_context='inventory')['rows']] == ['inventory-pressure']
+    assert [row['name'] for row in consumer_view(bucket_usage_context='unavailable')['rows']] == ['unknown']
 
 
 def test_consumer_quota_state_and_pressure_reuse_capacity_thresholds() -> None:
-    assert [row['name'] for row in consumer_view(bucket_quota_pressure='within')['rows']] == [
-        'metrics-healthy'
-    ]
-    assert [row['name'] for row in consumer_view(bucket_quota_pressure='warning')['rows']] == [
-        'inventory-pressure'
-    ]
-    assert [row['name'] for row in consumer_view(bucket_quota_pressure='critical')['rows']] == [
-        'metrics-critical'
-    ]
-    assert [row['name'] for row in consumer_view(bucket_quota_state='not_configured')['rows']] == [
-        'no-quota'
-    ]
-    assert [row['name'] for row in consumer_view(bucket_quota_state='unknown')['rows']] == [
-        'unknown'
-    ]
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='within')['rows']] == ['metrics-healthy']
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='warning')['rows']] == ['inventory-pressure']
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='critical')['rows']] == ['metrics-critical']
+    assert [row['name'] for row in consumer_view(bucket_quota_state='not_configured')['rows']] == ['no-quota']
+    assert [row['name'] for row in consumer_view(bucket_quota_state='unknown')['rows']] == ['unknown']
 
 
 def test_consumer_request_evidence_counts_zero_as_observed_not_missing() -> None:
