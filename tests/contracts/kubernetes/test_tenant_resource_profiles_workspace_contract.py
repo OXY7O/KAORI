@@ -930,7 +930,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'table_ui.inventory_block_header(' in budget
     assert 'allocation-budget-status-tip' in budget
     assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in budget
-    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in budget
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in budget
     assert "bars|selectattr('key', 'equalto', capacity_filters.resource)|list" in budget
     assert 'detail_row.toggle_button(' in budget
     assert 'detail_row.static_detail_row(' in budget
