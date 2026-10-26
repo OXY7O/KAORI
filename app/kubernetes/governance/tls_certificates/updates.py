@@ -564,4 +564,3 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                 )
 
     return _summarize_bulk_update_results(results, bulk_job_id)
-
