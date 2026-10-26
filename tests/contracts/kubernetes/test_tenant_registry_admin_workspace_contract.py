@@ -360,8 +360,11 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
 
     assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
     assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
-    assert 'recent_capsule_access_remediation' in capsule
-    assert 'recent_native_access_remediation' in native
+    assert 'recent_capsule_access_remediation' not in capsule
+    assert 'recent_native_access_remediation' not in native
+    assert '_provider_access_remediation_detail.html' in read(
+        'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
+    )
     rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
     detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
     assert 'No committed external-access inspection yet.' in rows
