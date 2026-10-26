@@ -163,7 +163,7 @@
     <div class="flex min-w-0 items-center gap-2 px-2"><i data-lucide="box" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i><div class="min-w-0"><p class="font-semibold text-content-primary">Native Tenant</p><p class="truncate font-mono text-content-muted" title="{{ evidence.tenant_id }}">{{ evidence.tenant_id }}</p></div></div>
     <div class="flex items-start gap-1.5 px-2 text-content-secondary"><i data-lucide="calendar-days" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>{{ event.created_at|user_datetime }}</div>
     <div class="flex flex-wrap gap-x-3 gap-y-1 px-2">
-        <span class="inline-flex items-center gap-1" title="External Bindings"><i data-lucide="link-2" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i><strong>{{ evidence.external_count }}</strong> Bindings</span>
+        <span class="inline-flex items-center gap-1" title="External RoleBindings"><i data-lucide="link-2" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i><strong>{{ evidence.external_count }}</strong> Bindings</span>
         <span class="inline-flex items-center gap-1" title="Namespaces"><i data-lucide="users" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i><strong>{{ evidence.namespaces|length }}</strong> Namespaces</span>
         <span class="inline-flex items-center gap-1" title="KAORI-correlated Resources"><i data-lucide="tag" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i><strong>{{ evidence.kaori_correlated_count }}</strong> KAORI</span>
         {% if drift_event %}<span class="inline-flex items-center gap-1" title="Latest separately committed drift analysis"><i data-lucide="alert-triangle" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i><strong>{{ drift.finding_count }}</strong> Drift</span>{% endif %}
@@ -177,7 +177,7 @@
                                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                                 <h5 class="text-sm font-semibold text-content-primary">Provider Authority</h5>
                                                 <p class="mt-2 break-all text-xs text-content-muted">Kubernetes namespace-scoped RBAC evidence</p>
-                                                <p class="mt-2 text-xs text-content-secondary">{{ evidence.namespaces|length }} provider owner(s) · {{ evidence.external_count }} external binding(s) · {{ evidence.kaori_correlated_count }} KAORI-correlated</p>
+                                                <p class="mt-2 text-xs text-content-secondary">{{ evidence.namespaces|length }} observed namespace(s) · {{ evidence.external_count }} external RoleBinding(s) · {{ evidence.kaori_correlated_count }} KAORI-correlated</p>
                                             </section>
                                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Latest committed drift findings">
     <h5 class="flex items-center gap-2 text-sm font-semibold text-content-primary"><i data-lucide="alert-triangle" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Drift Findings</h5>
@@ -204,7 +204,7 @@
 </section>
                                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                                 <h5 class="text-sm font-semibold text-content-primary">Available Actions</h5>
-                                                <p class="mt-2 text-xs leading-5 text-content-muted">Review committed evidence before analyzing drift. Native remains authoritative.</p>
+                                                <p class="mt-2 text-xs leading-5 text-content-muted">Review committed evidence before analyzing drift. Kubernetes RBAC remains authoritative.</p>
                                                                                     {% if can_manage %}
                                         <form method="post"
                                               action="{{ url_for('tenant.analyze_native_access_drift_route') }}"
