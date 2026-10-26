@@ -28,7 +28,10 @@ def test_mfa_tab_uses_approved_shared_kaori_visual_components() -> None:
     assert 'Policy Configuration' in tab
     assert 'Enforcement Modes' in tab
     assert 'Account Enrollment &amp; Recovery' in tab
-    assert 'sm:grid-cols-3' in tab
+    assert 'assurance.render(' in tab
+    assert "'mfa-policy'," in tab
+    assert "'Factor Ownership'" in tab
+    assert "'Recovery Authority'" in tab
     assert 'xl:grid-cols-5' in tab
 
 
@@ -100,12 +103,12 @@ def test_mfa_policy_configuration_and_modes_panels_stretch_to_matching_heights()
 
 def test_mfa_summary_tiles_have_distinct_semantic_icon_cues() -> None:
     tab = _mfa_tab()
-    assert 'Current Policy</p>' in tab
-    assert 'Verification Method</p>' in tab
-    assert 'Session Impact</p>' in tab
+    assert "'Current Policy'" in tab
+    assert "'Verification Method'" in tab
+    assert "'Session Impact'" in tab
     for icon in ('shield-check', 'key-round', 'log-out'):
-        assert f'data-lucide="{icon}"' in tab
-    assert 'bg-status-warning-soft text-status-warning-text' in tab
+        assert f"'{icon}'" in tab
+    assert "'bg-status-warning-soft text-status-warning-text'" in tab
 
 
 def test_enforcement_modes_use_icon_labels_without_fake_policy_state() -> None:

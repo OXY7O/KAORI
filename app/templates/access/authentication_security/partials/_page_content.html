@@ -2,6 +2,7 @@
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "access/authentication_security/partials/_assurance_summary.html" as assurance %}
 <div id="authentication-security-page" class="space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
@@ -45,88 +46,39 @@
                     'required_privileged': 'Required · Privileged',
                     'required_all': 'Required · All Users'
                 }.get(mfa_policy_mode, 'Unrecognized Policy') %}
-                <section class="rounded-xl border border-outline-default bg-surface-card"
-                         aria-labelledby="authentication-posture-heading">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="shield-check" class="h-5 w-5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h2 id="authentication-posture-heading"
-                                        class="text-base font-semibold text-content-primary">Authentication Assurance Posture</h2>
-                                    {{ info_tip.render(
-                                        'authentication-assurance-posture-guide',
-                                        'Authentication assurance posture',
-                                        'Summarizes committed KAORI policy and session-enforcement boundaries.',
-                                        [
-                                            'MFA — committed policy governs the second-factor challenge after primary sign-in.',
-                                            'Bot Protection — Turnstile verification is enforced only when the policy is enabled.',
-                                            'Session Security — generation-based admission revokes previously issued login sessions.',
-                                            'Configured adapters do not establish external provider availability or individual enrollment.'
-                                        ],
-                                        placement='right',
-                                        variant='guide'
-                                    ) }}
-                                </div>
-                            </div>
-                        </div>
-                        {{ table_label.status_indicator_label('Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled', 'info' if mfa_active or bot_active else 'unknown') }}
-                    </header>
-                    <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
-                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-content-muted">MFA Policy</p>
-                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">{{ mfa_display }}</p>
-                                </div>
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="shield-check" class="h-5 w-5"></i>
-                                </span>
-                            </div>
-                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">
-                                {{ 'TOTP challenge follows primary sign-in for enrolled accounts.' if mfa_active else 'Additional factor challenge is not required by policy.' }}
-                            </p>
-                        </article>
-                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-content-muted">Bot Protection</p>
-                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">{{ 'Enforced' if bot_active else 'Disabled' }}</p>
-                                </div>
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if bot_active else 'bg-kaori-soft text-kaori-primary' }}"
-                                      aria-hidden="true">
-                                    <i data-lucide="bot" class="h-5 w-5"></i>
-                                </span>
-                            </div>
-                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">
-                                {{ 'Turnstile token verification is required before sign-in.' if bot_active else 'Turnstile is not currently required at sign-in.' }}
-                            </p>
-                        </article>
-                        <article class="flex min-h-[10rem] flex-col bg-surface-card px-5 py-4 lg:px-6">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-content-muted">Session Security</p>
-                                    <p class="mt-2 text-xl font-bold tracking-tight text-content-primary">Active</p>
-                                </div>
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text"
-                                      aria-hidden="true">
-                                    <i data-lucide="monitor-check" class="h-5 w-5"></i>
-                                </span>
-                            </div>
-                            <p class="mt-auto pt-3 text-xs leading-5 text-content-secondary">Single active login generation per account.</p>
-                        </article>
-                    </div>
-                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 lg:px-6">
-                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
-                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
-                            <p>Policy state comes from KAORI. Configured adapters do not prove provider availability or successful user enrollment.</p>
-                        </div>
-                    </footer>
-                </section>
+                {{ assurance.render(
+                    'authentication-posture',
+                    'Authentication Assurance Posture',
+                    'Committed security controls and their authorization boundaries.',
+                    'Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled',
+                    'info' if mfa_active or bot_active else 'unknown',
+                    'shield-check',
+                    [
+                        ('shield-check', 'MFA Policy', mfa_display, 'Second-factor requirements follow the committed policy.', 'bg-kaori-soft text-kaori-primary'),
+                        ('bot', 'Bot Protection', 'Enforced' if bot_active else 'Disabled', 'Turnstile verification is required only when enabled.', 'bg-status-normal-soft text-status-normal-text' if bot_active else 'bg-kaori-soft text-kaori-primary'),
+                        ('key-round', 'Provider Setup', 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'Stored credentials do not establish provider availability.', 'bg-status-info-soft text-status-info-text'),
+                        ('monitor-check', 'Session Security', 'Active', 'Single active login generation per account.', 'bg-status-normal-soft text-status-normal-text')
+                    ],
+                    [
+                        ('shield-check', 'Second-Factor Policy', 'Governed', 'MFA is evaluated after primary authentication.'),
+                        ('cloud', 'Provider Authority', 'External', 'Cloudflare Siteverify remains authoritative for Turnstile.'),
+                        ('log-out', 'Session Revocation', 'Generation', 'New logins replace previous session generations.'),
+                        ('history', 'Committed Evidence', 'Audit-Aware', 'Authentication activity records policy and login outcomes.')
+                    ],
+                    guide=info_tip.render(
+                        'authentication-assurance-posture-guide',
+                        'Authentication assurance posture',
+                        'Summarizes committed KAORI policy and session-enforcement boundaries.',
+                        [
+                            'MFA — committed policy governs the second-factor challenge after primary sign-in.',
+                            'Bot Protection — Turnstile verification is enforced only when the policy is enabled.',
+                            'Session Security — generation-based admission revokes previously issued login sessions.',
+                            'Configured adapters do not establish external provider availability or individual enrollment.'
+                        ],
+                        placement='right',
+                        variant='guide'
+                    )
+                ) }}
                 <section aria-label="Authentication security controls">
                     <div class="grid gap-4 xl:grid-cols-3">
                         <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -305,71 +257,40 @@
                     'required_privileged': 'Required · Privileged',
                     'required_all': 'Required · All Users'
                 }.get(mfa_policy_mode, 'Unknown Policy') %}
-                <section class="overflow-visible rounded-xl border border-outline-default bg-surface-card"
-                         aria-labelledby="mfa-policy-heading">
-                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="shield-check" class="h-5 w-5"></i>
-                            </span>
-                            <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                <h2 id="mfa-policy-heading"
-                                    class="text-base font-semibold text-content-primary">MFA Assurance Policy</h2>
-                                {{ info_tip.render(
-                                    'mfa-policy-assurance-guide',
-                                    'MFA assurance policy',
-                                    'KAORI evaluates second-factor requirements after the primary identity provider verifies an account.',
-                                    [
-                                        'Disabled — a second factor is not required by the global policy.',
-                                        'Optional — accounts with an enrolled factor are challenged.',
-                                        'Required Privileged — admin-level accounts require MFA.',
-                                        'Required All — all human accounts require MFA enrollment and verification.',
-                                        'Changing the policy revokes existing authenticated and Remember Me sessions.'
-                                    ],
-                                    placement='right',
-                                    variant='guide'
-                                ) }}
-                            </div>
-                        </div>
-                        {{ table_label.status_indicator_label('Disabled' if mfa_policy_mode == 'disabled' else 'Policy Active', 'unknown' if mfa_policy_mode == 'disabled' else 'info') }}
-                    </header>
-                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
-                        <div class="bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Current Policy</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ current_mfa_label }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Committed KAORI configuration</p>
-                        </div>
-                        <div class="bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Verification Method</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="key-round" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">TOTP</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Authenticator and one-use recovery codes</p>
-                        </div>
-                        <div class="bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Session Impact</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"
-                                      aria-hidden="true">
-                                    <i data-lucide="log-out" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">Revocation</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Policy changes invalidate issued login sessions</p>
-                        </div>
-                    </div>
-                </section>
+                {{ assurance.render(
+                    'mfa-policy',
+                    'MFA Assurance Policy',
+                    'Second-factor enforcement and personal recovery boundaries.',
+                    'Disabled' if mfa_policy_mode == 'disabled' else 'Policy Active',
+                    'unknown' if mfa_policy_mode == 'disabled' else 'info',
+                    'shield-check',
+                    [
+                        ('shield-check', 'Current Policy', current_mfa_label, 'Committed KAORI configuration.', 'bg-kaori-soft text-kaori-primary'),
+                        ('key-round', 'Verification Method', 'TOTP', 'Authenticator and one-use recovery codes.', 'bg-status-info-soft text-status-info-text'),
+                        ('log-out', 'Session Impact', 'Revocation', 'Policy changes invalidate issued login sessions.', 'bg-status-warning-soft text-status-warning-text'),
+                        ('user-round', 'Factor Ownership', 'Self-Service', 'Each user enrolls and stores personal recovery codes.', 'bg-kaori-soft text-kaori-primary')
+                    ],
+                    [
+                        ('fingerprint', 'Factor Enrollment', 'User-Owned', 'Administrators cannot retrieve another user\'s MFA secret.'),
+                        ('shield-check', 'Assurance Gate', 'Policy', 'Required policies challenge eligible accounts.'),
+                        ('key-round', 'Recovery Authority', 'Private', 'Recovery codes are one-time and personal.'),
+                        ('log-out', 'Policy Transition', 'Revocation', 'Changes invalidate existing and Remember Me sessions.')
+                    ],
+                    guide=info_tip.render(
+                        'mfa-policy-assurance-guide',
+                        'MFA assurance policy',
+                        'KAORI evaluates second-factor requirements after the primary identity provider verifies an account.',
+                        [
+                            'Disabled — a second factor is not required by the global policy.',
+                            'Optional — accounts with an enrolled factor are challenged.',
+                            'Required Privileged — admin-level accounts require MFA.',
+                            'Required All — all human accounts require MFA enrollment and verification.',
+                            'Changing the policy revokes existing authenticated and Remember Me sessions.'
+                        ],
+                        placement='right',
+                        variant='guide'
+                    )
+                ) }}
                 <div class="grid items-stretch gap-4 xl:grid-cols-5">
                     <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
                              aria-labelledby="mfa-policy-config-heading">
@@ -499,74 +420,40 @@
                     </a>
                 </section>
             {% elif active_tab == 'bot' %}
-                <section class="overflow-visible rounded-xl border border-outline-default bg-surface-card"
-                         aria-labelledby="bot-protection-heading"
-                         data-auth-bot-posture="committed">
-                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="bot" class="h-5 w-5"></i>
-                            </span>
-                            <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                <h2 id="bot-protection-heading"
-                                    class="text-base font-semibold text-content-primary">Bot Protection</h2>
-                                {{ info_tip.render(
-                                    'bot-protection-guide',
-                                    'Bot Protection',
-                                    'Turnstile challenges are checked before primary sign-in or external SSO.',
-                                    [
-                                        'Disabled — no Turnstile challenge is required at sign-in.',
-                                        'Always — all sign-ins require a successful one-use Cloudflare Siteverify token.',
-                                        'Save a complete provider configuration while disabled, then test it before enabling Always.',
-                                        'Stored credentials do not prove provider availability. A successful test is valid for one hour only when configuration is unchanged.',
-                                        'Before enabling, confirm approved recovery access and outbound HTTPS to Cloudflare.'
-                                    ],
-                                    placement='right',
-                                    variant='guide'
-                                ) }}
-                            </div>
-                        </div>
-                        {{ table_label.status_indicator_label('Enforced' if bot_mode == 'always' else 'Not Enabled', 'warning' if bot_mode == 'always' else 'unknown') }}
-                    </header>
-                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
-                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Protection Mode</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ 'Always' if bot_mode == 'always' else 'Disabled' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Committed KAORI enforcement policy</p>
-                        </article>
-                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Verification Adapter</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="cloud" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            {% for provider in bot_providers %}
-                                <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ provider.label }}</p>
-                            {% endfor %}
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Cloudflare Siteverify · server-side</p>
-                        </article>
-                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-muted">Provider Configuration</p>
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="key-round" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Saved instance data, not provider health</p>
-                        </article>
-                    </div>
-                </section>
+                {{ assurance.render(
+                    'bot-protection',
+                    'Bot Protection',
+                    'Turnstile policy, provider configuration and activation boundaries.',
+                    'Enforced' if bot_mode == 'always' else 'Not Enabled',
+                    'warning' if bot_mode == 'always' else 'unknown',
+                    'bot',
+                    [
+                        ('shield-check', 'Protection Mode', 'Always' if bot_mode == 'always' else 'Disabled', 'Committed KAORI enforcement policy.', 'bg-kaori-soft text-kaori-primary'),
+                        ('cloud', 'Verification Adapter', 'Cloudflare Turnstile', 'Server-side Cloudflare Siteverify.', 'bg-status-info-soft text-status-info-text'),
+                        ('key-round', 'Provider Configuration', 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'Saved instance data, not provider health.', 'bg-kaori-soft text-kaori-primary'),
+                        ('clipboard-check', 'Verification Evidence', 'Recorded' if bot_tested_at else 'Not Recorded', 'Recorded proof is not a live readiness signal.', 'bg-status-normal-soft text-status-normal-text' if bot_tested_at else 'bg-status-unknown-soft text-status-unknown-text')
+                    ],
+                    [
+                        ('shield-alert', 'Challenge Boundary', 'Fail Closed', 'Rejected or unavailable verification blocks enabled sign-in.'),
+                        ('key-round', 'One-Use Proof', 'Siteverify', 'Cloudflare validates the one-use token server-side.'),
+                        ('clock', 'Activation Evidence', 'One Hour', 'Always needs recent proof for unchanged configuration.'),
+                        ('shield-check', 'Recovery Access', 'Required', 'Confirm approved independent recovery before enabling.')
+                    ],
+                    guide=info_tip.render(
+                        'bot-protection-guide',
+                        'Bot Protection',
+                        'Turnstile challenges are checked before primary sign-in or external SSO.',
+                        [
+                            'Disabled — no Turnstile challenge is required at sign-in.',
+                            'Always — all sign-ins require a successful one-use Cloudflare Siteverify token.',
+                            'Save a complete provider configuration while disabled, then test it before enabling Always.',
+                            'Stored credentials do not prove provider availability. A successful test is valid for one hour only when configuration is unchanged.',
+                            'Before enabling, confirm approved recovery access and outbound HTTPS to Cloudflare.'
+                        ],
+                        placement='right',
+                        variant='guide'
+                    )
+                ) }}
                 <div class="grid items-stretch gap-4 xl:grid-cols-5"
                      data-auth-bot-layout="configuration-safety">
                     <section class="flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
@@ -736,30 +623,39 @@
                     </section>
                 </div>
             {% else %}
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Session Security</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Committed KAORI authentication sessions are guarded by generation-based revocation.</p>
-                </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <dl class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <dt class="text-xs font-semibold text-content-muted">Concurrent Logins</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">Single active login generation</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs font-semibold text-content-muted">Provider Disablement</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">Linked session generations revoked</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs font-semibold text-content-muted">Remember Me</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">Prior generations rejected</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs font-semibold text-content-muted">Idle & Absolute Timeouts</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">Requires separate qualification</dd>
-                        </div>
-                    </dl>
-                </div>
+                {{ assurance.render(
+                    'session-security',
+                    'Session Security',
+                    'Committed login generation controls and recovery boundaries.',
+                    'Generation Active',
+                    'info',
+                    'monitor-check',
+                    [
+                        ('monitor-check', 'Concurrent Logins', 'Single Generation', 'Single active login generation per human account.', 'bg-status-normal-soft text-status-normal-text'),
+                        ('log-out', 'Provider Disablement', 'Revocation', 'Linked session generations are revoked on disable.', 'bg-status-warning-soft text-status-warning-text'),
+                        ('shield-check', 'Remember Me', 'Prior Rejected', 'Prior login generations cannot be reused.', 'bg-kaori-soft text-kaori-primary'),
+                        ('clock', 'Idle & Absolute Timeouts', 'Not Qualified', 'Requires separate qualification; no enforced timeout claim.', 'bg-status-unknown-soft text-status-unknown-text')
+                    ],
+                    [
+                        ('shield-check', 'Admission Boundary', 'Server-Owned', 'Protected requests check the committed login generation.'),
+                        ('link-2-off', 'Provider Lifecycle', 'Revocation', 'Disabling a provider rejects linked prior sessions.'),
+                        ('history', 'Activity Evidence', 'Correlated', 'Auth events use non-secret session correlation.'),
+                        ('shield-alert', 'Scope Limitation', 'No Inventory', 'This is not an active-device or person registry.')
+                    ],
+                    guide=info_tip.render(
+                        'session-security-guide',
+                        'Session Security',
+                        'KAORI enforces login generations without claiming an active device inventory.',
+                        [
+                            'Single generation — a new successful sign-in revokes earlier generations.',
+                            'Provider disablement — linked external-source sessions are invalidated.',
+                            'Remember Me — older generations cannot restore access.',
+                            'Idle/absolute timeouts and per-device inventories need separate qualification.'
+                        ],
+                        placement='right',
+                        variant='guide'
+                    )
+                ) }}
             {% endif %}
         </div>
     </section>
