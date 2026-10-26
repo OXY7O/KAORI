@@ -19,7 +19,8 @@
         "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
         "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
     } %}
-    {% set initial_tab = 'validation' if feedback in ['validation_queued', 'validation_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration') %}
+    {% set requested_tab = request.args.get('tab', '') %}
+    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration')) %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-github-installation-detail
          x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], '{{ initial_tab }}', 'github-detail-tabs')"
@@ -191,31 +192,7 @@
                      aria-labelledby="github-tab-validation"
                      x-show="activeTab === 'validation'"
                      x-cloak>
-                    <section class="{{ ui.section_shell_classes() }}">
-                        {{ ui.section_header('shield-check', 'GitHub Full Validation', 'Verify provider identity, granted permissions, and the installation contract') }}
-                        <div class="space-y-4 p-4 sm:p-5">
-                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">Core Readiness</p>
-                                    <div class="mt-2">{{ integration_status(readiness, display='indicator') }}</div>
-                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Successful registration is not Full Validation or committed inventory.</p>
-                                </div>
-                                <form method="post"
-                                      action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}">
-                                    {{ action_form.hidden_tag() }}
-                                    <button type="submit"
-                                            class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                        <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                                        Run Full Validation
-                                    </button>
-                                </form>
-                            </div>
-                            {{ operational_callout.render("Validation Boundary",
-                                                        "Full Validation runs as an admitted canonical JobExecution. It checks provider access but does not commit repository inventory.",
-                                                        icon="shield-check",
-                                                        tone="info") }}
-                        </div>
-                    </section>
+                    {% include "integrations/source_control/github/partials/_detail_validation.html" %}
                 </div>
                 <div id="github-panel-runtime"
                      role="tabpanel"

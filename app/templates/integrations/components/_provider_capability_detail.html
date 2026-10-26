@@ -3,8 +3,8 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro content(row, provider_label, evidence_owner, query_label, evidence_boundary, presentation='standard') -%}
-    {% set status_tone = 'ready' if row.available else ('blocked' if row.required else 'degraded') %}
-    {% set icon_tone = 'normal' if row.available else ('critical' if row.required else 'warning') %}
+    {% set status_tone = 'ready' if row.available else ('validation_required' if row.status_key == 'unverified' else ('blocked' if row.required else 'degraded')) %}
+    {% set icon_tone = 'normal' if row.available else ('info' if row.status_key == 'unverified' else ('critical' if row.required else 'warning')) %}
     <div class="space-y-5" data-kaori-provider-capability-modal-content>
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                  data-kaori-provider-capability-contract>

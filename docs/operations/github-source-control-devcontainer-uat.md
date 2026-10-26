@@ -1428,3 +1428,67 @@ merged SHA must be validated again before claiming PASS.
 
 Official Developer Check, Full Admission, `kaori/staging`, `main`,
 deployment and release remain HOLD.
+
+
+## 2026-10-26 — #3297 Validation & Capabilities design parity (Human UAT)
+
+**Authority:** the existing approved Alertmanager `Validation & Capabilities`
+workspace is the visual/interaction reference, reusing shared components.
+The GitHub Core Readiness + Validation Boundary-only layout is superseded by:
+Full Validation header/action, Provider Readiness with metric/gate/evidence/next
+action, Readiness Explanation, and a six-row Capability Registry.
+
+**Evidence / semantics:** the UI is a committed-state projection of
+`IntegrationInstance.metadata_json.github_validation`; it makes no GitHub
+API calls during GET or capability filter paging. The six capability read
+contracts are exactly those already defined in GitHub `readiness.py`.
+`Permission Verified` means Full Validation observed granted read scopes,
+**not** live provider health, a successful API probe for every optional
+capability, or committed repository/revision inventory. Unknown/missing
+Full Validation stays **Not Validated** and required gaps remain **not
+assessed**, not zero. The required Metadata + Contents permissions are
+separate from four optional scopes. Inventory synchronization remains an
+authorized, independent operation.
+
+**UI standard:** shared `_capability_readiness.html`,
+`_readiness_explanation.html`, native `_record_detail_modal.html`,
+`_provider_capability_detail.html`, table filter/loading/pagination and
+record action components; default five rows, size options from KAORI
+pagination standard, HTMX filter/partial update, empty state and
+keyboard-accessible View More. Registry filter's unverified mode is
+opt-in to the shared server-side registry function so other provider
+views remain unchanged. The Full Validation POST preserves the existing
+CSRF gate and canonical JobExecution admission.
+
+### UAT
+1. Pull holding branch; view **Source Control → GitHub → Manage →
+   Validation & Capabilities** with an unvalidated UAT connection. Confirm
+   permission verified=0, required gaps **Not Checked**, capability rows
+   **Not Validated**, and never a provider-Ready claim or fake inventory.
+2. Run Full Validation on an authorized disposable installation. Validate
+   six capability states from committed snapshot; Required vs Optional,
+   read-scope names, provider evidence/impact and View More. Actual
+   provider mutation is **outside this UI-only PR**.
+3. Search/filter by requirement and status; test 5/10/25/50 pagination,
+   previous/next, Clear Filters, HX partial swap/loading, no-JS navigation,
+   empty state and selected **Validation** tab persistence.
+4. Compare with Alertmanager at desktop 1440x900 and mobile 390x844,
+   light/dark, keyboard and native dialog focus/Escape. Reverify
+   Full Validation CSRF POST and separate Sync Repositories.
+5. Run Ruff, Ruff Format, djLint, focused pytest and integration/sidebar
+   verification on the exact merged SHA. Preserve execution logs and visual
+   evidence. CI PASS alone does not complete Human Acceptance.
+
+**Gate state:** Human UAT pending; official Developer Check / Full Admission,
+`kaori/staging`, `main` and release HOLD.
+
+
+**Canonical validation loading:** The GitHub Full Validation header now also
+reuses the existing validation worker's active-task snapshot, shared
+loading/header, job status, 1.5s poller, record-scoped status access guard
+and HTMX region replacement. The legacy non-HTMX POST redirect remains
+supported; the new status GET requires local authorized UAT access and
+matches `integration_type=source_control` and the exact canonical instance
+before returning a result. The tab readiness badge is refreshed using the
+shared OOB badge macro. No new worker/task/queue or provider GET on normal
+workspace rendering was introduced.
