@@ -63,29 +63,33 @@ def _actor_authorized(actor_id: int) -> bool:
 
 
 def _event(case: AlertCase, *, event_type: str, actor_id: int, summary: str) -> None:
-    db.session.add(AlertCaseEvent(
-        case_id=case.id,
-        event_type=event_type,
-        actor_user_id=actor_id,
-        summary=summary,
-        metadata_json={'source_type': 'provider_alert', 'domain': 'secrets_pki'},
-    ))
+    db.session.add(
+        AlertCaseEvent(
+            case_id=case.id,
+            event_type=event_type,
+            actor_user_id=actor_id,
+            summary=summary,
+            metadata_json={'source_type': 'provider_alert', 'domain': 'secrets_pki'},
+        )
+    )
 
 
 def _audit(case: AlertCase, *, actor_id: int, action: str) -> None:
-    db.session.add(AuditEvent(
-        actor_user_id=actor_id,
-        target_type='alert_case',
-        target_id=case.public_id,
-        action=action,
-        summary='A qualified Vault Alert Source case was admitted or refreshed.',
-        metadata_json={
-            'case_id': case.public_id,
-            'source_type': 'provider_alert',
-            'domain': 'secrets_pki',
-            'asset_key': case.asset_key,
-        },
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_id,
+            target_type='alert_case',
+            target_id=case.public_id,
+            action=action,
+            summary='A qualified Vault Alert Source case was admitted or refreshed.',
+            metadata_json={
+                'case_id': case.public_id,
+                'source_type': 'provider_alert',
+                'domain': 'secrets_pki',
+                'asset_key': case.asset_key,
+            },
+        )
+    )
 
 
 def _new_case(
@@ -207,8 +211,7 @@ def admit_vault_provider_cases(
             or not isinstance(candidates, list)
             or not 1 <= len(candidates) <= _MAX_PLAN
             or any(
-                not isinstance(candidate, dict)
-                or candidate.get('proposed_routing_state') != 'suppressed'
+                not isinstance(candidate, dict) or candidate.get('proposed_routing_state') != 'suppressed'
                 for candidate in candidates
             )
         ):
@@ -257,10 +260,13 @@ def admit_vault_provider_cases(
                 return _result('blocked')
             case = db.session.get(AlertCase, existing_id)
             if (
-                case is None or case.case_key != case_key
-                or case.domain != 'secrets_pki' or case.asset_key != binding.asset_key
+                case is None
+                or case.case_key != case_key
+                or case.domain != 'secrets_pki'
+                or case.asset_key != binding.asset_key
                 or case.source_type != 'provider_alert'
-                or case.source_state != 'firing' or case.workflow_state == 'closed'
+                or case.source_state != 'firing'
+                or case.workflow_state == 'closed'
                 or case.routing_state != 'suppressed'
             ):
                 db.session.rollback()

@@ -48,14 +48,20 @@ def _verify_tls_secret_preconditions(api: Any, record: Any) -> str:
         raise ValueError('The live Kubernetes Secret is no longer a TLS Secret.')
     expected_uid = str(getattr(record, 'secret_uid', None) or '')
     if not expected_uid or not live_uid:
-        raise TLSSecretIdentityError('TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.')
+        raise TLSSecretIdentityError(
+            'TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.'
+        )
     try:
         expected_object_uid = str(UUID(expected_uid))
         live_object_uid = str(UUID(live_uid))
     except (TypeError, ValueError) as exc:
-        raise TLSSecretIdentityError('TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.') from exc
+        raise TLSSecretIdentityError(
+            'TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.'
+        ) from exc
     if expected_object_uid != live_object_uid:
-        raise TLSSecretIdentityError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
+        raise TLSSecretIdentityError(
+            'The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.'
+        )
     if not resource_version:
         raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
     return resource_version

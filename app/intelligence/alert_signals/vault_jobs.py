@@ -42,7 +42,9 @@ def _provider_for(binding: IntegrationBinding) -> AlertmanagerInstance | None:
         integration_instance_id=binding.integration_instance_id,
     ).first()
     if (
-        provider is None or not provider.enabled or not provider.endpoint
+        provider is None
+        or not provider.enabled
+        or not provider.endpoint
         or provider.readiness_status not in {'ready', 'degraded'}
     ):
         return None
@@ -70,7 +72,9 @@ def build_vault_alert_observation_targets(*, now: datetime | None = None) -> lis
     for (vault_id,) in vault_ids:
         rows = (
             IntegrationBinding.query.filter_by(
-                asset_type='vault_instance', asset_key=str(vault_id), enabled=True,
+                asset_type='vault_instance',
+                asset_key=str(vault_id),
+                enabled=True,
             )
             .join(
                 IntegrationInstance,
@@ -103,7 +107,8 @@ def dispatch_vault_alert_observations(
     """Manual operator UAT only; no policy/Beat scheduling is admitted."""
     if trigger_type != 'manual':
         return RegisteredJobDispatchResult(
-            status='blocked', message='Vault alert observation is manual-only.',
+            status='blocked',
+            message='Vault alert observation is manual-only.',
         )
     try:
         targets = build_vault_alert_observation_targets()
@@ -111,7 +116,8 @@ def dispatch_vault_alert_observations(
         return RegisteredJobDispatchResult(status='blocked', message=str(exc))
     if not targets:
         return RegisteredJobDispatchResult(
-            status='blocked', message='No qualified Vault Alert Source is eligible.',
+            status='blocked',
+            message='No qualified Vault Alert Source is eligible.',
         )
     from app.intelligence.alert_signals.tasks import observe_vault_alert_source
 
@@ -153,12 +159,17 @@ def build_vault_alert_job_context(policy: JobPolicy) -> dict:
         diagnostics = ['Vault source fleet exceeds the bounded observation profile.']
     jobs = JobExecution.query.filter_by(job_type=JOB_TYPE, operation=OPERATION)
     recent = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
-    active = jobs.filter(
-        JobExecution.status.in_(ACTIVE_JOB_STATUSES),
-        JobExecution.completed_at.is_(None),
-    ).order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+    active = (
+        jobs.filter(
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+            JobExecution.completed_at.is_(None),
+        )
+        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
+        .first()
+    )
     registered = IntegrationInstance.query.filter_by(
-        integration_type='secrets_pki', provider_key='vault',
+        integration_type='secrets_pki',
+        provider_key='vault',
     ).count()
     count = len(targets)
     return {
@@ -177,7 +188,8 @@ def build_vault_alert_job_context(policy: JobPolicy) -> dict:
             'icon': 'loader-circle' if active else ('circle-check' if count else 'shield-alert'),
             'description': (
                 'Manual source-qualified Alertmanager observation.'
-                if count else 'Validate a Vault Alert Source binding before manual execution.'
+                if count
+                else 'Validate a Vault Alert Source binding before manual execution.'
             ),
         },
         'configuration_state': {
@@ -223,8 +235,11 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
         response = client.get_alerts(filters=[f'vault_instance="{binding.asset_key}"'])
         observed = datetime.now(UTC)
         result = commit_vault_alert_observations(
-            binding_id=binding.id, alerts=response, hmac_key=key,
-            observed_at=observed, now=observed,
+            binding_id=binding.id,
+            alerts=response,
+            hmac_key=key,
+            observed_at=observed,
+            now=observed,
         )
         return result['state']
     except Exception:
@@ -249,9 +264,13 @@ def run_vault_alert_observation_job(
         return {'status': 'blocked', 'observed_sources': 0, 'failed_sources': 0}
     job = db.session.get(JobExecution, job_execution_id)
     if (
-        job is None or job.celery_task_id != task_id or job.job_type != JOB_TYPE
-        or job.operation != OPERATION or job.scope_type != 'secrets_pki_alert_fleet'
-        or job.scope_key != 'all' or job.status not in {'queued', 'retrying'}
+        job is None
+        or job.celery_task_id != task_id
+        or job.job_type != JOB_TYPE
+        or job.operation != OPERATION
+        or job.scope_type != 'secrets_pki_alert_fleet'
+        or job.scope_key != 'all'
+        or job.status not in {'queued', 'retrying'}
         or job.integration_type != 'secrets_pki'
         or job.requested_by_user_id is None
         or not isinstance(job.payload_json, dict)
@@ -283,14 +302,18 @@ def run_vault_alert_observation_job(
     failed = 0
     unobserved = 0
     ctx.start(
-        message='Preparing qualified Vault Alert Sources.', total=len(binding_ids),
-        stage='Source Validation', target='Secrets & PKI',
+        message='Preparing qualified Vault Alert Sources.',
+        total=len(binding_ids),
+        stage='Source Validation',
+        target='Secrets & PKI',
     )
     try:
         for index, binding_id in enumerate(binding_ids, start=1):
             ctx.checkpoint(
-                current=index - 1, total=len(binding_ids),
-                stage='Observing Alertmanager', target='Approved Vault Source',
+                current=index - 1,
+                total=len(binding_ids),
+                stage='Observing Alertmanager',
+                target='Approved Vault Source',
             )
             outcome = observe_vault_alert_binding(binding_id, key=key)
             if outcome in {'qualified', 'unobserved'}:
@@ -299,8 +322,10 @@ def run_vault_alert_observation_job(
             else:
                 failed += 1
             ctx.checkpoint(
-                current=index, total=len(binding_ids),
-                stage='Evidence Commitment', target='Secrets & PKI',
+                current=index,
+                total=len(binding_ids),
+                stage='Evidence Commitment',
+                target='Secrets & PKI',
             )
         result = {
             'status': 'failed' if failed == len(binding_ids) else ('partial' if failed else 'success'),
@@ -312,7 +337,8 @@ def run_vault_alert_observation_job(
             ctx.fail('All Vault Alert Source observations were unavailable.', error_code='source_unavailable')
         else:
             ctx.succeed(
-                result_summary=result, result_type='secrets_pki_alert_observation',
+                result_summary=result,
+                result_type='secrets_pki_alert_observation',
                 partial=bool(failed),
             )
         return result

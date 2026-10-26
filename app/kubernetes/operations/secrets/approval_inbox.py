@@ -70,7 +70,6 @@ def get_secret_reveal_approval_work_inbox(*, user_id: int) -> dict[str, Any]:
     return {'items': items, 'pending_count': pending_count, 'total_count': pending_count}
 
 
-
 def get_secret_reveal_requester_work_inbox(*, user_id: int) -> dict[str, Any]:
     """Return approved, unexpired requests awaiting this requester's one-time reveal."""
     empty: dict[str, Any] = {'items': [], 'ready_count': 0, 'total_count': 0}

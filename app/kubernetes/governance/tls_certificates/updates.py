@@ -270,9 +270,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
             current_app.logger.warning('TLS Secret rotation rejected due to stale target identity.')
         else:
             current_app.logger.exception('Kubernetes TLS Secret mutation failed.')
-        safe_message = (
-            str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
-        )
+        safe_message = str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
         failure_event_saved = _persist_failure_event(
             _new_tls_update_event(
                 TLSUpdateEventSpec(
@@ -456,9 +454,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                     target.namespace,
                     target.secret_name,
                 )
-            safe_message = (
-                str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
-            )
+            safe_message = str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
             db.session.add(
                 _new_tls_update_event(
                     TLSUpdateEventSpec(

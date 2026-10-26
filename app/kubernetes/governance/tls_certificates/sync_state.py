@@ -42,9 +42,7 @@ def _cluster_job_scope(cluster_id: str):
     a selected cluster was an actual job target. Canonical payload targets
     are explicit and JSONB containment works on PostgreSQL's JSON column.
     """
-    return cast(JobExecution.payload_json, JSONB).contains(
-        {'targets': [{'cluster_id': str(cluster_id)}]}
-    )
+    return cast(JobExecution.payload_json, JSONB).contains({'targets': [{'cluster_id': str(cluster_id)}]})
 
 
 def _last_successful_cluster_job(base_query, cluster_id: str) -> JobExecution | None:
@@ -115,9 +113,7 @@ def tls_sync_stale_after(interval_minutes: int | None) -> timedelta:
     return timedelta(minutes=minutes + min(max(minutes // 4, 15), 180))
 
 
-def tls_sync_evidence_is_current(
-    observed_at: datetime | None, *, stale_after: timedelta, now: datetime
-) -> bool:
+def tls_sync_evidence_is_current(observed_at: datetime | None, *, stale_after: timedelta, now: datetime) -> bool:
     """Missing, future, or aged committed evidence cannot authorize rotation."""
     at = _as_utc(observed_at)
     checked_at = _as_utc(now)

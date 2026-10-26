@@ -756,8 +756,7 @@ def get_capsule_tenant_quota_context(
         drifted = [
             tenant
             for tenant in drifted
-            if needle in str(tenant.name or '').casefold()
-            or needle in str(tenant.provider_reference or '').casefold()
+            if needle in str(tenant.name or '').casefold() or needle in str(tenant.provider_reference or '').casefold()
         ]
     visible_drifted, pagination = paginate_sequence(
         drifted,
