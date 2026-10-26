@@ -84,6 +84,10 @@ def test_mfa_recovery_regeneration_has_symmetric_cards_and_inline_form() -> None
     assert 'xl:col-span-7' in recovery
     assert 'xl:col-span-5' in recovery
     assert 'data-account-mfa-recovery-security="equal-height"' in recovery
+    assert 'Review safeguards before replacing your recovery codes.' in recovery
+    assert 'border-b border-outline-subtle px-5 pb-4 pt-5' in recovery
+    assert 'Verify with a valid code.' in recovery
+    assert 'Use your current sign-in and a valid code.' not in recovery
     assert 'data-account-mfa-regenerate-form="inline"' in recovery
     assert 'class="mt-5 grid gap-3 lg:grid-cols-12 lg:items-end"' in recovery
     assert 'min-w-0 lg:col-span-4' in recovery
