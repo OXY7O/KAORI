@@ -176,7 +176,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
         assert f"runtime_view='{kind}'" in page
         assert 'runtime_table_embedded|default(false)' in page
         assert 'components/pagination.html' in page
-        assert 'components/loading_bar.html' in page
+        assert 'table_ui.inventory_block_header(' in page
         assert 'data-kaori-auto-submit' in page
         assert 'registry_ui.clear_filters_action(' in page
     assert routes.count('runtime_table_embedded=True') == 2
@@ -247,3 +247,51 @@ def test_runtime_history_uses_full_kaori_table_components():
             assert token in page, (filename, token)
         assert f"runtime_view='{view}'" in page
         assert 'payload_sha256' not in page
+
+
+def test_runtime_filter_controls_and_kaori_tab_counters():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
+    deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
+    routes = _read(ROUTES)
+
+    # The full table owns result counts; tab labels must remain text-only.
+    tabs = runtime.split('{% set runtime_tabs = [', 1)[1].split('] %}', 1)[0]
+    assert "'Recent Jobs'" in tabs
+    assert "'Signed Webhook Deliveries'" in tabs
+    assert 'total_items' not in tabs
+    for page, fields, view in (
+        (jobs, ('job_search', 'job_queue', 'job_status'), 'jobs'),
+        (deliveries, ('delivery_search', 'delivery_event', 'delivery_state'), 'deliveries'),
+    ):
+        assert page.count('type="search"') == 1
+        for field in fields:
+            assert f'name="{field}"' in page
+            assert f"'{field}': {field}" in page
+            assert f'{field}={field}' in page
+            assert f'<input type="hidden" name="{field}"' in page or field == fields[0]
+        assert 'hx-trigger="change, input changed delay:400ms, submit"' in page
+        assert "registry_ui.clear_filters_action(" in page
+        assert f"runtime_view='{view}'" in page
+
+    assert "JobExecution.integration_type == 'source_control'" in routes
+    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
+    assert "JobExecution.queue_name == job_queue" in routes
+    assert "SourceWebhookDelivery.event_type == delivery_event" in routes
+    assert "JobExecution.operation.ilike(" in routes
+    assert "SourceWebhookDelivery.action.ilike(" in routes
+    assert "request.args.get('job_search', '').strip()[:80]" in routes
+    assert "request.args.get('delivery_search', '').strip()[:80]" in routes
+    assert '.limit(50)' in routes
+    assert "return '%' + value.replace(" in routes
+    assert 'requests.get(' not in routes
+
+
+def test_runtime_search_escapes_sql_like_wildcards():
+    from app.integrations.source_control.source_control.providers.github.application.uat_routes import (
+        _runtime_search_pattern,
+    )
+
+    assert _runtime_search_pattern('runtime_refresh') == r'%runtime\_refresh%'
+    assert _runtime_search_pattern('100%') == r'%100\%%'
+    assert _runtime_search_pattern('job') == '%job%'

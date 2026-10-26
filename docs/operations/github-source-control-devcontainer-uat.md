@@ -1657,3 +1657,28 @@ queries, destructive actions, secrets or raw webhook payloads in these tables.
 Ruff Format and djLint from the user's prior Dev Container log were not
 passing for the previous SHA. Recheck the new merged SHA rather than claiming
 source inspection as executable QA. Human desktop/mobile/light/dark UAT HOLD.
+
+
+## 2026-10-26 — #3306 Advanced server-filtered GitHub Runtime tables
+
+- Removed numeric counts from **Recent Jobs** and **Signed Webhook Deliveries**
+  Framed Workspace Tab Style 2 labels. Matching result counts remain in the
+  canonical full-table registry headers and pagination summary.
+- Recent Jobs filters: **Search Operation / Job ID**, **Queue**, **Job Status**.
+  Deliveries filters: **Search Event / Action**, **Event Type**,
+  **Processing State**. All filters operate server-side before the shared
+  paginator, not on the five visible rows. Literal LIKE patterns are escaped,
+  search terms bounded to 80 characters, and Queue/Event Type options sourced
+  from the authorized committed installation scope with a bounded distinct
+  query. No live provider GET is introduced.
+- Changing filters resets the relevant page to 1 while preserving its Rows
+  setting. All active filters propagate through numeric pagination,
+  Previous/Next, Rows selector and normal GET fallback. The Apply Filters
+  button permits non-JavaScript submission, while HTMX debounces search.
+  Clear Filters clears all three fields and retains the row-size selection.
+- Jobs and webhook receipts remain independent evidence domains; matching
+  results, status, and empty state are scoped to the authorized installation.
+  Retain no-raw-payload/no-secret guarantee.
+- Fresh Dev Container Ruff, Ruff Format, djLint, pytest, route startup,
+  light/dark/mobile table and filter UAT must be collected on the new merge
+  SHA; the earlier 67 passed / 1 failed belongs to the previous candidate.

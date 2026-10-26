@@ -118,16 +118,17 @@
 <section id="github-runtime-evidence-registry"
          class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          data-kaori-github-runtime-registry-tabs>
-    {{ framed_tabs.render_navigation([
-        ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs') , job_pagination.total_items),
-    ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'), delivery_pagination.total_items)
-    ],
-    runtime_view,
-    prefix='github-runtime-history',
-    aria_label='GitHub Runtime Evidence',
-    hx_target='#github-runtime-evidence-registry',
-    hx_select='#github-runtime-evidence-registry',
-    hx_push_url='true') }}
+    {% set runtime_tabs = [
+        ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs')),
+        ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'))
+    ] %}
+    {{ framed_tabs.render_navigation(runtime_tabs,
+        runtime_view,
+        prefix='github-runtime-history',
+        aria_label='GitHub Runtime Evidence',
+        hx_target='#github-runtime-evidence-registry',
+        hx_select='#github-runtime-evidence-registry',
+        hx_push_url='true') }}
     <div id="github-runtime-evidence-registry-content">
         {% set runtime_table_embedded = true %}
         {% if runtime_view == 'deliveries' %}
