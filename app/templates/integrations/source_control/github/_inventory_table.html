@@ -3,6 +3,8 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set inventory_href_endpoint = inventory_href_endpoint|default('github_source_uat.detail') %}
+{% set inventory_htmx_endpoint = inventory_htmx_endpoint|default('github_source_uat.inventory_table') %}
 {% set page_sizes = [5, 10, 25, 50] %}
 {% set matching_total = inventory.matching_total %}
 {% set total_pages = ((matching_total + inventory.per_page - 1) // inventory.per_page) if matching_total else 1 %}
@@ -13,7 +15,7 @@
          data-kaori-full-table-registry="repository-inventory"
          data-kaori-server-filtered-registry
          aria-live="polite"
-         hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+         hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id, page=inventory.page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
          hx-trigger="every 15s"
          hx-target="#source-control-inventory"
          hx-swap="outerHTML"
@@ -21,9 +23,9 @@
          hx-indicator="#github-inventory-loading">
     {% set header_actions %}
         {% if filters_active %}
-            {{ registry_ui.clear_filters_action(url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page) ,
+            {{ registry_ui.clear_filters_action(url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page) ,
             table_ui.action_classes(),
-            hx_get=url_for('github_source_uat.inventory_table', installation_id=installation.id, page=1, per_page=inventory.per_page),
+            hx_get=url_for(inventory_htmx_endpoint, installation_id=installation.id, page=1, per_page=inventory.per_page),
             target='#source-control-inventory',
             select='#source-control-inventory',
             indicator='#github-inventory-loading',
@@ -50,8 +52,8 @@
         result_count=matching_total) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form method="get"
-              action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory') }}"
-              hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id) }}"
+              action="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory') }}"
+              hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id) }}"
               hx-target="#source-control-inventory"
               hx-select="#source-control-inventory"
               hx-swap="outerHTML"
@@ -203,8 +205,8 @@
                 <span>Showing {{ start_item }}–{{ end_item }} of {{ matching_total }} {{ pagination_ui.resource_name('Repositories', matching_total) }}</span>
             {% endif %}
             <form method="get"
-                  action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory') }}"
-                  hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id) }}"
+                  action="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory') }}"
+                  hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id) }}"
                   hx-target="#source-control-inventory"
                   hx-select="#source-control-inventory"
                   hx-swap="outerHTML"
@@ -238,8 +240,8 @@
              aria-label="Committed repository pagination">
             {% for label, target_page, enabled in [('Previous', inventory.page - 1, inventory.page > 1), ('Next', inventory.page + 1, inventory.page < total_pages)] %}
                 {% if enabled %}
-                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory', page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
-                       hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+                    <a href="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+                       hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id, page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
                        hx-target="#source-control-inventory"
                        hx-swap="outerHTML"
                        hx-indicator="#github-inventory-loading"
@@ -254,10 +256,10 @@
                         page_param='page',
                         hx_target='#source-control-inventory',
                         hx_indicator='#github-inventory-loading',
-                        endpoint='github_source_uat.inventory_table',
+                        endpoint=inventory_htmx_endpoint,
                         query_params={'tab': 'inventory', 'per_page': inventory.per_page, 'inventory_search': inventory_search, 'inventory_visibility': inventory_visibility, 'inventory_archived': inventory_archived},
                         hx_swap='outerHTML',
-                        href_endpoint='github_source_uat.detail') }}
+                        href_endpoint=inventory_href_endpoint) }}
         </nav>
     </footer>
 </section>
