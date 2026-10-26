@@ -178,6 +178,22 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='source_control',
+        label='Source Control',
+        icon='git-branch',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview', 'Overview', 'layout-dashboard',
+                'source_control.overview', ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'repositories', 'Repositories', 'folder-git-2',
+                'source_control.repositories', ('integrations.manage',),
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='secrets_pki',
         label='Secrets & PKI',
         icon='key-round',
