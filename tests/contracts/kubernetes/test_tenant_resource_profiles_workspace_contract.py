@@ -1538,8 +1538,9 @@ def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None
     Environment(autoescape=True).parse(template)
 
     assert 'Adopted Native Governance Cutover' in template
-    assert 'Adopted Baseline · Observed' in template
-    assert 'KAORI Managed · Only after verified cutover' in template
+    assert 'Observed Provider Baseline' in template
+    assert 'Proposed KAORI Managed Contract' in template
+    assert 'Only committed after admitted provider read-back.' in template
     assert 'Managed Contract Comparison' in template
     assert 'Change Highlights' in template
     assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in template
@@ -1739,7 +1740,7 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert 'min-w-[27rem]' in shared
     assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
     assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in shared
-    assert re.search(r'data-tenant-allocation-highlight-item\\s+hidden', template)
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
     assert 'border-l-2 border-kaori-primary/20 pl-3' in template
     assert 'data-tenant-allocation-change-namespace' in template
     assert 'renderContractPreview(current, proposed)' in script
