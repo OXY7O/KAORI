@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/details/_expandable_row.html" as detail_row %}
 {% set capacity_registry_id = "capacity-budget-registry" %}
 {% set capacity_loading_id = "capacity-budget-loading" %}
 {% set capacity_query_params = {
@@ -43,7 +43,7 @@
     {% endset %}
     {{ table_ui.inventory_block_header('chart-no-axes-combined',
         'Allocation Budget',
-        'Committed capacity by cluster and resource, with direct budget, allocation, headroom and evidence visibility.',
+        'Committed cluster allocation with resource-level evidence available in View Details.',
         capacity_loading_id,
         'Refreshing Allocation Budget',
         none,
@@ -116,17 +116,17 @@
             </div>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1000px] !table-fixed') }}">
-            <caption class="sr-only">Committed request capacity, budget, headroom and evidence for each Ready Kubernetes cluster and resource.</caption>
+    <div class="overflow-x-auto xl:overflow-visible">
+        <table class="{{ table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Cluster allocation budget registry. Expand a cluster to inspect its resource commitments.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Cluster / Evidence</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Resource</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Budget</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Committed</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Headroom</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Allocation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[29%]">Cluster / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Capacity State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Evidence</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Namespaces</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -134,55 +134,41 @@
                     {% set state_tone = 'normal' if item.state == 'Healthy' else ('critical' if item.state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning') %}
                     {% set bars = capacity_budget_bars.get(item.cluster.id|string, []) %}
                     {% set visible_bars = bars if not capacity_filters.resource else bars|selectattr('key', 'equalto', capacity_filters.resource)|list %}
-                    {% for bar in visible_bars %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            {% if loop.first %}
-                                <th scope="rowgroup"
-                                    rowspan="{{ visible_bars|length }}"
-                                    class="{{ table_ui.cell_classes() }} min-w-0 align-top text-left">
-                                    {{ table_ui.cluster_identity(item.cluster.name, item.cluster.environment) }}
-                                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                                        {{ table_label.status_label(item.state, state_tone) }}
-                                        {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|replace('_', ' ')|title,
-                                            'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
-                                    </div>
-                                    <p class="mt-1 text-xs text-content-muted">
-                                        {{ item.committed_namespace_count }} committed Namespace{{ '' if item.committed_namespace_count == 1 else 's' }}
-                                    </p>
-                                </th>
-                            {% endif %}
-                            <th scope="row" class="{{ table_ui.cell_classes() }} min-w-0 align-middle text-left">
-                                <p class="text-xs font-semibold text-content-primary">{{ bar.label }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">
-                                    {{ 'Logical admission ceiling' if bar.key == 'storage_bytes' else 'Governed request commitment' }}
-                                </p>
-                                {% if bar.shortfall %}
-                                    <p class="mt-1 text-xs font-semibold text-status-critical-text">Over budget by {{ bar.shortfall }}</p>
-                                {% endif %}
-                            </th>
-                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums">{{ bar.budget }}</td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums">{{ bar.committed }}</td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle font-semibold tabular-nums {{ 'text-status-critical-text' if bar.shortfall else 'text-content-primary' }}">{{ bar.headroom }}</td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
-                                {% if bar.known and item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh'] %}
-                                    <p class="text-xs font-semibold tabular-nums text-content-primary">{{ bar.percent }}% committed</p>
-                                    {{ progress_bar.stacked_bar(bar.percent,
-                                        bar.free_percent,
-                                        'mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
-                                        'h-full bg-kaori-primary',
-                                        'h-full bg-kaori-primary/20',
-                                        label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
-                                {% else %}
-                                    {{ table_label.status_label('Evidence Unavailable' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] else bar.state,
-                                        'warning' if item.state == 'Unknown' or item.snapshot_state not in ['current', 'fresh'] or bar.state == 'Unknown' else 'info') }}
-                                    <p class="mt-1 text-xs text-content-muted">Ratio unavailable</p>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
+                    {% set detail_target_id = 'capacity-budget-evidence-' ~ item.cluster.id %}
+                    {% set detail_row_id = detail_target_id ~ '-row' %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <th scope="row"
+                            class="{{ table_ui.cell_classes() }} min-w-0 text-left">
+                            {{ table_ui.cluster_identity(item.cluster.name, item.cluster.environment) }}
+                        </th>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(item.state, state_tone) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|replace('_', ' ') |title,
+                            'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-sm font-semibold tabular-nums text-content-primary">{{ item.committed_namespace_count }}</span>
+                            <span class="block text-xs text-content-muted">Committed</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            {{ detail_row.toggle_button('tenant-capacity-budget',
+                                item.cluster.id,
+                                '',
+                                detail_target_id,
+                                detail_row_id,
+                                open_label='View Details',
+                                close_label='Hide Details',
+                                table_action=true) }}
+                        </td>
+                    </tr>
+                    {% call detail_row.static_detail_row(detail_row_id, detail_target_id, 5, content_classes='w-full min-w-0') %}
+                        {% include "kubernetes/tenant/partials/_allocation_budget_detail.html" %}
+                    {% endcall %}
                 {% else %}
                     <tr>
-                        <td colspan="6" class="p-0">
+                        <td colspan="5" class="p-0">
                             {% set empty_state_icon = "server-off" %}
                             {% set empty_state_title = "No Matching Clusters" %}
                             {% set empty_state_description = "Adjust the filters or check committed Ready Kubernetes cluster evidence." %}
