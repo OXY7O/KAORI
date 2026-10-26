@@ -44,6 +44,42 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
     assert "{% if can_manage and membership.principal_type in ['user', 'group'] %}" in registry
 
 
+
+def test_membership_revoke_modal_uses_compact_single_column_confirmation() -> None:
+    registry = read('_membership_registry.html')
+    shared = (ROOT / 'app/templates/components/destructive_confirmation_modal.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert "presentation='membership'" in registry
+    assert "notice='Reactivating this Membership later" in registry
+    assert 'access_chrome=true' not in registry
+    assert "('user-x', 'Disable Membership'" in registry
+    assert "('shield-x', 'Revoke dependent grants'" in registry
+    assert "('history', 'Preserve audit history'" in registry
+
+    variant = shared.split("{% if presentation == 'membership' %}", 1)[1]
+    header = variant.split('{% else %}', 1)[0]
+    assert 'Review the principal and Tenant before confirming this access change.' in header
+    assert 'metadata_label(' not in header
+    assert 'status_label(' not in header
+
+    assert 'aria-label="Revocation impact"' in shared
+    assert 'class="divide-y divide-outline-subtle overflow-hidden rounded-lg' in shared
+    assert 'Important access boundary' in shared
+    assert 'data-destructive-target-name' in shared
+    assert 'data-destructive-target-scope' in shared
+    assert 'data-destructive-detail' in shared
+    assert 'data-destructive-modal-confirm' in shared
+    assert 'data-submit-button-id="{{ confirm_button_id }}"' in shared
+    assert 'data-destructive-modal-close' in shared
+
+    # Existing high-risk resource and multi-step presentations stay available.
+    assert "presentation == 'kubernetes'" in shared
+    assert "presentation == 'steps'" in shared
+    assert 'access_chrome=false' in shared
+
+
 def test_group_modals_use_distinct_context_and_destructive_review() -> None:
     registry = read('_group_registry.html')
     assert 'aria-label="Tenant information"' in registry

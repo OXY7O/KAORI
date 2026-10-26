@@ -28,7 +28,9 @@
                 aria-describedby="{{ id }}-tooltip"
                 aria-label="{% if action_variant %}Why {{ button_text }} is unavailable{% else %}{{ 'Open guide: ' if guide_variant else 'More information about ' }}{{ title }}{% endif %}"
                 class="{% if button_text %}{{ button_classes if button_classes else action_button.classes('secondary') }}{% elif guide_variant %}inline-flex min-h-7 cursor-help items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand-outline bg-kaori-soft px-2.5 py-1 text-xs font-semibold leading-4 text-kaori-primary-dark transition-colors hover:border-kaori-primary hover:bg-kaori-soft hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus dark:text-kaori-accent{% else %}inline-flex h-6 w-6 cursor-help items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus{% endif %}">
-            <i data-lucide="{{ trigger_icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+            <i data-lucide="{{ trigger_icon }}"
+               class="h-3.5 w-3.5 shrink-0"
+               aria-hidden="true"></i>
             {% if guide_variant %}
                 <span>Guide</span>
             {% elif button_text %}
