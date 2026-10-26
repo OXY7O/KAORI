@@ -115,6 +115,90 @@ def _string_metadata(
     return None
 
 
+def _apply_authentication_event_context(
+    context: dict[str, Any],
+    *,
+    access_action: str | None,
+    auth_result: str | None,
+    username: str | None,
+    auth_source: str | None,
+) -> None:
+    """Preserve Access event presentation for sign-in and security controls."""
+    if access_action and access_action.startswith(('mfa_', 'bot_')):
+        # Authentication Security settings and factor evidence are not
+        # sign-in events. Preserve the KAORI committed security-control
+        # authority while retaining the existing Access audit category.
+        control = (
+            'MFA Policy'
+            if access_action.startswith('mfa_policy_')
+            else 'MFA Factor'
+            if access_action.startswith('mfa_')
+            else 'Bot Protection'
+        )
+        context.update(
+            module_label='Access',
+            target_type='Security Control',
+            target_name=control,
+            event_icon='shield-check',
+            event_tone='violet',
+            source_label='Authentication security',
+            source_detail='KAORI committed evidence',
+        )
+    else:
+        action_is_logout = access_action == 'logout'
+        result_failed = auth_result == 'failed'
+        context.update(
+            module_label='Access',
+            target_type='User Session',
+            target_name=username or 'Unauthenticated request',
+            event_icon='log-out' if action_is_logout else 'log-in',
+            event_tone='rose' if result_failed else 'indigo',
+            source_label='Authentication provider',
+            source_detail=auth_source or 'Provider not recorded',
+        )
+
+
+def _append_authentication_context_items(
+    context_items: list[dict[str, Any]],
+    *,
+    access_action: str | None,
+    auth_source: str | None,
+    browser: str | None,
+    operating_system: str | None,
+) -> None:
+    """Append the existing Access event audit descriptors in order."""
+    context_items.append(
+        {
+            'label': 'Action',
+            'value': (
+                _display_event_label(access_action.replace('_', ' '))
+                if access_action and access_action.startswith(('mfa_', 'bot_'))
+                else 'Sign out'
+                if access_action == 'logout'
+                else 'Sign in'
+            ),
+            'tone': 'indigo',
+        }
+    )
+    if auth_source:
+        context_items.append(
+            {
+                'label': 'Provider',
+                'value': auth_source,
+                'tone': 'blue',
+            }
+        )
+    client_label = ' on '.join(value for value in (browser, operating_system) if value)
+    if client_label:
+        context_items.append(
+            {
+                'label': 'Client',
+                'value': client_label,
+                'tone': 'amber',
+            }
+        )
+
+
 def build_event_context(
     event_type: str,
     metadata: dict[str, Any],
@@ -213,38 +297,13 @@ def build_event_context(
             source_detail='KAORI Reports runtime',
         )
     elif event_type == 'authentication':
-        if access_action and access_action.startswith(('mfa_', 'bot_')):
-            # Authentication Security settings and factor evidence are not
-            # sign-in events. Preserve the KAORI committed security-control
-            # authority while retaining the existing Access audit category.
-            control = (
-                'MFA Policy'
-                if access_action.startswith('mfa_policy_')
-                else 'MFA Factor'
-                if access_action.startswith('mfa_')
-                else 'Bot Protection'
-            )
-            context.update(
-                module_label='Access',
-                target_type='Security Control',
-                target_name=control,
-                event_icon='shield-check',
-                event_tone='violet',
-                source_label='Authentication security',
-                source_detail='KAORI committed evidence',
-            )
-        else:
-            action_is_logout = access_action == 'logout'
-            result_failed = auth_result == 'failed'
-            context.update(
-                module_label='Access',
-                target_type='User Session',
-                target_name=username or 'Unauthenticated request',
-                event_icon='log-out' if action_is_logout else 'log-in',
-                event_tone='rose' if result_failed else 'indigo',
-                source_label='Authentication provider',
-                source_detail=auth_source or 'Provider not recorded',
-            )
+        _apply_authentication_event_context(
+            context,
+            access_action=access_action,
+            auth_result=auth_result,
+            username=username,
+            auth_source=auth_source,
+        )
     elif event_type == 'user_preference':
         preference_name = _string_metadata(metadata, 'preference')
         context.update(
@@ -298,36 +357,13 @@ def build_event_context(
     ]
 
     if event_type == 'authentication':
-        context_items.append(
-            {
-                'label': 'Action',
-                'value': (
-                    _display_event_label(access_action.replace('_', ' '))
-                    if access_action and access_action.startswith(('mfa_', 'bot_'))
-                    else 'Sign out'
-                    if access_action == 'logout'
-                    else 'Sign in'
-                ),
-                'tone': 'indigo',
-            }
+        _append_authentication_context_items(
+            context_items,
+            access_action=access_action,
+            auth_source=auth_source,
+            browser=browser,
+            operating_system=operating_system,
         )
-        if auth_source:
-            context_items.append(
-                {
-                    'label': 'Provider',
-                    'value': auth_source,
-                    'tone': 'blue',
-                }
-            )
-        client_label = ' on '.join(value for value in (browser, operating_system) if value)
-        if client_label:
-            context_items.append(
-                {
-                    'label': 'Client',
-                    'value': client_label,
-                    'tone': 'amber',
-                }
-            )
 
     if environment:
         context_items.append(
