@@ -69,7 +69,9 @@ def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> Non
     assert 'Inspect Namespace RoleBindings read-only without changing RBAC or identities.' in native
     assert 'No membership or RBAC mutation occurs' in capsule
     assert 'does not import IdP users' in capsule
-    assert 'Labels indicate possible correlation' in native
+    assert 'Labels indicate possible correlation' in read(
+        'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
+    )
     assert 'No automatic remediation was performed.' in native
     assert 'Inspect External Access' in capsule
     assert 'Inspect Native RBAC' in native
@@ -82,3 +84,35 @@ def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> Non
         assert 'Not inspected' in panel
         assert 'Committed Evidence' in panel
         assert 'Provider Authority' in panel
+
+def test_provider_evidence_clear_filters_matches_kaori_header_standard() -> None:
+    for provider, path in (
+        ('capsule', 'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'),
+        ('native', 'app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html'),
+    ):
+        panel = read(path)
+        header = panel.index('>Inspection Evidence</h4>')
+        clear = panel.index("registry_ui.clear_filters_link('tenant.tenants'")
+        filter_form = panel.index("registry_ui.filter_form('tenant.tenants'")
+        assert header < clear < filter_form
+        assert panel.count("registry_ui.clear_filters_link('tenant.tenants'") == 1
+        assert 'data-kaori-registry-header-actions' in panel[header:filter_form]
+        assert 'table_ui.action_classes()' in panel[clear:filter_form]
+        assert "query_params={'section': 'access-grants', 'access_inventory_view': '" + provider + "'}" in panel[
+            clear:filter_form
+        ]
+        assert 'lead=false' not in panel[clear:filter_form]
+        assert 'table_ui.inventory_filter_bar_classes()' in panel[clear:filter_form]
+        assert panel.index('name="access_evidence_status"', filter_form) > filter_form
+        assert panel.index("'access_evidence_search'", filter_form) > filter_form
+
+
+def test_native_authority_disclaimer_uses_full_width_detail_footer() -> None:
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert detail.count('Labels indicate possible correlation') == 1
+    assert "if access_provider == 'native'" in detail
+    assert 'lg:whitespace-nowrap' in detail
+    assert 'border-t border-outline-subtle px-4 py-3 sm:px-5' in detail
+    assert detail.index('Labels indicate possible correlation') > detail.index(
+        'aria-label="Drift and governed next actions"'
+    )
