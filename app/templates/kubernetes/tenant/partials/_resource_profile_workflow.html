@@ -60,7 +60,7 @@
         {% endcall %}
         {% call operational_section_card.render(
             'Admission Boundaries',
-            'Capacity Governance proves request-budget safety; Kubernetes remains the enforcement platform.',
+            'Capacity Governance verifies request budgets; Kubernetes enforces them.',
             'scale',
             body_classes='p-5',
             aria_label='Capacity admission boundaries'
@@ -69,7 +69,7 @@
                 {% for icon, title, description in [
                     ('database', 'Committed evidence first', 'Positive allocation uses fresh committed Capacity Analytics evidence, not a live provider guess.'),
                     ('calculator', 'Requests drive baseline admission', 'CPU and memory requests are commitment dimensions; quota does not equal physical reservation.'),
-                    ('triangle-alert', 'Unknown fails safely', 'Missing, stale, or unbounded required evidence blocks positive commitment while reductions remain possible.')
+                    ('triangle-alert', 'Unknown fails safely', 'Missing, stale or unbounded evidence blocks growth; reductions remain allowed.')
                     ] %}
                     <div class="flex gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
