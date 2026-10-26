@@ -191,20 +191,20 @@
                                     {% else %}
                                         {# The same visual control opens KAORI guidance, never a separate ? / i icon. #}
                                         {% if membership.principal_type not in ['user', 'group'] %}
-                                            {% set reactivate_title = 'Reactivation unavailable' %}
-                                            {% set reactivate_reason = 'This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead.' %}
+                                            {% set reactivate_title = "Reactivation unavailable" %}
+                                            {% set reactivate_reason = "This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead." %}
                                         {% else %}
-                                            {% set reactivate_title = 'Reactivation requires permission' %}
-                                            {% set reactivate_reason = 'You do not have permission to manage Tenant Memberships.' %}
+                                            {% set reactivate_title = "Reactivation requires permission" %}
+                                            {% set reactivate_reason = "You do not have permission to manage Tenant Memberships." %}
                                         {% endif %}
                                         {{ info_tip.render('membership-reactivate-' ~ membership.id,
-                                            reactivate_title,
-                                            reactivate_reason,
-                                            placement='left',
-                                            button_text='Reactivate',
-                                            button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help',
-                                            variant='action',
-                                            trigger_icon='user-check') }}
+                                                                                reactivate_title,
+                                                                                reactivate_reason,
+                                                                                placement='left',
+                                                                                button_text='Reactivate',
+                                                                                button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help',
+                                        variant='action',
+                                        trigger_icon='user-check') }}
                                     {% endif %}
                                 </form>
                             {% endif %}
