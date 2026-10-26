@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-PARTIALS = "app/templates/storage/object_storage/analytics/partials"
+PARTIALS = 'app/templates/storage/object_storage/analytics/partials'
 
 
 def read(path: str) -> str:
@@ -26,7 +26,7 @@ def test_only_overview_owns_data_and_evidence_tab() -> None:
         '_forecast_workspace.html',
         '_alerts_workspace.html',
     ):
-        workspace = read(f'{PARTIALS}/{filename}")
+        workspace = read(f'{PARTIALS}/{filename}')
         assert "('evidence', 'Evidence', 'list-checks')" not in workspace
         assert 'data-analytics-tab-panel="evidence"' not in workspace
         assert 'panel-evidence' not in workspace
@@ -112,8 +112,8 @@ def test_overview_evidence_coverage_and_embedded_reconciliation_follow_kaori_tab
         'item.tone',
     ):
         assert original in reconciliation
-    assert "reconciliation_embedded = true" in context
-    assert "reconciliation_embedded = true" in capacity
+    assert 'reconciliation_embedded = true' in context
+    assert 'reconciliation_embedded = true' in capacity
     assert 'data-object-storage-reconciliation-context' in reconciliation
     assert 'Observation times differ; drift is a review signal.' in reconciliation
 
@@ -143,4 +143,4 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_overview_evidence_context.html',
         '_reconciliation.html',
     ):
-        jinja.from_string(read(f'{PARTIALS}/{filename}"))
+        jinja.from_string(read(f'{PARTIALS}/{filename}'))
