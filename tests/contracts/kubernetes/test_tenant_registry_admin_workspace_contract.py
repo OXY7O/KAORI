@@ -750,7 +750,9 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     assert 'button_classes if button_classes else action_button.classes' in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
-    assert 'circle-help' in component
+    assert 'data-lucide="info"' in component
+    assert 'circle-help' not in component
+    assert 'never a question-mark icon' in component
 
     assert 'portal.appendChild(preview)' in controller
     assert "event.key === 'Escape'" in controller

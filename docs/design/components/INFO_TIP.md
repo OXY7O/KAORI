@@ -4,11 +4,11 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The default trigger remains compact **icon-only** for field-level and dense inline context. For table/card/section **title-level** guidance, the approved standard is an explicit compact Violet **info + Guide** label immediately beside the title, using `info_tip.render(..., variant='guide')`. This is not a separate header action: reuse the same non-modal popover, content, and event controller. Do not add independent **Status Guide**, **Membership Guide**, or **Group Guide** action buttons.
+The default trigger remains compact **icon-only** with Lucide **info** (information glyph, never a question-mark icon) for field-level and dense inline context. For table/card/section **title-level** guidance, the approved standard is an explicit compact Violet **info + Guide** label immediately beside the title, using `info_tip.render(..., variant='guide')`. This is not a separate header action: reuse the same non-modal popover, content, and event controller. Do not add independent **Status Guide**, **Membership Guide**, or **Group Guide** action buttons.
 
 The Guide trigger follows compact label geometry (`rounded-md`, not a full pill), with a subtle Violet surface, 12px text, a small info glyph and restrained hover/focus treatment. Both Info Tip variants share a restrained `rounded-lg` popover with soft border/elevation, a clear icon-and-title header, 14px readable description and separated supporting rows. Desktop target widths are 384px for icon help and 416px for Guide help; `max-w-[calc(100vw-2rem)]` shrinks either variant inside narrow viewports, and existing max-height/vertical scrolling keeps longer glossaries usable. The shared portal/controller remains authoritative for viewport positioning and dismissal. Reuse KAORI semantic tokens for dark mode; never introduce page-local help styles.
 
-Legacy `button_text` Info Tips remain available for genuinely exceptional use cases. Changing the default `icon` trigger globally is not allowed because field and inline help have different density constraints.
+Legacy `button_text` Info Tips remain available for genuinely exceptional use cases. Keep field and inline triggers icon-only and compact, using the same **info** glyph as the title-level Guide. Do not substitute `circle-help` or a standalone question-mark trigger. The trigger size and input-mode handling must stay consistent with the shared component.
 
 ## Use
 
