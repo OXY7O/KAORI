@@ -57,7 +57,9 @@ def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     assert html.count('class="max-w-md"') == 1  # Enrolled recovery password only.
     assert 'class="max-w-[21rem]"' not in html
     assert 'class="max-w-sm"' in html  # Enrolled recovery verification remains bounded.
-    enrollment = html.split('data-account-mfa-steps="paired"', 1)[1].split('{% else %}', 1)[0]
+    enrollment = html.split('data-account-mfa-steps="paired"', 1)[1].split(
+        'data-account-mfa-recovery-layout="action-context"', 1
+    )[0]
     assert enrollment.count('<div class="w-full">') == 2
     assert 'id="mfa-current-password"' in enrollment
     assert 'id="mfa-confirm-code"' in enrollment
