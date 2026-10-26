@@ -289,13 +289,11 @@ def test_github_connection_edit_follows_existing_guarded_provider_pattern() -> N
     registration = (
         root / 'app/integrations/source_control/source_control/providers/github/registration.py'
     ).read_text()
-    forms = (
-        root / 'app/integrations/source_control/source_control/providers/github/application/forms.py'
-    ).read_text()
+    forms = (root / 'app/integrations/source_control/source_control/providers/github/application/forms.py').read_text()
 
     assert "@github_uat_bp.route('/installations/<int:installation_id>/edit', methods=['GET', 'POST'])" in routes
     assert "@permission_required('integrations.manage')\ndef edit_connection(" in routes
-    assert "installation = _installation_or_404(installation_id)" in routes
+    assert 'installation = _installation_or_404(installation_id)' in routes
     assert 'form.validate_on_submit()' in routes
     assert 'update_github_connection_configuration(' in routes
     assert "event_type='source_control_connection_updated'" in routes
@@ -308,7 +306,7 @@ def test_github_connection_edit_follows_existing_guarded_provider_pattern() -> N
     assert 'form.webhook_secret.data' not in edit
     assert 'name="connection_test_proof"' in edit
     assert 'Test Connection' in edit
-    assert "name=\"action\"" in edit
+    assert 'name="action"' in edit
     assert 'installation.native_app_id' in edit
     assert 'installation.native_installation_id' in edit
     assert 'installation.account.native_account_id' in edit
@@ -321,27 +319,44 @@ def test_github_edit_metadata_and_provider_identity_do_not_leak_or_mutate(monkey
     from app.integrations.source_control.source_control.providers.github import registration
 
     canonical = SimpleNamespace(
-        id=21, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', name='Old Name', environment='development',
-        description='Old', enabled=True, readiness_status='ready', health_status='healthy',
-        last_checked_at='yesterday', last_error=None,
-        metadata_json={'github_validation': {'capability_states': {'source_revision': 'permission_verified'}},
-                       'provider_label': 'GitHub'},
+        id=21,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        name='Old Name',
+        environment='development',
+        description='Old',
+        enabled=True,
+        readiness_status='ready',
+        health_status='healthy',
+        last_checked_at='yesterday',
+        last_error=None,
+        metadata_json={'github_validation': {'capability_states': {'source_revision': 'permission_verified'}}, 'provider_label': 'GitHub'},
     )
     installation = SimpleNamespace(
-        id=7, provider_key='github', host_key='github.com', integration_instance_id=21,
-        integration_instance=canonical, native_app_id='123', native_installation_id='456',
+        id=7,
+        provider_key='github',
+        host_key='github.com',
+        integration_instance_id=21,
+        integration_instance=canonical,
+        native_app_id='123',
+        native_installation_id='456',
     )
     commits = []
     query = SimpleNamespace(filter_by=lambda **_: SimpleNamespace(first=lambda: canonical))
     monkeypatch.setattr(registration, 'IntegrationInstance', SimpleNamespace(query=query))
     monkeypatch.setattr(
-        registration, 'db',
+        registration,
+        'db',
         SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'), rollback=lambda: None)),
     )
 
     invalidated = registration.update_github_connection_configuration(
-        installation, name='Renamed', environment='development', description='Updated', enabled=True,
+        installation,
+        name='Renamed',
+        environment='development',
+        description='Updated',
+        enabled=True,
     )
     assert not invalidated
     assert canonical.readiness_status == 'ready'
@@ -349,7 +364,11 @@ def test_github_edit_metadata_and_provider_identity_do_not_leak_or_mutate(monkey
     assert (installation.native_app_id, installation.native_installation_id) == ('123', '456')
 
     invalidated = registration.update_github_connection_configuration(
-        installation, name='Renamed', environment='production', description='Updated', enabled=False,
+        installation,
+        name='Renamed',
+        environment='production',
+        description='Updated',
+        enabled=False,
     )
     assert invalidated
     assert canonical.readiness_status == 'validation_required'
@@ -365,28 +384,44 @@ def test_github_edit_rejects_duplicate_name_and_invalid_environment(monkeypatch)
     from app.integrations.source_control.source_control.providers.github import registration
 
     canonical = SimpleNamespace(
-        id=21, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', name='Original', environment='development',
-        description=None, enabled=True,
+        id=21,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        name='Original',
+        environment='development',
+        description=None,
+        enabled=True,
     )
     installation = SimpleNamespace(
-        provider_key='github', host_key='github.com', integration_instance_id=21,
+        provider_key='github',
+        host_key='github.com',
+        integration_instance_id=21,
         integration_instance=canonical,
     )
     commits = []
     query = SimpleNamespace(filter_by=lambda **_: SimpleNamespace(first=lambda: SimpleNamespace(id=33)))
     monkeypatch.setattr(registration, 'IntegrationInstance', SimpleNamespace(query=query))
     monkeypatch.setattr(
-        registration, 'db',
+        registration,
+        'db',
         SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'), rollback=lambda: None)),
     )
     with pytest.raises(ValueError, match='already exists'):
         registration.update_github_connection_configuration(
-            installation, name='Duplicate', environment='development', description=None, enabled=True,
+            installation,
+            name='Duplicate',
+            environment='development',
+            description=None,
+            enabled=True,
         )
     with pytest.raises(ValueError, match='Environment'):
         registration.update_github_connection_configuration(
-            installation, name='Valid Name', environment='invalid', description=None, enabled=True,
+            installation,
+            name='Valid Name',
+            environment='invalid',
+            description=None,
+            enabled=True,
         )
     assert canonical.name == 'Original'
     assert commits == []
@@ -396,31 +431,59 @@ def test_github_credential_rotation_clears_shared_installation_validation(monkey
     from app.integrations.source_control.source_control.providers.github import registration
 
     credential = SimpleNamespace(
-        id=44, native_app_id='123', host_key='github.com', enabled=True,
-        private_key_pem='-----BEGIN OLD KEY-----', webhook_secret='old-webhook-secret-for-UAT',
+        id=44,
+        native_app_id='123',
+        host_key='github.com',
+        enabled=True,
+        private_key_pem='-----BEGIN OLD KEY-----',
+        webhook_secret='old-webhook-secret-for-UAT',
     )
     account = SimpleNamespace(
-        provider_key='github', host_key='github.com', native_account_id='789',
+        provider_key='github',
+        host_key='github.com',
+        native_account_id='789',
     )
     first = SimpleNamespace(
-        id=21, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', name='GitHub UAT', environment='development',
-        description='old', enabled=True, readiness_status='ready', health_status='healthy',
-        last_checked_at='before', last_error=None,
+        id=21,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        name='GitHub UAT',
+        environment='development',
+        description='old',
+        enabled=True,
+        readiness_status='ready',
+        health_status='healthy',
+        last_checked_at='before',
+        last_error=None,
         metadata_json={'github_validation': {'validated': True}, 'provider_label': 'GitHub'},
     )
     second = SimpleNamespace(
-        id=22, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', name='GitHub other', environment='development',
-        description='other', enabled=True, readiness_status='ready', health_status='healthy',
-        last_checked_at='before', last_error=None,
+        id=22,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        name='GitHub other',
+        environment='development',
+        description='other',
+        enabled=True,
+        readiness_status='ready',
+        health_status='healthy',
+        last_checked_at='before',
+        last_error=None,
         metadata_json={'github_validation': {'validated': True}, 'provider_label': 'GitHub'},
     )
     installation = SimpleNamespace(
-        id=7, provider_key='github', host_key='github.com',
-        native_app_id='123', native_installation_id='456',
-        integration_instance_id=21, integration_instance=first,
-        github_app_credential_id=44, github_app_credential=credential, account=account,
+        id=7,
+        provider_key='github',
+        host_key='github.com',
+        native_app_id='123',
+        native_installation_id='456',
+        integration_instance_id=21,
+        integration_instance=first,
+        github_app_credential_id=44,
+        github_app_credential=credential,
+        account=account,
     )
     linked = SimpleNamespace(integration_instance=second)
     commits = []
@@ -430,14 +493,17 @@ def test_github_credential_rotation_clears_shared_installation_validation(monkey
     monkeypatch.setattr(registration, 'IntegrationInstance', SimpleNamespace(query=query))
     monkeypatch.setattr(registration, 'SourceInstallation', SimpleNamespace(query=source_query))
     monkeypatch.setattr(
-        registration, 'db',
+        registration,
+        'db',
         SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(1), rollback=lambda: None)),
     )
 
     def probe(values):
         observed_keys.append((values.private_key_pem, values.webhook_secret))
         return SimpleNamespace(
-            app_id='123', installation_id='456', account_id='789',
+            app_id='123',
+            installation_id='456',
+            account_id='789',
             repository_selection='selected',
         )
 
@@ -468,35 +534,52 @@ def test_github_credential_rotation_rejects_mismatched_provider_identity(monkeyp
     from app.integrations.source_control.source_control.providers.github import registration
 
     canonical = SimpleNamespace(
-        id=21, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', name='Current', environment='development',
-        description='existing', enabled=True, readiness_status='ready',
+        id=21,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        name='Current',
+        environment='development',
+        description='existing',
+        enabled=True,
+        readiness_status='ready',
     )
     credential = SimpleNamespace(
-        id=44, native_app_id='123', host_key='github.com', enabled=True,
-        private_key_pem='-----BEGIN OLD KEY-----', webhook_secret='old-webhook-secret-for-UAT',
+        id=44,
+        native_app_id='123',
+        host_key='github.com',
+        enabled=True,
+        private_key_pem='-----BEGIN OLD KEY-----',
+        webhook_secret='old-webhook-secret-for-UAT',
     )
     account = SimpleNamespace(provider_key='github', host_key='github.com', native_account_id='789')
     installation = SimpleNamespace(
-        provider_key='github', host_key='github.com', integration_instance=canonical,
-        integration_instance_id=21, native_app_id='123', native_installation_id='456',
-        github_app_credential=credential, account=account,
+        provider_key='github',
+        host_key='github.com',
+        integration_instance=canonical,
+        integration_instance_id=21,
+        native_app_id='123',
+        native_installation_id='456',
+        github_app_credential=credential,
+        account=account,
     )
     monkeypatch.setattr(
-        registration, 'IntegrationInstance',
+        registration,
+        'IntegrationInstance',
         SimpleNamespace(query=SimpleNamespace(filter_by=lambda **_: SimpleNamespace(first=lambda: canonical))),
     )
     monkeypatch.setattr(
-        registration, 'test_connection',
-        lambda _: SimpleNamespace(
-            app_id='999', installation_id='456', account_id='789',
-            repository_selection='selected',
-        ),
+        registration,
+        'test_connection',
+        lambda _: SimpleNamespace( app_id='999', installation_id='456', account_id='789', repository_selection='selected', ),
     )
     with pytest.raises(registration.GitHubProviderError, match='did not match'):
         registration.update_github_connection_configuration(
-            installation, name='Current', environment='development',
-            description='existing', enabled=True,
+            installation,
+            name='Current',
+            environment='development',
+            description='existing',
+            enabled=True,
             replacement_private_key_pem='-----BEGIN NEW KEY-----',
         )
     assert canonical.readiness_status == 'ready'
@@ -514,28 +597,41 @@ def test_github_edit_requires_fresh_bound_proof_for_credential_changes() -> None
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'test-github-edit-proof-secret'
     values = GitHubConnectionInput(
-        name='GitHub UAT', environment='development', description='test',
-        app_id='123', installation_id='456', account_id='789',
+        name='GitHub UAT',
+        environment='development',
+        description='test',
+        app_id='123',
+        installation_id='456',
+        account_id='789',
         private_key_pem='-----BEGIN NEW KEY-----',
         webhook_secret='new-webhook-secret-for-UAT',
     )
     with app.app_context():
         proof = registration_proof.issue_github_registration_proof(user_id=1, values=values)
         assert registration_proof.verify_github_registration_proof(
-            token=proof, user_id=1, values=values,
+            token=proof,
+            user_id=1,
+            values=values,
         )[0]
         changed_values = GitHubConnectionInput(
-            name=values.name, environment=values.environment,
-            description=values.description, app_id=values.app_id,
-            installation_id=values.installation_id, account_id=values.account_id,
+            name=values.name,
+            environment=values.environment,
+            description=values.description,
+            app_id=values.app_id,
+            installation_id=values.installation_id,
+            account_id=values.account_id,
             private_key_pem='-----BEGIN DIFFERENT KEY-----',
             webhook_secret=values.webhook_secret,
         )
         assert not registration_proof.verify_github_registration_proof(
-            token=proof, user_id=1, values=changed_values,
+            token=proof,
+            user_id=1,
+            values=changed_values,
         )[0]
         assert not registration_proof.verify_github_registration_proof(
-            token=proof, user_id=2, values=values,
+            token=proof,
+            user_id=2,
+            values=values,
         )[0]
 
 
