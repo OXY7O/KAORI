@@ -23,7 +23,7 @@ def test_domain_registered_and_uses_canonical_archive_engine() -> None:
     assert 'def inspect_boundary(' in adapter
     assert 'def iter_records(' in adapter
     assert 'def cleanup_records(' in adapter
-    assert "return resolve_policy(" in adapter
+    assert 'return resolve_policy(' in adapter
     assert 'enabled=False' in adapter
     assert 'retention_days=90' in adapter
     assert 'archive_retention_days=365' in adapter
@@ -68,7 +68,7 @@ def test_policy_queue_schedule_and_ui_refuse_unadmitted_cleanup() -> None:
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert 'Manual Archive Only · No schedule' in ui
     assert '<span class="font-semibold text-kaori-primary dark:text-kaori-accent">Archive Only</span>' in ui
-    assert "data_lifecycle.run" in ui
+    assert 'data_lifecycle.run' in ui
     assert 'name="mode" value="archive_only"' in ui
 
 
@@ -89,9 +89,11 @@ def test_notification_identity_schema_stays_inert_until_rollout_is_admitted() ->
     assert "UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_identity_event')" in model
     assert "ondelete='RESTRICT'" in model
     assert "down_revision = '20261023_notify_retry_after'" in migration
-    assert "UniqueConstraint('source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id')" in model
+    assert (
+        "UniqueConstraint('source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id')" in model
+    )
     assert "name='uq_notification_delivery_identities_source_delivery_id'" in migration
-    assert "op.create_table(" in migration
+    assert 'op.create_table(' in migration
     assert "'notification_delivery_identities'" in migration
     model_exports = read('app/models/__init__.py')
     assert 'NotificationDeliveryIdentity' in model_exports

@@ -3,6 +3,7 @@
 Source/render syntax assertions complement, not replace, DevContainer
 keyboard/HTMX/mobile/light-dark Visual QA and human acceptance.
 """
+
 from pathlib import Path
 
 from jinja2 import Environment
@@ -46,8 +47,8 @@ def test_search_header_and_execution_footer_stay_outside_scroll_region() -> None
 
 def test_compact_domain_rows_preserve_navigation_state_and_accessibility() -> None:
     source = read()
-    assert "domainSearch.trim().toLowerCase()" in source
-    assert "item.dataset.domainSearch.includes(query)" in source
+    assert 'domainSearch.trim().toLowerCase()' in source
+    assert 'item.dataset.domainSearch.includes(query)' in source
     assert 'data-domain-search="{{ (domain.label ~ ' in source
     assert 'domain.hot_retention_days' in source
     assert 'domain.total_archives' in source
@@ -57,7 +58,7 @@ def test_compact_domain_rows_preserve_navigation_state_and_accessibility() -> No
     assert 'hx-push-url="true"' in source
     assert ':aria-current="activeDomain ===' in source
     assert 'focus-visible:ring-outline-focus' in source
-    assert 'href="{{ url_for(\'platform_operations.data_lifecycle.index\'' in source
+    assert "href=\"{{ url_for('platform_operations.data_lifecycle.index'" in source
     assert 'domainPickerOpen = false' in source
 
 
@@ -110,7 +111,7 @@ def test_current_domain_scroll_restoration_does_not_scroll_outer_document() -> N
     assert 'data-domain-id="{{ domain.name }}"' in source
     assert 'ensureActiveVisible() {' in source
     assert 'if (!list || list.scrollHeight <= list.clientHeight) return;' in source
-    assert "item.dataset.domainId === this.activeDomain" in source
+    assert 'item.dataset.domainId === this.activeDomain' in source
     assert 'list.getBoundingClientRect()' in source
     assert 'active.getBoundingClientRect()' in source
     assert 'list.scrollTop +=' in source
@@ -122,7 +123,8 @@ def test_current_domain_scroll_restoration_does_not_scroll_outer_document() -> N
 def test_compact_footer_and_search_are_anchored_above_and_below_only_list() -> None:
     source = read()
     left = source.split('<aside class="min-w-0 xl:relative', 1)[1].split(
-        '</aside>', 1,
+        '</aside>',
+        1,
     )[0]
     search = left.index('id="data-lifecycle-domain-search"')
     list_start = left.index('x-ref="domainList"')
@@ -133,6 +135,7 @@ def test_compact_footer_and_search_are_anchored_above_and_below_only_list() -> N
     assert "current_user.has_permission('jobs.view')" in left
     assert 'xl:overflow-y-auto' not in left[:list_start]
     assert 'xl:overflow-y-auto' not in left[list_end:]
+
 
 def test_boundary_footer_top_placement_uses_canonical_viewport_safe_controller() -> None:
     source = read()

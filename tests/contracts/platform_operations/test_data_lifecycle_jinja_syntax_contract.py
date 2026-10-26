@@ -36,10 +36,10 @@ def test_notification_delivery_block_is_closed_before_audit_event_branch() -> No
         '            <p class="rounded-lg border border-outline-subtle '
     ) in source
     assert (
-        "No per-record archive search.\n"
-        "            </p>\n"
-        "        {% endif %}\n"
+        'No per-record archive search.\n'
+        '            </p>\n'
+        '        {% endif %}\n'
         "        {% if selected.name == 'audit_event' %}"
     ) in source
     assert '{% endif %>' not in source
-    assert "Manual Archive Only enabled" in source
+    assert 'Manual Archive Only enabled' in source

@@ -154,6 +154,7 @@ def test_report_exports_stamp_the_canonical_generated_report_hot_retention_windo
         assert 'get_generated_report_hot_retention_days' in renderer
         assert 'retention_days=get_generated_report_hot_retention_days()' in renderer
 
+
 def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     generated = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
@@ -163,14 +164,10 @@ def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms
     assert 'Closed alert cases, operator evidence, delivery, and postmortems.' in presentation
     assert 'Report metadata and retained PDF, XLSX, or CSV evidence.' in generated
     assert 'Ready, Failed, and Archived reports past their status-specific hot retention.' in generated
-    assert (
-        'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.'
-        in generated
-    )
+    assert 'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.' in generated
     assert 'Source files stay intact until archive and supplements pass verification.' in generated
     assert (
         'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '
         'verifying SHA-256 before source-file or row cleanup.'
     ) in workspace
     assert 'Requested, Queued, Generating, and active regeneration remain protected.' in workspace
-

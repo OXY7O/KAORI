@@ -3,6 +3,7 @@
 Source/Jinja checks do not substitute for disposable PostgreSQL/worker,
 Archive Storage checksum or browser/human acceptance.
 """
+
 from pathlib import Path
 
 from jinja2 import Environment
@@ -31,7 +32,7 @@ def test_delivery_notice_is_one_accessible_inline_row_with_violet_and_warning_em
     assert 'No per-record archive search.' in notice
     assert '<div' not in notice
     assert 'whitespace-nowrap' not in notice
-    assert "hx-target=\"#data-lifecycle-domain-workspace\"" in ui
+    assert 'hx-target="#data-lifecycle-domain-workspace"' in ui
     # This domain has no scheduled execution; the UI must not offer dead controls.
     assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
     assert "selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run'" in ui
@@ -46,14 +47,14 @@ def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns()
     ui = read(UI)
     presentation = read(PRESENTATION)
     assert 'sm:grid-cols-2' in ui
-    assert "lifecycle.coverage|length == 3" in ui
+    assert 'lifecycle.coverage|length == 3' in ui
     assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
     assert 'xl:grid-cols-3' in ui  # Other eligible domains preserve existing layout.
     assert 'class="h-full rounded-lg border border-outline-subtle' in ui
     assert '{% for item in lifecycle.coverage %}' in ui
     assert 'bg-surface-subtle' in ui
 
-    runtime = presentation.split("'runtime_observation': (", 1)[1].split("\n        ),", 1)[0]
+    runtime = presentation.split("'runtime_observation': (", 1)[1].split('\n        ),', 1)[0]
     for label, description in (
         ('Kubernetes', 'Recent Kubernetes runtime observations.'),
         ('Metrics Source', 'Recent Metrics Source observations.'),

@@ -60,8 +60,8 @@ def test_execution_boundary_is_canonical_title_adjacent_guide_not_question_mark(
     assert "url_for('jobs.executions')" in footer
     canonical = (ROOT / 'app/templates/components/info_tip.html').read_text(encoding='utf-8')
     assert "guide_variant = variant == 'guide' and not button_text" in canonical
-    assert "data-kaori-info-tip-variant" in canonical
-    assert "aria-expanded=\"false\"" in canonical
+    assert 'data-kaori-info-tip-variant' in canonical
+    assert 'aria-expanded="false"' in canonical
 
 
 def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() -> None:
@@ -69,9 +69,9 @@ def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() 
     ui = WORKSPACE.read_text(encoding='utf-8')
     Environment().parse(index)
     Environment().parse(ui)
-    assert index.count("platform_operations/data_lifecycle/partials/_domain_workspace.html") == 1
+    assert index.count('platform_operations/data_lifecycle/partials/_domain_workspace.html') == 1
     assert '{% for domain in lifecycle.domains %}' in index
-    assert "x-ref=\"domainList\"" in index
+    assert 'x-ref="domainList"' in index
     assert 'xl:grid-cols-12 xl:items-stretch' in index
     assert 'xl:col-span-4' in index
     assert 'xl:col-span-8' in index
@@ -79,9 +79,15 @@ def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() 
     assert 'class="{{ table_ui.block_classes() }} !border-outline-subtle !shadow-none"' in ui
     assert 'components/table_label.html' in ui
     assert 'components/loading_bar.html' in ui
-    for section in ('Hot Retention', 'Archive Retention', 'Batch Size',
-                    'Lifecycle Coverage', 'Storage Boundary',
-                    'Retention Boundary', 'Execution Worker'):
+    for section in (
+        'Hot Retention',
+        'Archive Retention',
+        'Batch Size',
+        'Lifecycle Coverage',
+        'Storage Boundary',
+        'Retention Boundary',
+        'Execution Worker',
+    ):
         assert section in ui
     assert '{% for item in lifecycle.coverage %}' in ui
     assert 'class="h-full rounded-lg border border-outline-subtle bg-surface-subtle p-3.5"' in ui
@@ -92,14 +98,14 @@ def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() 
     assert 'Source-owned records covered by manual, non-destructive archival.' in ui
     assert 'Records covered by this retention, archive, and cleanup policy.' in ui
     assert 'hx-indicator="#data-lifecycle-policy-loading"' in ui
-    assert "components/operation_feedback_oob.html" in ui
+    assert 'components/operation_feedback_oob.html' in ui
 
 
 def test_buttons_share_permission_csrf_while_manual_domains_keep_correct_capability() -> None:
     ui = WORKSPACE.read_text(encoding='utf-8')
     assert "current_user.has_permission('platform_operations.manage_data_lifecycle')" in ui
     assert ui.count('name="csrf_token" value="{{ csrf_token() }}"') == 3
-    assert 'url_for(\'platform_operations.data_lifecycle.save_policy\')' in ui
+    assert "url_for('platform_operations.data_lifecycle.save_policy')" in ui
     assert "url_for('platform_operations.data_lifecycle.preview'" in ui
     assert 'name="mode" value="archive_only"' in ui
     assert 'name="mode" value="archive_and_cleanup"' in ui
@@ -110,14 +116,14 @@ def test_buttons_share_permission_csrf_while_manual_domains_keep_correct_capabil
     assert 'hx-disabled-elt="find button[type=\'submit\']"' in ui
     assert 'hx-target="#data-lifecycle-domain-workspace"' in ui
     assert 'hx-target="#data-lifecycle-page"' in ui
-    assert 'url_for(\'platform_operations.data_lifecycle.index\', tab=\'storage\')' in ui
+    assert "url_for('platform_operations.data_lifecycle.index', tab='storage')" in ui
 
 
 def test_all_nine_policies_have_correct_card_count_driven_responsive_grid() -> None:
     ui = WORKSPACE.read_text(encoding='utf-8')
     start = ui.index('<div class="grid gap-3 p-4 ')
     end = ui.index('">', start)
-    grid = Environment().from_string(ui[start:end + 2])
+    grid = Environment().from_string(ui[start : end + 2])
     for domain, count in EXPECTED_COVERAGE_COUNTS.items():
         rendered = grid.render(lifecycle={'coverage': [{}] * count})
         assert ('sm:grid-cols-2' in rendered) is (count > 1), domain
