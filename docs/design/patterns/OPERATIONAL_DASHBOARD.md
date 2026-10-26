@@ -112,6 +112,7 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 ### Controlled dashboard flow contract
 
 `Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`.
+The Operational Dashboard verifier protects the **ordered six-step sequence**, shared response component, committed alert-source validation, accountable ownership, safety guardrails, and follow-up evidence. Domain-specific explanatory copy may be shortened for UAT readability; the verifier must not lock obsolete sentence fragments that are no longer part of the approved content contract.
 
 `Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity remains on `components/operational_flow_steps.html` where directional action progression is the intended semantic.
 
