@@ -24,6 +24,7 @@ def build_capability_registry_view(
     per_page: Any = 5,
     search_fields: tuple[str, ...] = ('label', 'category'),
     distinguish_optional_gap: bool = False,
+    distinguish_unverified: bool = False,
 ) -> dict[str, Any]:
     """Return one normalized KAORI capability-registry view.
 
@@ -40,6 +41,8 @@ def build_capability_registry_view(
     allowed_statuses = {'all', 'ready', 'blocked'}
     if distinguish_optional_gap:
         allowed_statuses.add('optional_gap')
+    if distinguish_unverified:
+        allowed_statuses.add('unverified')
     normalized_status = str(status or 'all').strip().lower()
     if normalized_status not in allowed_statuses:
         normalized_status = 'all'
@@ -50,7 +53,9 @@ def build_capability_registry_view(
         required = bool(_value(row, 'required', False))
         available = bool(_value(row, 'available', False))
         requirement_key = 'required' if required else 'optional'
-        if available:
+        if distinguish_unverified and _value(row, 'status_key') == 'unverified':
+            status_key = 'unverified'
+        elif available:
             status_key = 'ready'
         elif distinguish_optional_gap and not required:
             status_key = 'optional_gap'
