@@ -120,6 +120,55 @@ def test_session_detail_hub_describes_only_confirmed_read_only_boundaries() -> N
     assert 'Active device count' not in session
 
 
+def test_session_assurance_descriptions_fit_desktop_without_forced_truncation() -> None:
+    session = tabs()['sessions']
+    for detail in (
+        'Provider disablement revokes sessions.',
+        'Timeout enforcement is not qualified.',
+        'Requests check committed generation.',
+    ):
+        assert detail in session
+        assert len(detail) <= 40
+    for outdated in (
+        'Linked session generations are revoked on disable.',
+        'Requires separate qualification; no enforced timeout claim.',
+        'Protected requests check the committed login generation.',
+    ):
+        assert outdated not in session
+    summary = read(SUMMARY)
+    assert '{{ detail }}' in summary
+    assert 'whitespace-nowrap' not in summary
+    assert 'text-ellipsis' not in summary
+
+
+def test_session_controls_visually_distinguish_enforced_from_unqualified() -> None:
+    session = tabs()['sessions']
+    assert 'data-auth-session-layout="functional-posture"' in session
+    assert 'grid gap-4 p-4 lg:grid-cols-2 lg:p-5' in session
+    assert session.count('data-auth-session-control-group=') == 2
+    assert 'data-auth-session-control-group="enforced"' in session
+    assert 'data-auth-session-control-group="unqualified"' in session
+    assert "table_label.status_indicator_label('Enforced', 'normal')" in session
+    assert "table_label.status_indicator_label('Not Qualified', 'unknown')" in session
+    assert 'aria-labelledby="auth-session-governed-heading"' in session
+    assert 'aria-labelledby="auth-session-scope-heading"' in session
+    for title in (
+        'Admission Gate',
+        'Session Revocation',
+        'Remember Me',
+        'Idle Timeout',
+        'Absolute Timeout',
+        'Device / Remote Sessions',
+    ):
+        assert title in session
+    assert session.count('data-lucide="check-circle-2"') == 3
+    assert session.count('data-lucide="circle-help"') == 3
+    assert 'No active-device inventory or remote session registry is claimed.' in session
+    assert '<form' not in session
+    assert 'hx-post=' not in session
+    assert 'name="csrf_token"' not in session
+
+
 def test_mfa_and_bot_policy_forms_remain_server_owned_and_permission_scoped() -> None:
     mfa = tabs()['mfa']
     bot = tabs()['bot']
