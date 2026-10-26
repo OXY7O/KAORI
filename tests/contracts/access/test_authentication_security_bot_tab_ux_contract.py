@@ -79,6 +79,7 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert 'class="cf-turnstile"' in tab
     assert 'data-sitekey="{{ bot_site_key }}"' in tab
     assert 'data-action="login"' in tab
+    assert 'data-size="compact"' in tab
     assert 'https://challenges.cloudflare.com/turnstile/v0/api.js' in tab
     assert 'Test Turnstile' in tab
     assert '{% if bot_tested_at %}' in tab
