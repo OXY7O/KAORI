@@ -283,9 +283,7 @@ def revoke_disabled_provider_session_generations(provider: IdentityProvider) -> 
     mutation atomically with disabling the provider. Re-enabling never restores
     the prior generation, and Local Database accounts cannot be included.
     """
-    linked_user_ids = select(ExternalIdentityLink.user_id).where(
-        ExternalIdentityLink.provider_id == provider.id
-    )
+    linked_user_ids = select(ExternalIdentityLink.user_id).where(ExternalIdentityLink.provider_id == provider.id)
     return int(
         db.session.query(User)
         .filter(
@@ -311,9 +309,7 @@ def update_identity_provider(
         # in-memory value loaded before a concurrent update is not authoritative.
         was_enabled = bool(
             db.session.execute(
-                select(IdentityProvider.enabled)
-                .where(IdentityProvider.id == provider.id)
-                .with_for_update()
+                select(IdentityProvider.enabled).where(IdentityProvider.id == provider.id).with_for_update()
             ).scalar_one()
         )
         # Refresh the previously loaded ORM record after obtaining the lock;

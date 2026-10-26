@@ -41,21 +41,29 @@ def _administrator(user_id: int) -> User:
 def _principal(user_id: int, permission_key: str) -> None:
     user = db.session.get(User, user_id)
     if (
-        user is None or not user.is_active
-        or user.role_record is None or not user.role_record.is_active
+        user is None
+        or not user.is_active
+        or user.role_record is None
+        or not user.role_record.is_active
         or permission_key not in user.role_record.permission_keys()
     ):
         raise ScopedGrantRejected('Grant principal is not eligible for the requested permission.')
 
 
 def _target(
-    *, integration_instance_id: int, scope_level: str,
-    provider_namespace: str | None, mount: str | None,
+    *,
+    integration_instance_id: int,
+    scope_level: str,
+    provider_namespace: str | None,
+    mount: str | None,
 ) -> tuple[str | None, str | None]:
     identity = db.session.get(IntegrationInstance, integration_instance_id)
     if (
-        identity is None or not identity.enabled or identity.lifecycle_status != 'active'
-        or identity.integration_type != 'secrets_pki' or identity.provider_key != 'vault'
+        identity is None
+        or not identity.enabled
+        or identity.lifecycle_status != 'active'
+        or identity.integration_type != 'secrets_pki'
+        or identity.provider_key != 'vault'
     ):
         raise ScopedGrantRejected('Grant target is unavailable.')
     vault = VaultInstance.query.filter_by(integration_instance_id=integration_instance_id).first()
@@ -81,8 +89,12 @@ def _window(value: datetime, label: str) -> datetime:
 
 
 def _commit_transition(
-    *, actor_user_id: int, policy: ScopeAccessPolicy,
-    revision_number: int, event_type: str, label: str,
+    *,
+    actor_user_id: int,
+    policy: ScopeAccessPolicy,
+    revision_number: int,
+    event_type: str,
+    label: str,
 ) -> None:
     # Stage the canonical Activity Audit record into the SAME transaction.
     # Unlike record_operational_activity, this propagates persistence errors.
@@ -107,18 +119,25 @@ def _commit_transition(
 
 
 def request_scope_grant(
-    *, actor_user_id: int, principal_user_id: int,
-    integration_instance_id: int, scope_level: str,
-    provider_namespace: str | None, mount: str | None,
-    effective_from: datetime, effective_until: datetime,
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    integration_instance_id: int,
+    scope_level: str,
+    provider_namespace: str | None,
+    mount: str | None,
+    effective_from: datetime,
+    effective_until: datetime,
     reason_code: str,
 ) -> ScopeAccessPolicy:
     """Create draft only; requesting a policy NEVER activates a permit."""
     _administrator(actor_user_id)
     _principal(principal_user_id, _SUPPORTED_PERMISSION)
     namespace, exact_mount = _target(
-        integration_instance_id=integration_instance_id, scope_level=scope_level,
-        provider_namespace=provider_namespace, mount=mount,
+        integration_instance_id=integration_instance_id,
+        scope_level=scope_level,
+        provider_namespace=provider_namespace,
+        mount=mount,
     )
     starts, ends = _window(effective_from, 'Start'), _window(effective_until, 'End')
     if starts >= ends or ends <= datetime.now(UTC) or reason_code not in _REASON_CODES:
@@ -144,8 +163,11 @@ def request_scope_grant(
         db.session.add(revision)
         db.session.flush()
         _commit_transition(
-            actor_user_id=actor_user_id, policy=policy, revision_number=1,
-            event_type='access_scope_grant_requested', label='Scoped Grant Requested',
+            actor_user_id=actor_user_id,
+            policy=policy,
+            revision_number=1,
+            event_type='access_scope_grant_requested',
+            label='Scoped Grant Requested',
         )
     except Exception:
         db.session.rollback()
@@ -163,7 +185,8 @@ def _lock_current(policy_id: str) -> tuple[ScopeAccessPolicy, ScopeAccessPolicyR
     if policy is None:
         raise ScopedGrantRejected('Scoped policy is unavailable.')
     revision = ScopeAccessPolicyRevision.query.filter_by(
-        policy_id=policy.id, revision_number=policy.current_revision,
+        policy_id=policy.id,
+        revision_number=policy.current_revision,
     ).first()
     if revision is None:
         raise ScopedGrantRejected('Scoped policy revision is unavailable.')
@@ -171,7 +194,10 @@ def _lock_current(policy_id: str) -> tuple[ScopeAccessPolicy, ScopeAccessPolicyR
 
 
 def approve_scope_grant(
-    *, policy_id: str, approver_user_id: int, expected_revision: int,
+    *,
+    policy_id: str,
+    approver_user_id: int,
+    expected_revision: int,
 ) -> ScopeAccessPolicy:
     """Independently approve an exact draft and commit mandatory audit atomically."""
     _administrator(approver_user_id)
@@ -206,9 +232,11 @@ def approve_scope_grant(
         policy.current_revision = revision.revision_number
         db.session.flush()
         _commit_transition(
-            actor_user_id=approver_user_id, policy=policy,
+            actor_user_id=approver_user_id,
+            policy=policy,
             revision_number=revision.revision_number,
-            event_type='access_scope_grant_approved', label='Scoped Grant Approved',
+            event_type='access_scope_grant_approved',
+            label='Scoped Grant Approved',
         )
     except Exception:
         db.session.rollback()
@@ -217,7 +245,10 @@ def approve_scope_grant(
 
 
 def revoke_scope_grant(
-    *, policy_id: str, actor_user_id: int, expected_revision: int,
+    *,
+    policy_id: str,
+    actor_user_id: int,
+    expected_revision: int,
 ) -> ScopeAccessPolicy:
     """Immediately revoke a current active grant, retaining immutable history."""
     _administrator(actor_user_id)
@@ -239,9 +270,11 @@ def revoke_scope_grant(
         policy.current_revision = revision.revision_number
         db.session.flush()
         _commit_transition(
-            actor_user_id=actor_user_id, policy=policy,
+            actor_user_id=actor_user_id,
+            policy=policy,
             revision_number=revision.revision_number,
-            event_type='access_scope_grant_revoked', label='Scoped Grant Revoked',
+            event_type='access_scope_grant_revoked',
+            label='Scoped Grant Revoked',
         )
     except Exception:
         db.session.rollback()

@@ -25,8 +25,11 @@ class ScopeParityFinding:
     baseline_allowed: bool
     scoped_decision: Literal['allow', 'deny', 'unavailable']
     variance: Literal[
-        'parity_allowed', 'parity_denied', 'legacy_allowed_scope_denied',
-        'legacy_denied_scope_allowed', 'scoped_unavailable',
+        'parity_allowed',
+        'parity_denied',
+        'legacy_allowed_scope_denied',
+        'legacy_denied_scope_allowed',
+        'scoped_unavailable',
     ]
 
     @property
