@@ -126,10 +126,7 @@ def build_security_posture(
         cve_findings = cve_findings.filter(func.lower(RegistryVulnerability.severity) == severity_value)
 
     rank = case(
-        *[
-            (func.lower(RegistryVulnerability.severity) == key, index)
-            for key, index in _SEVERITY_RANK.items()
-        ],
+        *[(func.lower(RegistryVulnerability.severity) == key, index) for key, index in _SEVERITY_RANK.items()],
         else_=5,
     )
     grouped = (
@@ -238,7 +235,10 @@ def build_security_posture(
         'scan_status': scan_status,
         'runtime_status': correlation,
         'has_complete_security_evidence': bool(
-            source_ids and last_scan and recent and scanned_artifacts == artifacts_total
+            source_ids
+            and last_scan
+            and recent
+            and scanned_artifacts == artifacts_total
             and correlation['status'] == 'Ready'
         ),
     }

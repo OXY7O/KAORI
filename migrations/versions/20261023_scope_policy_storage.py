@@ -22,16 +22,22 @@ def upgrade() -> None:
         'access_scope_policies',
         sa.Column('id', sa.String(length=36), primary_key=True),
         sa.Column(
-            'principal_user_id', sa.Integer(),
-            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+            'principal_user_id',
+            sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column(
-            'permission_key', sa.String(length=120),
-            sa.ForeignKey('permissions.key', ondelete='RESTRICT'), nullable=False,
+            'permission_key',
+            sa.String(length=120),
+            sa.ForeignKey('permissions.key', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column(
-            'integration_instance_id', sa.Integer(),
-            sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False,
+            'integration_instance_id',
+            sa.Integer(),
+            sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column('scope_level', sa.String(length=24), nullable=False),
         sa.Column('provider_namespace', sa.String(length=255), nullable=True),
@@ -49,27 +55,34 @@ def upgrade() -> None:
         sa.CheckConstraint('current_revision > 0', name='ck_access_scope_policy_revision'),
     )
     op.create_index(
-        'ix_access_scope_policy_principal_target', 'access_scope_policies',
+        'ix_access_scope_policy_principal_target',
+        'access_scope_policies',
         ['principal_user_id', 'permission_key', 'integration_instance_id', 'scope_level'],
     )
     op.create_table(
         'access_scope_policy_revisions',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column(
-            'policy_id', sa.String(length=36),
-            sa.ForeignKey('access_scope_policies.id', ondelete='RESTRICT'), nullable=False,
+            'policy_id',
+            sa.String(length=36),
+            sa.ForeignKey('access_scope_policies.id', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column('revision_number', sa.Integer(), nullable=False),
         sa.Column('lifecycle_status', sa.String(length=24), nullable=False),
         sa.Column('effective_from', sa.DateTime(timezone=True), nullable=False),
         sa.Column('effective_until', sa.DateTime(timezone=True), nullable=False),
         sa.Column(
-            'requested_by_user_id', sa.Integer(),
-            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+            'requested_by_user_id',
+            sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column(
-            'approved_by_user_id', sa.Integer(),
-            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=True,
+            'approved_by_user_id',
+            sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'),
+            nullable=True,
         ),
         sa.Column('approved_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('change_reason', sa.String(length=160), nullable=False),
@@ -83,14 +96,15 @@ def upgrade() -> None:
         sa.CheckConstraint('effective_until > effective_from', name='ck_access_scope_revision_window'),
         sa.CheckConstraint(
             "lifecycle_status <> 'active' OR"
-            " (approved_by_user_id IS NOT NULL AND approved_at IS NOT NULL"
-            " AND approved_by_user_id <> requested_by_user_id)",
+            ' (approved_by_user_id IS NOT NULL AND approved_at IS NOT NULL'
+            ' AND approved_by_user_id <> requested_by_user_id)',
             name='ck_access_scope_revision_approved',
         ),
     )
     op.create_index(
         'ix_access_scope_policy_revisions_policy_id',
-        'access_scope_policy_revisions', ['policy_id'],
+        'access_scope_policy_revisions',
+        ['policy_id'],
     )
 
 

@@ -73,8 +73,7 @@ def admit_secret_registry_scope(
         not isinstance(observed_record_instance_ids, tuple)
         or len(observed_record_instance_ids) > 200
         or any(
-            not isinstance(item, int) or isinstance(item, bool)
-            or item != requested_instance_id
+            not isinstance(item, int) or isinstance(item, bool) or item != requested_instance_id
             for item in observed_record_instance_ids
         )
     ):

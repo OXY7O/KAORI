@@ -46,8 +46,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        'fk_sc_installation_app_credential', 'source_control_installations', type_='foreignkey'
-    )
+    op.drop_constraint('fk_sc_installation_app_credential', 'source_control_installations', type_='foreignkey')
     op.drop_column('source_control_installations', 'github_app_credential_id')
     op.drop_table('source_control_github_app_credentials')

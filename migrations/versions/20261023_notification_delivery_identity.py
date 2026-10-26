@@ -7,6 +7,7 @@ Schema-only. Does not backfill or change dispatch, channel deletion, archive
 policy, recovery worker, or retention. Existing delivery journal remains
 authoritative until #2868 runtime/atomic rollout is separately admitted.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -23,7 +24,8 @@ def upgrade() -> None:
         'notification_delivery_identities',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column(
-            'channel_id', sa.Integer(),
+            'channel_id',
+            sa.Integer(),
             sa.ForeignKey('notification_channels.id', ondelete='RESTRICT'),
             nullable=False,
         ),
@@ -31,11 +33,13 @@ def upgrade() -> None:
         sa.Column('source_delivery_id', sa.Integer(), nullable=True),
         sa.Column('first_seen_at', sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint(
-            'channel_id', 'event_key',
+            'channel_id',
+            'event_key',
             name='uq_notification_delivery_identity_event',
         ),
         sa.UniqueConstraint(
-            'source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id',
+            'source_delivery_id',
+            name='uq_notification_delivery_identities_source_delivery_id',
         ),
     )
     op.create_index(

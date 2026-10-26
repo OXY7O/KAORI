@@ -68,24 +68,28 @@ def build_secrets_pki_operational_summary() -> dict[str, Any]:
         raise ValueError('Secrets & PKI approved inventory source scope exceeds its collection bound.')
     state_rows = (
         SecretInventoryCollectionState.query.filter(
-            SecretInventoryCollectionState.integration_instance_id.in_(
-                [row.integration_instance_id for row in sources]
-            )
-        ).limit(MAX_FLEET_MOUNTS + 1).all()
-        if sources else []
+            SecretInventoryCollectionState.integration_instance_id.in_([row.integration_instance_id for row in sources])
+        )
+        .limit(MAX_FLEET_MOUNTS + 1)
+        .all()
+        if sources
+        else []
     )
     if len(state_rows) > MAX_FLEET_MOUNTS:
         return {
-            'state': 'blocked', 'label': 'Inventory Coverage Exceeds Limit', 'tone': 'warning',
-            'provider_count': len(sources), 'approved_mount_count': len(scopes),
-            'committed_mount_count': None, 'observed_secret_count': None,
-            'last_committed_at': None, 'updated_label': 'Not Collected',
-            'has_evidence': False, 'source_limit_exceeded': True,
+            'state': 'blocked',
+            'label': 'Inventory Coverage Exceeds Limit',
+            'tone': 'warning',
+            'provider_count': len(sources),
+            'approved_mount_count': len(scopes),
+            'committed_mount_count': None,
+            'observed_secret_count': None,
+            'last_committed_at': None,
+            'updated_label': 'Not Collected',
+            'has_evidence': False,
+            'source_limit_exceeded': True,
         }
-    selected = [
-        row for row in state_rows
-        if (row.integration_instance_id, row.provider_namespace, row.mount) in scopes
-    ]
+    selected = [row for row in state_rows if (row.integration_instance_id, row.provider_namespace, row.mount) in scopes]
     committed = [row for row in selected if row.last_committed_at is not None]
     last = max(
         (row.last_committed_at for row in committed if row.last_committed_at is not None),
