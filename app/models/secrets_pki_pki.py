@@ -6,7 +6,7 @@ provider error responses are persisted in these models.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint

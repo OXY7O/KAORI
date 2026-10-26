@@ -19,15 +19,16 @@ from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
     parse_approved_pki_mounts,
 )
-from app.kubernetes.governance.tls_certificates.controller_evidence import validate_committed_controller_owners
 from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.kubernetes.governance.tls_certificates.controller_evidence import validate_committed_controller_owners
 from app.kubernetes.governance.tls_certificates.readiness import (
     check_tls_governance_schema_readiness,
 )
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_stored_certificates import (
-    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
 from app.secrets_pki.certificate_delivery import SourceState, assess_certificate_overlap

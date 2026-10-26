@@ -6,7 +6,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
-    MAX_ISSUERS, parse_approved_pki_mounts,
+    MAX_ISSUERS,
+    parse_approved_pki_mounts,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_pki import PKIIssuerCollectionState

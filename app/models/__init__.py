@@ -299,4 +299,8 @@ __all__ = [
     'ResolverDeploymentPolicy',
     'ResolverOperationalControl',
     'ResolverProductionReadinessRecord',
+    'ScopeAccessPolicy',
+    'ScopeAccessPolicyRevision',
+    'SourceRepositoryCollectionState',
+    'SourceWebhookDelivery',
 ]

@@ -95,7 +95,7 @@ class SourceInstallation(db.Model):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
     account: Mapped[SourceAccount | None] = relationship('SourceAccount')
-    integration_instance: Mapped['IntegrationInstance'] = relationship('IntegrationInstance')
+    integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance')
     github_app_credential: Mapped[GitHubAppCredential | None] = relationship('GitHubAppCredential')
     grants: Mapped[list[SourceRepositoryGrant]] = relationship(
         'SourceRepositoryGrant', back_populates='installation',

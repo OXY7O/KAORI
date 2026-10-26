@@ -1,11 +1,13 @@
 from collections.abc import Callable
 
 from app.platform_operations.data_lifecycle.retention.domains.alert_incident import AlertIncidentArchiveDomain
-from app.platform_operations.data_lifecycle.retention.domains.audit_event import AuditEventArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain
+from app.platform_operations.data_lifecycle.retention.domains.audit_event import AuditEventArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.generated_report import GeneratedReportArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.job_execution import JobExecutionArchiveDomain
-from app.platform_operations.data_lifecycle.retention.domains.notification_delivery import NotificationDeliveryArchiveDomain
+from app.platform_operations.data_lifecycle.retention.domains.notification_delivery import (
+    NotificationDeliveryArchiveDomain,
+)
 from app.platform_operations.data_lifecycle.retention.domains.operational_activity import (
     OperationalActivityArchiveDomain,
 )
