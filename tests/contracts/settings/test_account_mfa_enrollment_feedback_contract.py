@@ -40,5 +40,16 @@ def test_existing_route_distinguishes_expired_form_and_service_errors() -> None:
     assert 'mfa_setup_secret = begin_mfa_enrollment(user)' in routes
     assert 'except ValidationError:' in routes
     assert 'except MfaVerificationError as exc:' in routes
-    assert 'mfa_feedback = _mfa_account_error_message(exc)' in routes
+    rejection = routes.split('except MfaVerificationError as exc:', 1)[1].split(
+        'except (CredentialEncryptionError, SQLAlchemyError):', 1
+    )[0]
+    assert 'message = _mfa_account_error_message(exc)' in rejection
+    assert "title = 'MFA request not accepted'" in rejection
+    assert "status = 'error'" in routes
+    assert 'if committed_audit:' in routes
+    assert 'activity_audit_saved=True' in routes
+    assert 'notification_deck_visible=False' in routes
+    assert 'mfa_toast = create_transient_feedback(status=status, title=title, message=message)' in routes
+    assert 'queue_operational_feedback(mfa_toast)' in routes
+    assert 'mfa_feedback' not in routes
     assert "response.headers['Cache-Control'] = 'no-store'" in routes
