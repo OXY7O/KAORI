@@ -105,3 +105,10 @@ Feature: Central Object Storage Analytics Data & Evidence
 - Capacity Bucket Records uses concise desktop single-line context copy while retaining bounded Inventory fallback; Performance and Top Consumers descriptions remain unchanged.
 - The filter bar reuses the canonical responsive table filter geometry and adds **Quota State** and **Quota Pressure** selectors for Capacity only. Configured/Not Configured/Unknown derive from committed quota state/evidence; Within (under 85%), Pressure (85% to under 95%), and Critical (95% or above) require usable configured quota and utilization data. Search, system identity, time range, tab and Rows persist across HTMX and pagination; filtering resets page to 1, and Clear Filters retains Rows.
 - Dev Container UAT must confirm 6h/24h, 1440px one-line description, 390px wrapping, light/dark, keyboard Guides, valid/invalid/empty filter combinations, pagination, Clear Filters, no false Unknown-as-zero outcomes and no HTTP 500.
+
+## 26 October 2026 — Capacity Bucket Records UAT follow-up (#3282)
+
+- The Capacity-only Bucket Capacity Records header uses `table_ui.block_icon_classes()` with the `boxes` icon, next to the title/result count and the existing concise source-bound description.
+- **Clear Filters** is a right-hand header action, consistent with the existing Provider Alert Records table. It reuses `registry_ui.clear_filters_action` with `lead=false`; no `order-first` is introduced in the form. The filter bar itself contains Search Bucket, Quota State, and Quota Pressure only.
+- Clear retains the canonical system/time-window/tab/Rows context and HTMX table refresh; no provider query, additional classification, or backend mutation is introduced.
+- Latest operator checkpoint before this follow-up: 36 focused pytest PASS; `djlint` formatting debt on Trend, `ruff I001` on quota filter test imports, and `ruff format` on quota filter predicate remained. Those formatter-only findings were addressed in the follow-up branch and require exact-head re-validation.
