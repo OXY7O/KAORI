@@ -26,20 +26,25 @@ def test_mfa_workspace_parses_and_reuses_account_design_language() -> None:
     assert 'md:grid-cols-3' in html
 
 
-def test_mfa_enrollment_matches_account_natural_action_context_layout() -> None:
+def test_mfa_guide_precedes_two_responsive_enrollment_cards() -> None:
     html = source()
-    assert 'data-account-mfa-enrollment-layout="action-context"' in html
+    assert 'data-account-mfa-enrollment-layout="guide-over-steps"' in html
+    assert 'data-account-mfa-steps="paired"' in html
+    assert 'xl:grid-cols-2 xl:items-stretch' in html
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in html
     assert 'data-account-mfa-recovery-layout="action-context"' in html
-    assert 'xl:grid-cols-12 xl:items-stretch' in html
     assert 'xl:grid-cols-12 xl:items-start' in html
-    assert 'xl:col-span-7' in html
-    assert 'xl:col-span-5' in html
+    assert 'xl:col-span-7' in html  # Enrolled recovery only.
+    assert 'xl:col-span-5' in html  # Enrolled recovery only.
     assert 'How to Activate MFA' in html
     assert 'Recovery Security' in html
     assert 'STEP 01' in html
     assert 'STEP 02' in html
     assert 'data-lucide="smartphone"' in html
     assert 'data-lucide="fingerprint"' in html
+    assert html.index('data-account-mfa-guide="single-panel"') < html.index('data-account-mfa-steps="paired"')
+    assert html.index('data-account-mfa-steps="paired"') < html.index('id="account-mfa-step-one"')
+    assert html.index('id="account-mfa-step-one"') < html.index('id="account-mfa-step-two"')
 
 
 def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
@@ -132,17 +137,19 @@ def test_approved_mockup_has_illustrative_hero_and_posture_cards() -> None:
     assert 'table_label.status_indicator_label(' in html
 
 
-def test_approved_mockup_connects_numbered_enrollment_and_fills_guide_column() -> None:
+def test_approved_mockup_uses_single_guide_above_balanced_step_cards() -> None:
     html = source()
-    assert 'aria-hidden="true">1</span>' in html
-    assert 'aria-hidden="true">2</span>' in html
+    for n in ('1', '2', '3', '4'):
+        assert f'aria-hidden="true">{n}</span>' in html
     assert 'Generate Setup Key</h3>' in html
     assert 'Verify Your Authenticator</h3>' in html
-    assert 'xl:grid-cols-12 xl:items-stretch' in html
-    assert 'flex flex-1 flex-col divide-y divide-outline-subtle' in html
+    assert 'data-account-mfa-enrollment-layout="guide-over-steps"' in html
+    assert 'grid gap-4 xl:grid-cols-2 xl:items-stretch' in html
     assert 'flex min-w-0 flex-col rounded-xl border border-outline-default' in html
-    assert 'data-account-mfa-guide="single-panel"' in html
+    assert html.count('data-account-mfa-guide="single-panel"') == 1
     assert 'mt-auto border-t border-outline-subtle' in html
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in html
+    assert 'xl:grid-cols-12 xl:items-stretch' not in html
 
 
 def test_otp_remains_one_native_accessible_field_with_visual_digit_spacing() -> None:
