@@ -82,3 +82,11 @@ Feature: Central Object Storage Analytics Data & Evidence
     And the content remains usable at desktop and narrow widths
     And page requests do not raise a Jinja error or HTTP 500
 ```
+
+
+## 26 October 2026 — Evidence visual UAT refinement
+
+- Source-authority descriptions and fallback rules use concise single-line copy at the desktop UAT viewport; retain full values in title attributes where clipping is necessary on narrower screens.
+- Committed Domain Coverage uses the existing table primitives and compact semantic status labels in four accessible columns: Domain, Committed Source, Readiness, Fallback Boundary. Color reflects each committed tone, never inferred health.
+- Inventory & Operational Reconciliation uses a single comparison table with Operational, Inventory, combined Delta/Variance as Drift, and semantic Assessment; embedded rendering hides redundant nested titles inside the Overview/Capacity disclosures. No committed metric arithmetic or evidence source has changed.
+- Gherkin visual QA: at 1440px verify one-line authority and boundary explanations, four semantic readiness badges, and legible Drift with both original delta and variance. At narrow viewports verify horizontal overflow rather than information loss, and keyboard accessibility of both disclosures.

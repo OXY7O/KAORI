@@ -13,7 +13,7 @@ def read(path: str) -> str:
 
 
 def test_only_overview_owns_data_and_evidence_tab() -> None:
-    overview = read(f"{PARTIALS}/_overview_workspace.html")
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
     assert "('evidence', 'Data & Evidence', 'list-checks')" in overview
     assert 'data-analytics-tab-panel="evidence"' in overview
     assert 'partials/_metrics_readiness.html' in overview
@@ -26,7 +26,7 @@ def test_only_overview_owns_data_and_evidence_tab() -> None:
         '_forecast_workspace.html',
         '_alerts_workspace.html',
     ):
-        workspace = read(f"{PARTIALS}/{filename}")
+        workspace = read(f'{PARTIALS}/{filename}")
         assert "('evidence', 'Evidence', 'list-checks')" not in workspace
         assert 'data-analytics-tab-panel="evidence"' not in workspace
         assert 'panel-evidence' not in workspace
@@ -34,7 +34,7 @@ def test_only_overview_owns_data_and_evidence_tab() -> None:
 
 
 def test_domain_context_preserves_source_authority_and_deep_link() -> None:
-    component = read(f"{PARTIALS}/_domain_evidence_context.html")
+    component = read(f'{PARTIALS}/_domain_evidence_context.html')
     controller = read('app/static/js/analytics/controls.js')
     routes = read('app/storage/object_storage/analytics/routes.py')
 
@@ -64,11 +64,11 @@ def test_domain_context_preserves_source_authority_and_deep_link() -> None:
 
 
 def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
-    capacity = read(f"{PARTIALS}/_capacity_workspace.html")
-    forecast = read(f"{PARTIALS}/_forecast_workspace.html")
-    alerts = read(f"{PARTIALS}/_alerts_workspace.html")
-    consumers = read(f"{PARTIALS}/_top_consumers_workspace.html")
-    performance = read(f"{PARTIALS}/_performance_workspace.html")
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    forecast = read(f'{PARTIALS}/_forecast_workspace.html')
+    alerts = read(f'{PARTIALS}/_alerts_workspace.html')
+    consumers = read(f'{PARTIALS}/_top_consumers_workspace.html')
+    performance = read(f'{PARTIALS}/_performance_workspace.html')
     for marker in (
         'data-object-storage-capacity-reconciliation',
         'partials/_reconciliation.html',
@@ -91,6 +91,44 @@ def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
     assert 'partials/_performance_analysis.html' in performance
 
 
+def test_overview_evidence_coverage_and_embedded_reconciliation_follow_kaori_table_standard() -> None:
+    context = read(f'{PARTIALS}/_overview_evidence_context.html')
+    reconciliation = read(f'{PARTIALS}/_reconciliation.html')
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+
+    assert 'data-object-storage-coverage-table' in context
+    assert 'data-object-storage-evidence-domain="{{ domain|lower }}"' in context
+    assert 'table_ui.table_classes(' in context
+    assert 'table_label.status_label(state, tone' in context
+    assert 'whitespace-nowrap' in context
+    assert 'data-object-storage-reconciliation-table' in reconciliation
+    assert 'table_ui.table_classes(' in reconciliation
+    for original in (
+        'item.operational_display',
+        'item.inventory_display',
+        'item.delta_display',
+        'item.delta_percent_display',
+        'item.status',
+        'item.tone',
+    ):
+        assert original in reconciliation
+    assert "reconciliation_embedded = true" in context
+    assert "reconciliation_embedded = true" in capacity
+    assert 'data-object-storage-reconciliation-context' in reconciliation
+    assert 'Observation times differ; drift is a review signal.' in reconciliation
+
+
+def test_evidence_authority_explanations_are_single_line_at_desktop_width() -> None:
+    context = read(f'{PARTIALS}/_overview_evidence_context.html')
+    assert 'Identity, quota, protection, and usage fallback.' in context
+    assert 'Committed alert lifecycle and routing evidence.' in context
+    assert 'Worker projection; no Inventory fallback.' in context
+    assert 'Alertmanager first; ALERTS fallback is rule-state only.' in context
+    assert 'truncate whitespace-nowrap' in context
+    assert 'block whitespace-nowrap' in context
+
+
+
 def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> None:
     jinja = Environment()
     jinja.filters['user_datetime'] = lambda value, fallback=None: value or fallback
@@ -102,5 +140,7 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_forecast_workspace.html',
         '_alerts_workspace.html',
         '_domain_evidence_context.html',
+        '_overview_evidence_context.html',
+        '_reconciliation.html',
     ):
-        jinja.from_string(read(f"{PARTIALS}/{filename}"))
+        jinja.from_string(read(f'{PARTIALS}/{filename}"))
