@@ -5,10 +5,11 @@
 {% import "integrations/components/_workspace.html" as ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="github-runtime-deliveries"
-         class="{{ ui.section_shell_classes() }}"
+         class="{{ 'min-w-0' if runtime_table_embedded|default(false) else ui.section_shell_classes() }}"
          data-kaori-github-runtime-deliveries
          data-kaori-server-filtered-registry>
-    <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+    {% if not runtime_table_embedded|default(false) %}
+        <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-start gap-3">
                 {{ ui.palette_icon('webhook', 'brand', size='sm') }}
@@ -30,8 +31,20 @@
             {{ integration_status('ready' if delivery_pagination.total_items else 'not_observed', delivery_pagination.total_items ~ ' Deliveries', display='text') }}
             </div>
         </div>
-        {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
-    </header>
+        </header>
+    {% endif %}
+    {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
+    {% if runtime_table_embedded|default(false) and delivery_state %}
+        <div class="flex justify-end border-b border-outline-subtle px-4 py-2.5">
+            {{ registry_ui.clear_filters_action(
+                url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'),
+                table_ui.action_classes(),
+                hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_per_page=delivery_pagination.per_page),
+                target='#github-runtime-deliveries',
+                indicator='#github-runtime-deliveries-loading'
+            ) }}
+        </div>
+    {% endif %}
     {% if runtime_table_embedded|default(false) and delivery_state %}
         <div class="flex justify-end border-b border-outline-subtle px-4 py-2.5">
             {{ registry_ui.clear_filters_action(
