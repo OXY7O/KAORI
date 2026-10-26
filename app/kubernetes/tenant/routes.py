@@ -463,7 +463,7 @@ def resource_profiles():
     context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
     allocation_search = str(request.args.get('allocation_search') or '').strip()
     context['allocation_search'] = allocation_search
-    if active_view == 'capacity' and selected is not None:
+    if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:
         bars = build_tenant_allocation_bars(selected)
         context['allocation_overview'] = {
             'cluster': selected['cluster'],

@@ -1,17 +1,9 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/progress_bar.html" as progress_bar %}
-{% import "components/table_registry.html" as registry_ui %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
-{% set capacity_registry_id = "capacity-budget-registry" %}
-{% set capacity_loading_id = "capacity-budget-loading" %}
-{% set capacity_query_params = {
-    'view': 'capacity',
-    'capacity_search': capacity_filters.search
-} %}
 <section class="space-y-5" aria-label="Tenant Capacity Governance">
     <form method="post"
           action="{{ url_for('tenant.update_capacity_policy_route') }}"
