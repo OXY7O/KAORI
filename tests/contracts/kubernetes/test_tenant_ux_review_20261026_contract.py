@@ -163,7 +163,7 @@ def test_access_grant_detail_has_compact_context_and_right_aligned_actions() -> 
     assert 'tenant.reconcile_access_grant_route' in detail
     assert 'tenant.revoke_access_grant_route' in detail
     assert "if grant.status == 'active'" in detail
-    assert 'Retire requires revoked Memberships and reconciled Access Grants.' in group
+    assert 'Retire requires revoked Memberships and reconciled grants.' in group
     assert 'Retirement is blocked while active Memberships' not in group
 
 
