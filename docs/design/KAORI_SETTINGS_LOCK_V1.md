@@ -148,3 +148,29 @@ Under Settings Final Lock, personal MFA enrollment feedback uses the same canoni
 The one-time provisioning card shows **Scan QR Code** and **Manual Setup Key** side-by-side when there is a successful pending setup response, stacking on narrow screens. The QR is locally generated as PNG by the pinned vetted `qrcode` library; never call an external QR provider, persist the image or alter provider/capability ownership. QR does not require new JavaScript. The original single six-digit input remains the verifier; setup pending remains distinct from factor enabled. Preserve theme surfaces, responsive labels and no-store rendering.
 
 The UAT-1 screenshot's prior inline info strip is retired. Report status/invalid input through Operational Toast, retain safe copy and labels in the provisioning card itself, and never make manual key unavailable when scanning fails.
+
+## Approved MFA enrollment layout — guide first, paired steps (#3228, 2026-10-26)
+
+The operator's latest accepted *design proposal* supersedes only the older
+enrollment-specific 7/5 action/context presentation described in historical
+sections above. Within Settings → Account & Authentication → Multi-Factor
+Authentication, show committed Factor Status / Security Policy / Recovery Codes
+cards, then a **full-width single How to Activate MFA guide** with four ordered
+items in one horizontal row at wide desktop widths (2 columns on medium screens;
+a readable single column on narrow mobile). Beneath the guide, Step 01
+**Generate Setup Key** and Step 02 **Verify Your Authenticator** occupy **one
+balanced two-column desktop row** and stack naturally on smaller viewports.
+Cards must not stretch their inputs into unreadably wide fields.
+
+The authorized one-time QR and manual setup key remain inside Step 01's
+response-local warning surface. Step 02 keeps exactly one native six-digit
+verification field; no custom segmented OTP control, fake copy button, or
+new browser-side secret persistence. The shared Operational Toast and existing
+committed Activity Audit semantics from #3261 remain unchanged. The enrolled
+recovery-regeneration section retains its previously approved 7/5 layout.
+Reuse KAORI Violet semantic surfaces; no new design tokens or component copies.
+The mockup is presentation guidance, not proof of a completed browser UAT:
+verify actual responsive 1440/1280/1024/768/390/360 viewport and light/dark
+rendering, keyboard focus, success/failure states, and guarded MFA operations
+against the exact UAT candidate before human acceptance. Never attach
+screenshots containing live QR, seed or recovery codes.
