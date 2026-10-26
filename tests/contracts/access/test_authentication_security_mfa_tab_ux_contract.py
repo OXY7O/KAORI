@@ -107,7 +107,7 @@ def test_mfa_summary_tiles_have_distinct_semantic_icon_cues() -> None:
     assert "'Verification Method'" in tab
     assert "'Session Impact'" in tab
     for icon in ('shield-check', 'key-round', 'log-out'):
-        assert f'data-lucide="{icon}"' in tab
+        assert f"'{icon}'" in tab
     assert "'bg-status-warning-soft text-status-warning-text'" in tab
 
 
