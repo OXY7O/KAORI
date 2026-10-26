@@ -228,8 +228,8 @@ def test_namespace_access_expanded_evidence_uses_compact_context_and_lifecycle()
     assert 'aria-label="Credential lifecycle"' in detail
     assert 'aria-label="Technical references"' in detail
     assert "access.get('approved_access_methods') or []" in detail
-    assert "access.get('credential_public_id')" in detail
-    assert "access.get('jumpserver_reference')" in detail
+    assert 'access.get("credential_public_id")' in detail
+    assert 'access.get("jumpserver_reference")' in detail
     assert "access.get('error')" in detail
     assert 'Evidence Unavailable' in detail
     assert 'No effective access is asserted by this record.' in detail
