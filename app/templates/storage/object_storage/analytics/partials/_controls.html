@@ -1,6 +1,16 @@
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set capacity_controls_guide = info_tip.render('object-storage-capacity-controls-readiness-guide',
+    'Analytics Controls & Data Readiness Guide',
+    'Selectors choose the committed analytics scope; readiness and snapshot status describe different evidence boundaries.',
+    items=[
+    'Object Storage System and Time Range select the analysis context; changing them refreshes the committed workspace view.',
+    'Metrics Source Status reflects collection-time contract readiness and source identity; it is not proof that a current provider request succeeded.',
+    'Latest Analytics Data Snapshot shows worker-committed data, freshness, and refresh attempts. Stale or unavailable evidence must not be interpreted as healthy or zero.',
+    ],
+    placement='right', variant='guide') if page_key == 'capacity' else '' %}
 {% set storage_readiness_description %}
     {% if page_key == 'alerts' %}
         Select the Object Storage system and committed alert source. Automatic prefers worker-collected Alertmanager evidence and falls back to committed Metrics Source evidence.
@@ -15,7 +25,8 @@
     storage_readiness_description|trim,
     'sliders-horizontal',
     'object-storage-analytics-refresh-indicator',
-    eyebrow='Analytics Overview' if page_key == 'overview' else page.title
+    eyebrow='Analytics Overview' if page_key == 'overview' else page.title,
+    title_accessory=capacity_controls_guide
     ) %}
     <form id="object-storage-analytics-controls"
           method="get"
