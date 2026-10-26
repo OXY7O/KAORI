@@ -1611,3 +1611,31 @@ rollout tests, rather than an imprecise single substring check.
 No change to GitHub provider grants, JobExecution, committed evidence,
 authentication, or repository synchronization. Executable QA and
 Human Visual Acceptance remain pending on the new exact SHA.
+
+
+## 2026-10-26 — #3306 Runtime Health Guide & permission-style history tabs
+
+Human Dev Container UAT requested two visual parity corrections:
+
+- Runtime Health & Diagnostics now passes the approved title-adjacent
+  Violet `info + Guide` through the existing
+  `connection_validation_header.render(title_extra=...)`. Its explanation
+  keeps runtime observation, permission Full Validation, and signed webhook
+  receipts separate from committed repository inventory.
+- The Recent Jobs / Signed Webhook Deliveries registry now uses
+  **Tab Style 2 — Framed Workspace Tabs** through
+  `components/framed_workspace_tabs.html::render_navigation`, matching
+  `access/permissions/partials/_workspace.html` (Permission Registry /
+  Role Coverage). No page-local tab CSS or JS was added. Server-owned
+  `runtime_view=jobs|deliveries`, HTMX selective replacement, normal
+  link fallback, per-view independent server filters and five-row
+  pagination, status badges, and loading/empty states are preserved.
+- The Guide rollout contract now includes the GitHub Runtime header and
+  verifies the **rendered Guide trigger** instead of checking an obsolete
+  two-variant conditional: the canonical shared Info Tip also supports
+  the `action` variant for unavailable actions.
+
+Verify desktop/mobile, light/dark, keyboard/touch Guide interaction, tab
+selection and URL history, HTMX table filtering, and no-JS link fallback.
+Executable tests, startup, and Human Visual Acceptance remain pending
+on this candidate SHA. Official CI/CD / Full Admission / promotion HOLD.

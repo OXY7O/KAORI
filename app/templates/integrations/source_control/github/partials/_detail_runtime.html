@@ -5,7 +5,8 @@
 {% import "integrations/components/_workspace.html" as ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
-{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
+{% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = last_runtime_refresh is not none and last_runtime_refresh.status == 'succeeded' and canonical.last_checked_at is not none %}
 {% set health = canonical.health_status or 'not_observed' if runtime_observed else 'not_observed' %}
@@ -29,7 +30,16 @@
         'Review committed runtime health, installation diagnostics, jobs, and signed webhook transport evidence.',
         icon='activity',
         loading_id='github-runtime-loading',
-        loading_active=runtime_refresh_job and runtime_refresh_job.is_active
+        loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+        title_extra=info_tip.render('github-runtime-health-guide',
+            'GitHub Runtime Health & Diagnostics',
+            'KAORI reports committed runtime evidence for the selected GitHub App installation, independently from permission validation and repository synchronization.',
+            [
+                'Runtime Refresh checks current installation health through an admitted JobExecution.',
+                'Full Validation verifies App permissions; it does not establish runtime health.',
+                'Signed webhook deliveries are transport evidence, not synchronized repository inventory.'
+            ],
+            placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
@@ -107,24 +117,24 @@
 </section>
 {% set runtime_view = 'deliveries' if request.args.get('runtime_view') == 'deliveries' else 'jobs' %}
 <section id="github-runtime-evidence-registry"
-         class="{{ ui.section_shell_classes() }}"
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          data-kaori-github-runtime-registry-tabs>
-    {{ content_tabs.render_links('github-runtime-history',
-        [
+    {{ framed_tabs.render_navigation([
             ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs'), job_pagination.total_items),
             ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'), delivery_pagination.total_items)
         ],
         runtime_view,
-        'GitHub Runtime Evidence',
-        embedded=true,
-        nowrap=true,
+        prefix='github-runtime-history',
+        aria_label='GitHub Runtime Evidence',
         hx_target='#github-runtime-evidence-registry',
         hx_select='#github-runtime-evidence-registry',
         hx_push_url='true') }}
-    {% set runtime_table_embedded = true %}
-    {% if runtime_view == 'deliveries' %}
-        {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
-    {% else %}
-        {% include "integrations/source_control/github/partials/_runtime_jobs.html" %}
-    {% endif %}
+    <div id="github-runtime-evidence-registry-content">
+        {% set runtime_table_embedded = true %}
+        {% if runtime_view == 'deliveries' %}
+            {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
+        {% else %}
+            {% include "integrations/source_control/github/partials/_runtime_jobs.html" %}
+        {% endif %}
+    </div>
 </section>

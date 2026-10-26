@@ -104,6 +104,7 @@ GITHUB_TITLE_GUIDES = {
     'integrations/source_control/github/uat_detail.html': 'github-connection-contract-guide',
     'integrations/source_control/github/partials/_detail_validation.html': 'github-full-validation-guide',
     'integrations/source_control/github/partials/_detail_inventory.html': 'github-inventory-lifecycle-guide',
+    'integrations/source_control/github/partials/_detail_runtime.html': 'github-runtime-health-guide',
 }
 
 
@@ -123,12 +124,26 @@ def test_github_title_guides_explicitly_render_the_labeled_guide_variant() -> No
     detail = _read('integrations/source_control/github/uat_detail.html')
     validation = _read('integrations/source_control/github/partials/_detail_validation.html')
     inventory = _read('integrations/source_control/github/partials/_detail_inventory.html')
+    runtime = _read('integrations/source_control/github/partials/_detail_runtime.html')
     assert 'title_extra=connection_title_tip' in detail
-    assert 'title_extra=info_tip.render(' in validation
-    assert 'title_extra=info_tip.render(' in inventory
+    for source in (validation, inventory, runtime):
+        assert 'title_extra=info_tip.render(' in source
 
-    component = _read('components/info_tip.html')
-    assert 'data-kaori-info-tip-variant="{{ \'guide\' if guide_variant else \'icon\' }}"' in component
-    assert '<span>Guide</span>' in component
-    assert 'data-lucide="info"' in component
-    assert 'data-lucide="circle-help"' not in component
+    # Assert the rendered trigger, not the obsolete conditional's literal
+    # source text: canonical Info Tip also supports the 'action' variant.
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
+    trigger = str(
+        env.get_template('components/info_tip.html').module.render(
+            'github-runtime-health-guide',
+            'GitHub Runtime Health & Diagnostics',
+            'Committed runtime evidence is installation-scoped.',
+            placement='right',
+            variant='guide',
+        )
+    )
+    assert 'data-kaori-info-tip-variant="guide"' in trigger
+    assert '<span>Guide</span>' in trigger
+    assert 'data-lucide="info"' in trigger
+    assert 'data-lucide="circle-help"' not in trigger
