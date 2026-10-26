@@ -56,16 +56,23 @@ def test_disallowed_samples_fail_closed_without_counts(payload, status):
 
 @pytest.mark.parametrize('identity', ['', '0', '042', '-42', '+42', '42a', '４２', '42949672960'])
 def test_noncanonical_identity_rejected(identity):
-    assert vault_alert_evidence.qualify_vault_alert_sample(
-        asset_key=identity, payload=[_alert()],
-    )['status'] == 'blocked'
+    assert (
+        vault_alert_evidence.qualify_vault_alert_sample(
+            asset_key=identity,
+            payload=[_alert()],
+        )['status']
+        == 'blocked'
+    )
 
 
 def test_valid_sample_counts_only_raw_observations_without_case_claims():
     result = vault_alert_evidence.qualify_vault_alert_sample(
         asset_key='42',
-        payload=[_alert(), _alert(state='suppressed', severity='warning'),
-                 _alert(state='unprocessed', severity='info')],
+        payload=[
+            _alert(),
+            _alert(state='suppressed', severity='warning'),
+            _alert(state='unprocessed', severity='info'),
+        ],
     )
     assert result['status'] == 'qualified'
     assert result['identity_observed'] is True
@@ -77,23 +84,35 @@ def test_valid_sample_counts_only_raw_observations_without_case_claims():
 
 def _binding():
     return SimpleNamespace(
-        integration_instance_id=12, asset_type='vault_instance', asset_key='42',
-        selector_json=_scope(), validation_profile=None, validation_status=None,
-        validation_message=None, validation_evidence=None, last_validated_at=None,
+        integration_instance_id=12,
+        asset_type='vault_instance',
+        asset_key='42',
+        selector_json=_scope(),
+        validation_profile=None,
+        validation_status=None,
+        validation_message=None,
+        validation_evidence=None,
+        last_validated_at=None,
     )
 
 
 def _setup(monkeypatch, alerts):
     identity = SimpleNamespace(
-        id=42, integration_type='secrets_pki', provider_key='vault',
-        enabled=True, lifecycle_status='active',
+        id=42,
+        integration_type='secrets_pki',
+        provider_key='vault',
+        enabled=True,
+        lifecycle_status='active',
     )
     monkeypatch.setattr(
-        vault_scope, 'db', SimpleNamespace(
+        vault_scope,
+        'db',
+        SimpleNamespace(
             session=SimpleNamespace(get=lambda _model, key: identity if key == 42 else None),
         ),
     )
     queries = []
+
     def get_alerts(*, filters):
         queries.append(('alerts', filters))
         return alerts
@@ -103,7 +122,8 @@ def _setup(monkeypatch, alerts):
         return []
 
     monkeypatch.setattr(
-        binding_validation, 'build_client',
+        binding_validation,
+        'build_client',
         lambda _instance: SimpleNamespace(get_alerts=get_alerts, get_silences=get_silences),
     )
     return queries
@@ -113,7 +133,9 @@ def test_binding_validation_commits_only_safe_qualified_counts(monkeypatch):
     calls = _setup(monkeypatch, [_alert(), _alert(state='suppressed', severity='warning')])
     binding = _binding()
     result = binding_validation.validate_binding(
-        instance=SimpleNamespace(integration_instance_id=12), binding=binding, commit=False,
+        instance=SimpleNamespace(integration_instance_id=12),
+        binding=binding,
+        commit=False,
     )
     assert result['status'] == 'ready'
     sample = binding.validation_evidence['vault_alert_sample']
@@ -130,7 +152,9 @@ def test_empty_validated_binding_is_unobserved_not_healthy(monkeypatch):
     _setup(monkeypatch, [])
     binding = _binding()
     result = binding_validation.validate_binding(
-        instance=SimpleNamespace(integration_instance_id=12), binding=binding, commit=False,
+        instance=SimpleNamespace(integration_instance_id=12),
+        binding=binding,
+        commit=False,
     )
     assert result['status'] == 'ready'
     assert binding.validation_evidence['vault_alert_sample']['status'] == 'unobserved'
@@ -142,7 +166,9 @@ def test_unsafe_binding_sample_never_qualifies_or_leaks(monkeypatch, bad_payload
     calls = _setup(monkeypatch, bad_payload)
     binding = _binding()
     result = binding_validation.validate_binding(
-        instance=SimpleNamespace(integration_instance_id=12), binding=binding, commit=False,
+        instance=SimpleNamespace(integration_instance_id=12),
+        binding=binding,
+        commit=False,
     )
     assert result['status'] in {'blocked', 'degraded'}
     if result['status'] == 'blocked':
@@ -158,7 +184,9 @@ def test_foreign_identity_takes_precedence_over_incomplete_row(monkeypatch):
     queries = _setup(monkeypatch, [_alert(state='unknown'), _alert(asset='99')])
     binding = _binding()
     result = binding_validation.validate_binding(
-        instance=SimpleNamespace(integration_instance_id=12), binding=binding, commit=False,
+        instance=SimpleNamespace(integration_instance_id=12),
+        binding=binding,
+        commit=False,
     )
     assert result['status'] == 'blocked'
     assert binding.validation_evidence is None

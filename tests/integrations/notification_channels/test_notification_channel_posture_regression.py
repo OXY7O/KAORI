@@ -12,10 +12,13 @@ class Query:
         self.channels = channels
 
     def filter_by(self, **criteria: object) -> Query:
-        return Query([
-            item for item in self.channels
-            if all(getattr(item, key, None) == value for key, value in criteria.items())
-        ])
+        return Query(
+            [
+                item
+                for item in self.channels
+                if all(getattr(item, key, None) == value for key, value in criteria.items())
+            ]
+        )
 
     def order_by(self, *_args: object) -> Query:
         return self
@@ -25,8 +28,12 @@ class Query:
 
 
 def channel(
-    *, enabled: bool = True, configured: bool = True, test_status: str = 'success',
-    last_delivery_status: str = 'never', lifecycle_state: str = 'active',
+    *,
+    enabled: bool = True,
+    configured: bool = True,
+    test_status: str = 'success',
+    last_delivery_status: str = 'never',
+    lifecycle_state: str = 'active',
 ) -> SimpleNamespace:
     return SimpleNamespace(
         id=1,
@@ -115,23 +122,37 @@ def test_notification_overview_metrics_uses_committed_state_without_provider_cal
         def all(self) -> list[tuple[str, int]]:
             return outcome_rows
 
-    recent = [
-        SimpleNamespace(
-            id=19, status='sent', event_type='alert_intelligence.active_alert',
-            channel=SimpleNamespace(name='KAORI Telegram'), created_at=None,
-        )
-    ] if outcome_rows else []
+    recent = (
+        [
+            SimpleNamespace(
+                id=19,
+                status='sent',
+                event_type='alert_intelligence.active_alert',
+                channel=SimpleNamespace(name='KAORI Telegram'),
+                created_at=None,
+            )
+        ]
+        if outcome_rows
+        else []
+    )
     monkeypatch.setattr(service, 'NotificationChannel', SimpleNamespace(query=ArchivedQuery()))
     monkeypatch.setattr(
-        service, 'NotificationDelivery',
+        service,
+        'NotificationDelivery',
         SimpleNamespace(
-            status=Column(), id=Column(), created_at=Column(),
+            status=Column(),
+            id=Column(),
+            created_at=Column(),
             query=Deliveries(recent),
         ),
     )
-    monkeypatch.setattr(service, 'db', SimpleNamespace(
-        session=SimpleNamespace(query=lambda *_args: Aggregates()),
-    ))
+    monkeypatch.setattr(
+        service,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(query=lambda *_args: Aggregates()),
+        ),
+    )
     monkeypatch.setattr(service, 'event_type_label', lambda _: 'Active Alert')
     result = service.notification_overview_metrics()
     assert result['archived'] == archived_count

@@ -26,67 +26,102 @@ FP = 'a' * 64
 def committed_sources():
     app = Flask(__name__)
     app.config.update(
-        SECRET_KEY='test-fixture-only', SQLALCHEMY_DATABASE_URI='sqlite://',
+        SECRET_KEY='test-fixture-only',
+        SQLALCHEMY_DATABASE_URI='sqlite://',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
     )
     db.init_app(app)
     with app.app_context():
         tables = [
-            Cluster.__table__, IntegrationInstance.__table__, VaultInstance.__table__,
+            Cluster.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
             PKIStoredCertificateCollectionState.__table__,
             PKIStoredCertificateObservation.__table__,
-            TLSCertificateCollectionState.__table__, TLSCertificateInventory.__table__,
+            TLSCertificateCollectionState.__table__,
+            TLSCertificateInventory.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         provider = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault',
-            adapter_key='vault_http_v1', name='test-provider', environment='testing',
-            enabled=True, readiness_status='ready', lifecycle_status='active',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='test-provider',
+            environment='testing',
+            enabled=True,
+            readiness_status='ready',
+            lifecycle_status='active',
         )
         cluster = Cluster(name='cluster-correlation-fixture', environment='testing')
         db.session.add_all([provider, cluster])
         db.session.flush()
         vault = VaultInstance(
             integration_instance_id=provider.id,
-            endpoint='https://vault.invalid', auth_mount='approle',
-            role_id='test-only', secret_id='not-a-credential', timeout=5,
-            verify_ssl=True, pki_mounts=['pki'], pki_stored_certs_enabled=True,
+            endpoint='https://vault.invalid',
+            auth_mount='approle',
+            role_id='test-only',
+            secret_id='not-a-credential',
+            timeout=5,
+            verify_ssl=True,
+            pki_mounts=['pki'],
+            pki_stored_certs_enabled=True,
         )
-        db.session.add_all([
-            vault,
-            PKIStoredCertificateCollectionState(
-                integration_instance_id=provider.id, provider_namespace='', mount='pki',
-                status='ready', observed_stored_certificate_count=1,
-                last_observed_at=AT, last_committed_at=AT,
-            ),
-            PKIStoredCertificateObservation(
-                integration_instance_id=provider.id, provider_namespace='', mount='pki',
-                serial_hex='65', fingerprint_sha256=FP,
-                valid_from=AT-timedelta(days=4),
-                valid_until=AT+timedelta(days=90), observation_status='observed',
-                last_observed_at=AT,
-            ),
-            TLSCertificateCollectionState(
-                cluster_id=cluster.id, secret_collection_status=TLS_COLLECTION_COLLECTED,
-                ingress_mapping_status=TLS_COLLECTION_COLLECTED, collected_at=AT,
-            ),
-            TLSCertificateInventory(
-                cluster_id=cluster.id,
-                namespace='private-namespace', secret_name='private-tls-secret',
-                fingerprint_sha256=FP, status='healthy',
-                secret_uid='12345678-1234-4234-8234-123456789abc',
-                controller_owner_refs=[
-                    {'kind': 'ExternalSecret', 'api_group': 'external-secrets.io',
-                     'uid': '12345678-1234-4234-8234-123456789abd'},
-                ],
-                not_before=AT-timedelta(days=4), not_after=AT+timedelta(days=90),
-                used_by=[{'namespace': 'private-namespace', 'name': 'private-ingress', 'hosts': ['internal.example']}],
-                coverage_state='fully_covered', declared_host_count=1,
-                covered_host_count=1,
-                collected_at=AT,
-            ),
-        ])
+        db.session.add_all(
+            [
+                vault,
+                PKIStoredCertificateCollectionState(
+                    integration_instance_id=provider.id,
+                    provider_namespace='',
+                    mount='pki',
+                    status='ready',
+                    observed_stored_certificate_count=1,
+                    last_observed_at=AT,
+                    last_committed_at=AT,
+                ),
+                PKIStoredCertificateObservation(
+                    integration_instance_id=provider.id,
+                    provider_namespace='',
+                    mount='pki',
+                    serial_hex='65',
+                    fingerprint_sha256=FP,
+                    valid_from=AT - timedelta(days=4),
+                    valid_until=AT + timedelta(days=90),
+                    observation_status='observed',
+                    last_observed_at=AT,
+                ),
+                TLSCertificateCollectionState(
+                    cluster_id=cluster.id,
+                    secret_collection_status=TLS_COLLECTION_COLLECTED,
+                    ingress_mapping_status=TLS_COLLECTION_COLLECTED,
+                    collected_at=AT,
+                ),
+                TLSCertificateInventory(
+                    cluster_id=cluster.id,
+                    namespace='private-namespace',
+                    secret_name='private-tls-secret',
+                    fingerprint_sha256=FP,
+                    status='healthy',
+                    secret_uid='12345678-1234-4234-8234-123456789abc',
+                    controller_owner_refs=[
+                        {
+                            'kind': 'ExternalSecret',
+                            'api_group': 'external-secrets.io',
+                            'uid': '12345678-1234-4234-8234-123456789abd',
+                        },
+                    ],
+                    not_before=AT - timedelta(days=4),
+                    not_after=AT + timedelta(days=90),
+                    used_by=[
+                        {'namespace': 'private-namespace', 'name': 'private-ingress', 'hosts': ['internal.example']}
+                    ],
+                    coverage_state='fully_covered',
+                    declared_host_count=1,
+                    covered_host_count=1,
+                    collected_at=AT,
+                ),
+            ]
+        )
         db.session.commit()
         try:
             yield provider.id, cluster.id
@@ -97,7 +132,8 @@ def committed_sources():
 
 def _read():
     return build_certificate_delivery_overlap(
-        authorized_to_view_kubernetes_tls=True, now=AT + timedelta(minutes=2),
+        authorized_to_view_kubernetes_tls=True,
+        now=AT + timedelta(minutes=2),
     )
 
 
@@ -133,7 +169,7 @@ def test_old_or_noncommitted_vault_source_does_not_prove_a_mismatch(committed_so
     state = PKIStoredCertificateCollectionState.query.filter_by(
         integration_instance_id=provider_id,
     ).one()
-    state.last_committed_at = AT-timedelta(days=3)
+    state.last_committed_at = AT - timedelta(days=3)
     db.session.commit()
     result = _read()
     assert result['status'] == 'source_unknown'

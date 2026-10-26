@@ -293,9 +293,15 @@ def test_retire_channel_preserves_history_and_blocks_schedules(monkeypatch: pyte
     channel.lifecycle_state = 'active'
     session = SessionStub(channel=channel)
     monkeypatch.setattr(lifecycle, 'db', SimpleNamespace(session=session))
-    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _id: lifecycle.NotificationChannelUsage(
-        delivery_records=26, report_schedules=0, report_schedule_names=(),
-    ))
+    monkeypatch.setattr(
+        lifecycle,
+        'get_channel_usage',
+        lambda _id: lifecycle.NotificationChannelUsage(
+            delivery_records=26,
+            report_schedules=0,
+            report_schedule_names=(),
+        ),
+    )
     lifecycle.retire_channel(channel, reason='Destination replaced with managed operations bot', user_id=19)  # type: ignore[arg-type]
     assert channel.lifecycle_state == 'retired'
     assert channel.enabled is False
@@ -310,9 +316,15 @@ def test_retire_channel_preserves_history_and_blocks_schedules(monkeypatch: pyte
     assert session.commits == 1
 
     channel.lifecycle_state = 'active'
-    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _id: lifecycle.NotificationChannelUsage(
-        delivery_records=26, report_schedules=1, report_schedule_names=('Weekly Ops',),
-    ))
+    monkeypatch.setattr(
+        lifecycle,
+        'get_channel_usage',
+        lambda _id: lifecycle.NotificationChannelUsage(
+            delivery_records=26,
+            report_schedules=1,
+            report_schedule_names=('Weekly Ops',),
+        ),
+    )
     with pytest.raises(lifecycle.NotificationChannelRetirementBlocked):
         lifecycle.retire_channel(channel, reason='Destination replaced', user_id=19)  # type: ignore[arg-type]
     assert session.commits == 1
@@ -324,16 +336,26 @@ def test_retired_channel_is_never_eligible_or_sent(monkeypatch: pytest.MonkeyPat
     channel.enabled = True  # Fail-safe even if inconsistent legacy data exists.
     sent = []
     monkeypatch.setattr(service, 'get_notification_provider', lambda _key: sent.append('adapter'))
-    assert service._channel_matches_event(
-        channel, domain='kubernetes', event_type='alert_intelligence.active_alert', severity='warning',
-    ) is False
+    assert (
+        service._channel_matches_event(
+            channel,
+            domain='kubernetes',
+            event_type='alert_intelligence.active_alert',
+            severity='warning',
+        )
+        is False
+    )
     result = service._deliver(channel, NotificationMessage(title='No send', body='Retired', severity='warning'))
     assert result.success is False
     assert sent == []
     assert service.test_channel(channel).success is False
-    assert service.send_channel_preview_message(
-        channel, NotificationMessage(title='No preview', body='Retired', severity='warning'),
-    ).success is False
+    assert (
+        service.send_channel_preview_message(
+            channel,
+            NotificationMessage(title='No preview', body='Retired', severity='warning'),
+        ).success
+        is False
+    )
 
 
 def test_disabled_channel_still_cannot_delete_committed_delivery_evidence(

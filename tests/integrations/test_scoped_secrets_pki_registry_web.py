@@ -48,13 +48,19 @@ def scope_db():
         foreign = User(username='foreign', email='foreign@example.invalid', role_id=role.id)
         source = IntegrationInstance(
             integration_type='secrets_pki',
-            provider_key='vault', adapter_key='test',
-            name='Vault Secret Source', enabled=True, lifecycle_status='active',
+            provider_key='vault',
+            adapter_key='test',
+            name='Vault Secret Source',
+            enabled=True,
+            lifecycle_status='active',
         )
         other = IntegrationInstance(
             integration_type='secrets_pki',
-            provider_key='vault', adapter_key='test',
-            name='Foreign Vault Source', enabled=True, lifecycle_status='active',
+            provider_key='vault',
+            adapter_key='test',
+            name='Foreign Vault Source',
+            enabled=True,
+            lifecycle_status='active',
         )
         db.session.add_all([actor, foreign, source, other])
         db.session.flush()
@@ -71,8 +77,10 @@ def scope_db():
         db.session.add(policy)
         db.session.commit()
         ids = SimpleNamespace(
-            actor=actor.id, foreign=foreign.id,
-            instance=source.id, other=other.id,
+            actor=actor.id,
+            foreign=foreign.id,
+            instance=source.id,
+            other=other.id,
             policy=policy.id,
         )
         try:
@@ -97,28 +105,47 @@ def test_policy_ref_is_canonical_and_instance_numeric():
 def test_resolve_only_exact_actor_instance_mount_policy(scope_db):
     _app, ids = scope_db
     assert web._resolve_scope(
-        actor_id=ids.actor, instance_id=ids.instance, policy_ref=ids.policy,
+        actor_id=ids.actor,
+        instance_id=ids.instance,
+        policy_ref=ids.policy,
     ) == ('private-namespace', 'sensitive/kv')
-    assert web._resolve_scope(
-        actor_id=ids.foreign, instance_id=ids.instance, policy_ref=ids.policy,
-    ) is None
-    assert web._resolve_scope(
-        actor_id=ids.actor, instance_id=ids.other, policy_ref=ids.policy,
-    ) is None
-    assert web._resolve_scope(
-        actor_id=ids.actor, instance_id=ids.instance, policy_ref=str(uuid4()),
-    ) is None
+    assert (
+        web._resolve_scope(
+            actor_id=ids.foreign,
+            instance_id=ids.instance,
+            policy_ref=ids.policy,
+        )
+        is None
+    )
+    assert (
+        web._resolve_scope(
+            actor_id=ids.actor,
+            instance_id=ids.other,
+            policy_ref=ids.policy,
+        )
+        is None
+    )
+    assert (
+        web._resolve_scope(
+            actor_id=ids.actor,
+            instance_id=ids.instance,
+            policy_ref=str(uuid4()),
+        )
+        is None
+    )
 
 
 def test_unselected_route_never_queries_scope_or_secret_rows(scope_db, monkeypatch):
     app, ids = scope_db
     monkeypatch.setattr(web, 'current_user', SimpleNamespace(id=ids.actor))
     monkeypatch.setattr(
-        web, '_resolve_scope',
+        web,
+        '_resolve_scope',
         lambda **_kw: pytest.fail('Unselected route must not inspect private grants'),
     )
     monkeypatch.setattr(
-        web, 'read_governed_scoped_secret_registry',
+        web,
+        'read_governed_scoped_secret_registry',
         lambda **_kw: pytest.fail('Unselected route must not inspect Secret metadata'),
     )
     monkeypatch.setattr(web, 'render_template', lambda _name, **kw: kw)
@@ -128,20 +155,24 @@ def test_unselected_route_never_queries_scope_or_secret_rows(scope_db, monkeypat
     assert answer['scope_ref'] is None
 
 
-@pytest.mark.parametrize('params', [
-    'instance_id=1&scope_ref=secret/kv',
-    'instance_id=1',
-    'scope_ref=missing',
-    'instance_id=0&scope_ref=example',
-    'instance_id=01&scope_ref=example',
-    'instance_id=2&scope_ref=example&page=0',
-    'instance_id=2&scope_ref=example&page=41',
-])
+@pytest.mark.parametrize(
+    'params',
+    [
+        'instance_id=1&scope_ref=secret/kv',
+        'instance_id=1',
+        'scope_ref=missing',
+        'instance_id=0&scope_ref=example',
+        'instance_id=01&scope_ref=example',
+        'instance_id=2&scope_ref=example&page=0',
+        'instance_id=2&scope_ref=example&page=41',
+    ],
+)
 def test_invalid_target_never_calls_source_reader(scope_db, monkeypatch, params):
     app, ids = scope_db
     monkeypatch.setattr(web, 'current_user', SimpleNamespace(id=ids.actor))
     monkeypatch.setattr(
-        web, 'read_governed_scoped_secret_registry',
+        web,
+        'read_governed_scoped_secret_registry',
         lambda **_kw: pytest.fail('Invalid target must not read source'),
     )
     with app.test_request_context('/secrets-pki/registry?' + params):
@@ -155,25 +186,29 @@ def test_granted_route_passes_server_only_mount_into_governed_reader(scope_db, m
     observed = datetime(2026, 10, 23, 10, tzinfo=UTC)
     safe_id = str(uuid4())
     approved = ScopedSecretPage(
-        status='ready', total_items=1, page=1, per_page=5,
-        rows=(ScopedSecretRow(
-            secret_identity_id=safe_id,
-            current_version=3,
-            observed_version_count=2,
-            logical_lifecycle='discovered',
-            cas_required=True,
-            last_observed_at=observed,
-        ),),
+        status='ready',
+        total_items=1,
+        page=1,
+        per_page=5,
+        rows=(
+            ScopedSecretRow(
+                secret_identity_id=safe_id,
+                current_version=3,
+                observed_version_count=2,
+                logical_lifecycle='discovered',
+                cas_required=True,
+                last_observed_at=observed,
+            ),
+        ),
     )
     monkeypatch.setattr(web, 'current_user', SimpleNamespace(id=ids.actor))
     monkeypatch.setattr(
-        web, 'read_governed_scoped_secret_registry',
-        lambda **kw: (called.append(kw) or approved),
+        web,
+        'read_governed_scoped_secret_registry',
+        lambda **kw: called.append(kw) or approved,
     )
     monkeypatch.setattr(web, 'render_template', lambda _name, **kw: kw)
-    with app.test_request_context(
-        f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'
-    ):
+    with app.test_request_context(f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'):
         result = web.scoped_registry_response()
     assert result['registry'] == approved
     assert called[0]['actor_id'] == ids.actor
@@ -190,18 +225,22 @@ def test_denied_governed_read_never_renders_secret_data(scope_db, monkeypatch):
     app, ids = scope_db
     monkeypatch.setattr(web, 'current_user', SimpleNamespace(id=ids.actor))
     monkeypatch.setattr(
-        web, 'read_governed_scoped_secret_registry',
+        web,
+        'read_governed_scoped_secret_registry',
         lambda **_kw: ScopedSecretPage(
-            status='scope_required', total_items=None, page=1, per_page=5, rows=(),
+            status='scope_required',
+            total_items=None,
+            page=1,
+            per_page=5,
+            rows=(),
         ),
     )
     monkeypatch.setattr(
-        web, 'render_template',
+        web,
+        'render_template',
         lambda _name, **_kw: pytest.fail('Denied source must not render rows'),
     )
-    with app.test_request_context(
-        f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'
-    ):
+    with app.test_request_context(f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'):
         with pytest.raises(NotFound):
             web.scoped_registry_response()
 
@@ -210,12 +249,11 @@ def test_policy_ownership_is_a_precondition_not_a_grant(scope_db, monkeypatch):
     app, ids = scope_db
     monkeypatch.setattr(web, 'current_user', SimpleNamespace(id=ids.foreign))
     monkeypatch.setattr(
-        web, 'read_governed_scoped_secret_registry',
+        web,
+        'read_governed_scoped_secret_registry',
         lambda **_kw: pytest.fail('Wrong actor must never reach governed reader'),
     )
-    with app.test_request_context(
-        f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'
-    ):
+    with app.test_request_context(f'/secrets-pki/registry?instance_id={ids.instance}&scope_ref={ids.policy}'):
         with pytest.raises(NotFound):
             web.scoped_registry_response()
 
@@ -232,8 +270,14 @@ def test_template_hides_namespace_path_and_uses_reusable_violet_table():
     assert 'item.logical_lifecycle' in html
     assert 'registry.total_pages' in html
     for unsafe in (
-        'item.path', 'item.mount', 'item.namespace', 'item.name',
-        'item.value', 'item.token', 'item.path_sha256', 'item.secret_id }}',
+        'item.path',
+        'item.mount',
+        'item.namespace',
+        'item.name',
+        'item.value',
+        'item.token',
+        'item.path_sha256',
+        'item.secret_id }}',
     ):
         assert unsafe not in html
     assert 'name="mount"' not in html
