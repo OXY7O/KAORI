@@ -11,7 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
+from app.common.celery_queue_health import get_cached_celery_topology, get_queue_readiness
 from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
 from app.models.job import JobExecution, JobExecutionSubscriber
@@ -245,7 +245,9 @@ def get_activity_center_context(
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
     if queued_jobs:
-        topology = inspect_celery_topology()
+        # The Deck must never hold a DB read transaction while waiting on broker RPC.
+        # Use a recent in-process observation, or render Unknown without remote I/O.
+        topology = get_cached_celery_topology()
         queue_health = {
             queue_name: get_queue_readiness(queue_name, topology=topology)
             for queue_name in {str(job['queue_name']) for job in queued_jobs}
