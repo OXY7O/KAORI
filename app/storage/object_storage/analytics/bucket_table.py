@@ -41,12 +41,18 @@ def build_bucket_table_view(
     quota_state = str(query_args.get('bucket_quota_state') or 'all').strip().lower()
     quota_pressure = str(query_args.get('bucket_quota_pressure') or 'all').strip().lower()
     usage_context = str(query_args.get('bucket_usage_context') or 'all').strip().lower()
-    if page_key != 'performance' or usage_context not in {'all', 'metrics', 'inventory', 'unavailable'}:
+    request_evidence = str(query_args.get('bucket_request_evidence') or 'all').strip().lower()
+    if page_key not in {'performance', 'top_consumers'} or usage_context not in {
+        'all', 'metrics', 'inventory', 'unavailable'
+    }:
         usage_context = 'all'
-    if page_key != 'capacity' or quota_state not in {'all', 'configured', 'not_configured', 'unknown'}:
+    allowed_quota_states = {'all', 'configured', 'not_configured', 'unknown'}
+    if page_key not in {'capacity', 'top_consumers'} or quota_state not in allowed_quota_states:
         quota_state = 'all'
-    if page_key != 'capacity' or quota_pressure not in {'all', 'within', 'warning', 'critical'}:
+    if page_key not in {'capacity', 'top_consumers'} or quota_pressure not in {'all', 'within', 'warning', 'critical'}:
         quota_pressure = 'all'
+    if page_key != 'top_consumers' or request_evidence not in {'all', 'available', 'unavailable'}:
+        request_evidence = 'all'
 
     filtered = list(rows)
     if search:
@@ -69,6 +75,13 @@ def build_bucket_table_view(
                     and row.get('usage_source') != 'Committed Snapshot'
                 )
             )
+        ]
+
+    if request_evidence != 'all':
+        filtered = [
+            row
+            for row in filtered
+            if (row.get('request_rate') is not None) == (request_evidence == 'available')
         ]
 
     if quota_state == 'configured':
@@ -110,11 +123,13 @@ def build_bucket_table_view(
         'bucket_q': search,
         'bucket_per_page': per_page,
     }
-    if page_key == 'performance':
+    if page_key in {'performance', 'top_consumers'}:
         query_params['bucket_usage_context'] = usage_context
-    if page_key == 'capacity':
+    if page_key in {'capacity', 'top_consumers'}:
         query_params['bucket_quota_state'] = quota_state
         query_params['bucket_quota_pressure'] = quota_pressure
+    if page_key == 'top_consumers':
+        query_params['bucket_request_evidence'] = request_evidence
     workspace_tab = _workspace_tab(page_key)
     if workspace_tab is not None:
         query_params['tab'] = workspace_tab
@@ -125,6 +140,7 @@ def build_bucket_table_view(
         'quota_state': quota_state,
         'quota_pressure': quota_pressure,
         'usage_context': usage_context,
+        'request_evidence': request_evidence,
         'pagination': {
             'page': page,
             'current_page': page,

@@ -228,3 +228,168 @@ def test_forecast_search_pagination_and_invalid_filter_values() -> None:
     assert result['history_state'] == 'all'
     assert result['pagination']['page'] == 1
     assert result['query_params']['forecast_q'] == 'baseline'
+
+
+CONSUMER_ROWS = [
+    {
+        'name': 'metrics-healthy',
+        'usage_bytes': 120.0,
+        'usage_source': 'Thanos Query',
+        'quota_bytes': 1000.0,
+        'quota_state': 'configured',
+        'quota_utilization': 12.0,
+        'request_rate': 0.0,
+        'error_ratio': 0.0,
+    },
+    {
+        'name': 'inventory-pressure',
+        'usage_bytes': 90.0,
+        'usage_source': 'Committed Snapshot',
+        'quota_bytes': 100.0,
+        'quota_state': 'configured',
+        'quota_utilization': 90.0,
+        'request_rate': None,
+        'error_ratio': None,
+    },
+    {
+        'name': 'metrics-critical',
+        'usage_bytes': 96.0,
+        'usage_source': 'Thanos Query',
+        'quota_bytes': 100.0,
+        'quota_state': 'configured',
+        'quota_utilization': 96.0,
+        'request_rate': 1.5,
+        'error_ratio': 2.5,
+    },
+    {
+        'name': 'no-quota',
+        'usage_bytes': 0.0,
+        'usage_source': 'Thanos Query',
+        'quota_bytes': None,
+        'quota_state': 'not_configured',
+        'quota_utilization': None,
+        'request_rate': None,
+        'error_ratio': None,
+    },
+    {
+        'name': 'unknown',
+        'usage_bytes': None,
+        'usage_source': 'Metric Not Scraped',
+        'quota_bytes': None,
+        'quota_state': 'not_collected',
+        'quota_utilization': None,
+        'request_rate': None,
+        'error_ratio': None,
+    },
+]
+
+
+def consumer_view(**query: str) -> dict:
+    return build_bucket_table_view(
+        CONSUMER_ROWS,
+        query,
+        page_key='top_consumers',
+        system=_System(),
+        time_range='12h',
+    )
+
+
+def test_consumer_usage_context_preserves_missing_and_inventory_boundaries() -> None:
+    assert [row['name'] for row in consumer_view(bucket_usage_context='metrics')['rows']] == [
+        'metrics-healthy',
+        'metrics-critical',
+        'no-quota',
+    ]
+    assert [row['name'] for row in consumer_view(bucket_usage_context='inventory')['rows']] == [
+        'inventory-pressure'
+    ]
+    assert [row['name'] for row in consumer_view(bucket_usage_context='unavailable')['rows']] == [
+        'unknown'
+    ]
+
+
+def test_consumer_quota_state_and_pressure_reuse_capacity_thresholds() -> None:
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='within')['rows']] == [
+        'metrics-healthy'
+    ]
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='warning')['rows']] == [
+        'inventory-pressure'
+    ]
+    assert [row['name'] for row in consumer_view(bucket_quota_pressure='critical')['rows']] == [
+        'metrics-critical'
+    ]
+    assert [row['name'] for row in consumer_view(bucket_quota_state='not_configured')['rows']] == [
+        'no-quota'
+    ]
+    assert [row['name'] for row in consumer_view(bucket_quota_state='unknown')['rows']] == [
+        'unknown'
+    ]
+
+
+def test_consumer_request_evidence_counts_zero_as_observed_not_missing() -> None:
+    available = consumer_view(bucket_request_evidence='available')
+    assert [row['name'] for row in available['rows']] == ['metrics-healthy', 'metrics-critical']
+    assert available['rows'][0]['request_rate'] == 0.0
+    missing = consumer_view(bucket_request_evidence='unavailable')
+    assert [row['name'] for row in missing['rows']] == [
+        'inventory-pressure',
+        'no-quota',
+        'unknown',
+    ]
+    assert all(row['request_rate'] is None for row in missing['rows'])
+
+
+def test_consumer_combined_filter_respects_query_context_rows_and_empty_state() -> None:
+    selected = consumer_view(
+        bucket_q='critical',
+        bucket_usage_context='metrics',
+        bucket_quota_state='configured',
+        bucket_quota_pressure='critical',
+        bucket_request_evidence='available',
+        bucket_per_page='10',
+    )
+    assert [row['name'] for row in selected['rows']] == ['metrics-critical']
+    assert selected['pagination']['per_page'] == 10
+    assert selected['query_params']['time_range'] == '12h'
+    assert selected['query_params']['tab'] == 'records'
+    assert selected['query_params']['bucket_request_evidence'] == 'available'
+    assert selected['query_params']['bucket_quota_pressure'] == 'critical'
+    empty = consumer_view(bucket_quota_state='not_configured', bucket_request_evidence='available')
+    assert empty['rows'] == []
+    assert empty['pagination']['total_items'] == 0
+
+
+def test_consumer_clear_and_invalid_filters_preserve_scope() -> None:
+    cleared = consumer_view(bucket_per_page='25')
+    assert cleared['pagination']['total_items'] == 5
+    assert cleared['pagination']['per_page'] == 25
+    assert cleared['query_params']['tab'] == 'records'
+    assert cleared['query_params']['system_id'] == '42'
+    for key in ('usage_context', 'quota_state', 'quota_pressure', 'request_evidence'):
+        assert cleared[key] == 'all'
+
+    invalid = consumer_view(
+        bucket_usage_context='invalid',
+        bucket_quota_state='invalid',
+        bucket_quota_pressure='invalid',
+        bucket_request_evidence='invalid',
+        bucket_page='999',
+    )
+    assert invalid['pagination']['page'] == 1
+    assert invalid['pagination']['total_items'] == 5
+    for key in ('usage_context', 'quota_state', 'quota_pressure', 'request_evidence'):
+        assert invalid[key] == 'all'
+
+
+def test_consumer_request_filter_does_not_leak_to_other_domains() -> None:
+    result = build_bucket_table_view(
+        CONSUMER_ROWS,
+        {'bucket_request_evidence': 'available', 'bucket_quota_pressure': 'critical'},
+        page_key='performance',
+        system=_System(),
+        time_range='6h',
+    )
+    assert len(result['rows']) == 5
+    assert result['request_evidence'] == 'all'
+    assert result['quota_pressure'] == 'all'
+    assert 'bucket_request_evidence' not in result['query_params']

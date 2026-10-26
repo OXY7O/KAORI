@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% set consumer = metrics.bucket_analysis|default({}, true) %}
 {% set top_request = consumer.top_request_rate|default(none) %}
 {% set top_error = consumer.top_error_ratio|default(none) %}
@@ -6,7 +7,18 @@
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="activity" class="h-5 w-5"></i></span>
             <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Request Activity Leaders</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Request Activity Leaders</h2>
+                    {{ info_tip.render('object-storage-consumer-request-activity-leaders-guide',
+                                            'Request Activity Leaders Guide',
+                                            'Request demand and error ratio are distinct metrics-only signals; neither is inferred from Inventory.',
+                                            items=[
+                                            'Highest Request Rate ranks committed S3 activity; it does not measure bucket storage ownership.',
+                                            'Highest Error Ratio highlights reliability triage, not an identified root cause.',
+                                            'Missing request or error samples remain unavailable and never become fabricated zero or healthy evidence.',
+                                            ],
+                                            placement='right', variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Separate highest request demand from highest error ratio so throughput leaders do not hide reliability hotspots.</p>
             </div>
         </div>

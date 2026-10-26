@@ -32,19 +32,19 @@
                      data-kaori-table-header-actions
                      data-kaori-forecast-clear-filters>
                     {{ registry_ui.clear_filters_action(url_for(forecast_table.page_endpoint,
-                                                system_id=system.id,
-                                                history_window=selected_forecast_history_window,
-                                                tab='buckets',
-                                                forecast_bucket_per_page=forecast_table.pagination.per_page) ,
-                        table_ui.action_classes() ~ ' h-9 px-3',
-                        hx_get=url_for('analytics.object_storage_bucket_forecast_table',
-                        system_id=system.id,
-                        history_window=selected_forecast_history_window,
-                        tab='buckets',
-                        forecast_bucket_per_page=forecast_table.pagination.per_page),
-                        target='#object-storage-bucket-forecast-table-panel',
-                        indicator='#object-storage-bucket-forecast-table-loading-indicator',
-                        sync='#object-storage-bucket-forecast-table-panel:replace',
+                                        system_id=system.id,
+                                        history_window=selected_forecast_history_window,
+                                        tab='buckets',
+                                        forecast_bucket_per_page=forecast_table.pagination.per_page) ,
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_bucket_forecast_table',
+                    system_id=system.id,
+                    history_window=selected_forecast_history_window,
+                    tab='buckets',
+                    forecast_bucket_per_page=forecast_table.pagination.per_page),
+                    target='#object-storage-bucket-forecast-table-panel',
+                    indicator='#object-storage-bucket-forecast-table-loading-indicator',
+                    sync='#object-storage-bucket-forecast-table-panel:replace',
                     lead=false) }}
                 </div>
             {% endif %}
