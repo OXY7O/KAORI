@@ -290,28 +290,29 @@
                 </div>
             </div>
         {% else %}
-            <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
+            <div class="grid gap-4 xl:grid-cols-12 xl:items-stretch"
                  data-account-mfa-recovery-layout="action-context">
-                <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-7"
+                <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-7"
                          aria-labelledby="account-mfa-regenerate-title">
-                    <div class="flex items-start gap-3">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle pb-4">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="key-round" class="h-4 w-4"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h3 id="account-mfa-regenerate-title"
                                 class="text-sm font-bold text-content-primary">Regenerate Recovery Codes</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Replace all remaining recovery codes after verifying your identity.</p>
                         </div>
-                    </div>
+                    </header>
                     <form action="{{ url_for('settings.account', tab='mfa') }}"
                           method="post"
-                          class="mt-5 space-y-4">
+                          class="mt-5 grid gap-3 lg:grid-cols-12 lg:items-end"
+                          data-account-mfa-regenerate-form="inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="mfa_action" value="regenerate">
                         {% if can_change_password %}
-                            <div class="max-w-md">
+                            <div class="min-w-0 lg:col-span-4">
                                 <label for="mfa-regen-password"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">Current Password</label>
                                 <input id="mfa-regen-password"
@@ -320,10 +321,11 @@
                                        required
                                        autocomplete="current-password"
                                        maxlength="1024"
-                                       class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                       placeholder="Confirm your current password"
+                                       class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </div>
                         {% endif %}
-                        <div class="max-w-sm">
+                        <div class="min-w-0 {{ 'lg:col-span-4' if can_change_password else 'lg:col-span-8' }}">
                             <label for="mfa-regen-code"
                                    class="mb-1.5 block text-sm font-semibold text-content-primary">Authenticator or Recovery Code</label>
                             <input id="mfa-regen-code"
@@ -332,18 +334,51 @@
                                    required
                                    autocomplete="one-time-code"
                                    maxlength="64"
-                                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                   placeholder="Enter authenticator or recovery code"
+                                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         </div>
-                        <button type="submit"
-                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-5 text-sm font-semibold text-content-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                            Regenerate Recovery Codes
-                        </button>
+                        <div class="min-w-0 lg:col-span-4">
+                            <button type="submit"
+                                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="refresh-cw" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                <span>Regenerate Recovery Codes</span>
+                            </button>
+                        </div>
                     </form>
+                    <div class="mt-auto pt-5"
+                         data-account-mfa-recovery-steps="compact">
+                        <ol class="grid gap-3 rounded-xl bg-kaori-soft/40 p-4 sm:grid-cols-3">
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">1</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Verify your identity</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Use your current sign-in and a valid code.</p>
+                                </div>
+                            </li>
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">2</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Generate new codes</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Replace all unused recovery codes.</p>
+                                </div>
+                            </li>
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">3</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Save your new codes</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Store replacements in a safe location.</p>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
                 </section>
-                <aside class="min-w-0 rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
-                       aria-labelledby="mfa-recovery-boundary">
-                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                <aside class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
+                       aria-labelledby="mfa-recovery-boundary"
+                       data-account-mfa-recovery-security="equal-height">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-5">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"
                               aria-hidden="true">
                             <i data-lucide="shield-alert" class="h-4 w-4"></i>
@@ -351,20 +386,27 @@
                         <h3 id="mfa-recovery-boundary"
                             class="text-sm font-bold text-content-primary">Recovery Security</h3>
                     </header>
-                    <div class="space-y-4 p-5">
-                        <div class="flex items-start gap-3">
+                    <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
+                        <div class="flex flex-1 items-center gap-3 py-4">
                             <i data-lucide="key-round"
-                               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
                                aria-hidden="true"></i>
-                            <p class="text-sm leading-6 text-content-secondary">Current-password verification and a valid authenticator or recovery code are required.</p>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">
+                                {{ 'Password and authenticator/recovery code required.' if can_change_password else 'Fresh sign-in and authenticator/recovery code required.' }}
+                            </p>
                         </div>
-                        <div class="flex items-start gap-3">
+                        <div class="flex flex-1 items-center gap-3 py-4">
                             <i data-lucide="shield-alert"
-                               class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
+                               class="h-4 w-4 shrink-0 text-status-warning-text"
                                aria-hidden="true"></i>
-                            <p class="text-sm leading-6 text-content-secondary">Regeneration invalidates all previously unused recovery codes.</p>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">Regeneration invalidates all unused recovery codes.</p>
                         </div>
-                        <p class="border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">Save the replacement codes immediately when shown. KAORI cannot redisplay their plaintext values.</p>
+                        <div class="flex flex-1 items-center gap-3 py-4">
+                            <i data-lucide="info"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">Save new codes now; KAORI cannot show them again.</p>
+                        </div>
                     </div>
                 </aside>
             </div>
