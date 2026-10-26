@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 PARTIALS = ROOT / 'app/templates/kubernetes/tenant/partials'
 
@@ -44,6 +46,23 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
     assert "{% if can_manage and membership.principal_type in ['user', 'group'] %}" in registry
 
 
+def test_governed_confirmation_templates_compile_as_jinja() -> None:
+    """Check actual Jinja syntax, not just matching block names or HTML tags."""
+    environment = Environment(autoescape=True)
+    templates = (
+        ROOT / 'app/templates/components/destructive_confirmation_modal.html',
+        PARTIALS / '_group_registry.html',
+        PARTIALS / '_membership_registry.html',
+    )
+    for template in templates:
+        environment.parse(template.read_text(encoding='utf-8'))
+
+    # A mistyped closing delimiter ({% ... %> rather than {% ... %})
+    # must be rejected before a Tenant Groups page can return HTTP 500.
+    modal = templates[0].read_text(encoding='utf-8')
+    assert '%>' not in modal
+
+
 def test_governed_confirmation_standard_is_reused_by_membership_and_group() -> None:
     membership = read('_membership_registry.html')
     group = read('_group_registry.html')
@@ -51,10 +70,10 @@ def test_governed_confirmation_standard_is_reused_by_membership_and_group() -> N
 
     for registry in (membership, group):
         assert "presentation='governed'" in registry
-        assert "impact_items=[" in registry
-        assert "warning=" in registry
-        assert "destructive_modal.render(" in registry
-        assert "data-destructive-modal-open" in registry
+        assert 'impact_items=[' in registry
+        assert 'warning=' in registry
+        assert 'destructive_modal.render(' in registry
+        assert 'data-destructive-modal-open' in registry
 
     assert "operation_kind='revoke'" in membership
     assert "operation_kind='retire'" in group

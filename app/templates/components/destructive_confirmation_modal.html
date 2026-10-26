@@ -135,9 +135,8 @@
                         </div>
                     {% endif %}
                     {% if consequence %}
-                        <p data-destructive-detail
-                           class="text-xs leading-5 text-content-muted">{{ consequence }}</p>
-                    {% endif %>
+                        <p data-destructive-detail class="text-xs leading-5 text-content-muted">{{ consequence }}</p>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="{{ 'space-y-5 overflow-y-auto p-6 sm:p-7' if presentation == 'steps' else 'space-y-5 p-5' }}">
