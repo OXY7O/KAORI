@@ -116,12 +116,12 @@ from app.kubernetes.tenant.release_handoff_approval import (
     prepare_release_handoff_plan_committed,
     restart_expired_native_release_handoff_plan_committed,
 )
-from app.kubernetes.tenant.release_review_notifications import notify_release_handoff_review_recorded
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
     release_verified_native_tenant_committed,
     review_tenant_release_preflight_committed,
 )
+from app.kubernetes.tenant.release_review_notifications import notify_release_handoff_review_recorded
 from app.kubernetes.tenant.release_successor_claim import (
     record_release_successor_claim_committed,
 )

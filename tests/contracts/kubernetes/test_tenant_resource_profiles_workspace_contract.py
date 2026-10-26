@@ -892,56 +892,54 @@ def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_f
 def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     parent = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
     budget = read('app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_allocation_budget_detail.html')
     overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     routes = read('app/kubernetes/tenant/routes.py')
     governance = capacity_governance_source()
     script = read('app/static/js/tenant_resource_profile_presets.js')
 
-    assert "components/workspace_tabs.html" in parent
-    assert "workspace_tabs.render_query_tabs(" in parent
+    assert 'components/workspace_tabs.html' in parent
+    assert 'workspace_tabs.render_query_tabs(' in parent
     assert "active_allocation_view == 'budget'" in parent
     assert 'id="tenant-capacity-allocation-tabs"' in parent
     assert 'hx-select="#tenant-capacity-allocation-tabs"' in parent
-    assert "kubernetes/tenant/partials/_tenant_allocation_overview.html" in parent
-    assert "kubernetes/tenant/partials/_allocation_budget_registry.html" in parent
+    assert 'kubernetes/tenant/partials/_tenant_allocation_overview.html' in parent
+    assert 'kubernetes/tenant/partials/_allocation_budget_registry.html' in parent
     assert "('overview', 'Tenant Allocation Overview'" in parent
     assert "('budget', 'Allocation Budget'" in parent
-    assert parent.index('data-tenant-capacity-policy-form') < parent.index("workspace_tabs.render_query_tabs")
+    assert parent.index('data-tenant-capacity-policy-form') < parent.index('workspace_tabs.render_query_tabs')
     assert 'name="allocation_view" value="overview"' in overview
 
     assert 'components/table_registry.html' in budget
+    assert 'components/details/_expandable_row.html' in budget
     assert 'registry_ui.filter_form(' in budget
     assert 'registry_ui.footer(' in budget
     assert 'registry_ui.clear_filters_link(' in budget
-    assert 'capacity_page' in budget
-    assert 'capacity_per_page' in budget
-    assert 'capacity_search' in budget
-    assert 'capacity_environment' in budget
-    assert 'capacity_state' in budget
-    assert 'capacity_evidence' in budget
-    assert 'capacity_resource' in budget
-    assert "name='allocation_view'" not in budget
+    for field in ('capacity_page', 'capacity_per_page', 'capacity_search', 'capacity_environment',
+                  'capacity_state', 'capacity_evidence', 'capacity_resource'):
+        assert field in budget
     assert 'name="allocation_view" value="budget"' in budget
     assert 'table_ui.inventory_block_header(' in budget
     assert 'allocation-budget-status-tip' in budget
-    assert "table_ui.table_classes('min-w-[1000px] !table-fixed')" in budget
-    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in budget
+    assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in budget
+    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in budget
     assert "bars|selectattr('key', 'equalto', capacity_filters.resource)|list" in budget
-    assert 'rowspan="{{ visible_bars|length }}"' in budget
+    assert 'detail_row.toggle_button(' in budget
+    assert 'detail_row.static_detail_row(' in budget
+    for label in ('Cluster / Environment', 'Capacity State', 'Evidence', 'Namespaces', 'Actions'):
+        assert label in budget
+    assert 'Committed Allocation Evidence' in detail
     for field in ('bar.budget', 'bar.committed', 'bar.headroom', 'bar.percent', 'bar.free_percent', 'bar.shortfall'):
-        assert field in budget
-    for header in ('Cluster / Evidence', 'Resource', 'Budget', 'Committed', 'Headroom', 'Allocation'):
-        assert header in budget
-    assert 'progress_bar.stacked_bar(bar.percent,' in budget
-    assert 'Ratio unavailable' in budget
+        assert field in detail
+    assert 'progress_bar.stacked_bar(bar.percent,' in detail
+    assert 'Ratio unavailable' in detail
     assert 'No Matching Clusters' in budget
     assert 'data-kaori-native-dialog' not in budget
     assert 'View More' not in budget
-    assert 'hx-post' not in budget
-    assert 'components/status_detail_dialog.html' not in budget
+    assert 'hx-post' not in budget + detail
 
-    # Keep committed governance and explicit logical storage boundaries unchanged.
+    # Preserve compute/storage governance and original committed evidence calculations.
     assert 'Compute &amp; Pod Budget' in parent
     assert 'platform_reserve_pods' in parent
     assert 'unmanaged_commitment_pods' in parent
@@ -963,6 +961,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
 
 def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_budget() -> None:
     budget = read('app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_allocation_budget_detail.html')
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
     routes = read('app/kubernetes/tenant/routes.py')
     table = read('app/templates/components/table.html')
 
@@ -970,20 +970,22 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert "item.snapshot_state == 'current'" in budget
     assert 'item.committed_namespace_count' in budget
     assert 'item.state' in budget
-    assert 'bar.known' in budget
-    assert "bar.key == 'storage_bytes'" in budget
-    assert "Logical admission ceiling" in budget
+    assert 'bar.known' in detail
+    assert "bar.key == 'storage_bytes'" in detail
+    assert 'Logical admission ceiling' in detail
     assert 'Unknown capacity evidence is never treated as free headroom.' in budget
     assert 'Storage is a logical admission ceiling, not physical backend free space.' in budget
     assert 'table_ui.cluster_identity(item.cluster.name, item.cluster.environment)' in budget
     assert 'macro cluster_identity(' in table
     assert 'table_ui.table_classes(' in budget
-    assert 'data-kaori-canonical-registry' not in budget  # Shared registry macro owns this markup.
+    assert 'data-kaori-canonical-registry' not in budget
     assert 'registry_ui.footer(' in budget
-    assert 'resource_label=\'Clusters\'' in budget
-    assert "capacity_environment_options" in budget
-    assert "capacity_state_options" in budget
-    assert "capacity_evidence_options" in budget
+    assert "resource_label='Clusters'" in budget
+    assert 'capacity_environment_options' in budget
+    assert 'capacity_state_options' in budget
+    assert 'capacity_evidence_options' in budget
+    assert 'data-dialog-target="{{ budget_guide_dialog_id }}"' in overview
+    assert 'data-kaori-native-dialog' in overview
 
     for query_name in ('capacity_search', 'capacity_environment', 'capacity_state', 'capacity_evidence', 'capacity_resource'):
         assert f"request.args.get('{query_name}')" in routes
@@ -991,8 +993,8 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert "context['active_allocation_view'] = allocation_view" in routes
     assert "if allocation_view not in {'overview', 'budget'}:" in routes
     assert "capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]" in routes
-    assert "capacity_budget_bars" in budget
-    assert 'progress_bar.stacked_bar(bar.percent,' in budget
+    assert 'capacity_budget_bars' in budget
+    assert 'progress_bar.stacked_bar(bar.percent,' in detail
     assert 'No Matching Clusters' in budget
 
 
@@ -1301,9 +1303,8 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     capacity_scope = read('app/kubernetes/tenant/capacity_allocation_state.py')
 
     assert 'kubernetes/tenant/partials/_tenant_allocation_overview.html' in parent
-    assert parent.index('kubernetes/tenant/partials/_tenant_allocation_overview.html') < parent.index(
-        'kubernetes/tenant/partials/_allocation_budget_registry.html'
-    )
+    assert "active_allocation_view == 'budget'" in parent
+    assert 'workspace_tabs.render_query_tabs(' in parent
     assert 'workspace_tabs.render_query_tabs' in parent
     assert 'Tenant Allocation Overview' in overview
     assert 'allocation_cluster_id' in overview
@@ -1537,8 +1538,9 @@ def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None
     Environment(autoescape=True).parse(template)
 
     assert 'Adopted Native Governance Cutover' in template
-    assert 'Adopted Baseline · Observed' in template
-    assert 'KAORI Managed · Only after verified cutover' in template
+    assert 'Observed Provider Baseline' in template
+    assert 'Proposed KAORI Managed Contract' in template
+    assert 'Only committed after admitted provider read-back.' in template
     assert 'Managed Contract Comparison' in template
     assert 'Change Highlights' in template
     assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in template
@@ -1738,7 +1740,7 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert 'min-w-[27rem]' in shared
     assert 'data-tenant-allocation-tech-proposed="{{ path }}"' in shared
     assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in shared
-    assert re.search(r'data-tenant-allocation-highlight-item\\s+hidden', template)
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
     assert 'border-l-2 border-kaori-primary/20 pl-3' in template
     assert 'data-tenant-allocation-change-namespace' in template
     assert 'renderContractPreview(current, proposed)' in script

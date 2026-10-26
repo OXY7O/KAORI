@@ -211,30 +211,36 @@
         </footer>
     </form>
     {% set allocation_tabs = [
-        ('overview', 'Tenant Allocation Overview', 'chart-no-axes-combined',
+            ('overview', 'Tenant Allocation Overview', 'chart-no-axes-combined',
             url_for('tenant.resource_profiles', view='capacity', allocation_view='overview',
-                allocation_cluster_id=allocation_cluster_id)),
-        ('budget', 'Allocation Budget', 'table-2',
+            allocation_cluster_id=allocation_cluster_id)),
+            ('budget', 'Allocation Budget', 'table-2',
             url_for('tenant.resource_profiles', view='capacity', allocation_view='budget',
-                allocation_cluster_id=allocation_cluster_id))
-    ] %}
+            allocation_cluster_id=allocation_cluster_id))
+        ] %}
     <section id="tenant-capacity-allocation-tabs"
              class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="Tenant allocation views"
              hx-select="#tenant-capacity-allocation-tabs">
         {{ workspace_tabs.render_query_tabs(allocation_tabs,
-            active_allocation_view,
-            aria_label='Tenant allocation views',
-            hx_target='#tenant-capacity-allocation-tabs',
-            hx_indicator='#resource-profile-workspace-loading',
-            hx_sync='#tenant-capacity-allocation-tabs:replace') }}
+                active_allocation_view,
+                aria_label='Tenant allocation views',
+                hx_target='#tenant-capacity-allocation-tabs',
+                hx_indicator='#resource-profile-workspace-loading',
+                hx_sync='#tenant-capacity-allocation-tabs:replace') }}
         <div class="min-w-0 p-4 sm:p-5">
             {% if active_allocation_view == 'budget' %}
-                <div id="tenant-allocation-budget-panel" class="min-w-0" role="region" aria-label="Allocation Budget">
+                <div id="tenant-allocation-budget-panel"
+                     class="min-w-0"
+                     role="region"
+                     aria-label="Allocation Budget">
                     {% include "kubernetes/tenant/partials/_allocation_budget_registry.html" %}
                 </div>
             {% else %}
-                <div id="tenant-allocation-overview-panel" class="min-w-0" role="region" aria-label="Tenant Allocation Overview">
+                <div id="tenant-allocation-overview-panel"
+                     class="min-w-0"
+                     role="region"
+                     aria-label="Tenant Allocation Overview">
                     {% include "kubernetes/tenant/partials/_tenant_allocation_overview.html" %}
                 </div>
             {% endif %}
