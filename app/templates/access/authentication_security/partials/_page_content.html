@@ -85,7 +85,22 @@
                         variant='guide'
                     )
                 ) }}
-                <section aria-label="Authentication security controls">
+                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                         aria-labelledby="auth-security-control-areas-heading"
+                         data-auth-security-overview-hub="true">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 lg:px-6">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="layout-grid" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 id="auth-security-control-areas-heading"
+                                class="text-base font-semibold text-content-primary">Authentication Security Control Areas</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Review authentication controls and ownership boundaries in one workspace.</p>
+                        </div>
+                    </header>
+                    <div class="p-4 lg:p-5">
+                        <section aria-label="Authentication security controls">
                     <div class="grid gap-4 xl:grid-cols-3">
                         <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                             <div class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
@@ -178,9 +193,10 @@
                             </div>
                         </article>
                     </div>
-                </section>
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                         aria-labelledby="authentication-boundaries-heading">
+                        </section>
+                    </div>
+                    <section class="border-t border-outline-subtle"
+                             aria-labelledby="authentication-boundaries-heading">
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 lg:px-6">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
@@ -255,8 +271,9 @@
                             </ul>
                         </article>
                     </div>
+                    </section>
                 </section>
-                        {% elif active_tab == 'mfa' %}
+            {% elif active_tab == 'mfa' %}
                 {% set current_mfa_label = {
                     'disabled': 'Disabled',
                     'optional': 'Optional',
