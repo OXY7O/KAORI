@@ -23,6 +23,7 @@ from app.storage.object_storage.analytics.analysis import (
     derive_headroom,
     error_ratio,
     forecast_posture,
+    metric_boundary_evaluations,
     metric_risk_signals,
     performance_posture,
 )
@@ -683,6 +684,13 @@ def _apply_alert_snapshot_context(
     page_metrics_value = payload.get('page_metrics')
     page_metrics = cast(dict[str, Any], page_metrics_value) if isinstance(page_metrics_value, dict) else {}
     context['metrics'] = dict(page_metrics.get('alerts') or _unavailable_alert_metrics())
+    committed_metrics = context['metrics']
+    committed_metrics['boundary_evaluations'] = metric_boundary_evaluations(
+        utilization=committed_metrics.get('utilization'),
+        error_ratio=committed_metrics.get('error_ratio'),
+        waiting=committed_metrics.get('waiting'),
+        offline_nodes=committed_metrics.get('offline_nodes'),
+    )
     metrics_runtime_state = str(context['metrics_source'].get('runtime_state') or '')
     metrics_operational = metrics_runtime_state in {'operational', 'degraded'}
     context['alerts_evidence_available'] = bool(alert_stream.get('connected')) or metrics_operational
