@@ -35,18 +35,18 @@ class Queue:
         self.order: tuple[object, ...] = ()
         self.limit_value = 0
 
-    def filter(self, *conditions: object) -> 'Queue':
+    def filter(self, *conditions: object) -> Queue:
         self.conditions = conditions
         return self
 
     def count(self) -> int:
         return 1
 
-    def order_by(self, *args: object) -> 'Queue':
+    def order_by(self, *args: object) -> Queue:
         self.order = args
         return self
 
-    def limit(self, value: int) -> 'Queue':
+    def limit(self, value: int) -> Queue:
         self.limit_value = value
         return self
 
@@ -333,7 +333,7 @@ def test_requester_active_work_requires_current_approved_owned_unexpired_state(m
         record.status = status
         record.requester_user_id = owner
         record.policy = policy
-        record.expires_at = now - timedelta(seconds=seconds_ago)
+        record.expires_at = now - timedelta(seconds=expiry_delta_seconds)
         result = approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42)
         assert result['ready_count'] == expected
         assert len(result['items']) == expected

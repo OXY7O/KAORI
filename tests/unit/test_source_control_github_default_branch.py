@@ -8,7 +8,9 @@ import pytest
 
 from app.integrations.source_control.source_control.providers.github import transport
 from app.integrations.source_control.source_control.providers.github.transport import (
-    GitHubAppClient, GitHubProviderError, InstallationToken,
+    GitHubAppClient,
+    GitHubProviderError,
+    InstallationToken,
 )
 
 
