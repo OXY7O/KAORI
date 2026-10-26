@@ -575,3 +575,24 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Collect redacted screenshots, actual command results, and Human Acceptance; defer Full Admission, `kaori/staging`/`main` promotion and release until explicitly authorized.
+
+## Assurance copy and Bot Activation & Safety visual UAT (#3350, 2026-10-26)
+
+Review the operator's four red-marked screenshots against the merged holding SHA. At ~1150-1200px desktop width, MFA **Factor Ownership**, **Factor Enrollment**, **Policy Transition** and Bot **Challenge Boundary**, **One-Use Proof**, **Activation Evidence**, **Recovery Access** each show a complete concise description on **one line**; at tablet/mobile 1024/768/390/360, accessibility zoom or different locale, text may wrap naturally, but cannot be hidden or clipped. Confirm titles and right-edge status/qualifier remain accessible and no layout/typography regression occurs on Overview and Session summary components.
+
+In Bot Protection, verify the *two inline helper paragraphs* under Protection Mode and Verification Secret are absent, while labels, Disabled/Always options, encrypted password input, server save, CSRF, RBAC, Change Impact and mandatory recovery acknowledgement remain intact. Encrypted secret/audit guarantees remain operational despite removal of duplicate copy. Test both manager and read-only viewer.
+
+Right-hand **Activation & Safety** at desktop has three ordered, well-proportioned steps distributed through panel height with semantic context surfaces, not empty oversized zones. Each step must show practical truthful configuration/one-use proof/recovery guidance. On narrow devices the cards stack; no overflow or compressed Siteverify widget. Where provider configuration exists, the conditional real Turnstile challenge/test form remains usable; where it does not, show the original truthful setup-prerequisite guidance, never fabricate a `Healthy` or `Ready` state. Preserve one-hour proof validity and fail-closed admission. The footer about external provider authority and independent recovery remains.
+
+The operator's preceding **old SHA** evidence showed Ruff check PASS, **Ruff Format FAIL** (two test assertion formatting sites), **50 focused pytest PASS**, and earlier **djlint FAIL** on a large multiline Jinja formatting diff. This scope updates those two test-format locations but does not claim runtime success or eliminate the djlint debt. New-SHA Ruff, Ruff Format, djlint, pytest, Access Final Lock/Sidebar verifier, browser light/dark/responsive, security UAT and Human Acceptance **must be run and recorded**; do not waive formatter failure.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+If `djlint --check` still reports the inherited macro/markup layout diff, review and apply only the standard `djlint --reformat` output on the existing file in the Dev Container, inspect its diff and re-run original gates. Do not disable checks or infer pass from structurally balanced tags. Official admission/kaori/staging/main remains HOLD pending user visual acceptance.
