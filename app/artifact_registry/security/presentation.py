@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
 from app.artifact_registry.security.presentation_scope import (
+    _evidence_state,
     _security_scope_labels,
     _security_snapshot_context,
 )
@@ -93,23 +94,6 @@ def _capability_state(
     if attempted:
         return {'key': 'supported_unavailable', 'label': 'Unavailable', 'tone': 'warning'}
     return {'key': 'not_collected', 'label': 'Not Collected', 'tone': 'unknown'}
-
-
-def _evidence_state(value: str | None, *, evidence: str) -> dict[str, str]:
-    key = str(value or '').strip().lower()
-    if evidence == 'signature':
-        if key == 'signed':
-            return {'label': 'Observed', 'tone': 'normal'}
-        if key == 'unsigned':
-            return {'label': 'Not Observed', 'tone': 'warning'}
-        return {'label': 'Not Collected' if not key else 'Not Observed', 'tone': 'unknown'}
-    if evidence == 'sbom':
-        if key == 'available':
-            return {'label': 'Available', 'tone': 'normal'}
-        if key == 'observed':
-            return {'label': 'Observed', 'tone': 'info'}
-        return {'label': 'Not Collected' if not key else 'Not Available', 'tone': 'unknown'}
-    return {'label': key.replace('_', ' ').title() if key else 'Not Collected', 'tone': 'unknown'}
 
 
 def _scoped_sources(
