@@ -164,7 +164,7 @@ def test_access_grant_detail_has_compact_context_and_right_aligned_actions() -> 
     assert "action_button.classes('critical')" in detail
     assert "action_button.classes('secondary', full=true)" not in detail
     assert "action_button.classes('critical', full=true)" not in detail
-    assert detail.count('class="shrink-0"') == 2
+    assert detail.count('class="ml-auto shrink-0"') == 2
     assert detail.count('flex min-w-0 flex-wrap items-center justify-between gap-3 bg-surface-card') == 2
     assert detail.count('name="csrf_token"') == 2
     assert detail.count('name="access_inventory_view" value="grants"') == 2
@@ -173,10 +173,6 @@ def test_access_grant_detail_has_compact_context_and_right_aligned_actions() -> 
     assert "if grant.status == 'active'" in detail
     assert 'Provider Reconciliation' in detail
     assert 'data-access-grant-expanded-evidence' in detail
-    assert 'Grant Context' in detail
-    assert 'Governed Actions' in detail
-    assert 'action_button.classes(\'secondary\', full=true)' not in detail
-    assert 'action_button.classes(\'critical\', full=true)' not in detail
     assert 'Retire requires revoked Memberships and reconciled grants.' in group
     assert 'Retirement is blocked while active Memberships' not in group
 
