@@ -238,14 +238,18 @@
 {{ destructive_modal.render('tenant-membership-revoke-modal',
 'Revoke Membership',
 'Selected principal',
-'KAORI preserves the Membership record and its authorization history.',
+'',
 'tenant-membership-revoke-submit',
 action_label='Revoke Membership',
-notice='Reactivating this Membership later will not restore revoked Access Grants; new authorization is required.',
+notice='Remove this principal’s Tenant authorization and dependent grants.',
 scope_value='Tenant Membership',
+target_label='Principal',
+scope_label='Tenant',
+operation_kind='revoke',
 impact_items=[
 ('user-x', 'Disable Membership', 'The principal loses authorization through this Tenant Membership.'),
 ('shield-x', 'Revoke dependent grants', 'Active Access Grants are revoked and provider cleanup is reconciled.'),
 ('history', 'Preserve audit history', 'Membership and Access Grant evidence remain available for review.')
 ],
-presentation='membership') }}
+warning='Reactivating this Membership later does not restore revoked Access Grants. A new authorization is required.',
+presentation='governed') }}

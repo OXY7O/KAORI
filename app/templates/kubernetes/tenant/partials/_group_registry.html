@@ -325,16 +325,18 @@
 {{ destructive_modal.render('tenant-group-retire-modal',
 'Retire Tenant Group',
 'Selected Tenant Group',
-'The group remains in KAORI as historical evidence and can be reactivated later. No external IdP group is deleted.',
+'',
 'tenant-group-retire-submit',
 action_label='Retire Group',
-notice='Retire removes this group from future Membership selection without hard-deleting its history.',
+notice='Stop future Membership selection while preserving existing history.',
 scope_value='Tenant Group binding',
+target_label='Group',
+scope_label='Tenant / Group',
+operation_kind='retire',
 impact_items=[
-('user-round-x', 'Stop New Membership', 'The retired group is no longer selectable for a new Tenant Membership.') ,
-('history', 'Retain History', 'Existing revoked Membership, Access Grant, correlation, and audit evidence remains queryable.'),
-('external-link', 'Leave IdP Untouched', 'KAORI does not delete or modify the authoritative external Identity Group.')
+('user-round-x', 'Stop new memberships', 'This group is no longer available for new Tenant Memberships.'),
+('history', 'Preserve history', 'Revoked memberships, access grants, correlation, and audit evidence remain queryable.'),
+('external-link', 'Leave IdP unchanged', 'KAORI does not modify or delete the authoritative external group.')
 ],
-warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.',
-access_chrome=true
-) }}
+warning='Retirement is blocked while active Memberships or unfinished Access Grant cleanup exist. Revoke and reconcile first.',
+presentation='governed') }}

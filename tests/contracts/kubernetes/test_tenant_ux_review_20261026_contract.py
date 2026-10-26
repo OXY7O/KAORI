@@ -45,36 +45,38 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
 
 
 
-def test_membership_revoke_modal_uses_compact_single_column_confirmation() -> None:
-    registry = read('_membership_registry.html')
-    shared = (ROOT / 'app/templates/components/destructive_confirmation_modal.html').read_text(
-        encoding='utf-8'
-    )
+def test_governed_confirmation_standard_is_reused_by_membership_and_group() -> None:
+    membership = read('_membership_registry.html')
+    group = read('_group_registry.html')
+    shared = (ROOT / 'app/templates/components/destructive_confirmation_modal.html').read_text(encoding='utf-8')
 
-    assert "presentation='membership'" in registry
-    assert "notice='Reactivating this Membership later" in registry
-    assert 'access_chrome=true' not in registry
-    assert "('user-x', 'Disable Membership'" in registry
-    assert "('shield-x', 'Revoke dependent grants'" in registry
-    assert "('history', 'Preserve audit history'" in registry
+    for registry in (membership, group):
+        assert "presentation='governed'" in registry
+        assert "impact_items=[" in registry
+        assert "warning=" in registry
+        assert "destructive_modal.render(" in registry
+        assert "data-destructive-modal-open" in registry
 
-    variant = shared.split("{% if presentation == 'membership' %}", 1)[1]
-    header = variant.split('{% else %}', 1)[0]
-    assert 'Review the principal and Tenant before confirming this access change.' in header
-    assert 'metadata_label(' not in header
-    assert 'status_label(' not in header
+    assert "operation_kind='revoke'" in membership
+    assert "operation_kind='retire'" in group
+    assert "target_label='Principal'" in membership
+    assert "target_label='Group'" in group
+    assert "scope_label='Tenant'" in membership
+    assert "scope_label='Tenant / Group'" in group
 
-    assert 'aria-label="Revocation impact"' in shared
-    assert 'class="divide-y divide-outline-subtle overflow-hidden rounded-lg' in shared
-    assert 'Important access boundary' in shared
+    assert "max-w-3xl' if presentation in ['governed', 'membership']" in shared
+    assert "{% if presentation in ['governed', 'membership'] %}" in shared
+    assert 'aria-label="Governed action impact"' in shared
+    assert 'divide-y divide-outline-subtle' in shared
+    assert '{{ target_label }}' in shared
+    assert '{{ scope_label }}' in shared
+    assert '{{ warning }}' in shared
+    assert 'Important before confirming' in shared
     assert 'data-destructive-target-name' in shared
     assert 'data-destructive-target-scope' in shared
-    assert 'data-destructive-detail' in shared
     assert 'data-destructive-modal-confirm' in shared
     assert 'data-submit-button-id="{{ confirm_button_id }}"' in shared
     assert 'data-destructive-modal-close' in shared
-
-    # Existing high-risk resource and multi-step presentations stay available.
     assert "presentation == 'kubernetes'" in shared
     assert "presentation == 'steps'" in shared
     assert 'access_chrome=false' in shared
@@ -86,9 +88,10 @@ def test_group_modals_use_distinct_context_and_destructive_review() -> None:
     assert 'aria-label="Group details"' in registry
     assert 'Updating Kubernetes Group Subject' in registry
     assert 'Retire Tenant Group' in registry
-    assert "access_chrome=true" in registry
-    assert "data-destructive-modal-open" in registry
-    assert "data-tenant-group-edit-form" in registry
+    assert "operation_kind='retire'" in registry
+    assert "presentation='governed'" in registry
+    assert 'data-destructive-modal-open' in registry
+    assert 'data-tenant-group-edit-form' in registry
 
 
 def test_access_grant_and_credential_actions_are_in_expanded_evidence() -> None:
@@ -109,8 +112,8 @@ def test_access_grant_and_credential_actions_are_in_expanded_evidence() -> None:
 
     grant = read('_access_grant_row_detail.html')
     credential = read('_credential_row_detail.html')
-    assert "tenant.reconcile_access_grant_route" in grant
-    assert "tenant.revoke_access_grant_route" in grant
+    assert 'tenant.reconcile_access_grant_route' in grant
+    assert 'tenant.revoke_access_grant_route' in grant
     assert 'access-grant-more-actions-' not in read('_access_grant_registry.html')
     for route in (
         'renew_credential_route',
