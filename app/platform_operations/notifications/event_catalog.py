@@ -159,7 +159,7 @@ def _apply_authentication_event_context(
 
 
 def _append_authentication_context_items(
-    context_items: list[dict[str, str]],
+    context_items: list[dict[str, Any]],
     *,
     access_action: str | None,
     auth_source: str | None,
