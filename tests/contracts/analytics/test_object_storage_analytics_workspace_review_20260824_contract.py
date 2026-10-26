@@ -45,7 +45,7 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
             'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.',
             forecast_table,
         ),
-        ('Metrics Source ALERTS provides narrower rule-state evidence.', alerts),
+        ('Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.', alerts),
         ("('Stale · Failed', 'warning')", materialization),
     )
     for phrase, source in expected:
@@ -139,7 +139,7 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     assert 'Inventory fallback is per field and only where supported.' in buckets
     assert 'Alertmanager/Metrics Source ALERTS report provider alerts;' in alert_summary
     assert 'If either evidence family is unavailable, posture stays Unknown' in alert_summary
-    assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
+    assert 'Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.' in alert_records
 
     assert 'Provider conditions require review.' in system_posture
     assert (
