@@ -21,7 +21,7 @@ Human-approved design review #3235; implementation issue #3260. This governs **O
 | Performance | Committed metrics-source/status banner | `Request Health`, `Traffic & Trend`, `Bucket Activity` |
 | Top Consumers | Committed metrics-source/status banner | `Consumer Records` and activity records with per-field provenance |
 | Forecast | Worker-materialized forecast state in context | `Worker & Method` retains generation/refresh/methodology; charts distinguish observed history from projection |
-| Alerts & Anomalies | Alertmanager-first resolved source/status in context | `Alert Overview` → expandable Alert Source & Lifecycle Details; provider alerts and KAORI anomaly signals remain separate |
+| Alerts & Anomalies | Alertmanager-first resolved source/status in context | `Alert Overview` → compact native `View Alert Source` dialog; `Anomaly Signals` → committed KAORI boundary evaluation table, independent of provider alerts |
 
 ## Semantic and security guardrails
 
@@ -65,7 +65,7 @@ Feature: Central Object Storage Analytics Data & Evidence
     Given I open Forecast Worker & Method
     Then I see the committed worker generation status and methodology
     Given I open Alerts Overview
-    When I expand "Alert Source & Lifecycle Details"
+    When I open the "View Alert Source" dialog
     Then I can distinguish Alertmanager lifecycle evidence from narrower Metrics Source ALERTS fallback
     And KAORI anomaly signals remain independent of provider-alert records
 
@@ -192,3 +192,12 @@ Feature: Central Object Storage Analytics Data & Evidence
 - **Bucket Forecast Records** retains its independent HTMX-rendered KAORI table surface, filters, Clear Filters, pagination and history/system selection. Its heading now includes a canonical, unique Guide explaining forecast-ready history, worker quota/watch planning signals and the boundary from active provider alert lifecycle. The Guide macro is imported directly in the table partial so direct HTMX rendering does not inherit a missing macro from a parent.
 - **Top Consumers** uses concise single-line desktop evidence helpers without changing calculations: `Quota Evidence` still displays the three committed dynamic counts (observed quota states, known bucket total, explicit Not Configured state); `Reliability Boundary` states that error ratio helps triage rather than establish root cause, and directs follow-up to Performance. At narrow widths, text may wrap for accessibility; numeric meaning and unknown/not-configured distinctions remain unchanged.
 - QA: check unique native Guides/keyboard focus, desktop 1440×900, mobile/light/dark, HTMX partial/empty-state, accurate quota counts and no regression to chart or alert semantics. Run existing `djlint`, Ruff and focused pytest; no custom validation script. Official Full Admission, staging/main promotion and release remain HOLD until Human Acceptance.
+
+## 26 October 2026 — Complete four-boundary Anomaly Signal evaluation (#3360)
+
+- **Authority:** Existing Object Storage Analytics `metric_risk_signals()` remains the triggered-findings contract used by `Alert Overview` counts and read-only `Recommendations`. Its outputs are **not** a complete inventory of all checks, hence the earlier Anomaly Signals tab displayed only one Critical row for a high request-error ratio. That is correct as a finding but too sparse as an operator evaluation view.
+- **Anomaly Signals** now shows four committed KAORI metric boundaries on a standard, accessible, responsive `table_primitives.html` table, each including Operating Boundary, Observed, Threshold, Severity, and Evaluation. The header uses the existing Violet `Guide` from `components/info_tip.html` with `variant='guide'`, not an isolated question-mark tooltip.
+- **Exact rules are unchanged:** Capacity Warning ≥85% / Critical ≥95%; Request Error Ratio Warning ≥5% / Critical ≥10%; Waiting Requests Warning strictly >0 (no Critical boundary); Offline Nodes Critical strictly >0 (no Warning boundary). Values are derived from existing source-qualified `utilization`, `error_ratio`, `waiting`, and `offline_nodes` only. A measured zero is Normal; each missing metric is individually **Unknown**, even when another boundary is Critical. No made-up data, no ML, no additional provider query.
+- The new `metric_boundary_evaluations()` builder is evaluated **only over already loaded worker-committed Object Storage Analytics metrics in `_apply_alert_snapshot_context`**, not during fresh provider access. It supports historical committed snapshots without requiring a worker backfill, schema change, provider adapter, or altering the serialized snapshot. The existing alert and anomaly source authority, materialized-worker read boundary, and critical/warning findings rollup are preserved.
+- **Architecture taxonomy:** Provider Alerts = authoritative Alertmanager lifecycle (or narrower Metrics Source ALERTS rule-state fallback). KAORI Anomaly Signals = deterministic domain-specific operating-boundary evaluations. Cross-domain intelligent correlation and diagnostic recommendations are separate, future capabilities; this view does **not** claim root cause, predictive anomaly detection, or an auto-created external alert.
+- Human UAT: test four rows/threshold edges, normal vs missing evidence, separately Unknown boundaries, existing Overview anomalous count and Recommendations unchanged, Jinja table/Guide keyboard/focus, horizontal overflow on mobile, Violet/light/dark at 1440×900; use existing Ruff, djlint and pytest gates. This workstream remains on temporary `kaori/review/staging-uat` pending explicit acceptance; Full Admission, staging/main and release/tag HOLD.
