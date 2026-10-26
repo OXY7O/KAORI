@@ -67,14 +67,14 @@
                                                         placement='right', variant='guide') }}
                         {% elif compact_forecast_workspace %}
                             {{ info_tip.render('object-storage-storage-usage-forecast-' ~ object_storage_trend_instance|default('trend') ~ '-guide',
-                                                        'Storage Usage Forecast Guide',
-                                                        'Committed historical usage is observed evidence; the dashed 30-day line is a worker planning projection.',
-                                                        items=[
-                                                        'Observed samples and historical growth describe committed history, not guaranteed future capacity demand.',
-                                                        'The dashed linear projection uses the current forecast-worker baseline.',
-                                                        'Missing history and forecast evidence remain unavailable rather than zero or Healthy.',
-                                                        ],
-                                                        placement='right', variant='guide') }}
+                            'Storage Usage Forecast Guide',
+                            'Committed historical usage is observed evidence; the dashed 30-day line is a worker planning projection.',
+                            items=[
+                            'Observed samples and historical growth describe committed history, not guaranteed future capacity demand.',
+                            'The dashed linear projection uses the current forecast-worker baseline.',
+                            'Missing history and forecast evidence remain unavailable rather than zero or Healthy.',
+                            ],
+                            placement='right', variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">

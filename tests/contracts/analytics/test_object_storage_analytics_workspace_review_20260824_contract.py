@@ -41,7 +41,10 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
         ('Missing evidence stays Unknown.', performance),
         ('throughput alone does not indicate health or saturation.', traffic),
         ('These are planning signals, not active alerts.', forecasts),
-        ('Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.', forecast_table),
+        (
+            'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.',
+            forecast_table,
+        ),
         ('Metrics Source ALERTS provides narrower rule-state evidence.', alerts),
         ("('Stale · Failed', 'warning')", materialization),
     )

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
+from app.storage.object_storage.analytics.bucket_table import (
+    build_bucket_forecast_table_view,
+    build_bucket_table_view,
+)
 
 
 class _System:
@@ -163,3 +166,65 @@ def test_performance_invalid_usage_context_and_cross_workspace_isolation() -> No
     assert len(other['rows']) == 3
     assert other['usage_context'] == 'all'
     assert 'bucket_usage_context' not in other['query_params']
+
+
+FORECAST_ROWS = [
+    {'name': 'ready-warning', 'watch_tone': 'warning', 'history_state': 'ready'},
+    {'name': 'baseline-missing', 'watch_tone': 'normal', 'history_state': 'no_data'},
+    {'name': 'baseline-partial', 'watch_tone': 'normal', 'history_state': 'partial'},
+]
+
+
+def forecast_view(**query: str) -> dict:
+    return build_bucket_forecast_table_view(
+        FORECAST_ROWS,
+        query,
+        system=_System(),
+        history_window='30d',
+    )
+
+
+def test_forecast_watch_and_history_filter_intersect_on_committed_records() -> None:
+    result = forecast_view(forecast_watch='normal', forecast_history_state='no_data')
+    assert [row['name'] for row in result['rows']] == ['baseline-missing']
+    assert result['pagination']['total_items'] == 1
+    assert result['watch'] == 'normal'
+    assert result['history_state'] == 'no_data'
+    assert result['query_params']['forecast_watch'] == 'normal'
+    assert result['query_params']['forecast_history_state'] == 'no_data'
+
+
+def test_forecast_active_filter_with_no_match_keeps_reset_and_context() -> None:
+    result = forecast_view(
+        forecast_watch='warning',
+        forecast_history_state='no_data',
+        forecast_bucket_per_page='10',
+    )
+    assert result['rows'] == []
+    assert result['pagination']['total_items'] == 0
+    assert result['pagination']['per_page'] == 10
+    assert result['query_params']['tab'] == 'buckets'
+    assert result['query_params']['history_window'] == '30d'
+    assert result['query_params']['system_id'] == '42'
+
+
+def test_forecast_clear_filters_preserves_history_and_page_size() -> None:
+    result = forecast_view(forecast_bucket_per_page='10')
+    assert result['pagination']['total_items'] == 3
+    assert result['pagination']['per_page'] == 10
+    assert result['watch'] == result['history_state'] == 'all'
+    assert result['search'] == ''
+    assert result['query_params']['history_window'] == '30d'
+
+
+def test_forecast_search_pagination_and_invalid_filter_values() -> None:
+    result = forecast_view(
+        forecast_q='baseline',
+        forecast_watch='normal',
+        forecast_history_state='invalid',
+        forecast_bucket_page='99',
+    )
+    assert [row['name'] for row in result['rows']] == ['baseline-missing', 'baseline-partial']
+    assert result['history_state'] == 'all'
+    assert result['pagination']['page'] == 1
+    assert result['query_params']['forecast_q'] == 'baseline'
