@@ -501,8 +501,20 @@
                         variant='guide'
                     )
                 ) }}
-                <div class="grid items-stretch gap-4 xl:grid-cols-5"
-                     data-auth-bot-layout="configuration-safety">
+                <div class="space-y-4"
+                     data-auth-security-bot-stack="true">
+                    <header class="space-y-1"
+                            data-auth-security-bot-intro="above-card">
+                        <h2 id="auth-security-bot-controls-heading"
+                            class="text-base font-semibold text-content-primary">Bot Protection Controls</h2>
+                        <p class="text-sm leading-6 text-content-secondary">Configure Cloudflare Turnstile, verify the provider, and review activation safeguards in one workspace.</p>
+                    </header>
+                    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                             aria-labelledby="auth-security-bot-controls-heading"
+                             data-auth-security-bot-hub="true">
+                        <div class="p-4 lg:p-5">
+                            <div class="grid items-stretch gap-4 xl:grid-cols-5"
+                                 data-auth-bot-layout="configuration-safety">
                     <section class="flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
                              aria-labelledby="bot-policy-config-heading">
                         <header class="flex items-center gap-3 border-b border-outline-subtle pb-4">
@@ -688,6 +700,9 @@
                                 <p>Stored configuration is not proof of provider availability. Confirm independent administrator recovery before activation.</p>
                             </div>
                         </footer>
+                    </section>
+                            </div>
+                        </div>
                     </section>
                 </div>
             {% else %}
