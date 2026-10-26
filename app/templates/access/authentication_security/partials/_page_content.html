@@ -4,6 +4,13 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "access/authentication_security/partials/_assurance_summary.html" as assurance %}
 <div id="authentication-security-page" class="space-y-6">
+    <div data-authentication-security-submenu hx-sync="this:replace">
+        {{ workspace_tabs.render_navigation(submenu_tabs,
+            active_tab,
+            prefix='authentication-security',
+            aria_label='Authentication Security Sections',
+            hx_target='#authentication-security-page') }}
+    </div>
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
@@ -33,9 +40,8 @@
             ) }}
         </div>
     </section>
-    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="rounded-2xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="Authentication Security Workspace">
-        {{ workspace_tabs.render_query_tabs(tabs, active_tab, aria_label='Authentication Security Sections', hx_target='#authentication-security-page', hx_sync='this:replace') }}
         <div class="space-y-4 p-5 lg:p-6">
             {% if active_tab == 'overview' %}
                 {% set mfa_active = mfa_policy_mode != 'disabled' %}
