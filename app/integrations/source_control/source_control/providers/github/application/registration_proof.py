@@ -110,8 +110,7 @@ def issue_github_successor_proof(
 
 
 def verify_github_successor_proof(
-    *, token: str | None, user_id: int, predecessor_installation_id: int,
-    values: GitHubConnectionInput
+    *, token: str | None, user_id: int, predecessor_installation_id: int, values: GitHubConnectionInput
 ) -> tuple[bool, str]:
     if not token:
         return False, 'Test the replacement installation before registration.'

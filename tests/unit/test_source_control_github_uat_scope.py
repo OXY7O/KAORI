@@ -677,19 +677,30 @@ def test_github_successor_input_preserves_predecessor_and_reuses_shared_app_secr
     from app.integrations.source_control.source_control.providers.github import registration
 
     credential = SimpleNamespace(
-        id=44, enabled=True, host_key='github.com', native_app_id='123',
+        id=44,
+        enabled=True,
+        host_key='github.com',
+        native_app_id='123',
         private_key_pem='-----BEGIN PRIVATE KEY-----\\nlegacy',
         webhook_secret='existing-webhook-secret-example',
     )
     canonical = SimpleNamespace(
-        id=8, integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', environment='development',
-        description='original connection', enabled=True,
+        id=8,
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        environment='development',
+        description='original connection',
+        enabled=True,
     )
     predecessor = SimpleNamespace(
-        id=3, provider_key='github', host_key='github.com',
-        native_app_id='123', native_installation_id='456',
-        integration_instance_id=8, integration_instance=canonical,
+        id=3,
+        provider_key='github',
+        host_key='github.com',
+        native_app_id='123',
+        native_installation_id='456',
+        integration_instance_id=8,
+        integration_instance=canonical,
         github_app_credential=credential,
     )
     values = registration.build_successor_connection_input(
@@ -702,7 +713,9 @@ def test_github_successor_input_preserves_predecessor_and_reuses_shared_app_secr
         webhook_secret=None,
     )
     assert (str(values.app_id), str(values.installation_id), str(values.account_id)) == (
-        '123', '987', '789',
+        '123',
+        '987',
+        '789',
     )
     assert values.private_key_pem == credential.private_key_pem
     assert values.webhook_secret == credential.webhook_secret
@@ -713,28 +726,38 @@ def test_github_successor_input_preserves_predecessor_and_reuses_shared_app_secr
         registration.build_successor_connection_input(
             predecessor,
             successor_name='Duplicate Native Binding',
-            app_id='123', installation_id='456', account_id='789',
-            private_key_pem=None, webhook_secret=None,
+            app_id='123',
+            installation_id='456',
+            account_id='789',
+            private_key_pem=None,
+            webhook_secret=None,
         )
     with pytest.raises(ValueError, match='requires a new PEM'):
         registration.build_successor_connection_input(
             predecessor,
             successor_name='Another GitHub App',
-            app_id='456', installation_id='987', account_id='789',
-            private_key_pem=None, webhook_secret=None,
+            app_id='456',
+            installation_id='987',
+            account_id='789',
+            private_key_pem=None,
+            webhook_secret=None,
         )
     with pytest.raises(registration.GitHubProviderError, match='Shared GitHub App credentials'):
         registration.build_successor_connection_input(
             predecessor,
             successor_name='Changed Shared Secret',
-            app_id='123', installation_id='987', account_id='789',
+            app_id='123',
+            installation_id='987',
+            account_id='789',
             private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
             webhook_secret='other-webhook-secret-example',
         )
     new_app = registration.build_successor_connection_input(
         predecessor,
         successor_name='Different New App',
-        app_id='456', installation_id='987', account_id='789',
+        app_id='456',
+        installation_id='987',
+        account_id='789',
         private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
         webhook_secret='other-webhook-secret-example',
     )
@@ -754,35 +777,60 @@ def test_github_successor_proof_is_bound_to_predecessor_identity_and_user() -> N
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'test-successor-source-bound-proof'
     values = GitHubConnectionInput(
-        name='Successor Test', environment='development', description=None,
-        app_id='456', installation_id='987', account_id='789',
+        name='Successor Test',
+        environment='development',
+        description=None,
+        app_id='456',
+        installation_id='987',
+        account_id='789',
         private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
         webhook_secret='other-webhook-secret-example',
     )
     with app.app_context():
         proof = registration_proof.issue_github_successor_proof(
-            user_id=21, predecessor_installation_id=3, values=values,
+            user_id=21,
+            predecessor_installation_id=3,
+            values=values,
         )
         assert registration_proof.verify_github_successor_proof(
-            token=proof, user_id=21, predecessor_installation_id=3, values=values,
+            token=proof,
+            user_id=21,
+            predecessor_installation_id=3,
+            values=values,
         )[0]
         assert not registration_proof.verify_github_successor_proof(
-            token=proof, user_id=22, predecessor_installation_id=3, values=values,
+            token=proof,
+            user_id=22,
+            predecessor_installation_id=3,
+            values=values,
         )[0]
         assert not registration_proof.verify_github_successor_proof(
-            token=proof, user_id=21, predecessor_installation_id=4, values=values,
+            token=proof,
+            user_id=21,
+            predecessor_installation_id=4,
+            values=values,
         )[0]
         updated = GitHubConnectionInput(
-            name=values.name, environment=values.environment,
-            description=values.description, app_id=values.app_id,
-            installation_id='999', account_id=values.account_id,
-            private_key_pem=values.private_key_pem, webhook_secret=values.webhook_secret,
+            name=values.name,
+            environment=values.environment,
+            description=values.description,
+            app_id=values.app_id,
+            installation_id='999',
+            account_id=values.account_id,
+            private_key_pem=values.private_key_pem,
+            webhook_secret=values.webhook_secret,
         )
         assert not registration_proof.verify_github_successor_proof(
-            token=proof, user_id=21, predecessor_installation_id=3, values=updated,
+            token=proof,
+            user_id=21,
+            predecessor_installation_id=3,
+            values=updated,
         )[0]
         assert not registration_proof.verify_github_successor_proof(
-            token=None, user_id=21, predecessor_installation_id=3, values=values,
+            token=None,
+            user_id=21,
+            predecessor_installation_id=3,
+            values=values,
         )[0]
 
 
@@ -813,9 +861,22 @@ def test_github_successor_route_and_ui_keep_existing_evidence_separate() -> None
     assert 'name="connection_test_proof"' in replacement
     assert 'Test Replacement' in replacement
     assert 'Register Replacement' in replacement
-    assert "hx-vals='{\"action\":\"test\"}'" in replacement
+    assert 'hx-vals=\'{"action":"test"}\'' in replacement
     assert 'x-on:github-connection-tested.window' in replacement
     assert 'form.private_key_pem.data' not in replacement
     assert 'form.webhook_secret.data' not in replacement
     assert 'installation.native_app_id =' not in routes
     assert 'installation.native_installation_id =' not in routes
+
+
+def test_github_successor_runtime_import_contract() -> None:
+    """Catch missing registration exports before Flask blueprint startup."""
+    from app.integrations.source_control.source_control.providers.github.application.uat_routes import (
+        github_uat_bp,
+    )
+    from app.integrations.source_control.source_control.providers.github.registration import (
+        build_successor_connection_input,
+    )
+
+    assert callable(build_successor_connection_input)
+    assert github_uat_bp.name == 'github_source_uat'
