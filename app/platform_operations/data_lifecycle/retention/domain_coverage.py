@@ -135,5 +135,3 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             },
         ),
     }.get(name, ())
-
-
