@@ -1,0 +1,92 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% set plan = remediation_event.metadata_json or {} %}
+{% set review_count = plan.manual_review_count|default(0)|int %}
+{% set reconcile_count = plan.explicit_reconcile_count|default(0)|int %}
+{# Render only committed decisions matched to this exact provider inspection and drift source. #}
+<section class="border-t border-outline-subtle px-4 py-4 sm:px-5"
+         aria-labelledby="tenant-remediation-{{ access_provider }}-{{ event.id }}"
+         data-tenant-access-remediation>
+    <header class="flex flex-wrap items-start justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="clipboard-check" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h6 id="tenant-remediation-{{ access_provider }}-{{ event.id }}"
+                    class="text-sm font-semibold text-content-primary">Governed Remediation</h6>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Latest matching committed decision · Prepared {{ remediation_event.created_at|user_datetime }}
+                </p>
+            </div>
+        </div>
+        {{ table_label.status_label('Manual Review' if review_count else 'Operator Decision' if reconcile_count else 'No Candidates',
+            'warning' if review_count or reconcile_count else 'info') }}
+    </header>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+            <p class="text-xs text-content-muted">Approved-path Candidates</p>
+            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ reconcile_count }}</p>
+        </div>
+        <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+            <p class="text-xs text-content-muted">Manual Review</p>
+            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ review_count }}</p>
+        </div>
+    </div>
+    <div class="mt-4 divide-y divide-outline-subtle rounded-lg border border-outline-subtle bg-surface-card">
+        {% for item in plan.get('items') or [] %}
+            <div class="flex min-w-0 flex-wrap items-start justify-between gap-3 px-4 py-3">
+                <div class="flex min-w-0 flex-1 items-start gap-2.5">
+                    <i data-lucide="{{ 'triangle-alert' if item.decision == 'manual_review' else 'shield-check' }}"
+                       class="mt-0.5 h-4 w-4 shrink-0 {{ 'text-status-warning' if item.decision == 'manual_review' else 'text-kaori-primary' }}"
+                       aria-hidden="true"></i>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.code|replace('_', ' ')|title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            {{ 'Human review required before any governed action.' if item.decision == 'manual_review' else 'Existing Access Grant Inspect/Reconcile requires explicit operator approval.' }}
+                        </p>
+                    </div>
+                </div>
+                {{ table_label.status_label('Manual Review' if item.decision == 'manual_review' else 'Operator Approval',
+                    'warning' if item.decision == 'manual_review' else 'info') }}
+            </div>
+        {% else %}
+            <p class="px-4 py-3 text-xs text-content-muted">No remediation candidates were identified in this committed decision.</p>
+        {% endfor %}
+    </div>
+    <details class="group mt-3" data-tenant-remediation-technical-evidence>
+        <summary class="{{ table_ui.action_classes() }} list-none [&::-webkit-details-marker]:hidden">
+            <i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>
+            Technical Evidence
+            <i data-lucide="chevron-down"
+               class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+               aria-hidden="true"></i>
+        </summary>
+        <div class="mt-3 space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-3">
+            <dl class="grid gap-3 text-xs sm:grid-cols-2">
+                <div class="min-w-0">
+                    <dt class="text-content-muted">Tenant ID</dt>
+                    <dd class="mt-1 break-all text-content-primary">{{ plan.tenant_id }}</dd>
+                </div>
+                <div class="min-w-0">
+                    <dt class="text-content-muted">Source Drift Evaluated</dt>
+                    <dd class="mt-1 break-all text-content-primary">{{ plan.source_drift_evaluated_at }}</dd>
+                </div>
+            </dl>
+            {% for item in plan.get('items') or [] %}
+                <div class="min-w-0 border-t border-outline-subtle pt-3 text-xs">
+                    <p class="font-semibold text-content-primary">{{ item.code|replace('_', ' ')|title }}</p>
+                    <p class="mt-1 text-content-muted">Subject / Binding Reference</p>
+                    <p class="mt-1 break-all text-content-secondary">{{ item.subject or 'Not provided' }}</p>
+                    <p class="mt-2 text-content-muted">Decision Rationale</p>
+                    <p class="mt-1 break-words leading-5 text-content-secondary">{{ item.reason }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </details>
+    <div class="mt-3 flex items-start gap-2 text-xs leading-5 text-content-muted">
+        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+        <p>Preview only · No Kubernetes mutation. Inspect/Reconcile/Revoke remain governed by the canonical Access Grant Registry.</p>
+    </div>
+</section>

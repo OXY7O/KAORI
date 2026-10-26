@@ -6,6 +6,7 @@
     {% set evidence = event.metadata_json or {} %}
     {% set drift_event = access_evidence_drift_by_tenant.get(evidence.tenant_id) %}
     {% set drift = (drift_event.metadata_json or {}) if drift_event else {} %}
+    {% set remediation_event = access_evidence_remediation_by_observation.get(event.id) %}
     {% set detail_target_id = 'tenant-' ~ access_provider ~ '-evidence-' ~ event.id %}
     {% set detail_row_id = detail_target_id ~ '-row' %}
     <tr class="{{ table_ui.row_classes() }} bg-surface-card">
