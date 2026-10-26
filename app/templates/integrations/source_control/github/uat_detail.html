@@ -14,13 +14,15 @@
     {% set feedback_map = {
         "validation_queued": "Full Validation requested through canonical JobExecution.",
         "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
+        "runtime_queued": "Runtime Refresh requested through canonical JobExecution.",
+        "runtime_blocked": "Runtime Refresh could not start. Review worker readiness and installation authorization.",
         "sync_queued": "Repository reconciliation requested through canonical JobExecution.",
         "sync_blocked": "Repository sync blocked. Verify Full Validation, worker readiness and installation access.",
         "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
         "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
     } %}
     {% set requested_tab = request.args.get('tab', '') %}
-    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration')) %}
+    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('runtime' if feedback in ['runtime_queued', 'runtime_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration'))) %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-github-installation-detail
          x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], '{{ initial_tab }}', 'github-detail-tabs')"
@@ -61,7 +63,7 @@
             {{ operational_callout.render("Connection Operation",
                         feedback_map[feedback],
                         icon="info",
-                        tone="warning" if feedback in ['validation_blocked', 'sync_blocked'] else "info",
+                        tone="warning" if feedback in ['validation_blocked', 'runtime_blocked', 'sync_blocked'] else "info",
                         variant="semantic") }}
         {% endif %}
         <section id="github-detail-tabs" class="{{ ui.section_shell_classes() }}">

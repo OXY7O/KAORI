@@ -4,6 +4,7 @@
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "integrations/components/_workspace.html" as ui %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = last_runtime_refresh is not none and last_runtime_refresh.status == 'succeeded' and canonical.last_checked_at is not none %}
 {% set health = canonical.health_status or 'not_observed' if runtime_observed else 'not_observed' %}
@@ -48,6 +49,13 @@
         </form>
     {% endcall %}
     {{ provider_job_status.render(runtime_refresh_job, 'GitHub runtime refresh running', 'GitHub') }}
+    {% if runtime_feedback|default('') == 'blocked' %}
+        {{ operational_callout.render('Runtime Refresh Blocked',
+            'Review installation authorization, worker admission, and connection configuration before retrying.',
+            icon='shield-alert',
+            tone='warning',
+            variant='semantic') }}
+    {% endif %}
     <div class="space-y-4 p-4 sm:p-5" data-kaori-github-runtime-layout>
         {{ runtime_decision.render(
             gate,

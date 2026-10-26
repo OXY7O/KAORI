@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_workspace.html" as ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="github-runtime-jobs"
@@ -16,7 +17,18 @@
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Canonical JobExecution history for this installation.</p>
                 </div>
             </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if job_status %}
+                    {{ registry_ui.clear_filters_action(
+                        url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime'),
+                        table_ui.action_classes(),
+                        hx_get=url_for('github_source_uat.runtime_jobs', installation_id=installation.id, job_page=1, job_per_page=job_pagination.per_page),
+                        target='#github-runtime-jobs',
+                        indicator='#github-runtime-jobs-loading'
+                        ) }}
+                {% endif %}
             {{ integration_status('ready' if job_pagination.total_items else 'not_observed', job_pagination.total_items ~ ' Jobs', display='text') }}
+            </div>
         </div>
         {{ loading_bar.render('github-runtime-jobs-loading', label='Refreshing job history') }}
     </header>
@@ -101,6 +113,15 @@
                     <span aria-disabled="true" class="{{ pagination_ui.navigation_classes(true) }}">{{ direction }}</span>
                 {% endif %}
             {% endfor %}
+            {{ pagination_ui.numeric_pages(job_pagination.page,
+                job_pagination.total_pages,
+                page_param='job_page',
+                hx_target='#github-runtime-jobs',
+                hx_indicator='#github-runtime-jobs-loading',
+                endpoint='github_source_uat.runtime_jobs',
+                query_params={'tab': 'runtime', 'job_per_page': job_pagination.per_page, 'job_status': job_status},
+                hx_swap='outerHTML',
+                href_endpoint='github_source_uat.detail') }}
         </nav>
     </footer>
 </section>

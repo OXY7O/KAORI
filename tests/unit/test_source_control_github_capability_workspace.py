@@ -105,6 +105,7 @@ def test_partial_and_unknown_capability_states_cannot_become_verified():
 def test_github_validation_reuses_provider_readiness_registry_and_detail_components():
     detail = (TEMPLATES / 'uat_detail.html').read_text()
     validation = (TEMPLATES / 'partials/_detail_validation.html').read_text()
+    inventory = (TEMPLATES / 'partials/_detail_inventory.html').read_text()
     registry = (TEMPLATES / 'partials/_capability_registry.html').read_text()
     routes = ROUTES.read_text()
     shared_readiness = (
@@ -158,7 +159,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert 'validate_snapshot_access(' in routes
     assert 'validation_poll_response(' in routes
     assert 'integration_instance_id=installation.integration_instance_id' in routes
-    assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in detail
+    assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in inventory
     assert 'provider_key' not in registry
     assert 'credential.private_key_pem' not in registry
     assert '<style' not in validation and '<script' not in validation

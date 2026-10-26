@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_workspace.html" as ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="github-runtime-deliveries"
@@ -16,7 +17,18 @@
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Committed signed transport receipts; not repository collection evidence.</p>
                 </div>
             </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if delivery_state %}
+                    {{ registry_ui.clear_filters_action(
+                        url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime'),
+                        table_ui.action_classes(),
+                        hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=1, delivery_per_page=delivery_pagination.per_page),
+                        target='#github-runtime-deliveries',
+                        indicator='#github-runtime-deliveries-loading'
+                        ) }}
+                {% endif %}
             {{ integration_status('ready' if delivery_pagination.total_items else 'not_observed', delivery_pagination.total_items ~ ' Deliveries', display='text') }}
+            </div>
         </div>
         {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
     </header>
@@ -103,6 +115,15 @@
                     <span aria-disabled="true" class="{{ pagination_ui.navigation_classes(true) }}">{{ direction }}</span>
                 {% endif %}
             {% endfor %}
+            {{ pagination_ui.numeric_pages(delivery_pagination.page,
+                delivery_pagination.total_pages,
+                page_param='delivery_page',
+                hx_target='#github-runtime-deliveries',
+                hx_indicator='#github-runtime-deliveries-loading',
+                endpoint='github_source_uat.runtime_deliveries',
+                query_params={'tab': 'runtime', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state},
+                hx_swap='outerHTML',
+                href_endpoint='github_source_uat.detail') }}
         </nav>
     </footer>
 </section>

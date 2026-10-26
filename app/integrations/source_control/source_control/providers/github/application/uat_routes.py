@@ -139,7 +139,10 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     """Bounded, installation-scoped committed JobExecution and delivery evidence."""
     job_status = request.args.get('job_status', '').strip()
     delivery_state = request.args.get('delivery_state', '').strip()
-    allowed_jobs = {'queued', 'running', 'retrying', 'cancel_requested', 'succeeded', 'partially_succeeded', 'failed', 'canceled', 'expired'}
+    allowed_jobs = {
+        'queued', 'running', 'retrying', 'cancel_requested', 'succeeded',
+        'partially_succeeded', 'failed', 'canceled', 'expired',
+    }
     allowed_delivery = {'received', 'queued', 'processing', 'processed', 'completed', 'failed', 'ignored'}
     if job_status not in allowed_jobs:
         job_status = ''
@@ -188,7 +191,9 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     }
 
 
-def _render_runtime_content(installation: SourceInstallation, *, runtime_refresh_job=None) -> ResponseReturnValue:
+def _render_runtime_content(
+    installation: SourceInstallation, *, runtime_refresh_job=None, runtime_feedback: str = ''
+) -> ResponseReturnValue:
     canonical = installation.integration_instance
     if canonical is None:
         abort(409)
@@ -200,6 +205,7 @@ def _render_runtime_content(installation: SourceInstallation, *, runtime_refresh
         installation=installation,
         canonical=canonical,
         action_form=FlaskForm(),
+        runtime_feedback=runtime_feedback,
         **context,
     )
 
@@ -550,10 +556,16 @@ def runtime_refresh(installation_id: int) -> ResponseReturnValue:
             requested_by_user_id=int(current_user.id),
         )
     except (GitHubProviderError, RuntimeError, ValueError):
-        return redirect(url_for('github_source_uat.detail', installation_id=installation_id, tab='runtime'))
+        if request.headers.get('HX-Request') == 'true':
+            return _render_runtime_content(installation, runtime_feedback='blocked')
+        return redirect(
+            url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_blocked')
+        )
     if request.headers.get('HX-Request') == 'true':
         return _render_runtime_content(installation, runtime_refresh_job=job)
-    return redirect(url_for('github_source_uat.detail', installation_id=installation_id, tab='runtime'))
+    return redirect(
+        url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_queued')
+    )
 
 
 @github_uat_bp.get('/installations/<int:installation_id>/runtime/refresh/status/<string:task_id>')

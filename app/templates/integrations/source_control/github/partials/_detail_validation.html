@@ -17,11 +17,11 @@
 ] %}
 {% set capability_metadata = [('Profile · ' ~ capability_summary.profile) if validation_observed else 'No Committed Validation'] %}
 {% if not validation_observed %}
-    {% set next_action = 'Run Full Validation to assess GitHub App installation permissions.' %}
+    {% set next_action = "Run Full Validation to assess GitHub App installation permissions." %}
 {% elif not provider_ready %}
-    {% set next_action = 'Review missing GitHub App permissions and rerun Full Validation.' %}
+    {% set next_action = "Review missing GitHub App permissions and rerun Full Validation." %}
 {% else %}
-    {% set next_action = 'Synchronize repositories separately to commit grants and exact source revisions.' %}
+    {% set next_action = "Synchronize repositories separately to commit grants and exact source revisions." %}
 {% endif %}
 <section id="github-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
@@ -55,36 +55,36 @@
     {% endcall %}
     {{ validation_poller.render(validation_job and validation_job.is_active,
             url_for('github_source_uat.validation_status', installation_id=installation.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
-            '#github-validation-workspace') }}
+    '#github-validation-workspace') }}
     {{ provider_job_status.render(validation_job, 'GitHub validation running in worker', 'GitHub') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('GitHub Provider Readiness',
                 'Committed App permission evidence determines installation readiness.',
                 readiness if validation_observed else 'validation_required',
-                (readiness|replace('_', ' ')|title) if validation_observed else 'Not Validated',
+                (readiness|replace('_', ' ') |title) if validation_observed else 'Not Validated',
                 'Permission-Verified Capabilities',
-                (validated_count ~ ' / ' ~ total_count) if validation_observed else 'Not Validated',
-                readiness_percent,
-                capability_metadata,
-                capability_metrics,
-                'Provider Ready' if provider_ready else ('Validation Required' if not validation_observed else 'Review Required Permissions'),
-                'Metadata and Contents read permissions are verified.' if provider_ready else ('No committed Full Validation evidence yet.' if not validation_observed else 'Current readiness or required permission coverage needs review.'),
-                'normal' if provider_ready else ('info' if not validation_observed else 'critical'),
-                'GitHub owns grants; KAORI commits inventory and SHA after sync.',
-                next_action
-                ) }}
+        (validated_count ~ ' / ' ~ total_count) if validation_observed else 'Not Validated',
+        readiness_percent,
+        capability_metadata,
+        capability_metrics,
+        'Provider Ready' if provider_ready else ('Validation Required' if not validation_observed else 'Review Required Permissions'),
+        'Metadata and Contents read permissions are verified.' if provider_ready else ('No committed Full Validation evidence yet.' if not validation_observed else 'Current readiness or required permission coverage needs review.'),
+        'normal' if provider_ready else ('info' if not validation_observed else 'critical'),
+        'GitHub owns grants; KAORI commits inventory and SHA after sync.',
+        next_action
+        ) }}
         {% if provider_ready %}
-            {% set decision_title = 'Provider Readiness Is Ready' %}
-            {% set decision_body = 'GitHub App permissions are verified. Repository inventory remains a separate synchronization.' %}
-            {% set decision_tone = 'normal' %}
+            {% set decision_title = "Provider Readiness Is Ready" %}
+            {% set decision_body = "GitHub App permissions are verified. Repository inventory remains a separate synchronization." %}
+            {% set decision_tone = "normal" %}
         {% elif validation_observed %}
-            {% set decision_title = 'Why Readiness Needs Attention' %}
+            {% set decision_title = "Why Readiness Needs Attention" %}
             {% set decision_body = next_action %}
-            {% set decision_tone = 'warning' %}
+            {% set decision_tone = "warning" %}
         {% else %}
-            {% set decision_title = 'Why Full Validation Is Required' %}
-            {% set decision_body = 'Registration and Test Connection do not establish capability readiness or committed repository inventory.' %}
-            {% set decision_tone = 'info' %}
+            {% set decision_title = "Why Full Validation Is Required" %}
+            {% set decision_body = "Registration and Test Connection do not establish capability readiness or committed repository inventory." %}
+            {% set decision_tone = "info" %}
         {% endif %}
         {{ readiness_explanation.render(decision_title,
                 decision_body,
@@ -95,5 +95,5 @@
     </div>
 </section>
 {% if request.headers.get('HX-Request') == 'true' %}
-    {{ framed_workspace_tabs.badge_oob('github', 'validation', readiness|replace('_', ' ')|title) }}
+    {{ framed_workspace_tabs.badge_oob('github', 'validation', readiness|replace('_', ' ') |title) }}
 {% endif %}

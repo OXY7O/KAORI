@@ -23,7 +23,8 @@
         </div>
         <div class="flex flex-wrap gap-2">
             {{ integration_status('ready' if inventory.total is not none else 'not_observed', inventory.collection_status|replace('_', ' ')|title, display='text') }}
-            {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ inventory.coverage|replace('_', ' ')|title, display='text') }}
+            {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ (inventory.coverage|replace('_', ' ')|title), display='text') }}
+            {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Scope: ' ~ (inventory.selection_scope|replace('_', ' ')|title), display='text') }}
         </div>
         {{ loading_bar.render('github-inventory-loading', label='Refreshing committed repository registry') }}
     </header>
@@ -68,7 +69,7 @@
                                 <p class="font-semibold text-content-primary">{{ row.full_name or 'Unknown repository' }}</p>
                                 <p class="mt-1 text-xs text-content-muted">{{ 'Archived' if row.archived else (row.visibility|title if row.visibility else 'Visibility unknown') }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status('ready' if row.access_status == 'active' else 'degraded', row.access_status|replace('_', ' ')|title, display='indicator') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.access_status, row.access_status|replace('_', ' ')|title, display='indicator') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.default_branch or 'Unknown' }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <code class="text-xs" title="{{ row.exact_default_branch_sha or 'Unobserved' }}">{{ (row.exact_default_branch_sha or 'Unknown')|truncate(16, True) }}</code>

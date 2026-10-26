@@ -40,7 +40,7 @@
                 ('Committed Grants', inventory.total if committed else 'Unknown', 'Grant relationships; unknown is not zero', 'git-branch', 'normal' if committed else 'unknown'),
                 ('Coverage', inventory.coverage|replace('_', ' ')|title, 'Latest committed collection scope' if committed else 'Not yet committed', 'scan-search', 'normal' if committed else 'unknown'),
                 ('Snapshot Freshness', inventory.collected_at or 'Not Observed', 'Last successful committed collection', 'clock', 'info'),
-                ('Lifecycle Gate', 'Eligible' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Canonical connection lifecycle, not a deletion approval', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
+                ('Connection Lifecycle', 'Active' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Registration state; synchronization needs Full Validation', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
             ] %}
                 <article class="min-w-0 bg-surface-card p-4 sm:p-5">
                     <div class="flex items-start justify-between gap-3">
