@@ -199,6 +199,48 @@ def test_unavailable_namespace_scope_does_not_echo_long_credential_identity() ->
     assert 'min-w-[1400px]' not in registry
 
 
+def test_namespace_access_expanded_evidence_uses_compact_context_and_lifecycle() -> None:
+    detail = read('_namespace_access_detail.html')
+    registry = read('_namespace_access_registry.html')
+
+    assert 'data-tenant-namespace-access-detail' in detail
+    assert 'Committed Namespace Access' in detail
+    assert 'aria-label="Namespace access context"' in detail
+    assert 'Access Context' in detail
+    assert 'sm:grid-cols-2 lg:grid-cols-4' in detail
+    assert 'sm:grid-cols-3' in detail
+    assert 'lg:grid-cols-2 sm:p-5' not in detail
+    for label in (
+        'Tenant / Environment',
+        'Cluster',
+        'Access Profile',
+        'Identity',
+        'Application',
+        'Purpose',
+        'Approved Access Methods',
+        'Renewal Review',
+        'Valid Until',
+        'Rotation Generation',
+        'Credential Reference',
+        'Jumpserver Reference',
+    ):
+        assert label in detail
+    assert 'aria-label="Credential lifecycle"' in detail
+    assert 'aria-label="Technical references"' in detail
+    assert "access.get('approved_access_methods') or []" in detail
+    assert "access.get('credential_public_id')" in detail
+    assert "access.get('jumpserver_reference')" in detail
+    assert "access.get('error')" in detail
+    assert 'Evidence Unavailable' in detail
+    assert 'No effective access is asserted by this record.' in detail
+    assert 'Kubernetes remains authoritative for effective RBAC.' in detail
+    assert 'No token, kubeconfig, private key, certificate, or Secret material is displayed.' in detail
+    assert '_namespace_access_detail.html' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert 'data-kaori-native-dialog' not in detail
+    Environment(autoescape=True).parse(detail)
+
+
 def test_provider_inventory_headers_use_right_aligned_authority_labels() -> None:
     for filename, authority in (
         ('_external_capsule_access_inventory.html', 'Capsule Authority'),
@@ -227,7 +269,7 @@ def test_credential_expanded_detail_has_compact_governed_actions() -> None:
     assert 'lg:grid-cols-2' in template
     assert "action_button.classes('secondary')" in template
     assert "action_button.classes('critical')" in template
-    assert "full=true" not in template
+    assert 'full=true' not in template
     assert template.count('class="ml-auto shrink-0"') == 4
     assert 'data-credential-material-open' in template
     assert 'data-dialog-target="credential-material-request-{{ credential.id }}"' in template
