@@ -114,14 +114,17 @@ def _schema_ready() -> bool:
             return False
         vault_columns = {str(column['name']) for column in inspector.get_columns('vault_instances')}
         tls_columns = {str(col['name']) for col in inspector.get_columns('tls_certificate_inventory')}
-        return ('pki_stored_certs_enabled' in vault_columns
-                and {'secret_uid', 'controller_owner_refs'}.issubset(tls_columns))
+        return 'pki_stored_certs_enabled' in vault_columns and {'secret_uid', 'controller_owner_refs'}.issubset(
+            tls_columns
+        )
     except SQLAlchemyError:
         return False
 
 
 def build_certificate_delivery_overlap(
-    *, authorized_to_view_kubernetes_tls: bool, now: datetime | None = None,
+    *,
+    authorized_to_view_kubernetes_tls: bool,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Never query cross-domain TLS evidence without both domain permissions.
 
@@ -147,7 +150,8 @@ def build_certificate_delivery_overlap(
                 VaultInstance.pki_stored_certs_enabled.is_(True),
             )
             .order_by(VaultInstance.id.asc())
-            .limit(_MAX_VAULT_SOURCES + 1).all()
+            .limit(_MAX_VAULT_SOURCES + 1)
+            .all()
         )
         if len(sources) > _MAX_VAULT_SOURCES:
             return _blocked('Certificate Source Scope Exceeds Limit')
@@ -161,9 +165,13 @@ def build_certificate_delivery_overlap(
         if len(scopes) > _MAX_PKI_SCOPES:
             return _blocked('Certificate Mount Scope Exceeds Limit')
         ids = [int(provider.integration_instance_id) for provider in sources]
-        state_rows = PKIStoredCertificateCollectionState.query.filter(
-            PKIStoredCertificateCollectionState.integration_instance_id.in_(ids)
-        ).limit(_MAX_PKI_SCOPES + 1).all()
+        state_rows = (
+            PKIStoredCertificateCollectionState.query.filter(
+                PKIStoredCertificateCollectionState.integration_instance_id.in_(ids)
+            )
+            .limit(_MAX_PKI_SCOPES + 1)
+            .all()
+        )
         if len(state_rows) > _MAX_PKI_SCOPES:
             return _blocked('Stored Certificate State Exceeds Limit')
         allowed = {
@@ -172,18 +180,20 @@ def build_certificate_delivery_overlap(
             if (row.integration_instance_id, row.provider_namespace, row.mount) in scopes
         }
         qualified_sources = {
-            int(row.integration_instance_id)
-            for row in sources if row.integration_instance.readiness_status == 'ready'
+            int(row.integration_instance_id) for row in sources if row.integration_instance.readiness_status == 'ready'
         }
         ready_scopes = {
-            key for key, row in allowed.items()
+            key
+            for key, row in allowed.items()
             if key[0] in qualified_sources
             and row.status == 'ready'
             and (_utc(row.last_committed_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
         }
         source_state: SourceState
         if not ready_scopes:
-            source_state = 'stale' if any(row.last_committed_at is not None for row in allowed.values()) else 'not_collected'
+            source_state = (
+                'stale' if any(row.last_committed_at is not None for row in allowed.values()) else 'not_collected'
+            )
         elif len(ready_scopes) != len(scopes):
             source_state = 'partial'
         else:
@@ -192,22 +202,28 @@ def build_certificate_delivery_overlap(
         # rows cannot qualify that zero or participate in a candidate overlap.
         public_fps: tuple[str, ...] = ()
         if ready_scopes:
-            source_rows = PKIStoredCertificateObservation.query.filter(
-                PKIStoredCertificateObservation.integration_instance_id.in_(ids),
-                PKIStoredCertificateObservation.observation_status == 'observed',
-                PKIStoredCertificateObservation.last_observed_at >= cutoff,
-            ).limit(_MAX_CERT_RECORDS + 1).all()
+            source_rows = (
+                PKIStoredCertificateObservation.query.filter(
+                    PKIStoredCertificateObservation.integration_instance_id.in_(ids),
+                    PKIStoredCertificateObservation.observation_status == 'observed',
+                    PKIStoredCertificateObservation.last_observed_at >= cutoff,
+                )
+                .limit(_MAX_CERT_RECORDS + 1)
+                .all()
+            )
             if len(source_rows) > _MAX_CERT_RECORDS:
                 return _blocked('Vault Certificate Evidence Exceeds Limit')
             public_fps = tuple(
-                row.fingerprint_sha256 for row in source_rows
+                row.fingerprint_sha256
+                for row in source_rows
                 if (row.integration_instance_id, row.provider_namespace, row.mount) in ready_scopes
             )
         tls_states = TLSCertificateCollectionState.query.limit(_MAX_TLS_CLUSTERS + 1).all()
         if len(tls_states) > _MAX_TLS_CLUSTERS:
             return _blocked('Kubernetes TLS Source Scope Exceeds Limit')
         ready_clusters = {
-            row.cluster_id for row in tls_states
+            row.cluster_id
+            for row in tls_states
             if row.secret_collection_status == TLS_COLLECTION_COLLECTED
             and (_utc(row.collected_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
         }
@@ -224,7 +240,8 @@ def build_certificate_delivery_overlap(
         # Governance. A current Secret inventory does not prove a complete
         # Ingress reference inventory.
         ingress_ready = {
-            row.cluster_id for row in tls_states
+            row.cluster_id
+            for row in tls_states
             if row.cluster_id in ready_clusters
             and row.ingress_mapping_status == TLS_COLLECTION_COLLECTED
             and (_utc(row.collected_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
@@ -245,21 +262,26 @@ def build_certificate_delivery_overlap(
         if public_fps and ready_clusters:
             # SQL predicate restricts to approved fingerprint and collected
             # clusters before hydrating records (never load TLS Secret names).
-            tls_rows = TLSCertificateInventory.query.with_entities(
-                TLSCertificateInventory.fingerprint_sha256,
-                TLSCertificateInventory.secret_uid,
-                TLSCertificateInventory.controller_owner_refs,
-                TLSCertificateInventory.cluster_id,
-                TLSCertificateInventory.used_by,
-                TLSCertificateInventory.coverage_state,
-                TLSCertificateInventory.declared_host_count,
-                TLSCertificateInventory.covered_host_count,
-            ).filter(
-                TLSCertificateInventory.cluster_id.in_(ready_clusters),
-                TLSCertificateInventory.fingerprint_sha256.in_(set(public_fps)),
-                TLSCertificateInventory.collected_at >= cutoff,
-                TLSCertificateInventory.status.notin_(['invalid', 'unknown']),
-            ).limit(_MAX_CERT_RECORDS + 1).all()
+            tls_rows = (
+                TLSCertificateInventory.query.with_entities(
+                    TLSCertificateInventory.fingerprint_sha256,
+                    TLSCertificateInventory.secret_uid,
+                    TLSCertificateInventory.controller_owner_refs,
+                    TLSCertificateInventory.cluster_id,
+                    TLSCertificateInventory.used_by,
+                    TLSCertificateInventory.coverage_state,
+                    TLSCertificateInventory.declared_host_count,
+                    TLSCertificateInventory.covered_host_count,
+                )
+                .filter(
+                    TLSCertificateInventory.cluster_id.in_(ready_clusters),
+                    TLSCertificateInventory.fingerprint_sha256.in_(set(public_fps)),
+                    TLSCertificateInventory.collected_at >= cutoff,
+                    TLSCertificateInventory.status.notin_(['invalid', 'unknown']),
+                )
+                .limit(_MAX_CERT_RECORDS + 1)
+                .all()
+            )
             if len(tls_rows) > _MAX_CERT_RECORDS:
                 return _blocked('Kubernetes TLS Fingerprint Overlap Exceeds Limit')
             tls_fps = tuple(row[0] for row in tls_rows)
@@ -283,7 +305,8 @@ def build_certificate_delivery_overlap(
                         declared_host_count=row[6],
                         covered_host_count=row[7],
                     )
-                    for row in tls_rows if row[3] in ingress_ready
+                    for row in tls_rows
+                    if row[3] in ingress_ready
                 )
         assessment = assess_certificate_overlap(
             vault_fingerprints=public_fps,
@@ -294,8 +317,10 @@ def build_certificate_delivery_overlap(
         ingress = assess_ingress_reference(
             matches=ingress_matches,
             mapping_state=(
-                mapping_state if assessment.status in {'overlap_observed', 'no_overlap_observed'}
-                and kubernetes_state == 'ready' and source_state == 'ready'
+                mapping_state
+                if assessment.status in {'overlap_observed', 'no_overlap_observed'}
+                and kubernetes_state == 'ready'
+                and source_state == 'ready'
                 else 'blocked'
             ),
         )
@@ -312,30 +337,43 @@ def build_certificate_delivery_overlap(
             'overlapping_certificates': assessment.overlapping_public_certificates,
             'matching_kubernetes_tls_secrets': assessment.matching_kubernetes_tls_secrets,
             'matching_tls_secrets_with_object_uid': (
-                uid_count if assessment.status in {'overlap_observed', 'no_overlap_observed'}
-                and source_state == 'ready' and kubernetes_state == 'ready'
+                uid_count
+                if assessment.status in {'overlap_observed', 'no_overlap_observed'}
+                and source_state == 'ready'
+                and kubernetes_state == 'ready'
                 and (uid_count > 0 or assessment.matching_kubernetes_tls_secrets == 0)
                 else None
             ),
             'controller_owner_reference_status': (
-                'not_qualified' if assessment.status not in {'overlap_observed', 'no_overlap_observed'}
-                or source_state != 'ready' or kubernetes_state != 'ready'
-                else 'not_applicable' if not assessment.matching_kubernetes_tls_secrets
-                else 'partial' if controller_owner_unknown
-                else 'candidate_observed' if controller_owner_count
+                'not_qualified'
+                if assessment.status not in {'overlap_observed', 'no_overlap_observed'}
+                or source_state != 'ready'
+                or kubernetes_state != 'ready'
+                else 'not_applicable'
+                if not assessment.matching_kubernetes_tls_secrets
+                else 'partial'
+                if controller_owner_unknown
+                else 'candidate_observed'
+                if controller_owner_count
                 else 'not_observed'
             ),
             'matching_tls_secrets_with_controller_owner': (
-                controller_owner_count if not controller_owner_unknown
+                controller_owner_count
+                if not controller_owner_unknown
                 and assessment.status in {'overlap_observed', 'no_overlap_observed'}
-                and source_state == 'ready' and kubernetes_state == 'ready'
+                and source_state == 'ready'
+                and kubernetes_state == 'ready'
                 else None
             ),
             'object_identity_status': (
-                'not_qualified' if source_state != 'ready' or kubernetes_state != 'ready'
-                else 'not_applicable' if not assessment.matching_kubernetes_tls_secrets
-                else 'not_observed' if uid_count == 0
-                else 'partial' if uid_count < assessment.matching_kubernetes_tls_secrets
+                'not_qualified'
+                if source_state != 'ready' or kubernetes_state != 'ready'
+                else 'not_applicable'
+                if not assessment.matching_kubernetes_tls_secrets
+                else 'not_observed'
+                if uid_count == 0
+                else 'partial'
+                if uid_count < assessment.matching_kubernetes_tls_secrets
                 else 'qualified'
             ),
             'ingress_reference_status': ingress.status,

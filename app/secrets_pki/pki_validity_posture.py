@@ -107,7 +107,8 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
             return _result('blocked', 'PKI Source Limit Exceeded')
         scopes = {
             (source.id, source.namespace or '', mount)
-            for source in sources if source.pki_stored_certs_enabled
+            for source in sources
+            if source.pki_stored_certs_enabled
             for mount in parse_approved_pki_mounts(','.join(source.pki_mounts or ()))
         }
         if not scopes:
@@ -126,25 +127,22 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
                 PKIStoredCertificateCollectionState.last_observed_at,
                 PKIStoredCertificateCollectionState.last_committed_at,
             )
-            .where(PKIStoredCertificateCollectionState.integration_instance_id.in_(
-                [source.id for source in sources]
-            ))
+            .where(PKIStoredCertificateCollectionState.integration_instance_id.in_([source.id for source in sources]))
             .limit(_MAX_SCOPES + 1)
         ).all()
         if len(states) > _MAX_SCOPES:
             return _result('blocked', 'PKI Collection State Limit Exceeded')
-        state_by_scope = {
-            (row[0], row[1], row[2]): row
-            for row in states if (row[0], row[1], row[2]) in scopes
-        }
+        state_by_scope = {(row[0], row[1], row[2]): row for row in states if (row[0], row[1], row[2]) in scopes}
         if set(state_by_scope) != scopes:
             return _result('incomplete', 'PKI Collection Coverage Incomplete')
         for row in state_by_scope.values():
             observed, committed = _utc(row[5]), _utc(row[6])
             if (
                 row[3] != 'ready'
-                or type(row[4]) is not int or not 0 <= row[4] <= _MAX_CERTS_PER_MOUNT
-                or observed is None or committed is None
+                or type(row[4]) is not int
+                or not 0 <= row[4] <= _MAX_CERTS_PER_MOUNT
+                or observed is None
+                or committed is None
                 or not timedelta(0) <= instant - observed <= _FRESHNESS
                 or not timedelta(0) <= instant - committed <= _FRESHNESS
             ):
@@ -196,8 +194,11 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
                 else:
                     expiry['expires_after_30d'] += 1
         return _result(
-            'ready', 'Qualified Stored Certificate Validity Windows',
-            counts=result, expiry_counts=expiry, count=len(rows),
+            'ready',
+            'Qualified Stored Certificate Validity Windows',
+            counts=result,
+            expiry_counts=expiry,
+            count=len(rows),
             last_observed_at=max(_utc(row[5]) for row in state_by_scope.values()),
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):

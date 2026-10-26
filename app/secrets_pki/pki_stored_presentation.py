@@ -18,7 +18,9 @@ MAX_PKI_SCOPES = 100
 
 
 def stored_pki_certificate_readiness(
-    *, instance: VaultInstance | None = None, now: datetime | None = None,
+    *,
+    instance: VaultInstance | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Counts are scoped to successful LIST /certs, never entire issued population."""
     instant = now or datetime.now(UTC)
@@ -32,7 +34,8 @@ def stored_pki_certificate_readiness(
                 IntegrationInstance.enabled.is_(True),
             )
             .order_by(VaultInstance.id.asc())
-            .limit(MAX_VAULT_SOURCES + 1).all()
+            .limit(MAX_VAULT_SOURCES + 1)
+            .all()
         )
     else:
         sources = [instance]
@@ -50,23 +53,27 @@ def stored_pki_certificate_readiness(
     if len(scopes) > MAX_PKI_SCOPES:
         return _result('blocked', 'Stored Certificate Scope Exceeds Limit')
     if not scopes:
-        return _result('not_configured', 'Stored Certificate Collection Not Enabled',
-                       approved_mounts=0)
-    state_rows = PKIStoredCertificateCollectionState.query.filter(
-        PKIStoredCertificateCollectionState.integration_instance_id.in_(
-            [row.integration_instance_id for row in sources]
+        return _result('not_configured', 'Stored Certificate Collection Not Enabled', approved_mounts=0)
+    state_rows = (
+        PKIStoredCertificateCollectionState.query.filter(
+            PKIStoredCertificateCollectionState.integration_instance_id.in_(
+                [row.integration_instance_id for row in sources]
+            )
         )
-    ).limit(MAX_PKI_SCOPES + 1).all()
+        .limit(MAX_PKI_SCOPES + 1)
+        .all()
+    )
     if len(state_rows) > MAX_PKI_SCOPES:
         return _result('blocked', 'Stored Certificate State Exceeds Limit')
     matching = [
-        item for item in state_rows
-        if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes
+        item for item in state_rows if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes
     ]
     counts = [
         qualified_committed_pki_count(
-            item, instant=instant,
-            count_field='observed_stored_certificate_count', max_count=64,
+            item,
+            instant=instant,
+            count_field='observed_stored_certificate_count',
+            max_count=64,
         )
         for item in matching
     ]
@@ -80,7 +87,8 @@ def stored_pki_certificate_readiness(
     )
     if not matching:
         state, label = (
-            ('blocked', 'Vault Validation Required') if unvalidated
+            ('blocked', 'Vault Validation Required')
+            if unvalidated
             else ('not_collected', 'Stored Certificates Not Collected')
         )
     elif unvalidated:
@@ -93,7 +101,9 @@ def stored_pki_certificate_readiness(
         state, label = 'committed', 'Committed Stored Certificate Evidence'
     qualified = state == 'committed'
     return _result(
-        state, label, approved_mounts=len(scopes),
+        state,
+        label,
+        approved_mounts=len(scopes),
         committed_mounts=len(matching) if qualified else None,
         observed_certificates=sum(value for value in counts if value is not None) if qualified else None,
         last_committed_at=max(item.last_committed_at for item in matching) if qualified else None,
@@ -101,13 +111,18 @@ def stored_pki_certificate_readiness(
 
 
 def _result(
-    state: str, label: str, *,
-    approved_mounts: int | None = None, committed_mounts: int | None = None,
+    state: str,
+    label: str,
+    *,
+    approved_mounts: int | None = None,
+    committed_mounts: int | None = None,
     observed_certificates: int | None = None,
     last_committed_at: datetime | None = None,
 ) -> dict[str, Any]:
     return {
-        'state': state, 'label': label, 'approved_mounts': approved_mounts,
+        'state': state,
+        'label': label,
+        'approved_mounts': approved_mounts,
         'committed_mounts': committed_mounts,
         'observed_certificates': observed_certificates,
         'last_committed_at': last_committed_at,

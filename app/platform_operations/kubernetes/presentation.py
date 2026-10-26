@@ -83,8 +83,16 @@ def build_kubernetes_administration_summary() -> dict[str, object]:
             'workspace_tab': 'secret-reveal',
             'action_label': 'Configure Secret Reveal',
             'metrics': (
-                ('badge-check', 'Cluster Prerequisites', f"{counts['ready_cluster_count']} / {counts['cluster_count']}"),
-                ('boxes', 'Configured Policy Scope', f"{counts['eligible_policy_count']} / {counts['enabled_namespace_count']}"),
+                (
+                    'badge-check',
+                    'Cluster Prerequisites',
+                    f'{counts["ready_cluster_count"]} / {counts["cluster_count"]}',
+                ),
+                (
+                    'boxes',
+                    'Configured Policy Scope',
+                    f'{counts["eligible_policy_count"]} / {counts["enabled_namespace_count"]}',
+                ),
             ),
             'evidence_label': 'Configured KAORI state; runtime authorization is verified at execution.',
         },

@@ -107,7 +107,8 @@ class RotationAssessment:
 
 def assess_rotation(
     evidence: RotationTransitionEvidence,
-    *, at: datetime,
+    *,
+    at: datetime,
 ) -> RotationAssessment:
     """No automatic success for a version increase or unqualified attestation."""
     now = _aware(at)
@@ -125,7 +126,8 @@ def assess_rotation(
     complete = bool(required) and matched == required
     attested_at = evidence.verified_rotation_at
     can_verify = (
-        complete and attested_at is not None
+        complete
+        and attested_at is not None
         and _aware(evidence.started_at) <= _aware(attested_at) <= now
         and all(
             any(
@@ -141,18 +143,27 @@ def assess_rotation(
     if not can_verify or attested_at is None:
         return RotationAssessment(
             'awaiting_readback' if required else 'not_evaluated',
-            None, len(required), len(matched), None,
+            None,
+            len(required),
+            len(matched),
+            None,
         )
     verified_at = _aware(attested_at)
     threshold = policy.maximum_verified_rotation_age_days
     return RotationAssessment(
-        'verified', verified_at, len(required), len(matched),
+        'verified',
+        verified_at,
+        len(required),
+        len(matched),
         now > verified_at + timedelta(days=threshold) if threshold is not None else None,
     )
 
 
 def classify_kv2_version(
-    *, destroyed: bool, deletion_time: str | None, observed_at: datetime,
+    *,
+    destroyed: bool,
+    deletion_time: str | None,
+    observed_at: datetime,
 ) -> VersionState:
     """KV v2 deletion_time may be scheduled for a future instant."""
     observation_time = _aware(observed_at)
@@ -203,7 +214,9 @@ class LeaseAssessment:
 
 
 def assess_known_lease(
-    evidence: KnownLeaseEvidence | None, *, at: datetime,
+    evidence: KnownLeaseEvidence | None,
+    *,
+    at: datetime,
 ) -> LeaseAssessment:
     """Elapsed expiry is not proof of revocation, renewal, or dynamic credential deletion."""
     now = _aware(at)
@@ -214,6 +227,8 @@ def assess_known_lease(
         return LeaseAssessment('unknown', _aware(evidence.observed_at), None, evidence.renewable, 'single_known_lease')
     return LeaseAssessment(
         'expiry_window_elapsed_unverified' if deadline <= now else 'observed',
-        _aware(evidence.observed_at), deadline, evidence.renewable,
+        _aware(evidence.observed_at),
+        deadline,
+        evidence.renewable,
         'single_known_lease',
     )

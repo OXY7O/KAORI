@@ -31,9 +31,12 @@ def qualified_committed_pki_count(
     committed = _utc(getattr(state, 'last_committed_at', None))
     count = getattr(state, count_field, None)
     if (
-        now is None or observed is None or committed is None
+        now is None
+        or observed is None
+        or committed is None
         or getattr(state, 'status', None) != 'ready'
-        or type(count) is not int or not 0 <= count <= max_count
+        or type(count) is not int
+        or not 0 <= count <= max_count
         or not observed <= committed <= now
         or now - observed > _FRESHNESS
         or now - committed > _FRESHNESS

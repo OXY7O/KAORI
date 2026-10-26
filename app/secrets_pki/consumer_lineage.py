@@ -15,12 +15,18 @@ from uuid import UUID
 EdgeKind = Literal['secret_to_materialization', 'materialization_to_consumer']
 LineageStatus = Literal['candidate', 'confirmed', 'rejected', 'conflict']
 MaterializationKind = Literal[
-    'kubernetes_secret', 'csi_volume', 'vault_agent_template',
-    'ci_variable', 'injection_session',
+    'kubernetes_secret',
+    'csi_volume',
+    'vault_agent_template',
+    'ci_variable',
+    'injection_session',
 ]
 ConsumerKind = Literal[
-    'kubernetes_workload', 'service_environment', 'ci_pipeline',
-    'automation_runner', 'integration_instance',
+    'kubernetes_workload',
+    'service_environment',
+    'ci_pipeline',
+    'automation_runner',
+    'integration_instance',
 ]
 EvidenceKind = Literal['controller_uid', 'resource_uid', 'runtime_readback', 'approved_mapping']
 SourceFreshness = Literal['ready', 'stale', 'partial', 'not_collected']
@@ -69,17 +75,26 @@ class LineageEdge:
         if self.status not in {'candidate', 'confirmed', 'rejected', 'conflict'}:
             raise ValueError('Unknown lineage verification state.')
         if self.evidence_kind not in {
-            'controller_uid', 'resource_uid', 'runtime_readback', 'approved_mapping',
+            'controller_uid',
+            'resource_uid',
+            'runtime_readback',
+            'approved_mapping',
         }:
             raise ValueError('Unsupported lineage evidence type.')
         if self.kind == 'secret_to_materialization' and self.resource_kind not in {
-            'kubernetes_secret', 'csi_volume', 'vault_agent_template',
-            'ci_variable', 'injection_session',
+            'kubernetes_secret',
+            'csi_volume',
+            'vault_agent_template',
+            'ci_variable',
+            'injection_session',
         }:
             raise ValueError('Secret source must point to a typed materialization.')
         if self.kind == 'materialization_to_consumer' and self.resource_kind not in {
-            'kubernetes_workload', 'service_environment', 'ci_pipeline',
-            'automation_runner', 'integration_instance',
+            'kubernetes_workload',
+            'service_environment',
+            'ci_pipeline',
+            'automation_runner',
+            'integration_instance',
         }:
             raise ValueError('Materialization must point to a typed consumer.')
         if self.status == 'confirmed' and self.evidence_kind == 'approved_mapping':
@@ -107,9 +122,13 @@ def _active(edge: LineageEdge, at: datetime) -> bool:
 
 
 def project_secret_impact(
-    *, secret_identity_id: str, edges: tuple[LineageEdge, ...],
-    authorized_consumer_ids: frozenset[str], source_freshness: SourceFreshness,
-    correlation_freshness: SourceFreshness, at: datetime,
+    *,
+    secret_identity_id: str,
+    edges: tuple[LineageEdge, ...],
+    authorized_consumer_ids: frozenset[str],
+    source_freshness: SourceFreshness,
+    correlation_freshness: SourceFreshness,
+    at: datetime,
 ) -> LineageImpact:
     """Only connected confirmed, effective, authorized edges count as impact.
 
@@ -119,10 +138,12 @@ def project_secret_impact(
     """
     source_id = _uuid(secret_identity_id)
     _aware(at)
-    if (
-        source_freshness not in {'ready', 'stale', 'partial', 'not_collected'}
-        or correlation_freshness not in {'ready', 'stale', 'partial', 'not_collected'}
-    ):
+    if source_freshness not in {'ready', 'stale', 'partial', 'not_collected'} or correlation_freshness not in {
+        'ready',
+        'stale',
+        'partial',
+        'not_collected',
+    }:
         raise ValueError('Unknown committed source/correlation freshness.')
     if len(edges) > 500 or len(authorized_consumer_ids) > 500:
         raise ValueError('Impact projection exceeds bounded correlation scope.')
@@ -135,19 +156,18 @@ def project_secret_impact(
         if _active(edge, at) and edge.status in {'conflict', 'rejected'}
     }
     usable = [
-        edge for edge in edges
-        if _active(edge, at) and edge.status == 'confirmed'
-        and (edge.kind, edge.from_id, edge.to_id) not in conflicted
+        edge
+        for edge in edges
+        if _active(edge, at) and edge.status == 'confirmed' and (edge.kind, edge.from_id, edge.to_id) not in conflicted
     ]
-    mats = {
-        edge.to_id for edge in usable
-        if edge.kind == 'secret_to_materialization' and edge.from_id == source_id
-    }
-    consumers = sorted({
-        edge.to_id for edge in usable
-        if edge.kind == 'materialization_to_consumer'
-        and edge.from_id in mats and edge.to_id in allowed
-    })
+    mats = {edge.to_id for edge in usable if edge.kind == 'secret_to_materialization' and edge.from_id == source_id}
+    consumers = sorted(
+        {
+            edge.to_id
+            for edge in usable
+            if edge.kind == 'materialization_to_consumer' and edge.from_id in mats and edge.to_id in allowed
+        }
+    )
     if not consumers:
         state = 'not_proven'
     elif source_freshness == 'ready' and correlation_freshness == 'ready':

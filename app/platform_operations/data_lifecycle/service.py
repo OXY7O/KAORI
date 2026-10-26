@@ -71,8 +71,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             batch_size=batch_size,
             operation_mode=str(values.get('operation_mode') or 'archive_and_cleanup'),
             schedule_enabled=(
-                values.get('schedule_enabled') == 'on'
-                and domain_name not in {'notification_delivery', 'audit_event'}
+                values.get('schedule_enabled') == 'on' and domain_name not in {'notification_delivery', 'audit_event'}
             ),
             schedule_hour=_int_value(values, 'schedule_hour', 2),
             schedule_minute=_int_value(values, 'schedule_minute', 0),

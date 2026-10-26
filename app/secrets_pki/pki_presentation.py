@@ -19,7 +19,9 @@ MAX_PKI_SCOPES = 100
 
 
 def pki_public_readiness(
-    *, instance: VaultInstance | None = None, now: datetime | None = None,
+    *,
+    instance: VaultInstance | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Bound all queries and show missing/stale sources as unknown, not zero."""
     instant = now or datetime.now(UTC)
@@ -61,27 +63,29 @@ def pki_public_readiness(
         return _result('blocked', 'PKI Mount Coverage Exceeds Limit')
     if not scopes:
         return _result('not_configured', 'PKI Collection Not Configured', approved_mounts=0)
-    rows = PKIIssuerCollectionState.query.filter(
-        PKIIssuerCollectionState.integration_instance_id.in_(
-            [row.integration_instance_id for row in sources]
+    rows = (
+        PKIIssuerCollectionState.query.filter(
+            PKIIssuerCollectionState.integration_instance_id.in_([row.integration_instance_id for row in sources])
         )
-    ).limit(MAX_PKI_SCOPES + 1).all()
+        .limit(MAX_PKI_SCOPES + 1)
+        .all()
+    )
     if len(rows) > MAX_PKI_SCOPES:
         return _result('blocked', 'PKI Collection State Exceeds Limit')
-    selected = [
-        item for item in rows
-        if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes
-    ]
+    selected = [item for item in rows if (item.integration_instance_id, item.provider_namespace, item.mount) in scopes]
     counts = [
         qualified_committed_pki_count(
-            item, instant=instant,
-            count_field='observed_issuer_count', max_count=MAX_ISSUERS,
+            item,
+            instant=instant,
+            count_field='observed_issuer_count',
+            max_count=MAX_ISSUERS,
         )
         for item in selected
     ]
     if not selected:
         state, label = (
-            ('blocked', 'PKI Provider Validation Required') if any_unvalidated
+            ('blocked', 'PKI Provider Validation Required')
+            if any_unvalidated
             else ('not_collected', 'Public PKI Not Collected')
         )
     elif any_unvalidated:
@@ -94,7 +98,9 @@ def pki_public_readiness(
         state, label = 'committed', 'Committed Public PKI Evidence'
     qualified = state == 'committed'
     return _result(
-        state, label, approved_mounts=len(scopes),
+        state,
+        label,
+        approved_mounts=len(scopes),
         committed_mounts=len(selected) if qualified else None,
         observed_issuers=sum(value for value in counts if value is not None) if qualified else None,
         last_committed_at=max(item.last_committed_at for item in selected) if qualified else None,
@@ -102,12 +108,17 @@ def pki_public_readiness(
 
 
 def _result(
-    state: str, label: str, *, approved_mounts: int | None = None,
-    committed_mounts: int | None = None, observed_issuers: int | None = None,
+    state: str,
+    label: str,
+    *,
+    approved_mounts: int | None = None,
+    committed_mounts: int | None = None,
+    observed_issuers: int | None = None,
     last_committed_at: datetime | None = None,
 ) -> dict[str, Any]:
     return {
-        'state': state, 'label': label,
+        'state': state,
+        'label': label,
         'approved_mounts': approved_mounts,
         'committed_mounts': committed_mounts,
         'observed_issuers': observed_issuers,
