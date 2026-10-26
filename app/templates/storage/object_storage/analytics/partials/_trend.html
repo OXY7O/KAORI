@@ -174,9 +174,10 @@
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         {% if capacity_standalone_trend %}
-                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown'), 'compact') }}"
+                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown') , 'compact') }}"
                                   aria-hidden="true">
-                                <i data-lucide="{{ trend_summary.icon|default('activity') }}" class="h-3.5 w-3.5"></i>
+                                <i data-lucide="{{ trend_summary.icon|default('activity') }}"
+                                   class="h-3.5 w-3.5"></i>
                             </span>
                         {% endif %}
                         <p class="{{ 'mt-2 ' if capacity_standalone_trend else '' }}{{ analysis_surface.metric_label_classes() }}">Window Direction</p>
@@ -186,7 +187,7 @@
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         {% if capacity_standalone_trend %}
-                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown'), 'compact') }}"
+                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown') , 'compact') }}"
                                   aria-hidden="true">
                                 <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
                             </span>
