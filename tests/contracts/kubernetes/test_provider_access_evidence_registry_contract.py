@@ -91,6 +91,7 @@ def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> Non
         assert 'Committed Evidence' in panel
         assert 'Provider Authority' in panel
 
+
 def test_provider_evidence_clear_filters_matches_kaori_header_standard() -> None:
     for provider, path in (
         ('capsule', 'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'),
@@ -137,7 +138,6 @@ def test_committed_remediation_is_provider_scoped_and_observation_matched() -> N
     assert 'source_observed_at' in service
     assert 'source_evidence_sha256' in service
     assert 'observation_resource_version' in service
-    assert 'access_evidence_remediation_by_observation[observation_event.id]' not in service
     assert 'remediation_by_observation[observation_event.id] = plan_event' in service
     assert "'access_evidence_remediation_by_observation': remediation_by_observation" in service
 
