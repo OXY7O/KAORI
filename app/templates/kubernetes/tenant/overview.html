@@ -36,7 +36,10 @@
     {% set critical_preview = tenant_attention_rows|selectattr('tone', 'equalto', 'critical')|list|length %}
     {% set warning_preview = tenant_attention_rows|selectattr('tone', 'equalto', 'warning')|list|length %}
     <section class="space-y-4"
-             aria-label="Tenant operational attention and activity">
+             aria-labelledby="tenant-operational-oversight-heading">
+        {{ section_intro.render('Operational Oversight',
+                'Prioritized Tenant conditions and recent committed activity requiring operational review.',
+                'tenant-operational-oversight-heading') }}
         {% call operational_section_card.render(
             'Operational Attention & Activity',
             'Prioritize actionable Tenant conditions and monitor the latest committed activity.',

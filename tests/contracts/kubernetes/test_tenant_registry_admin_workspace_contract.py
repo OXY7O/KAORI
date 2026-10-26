@@ -587,6 +587,21 @@ def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
     assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
 
 
+def test_overview_operational_attention_has_section_intro_above_card() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+    assert 'components/section_intro.html' in overview
+    assert "aria-labelledby=\"tenant-operational-oversight-heading\"" in overview
+    assert "section_intro.render('Operational Oversight'," in overview
+    assert 'Prioritized Tenant conditions and recent committed activity requiring operational review.' in overview
+    assert "'tenant-operational-oversight-heading')" in overview
+    assert overview.index("section_intro.render('Operational Oversight',") < overview.index(
+        "'Operational Attention & Activity'"
+    )
+    assert overview.index("'Multi-Cluster Posture'") < overview.index("'Operational Oversight'")
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "'Tenant Estate by Cluster'" not in overview  # Owning card stays in the shared partial.
+
+
 def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
