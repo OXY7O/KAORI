@@ -81,7 +81,9 @@ def read_installation_inventory(
         raise ValueError('Source Control inventory pagination uses standard KAORI page sizes.')
 
     search = str(search).strip()[:80]
-    visibility = visibility if visibility in {'public', 'private', 'internal', 'unknown'} else ''
+    visibility = (
+        visibility if visibility in {'public', 'private', 'internal', 'unknown'} else ''
+    )
     archived = archived if archived in {'active', 'archived', 'unknown'} else ''
 
     state = session.get(SourceRepositoryCollectionState, authorized_installation_id)
@@ -190,5 +192,7 @@ def read_installation_inventory(
             )
             for repository, status, sha, tip_observed_at in data
         ),
-        page=effective_page, per_page=per_page, matching_total=matching_total,
+        page=effective_page,
+        per_page=per_page,
+        matching_total=matching_total,
     )
