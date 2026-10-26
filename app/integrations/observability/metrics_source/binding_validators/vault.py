@@ -155,6 +155,17 @@ def _identity_matcher(binding: IntegrationBinding, integration_id: int) -> Bindi
     return matcher
 
 
+def _identity_unqualified(identity: IntegrationInstance | None) -> bool:
+    """Preserve the fail-closed provider identity qualification predicate."""
+    return (
+        identity is None
+        or identity.integration_type != 'secrets_pki'
+        or identity.provider_key != 'vault'
+        or identity.lifecycle_status != 'active'
+        or not identity.enabled
+    )
+
+
 def validate_vault_metrics_binding(
     *,
     client: Any,
@@ -165,13 +176,7 @@ def validate_vault_metrics_binding(
     if not key.isascii() or not key.isdecimal() or len(key) > 10:
         return _assessment('blocked', 'Vault binding requires a canonical instance ID.', state='invalid_asset')
     identity = db.session.get(IntegrationInstance, int(key))
-    if (
-        identity is None
-        or identity.integration_type != 'secrets_pki'
-        or identity.provider_key != 'vault'
-        or identity.lifecycle_status != 'active'
-        or not identity.enabled
-    ):
+    if _identity_unqualified(identity):
         return _assessment('blocked', 'The bound Vault provider identity is no longer active.', state='invalid_asset')
     matcher = _identity_matcher(binding, identity.id)
     if matcher is None:
