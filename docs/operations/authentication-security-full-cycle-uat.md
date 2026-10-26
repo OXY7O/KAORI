@@ -425,3 +425,18 @@ python scripts/verify_settings_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Official CI/CD admission remains **HOLD** until explicitly authorized.
+
+## Enrolled recovery copy/header micro-refinement UAT (#3228, 2026-10-26)
+
+After merging the scoped design, verify **Recovery Security** has a short secondary line below its title (“Review safeguards before replacing your recovery codes.”) and the first **Verify your identity** guidance item reads “Verify with a valid code.” The current password/code/Regenerate control row, left three-step strip, right security statements and full card-height symmetry must remain unchanged. Review the desktop reference around 1159/1280/1440 px, tablet 768 and mobile 360/390 in light/dark, with no forced nonwrapping or overflow.
+
+Execute at the exact UAT holding SHA:
+```bash
+ruff check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+ruff format --check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+djlint --check app/templates/settings/account/partials/_mfa.html
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py tests/contracts/settings/test_settings_final_lock_contract.py
+python scripts/verify_settings_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+The user's earlier result of `26 passed` applies to a **previous MFA candidate**, not this updated design. Retain valid/invalid code, provider/local credential, one-time recovery, toast, audit and no-store Human UAT. Do not attach secrets or mark QA/Human Acceptance PASS before new exact-SHA evidence.
