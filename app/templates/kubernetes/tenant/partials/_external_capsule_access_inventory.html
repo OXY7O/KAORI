@@ -90,6 +90,18 @@
                     Committed provider observations. Open View Details to inspect owner, RBAC and drift evidence.
                 </p>
             </div>
+            {% if access_evidence_filters.search or access_evidence_filters.status %}
+                <div class="flex shrink-0 items-center gap-2">
+                    {{ registry_ui.clear_filters_link('tenant.tenants',
+                        evidence_registry_id,
+                        evidence_loading_id,
+                        access_evidence_pagination.per_page,
+                        table_ui.action_classes(),
+                        query_params={'section': 'access-grants', 'access_inventory_view': 'capsule'},
+                        page_param='access_evidence_page',
+                        per_page_param='access_evidence_per_page') }}
+                </div>
+            {% endif %}
         </header>
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             {% call registry_ui.filter_form('tenant.tenants',
@@ -122,17 +134,6 @@
                         'Tenant ID or event summary',
                         id='capsule-access-evidence-search') }}
                 </div>
-                {% if access_evidence_filters.search or access_evidence_filters.status %}
-                    {{ registry_ui.clear_filters_link('tenant.tenants',
-                        evidence_registry_id,
-                        evidence_loading_id,
-                        access_evidence_pagination.per_page,
-                        table_ui.action_classes(),
-                        query_params={'section': 'access-grants', 'access_inventory_view': 'capsule'},
-                        page_param='access_evidence_page',
-                        per_page_param='access_evidence_per_page',
-                        lead=false) }}
-                {% endif %}
             {% endcall %}
         </div>
         <div id="{{ evidence_loading_id }}"

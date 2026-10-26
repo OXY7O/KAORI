@@ -151,10 +151,6 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <p class="text-xs leading-5 text-content-muted">
-                        Labels indicate possible correlation, not provider ownership or effective permissions.
-                        External principals remain authoritative at Kubernetes/IdP.
-                    </p>
                 {% endif %}
             </section>
             <section class="min-w-0 space-y-4 bg-surface-elevated p-4 sm:p-5"
@@ -231,5 +227,12 @@
                 {% endif %}
             </section>
         </div>
+        {% if access_provider == 'native' %}
+            <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
+                <p class="text-xs leading-5 text-content-muted lg:whitespace-nowrap">
+                    Labels indicate possible correlation only, not provider ownership or effective access; Kubernetes/IdP remains authoritative for external principals.
+                </p>
+            </div>
+        {% endif %}
     </div>
 </div>
