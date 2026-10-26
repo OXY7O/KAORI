@@ -353,7 +353,7 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
         assert 'Provider Authority' in panel
         assert 'Inspection Target' in panel
         assert 'Inspection Evidence' in panel
-        assert 'rounded-xl border border-dashed' in panel
+        assert '<details class="group min-w-0">' in panel
         assert 'read-only' in panel.lower()
         assert 'bg-surface-hover px-5 py-4' in panel
 

@@ -1,4 +1,4 @@
-"""Provider access observations use a table-first committed evidence review workspace."""
+"""Tenant provider evidence uses one expandable table with committed drift correlation."""
 
 from pathlib import Path
 
@@ -9,64 +9,54 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_provider_evidence_tables_reuse_shared_registry_and_native_dialogs() -> None:
+def test_provider_evidence_uses_one_table_and_native_row_disclosure() -> None:
     for provider, path in (
         ('capsule', 'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'),
         ('native', 'app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html'),
     ):
         ui = read(path)
-        assert "table_ui.table_classes('min-w-[1050px] table-fixed xl:min-w-0')" in ui
-        assert 'scope="col"' in ui
+        assert ui.count('<table class=') == 1
+        assert "table_ui.table_classes('min-w-[970px] table-fixed xl:min-w-0')" in ui
+        assert '<details class="group min-w-0">' in ui
+        assert 'aria-label="Expand ' in ui
+        assert 'grid min-w-[970px]' in ui
+        assert 'colspan="5"' in ui
+        assert 'Provider Evidence' in ui
         assert 'Observed At' in ui
         assert 'Review Required' in ui
-        assert 'access_evidence_review_required }} records' in ui
-        assert 'Access' in ui or 'RBAC' in ui
-        assert '{% for event in access_evidence_rows %}' in ui
-        assert 'access_evidence_pagination.allowed_per_page' in ui
+        assert "access_evidence_drift_by_tenant.get(evidence.tenant_id)" in ui
         assert "registry_ui.footer('tenant.tenants'" in ui
-        assert 'data-kaori-dialog-open' in ui
-        assert 'data-kaori-native-dialog' in ui
-        assert f'data-dialog-target="tenant-{provider}-evidence-' in ui
-        assert f'<dialog id="tenant-{provider}-evidence-' in ui
-        assert 'data-kaori-dialog-close' in ui
-        assert 'max-h-[calc(100dvh-2rem)]' in ui
-        assert 'aria-haspopup="dialog"' in ui
-        assert "Review Profile Match" in ui
-        assert 'Analyze Drift' in ui
+        assert 'lead=false' in ui
         assert 'name="csrf_token"' in ui
         assert f'name="access_inventory_view" value="{provider}"' in ui
-        assert 'Opening this dialog does not reverify effective Kubernetes access.' in ui
-        assert '<article class="rounded-lg' not in ui
-        assert '<details class="group mt-3' not in ui
-        assert ui.index("registry_ui.footer('tenant.tenants'") < ui.index(
-            f'<dialog id="tenant-{provider}-evidence-'
-        )
+        assert 'Review Profile Match' in ui
+        assert 'No committed drift analysis for this Tenant' in ui
+        assert 'no automatic remediation was performed.' in ui
+        assert 'data-kaori-native-dialog' not in ui
+        assert '<dialog id="tenant-' not in ui
         assert ui.count('{% if ') == ui.count('{% endif %}')
         assert ui.count('{% for ') == ui.count('{% endfor %}')
 
 
-def test_capsule_drift_findings_use_separate_table_and_review_dialog() -> None:
+def test_capsule_drift_is_not_rendered_as_a_second_table() -> None:
     ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
-    assert 'Latest Committed Access Drift Findings' in ui
-    assert 'tenant-capsule-access-drift-title' in ui
-    assert 'data-dialog-target="tenant-capsule-drift-{{ event.id }}"' in ui
-    assert '<dialog id="tenant-capsule-drift-{{ event.id }}"' in ui
-    assert 'View Findings' in ui
+    assert 'Drift Findings' in ui
+    assert 'Latest independently committed analysis' in ui
     assert 'finding.code|replace' in ui
+    assert 'tenant.plan_capsule_access_remediation_route' in ui
     assert 'Prepare Remediation Decisions' in ui
     assert 'Declaration correlation only.' in ui
     assert 'Effective RBAC was not reverified' in ui
-    assert 'no automatic remediation was performed' in ui
+    assert 'tenant-capsule-access-drift-title' not in ui
+    assert 'View Findings' not in ui
 
 
-def test_modal_evidence_is_distinct_for_capsule_and_native_providers() -> None:
+def test_provider_specific_scope_and_review_are_preserved() -> None:
     capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
-    assert 'Observed Capsule Owners' in capsule
-    assert 'Provider Bindings' in capsule
-    assert 'No provider bindings observed in the committed inspection.' in capsule
-    assert 'Observed Namespaces' in native
-    assert 'Observed RoleBindings' in native
+    assert 'Observed Owners &amp; Provider Bindings' in capsule
+    assert 'review_external_capsule_profile_route' in capsule
+    assert 'review_external_native_profile_route' in native
     assert 'binding.claimed_grant_marker' in native
     assert 'Labels indicate possible correlation' in native
     assert 'No membership or RBAC mutation occurs' in capsule

@@ -24,6 +24,10 @@ def test_provider_access_evidence_queries_are_committed_and_paged() -> None:
     assert "AuditEvent.metadata_json['status'].as_string()" in service
     assert "AuditEvent.metadata_json['tenant_id'].as_string().ilike(pattern)" in service
     assert 'AuditEvent.summary.ilike(pattern)' in service
+    assert "func.row_number()" in service
+    assert "drift_types[provider]" in service
+    assert "tenant_key.in_(tenant_ids)" in service
+    assert "'access_evidence_drift_by_tenant': drift_by_tenant" in service
     assert 'get_provider_access_evidence_registry_context(' in routes
     assert "if active_view in {'capsule', 'native'}" in routes
     assert "_query_int('access_evidence_per_page', 5)" in routes
