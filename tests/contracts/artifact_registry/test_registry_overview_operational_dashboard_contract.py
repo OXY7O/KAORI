@@ -730,3 +730,18 @@ def test_artifact_registry_overview_visual_uat_copy_preserves_shared_evidence_co
     assert 'reporting_workspace.summary(overview.reporting' in reporting
     assert 'reporting_workspace.guidance(' in reporting
     assert 'reporting_steps' in shared_reporting
+
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+    feature = standard.split('Feature: Artifact Registry Overview compact presentation', 1)[1]
+    assert feature.count('  Scenario: ') >= 5
+    for requirement in (
+        'Top Consumers',
+        'Forecast Conclusion',
+        'Alert Interpretation & Response',
+        'Critical and Warning',
+        'Evidence Backed',
+        'Generate',
+        '1440',
+        'mobile viewport',
+    ):
+        assert requirement in feature
