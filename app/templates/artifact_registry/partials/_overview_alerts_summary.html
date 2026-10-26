@@ -1,5 +1,5 @@
 {% import "components/operational_alert_summary.html" as alert_summary %}
-{{ alert_summary.render(description='Active KAORI AlertCase posture and up to five recent Registry cases.',
+{{ alert_summary.render(description='Active Registry AlertCases and recent cases.',
 section_id='artifact-registry-dashboard-alerts-summary',
 action_href=url_for('alert_intelligence.index', domain='registry', asset=overview.selected_provider_id, tab='active') ,
 critical=overview.alerts.critical,
