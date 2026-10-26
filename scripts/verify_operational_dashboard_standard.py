@@ -1199,17 +1199,33 @@ def verify() -> None:
     ):
         if retired in alert_summary_workspace:
             raise AssertionError(f'shared Alerts Summary retains domain adapter API: {retired}')
-    for owner, source, row_token in (
-        ('Kubernetes Alerts Summary', alert_summary, 'rows=dashboard.alerts_snapshot.items'),
-        ('Object Storage Alerts Summary', object_alert_summary, 'rows=dashboard.alerts.rows'),
-        ('Artifact Registry Alerts Summary', artifact_alert_summary, 'rows=overview.alerts.rows'),
+    # The shared renderer, not the domain-specific subtitle, enforces the five-case cap.
+    for owner, source, row_token, description in (
+        (
+            'Kubernetes Alerts Summary',
+            alert_summary,
+            'rows=dashboard.alerts_snapshot.items',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Object Storage Alerts Summary',
+            object_alert_summary,
+            'rows=dashboard.alerts.rows',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Artifact Registry Alerts Summary',
+            artifact_alert_summary,
+            'rows=overview.alerts.rows',
+            'Active Registry AlertCases and recent cases.',
+        ),
     ):
         _require(
             source,
             (
                 'components/operational_alert_summary.html',
                 'alert_summary.render(',
-                'up to five recent',
+                f"description='{description}'",
                 "empty_label='No Active Cases'",
                 "empty_title='No Active Alert Cases'",
                 'No active recommendation-origin AlertCases',
