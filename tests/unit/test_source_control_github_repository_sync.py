@@ -21,10 +21,13 @@ def _installation():
 class FakeSession:
     def __init__(self):
         self.rollbacks = 0
+
     def rollback(self):
         self.rollbacks += 1
+
     def scalars(self, _statement):
         return []
+
     def scalar(self, _statement):
         return 0
 
@@ -34,15 +37,18 @@ def test_success_uses_single_generation_and_commit(monkeypatch):
     lease = RepositoryGeneration(installation_id=9, generation=4)
     evidence = SimpleNamespace(expected_count=3)
     monkeypatch.setattr(
-        repository_sync, 'reserve_generation',
+        repository_sync,
+        'reserve_generation',
         lambda _session, _installation: calls.append('reserve') or lease,
     )
     monkeypatch.setattr(
-        repository_sync, 'collect_installation_repositories',
+        repository_sync,
+        'collect_installation_repositories',
         lambda _installation: calls.append('collect') or evidence,
     )
     monkeypatch.setattr(
-        repository_sync, 'publish_generation',
+        repository_sync,
+        'publish_generation',
         lambda _session, _installation, _lease, _evidence: calls.append('publish') or 3,
     )
     result = repository_sync.synchronize_installation(FakeSession(), _installation())
@@ -58,15 +64,18 @@ def test_partial_pagination_marks_degraded_without_commit(monkeypatch):
     failures = []
     monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
     monkeypatch.setattr(
-        repository_sync, 'collect_installation_repositories',
+        repository_sync,
+        'collect_installation_repositories',
         lambda *_: (_ for _ in ()).throw(GitHubProviderError('incomplete')),
     )
     monkeypatch.setattr(
-        repository_sync, 'publish_generation',
+        repository_sync,
+        'publish_generation',
         lambda *_: pytest.fail('incomplete evidence must not be published'),
     )
     monkeypatch.setattr(
-        repository_sync, 'record_generation_failure',
+        repository_sync,
+        'record_generation_failure',
         lambda *_: failures.append('degraded'),
     )
     with pytest.raises(GitHubProviderError):
@@ -82,11 +91,13 @@ def test_late_scan_does_not_invalidate_newer_generation(monkeypatch):
     monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
     monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
     monkeypatch.setattr(
-        repository_sync, 'publish_generation',
+        repository_sync,
+        'publish_generation',
         lambda *_: (_ for _ in ()).throw(RepositoryGenerationError('stale')),
     )
     monkeypatch.setattr(
-        repository_sync, 'record_generation_failure',
+        repository_sync,
+        'record_generation_failure',
         lambda *_: statuses.append('checked'),
     )
     with pytest.raises(RepositoryGenerationError):
@@ -99,14 +110,13 @@ def test_no_custom_celery_or_webhook_dispatcher():
     from pathlib import Path
 
     src = (
-        Path(__file__).resolve().parents[2] /
-        'app/integrations/source_control/source_control/providers/github/repository_sync.py'
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/repository_sync.py'
     ).read_text()
     assert '@shared_task' not in src
     assert 'apply_async' not in src
     assert 'send_task' not in src
     assert 'enqueue_canonical_job' not in src
-
 
 
 def test_unexpected_publish_db_error_rolls_back_and_preserves_prior_snapshot(monkeypatch):
@@ -116,18 +126,19 @@ def test_unexpected_publish_db_error_rolls_back_and_preserves_prior_snapshot(mon
     monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
     monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
     monkeypatch.setattr(
-        repository_sync, 'publish_generation',
+        repository_sync,
+        'publish_generation',
         lambda *_: (_ for _ in ()).throw(RuntimeError('database unavailable')),
     )
     monkeypatch.setattr(
-        repository_sync, 'record_generation_failure',
+        repository_sync,
+        'record_generation_failure',
         lambda *_: calls.append('mark-degraded'),
     )
     with pytest.raises(RuntimeError, match='database unavailable'):
         repository_sync.synchronize_installation(session, _installation())
     assert session.rollbacks == 1
     assert calls == ['mark-degraded']
-
 
 
 def test_revision_gap_counts_all_unchecked_repositories(monkeypatch):
@@ -139,7 +150,8 @@ def test_revision_gap_counts_all_unchecked_repositories(monkeypatch):
     monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
     monkeypatch.setattr(repository_sync, 'publish_generation', lambda *_: 225)
     monkeypatch.setattr(
-        repository_sync, 'collect_default_branch_revision',
+        repository_sync,
+        'collect_default_branch_revision',
         lambda *_args, **_kwargs: SimpleNamespace(commit_sha='a' * 40),
     )
     monkeypatch.setattr(repository_sync, 'publish_default_branch_revision', lambda *_args, **_kwargs: True)
@@ -157,10 +169,12 @@ def test_branch_collect_failure_remains_partial_not_repository_rollback(monkeypa
     monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
     monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
     monkeypatch.setattr(repository_sync, 'publish_generation', lambda *_: 3)
+
     def branch(_session, *, installation, repository_id):
         if repository_id == 2:
             raise GitHubProviderError('branch missing')
         return SimpleNamespace(commit_sha='b' * 40)
+
     monkeypatch.setattr(repository_sync, 'collect_default_branch_revision', branch)
     monkeypatch.setattr(repository_sync, 'publish_default_branch_revision', lambda *_args, **_kwargs: True)
     result = repository_sync.synchronize_installation(session, _installation())

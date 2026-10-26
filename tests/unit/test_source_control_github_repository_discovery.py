@@ -16,16 +16,23 @@ from app.integrations.source_control.source_control.providers.github.transport i
 
 def _repository(i: int) -> dict:
     return {
-        'id': i, 'name': f'app-{i}', 'full_name': f'org/app-{i}',
-        'owner': {'id': 123, 'login': 'org'}, 'default_branch': 'main',
-        'archived': False, 'visibility': 'private',
+        'id': i,
+        'name': f'app-{i}',
+        'full_name': f'org/app-{i}',
+        'owner': {'id': 123, 'login': 'org'},
+        'default_branch': 'main',
+        'archived': False,
+        'visibility': 'private',
     }
 
 
 def _installation():
     return SimpleNamespace(
-        id=1, provider_key='github', host_key='github.com',
-        native_app_id='7', native_installation_id='99',
+        id=1,
+        provider_key='github',
+        host_key='github.com',
+        native_app_id='7',
+        native_installation_id='99',
         repository_scope='selected',
         account=SimpleNamespace(native_account_id='123'),
     )
@@ -42,7 +49,8 @@ class Client:
     def installation_detail(self, installation_id, account_id):
         assert (installation_id, account_id) == ('99', '123')
         return {
-            'id': 99, 'app_id': 7,
+            'id': 99,
+            'app_id': 7,
             'account': {'id': 123, 'type': 'Organization', 'login': 'org'},
             'repository_selection': self.scope,
         }
@@ -52,7 +60,8 @@ class Client:
         return InstallationToken(
             token='never-persist',
             expires_at=datetime.now(UTC) + timedelta(minutes=40),
-            permissions=permissions, repository_selection=self.scope,
+            permissions=permissions,
+            repository_selection=self.scope,
         )
 
     def repository_page(self, token, page):
@@ -62,16 +71,14 @@ class Client:
         start = (page - 1) * discovery.PAGE_SIZE
         return {
             'total_count': self.count,
-            'repositories': self.records[start:start + discovery.PAGE_SIZE],
+            'repositories': self.records[start : start + discovery.PAGE_SIZE],
             'repository_selection': self.scope,
         }
 
 
 @pytest.fixture(autouse=True)
 def provider_admitted_for_pure_collector_test(monkeypatch):
-    monkeypatch.setattr(
-        discovery, 'provider_kind', lambda *_: SimpleNamespace(available=True)
-    )
+    monkeypatch.setattr(discovery, 'provider_kind', lambda *_: SimpleNamespace(available=True))
 
 
 def test_multi_page_exhaustive_installation_collection():
@@ -134,27 +141,21 @@ def test_token_expiry_or_github_network_error_cannot_publish_inventory():
             raise GitHubProviderError('GitHub installation API request was rejected or unavailable.')
 
     with pytest.raises(GitHubProviderError):
-        discovery.collect_installation_repositories(
-            _installation(), client=Failing([_repository(1)])
-        )
+        discovery.collect_installation_repositories(_installation(), client=Failing([_repository(1)]))
 
 
 def test_provider_planned_prevents_collection(monkeypatch):
-    monkeypatch.setattr(
-        discovery, 'provider_kind', lambda *_: SimpleNamespace(available=False)
-    )
+    monkeypatch.setattr(discovery, 'provider_kind', lambda *_: SimpleNamespace(available=False))
     with pytest.raises(GitHubProviderError, match='not admitted'):
-        discovery.collect_installation_repositories(
-            _installation(), client=Client([_repository(1)])
-        )
+        discovery.collect_installation_repositories(_installation(), client=Client([_repository(1)]))
 
 
 def test_no_git_clone_or_file_content_ingestion():
     from pathlib import Path
 
     source = (
-        Path(__file__).resolve().parents[2] /
-        'app/integrations/source_control/source_control/providers/github/repository_discovery.py'
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/repository_discovery.py'
     ).read_text()
     assert 'subprocess' not in source
     assert 'git clone' not in source

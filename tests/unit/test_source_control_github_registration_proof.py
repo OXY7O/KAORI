@@ -38,9 +38,7 @@ def test_proof_round_trip_never_exposes_secrets() -> None:
         assert values.private_key_pem not in proof
         assert values.webhook_secret not in proof
         assert str(values.installation_id) not in proof
-        assert registration_proof.verify_github_registration_proof(
-            token=proof, user_id=7, values=values
-        ) == (True, '')
+        assert registration_proof.verify_github_registration_proof(token=proof, user_id=7, values=values) == (True, '')
 
 
 def test_proof_requires_matching_user_and_all_submitted_fields() -> None:
@@ -49,9 +47,7 @@ def test_proof_requires_matching_user_and_all_submitted_fields() -> None:
     with app.app_context():
         values = _values()
         proof = registration_proof.issue_github_registration_proof(user_id=7, values=values)
-        valid, error = registration_proof.verify_github_registration_proof(
-            token=proof, user_id=8, values=values
-        )
+        valid, error = registration_proof.verify_github_registration_proof(token=proof, user_id=8, values=values)
         assert not valid and 'another user' in error
 
         changes = {
@@ -67,9 +63,7 @@ def test_proof_requires_matching_user_and_all_submitted_fields() -> None:
         }
         for field, value in changes.items():
             changed = replace(values, **{field: value})
-            valid, error = registration_proof.verify_github_registration_proof(
-                token=proof, user_id=7, values=changed
-            )
+            valid, error = registration_proof.verify_github_registration_proof(token=proof, user_id=7, values=changed)
             assert not valid and 'settings changed' in error, field
 
 
@@ -79,9 +73,7 @@ def test_proof_rejects_missing_tampered_and_expired_tokens(monkeypatch) -> None:
     with app.app_context():
         values = _values()
         proof = registration_proof.issue_github_registration_proof(user_id=7, values=values)
-        valid, error = registration_proof.verify_github_registration_proof(
-            token='', user_id=7, values=values
-        )
+        valid, error = registration_proof.verify_github_registration_proof(token='', user_id=7, values=values)
         assert not valid and 'Run Test Connection' in error
         valid, error = registration_proof.verify_github_registration_proof(
             token=proof + '.tampered', user_id=7, values=values
@@ -94,9 +86,7 @@ def test_proof_rejects_missing_tampered_and_expired_tokens(monkeypatch) -> None:
                 raise SignatureExpired('expired')
 
         monkeypatch.setattr(registration_proof, '_serializer', lambda: ExpiredSerializer())
-        valid, error = registration_proof.verify_github_registration_proof(
-            token=proof, user_id=7, values=values
-        )
+        valid, error = registration_proof.verify_github_registration_proof(token=proof, user_id=7, values=values)
         assert not valid and 'expired' in error
 
 
@@ -116,11 +106,15 @@ def test_multiline_line_endings_do_not_invalidate_identical_configuration() -> N
             description='Line one\r\nLine two',
             private_key_pem='-----BEGIN PRIVATE KEY-----\r\nexample\r\n-----END PRIVATE KEY-----\r\n',
         )
-        assert registration_proof.verify_github_registration_proof(
-            token=token, user_id=7, values=normalized
-        ) == (True, '')
-        assert registration_proof.verify_github_registration_proof(
-            token=token,
-            user_id=7,
-            values=replace(normalized, private_key_pem=normalized.private_key_pem + 'changed'),
-        )[0] is False
+        assert registration_proof.verify_github_registration_proof(token=token, user_id=7, values=normalized) == (
+            True,
+            '',
+        )
+        assert (
+            registration_proof.verify_github_registration_proof(
+                token=token,
+                user_id=7,
+                values=replace(normalized, private_key_pem=normalized.private_key_pem + 'changed'),
+            )[0]
+            is False
+        )

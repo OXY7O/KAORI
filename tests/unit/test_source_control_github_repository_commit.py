@@ -40,31 +40,46 @@ def state(monkeypatch):
     engine = create_engine('sqlite+pysqlite:///:memory:')
     with engine.connect() as connection:
         connection.exec_driver_sql('PRAGMA foreign_keys = ON')
-    IntegrationInstance.metadata.create_all(bind=engine, tables=[
-        IntegrationInstance.__table__,
-        SourceAccount.__table__,
-        GitHubAppCredential.__table__,
-        SourceInstallation.__table__,
-        SourceRepository.__table__,
-        SourceRepositoryGrant.__table__,
-        SourceRepositoryCollectionState.__table__,
-    ])
+    IntegrationInstance.metadata.create_all(
+        bind=engine,
+        tables=[
+            IntegrationInstance.__table__,
+            SourceAccount.__table__,
+            GitHubAppCredential.__table__,
+            SourceInstallation.__table__,
+            SourceRepository.__table__,
+            SourceRepositoryGrant.__table__,
+            SourceRepositoryCollectionState.__table__,
+        ],
+    )
     with Session(engine) as session:
         account = SourceAccount(
-            provider_key='github', host_key='github.com', native_account_id='2',
-            login='old-login', account_type='Organization',
+            provider_key='github',
+            host_key='github.com',
+            native_account_id='2',
+            login='old-login',
+            account_type='Organization',
         )
         canonical = IntegrationInstance(
-            name='GitHub Test', integration_type='source_control',
-            provider_key='github', adapter_key='github_rest_v3',
-            enabled=True, lifecycle_status='active', readiness_status='validation_required',
+            name='GitHub Test',
+            integration_type='source_control',
+            provider_key='github',
+            adapter_key='github_rest_v3',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='validation_required',
         )
         session.add_all((account, canonical))
         session.flush()
         installation = SourceInstallation(
-            integration_instance_id=canonical.id, provider_key='github',
-            host_key='github.com', native_app_id='7', native_installation_id='9',
-            account_id=account.id, repository_scope='selected', grant_status='unknown',
+            integration_instance_id=canonical.id,
+            provider_key='github',
+            host_key='github.com',
+            native_app_id='7',
+            native_installation_id='9',
+            account_id=account.id,
+            repository_scope='selected',
+            grant_status='unknown',
         )
         session.add(installation)
         session.commit()
@@ -74,28 +89,45 @@ def state(monkeypatch):
 
 def _item(native_id='10', *, name='app', archived=False):
     return RepositoryObservation(
-        native_id=native_id, owner_native_id='2', owner_login='org',
-        name=name, full_name=f'org/{name}', default_branch='main',
-        visibility='private', archived=archived,
+        native_id=native_id,
+        owner_native_id='2',
+        owner_login='org',
+        name=name,
+        full_name=f'org/{name}',
+        default_branch='main',
+        visibility='private',
+        archived=archived,
     )
 
 
 def _evidence(*items, observed=None, scope='selected'):
     return RepositoryCollection(
-        provider_key='github', host_key='github.com',
-        app_native_id='7', installation_native_id='9',
-        account_native_id='2', account_type='Organization',
-        account_login='org', repository_selection=scope,
-        expected_count=len(items), repositories=tuple(items),
-        observed_at=observed or datetime.now(UTC), pages=1,
+        provider_key='github',
+        host_key='github.com',
+        app_native_id='7',
+        installation_native_id='9',
+        account_native_id='2',
+        account_type='Organization',
+        account_login='org',
+        repository_selection=scope,
+        expected_count=len(items),
+        repositories=tuple(items),
+        observed_at=observed or datetime.now(UTC),
+        pages=1,
     )
 
 
 def _current(session, installation):
-    return session.execute(select(SourceRepositoryGrant).where(
-        SourceRepositoryGrant.installation_id == installation.id,
-        SourceRepositoryGrant.valid_until.is_(None),
-    )).scalars().all()
+    return (
+        session.execute(
+            select(SourceRepositoryGrant).where(
+                SourceRepositoryGrant.installation_id == installation.id,
+                SourceRepositoryGrant.valid_until.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
 
 
 def test_generation_is_reserved_and_complete_scope_is_committed(state):
@@ -125,7 +157,9 @@ def test_rename_preserves_native_repository_identity(state):
     publish_generation(session, installation, reserve_generation(session, installation), _evidence(_item()))
     before = session.execute(select(SourceRepository)).scalar_one().id
     publish_generation(
-        session, installation, reserve_generation(session, installation),
+        session,
+        installation,
+        reserve_generation(session, installation),
         _evidence(_item(name='new-name', archived=True)),
     )
     repo = session.execute(select(SourceRepository)).scalar_one()
@@ -138,11 +172,15 @@ def test_rename_preserves_native_repository_identity(state):
 def test_exhaustive_missing_grant_marks_access_lost_without_deleting_repository(state):
     session, installation = state
     publish_generation(
-        session, installation, reserve_generation(session, installation),
+        session,
+        installation,
+        reserve_generation(session, installation),
         _evidence(_item('10'), _item('11', name='second')),
     )
     publish_generation(
-        session, installation, reserve_generation(session, installation),
+        session,
+        installation,
+        reserve_generation(session, installation),
         _evidence(_item('10')),
     )
     assert len(session.execute(select(SourceRepository)).scalars().all()) == 2
@@ -151,9 +189,7 @@ def test_exhaustive_missing_grant_marks_access_lost_without_deleting_repository(
     assert {g.access_status for g in current} == {'granted', 'access_lost'}
     history = session.execute(select(SourceRepositoryGrant)).scalars().all()
     assert len(history) == 3
-    assert all(r.provider_presence == 'observed' for r in session.execute(
-        select(SourceRepository)
-    ).scalars().all())
+    assert all(r.provider_presence == 'observed' for r in session.execute(select(SourceRepository)).scalars().all())
 
 
 def test_empty_authorized_scope_preserves_evidence_and_revokes_only_grants(state):
@@ -204,20 +240,30 @@ def test_wrong_account_scope_rejected_before_writing_repository(state):
 def test_generation_and_repository_ids_are_installation_scoped(state):
     session, installation = state
     other_account = SourceAccount(
-        provider_key='github', host_key='github.com', native_account_id='22',
+        provider_key='github',
+        host_key='github.com',
+        native_account_id='22',
         account_type='Organization',
     )
     other_canonical = IntegrationInstance(
-        name='Other GitHub', integration_type='source_control', provider_key='github',
-        adapter_key='github_rest_v3', enabled=True, lifecycle_status='active',
+        name='Other GitHub',
+        integration_type='source_control',
+        provider_key='github',
+        adapter_key='github_rest_v3',
+        enabled=True,
+        lifecycle_status='active',
         readiness_status='validation_required',
     )
     session.add_all([other_account, other_canonical])
     session.flush()
     other = SourceInstallation(
-        integration_instance_id=other_canonical.id, provider_key='github',
-        host_key='github.com', native_app_id='7', native_installation_id='10',
-        account_id=other_account.id, repository_scope='selected',
+        integration_instance_id=other_canonical.id,
+        provider_key='github',
+        host_key='github.com',
+        native_app_id='7',
+        native_installation_id='10',
+        account_id=other_account.id,
+        repository_scope='selected',
     )
     session.add(other)
     session.commit()
@@ -230,7 +276,8 @@ def test_generation_and_repository_ids_are_installation_scoped(state):
 def test_no_provider_authority_no_reservation(state, monkeypatch):
     session, installation = state
     monkeypatch.setattr(
-        repository_commit, '_admitted',
+        repository_commit,
+        '_admitted',
         lambda _: (_ for _ in ()).throw(RepositoryGenerationError('not admitted')),
     )
     with pytest.raises(RepositoryGenerationError, match='not admitted'):
@@ -238,18 +285,21 @@ def test_no_provider_authority_no_reservation(state, monkeypatch):
     assert session.get(SourceRepositoryCollectionState, installation.id) is None
 
 
-
 def test_mid_scan_provider_revocation_can_mark_degraded_without_removing_grants(
-    state, monkeypatch,
+    state,
+    monkeypatch,
 ):
     session, installation = state
     publish_generation(
-        session, installation, reserve_generation(session, installation),
+        session,
+        installation,
+        reserve_generation(session, installation),
         _evidence(_item()),
     )
     later = reserve_generation(session, installation)
     monkeypatch.setattr(
-        repository_commit, '_admitted',
+        repository_commit,
+        '_admitted',
         lambda _: (_ for _ in ()).throw(RepositoryGenerationError('App revoked')),
     )
     assert record_generation_failure(session, installation, later)
