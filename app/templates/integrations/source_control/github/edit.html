@@ -174,16 +174,19 @@
                             {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus") }}
                         {% endcall %}
                     </section>
-                    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-outline-subtle pt-5">
-                        <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
-                           class="{{ action_button.classes('secondary') }}">Cancel</a>
-                        <button type="submit"
-                                name="action"
-                                value="save"
-                                class="{{ action_button.classes('primary') }}">
-                            <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                            Save Changes
-                        </button>
+                    <div class="flex flex-col gap-3 border-t border-outline-subtle pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-xs leading-5 text-content-secondary">Saving updates KAORI settings; GitHub grants stay unchanged.</p>
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
+                               class="{{ action_button.classes('secondary') }}">Cancel</a>
+                            <button type="submit"
+                                    name="action"
+                                    value="save"
+                                    class="{{ action_button.classes('primary') }}">
+                                <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                                Save Changes
+                            </button>
+                        </div>
                     </div>
                 </form>
             </section>
@@ -197,7 +200,7 @@
                                 url_for('github_source.index', tab='registry') ,
                 'Open Source Control Registry',
                 flow_icon='workflow',
-                flow_note='Rotating an App credential resets validation for other linked installations.',
+                flow_note='App rotation resets validation for linked installations.',
                 related_icon='git-branch',
                 authority_boundary='GitHub owns installation and repository access; KAORI owns canonical connection configuration and audit.') }}
             </aside>

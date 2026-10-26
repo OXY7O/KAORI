@@ -49,7 +49,7 @@
                     {% endif %}
                     <div class="rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3">
                         <p class="text-sm font-semibold text-content-primary">Historical Connection Preserved</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI registers a new canonical connection and retains this installation, its source revisions, repository grants, and audit evidence. No installation is deleted or automatically deactivated.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI creates a new connection; the existing installation and evidence remain intact.</p>
                     </div>
                     <div class="space-y-4">
                         <div>
@@ -95,7 +95,7 @@
                             </button>
                         {% endcall %}
                         <div class="space-y-4 p-4 sm:p-5">
-                            <p class="text-xs leading-5 text-content-secondary">For the same App ID, leave both fields empty to reuse its protected credentials. For a different App ID, provide its new PEM and webhook secret. Existing secrets never appear in HTML.</p>
+                            <p class="text-xs leading-5 text-content-secondary">Same App: leave both fields blank. New App: provide PEM and webhook secret.</p>
                             <div>
                                 <label for="{{ form.private_key_pem.id }}"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.private_key_pem.label.text }}</label>
