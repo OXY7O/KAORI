@@ -655,3 +655,23 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Require explicit Human Acceptance before any official Developer Check/Full Admission, promotion to `kaori/staging`, `main`, or release.
+
+## Session functional boundaries and Bot unconfigured helper — UAT (#3380, 2026-10-26)
+
+Use the exact holding branch SHA for **Access → Authentication Security → Bot Protection** and **Session Security**. In the Bot panel, **Test Verification** no longer displays the redundant unconfigured-manager helper directly beneath its single-level card. Its verified-ready **real one-use Cloudflare Turnstile POST** remains when configuration is complete and managing rights exist; view-only permissions still show truthful restricted-verification guidance. Check that no second fake test button or inferred provider-health indicator appears. Verify CSRF, unchanged one-hour proof, independent recovery, and fail-closed policy in authorized UAT; never put secrets or challenge tokens in screenshots.
+
+In Session Security's Role Registry-style four-metric/four-boundary summary, confirm **Provider Disablement**, **Idle & Absolute Timeouts**, and **Admission Boundary** details are one line at the operator's desktop viewport, without forced clipping or ellipses. On mobile, wrapping remains natural. The single **Session Security Controls** hub must show two balanced functional cards, left **Governed in Access** with status **Enforced** and rows **Admission Gate / Session Revocation / Remember Me**, right **Outside Current Scope** with status **Not Qualified** and rows **Idle Timeout / Absolute Timeout / Device / Remote Sessions**. Icons and dividers should distinguish state and functional meaning without implying new controls; no buttons, forms or active-device inventory. Check screen reader/keyboard, light/dark, 1440/1280/1150/1024/768/390/360 widths and 200% zoom. Human Acceptance remains mandatory.
+
+Operator previous-SHA evidence attached: `ruff check` PASS, `ruff format --check` PASS (6 files), **djlint --check FAIL** for broad existing `_page_content.html` indentation, focused `pytest` **63 PASS / 1 FAIL** from stale Bot assertion about removed `data-auth-bot-step-context="safety"`, Access Final Lock PASS and Sidebar Standard PASS. This issue updates that obsolete expectation to current `data-auth-bot-step-note="safety"` and adds focused Bot/Session tests. These edits **do not prove** new-SHA QA. The page's djlint difference remains an OPEN admission gate; use the existing `djlint --reformat` on a reviewed scoped formatter work branch and rerun original checks, without bypass or custom scripts.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_*contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_overview_refinement_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+
+Official Developer Check/Full Admission, `kaori/staging`, `main`, release remain HOLD pending developer results and explicit UAT acceptance.
