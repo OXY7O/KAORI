@@ -295,13 +295,13 @@
                         ('shield-check', 'Current Policy', current_mfa_label, 'Committed KAORI configuration.', 'bg-kaori-soft text-kaori-primary'),
                         ('key-round', 'Verification Method', 'TOTP', 'Authenticator and one-use recovery codes.', 'bg-status-info-soft text-status-info-text'),
                         ('log-out', 'Session Impact', 'Revocation', 'Policy changes invalidate issued login sessions.', 'bg-status-warning-soft text-status-warning-text'),
-                        ('user-round', 'Factor Ownership', 'Self-Service', 'Each user enrolls and stores personal recovery codes.', 'bg-kaori-soft text-kaori-primary')
+                        ('user-round', 'Factor Ownership', 'Self-Service', 'Users keep their own recovery codes.', 'bg-kaori-soft text-kaori-primary')
                     ],
                     [
-                        ('fingerprint', 'Factor Enrollment', 'User-Owned', 'Administrators cannot retrieve another user\'s MFA secret.'),
+                        ('fingerprint', 'Factor Enrollment', 'User-Owned', 'Admins cannot retrieve MFA secrets.'),
                         ('shield-check', 'Assurance Gate', 'Policy', 'Required policies challenge eligible accounts.'),
                         ('key-round', 'Recovery Authority', 'Private', 'Recovery codes are one-time and personal.'),
-                        ('log-out', 'Policy Transition', 'Revocation', 'Changes invalidate existing and Remember Me sessions.')
+                        ('log-out', 'Policy Transition', 'Revocation', 'Policy changes revoke prior sessions.')
                     ],
                     guide=info_tip.render(
                         'mfa-policy-assurance-guide',
@@ -481,10 +481,10 @@
                         ('clipboard-check', 'Verification Evidence', 'Recorded' if bot_tested_at else 'Not Recorded', 'Recorded proof is not a live readiness signal.', 'bg-status-normal-soft text-status-normal-text' if bot_tested_at else 'bg-status-unknown-soft text-status-unknown-text')
                     ],
                     [
-                        ('shield-alert', 'Challenge Boundary', 'Fail Closed', 'Rejected or unavailable verification blocks enabled sign-in.'),
-                        ('key-round', 'One-Use Proof', 'Siteverify', 'Cloudflare validates the one-use token server-side.'),
-                        ('clock', 'Activation Evidence', 'One Hour', 'Always needs recent proof for unchanged configuration.'),
-                        ('shield-check', 'Recovery Access', 'Required', 'Confirm approved independent recovery before enabling.')
+                        ('shield-alert', 'Challenge Boundary', 'Fail Closed', 'Failed verification blocks sign-in.'),
+                        ('key-round', 'One-Use Proof', 'Siteverify', 'Cloudflare verifies one-use tokens.'),
+                        ('clock', 'Activation Evidence', 'One Hour', 'Always requires fresh proof.'),
+                        ('shield-check', 'Recovery Access', 'Required', 'Confirm recovery before enabling.')
                     ],
                     guide=info_tip.render(
                         'bot-protection-guide',
@@ -532,7 +532,6 @@
                                         <option value="disabled" {% if bot_mode == 'disabled' %}selected{% endif %}>Disabled</option>
                                         <option value="always" {% if bot_mode == 'always' %}selected{% endif %}>Always — require Turnstile on every login</option>
                                     </select>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Adaptive mode is deferred until committed risk signals are validated.</p>
                                 </div>
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div class="min-w-0">
@@ -568,7 +567,6 @@
                                            autocomplete="new-password"
                                            placeholder="{{ 'Leave blank to retain encrypted secret' if bot_has_secret else 'Enter Turnstile secret' }}"
                                            class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Encrypted at rest; never displayed or recorded in Activity Audit.</p>
                                 </div>
                                 <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
                                     <i data-lucide="shield-alert"
