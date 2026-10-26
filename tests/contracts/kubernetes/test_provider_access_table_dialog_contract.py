@@ -22,7 +22,7 @@ def test_provider_registries_use_shared_table_and_expandable_row() -> None:
     assert "open_label='View Details'" in rows
     assert "close_label='Hide Details'" in rows
     assert "detail_row.toggle_button(" in intelligence
-    assert "data-detail-static=\"true\"" in expandable
+    assert 'data-detail-static="true"' in expandable
     assert rows.count('<td class=') == 5
     assert '<td colspan="5"' in rows  # Only for empty state
     assert '<details class=' not in rows
@@ -47,7 +47,7 @@ def test_provider_registries_use_shared_table_and_expandable_row() -> None:
         assert 'class="flex items-end justify-end"' not in ui
         assert '<details class="group min-w-0">' not in ui
         assert 'grid min-w-[970px]' not in ui
-        assert f"name=\"access_inventory_view\" value=\"{provider}\"" in ui
+        assert f'name="access_inventory_view" value="{provider}"' in ui
 
 
 def test_committed_drift_and_provider_actions_remain_in_one_expansion() -> None:
