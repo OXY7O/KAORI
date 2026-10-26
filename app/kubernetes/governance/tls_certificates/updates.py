@@ -374,6 +374,39 @@ def _selected_tls_targets(target_ids: Iterable[int]) -> list[TLSCertificateInven
     return TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(ids)).all()
 
 
+def _summarize_bulk_update_results(results: list[dict[str, Any]], bulk_job_id: str) -> dict[str, Any]:
+    """Preserve partial-provider and persistence-gap reporting after TLS writes."""
+    provider_updated_count = sum(1 for result in results if result.get('provider_updated') is True)
+    persistence_gap_count = sum(
+        1
+        for result in results
+        if result.get('provider_updated') is True and result.get('persistence_confirmed') is False
+    )
+    failed_count = sum(1 for result in results if result['status'] == 'failed')
+    overall_status = _bulk_result_status(results)
+
+    if persistence_gap_count:
+        message = (
+            f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated in '
+            f'Kubernetes; KAORI persistence was not confirmed for '
+            f'{persistence_gap_count}. Run TLS synchronization.'
+        )
+    else:
+        message = f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated.' + (
+            f' {failed_count} failed.' if failed_count else ''
+        )
+
+    return {
+        'status': overall_status,
+        'message': message,
+        'bulk_job_id': bulk_job_id,
+        'results': results,
+        'provider_updated_count': provider_updated_count,
+        'persistence_gap_count': persistence_gap_count,
+        'failed_count': failed_count,
+    }
+
+
 def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
     cert_bytes, key_bytes = read_uploaded_pair(files)
     validation = validate_certificate_pair(
@@ -530,32 +563,5 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                     }
                 )
 
-    provider_updated_count = sum(1 for result in results if result.get('provider_updated') is True)
-    persistence_gap_count = sum(
-        1
-        for result in results
-        if result.get('provider_updated') is True and result.get('persistence_confirmed') is False
-    )
-    failed_count = sum(1 for result in results if result['status'] == 'failed')
-    overall_status = _bulk_result_status(results)
+    return _summarize_bulk_update_results(results, bulk_job_id)
 
-    if persistence_gap_count:
-        message = (
-            f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated in '
-            f'Kubernetes; KAORI persistence was not confirmed for '
-            f'{persistence_gap_count}. Run TLS synchronization.'
-        )
-    else:
-        message = f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated.' + (
-            f' {failed_count} failed.' if failed_count else ''
-        )
-
-    return {
-        'status': overall_status,
-        'message': message,
-        'bulk_job_id': bulk_job_id,
-        'results': results,
-        'provider_updated_count': provider_updated_count,
-        'persistence_gap_count': persistence_gap_count,
-        'failed_count': failed_count,
-    }
