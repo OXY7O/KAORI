@@ -223,6 +223,28 @@ def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
     return None
 
 
+def _reports_and_operations_items(endpoint: str) -> list[BreadcrumbItem] | None:
+    """Keep independent reports/operations breadcrumb routes in one pure resolver."""
+    if endpoint.startswith('reports.'):
+        return [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
+    if endpoint.startswith('jobs.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
+        ]
+    if endpoint.startswith('platform_operations.overview.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Overview'),
+        ]
+    if endpoint.startswith('platform_operations.data_lifecycle.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Data Lifecycle'),
+        ]
+    return None
+
+
 def build_navigation_breadcrumb(
     endpoint: str | None,
     path: str = '',
@@ -330,23 +352,8 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Intelligence', 'brain-circuit'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
-    elif endpoint.startswith('reports.'):
-        items = [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
-    elif endpoint.startswith('jobs.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
-        ]
-    elif endpoint.startswith('platform_operations.overview.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Overview'),
-        ]
-    elif endpoint.startswith('platform_operations.data_lifecycle.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Data Lifecycle'),
-        ]
+    elif (section_items := _reports_and_operations_items(endpoint)) is not None:
+        items = section_items
     elif endpoint.startswith('platform_operations.kubernetes.'):
         items = _platform_kubernetes_items(endpoint)
     elif endpoint.startswith(('integrations.', 'notification_channels.')):
