@@ -3,7 +3,8 @@
 from types import SimpleNamespace
 
 from app.kubernetes.governance.tls_certificates.collector import (
-    _qualified_secret_uid, parse_tls_secret,
+    _qualified_secret_uid,
+    parse_tls_secret,
 )
 
 UID_OLD = '12345678-1234-4234-8234-123456789abc'

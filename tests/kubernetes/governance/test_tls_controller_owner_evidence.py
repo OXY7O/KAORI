@@ -4,11 +4,11 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.kubernetes.governance.tls_certificates.collector import parse_tls_secret
 from app.kubernetes.governance.tls_certificates.controller_evidence import (
     normalize_tls_controller_owner,
     validate_committed_controller_owners,
 )
-from app.kubernetes.governance.tls_certificates.collector import parse_tls_secret
 
 UID_SECRET = '12345678-1234-4234-8234-123456789abc'
 UID_OWNER = '12345678-1234-4234-8234-123456789abd'

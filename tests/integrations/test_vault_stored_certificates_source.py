@@ -9,10 +9,12 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
-    VaultClient, VaultProviderError,
+    VaultClient,
+    VaultProviderError,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_stored_certificates import (
-    MAX_STORED_CERTIFICATES, collect_pki_stored_certificates,
+    MAX_STORED_CERTIFICATES,
+    collect_pki_stored_certificates,
 )
 
 

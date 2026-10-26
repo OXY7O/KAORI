@@ -1,7 +1,6 @@
 """HV-12 source-owned, short-lived Vault correlation evidence has no case side effects."""
 
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
 
 import pytest
 from flask import Flask
