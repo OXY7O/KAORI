@@ -68,7 +68,9 @@ def _validate(evidence: PKIIssuerCollection) -> None:
         ids.add(provider_id)
         cert = item.certificate
         _fingerprint(cert.fingerprint_sha256)
-        if (not isinstance(cert.serial_hex, str) or not 1 <= len(cert.serial_hex) <= 100
+        if (
+            not isinstance(cert.serial_hex, str)
+            or not 1 <= len(cert.serial_hex) <= 100
             or any(char not in hexdigits.lower() for char in cert.serial_hex)
         ):
             raise ValueError('PKI public certificate serial is malformed.')
@@ -76,10 +78,8 @@ def _validate(evidence: PKIIssuerCollection) -> None:
             raise ValueError('PKI certificate validity interval is invalid.')
         if not isinstance(cert.self_issued, bool) or cert.is_ca not in {True, False, None}:
             raise ValueError('PKI certificate public CA evidence is malformed.')
-        if (
-            len(item.chain_fingerprints) > MAX_CERTIFICATE_CHAIN
-            or any(not isinstance(x, str) or len(x) != 64 or _fingerprint(x) != x
-                   for x in item.chain_fingerprints)
+        if len(item.chain_fingerprints) > MAX_CERTIFICATE_CHAIN or any(
+            not isinstance(x, str) or len(x) != 64 or _fingerprint(x) != x for x in item.chain_fingerprints
         ):
             raise ValueError('PKI public CA chain exceeds the safe evidence contract.')
         if item.trust_status != 'not_evaluated' or item.revocation_status != 'not_evaluated':
@@ -87,15 +87,14 @@ def _validate(evidence: PKIIssuerCollection) -> None:
 
 
 def commit_pki_public_issuers(
-    integration_instance_id: int, evidence: PKIIssuerCollection,
+    integration_instance_id: int,
+    evidence: PKIIssuerCollection,
 ) -> PKICommitSummary:
     """Commit an entire approved mount or nothing; never delete historic evidence."""
     _validate(evidence)
     try:
         identity = db.session.execute(
-            select(IntegrationInstance)
-            .where(IntegrationInstance.id == integration_instance_id)
-            .with_for_update()
+            select(IntegrationInstance).where(IntegrationInstance.id == integration_instance_id).with_for_update()
         ).scalar_one_or_none()
         provider = db.session.execute(
             select(VaultInstance)
@@ -103,38 +102,50 @@ def commit_pki_public_issuers(
             .with_for_update(of=VaultInstance)
         ).scalar_one_or_none()
         if (
-            identity is None or provider is None
+            identity is None
+            or provider is None
             or identity.integration_type != 'secrets_pki'
             or identity.provider_key != 'vault'
             or identity.lifecycle_status != 'active'
-            or not identity.enabled or identity.readiness_status != 'ready'
+            or not identity.enabled
+            or identity.readiness_status != 'ready'
             or evidence.mount not in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
         ):
             raise ValueError('Vault PKI source is not eligible for committed collection.')
         namespace = provider.namespace or ''
         state = db.session.execute(
-            select(PKIIssuerCollectionState).where(
+            select(PKIIssuerCollectionState)
+            .where(
                 PKIIssuerCollectionState.integration_instance_id == integration_instance_id,
                 PKIIssuerCollectionState.provider_namespace == namespace,
                 PKIIssuerCollectionState.mount == evidence.mount,
-            ).with_for_update()
+            )
+            .with_for_update()
         ).scalar_one_or_none()
         if state is None:
             state = PKIIssuerCollectionState(
                 integration_instance_id=integration_instance_id,
-                provider_namespace=namespace, mount=evidence.mount,
+                provider_namespace=namespace,
+                mount=evidence.mount,
             )
             db.session.add(state)
             db.session.flush()
         if not evidence.issuers and (state.observed_issuer_count or 0) > 0:
             raise ValueError('Unexpected empty PKI collection cannot replace earlier committed issuer history.')
-        existing = db.session.execute(
-            select(PKIIssuerIdentity).where(
-                PKIIssuerIdentity.integration_instance_id == integration_instance_id,
-                PKIIssuerIdentity.provider_namespace == namespace,
-                PKIIssuerIdentity.mount == evidence.mount,
-            ).options(selectinload(PKIIssuerIdentity.certificates)).with_for_update()
-        ).scalars().all()
+        existing = (
+            db.session.execute(
+                select(PKIIssuerIdentity)
+                .where(
+                    PKIIssuerIdentity.integration_instance_id == integration_instance_id,
+                    PKIIssuerIdentity.provider_namespace == namespace,
+                    PKIIssuerIdentity.mount == evidence.mount,
+                )
+                .options(selectinload(PKIIssuerIdentity.certificates))
+                .with_for_update()
+            )
+            .scalars()
+            .all()
+        )
         by_source = {row.provider_issuer_id: row for row in existing}
         timestamp = _utc(evidence.observed_at)
         if state.last_observed_at is not None and timestamp < _utc(state.last_observed_at):
@@ -147,7 +158,8 @@ def commit_pki_public_issuers(
             if issuer is None:
                 issuer = PKIIssuerIdentity(
                     integration_instance_id=integration_instance_id,
-                    provider_namespace=namespace, mount=evidence.mount,
+                    provider_namespace=namespace,
+                    mount=evidence.mount,
                     provider_issuer_id=item.issuer_id,
                 )
                 db.session.add(issuer)
@@ -228,12 +240,14 @@ def mark_pki_public_issuers_failed(integration_instance_id: int, mount: str) -> 
         namespace = provider.namespace or ''
         state = PKIIssuerCollectionState.query.filter_by(
             integration_instance_id=integration_instance_id,
-            provider_namespace=namespace, mount=mount,
+            provider_namespace=namespace,
+            mount=mount,
         ).first()
         if state is None:
             state = PKIIssuerCollectionState(
                 integration_instance_id=integration_instance_id,
-                provider_namespace=namespace, mount=mount,
+                provider_namespace=namespace,
+                mount=mount,
             )
             db.session.add(state)
         state.status = 'stale' if state.last_committed_at is not None else 'failed'

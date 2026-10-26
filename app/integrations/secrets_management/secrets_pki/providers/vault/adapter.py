@@ -15,8 +15,12 @@ _CAPABILITY_PROFILE = 'vault.readiness.v1'
 
 def build_client(instance: VaultInstance) -> VaultClient:
     return VaultClient(
-        endpoint=instance.endpoint, namespace=instance.namespace, auth_mount=instance.auth_mount,
-        role_id=instance.role_id, secret_id=instance.secret_id, timeout=instance.timeout,
+        endpoint=instance.endpoint,
+        namespace=instance.namespace,
+        auth_mount=instance.auth_mount,
+        role_id=instance.role_id,
+        secret_id=instance.secret_id,
+        timeout=instance.timeout,
     )
 
 
@@ -42,7 +46,11 @@ class VaultRuntimeAdapter:
         try:
             client = build_client(instance)
             evidence = client.validate_capabilities()
-            connection = {'version': evidence['health']['version'], 'health_status': evidence['health']['status'], 'response_time_ms': evidence['response_time_ms']}
+            connection = {
+                'version': evidence['health']['version'],
+                'health_status': evidence['health']['status'],
+                'response_time_ms': evidence['response_time_ms'],
+            }
             capability = {'mount_metadata': evidence['mount_metadata']}
         except VaultProviderError as exc:
             instance.readiness_status = 'blocked'
@@ -76,9 +84,13 @@ class VaultRuntimeAdapter:
         instance.last_response_time_ms = int(connection['response_time_ms'])
         db.session.commit()
         return {
-            'connected': True, 'readiness_status': compatibility.readiness, 'version': instance.detected_version,
-            'compatibility_status': compatibility.status, 'compatibility_profile': compatibility.profile_key,
-            'capabilities': instance.capabilities, 'capability_profile': _CAPABILITY_PROFILE,
+            'connected': True,
+            'readiness_status': compatibility.readiness,
+            'version': instance.detected_version,
+            'compatibility_status': compatibility.status,
+            'compatibility_profile': compatibility.profile_key,
+            'capabilities': instance.capabilities,
+            'capability_profile': _CAPABILITY_PROFILE,
             'reason': instance.validation_message,
         }
 
@@ -90,9 +102,9 @@ class VaultRuntimeAdapter:
             instance.last_error = str(exc)
             health = {'status': 'unavailable'}
         else:
-            instance.last_status = 'connected' if health['status'] in {
-                'active', 'standby', 'performance_standby'
-            } else 'disconnected'
+            instance.last_status = (
+                'connected' if health['status'] in {'active', 'standby', 'performance_standby'} else 'disconnected'
+            )
             instance.last_error = None
         instance.last_checked_at = datetime.now(UTC)
         instance.validation_summary = {**(instance.validation_summary or {}), 'health_status': health['status']}
@@ -105,10 +117,20 @@ class VaultRuntimeAdapter:
         ready = instance.readiness_status == 'ready'
         available = health_status in {'active', 'standby', 'performance_standby'}
         unknown = health_status == 'unknown'
-        health = calculate_health((
-            HealthFactor('provider_health', 'Provider Health', 'success' if available else ('unknown' if unknown else 'failed'), 50, 100 if available else (50 if unknown else 0)),
-            HealthFactor('validation', 'Full Validation', 'success' if ready else 'warning', 50, 100 if ready else 50),
-        ))
+        health = calculate_health(
+            (
+                HealthFactor(
+                    'provider_health',
+                    'Provider Health',
+                    'success' if available else ('unknown' if unknown else 'failed'),
+                    50,
+                    100 if available else (50 if unknown else 0),
+                ),
+                HealthFactor(
+                    'validation', 'Full Validation', 'success' if ready else 'warning', 50, 100 if ready else 50
+                ),
+            )
+        )
         return RuntimeState(
             integration_type=self.integration_type,
             provider_key='vault',
@@ -118,17 +140,25 @@ class VaultRuntimeAdapter:
             observed_at=instance.last_checked_at or instance.last_validated_at or now,
             readiness=instance.readiness_status or 'validation_required',
             health=health,
-            diagnostics=(DiagnosticResult(
-                key='vault_health', label='Vault Health', category='runtime',
-                status='success' if available else ('unknown' if health_status == 'unknown' else 'failed'),
-                detail=f'Vault node state: {health_status}.',
-            ),),
+            diagnostics=(
+                DiagnosticResult(
+                    key='vault_health',
+                    label='Vault Health',
+                    category='runtime',
+                    status='success' if available else ('unknown' if health_status == 'unknown' else 'failed'),
+                    detail=f'Vault node state: {health_status}.',
+                ),
+            ),
             snapshot=CapabilitySnapshot(
                 profile=instance.capability_profile,
                 compatibility_profile=instance.compatibility_profile,
                 capabilities=tuple(instance.capabilities or ()),
                 observed_at=instance.last_validated_at or now,
-                metadata={'version': instance.detected_version, 'vault_state': health_status, 'compatibility_status': instance.compatibility_status},
+                metadata={
+                    'version': instance.detected_version,
+                    'vault_state': health_status,
+                    'compatibility_status': instance.compatibility_status,
+                },
             ),
             last_success_at=instance.last_checked_at if available else None,
             last_failure_at=instance.last_checked_at if not available else None,

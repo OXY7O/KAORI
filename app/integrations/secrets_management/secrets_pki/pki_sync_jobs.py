@@ -19,10 +19,7 @@ class NoEligibleVaultPKITargets(RuntimeError):
 
 
 def build_vault_pki_targets() -> list[dict[str, int]]:
-    instances = (
-        VaultInstance.query.order_by(VaultInstance.id.asc())
-        .limit(MAX_PROVIDER_INSTANCES + 1).all()
-    )
+    instances = VaultInstance.query.order_by(VaultInstance.id.asc()).limit(MAX_PROVIDER_INSTANCES + 1).all()
     if len(instances) > MAX_PROVIDER_INSTANCES:
         raise NoEligibleVaultPKITargets('Vault PKI provider count exceeds worker capacity.')
     targets: list[dict[str, int]] = []
@@ -51,9 +48,7 @@ def enqueue_vault_pki_sync(*, requested_by_user_id: int | None, trigger_type: st
 
     targets = build_vault_pki_targets()
     if not targets:
-        raise NoEligibleVaultPKITargets(
-            'No Ready Vault instance has an explicitly approved PKI issuer source.'
-        )
+        raise NoEligibleVaultPKITargets('No Ready Vault instance has an explicitly approved PKI issuer source.')
     return enqueue_canonical_job(
         task=sync_vault_pki_task,
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},

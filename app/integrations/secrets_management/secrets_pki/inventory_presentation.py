@@ -21,11 +21,15 @@ def vault_inventory_readiness(instance: VaultInstance) -> dict[str, Any]:
             'last_committed_at': None,
         }
     # At most eight explicitly configured scopes; retired scopes are excluded.
-    states = SecretInventoryCollectionState.query.filter(
-        SecretInventoryCollectionState.integration_instance_id == instance.integration_instance_id,
-        SecretInventoryCollectionState.provider_namespace == (instance.namespace or ''),
-        SecretInventoryCollectionState.mount.in_(configured),
-    ).limit(8).all()
+    states = (
+        SecretInventoryCollectionState.query.filter(
+            SecretInventoryCollectionState.integration_instance_id == instance.integration_instance_id,
+            SecretInventoryCollectionState.provider_namespace == (instance.namespace or ''),
+            SecretInventoryCollectionState.mount.in_(configured),
+        )
+        .limit(8)
+        .all()
+    )
     by_mount = {item.mount: item for item in states}
     observed = [by_mount.get(mount) for mount in configured]
     committed = [state for state in observed if state is not None and state.last_committed_at is not None]
@@ -39,10 +43,7 @@ def vault_inventory_readiness(instance: VaultInstance) -> dict[str, Any]:
     else:
         status = 'not_collected'
 
-    timestamps: list[datetime] = [
-        state.last_committed_at for state in committed
-        if state.last_committed_at is not None
-    ]
+    timestamps: list[datetime] = [state.last_committed_at for state in committed if state.last_committed_at is not None]
     return {
         'state': status,
         'approved_mount_count': len(configured),

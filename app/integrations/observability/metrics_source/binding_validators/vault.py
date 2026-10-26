@@ -56,7 +56,10 @@ def _historical_window_assessment(
     start = end - _HISTORY_LOOKBACK_SECONDS
     try:
         payload = query_range(
-            expression, str(start), str(end), str(_HISTORY_STEP_SECONDS),
+            expression,
+            str(start),
+            str(end),
+            str(_HISTORY_STEP_SECONDS),
         )
     except Exception:
         # A raw Metrics Source exception may contain URL/credentials/paths.
@@ -106,10 +109,7 @@ def _historical_window_assessment(
     if (
         timestamps[0] > start + _HISTORY_STEP_SECONDS
         or timestamps[-1] < end - _HISTORY_STEP_SECONDS
-        or any(
-            right - left > 2 * _HISTORY_STEP_SECONDS
-            for left, right in zip(timestamps, timestamps[1:])
-        )
+        or any(right - left > 2 * _HISTORY_STEP_SECONDS for left, right in zip(timestamps, timestamps[1:]))
     ):
         return unsupported('incomplete')
     return {
@@ -150,26 +150,27 @@ def _identity_matcher(binding: IntegrationBinding, integration_id: int) -> Bindi
     if len(parsed) != 1:
         return None
     matcher = parsed[0]
-    if (
-        matcher.label != _IDENTITY_LABEL
-        or matcher.operator != '='
-        or matcher.value != str(integration_id)
-    ):
+    if matcher.label != _IDENTITY_LABEL or matcher.operator != '=' or matcher.value != str(integration_id):
         return None
     return matcher
 
 
 def validate_vault_metrics_binding(
-    *, client: Any, binding: IntegrationBinding, profile: BindingValidationProfile,
+    *,
+    client: Any,
+    binding: IntegrationBinding,
+    profile: BindingValidationProfile,
 ) -> BindingValidationAssessment:
     key = str(binding.asset_key or '')
     if not key.isascii() or not key.isdecimal() or len(key) > 10:
         return _assessment('blocked', 'Vault binding requires a canonical instance ID.', state='invalid_asset')
     identity = db.session.get(IntegrationInstance, int(key))
     if (
-        identity is None or identity.integration_type != 'secrets_pki'
+        identity is None
+        or identity.integration_type != 'secrets_pki'
         or identity.provider_key != 'vault'
-        or identity.lifecycle_status != 'active' or not identity.enabled
+        or identity.lifecycle_status != 'active'
+        or not identity.enabled
     ):
         return _assessment('blocked', 'The bound Vault provider identity is no longer active.', state='invalid_asset')
     matcher = _identity_matcher(binding, identity.id)
@@ -184,15 +185,21 @@ def validate_vault_metrics_binding(
         payload = client.query(expression)
     except Exception:
         # Never leak raw provider URLs or response bodies into integration evidence.
-        return _assessment('degraded', 'Vault identity metric query failed; source remains unverified.', state='query_unavailable')
+        return _assessment(
+            'degraded', 'Vault identity metric query failed; source remains unverified.', state='query_unavailable'
+        )
     if not isinstance(payload, dict) or payload.get('status') != 'success':
         return _assessment('degraded', 'Vault identity metric query did not succeed.', state='query_unavailable')
     data = payload.get('data')
     if not isinstance(data, dict) or data.get('resultType') != 'vector':
-        return _assessment('degraded', 'Vault identity metric returned an unsupported response type.', state='unsupported_response')
+        return _assessment(
+            'degraded', 'Vault identity metric returned an unsupported response type.', state='unsupported_response'
+        )
     results = data.get('result')
     if not isinstance(results, list) or len(results) > 1:
-        return _assessment('blocked', 'Vault selector is ambiguous or metrics evidence is malformed.', state='ambiguous_identity')
+        return _assessment(
+            'blocked', 'Vault selector is ambiguous or metrics evidence is malformed.', state='ambiguous_identity'
+        )
     if not results:
         return _assessment('degraded', 'No Vault core identity signal matches the approved instance.', state='no_match')
     record = results[0]
@@ -200,7 +207,8 @@ def validate_vault_metrics_binding(
         return _assessment('blocked', 'Vault metric identity cannot be verified.', state='invalid_response')
     labels = record['metric']
     if labels.get(_IDENTITY_LABEL) != str(identity.id) or labels.get('__name__') not in {
-        None, _IDENTITY_METRIC,
+        None,
+        _IDENTITY_METRIC,
     }:
         return _assessment('blocked', 'Vault metric identity does not match the configured provider.', state='mismatch')
     sample = record.get('value')
@@ -219,11 +227,14 @@ def validate_vault_metrics_binding(
     instant = _assessment(
         'ready',
         f'{profile.label} matched one time-qualified Vault node identity; long-term retention is not validated.',
-        state='single_node_confirmed', matched=1,
+        state='single_node_confirmed',
+        matched=1,
     )
     history = _historical_window_assessment(
-        client=client, expression=expression,
-        integration_id=identity.id, now_epoch=time(),
+        client=client,
+        expression=expression,
+        integration_id=identity.id,
+        now_epoch=time(),
     )
     return BindingValidationAssessment(
         status=instant.status,

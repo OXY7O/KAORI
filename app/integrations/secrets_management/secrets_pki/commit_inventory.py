@@ -68,9 +68,7 @@ def commit_kv2_inventory(
     # committed under a stale pre-collection authorization decision.
     try:
         identity = db.session.execute(
-            select(IntegrationInstance)
-            .where(IntegrationInstance.id == integration_instance_id)
-            .with_for_update()
+            select(IntegrationInstance).where(IntegrationInstance.id == integration_instance_id).with_for_update()
         ).scalar_one_or_none()
         instance = db.session.execute(
             select(VaultInstance)
@@ -90,9 +88,7 @@ def commit_kv2_inventory(
             raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
 
         namespace = instance.namespace or ''
-        if len(namespace) > 255 or any(
-            len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records
-        ):
+        if len(namespace) > 255 or any(len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records):
             raise ValueError('KV v2 representation scope exceeds supported bounds.')
 
         state = SecretInventoryCollectionState.query.filter_by(
@@ -133,9 +129,7 @@ def commit_kv2_inventory(
         existing = {row.path: row for row in existing_rows}
         digests = {row.path_sha256: row.path for row in existing_rows}
         if existing_rows and not evidence.records:
-            raise ValueError(
-                'An unexpectedly empty KV v2 collection cannot replace prior committed evidence.'
-            )
+            raise ValueError('An unexpectedly empty KV v2 collection cannot replace prior committed evidence.')
 
         versions_count = 0
         for record in evidence.records:

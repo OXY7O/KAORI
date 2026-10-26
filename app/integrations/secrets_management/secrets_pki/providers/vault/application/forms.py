@@ -44,7 +44,9 @@ class VaultConnectionForm(FlaskForm):
     auth_mount = StringField('AppRole Auth Mount', default='approle', validators=[DataRequired(), Length(max=160)])
     role_id = StringField('AppRole RoleID', validators=[DataRequired(), Length(max=255)])
     secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
-    timeout = IntegerField('Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
+    timeout = IntegerField(
+        'Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)]
+    )
     enabled = BooleanField('Enable Provider Connection', default=True)
     kv2_mounts = StringField('Approved KV v2 Mounts (comma-separated)', validators=[Optional(), Length(max=1500)])
     pki_mounts = StringField('Approved PKI Mounts (comma-separated)', validators=[Optional(), Length(max=650)])
@@ -59,7 +61,9 @@ class VaultConnectionForm(FlaskForm):
             self.secret_id.data = ''
             self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
             self.pki_mounts.data = ', '.join(existing.pki_mounts or ()) if existing is not None else ''
-            self.pki_stored_certs_enabled.data = bool(existing.pki_stored_certs_enabled) if existing is not None else False
+            self.pki_stored_certs_enabled.data = (
+                bool(existing.pki_stored_certs_enabled) if existing is not None else False
+            )
 
     def validate_endpoint(self, field: StringField) -> None:
         try:
