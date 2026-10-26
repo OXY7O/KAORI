@@ -28,7 +28,7 @@
                 <div class="min-w-0">
                     <h3 id="github-capability-registry-title"
                         class="text-base font-semibold text-content-primary">Capability Registry</h3>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review GitHub App read permission capability, contract category, requirement, and validation state. Evidence stays behind View More.</p>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review committed GitHub App permission contracts and validation states. Details remain behind View More.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -232,8 +232,8 @@
             {{ provider_capability_detail.content(row,
                         "GitHub",
                         "GitHub App Permissions",
-                        "Provider API Probe",
-                        "Full Validation owns provider compatibility and generic GitHub API evidence. Consumer-specific alert contracts are validated on their bindings.") }}
+                        "Committed GitHub Permission Assessment",
+                        "Full Validation records read permissions, not live API execution or synchronized repository evidence. GitHub owns live grants.") }}
         {% endcall %}
     {% endfor %}
 </section>
