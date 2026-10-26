@@ -101,6 +101,6 @@ def test_login_and_sso_both_gate_before_admission_source_contract() -> None:
     assert source.index("bot_token_verified(request.form.get('cf-turnstile-response'), bot_state)") < source.index(
         "username = form.username.data or ''"
     )
-    assert "SSO_BOT_GRANT_TTL_SECONDS = 60" in source
-    assert "grant = session.pop(SSO_BOT_GRANT_KEY, None)" in source
-    assert "callback_bot_state.enabled" in source
+    assert 'SSO_BOT_GRANT_TTL_SECONDS = 60' in source
+    assert 'grant = session.pop(SSO_BOT_GRANT_KEY, None)' in source
+    assert 'callback_bot_state.enabled' in source

@@ -29,7 +29,8 @@ def upgrade() -> None:
     op.create_table(
         'source_control_repository_collection_states',
         sa.Column(
-            'installation_id', sa.Integer(),
+            'installation_id',
+            sa.Integer(),
             sa.ForeignKey('source_control_installations.id', ondelete='RESTRICT'),
             primary_key=True,
         ),
@@ -44,19 +45,17 @@ def upgrade() -> None:
         sa.Column('last_observed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('last_committed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('last_error', sa.String(255), nullable=True),
-        sa.CheckConstraint('next_generation >= committed_generation',
-                           name='ck_sc_collection_generation_order'),
+        sa.CheckConstraint('next_generation >= committed_generation', name='ck_sc_collection_generation_order'),
     )
     op.create_index(
-        'ix_sc_collection_status', 'source_control_repository_collection_states',
+        'ix_sc_collection_status',
+        'source_control_repository_collection_states',
         ['status', 'last_committed_at'],
     )
 
 
 def downgrade() -> None:
-    op.drop_index(
-        'ix_sc_collection_status', table_name='source_control_repository_collection_states'
-    )
+    op.drop_index('ix_sc_collection_status', table_name='source_control_repository_collection_states')
     op.drop_table('source_control_repository_collection_states')
     op.drop_column('source_control_repositories', 'visibility')
     op.drop_column('source_control_repositories', 'default_branch')

@@ -3,6 +3,7 @@
 Revision ID: 20261025_mfa_storage
 Revises: 20261023_delivery_identity
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

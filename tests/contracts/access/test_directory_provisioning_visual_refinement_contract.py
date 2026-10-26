@@ -42,7 +42,7 @@ def test_primary_and_right_guidance_use_shared_8_4_layout() -> None:
     assert 'form_context.layout_classes()' in source
     assert 'form_context.main_classes()' in source
     assert 'form_context.rail_classes()' in source
-    assert "grid gap-6 xl:grid-cols-12 xl:items-start" in shared
+    assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in shared
     assert 'xl:col-span-8' in shared
     assert 'xl:col-span-4' in shared
     assert source.count('surface_ui.block_classes(allow_overflow=true)') == 1

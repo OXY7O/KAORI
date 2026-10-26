@@ -57,12 +57,8 @@ def test_provisioned_ldap_user_reaches_user_bind_and_viewer_admission(
     assert result.reason == 'success'
     assert result.source == 'ldap'
     assert result.user is projected
-    local.authenticate.assert_called_once_with(
-        username='kaori-uat-user', password='directory-test-password'
-    )
-    ldap.authenticate.assert_called_once_with(
-        username='kaori-uat-user', password='directory-test-password'
-    )
+    local.authenticate.assert_called_once_with(username='kaori-uat-user', password='directory-test-password')
+    ldap.authenticate.assert_called_once_with(username='kaori-uat-user', password='directory-test-password')
 
 
 @pytest.mark.parametrize('password_hash_present', [True, False])

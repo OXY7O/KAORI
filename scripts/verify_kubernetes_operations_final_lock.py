@@ -260,7 +260,7 @@ def main() -> int:
         'No eligible cluster. Review readiness or policy.' not in reveal_page
         and "'No eligible protected cluster'" in reveal_page
         and '{% if not global_reveal_enabled %}disabled{% endif %}' in reveal_page
-        and 'info_title=\'Protected Reveal target guide\'' in reveal_page
+        and "info_title='Protected Reveal target guide'" in reveal_page
         and '{% if selection_error %}' in reveal_page,
         'Protected Reveal must retain safe empty/disabled state, live errors and the canonical Guide.',
         errors,

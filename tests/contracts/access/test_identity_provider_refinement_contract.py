@@ -75,7 +75,7 @@ def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table()
     assert "compact=true, class_name='min-w-[7.5rem]'" in registry
     assert 'table_action=true' not in registry
     users = read('app/templates/access/users/partials/_table.html')
-    assert "compact=true)" in users
+    assert 'compact=true)' in users
     toggle = read('app/templates/components/details/_expandable_row.html')
     assert '<span data-detail-toggle-label>{{ open_label }}</span>' in toggle
     assert 'aria-expanded="false"' in toggle

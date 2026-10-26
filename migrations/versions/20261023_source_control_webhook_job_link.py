@@ -25,14 +25,18 @@ def upgrade() -> None:
     )
     op.create_foreign_key(
         'fk_sc_webhook_delivery_job_execution',
-        'source_control_webhook_deliveries', 'job_executions',
-        ['dispatched_job_execution_id'], ['id'], ondelete='SET NULL',
+        'source_control_webhook_deliveries',
+        'job_executions',
+        ['dispatched_job_execution_id'],
+        ['id'],
+        ondelete='SET NULL',
     )
 
 
 def downgrade() -> None:
     op.drop_constraint(
         'fk_sc_webhook_delivery_job_execution',
-        'source_control_webhook_deliveries', type_='foreignkey',
+        'source_control_webhook_deliveries',
+        type_='foreignkey',
     )
     op.drop_column('source_control_webhook_deliveries', 'dispatched_job_execution_id')

@@ -27,15 +27,23 @@ def main() -> int:
             read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html'),
         )
     )
-    channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    channels_template = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    )
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
-    channel_retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
-    channel_details_drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    channel_retire = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html'
+    )
+    channel_details_drawer = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html'
+    )
     shared_side_drawer_js = read('app/static/js/side_drawer.js')
     shared_side_drawer = read('app/templates/components/side_drawer.html')
     shared_action_button = read('app/templates/components/action_button.html')
     read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
-    channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    channel_delete_blockers_dialog = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html'
+    )
     native_dialogs = read('app/static/js/native_dialogs.js')
     confirmation = read('app/templates/components/destructive_confirmation_modal.html')
     confirmation_script = read('app/static/js/destructive_confirmation_modal.js')
@@ -85,7 +93,8 @@ def main() -> int:
         'integrated notification navigation': 'components/workspace_tabs.html' in delivery_template
         and 'workspace_tabs.render_navigation' in delivery_template
         and 'framed_workspace_tabs' not in delivery_template
-        and delivery_template.index('workspace_tabs.render_navigation') < delivery_template.index('page_hero.shell_classes()')
+        and delivery_template.index('workspace_tabs.render_navigation')
+        < delivery_template.index('page_hero.shell_classes()')
         and "hx_target='#notification-channels-workspace'" in delivery_template
         and "hx_select='#notification-channels-workspace'" in delivery_template
         and delivery_template.count('section_intro.render(') == 3
@@ -95,62 +104,67 @@ def main() -> int:
         and 'Notification Delivery Overview' not in delivery_template
         and 'Channel Configuration & Registry' not in delivery_template
         and 'Committed Delivery Evidence' not in delivery_template,
-        'notification tabs macro namespace': '{% import "components/workspace_tabs.html" as workspace_tabs %}' in delivery_template
+        'notification tabs macro namespace': '{% import "components/workspace_tabs.html" as workspace_tabs %}'
+        in delivery_template
         and '{% set workspace_tabs =' not in delivery_template
         and '{% set notification_tab_items = [' in delivery_template
         and 'workspace_tabs.render_navigation(notification_tab_items,' in delivery_template,
         'delivery journal loading order': 'table_block.inventory_block_header(' in delivery_template
-        and delivery_template.index('table_block.inventory_block_header(') < delivery_template.index("table_registry.filter_form('notification_channels.index'")
-        and "result_count=payload.delivery_pagination.total_items" in delivery_template,
+        and delivery_template.index('table_block.inventory_block_header(')
+        < delivery_template.index("table_registry.filter_form('notification_channels.index'")
+        and 'result_count=payload.delivery_pagination.total_items' in delivery_template,
         'canonical delivery journal filters': 'delivery_filters_active' in service
-        and "name=\"delivery_provider\"" in delivery_template
-        and "name=\"delivery_domain\"" in delivery_template
-        and "name=\"delivery_severity\"" in delivery_template
-        and "name=\"delivery_status\"" in delivery_template
-        and "NotificationDelivery.channel.has(NotificationChannel.provider_key == provider)" in service
-        and "NotificationDelivery.domain == domain" in service
-        and "NotificationDelivery.severity == severity" in service
-        and "NotificationDelivery.status == status" in service
-        and "result_count=payload.delivery_pagination.total_items" in delivery_template
+        and 'name="delivery_provider"' in delivery_template
+        and 'name="delivery_domain"' in delivery_template
+        and 'name="delivery_severity"' in delivery_template
+        and 'name="delivery_status"' in delivery_template
+        and 'NotificationDelivery.channel.has(NotificationChannel.provider_key == provider)' in service
+        and 'NotificationDelivery.domain == domain' in service
+        and 'NotificationDelivery.severity == severity' in service
+        and 'NotificationDelivery.status == status' in service
+        and 'result_count=payload.delivery_pagination.total_items' in delivery_template
         and "section_intro.render('Delivery Contract & Ownership'" in delivery_template
         and "section_intro.render('Configured Channels'" in template,
-        'notification guidance and canonical table': "info_tip.render(" in template
-        and "Channel Inventory Guidance" in template
-        and "grid gap-4 lg:grid-cols-3" not in template
-        and "operational_section_card.render(" in delivery_template
-        and delivery_template.count("integration_ui.interpretation_panel(") == 1
-        and "header_actions=channel_clear_action" in template
-        and "header_actions=delivery_clear_action" in delivery_template
-        and "title_extra=info_tip.render(" in template
-        and "table_block.inventory_block_header(" in template
-        and "table_block.inventory_filter_bar_classes()" in template
-        and "table_block.inventory_filter_bar_classes()" in delivery_template
+        'notification guidance and canonical table': 'info_tip.render(' in template
+        and 'Channel Inventory Guidance' in template
+        and 'grid gap-4 lg:grid-cols-3' not in template
+        and 'operational_section_card.render(' in delivery_template
+        and delivery_template.count('integration_ui.interpretation_panel(') == 1
+        and 'header_actions=channel_clear_action' in template
+        and 'header_actions=delivery_clear_action' in delivery_template
+        and 'title_extra=info_tip.render(' in template
+        and 'table_block.inventory_block_header(' in template
+        and 'table_block.inventory_filter_bar_classes()' in template
+        and 'table_block.inventory_filter_bar_classes()' in delivery_template
         and "table_ui.action_classes() ~ ' ml-auto'" not in delivery_template
         and "variant='guide'" in template
-        and delivery_template.index("operational_section_card.render(") < delivery_template.index("section_intro.render('Delivery Journal'") < delivery_template.index("table_block.inventory_block_header(")
-        and "table_block.inventory_block_header(" in delivery_template
-        and "lead=false" in delivery_template
-        and "not receipt or readership by a person." in delivery_template
-        and "sending a notification does not create an audit event." in delivery_template,
-        'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_details_drawer
+        and delivery_template.index('operational_section_card.render(')
+        < delivery_template.index("section_intro.render('Delivery Journal'")
+        < delivery_template.index('table_block.inventory_block_header(')
+        and 'table_block.inventory_block_header(' in delivery_template
+        and 'lead=false' in delivery_template
+        and 'not receipt or readership by a person.' in delivery_template
+        and 'sending a notification does not create an audit event.' in delivery_template,
+        'confirmed HTMX channel actions': 'data-destructive-modal-open' in channel_details_drawer
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
-        and channels_template.index('</table>') < channels_template.index('id="notification-channel-delete-submit-{{ channel.id }}"')
+        and channels_template.index('</table>')
+        < channels_template.index('id="notification-channel-delete-submit-{{ channel.id }}"')
         and 'hx-post="{{ url_for(' in channel_details_drawer
-        and "destructive_confirmation_modal.render(" in template
-        and "data-destructive-submit-button-id=" in channel_details_drawer
-        and "data-destructive-modal-confirm" in confirmation
-        and "submit?.click()" in confirmation_script
+        and 'destructive_confirmation_modal.render(' in template
+        and 'data-destructive-submit-button-id=' in channel_details_drawer
+        and 'data-destructive-modal-confirm' in confirmation
+        and 'submit?.click()' in confirmation_script
         and 'event.stopPropagation()' in confirmation_script
         and 'hx-target="#notification-channels-workspace"' in template
         and 'hx-select="#notification-channels-workspace"' in template
         and 'hx-get="{{ url_for(' in template
         and 'hx-post="{{ url_for(' in channel_modals
         and "target.id === 'notification-channels-workspace'" in native_dialogs
-        and "operation_feedback=load_operational_feedback()" in delivery_template
-        and "components/operation_feedback_oob.html" in delivery_template
-        and "def _channel_return_query()" in routes
-        and "delete_channel(channel)" in routes,
+        and 'operation_feedback=load_operational_feedback()' in delivery_template
+        and 'components/operation_feedback_oob.html' in delivery_template
+        and 'def _channel_return_query()' in routes
+        and 'delete_channel(channel)' in routes,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
@@ -159,7 +173,8 @@ def main() -> int:
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
-        'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
+        'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')"
+        in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
         and 'Locked' in channel_details_drawer
         and 'channel.delete_blocked' in channel_details_drawer,
@@ -178,9 +193,9 @@ def main() -> int:
         and 'detailChannel = {{ channel.id }}' in channels_template
         and '_channel_details_drawer.html' in channels_template
         and '_channel_actions_dialog.html' not in channels_template
-        and "channel.event_type_labels|length" in channels_template
+        and 'channel.event_type_labels|length' in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
-        and "def _channel_event_type_groups(" in service
+        and 'def _channel_event_type_groups(' in service
         and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service,
         'policy dialog native and secret-safe': 'side_drawer.render(' in channel_details_drawer
         and 'data-side-drawer-dialog' in shared_side_drawer
@@ -191,7 +206,8 @@ def main() -> int:
         and 'channel.last_tested_at|user_datetime' in channel_details_drawer
         and 'channel.last_delivery_at|user_datetime' in channel_details_drawer
         and 'credential_payload' not in channel_details_drawer,
-        'balanced policy and discoverable deletion': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
+        'balanced policy and discoverable deletion': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')"
+        in channels_template
         and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channel_details_drawer
         and 'Locked' in channel_details_drawer
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
@@ -199,7 +215,8 @@ def main() -> int:
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
         and 'data-destructive-modal-open' in channel_details_drawer,
-        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_details_drawer
+        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"'
+        in channel_details_drawer
         and 'Delete Locked' in channel_details_drawer
         and 'Channel already disabled' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
@@ -211,13 +228,14 @@ def main() -> int:
         and "hx_target='#notification-channel-registry'" in channels_template
         and "hx_select='#notification-channel-registry'" in channels_template
         and 'hx-indicator="#notification-channel-loading"' in channels_template
-        and 'data-kaori-tab-variant="framed-workspace-v2-server"' in read('app/templates/components/framed_workspace_tabs.html')
+        and 'data-kaori-tab-variant="framed-workspace-v2-server"'
+        in read('app/templates/components/framed_workspace_tabs.html')
         and "'channel_lifecycle': payload.channel_lifecycle" in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
         and 'name="retirement_reason" required minlength="8" maxlength="500"' in channel_retire
         and 'channel.report_schedule_count' in channel_retire
-        and "notification_channels.retire" in channel_retire
-        and "NotificationChannel.query.filter_by(lifecycle_state=lifecycle)" in service
+        and 'notification_channels.retire' in channel_retire
+        and 'NotificationChannel.query.filter_by(lifecycle_state=lifecycle)' in service
         and "'channel_lifecycle': normalized_lifecycle" in service
         and "channel.lifecycle_state == 'retired'" in channel_details_drawer
         and 'channel.retirement_reason' in channel_details_drawer,
@@ -233,7 +251,8 @@ def main() -> int:
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
         'summary inspect act channel UX': channels_template.count('scope="col"') == 5
-        and 'Details' in channels_template and 'View More' not in channels_template
+        and 'Details' in channels_template
+        and 'View More' not in channels_template
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and 'openActionMenu' not in channels_template
         and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_details_drawer
@@ -245,7 +264,8 @@ def main() -> int:
         and '{% if not delegate_clicks %}@click.stop{% endif %}' in shared_side_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
         and 'data-destructive-modal-open' in channel_details_drawer,
-        'semantically styled drawer actions without lifecycle subheading': "side_drawer.section('Channel Actions'" in channel_details_drawer
+        'semantically styled drawer actions without lifecycle subheading': "side_drawer.section('Channel Actions'"
+        in channel_details_drawer
         and channel_details_drawer.count("action_button.classes('soft', full=true)") == 2
         and "action_button.classes('warning', full=true)" in channel_details_drawer
         and "action_button.classes('locked-info', full=true)" in channel_details_drawer
@@ -267,11 +287,14 @@ def main() -> int:
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
         and 'data-destructive-modal-open' in channel_details_drawer
-        and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in shared_side_drawer_js,
-        'notification delivery hot/archive ownership': 'Review hot committed attempts and retry evidence.' in delivery_template
+        and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')"
+        in shared_side_drawer_js,
+        'notification delivery hot/archive ownership': 'Review hot committed attempts and retry evidence.'
+        in delivery_template
         and 'archive history is artifact-level.' in delivery_template
         and "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery_template
-        and "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='notification_delivery')" in delivery_template
+        and "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='notification_delivery')"
+        in delivery_template
         and 'aria-label="Open Notification Delivery retention policy in Data Lifecycle"' in delivery_template
         and 'header_actions=delivery_clear_action' in delivery_template
         and "table_registry.filter_form('notification_channels.index'" in delivery_template
@@ -285,10 +308,11 @@ def main() -> int:
         and 'payload.overview.recent' in template
         and 'No Delivery Records Yet' in template
         and "NotificationChannel.query.filter_by(lifecycle_state='retired').count()" in service
-        and "db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))" in service
+        and 'db.session.query(NotificationDelivery.status, func.count(NotificationDelivery.id))' in service
         and "'overview': notification_overview_metrics() if include_overview else None" in service
         and "include_overview=active_tab == 'overview'" in routes,
-        'unified notification snapshot outside-card section intro': "section_intro.render('Operational Snapshot'," in template
+        'unified notification snapshot outside-card section intro': "section_intro.render('Operational Snapshot',"
+        in template
         and 'notification-snapshot-heading' in template
         and 'Channel readiness, committed delivery outcomes, and recent delivery activity.' in template
         and 'grid min-w-0 lg:grid-cols-5' in template
@@ -299,7 +323,8 @@ def main() -> int:
         and 'Delivery outcome:' in template
         and 'Showing up to 5 committed records.' in template
         and 'Provider acceptance does not prove human receipt.' in template,
-        'lifecycle modal header/footer parity': '{% import "components/action_button.html" as action_button %}' in channel_delete_blockers_dialog
+        'lifecycle modal header/footer parity': '{% import "components/action_button.html" as action_button %}'
+        in channel_delete_blockers_dialog
         and '{% import "components/action_button.html" as action_button %}' in channel_retire
         and 'aria-label="Notification Channel Lifecycle Actions"' in channel_delete_blockers_dialog
         and 'aria-label="Notification Channel Lifecycle Actions"' in channel_retire

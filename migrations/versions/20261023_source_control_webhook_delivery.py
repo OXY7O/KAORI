@@ -23,8 +23,12 @@ def upgrade() -> None:
     op.create_table(
         'source_control_webhook_deliveries',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('installation_id', sa.Integer(),
-                  sa.ForeignKey('source_control_installations.id', ondelete='RESTRICT'), nullable=False),
+        sa.Column(
+            'installation_id',
+            sa.Integer(),
+            sa.ForeignKey('source_control_installations.id', ondelete='RESTRICT'),
+            nullable=False,
+        ),
         sa.Column('delivery_id', sa.String(36), nullable=False),
         sa.Column('payload_sha256', sa.String(64), nullable=False),
         sa.Column('event_type', sa.String(64), nullable=False),
@@ -35,11 +39,11 @@ def upgrade() -> None:
         sa.Column('last_attempt_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('attempt_count', sa.Integer(), nullable=False),
-        sa.UniqueConstraint('installation_id', 'delivery_id',
-                            name='uq_sc_webhook_installation_delivery'),
+        sa.UniqueConstraint('installation_id', 'delivery_id', name='uq_sc_webhook_installation_delivery'),
     )
     op.create_index(
-        'ix_sc_webhook_processing', 'source_control_webhook_deliveries',
+        'ix_sc_webhook_processing',
+        'source_control_webhook_deliveries',
         ['processing_state', 'received_at'],
     )
 
