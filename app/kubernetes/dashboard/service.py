@@ -40,9 +40,9 @@ from app.kubernetes.dashboard.sections import (
     build_kpis,
     build_recommendations,
     build_reporting_snapshot,
+    build_top_consumers_snapshot,
     count_kubernetes_artifact_records,
     count_kubernetes_reports,
-    build_top_consumers_snapshot,
 )
 from app.kubernetes.dashboard.snapshots import (
     alerts_parameters,

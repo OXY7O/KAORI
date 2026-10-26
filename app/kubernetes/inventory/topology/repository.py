@@ -3,9 +3,8 @@ from __future__ import annotations
 from sqlalchemy import func, or_
 from sqlalchemy.orm import aliased, joinedload
 
-from app.extensions.db import db
-
 from app.common.inventory_generation import filter_current_generation
+from app.extensions.db import db
 from app.kubernetes.inventory.topology.contracts import TopologyRecords, TopologySelection
 from app.kubernetes.inventory.topology.presentation import iso_datetime, selector_matches
 from app.models import (

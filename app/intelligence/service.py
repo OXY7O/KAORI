@@ -44,7 +44,6 @@ from app.intelligence.recommendation_builders import (
     build_workload_resource_governance_findings as _build_workload_resource_governance_findings_impl,
 )
 from app.intelligence.registry_recommendations import build_registry_recommendation_findings
-from app.intelligence.secrets_pki_recommendations import build_secrets_pki_recommendation_findings
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
@@ -63,6 +62,7 @@ from app.intelligence.rule_presentation import (
     provider_label,
     to_int,
 )
+from app.intelligence.secrets_pki_recommendations import build_secrets_pki_recommendation_findings
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
 from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 

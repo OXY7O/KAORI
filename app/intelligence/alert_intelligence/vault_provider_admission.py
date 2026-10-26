@@ -7,7 +7,8 @@ read-only candidate planner and source identity remain authoritative.
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 

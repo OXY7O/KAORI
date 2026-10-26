@@ -9,9 +9,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
-from app.models.cluster import Cluster, ClusterStatus
-
 from app.kubernetes.cluster.onboarding import has_registered_clusters
+from app.models.cluster import Cluster, ClusterStatus
 
 
 def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
