@@ -86,6 +86,22 @@ def _validate(evidence: PKIIssuerCollection) -> None:
             raise ValueError('PKI source adapter cannot attest trust or revocation.')
 
 
+def _is_eligible_pki_source(
+    identity: IntegrationInstance,
+    provider: VaultInstance,
+    mount: str,
+) -> bool:
+    """Qualify the locked Vault PKI identity and currently approved mount."""
+    return (
+        identity.integration_type == 'secrets_pki'
+        and identity.provider_key == 'vault'
+        and identity.lifecycle_status == 'active'
+        and identity.enabled
+        and identity.readiness_status == 'ready'
+        and mount in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
+    )
+
+
 def commit_pki_public_issuers(
     integration_instance_id: int,
     evidence: PKIIssuerCollection,
@@ -101,16 +117,7 @@ def commit_pki_public_issuers(
             .where(VaultInstance.integration_instance_id == integration_instance_id)
             .with_for_update(of=VaultInstance)
         ).scalar_one_or_none()
-        if (
-            identity is None
-            or provider is None
-            or identity.integration_type != 'secrets_pki'
-            or identity.provider_key != 'vault'
-            or identity.lifecycle_status != 'active'
-            or not identity.enabled
-            or identity.readiness_status != 'ready'
-            or evidence.mount not in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
-        ):
+        if identity is None or provider is None or not _is_eligible_pki_source(identity, provider, evidence.mount):
             raise ValueError('Vault PKI source is not eligible for committed collection.')
         namespace = provider.namespace or ''
         state = db.session.execute(
