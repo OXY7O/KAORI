@@ -121,7 +121,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Generate a setup key</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your local password or use a fresh external sign-in.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your password or sign in again.</p>
                             </div>
                         </li>
                         <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
@@ -134,7 +134,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Add an authenticator app</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Scan the QR code or enter the setup key into a compatible TOTP application.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Scan QR or enter the setup key.</p>
                             </div>
                         </li>
                         <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
@@ -189,7 +189,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="mfa_action" value="begin">
                             {% if can_change_password %}
-                                <div class="max-w-md">
+                                <div class="w-full">
                                     <label for="mfa-current-password"
                                            class="mb-1.5 block text-sm font-semibold text-content-primary">Current Password</label>
                                     <input id="mfa-current-password"
@@ -199,7 +199,7 @@
                                            autocomplete="current-password"
                                            maxlength="1024"
                                            placeholder="Confirm your current password"
-                                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                           class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 </div>
                             {% else %}
                                 <p class="max-w-lg rounded-lg border border-outline-subtle bg-surface-hover p-3 text-xs leading-5 text-content-secondary">
@@ -266,7 +266,7 @@
                               class="mt-5 space-y-4">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="mfa_action" value="confirm">
-                            <div class="max-w-[21rem]">
+                            <div class="w-full">
                                 <label for="mfa-confirm-code"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">Verification Code</label>
                                 <input id="mfa-confirm-code"

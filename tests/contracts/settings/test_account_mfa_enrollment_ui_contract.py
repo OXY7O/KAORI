@@ -32,6 +32,11 @@ def test_mfa_guide_precedes_two_responsive_enrollment_cards() -> None:
     assert 'data-account-mfa-steps="paired"' in html
     assert 'xl:grid-cols-2 xl:items-stretch' in html
     assert 'sm:grid-cols-2 xl:grid-cols-4' in html
+    assert 'Confirm your password or sign in again.' in html
+    assert 'Scan QR or enter the setup key.' in html
+    assert 'Confirm your local password or use a fresh external sign-in.' not in html
+    assert 'Scan the QR code or enter the setup key into a compatible TOTP application.' not in html
+    assert 'whitespace-nowrap' not in html
     assert 'data-account-mfa-recovery-layout="action-context"' in html
     assert 'xl:grid-cols-12 xl:items-start' in html
     assert 'xl:col-span-7' in html  # Enrolled recovery only.
@@ -49,9 +54,17 @@ def test_mfa_guide_precedes_two_responsive_enrollment_cards() -> None:
 
 def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     html = source()
-    assert html.count('class="max-w-md"') == 2
-    assert 'class="max-w-[21rem]"' in html
-    assert 'class="max-w-sm"' in html
+    assert html.count('class="max-w-md"') == 1  # Enrolled recovery password only.
+    assert 'class="max-w-[21rem]"' not in html
+    assert 'class="max-w-sm"' in html  # Enrolled recovery verification remains bounded.
+    enrollment = html.split('data-account-mfa-steps="paired"', 1)[1].split(
+        'data-account-mfa-recovery-layout="action-context"', 1
+    )[0]
+    assert enrollment.count('<div class="w-full">') == 2
+    assert 'id="mfa-current-password"' in enrollment
+    assert 'id="mfa-confirm-code"' in enrollment
+    password_input = enrollment.split('id="mfa-current-password"', 1)[1].split('</div>', 1)[0]
+    assert 'class="h-12 w-full' in password_input
     assert 'h-11 w-full rounded-lg' in html
     assert 'id="mfa-current-password"' in html
     assert 'id="mfa-confirm-code"' in html
@@ -200,9 +213,7 @@ def test_one_time_authenticator_provisioning_exposes_local_qr_and_manual_fallbac
 
 
 def test_account_partial_uses_existing_operational_toast_oob() -> None:
-    page = (ROOT / 'app/templates/settings/account/partials/_page_content.html').read_text(
-        encoding='utf-8'
-    )
+    page = (ROOT / 'app/templates/settings/account/partials/_page_content.html').read_text(encoding='utf-8')
     assert '{% if mfa_toast %}' in page
     assert 'status=mfa_toast.status' in page
     assert 'activity_audit_saved=mfa_toast.activity_audit_saved' in page
@@ -212,9 +223,9 @@ def test_account_partial_uses_existing_operational_toast_oob() -> None:
 
 def test_mfa_backend_queues_full_page_feedback_and_protects_one_time_response() -> None:
     routes = (ROOT / 'app/settings/routes.py').read_text(encoding='utf-8')
-    assert "mfa_toast: dict[str, Any] | None = None" in routes
+    assert 'mfa_toast: dict[str, Any] | None = None' in routes
     assert 'build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)' in routes
-    assert "if not is_htmx:\n            queue_operational_feedback(mfa_toast)" in routes
+    assert 'if not is_htmx:\n            queue_operational_feedback(mfa_toast)' in routes
     assert "'mfa_toast': mfa_toast if is_htmx else None" in routes
     assert "response.headers['Cache-Control'] = 'no-store'" in routes
     assert "response.headers['Pragma'] = 'no-cache'" in routes
