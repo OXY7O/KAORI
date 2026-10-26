@@ -59,7 +59,7 @@ def test_each_tab_starts_with_single_governed_summary() -> None:
         tab = data[name]
         assert tab.count('assurance.render(') == 1, name
         assert marker in tab
-        assert 'variant=\'guide\'' in tab
+        assert "variant='guide'" in tab
         if name == 'bot':
             assert tab.index('assurance.render(') < tab.index('data-auth-bot-layout=')
     assert 'Authentication Assurance Posture' in data['overview']
