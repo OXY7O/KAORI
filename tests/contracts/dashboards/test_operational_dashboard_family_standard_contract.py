@@ -392,6 +392,21 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     ):
         assert token in object_response
 
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    assert 'expected_alert_steps = (' in verifier
+    assert "'components/operational_alert_response.html'" in verifier
+    assert "'committed snapshot'" in verifier
+    assert "'alert-source evidence'" in verifier
+    assert "'safety guardrails'" in verifier
+    assert "'follow-up evidence'" in verifier
+    assert "step_positions != sorted(step_positions)" in verifier
+    for retired_copy in (
+        'before acting on the signal',
+        'establish an accountable owner',
+        'remains auditable',
+    ):
+        assert retired_copy not in verifier
+
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     for source in (kubernetes_reporting, object_reporting):
         assert 'components/reporting_dashboard_workspace.html' in source
