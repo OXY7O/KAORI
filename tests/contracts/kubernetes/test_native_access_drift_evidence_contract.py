@@ -11,7 +11,8 @@ def test_native_access_drift_reuses_committed_observation_and_canonical_workspac
     service = read('app/kubernetes/tenant/access_drift_analysis.py')
     routes = read('app/kubernetes/tenant/routes_access.py')
     context = read('app/kubernetes/tenant/access_service.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    ui = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
 
     assert 'def classify_native_access_observation(' in service
     assert 'def evaluate_native_access_drift_committed(' in service
@@ -37,5 +38,5 @@ def test_native_access_drift_reuses_committed_observation_and_canonical_workspac
     assert 'tenant.analyze_native_access_drift_route' in ui
     assert 'Analyze Native Access Drift' in ui
     assert 'Drift Findings' in ui
-    assert 'access_evidence_drift_by_tenant.get(evidence.tenant_id)' in ui
+    assert 'access_evidence_drift_by_tenant.get(evidence.tenant_id)' in rows
     assert 'No automatic remediation was performed.' in ui
