@@ -20,7 +20,6 @@ from app.access.authentication.bot_protection.turnstile import (
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationSecurityPolicy
 
-
 TEST_SITE_KEYS = frozenset({'1x00000000000000000000AA', '2x00000000000000000000AB', '3x00000000000000000000FF'})
 TEST_SECRET_KEYS = frozenset({'1x0000000000000000000000000000000AA', '2x0000000000000000000000000000000AA', '3x0000000000000000000000000000000AA'})
 

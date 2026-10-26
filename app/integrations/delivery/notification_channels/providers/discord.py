@@ -18,8 +18,8 @@ from app.integrations.delivery.notification_channels.providers.form_support impo
     DenyRedirects,
     credential_map,
 )
-from app.models.notification_channel import NotificationChannel
 from app.integrations.delivery.notification_channels.retry_after import parse_retry_after
+from app.models.notification_channel import NotificationChannel
 
 _WEBHOOK_PATH = re.compile(r'/api/(?:v[0-9]+/)?webhooks/[0-9]{10,22}/[A-Za-z0-9._-]+\Z')
 _DISCORD_LIMIT = 2000
