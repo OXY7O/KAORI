@@ -40,9 +40,9 @@
     }
 
     function render(root = document) {
-        const panel =
-            root.querySelector?.('[data-object-storage-trend-panel]') ||
-            document.querySelector('[data-object-storage-trend-panel]')
+        const panel = root.matches?.('[data-object-storage-trend-panel]')
+            ? root
+            : root.querySelector?.('[data-object-storage-trend-panel]')
         if (!panel || typeof Chart === 'undefined') return
         const canvas = panel.querySelector('[data-object-storage-chart]')
         if (!canvas) return
@@ -169,9 +169,9 @@
     }
 
     function renderBucketForecastChart(root = document) {
-        const panel =
-            root.querySelector?.('[data-object-storage-bucket-forecast-chart-panel]') ||
-            document.querySelector('[data-object-storage-bucket-forecast-chart-panel]')
+        const panel = root.matches?.('[data-object-storage-bucket-forecast-chart-panel]')
+            ? root
+            : root.querySelector?.('[data-object-storage-bucket-forecast-chart-panel]')
         if (!panel || typeof Chart === 'undefined') return
         const canvas = panel.querySelector('[data-object-storage-bucket-forecast-chart]')
         if (!canvas) return
@@ -260,13 +260,20 @@
         renderBucketForecastChart(root)
     }
 
-    function destroyAllCharts() {
-        destroyChart()
-        destroyBucketForecastChart()
+    function chartInsideSwap(chart, target) {
+        return Boolean(chart?.canvas && target && (target === chart.canvas || target.contains?.(chart.canvas)))
     }
 
     document.addEventListener('DOMContentLoaded', () => renderAll(document))
     document.addEventListener('kaori:analytics-tab-visible', (event) => renderAll(event.target))
-    document.body.addEventListener('htmx:afterSwap', (event) => renderAll(event.target))
-    document.body.addEventListener('htmx:beforeSwap', destroyAllCharts)
+    document.body.addEventListener('htmx:beforeSwap', (event) => {
+        const target = event.detail?.target || event.target
+        if (chartInsideSwap(window[chartKey], target)) destroyChart()
+        if (chartInsideSwap(window[bucketForecastChartKey], target)) destroyBucketForecastChart()
+    })
+    document.body.addEventListener('htmx:afterSwap', (event) => {
+        const target = event.detail?.target || event.target
+        if (!target?.isConnected) return
+        renderAll(target)
+    })
 })()
