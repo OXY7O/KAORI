@@ -264,10 +264,8 @@
                                             {% endif %}
                                         </p>
                                     {% else %}
-                                <p class="rounded-lg border border-dashed border-outline-default bg-surface-card p-4 text-xs text-content-muted">
-                                    No provider bindings observed in the committed inspection.
-                                </p>
-                            {% endfor %}
+                                        <p class="text-xs text-content-muted">No subjects recorded for this binding.</p>
+                                    {% endfor %}
                                     {% if can_manage and binding.ownership == 'external' %}
                                         <form method="post"
                                               action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
