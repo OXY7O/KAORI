@@ -19,7 +19,7 @@
             <div class="flex flex-wrap items-center gap-1.5">
                 {{ table_label.status_label(item.state, state_tone) }}
                 {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|replace('_', ' ') |title,
-                    'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
+                'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
             </div>
         </header>
         <div class="grid min-w-0 gap-3 bg-surface-elevated p-3 sm:grid-cols-2 sm:p-4">
@@ -42,11 +42,15 @@
                     <dl class="grid min-w-0 grid-cols-3 gap-px bg-outline-subtle">
                         <div class="min-w-0 bg-surface-card px-3 py-3">
                             <dt class="text-xs text-content-muted">Budget</dt>
-                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">{{ bar.budget }}</dd>
+                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">
+                                {{ bar.budget }}
+                            </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card px-3 py-3">
                             <dt class="text-xs text-content-muted">Committed</dt>
-                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">{{ bar.committed }}</dd>
+                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">
+                                {{ bar.committed }}
+                            </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card px-3 py-3">
                             <dt class="text-xs text-content-muted">Headroom</dt>
@@ -65,11 +69,11 @@
                                 <span class="font-semibold tabular-nums text-content-primary">{{ bar.percent }}%</span>
                             </div>
                             {{ progress_bar.stacked_bar(bar.percent,
-                                bar.free_percent,
-                                'flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
-                                'h-full bg-kaori-primary',
-                                'h-full bg-kaori-primary/20',
-                                label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
+                                                        bar.free_percent,
+                                                        'flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
+                                                        'h-full bg-kaori-primary',
+                                                        'h-full bg-kaori-primary/20',
+                                                        label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
                         {% else %}
                             <p class="text-xs text-content-muted">Ratio unavailable — no free headroom is asserted.</p>
                         {% endif %}
