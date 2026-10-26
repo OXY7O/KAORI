@@ -399,7 +399,7 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     assert "'alert-source evidence'" in verifier
     assert "'safety guardrails'" in verifier
     assert "'follow-up evidence'" in verifier
-    assert "step_positions != sorted(step_positions)" in verifier
+    assert 'step_positions != sorted(step_positions)' in verifier
     for retired_copy in (
         'before acting on the signal',
         'establish an accountable owner',
@@ -417,6 +417,37 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     assert 'Governed Reporting Flow' in reporting_workspace
     for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
         assert f"'{step}'" in reporting_workspace
+
+
+def test_alerts_summary_verifier_uses_domain_copy_and_shared_preview_cap() -> None:
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    shared = read('app/templates/components/operational_alert_summary.html')
+    templates = (
+        (
+            'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'app/templates/artifact_registry/partials/_overview_alerts_summary.html',
+            'Active Registry AlertCases and recent cases.',
+        ),
+    )
+
+    assert 'rows[:5]' in shared
+    assert 'row_token, description in (' in verifier
+    assert "f\"description='{description}'\"" in verifier
+    assert "'Intelligence findings are separate.'" in verifier
+    assert "empty_label='No Active Cases'" in verifier
+    assert "empty_title='No Active Alert Cases'" in verifier
+    assert "row_token," in verifier
+    for path, description in templates:
+        assert f"description='{description}'" in read(path)
+        assert f"'{description}'" in verifier
+    assert verifier.count('Active Registry AlertCases and recent cases.') == 1
 
 
 def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> None:
