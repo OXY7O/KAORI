@@ -222,7 +222,7 @@
   "module_line_limits": {
     "app/artifact_registry/presentation_inventory.py": 938,
     "app/artifact_registry/presentation_runtime.py": 807,
-    "app/artifact_registry/routes.py": 950,
+    "app/artifact_registry/routes.py": 936,
     "app/artifact_registry/security/presentation.py": 907,
     "app/integrations/delivery/notification_channels/service.py": 1002,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
