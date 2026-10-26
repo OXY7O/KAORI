@@ -35,6 +35,30 @@ def test_mfa_tab_uses_approved_shared_kaori_visual_components() -> None:
     assert 'xl:grid-cols-5' in tab
 
 
+def test_mfa_controls_have_external_heading_and_one_harmonized_container() -> None:
+    tab = _mfa_tab()
+    assert tab.count('data-auth-security-mfa-stack="true"') == 1
+    assert tab.count('data-auth-security-mfa-hub="true"') == 1
+    assert 'data-auth-security-mfa-intro="above-card"' in tab
+    assert 'Multi-Factor Authentication Controls' in tab
+    assert 'Manage MFA enforcement, recovery boundaries, and personal enrollment in one workspace.' in tab
+    assert tab.index('data-auth-security-mfa-intro="above-card"') < tab.index(
+        'data-auth-security-mfa-hub="true"'
+    )
+    assert tab.index('data-auth-security-mfa-hub="true"') < tab.index('Policy Configuration')
+    assert tab.index('Policy Configuration') < tab.index('Enforcement Modes')
+    assert tab.index('Enforcement Modes') < tab.index('data-auth-security-mfa-enrollment="harmonized"')
+    assert 'aria-labelledby="auth-security-mfa-controls-heading"' in tab
+    assert 'border-t border-outline-subtle bg-surface-hover' in tab
+    assert 'rounded-xl border border-outline-default bg-surface-card p-4 lg:p-5' in tab
+    assert tab.count('Account Enrollment &amp; Recovery') == 1
+    assert tab.count('Open My MFA Settings') == 1
+    assert 'Authenticator App' in tab
+    assert 'Recovery Codes' in tab
+    assert "url_for('settings.account', tab='mfa')" in tab
+    assert 'flex flex-wrap items-center justify-between' in tab
+
+
 def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> None:
     tab = _mfa_tab()
     assert "mfa_policy_mode == 'disabled'" in tab
