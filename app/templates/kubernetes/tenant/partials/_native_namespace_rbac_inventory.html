@@ -328,7 +328,6 @@
             page_param='access_evidence_page',
             per_page_param='access_evidence_per_page') }}
     </section>
-    </section>
 </section>
 {% set scoped_access_profile_reviews = recent_external_access_profile_reviews|selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')|list %}
 {% if scoped_access_profile_reviews %}
