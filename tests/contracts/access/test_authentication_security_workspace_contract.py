@@ -38,7 +38,18 @@ def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> 
 
     assert 'components/page_hero.html' in template
     assert 'components/workspace_tabs.html' in template
-    assert 'workspace_tabs.render_query_tabs(' in template
+    assert 'workspace_tabs.render_navigation(' in template
+    assert 'workspace_tabs.render_query_tabs(' not in template
+    assert template.index('workspace_tabs.render_navigation(') < template.index('page_hero.shell_classes()')
+    assert template.count('workspace_tabs.render_navigation(') == 1
+    assert 'data-authentication-security-submenu' in template
+    assert 'hx-sync="this:replace"' in template
+    assert "prefix='authentication-security'" in template
+    assert "hx_target='#authentication-security-page'" in template
+    assert "'submenu_tabs': submenu_tabs" in source('app/access/authentication_security/__init__.py')
+    assert "None, href) for key, label, icon, href in tabs" in source(
+        'app/access/authentication_security/__init__.py'
+    )
     assert "hx_target='#authentication-security-page'" in template
     assert "'Enforced' if bot_mode == 'always' else 'Not Enabled'" in template
     assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in template
