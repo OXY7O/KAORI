@@ -2,15 +2,15 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
-{% set capacity_controls_guide = info_tip.render('object-storage-capacity-controls-readiness-guide',
+{% set analytics_controls_guide = info_tip.render('object-storage-analytics-controls-readiness-' ~ page_key ~ '-guide',
     'Analytics Controls & Data Readiness Guide',
-    'Selectors choose the committed analytics scope; readiness and snapshot status describe different evidence boundaries.',
+    'Selectors choose the evidence scope; readiness and committed snapshot state are separate observations.',
     items=[
-    'Object Storage System and Time Range select the analysis context; changing them refreshes the committed workspace view.',
-    'Metrics Source Status reflects collection-time contract readiness and source identity; it is not proof that a current provider request succeeded.',
-    'Latest Analytics Data Snapshot shows worker-committed data, freshness, and refresh attempts. Stale or unavailable evidence must not be interpreted as healthy or zero.',
+        'System and analysis window/source selectors change the requested committed evidence context, not provider configuration.',
+        'Metrics Source readiness reflects collection-time contract evidence; alert lifecycle and forecast-worker readiness have their own authorities.',
+        'Latest Analytics Data Snapshot reports worker-committed freshness and refresh attempts; stale or missing data is never assumed Healthy or zero.',
     ],
-    placement='right', variant='guide') if page_key == 'capacity' else '' %}
+placement='right', variant='guide') %}
 {% set storage_readiness_description %}
     {% if page_key == 'alerts' %}
         Select the Object Storage system and committed alert source. Automatic prefers worker-collected Alertmanager evidence and falls back to committed Metrics Source evidence.
@@ -26,7 +26,7 @@
     'sliders-horizontal',
     'object-storage-analytics-refresh-indicator',
     eyebrow='Analytics Overview' if page_key == 'overview' else page.title,
-    title_accessory=capacity_controls_guide
+    title_accessory=analytics_controls_guide
     ) %}
     <form id="object-storage-analytics-controls"
           method="get"
