@@ -538,3 +538,22 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Human Acceptance, official Developer Check, Full Admission, staging/main promotion and release remain on HOLD.
+
+## Overview title outside box and harmonized Operational Boundaries UAT (#3338, 2026-10-26)
+
+At the exact holding SHA review **Access → Authentication Security → Overview** after the separate Authentication Assurance Posture. The external **Authentication Security Control Areas** icon/title/one-line description must appear **above** the bordered common control box, not within its top border. The box should start immediately with the original three detailed control cards (MFA, Bot Protection, Session Security) and preserve all status labels, summary details and destination links.
+
+The lower **Operational Boundaries** remains *inside that box*: one subtle dividing line with a soft background, icon/title/short description, and two symmetric inner bordered cards (**Governed Here / Managed Elsewhere**) that use the same spacing, radius and semantic surfaces as the control cards above. There must not be an independent full-bleed white table or a nested outer workspace shell. Verify at 1440/1280/1024/768/390/360 and 200% zoom, light/dark and keyboard: no awkward gaps, truncated labels, overflow or inaccessible headings. Check original ownership wording and true MFA/Bot/Session review URLs, with and without HTMX; verify unaffected MFA, Bot and Session tabs, manager/view-only permission boundary, and external security verification contracts.
+
+The operator's previous 2026-10-26 run on a **prior commit** reported Ruff check and Ruff Format PASS, **48 pytest PASS**, Access Final Lock and Sidebar Navigation Standard PASS, while **djlint check still FAILS** for `_page_content.html` owing to extensive Jinja-macro and HTML indentation changes. Do not transfer previous successes to the new commit; `djlint` remains a verification blocker unless re-executed and fixed using the existing formatter. Do not enable provider `Always` merely to test the UI without documented independent recovery.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Record source SHA, each command's actual results, redacted desktop/mobile screenshots, negative/positive authorization and browser behavior, and the human acceptance decision. Official admission, `kaori/staging`, main and release remain HOLD.
