@@ -230,6 +230,65 @@ def forecast_posture(growth_per_day: float | None, days_to_capacity: float | Non
     )
 
 
+
+def metric_boundary_evaluations(
+    *,
+    utilization: float | None,
+    error_ratio: float | None,
+    waiting: float | None,
+    offline_nodes: float | None,
+) -> list[dict[str, str]]:
+    """Explain all existing Object Storage boundaries from committed metrics.
+
+    Presentation-only: do not change the triggered-only metric_risk_signals
+    contract consumed by Alerts Overview and Recommendations.
+    """
+    boundaries = (
+        ('capacity', 'Capacity Utilization', utilization, '85% warning · 95% critical'),
+        ('errors', 'Request Error Ratio', error_ratio, '5% warning · 10% critical'),
+        ('waiting', 'Waiting Requests', waiting, 'Warning when > 0'),
+        ('nodes', 'Offline Storage Nodes', offline_nodes, 'Critical when > 0'),
+    )
+    rows: list[dict[str, str]] = []
+    for key, title, value, threshold in boundaries:
+        if value is None:
+            severity, evaluation, observed = 'unknown', 'Evidence unavailable', 'Unavailable'
+        else:
+            observed = f'{value:.1f}%' if key in {'capacity', 'errors'} else f'{value:,.0f}'
+            if key == 'capacity':
+                severity = (
+                    'critical' if value >= CAPACITY_CRITICAL_PERCENT
+                    else 'warning' if value >= CAPACITY_WARNING_PERCENT
+                    else 'normal'
+                )
+            elif key == 'errors':
+                severity = (
+                    'critical' if value >= ERROR_CRITICAL_PERCENT
+                    else 'warning' if value >= ERROR_WARNING_PERCENT
+                    else 'normal'
+                )
+            elif key == 'waiting':
+                severity = 'warning' if value > 0 else 'normal'
+            else:
+                severity = 'critical' if value > 0 else 'normal'
+            evaluation = {
+                'normal': 'Within operating boundary',
+                'warning': 'Warning boundary reached',
+                'critical': 'Critical boundary reached',
+            }[severity]
+        rows.append(
+            {
+                'key': key,
+                'title': title,
+                'observed': observed,
+                'threshold': threshold,
+                'severity': severity,
+                'evaluation': evaluation,
+            }
+        )
+    return rows
+
+
 def metric_risk_signals(
     *,
     utilization: float | None,
