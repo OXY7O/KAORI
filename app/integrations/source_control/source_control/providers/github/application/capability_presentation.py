@@ -78,9 +78,7 @@ _CAPABILITIES = (
 )
 
 
-def _capability_status(
-    *, observed: bool, state: object, required: bool
-) -> tuple[bool, bool, str, str, str]:
+def _capability_status(*, observed: bool, state: object, required: bool) -> tuple[bool, bool, str, str, str]:
     """Project a committed permission state without changing admission semantics."""
     verified = bool(observed and state == 'permission_verified')
     unavailable = bool(observed and state == 'permission_unavailable')
