@@ -871,11 +871,11 @@ def test_github_successor_route_and_ui_keep_existing_evidence_separate() -> None
 
 def test_github_successor_runtime_import_contract() -> None:
     """Catch missing registration exports before Flask blueprint startup."""
-    from app.integrations.source_control.source_control.providers.github.registration import (
-        build_successor_connection_input,
-    )
     from app.integrations.source_control.source_control.providers.github.application.uat_routes import (
         github_uat_bp,
+    )
+    from app.integrations.source_control.source_control.providers.github.registration import (
+        build_successor_connection_input,
     )
 
     assert callable(build_successor_connection_input)
