@@ -12,9 +12,7 @@ def bot_tab() -> str:
     page = TEMPLATE.read_text(encoding='utf-8')
     Environment().parse(page)
     return page.split("{% elif active_tab == 'bot' %}", 1)[1].split(
-        '{% else %}\n                <div>\n'
-        '                    <h2 class="text-base font-semibold text-content-primary">'
-        'Session Security</h2>',
+        "{% else %}\n                {{ assurance.render(",
         1,
     )[0]
 
@@ -24,12 +22,12 @@ def test_bot_tab_has_committed_posture_cards_and_shared_guide() -> None:
     tab = bot_tab()
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert "variant='guide'" in tab
-    assert 'data-auth-bot-posture="committed"' in tab
+    assert "'bot-protection'," in tab
     assert 'bot-protection-guide' in tab
-    assert 'sm:grid-cols-3' in tab
-    assert 'Protection Mode</p>' in tab
-    assert 'Verification Adapter</p>' in tab
-    assert 'Provider Configuration</p>' in tab
+    assert "'Verification Evidence'" in tab
+    assert "'Protection Mode'" in tab
+    assert "'Verification Adapter'" in tab
+    assert "'Provider Configuration'" in tab
     assert "'Enforced' if bot_mode == 'always' else 'Not Enabled'" in tab
     assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in tab
     assert 'Saved instance data, not provider health' in tab
@@ -70,10 +68,9 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert 'data-auth-bot-activation="ordered"' in tab
     for name in ('Configure Provider', 'Test Verification', 'Enable Protection'):
         assert name in tab
-    assert (
-        '{% if can_manage_authentication_security and bot_has_secret '
-        'and bot_site_key and bot_hostname %}'
-    ) in tab
+    gate_head = '{% if can_manage_authentication_security and bot_has_secret '
+    gate_tail = 'and bot_site_key and bot_hostname %}'
+    assert gate_head + gate_tail in tab
     assert "url_for('access.authentication_security.test_bot_provider')" in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab
@@ -89,9 +86,9 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert 'whitespace-nowrap' not in tab
     assert 'hx-post=' not in tab
     assert 'data-auth-bot-form="configuration"' in tab
-    assert tab.index('data-auth-bot-form="configuration"') < tab.index(
-        'data-auth-bot-form="verification-test"'
-    )
+    config_at = tab.index('data-auth-bot-form="configuration"')
+    test_at = tab.index('data-auth-bot-form="verification-test"')
+    assert config_at < test_at
 
 
 def test_bot_server_admission_is_unchanged_and_proof_is_fresh() -> None:
