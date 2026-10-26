@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 import pytest
 from flask import Flask
 from flask_login import LoginManager, UserMixin
