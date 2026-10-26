@@ -269,3 +269,24 @@ The **Multi-Factor Authentication** tab follows the already approved single-sect
 Keep the exact currently implemented MFA policy form, manager/view-only branch, `mfa_mode`, `acknowledge_policy_impact=yes`, CSRF, four actual server policy modes, backend revocation and recovery requirements. Do **not** introduce any illustrated/mock policy input name or client-side security behavior. Enrollment/recovery remains user-owned in Settings and no raw secrets are displayed. The other Bot/Session tabs, Route-backed submenu above Hero, flat page-level workspace, source-backed KAORI summary and original Overview control/boundary cards remain unchanged. Use existing Violet colors, breakpoints and components only; mobile wrapping, light/dark, accessibility and explicit visual/Human UAT required.
 
 Authority progression: approved Access Design Lock → #3338 merged Overview external-header design → #3344 specific icon removal and MFA detail consolidation. Official Developer Check/Full Admission/staging/main remains on HOLD pending QA.
+
+## Compact MFA/Bot governance hints and balanced Bot activation panel (#3350, 2026-10-26)
+
+Authentication Security UAT requested **complete one-line descriptions at the reviewed desktop width** for the highlighted MFA Assurance Policy and Bot Protection governance/ownership cues. Keep the shared Role Registry-style 4-metric/4-boundary component, Violet tokens, normal typography and natural wrapping on smaller widths or zoom, with no `whitespace-nowrap`, ellipsis, tooltip-only meaning or clipping.
+
+Scoped committed copy:
+- MFA Factor Ownership metric: **“Users keep their own recovery codes.”**
+- MFA Factor Enrollment governance: **“Admins cannot retrieve MFA secrets.”**
+- MFA Policy Transition governance: **“Policy changes revoke prior sessions.”**
+- Bot Challenge Boundary: **“Failed verification blocks sign-in.”**
+- Bot One-Use Proof: **“Cloudflare verifies one-use tokens.”**
+- Bot Activation Evidence: **“Always requires fresh proof.”**
+- Bot Recovery Access: **“Confirm recovery before enabling.”**
+
+These are UI summaries, not new policy states: personal factor ownership, revocation of previously issued generations/Remember Me, server-side one-use Cloudflare Siteverify, recent proof (within one hour for unchanged configuration), and independent admin recovery remain governed by the original security implementation and detailed guidance.
+
+Remove two redundant *inline-only* helper paragraphs in Bot Protection's Protection Configuration: the adaptive-mode deferral note below the mode picker and the encryption/audit note below Verification Secret. Do not remove the actual encryption, audit, single-provider allowed modes, password field, `Change Impact`, independent recovery acknowledgement, or documentation of these guarantees.
+
+For Bot **Activation & Safety**, reuse the existing right-hand 3-step panel and ordered layout beside Protection Configuration. Each stage is vertically balanced with an inset semantic surface containing factual actionable context: **Configuration prerequisites** (site key, hostname, encrypted secret; saved configuration ≠ provider health), **One-use verification** (Cloudflare Siteverify and proof refresh on config changes), **Activation safeguards** (independent recovery and fail-closed rejection). The live Turnstile verification test, provider prerequisite gate, recorded evidence caveat and bottom security footer remain intact. No provider healthy/readiness signal is added. Use existing `bg-surface-subtle` and `border-outline-subtle`, and let the layout stretch/stack responsively.
+
+This refinement follows approved Authentication Security foundation #3138, above-Hero submenu, unified MFA control workspace #3344 and existing Bot Protection UAT authority. Verify contract/formatter tests, visual symmetry, mobile/light-dark and negative security conditions before Human Acceptance.
