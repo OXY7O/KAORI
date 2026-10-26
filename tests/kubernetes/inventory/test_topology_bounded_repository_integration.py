@@ -342,9 +342,7 @@ def test_parent_heavy_depth_full_counts_resources_without_orm_materialization(re
         db.session.add_all([cluster, snapshot])
         for index in range(360):
             namespace = f'ns-{index:04d}'
-            db.session.add(
-                NamespaceInventory(cluster_id=cluster.id, namespace=namespace, collected_at=now)
-            )
+            db.session.add(NamespaceInventory(cluster_id=cluster.id, namespace=namespace, collected_at=now))
             db.session.add(
                 WorkloadInventory(
                     cluster_id=cluster.id,

@@ -51,19 +51,15 @@ def store():
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         role = Role(name='vault_alert_admission_operator', display_name='Vault Case Operator')
         keys = (
-            'intelligence.decisions.create', 'intelligence.view',
-            'secrets_pki.sync', 'secrets_pki.view',
+            'intelligence.decisions.create',
+            'intelligence.view',
+            'secrets_pki.sync',
+            'secrets_pki.view',
         )
-        permissions = [
-            Permission(key=key, module=key.split('.')[0], action=key.split('.')[-1])
-            for key in keys
-        ]
+        permissions = [Permission(key=key, module=key.split('.')[0], action=key.split('.')[-1]) for key in keys]
         db.session.add_all([role, *permissions])
         db.session.flush()
-        db.session.add_all([
-            RolePermission(role_id=role.id, permission_id=permission.id)
-            for permission in permissions
-        ])
+        db.session.add_all([RolePermission(role_id=role.id, permission_id=permission.id) for permission in permissions])
         db.session.commit()
         try:
             yield
@@ -78,10 +74,7 @@ def _actor(*, approved=True):
         email=f'actor-{User.query.count()}@example.invalid',
         auth_source='database',
         is_super_admin=False,
-        role_id=(
-            Role.query.filter_by(name='vault_alert_admission_operator').one().id
-            if approved else None
-        ),
+        role_id=(Role.query.filter_by(name='vault_alert_admission_operator').one().id if approved else None),
         account_is_active=True,
     )
     db.session.add(actor)
@@ -91,19 +84,30 @@ def _actor(*, approved=True):
 
 def _source():
     vault = IntegrationInstance(
-        integration_type='secrets_pki', provider_key='vault', adapter_key='test',
-        name='Vault source', enabled=True, lifecycle_status='active',
+        integration_type='secrets_pki',
+        provider_key='vault',
+        adapter_key='test',
+        name='Vault source',
+        enabled=True,
+        lifecycle_status='active',
     )
     source = IntegrationInstance(
-        integration_type='alert_source', provider_key='alertmanager', adapter_key='test',
-        name='Alertmanager source', enabled=True, lifecycle_status='active',
+        integration_type='alert_source',
+        provider_key='alertmanager',
+        adapter_key='test',
+        name='Alertmanager source',
+        enabled=True,
+        lifecycle_status='active',
     )
     db.session.add_all([vault, source])
     db.session.flush()
     binding = IntegrationBinding(
-        integration_instance_id=source.id, asset_type='vault_instance',
-        asset_key=str(vault.id), enabled=True,
-        validation_profile='vault-alerts-v1', validation_status='ready',
+        integration_instance_id=source.id,
+        asset_type='vault_instance',
+        asset_key=str(vault.id),
+        enabled=True,
+        validation_profile='vault-alerts-v1',
+        validation_status='ready',
         selector_json={
             'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': str(vault.id)}],
         },
@@ -121,7 +125,8 @@ def _source():
 def _alert(vault_id, *, severity='warning', fingerprint='aabbccddeeff1234'):
     return {
         'labels': {
-            'vault_instance': str(vault_id), 'severity': severity,
+            'vault_instance': str(vault_id),
+            'severity': severity,
             'alertname': 'SECRET/RAW/PATH',
         },
         'annotations': {'summary': 'private Vault paths'},
@@ -134,17 +139,20 @@ def _alert(vault_id, *, severity='warning', fingerprint='aabbccddeeff1234'):
 
 def _commit(binding, alerts, *, observed=AT):
     return commit_vault_alert_observations(
-        binding_id=binding.id, alerts=alerts, hmac_key=KEY,
-        observed_at=observed, now=observed,
+        binding_id=binding.id,
+        alerts=alerts,
+        hmac_key=KEY,
+        observed_at=observed,
+        now=observed,
     )
 
 
 def _admit(binding, actor, *, at=AT):
     return admission.admit_vault_provider_cases(
-        binding_id=binding.id, actor_user_id=actor.id, now=at,
+        binding_id=binding.id,
+        actor_user_id=actor.id,
+        now=at,
     )
-
-
 
 
 def _grant(vault, actor, *, level='instance', state='active', target_id=None, until=None):
@@ -161,17 +169,19 @@ def _grant(vault, actor, *, level='instance', state='active', target_id=None, un
     )
     db.session.add(policy)
     db.session.flush()
-    db.session.add(ScopeAccessPolicyRevision(
-        policy_id=policy.id,
-        revision_number=1,
-        lifecycle_status=state,
-        effective_from=AT - timedelta(minutes=30),
-        effective_until=until or (AT + timedelta(hours=1)),
-        requested_by_user_id=requester.id,
-        approved_by_user_id=approver.id if state == 'active' else None,
-        approved_at=AT - timedelta(minutes=10) if state == 'active' else None,
-        change_reason='operational_access',
-    ))
+    db.session.add(
+        ScopeAccessPolicyRevision(
+            policy_id=policy.id,
+            revision_number=1,
+            lifecycle_status=state,
+            effective_from=AT - timedelta(minutes=30),
+            effective_until=until or (AT + timedelta(hours=1)),
+            requested_by_user_id=requester.id,
+            approved_by_user_id=approver.id if state == 'active' else None,
+            approved_at=AT - timedelta(minutes=10) if state == 'active' else None,
+            change_reason='operational_access',
+        )
+    )
     db.session.commit()
     return policy
 
@@ -306,10 +316,15 @@ def test_foreign_case_collision_blocks_atomic_admission(scope):
 
     key = build_vault_provider_case_plan(binding_id=binding.id, now=AT)['candidates'][0]['case_key']
     foreign = AlertCase(
-        case_key=key, source_type='provider_alert',
-        source_ref=key, domain='object_storage', asset_type='storage',
-        asset_key='foreign', asset_name='Foreign',
-        alert_name='Other source', routing_state='suppressed',
+        case_key=key,
+        source_type='provider_alert',
+        source_ref=key,
+        domain='object_storage',
+        asset_type='storage',
+        asset_key='foreign',
+        asset_name='Foreign',
+        alert_name='Other source',
+        routing_state='suppressed',
     )
     db.session.add(foreign)
     db.session.commit()
@@ -320,8 +335,9 @@ def test_foreign_case_collision_blocks_atomic_admission(scope):
 
 def test_db_error_rolls_back_full_case_batch(scope, monkeypatch):
     vault, _source, binding, actor = scope
-    _commit(binding, [_alert(vault.id, fingerprint='0000000000000001'),
-                      _alert(vault.id, fingerprint='0000000000000002')])
+    _commit(
+        binding, [_alert(vault.id, fingerprint='0000000000000001'), _alert(vault.id, fingerprint='0000000000000002')]
+    )
     original = admission._new_case
     attempts = []
 
@@ -358,7 +374,7 @@ def test_no_http_celery_provider_io_or_delivery_activation():
         encoding='utf-8',
     )
     assert 'with_for_update()' in code
-    assert "KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED" in code
+    assert 'KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED' in code
     assert 'get_alerts(' not in code
     assert 'create_notification(' not in code
     assert 'mark_case_source_resolved(' not in code
@@ -404,8 +420,12 @@ def test_invalid_or_foreign_instance_grant_denies_all_case_writes(scope, scenari
         current.effective_until = AT - timedelta(minutes=1)
     else:
         foreign = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault', adapter_key='test',
-            name='Foreign Vault', enabled=True, lifecycle_status='active',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='test',
+            name='Foreign Vault',
+            enabled=True,
+            lifecycle_status='active',
         )
         db.session.add(foreign)
         db.session.flush()
@@ -422,7 +442,8 @@ def test_missing_normalized_mutation_permission_blocks_write_even_with_grant(sco
     _commit(binding, [_alert(vault.id)])
     role = actor.role_record
     removed = next(
-        edge for edge in RolePermission.query.filter_by(role_id=role.id).all()
+        edge
+        for edge in RolePermission.query.filter_by(role_id=role.id).all()
         if edge.permission.key == 'secrets_pki.sync'
     )
     db.session.delete(removed)

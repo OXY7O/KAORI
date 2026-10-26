@@ -14,7 +14,9 @@ UID_NEW = '12345678-1234-4234-8234-123456789abd'
 def _secret(uid):
     return SimpleNamespace(
         metadata=SimpleNamespace(
-            namespace='internal-ns', name='api-certificate', uid=uid,
+            namespace='internal-ns',
+            name='api-certificate',
+            uid=uid,
         ),
         type='kubernetes.io/tls',
         data={},  # no tls.crt means invalid cert but the UID is still a source fact

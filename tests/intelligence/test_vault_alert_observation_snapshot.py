@@ -22,7 +22,8 @@ KEY = b'TEST-ONLY-correlation-key-with-32-bytes-DO-NOT-USE'
 def store():
     app = Flask(__name__)
     app.config.update(
-        SECRET_KEY='test-only', SQLALCHEMY_DATABASE_URI='sqlite://',
+        SECRET_KEY='test-only',
+        SQLALCHEMY_DATABASE_URI='sqlite://',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
     db.init_app(app)
@@ -42,9 +43,12 @@ def store():
 
 def _instance(kind, provider):
     row = IntegrationInstance(
-        integration_type=kind, provider_key=provider, adapter_key='test',
+        integration_type=kind,
+        provider_key=provider,
+        adapter_key='test',
         name=f'{kind}-{IntegrationInstance.query.count()}',
-        enabled=True, lifecycle_status='active',
+        enabled=True,
+        lifecycle_status='active',
     )
     db.session.add(row)
     db.session.flush()
@@ -54,8 +58,11 @@ def _instance(kind, provider):
 def _scoped_binding(vault, source):
     row = IntegrationBinding(
         integration_instance_id=source.id,
-        asset_type='vault_instance', asset_key=str(vault.id), enabled=True,
-        validation_profile='vault-alerts-v1', validation_status='ready',
+        asset_type='vault_instance',
+        asset_key=str(vault.id),
+        enabled=True,
+        validation_profile='vault-alerts-v1',
+        validation_status='ready',
         last_validated_at=AT,
         selector_json={
             'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': str(vault.id)}],
@@ -78,8 +85,9 @@ def accepted_source(store):
     return vault, source, binding
 
 
-def _alert(vault_id, *, state='active', severity='warning', fingerprint='aabbccddeeff1234',
-           starts='2026-10-23T01:00:00Z'):
+def _alert(
+    vault_id, *, state='active', severity='warning', fingerprint='aabbccddeeff1234', starts='2026-10-23T01:00:00Z'
+):
     return {
         'labels': {
             'vault_instance': str(vault_id),
@@ -96,7 +104,11 @@ def _alert(vault_id, *, state='active', severity='warning', fingerprint='aabbccd
 
 def _commit(binding_id, raw, **kw):
     return commit_vault_alert_observations(
-        binding_id=binding_id, alerts=raw, hmac_key=KEY, now=AT, **kw,
+        binding_id=binding_id,
+        alerts=raw,
+        hmac_key=KEY,
+        now=AT,
+        **kw,
     )
 
 
@@ -105,7 +117,9 @@ def test_qualified_commit_and_read_only_emit_opaque_allowlisted_evidence(accepte
     output = _commit(binding.id, [_alert(vault.id)])
     assert output == {'state': 'qualified', 'observed_rows': 1}
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=str(vault.id), signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=str(vault.id),
+        signal_key=SIGNAL_KEY,
     ).one()
     assert snapshot.status == 'ready'
     assert snapshot.payload_json['source_integration_id'] == source.id
@@ -119,8 +133,15 @@ def test_qualified_commit_and_read_only_emit_opaque_allowlisted_evidence(accepte
     assert entry['severity'] == 'warning'
     assert set(entry) == {'handle', 'source_state', 'severity', 'starts_at'}
     committed = repr(snapshot.payload_json)
-    for private in ('SECRET-NAME', '/kv/path', 'aabbccddeeff1234',
-                    'secret-value-never-store', repr(KEY), 'annotations', 'labels'):
+    for private in (
+        'SECRET-NAME',
+        '/kv/path',
+        'aabbccddeeff1234',
+        'secret-value-never-store',
+        repr(KEY),
+        'annotations',
+        'labels',
+    ):
         assert private not in committed
     assert repr(KEY) not in repr(result)
 
@@ -130,12 +151,15 @@ def test_per_alert_handles_are_deterministic_within_same_origin(accepted_source)
     _commit(binding.id, [_alert(vault.id)])
     first = read_vault_alert_observations(binding_id=binding.id, now=AT)['entries'][0]['handle']
     output = commit_vault_alert_observations(
-        binding_id=binding.id, alerts=[_alert(vault.id)], hmac_key=KEY,
+        binding_id=binding.id,
+        alerts=[_alert(vault.id)],
+        hmac_key=KEY,
         now=AT + timedelta(minutes=1),
     )
     assert output['state'] == 'qualified'
     second = read_vault_alert_observations(
-        binding_id=binding.id, now=AT + timedelta(minutes=1),
+        binding_id=binding.id,
+        now=AT + timedelta(minutes=1),
     )['entries'][0]['handle']
     assert first == second
 
@@ -154,19 +178,23 @@ def test_empty_provider_sample_is_unobserved_not_recovery(accepted_source):
     _vault, _source, binding = accepted_source
     assert _commit(binding.id, [])['state'] == 'unobserved'
     assert read_vault_alert_observations(binding_id=binding.id, now=AT) == {
-        'state': 'unobserved', 'entries': None,
+        'state': 'unobserved',
+        'entries': None,
     }
 
 
-@pytest.mark.parametrize('modify', [
-    lambda alert: {**alert, 'labels': {**alert['labels'], 'vault_instance': '999'}},
-    lambda alert: {**alert, 'labels': {**alert['labels'], 'severity': 'raw-sensitive'}},
-    lambda alert: {**alert, 'status': {'state': 'resolved'}},
-    lambda alert: {**alert, 'fingerprint': 'SECRET-PATH'},
-    lambda alert: {**alert, 'startsAt': '2026-10-23T01:00:00'},
-    lambda alert: {**alert, 'startsAt': '2026-10-23T04:00:00Z'},
-    lambda alert: {**alert, 'startsAt': 'malformed-source'},
-])
+@pytest.mark.parametrize(
+    'modify',
+    [
+        lambda alert: {**alert, 'labels': {**alert['labels'], 'vault_instance': '999'}},
+        lambda alert: {**alert, 'labels': {**alert['labels'], 'severity': 'raw-sensitive'}},
+        lambda alert: {**alert, 'status': {'state': 'resolved'}},
+        lambda alert: {**alert, 'fingerprint': 'SECRET-PATH'},
+        lambda alert: {**alert, 'startsAt': '2026-10-23T01:00:00'},
+        lambda alert: {**alert, 'startsAt': '2026-10-23T04:00:00Z'},
+        lambda alert: {**alert, 'startsAt': 'malformed-source'},
+    ],
+)
 def test_unsafe_alert_rows_fail_closed_and_discard_payload(accepted_source, modify):
     vault, _source, binding = accepted_source
     _commit(binding.id, [_alert(vault.id)])
@@ -178,24 +206,35 @@ def test_unsafe_alert_rows_fail_closed_and_discard_payload(accepted_source, modi
     )
     assert result['state'] == 'blocked'
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=str(vault.id), signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=str(vault.id),
+        signal_key=SIGNAL_KEY,
     ).one()
     assert snapshot.status == 'failed'
     assert snapshot.payload_json is None
     assert 'SECRET' not in str(snapshot.last_error)
-    assert read_vault_alert_observations(
-        binding_id=binding.id, now=AT + timedelta(minutes=1),
-    )['state'] == 'unavailable'
+    assert (
+        read_vault_alert_observations(
+            binding_id=binding.id,
+            now=AT + timedelta(minutes=1),
+        )['state']
+        == 'unavailable'
+    )
 
 
 def test_duplicated_occurrence_and_high_cardinality_are_rejected(accepted_source):
     vault, _source, binding = accepted_source
     alert = _alert(vault.id)
     assert _commit(binding.id, [alert, alert])['state'] == 'blocked'
-    assert commit_vault_alert_observations(
-        binding_id=binding.id, alerts=[alert] * 101, hmac_key=KEY,
-        now=AT + timedelta(minutes=1),
-    )['state'] == 'blocked'
+    assert (
+        commit_vault_alert_observations(
+            binding_id=binding.id,
+            alerts=[alert] * 101,
+            hmac_key=KEY,
+            now=AT + timedelta(minutes=1),
+        )['state']
+        == 'blocked'
+    )
 
 
 def test_disabled_or_ambiguous_source_fails_closed(accepted_source):
@@ -228,12 +267,18 @@ def test_missing_key_or_untrusted_timestamp_cannot_write(accepted_source):
     vault, _source, binding = accepted_source
     with pytest.raises(ValueError, match='correlation key'):
         commit_vault_alert_observations(
-            binding_id=binding.id, alerts=[_alert(vault.id)], hmac_key=b'weak', now=AT,
+            binding_id=binding.id,
+            alerts=[_alert(vault.id)],
+            hmac_key=b'weak',
+            now=AT,
         )
     with pytest.raises(ValueError, match='timezone-aware'):
         commit_vault_alert_observations(
-            binding_id=binding.id, alerts=[_alert(vault.id)], hmac_key=KEY,
-            now=AT, observed_at=AT.replace(tzinfo=None),
+            binding_id=binding.id,
+            alerts=[_alert(vault.id)],
+            hmac_key=KEY,
+            now=AT,
+            observed_at=AT.replace(tzinfo=None),
         )
     assert AlertSignalSnapshot.query.count() == 0
 
@@ -242,12 +287,14 @@ def test_stale_snapshot_and_disabled_vault_are_unknown(accepted_source):
     vault, _source, binding = accepted_source
     _commit(binding.id, [_alert(vault.id)])
     assert read_vault_alert_observations(
-        binding_id=binding.id, now=AT + timedelta(minutes=6),
+        binding_id=binding.id,
+        now=AT + timedelta(minutes=6),
     ) == {'state': 'stale', 'entries': None}
     vault.enabled = False
     db.session.commit()
     assert read_vault_alert_observations(
-        binding_id=binding.id, now=AT,
+        binding_id=binding.id,
+        now=AT,
     ) == {'state': 'unavailable', 'entries': None}
 
 
@@ -255,15 +302,19 @@ def test_tampered_committed_evidence_never_becomes_qualified(accepted_source):
     vault, _source, binding = accepted_source
     _commit(binding.id, [_alert(vault.id)])
     snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki', asset_key=str(vault.id), signal_key=SIGNAL_KEY,
+        domain='secrets_pki',
+        asset_key=str(vault.id),
+        signal_key=SIGNAL_KEY,
     ).one()
     altered = dict(snapshot.payload_json)
-    altered['entries'] = [{
-        'handle': 'x' * 64,
-        'severity': 'warning',
-        'source_state': 'firing',
-        'starts_at': '2026-10-23T01:00:00+00:00',
-    }]
+    altered['entries'] = [
+        {
+            'handle': 'x' * 64,
+            'severity': 'warning',
+            'source_state': 'firing',
+            'starts_at': '2026-10-23T01:00:00+00:00',
+        }
+    ]
     snapshot.payload_json = altered
     db.session.commit()
     assert read_vault_alert_observations(binding_id=binding.id, now=AT)['state'] == 'unavailable'
@@ -284,14 +335,16 @@ def test_identical_upstream_fingerprint_cannot_correlate_across_vaults(accepted_
     first_vault, _source, first_binding = accepted_source
     _commit(first_binding.id, [_alert(first_vault.id)])
     first_handle = read_vault_alert_observations(
-        binding_id=first_binding.id, now=AT,
+        binding_id=first_binding.id,
+        now=AT,
     )['entries'][0]['handle']
     second_vault = _instance('secrets_pki', 'vault')
     second_source = _instance('alert_source', 'alertmanager')
     second_binding = _scoped_binding(second_vault, second_source)
     _commit(second_binding.id, [_alert(second_vault.id)])
     second_handle = read_vault_alert_observations(
-        binding_id=second_binding.id, now=AT,
+        binding_id=second_binding.id,
+        now=AT,
     )['entries'][0]['handle']
     assert first_handle != second_handle
 
@@ -303,7 +356,8 @@ def test_binding_replaced_after_snapshot_cannot_reuse_old_source_identity(accept
     new_source = _instance('alert_source', 'alertmanager')
     new_binding = _scoped_binding(vault, new_source)
     assert read_vault_alert_observations(
-        binding_id=new_binding.id, now=AT,
+        binding_id=new_binding.id,
+        now=AT,
     ) == {'state': 'unavailable', 'entries': None}
 
 
@@ -331,9 +385,13 @@ def test_corrupt_or_foreign_source_provenance_cannot_be_read(accepted_source):
     ):
         row.payload_json = fake
         db.session.commit()
-        assert read_vault_alert_observations(
-            binding_id=binding.id, now=AT,
-        )['state'] == 'unavailable'
+        assert (
+            read_vault_alert_observations(
+                binding_id=binding.id,
+                now=AT,
+            )['state']
+            == 'unavailable'
+        )
 
 
 def test_untrusted_validation_sample_shape_is_not_a_valid_source(accepted_source):

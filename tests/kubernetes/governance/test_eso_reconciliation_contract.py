@@ -18,7 +18,8 @@ OWNER = [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': E
 
 def resource(*, ready='True', generation=3, observed_generation=None):
     payload = {
-        'apiVersion': 'external-secrets.io/v1beta1', 'kind': 'ExternalSecret',
+        'apiVersion': 'external-secrets.io/v1beta1',
+        'kind': 'ExternalSecret',
         'metadata': {'uid': ESO_UID, 'namespace': 'private-team', 'generation': generation, 'name': 'hidden'},
         'spec': {'target': {'name': 'reusable'}, 'data': [{'remoteRef': {'key': 'vault/private/path'}}]},
         'status': {
@@ -35,12 +36,17 @@ def resource(*, ready='True', generation=3, observed_generation=None):
 def evaluate(raw=None, **overrides):
     receipt = normalize_eso_readback(resource() if raw is None else raw, cluster_id='cluster-a', observed_at=NOW)
     kwargs = {
-        'target_cluster_id': 'cluster-a', 'target_namespace': 'private-team',
-        'target_secret_uid': SECRET_UID, 'current_secret_uid': SECRET_UID,
-        'target_fingerprint_sha256': 'a' * 64, 'target_owner_refs': OWNER,
+        'target_cluster_id': 'cluster-a',
+        'target_namespace': 'private-team',
+        'target_secret_uid': SECRET_UID,
+        'current_secret_uid': SECRET_UID,
+        'target_fingerprint_sha256': 'a' * 64,
+        'target_owner_refs': OWNER,
         'target_observed_at': NOW - timedelta(minutes=4),
         'current_identity_observed_at': NOW - timedelta(minutes=2),
-        'controller_source_state': 'ready', 'tls_source_state': 'ready', 'now': NOW,
+        'controller_source_state': 'ready',
+        'tls_source_state': 'ready',
+        'now': NOW,
     }
     kwargs.update(overrides)
     return qualify_eso_reconciliation(receipt, **kwargs)
@@ -69,44 +75,50 @@ def test_crd_secret_names_paths_and_spec_never_leave_normalizer():
     assert not hasattr(receipt, 'name')
 
 
-@pytest.mark.parametrize('mutation', [
-    lambda x: x['status'].update(observedGeneration=2),
-    lambda x: x['status'].pop('syncedResourceVersion'),
-    lambda x: x['status'].update(syncedResourceVersion=''),
-    lambda x: x['status'].update(syncedResourceVersion=' untrusted '),
-    lambda x: x['status'].pop('refreshTime'),
-    lambda x: x['status'].update(refreshTime=(NOW + timedelta(minutes=1)).isoformat()),
-    lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True'}] * 2),
-    lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True', 'observedGeneration': 2}]),
-    lambda x: x['status'].update(conditions=[{'type': 'Synced', 'status': 'True'}]),
-    lambda x: x['metadata'].update(uid='vault/../../secrets'),
-    lambda x: x['metadata'].update(generation=True),
-    lambda x: x.update(kind='SecretStore'),
-    lambda x: x.update(apiVersion='unapproved.io/v1'),
-])
+@pytest.mark.parametrize(
+    'mutation',
+    [
+        lambda x: x['status'].update(observedGeneration=2),
+        lambda x: x['status'].pop('syncedResourceVersion'),
+        lambda x: x['status'].update(syncedResourceVersion=''),
+        lambda x: x['status'].update(syncedResourceVersion=' untrusted '),
+        lambda x: x['status'].pop('refreshTime'),
+        lambda x: x['status'].update(refreshTime=(NOW + timedelta(minutes=1)).isoformat()),
+        lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True'}] * 2),
+        lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True', 'observedGeneration': 2}]),
+        lambda x: x['status'].update(conditions=[{'type': 'Synced', 'status': 'True'}]),
+        lambda x: x['metadata'].update(uid='vault/../../secrets'),
+        lambda x: x['metadata'].update(generation=True),
+        lambda x: x.update(kind='SecretStore'),
+        lambda x: x.update(apiVersion='unapproved.io/v1'),
+    ],
+)
 def test_unsupported_malformed_and_conflicting_status_is_unknown(mutation):
     raw = resource()
     mutation(raw)
     assert evaluate(raw).status == 'unknown'
 
 
-@pytest.mark.parametrize('override', [
-    {'target_cluster_id': 'cluster-b'},
-    {'target_namespace': 'other'},
-    {'current_secret_uid': REPLACED_UID},
-    {'current_secret_uid': None},
-    {'target_secret_uid': None},
-    {'target_owner_refs': None},
-    {'target_owner_refs': []},
-    {'target_owner_refs': [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': REPLACED_UID}]},
-    {'target_fingerprint_sha256': 'Z' * 64},
-    {'tls_source_state': 'partial'},
-    {'controller_source_state': 'stale'},
-    {'current_identity_observed_at': None},
-    {'current_identity_observed_at': NOW - timedelta(days=2)},
-    {'target_observed_at': NOW - timedelta(hours=2)},
-    {'now': NOW + timedelta(days=2)},
-])
+@pytest.mark.parametrize(
+    'override',
+    [
+        {'target_cluster_id': 'cluster-b'},
+        {'target_namespace': 'other'},
+        {'current_secret_uid': REPLACED_UID},
+        {'current_secret_uid': None},
+        {'target_secret_uid': None},
+        {'target_owner_refs': None},
+        {'target_owner_refs': []},
+        {'target_owner_refs': [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': REPLACED_UID}]},
+        {'target_fingerprint_sha256': 'Z' * 64},
+        {'tls_source_state': 'partial'},
+        {'controller_source_state': 'stale'},
+        {'current_identity_observed_at': None},
+        {'current_identity_observed_at': NOW - timedelta(days=2)},
+        {'target_observed_at': NOW - timedelta(hours=2)},
+        {'now': NOW + timedelta(days=2)},
+    ],
+)
 def test_recreated_uid_stale_source_and_cross_scope_evidence_is_unknown(override):
     result = evaluate(**override)
     assert result.status == 'unknown' and not result.delivery_proven

@@ -86,7 +86,8 @@ def _configure(monkeypatch, *, allowed: bool, active: bool = True, deleted: bool
     monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
     monkeypatch.setattr(approval_inbox, 'SecretRevealRequest', model)
     monkeypatch.setattr(
-        approval_inbox, 'url_for',
+        approval_inbox,
+        'url_for',
         lambda endpoint, **kwargs: '/secret-reveal/approvals?ticket=' + kwargs['pending_search'],
     )
     return queue
@@ -139,19 +140,18 @@ def test_secret_reveal_inbox_uses_tenant_style_composition_and_shared_deck():
     assert "app.extensions['kaori_secret_reveal_approval_work_inbox'] = get_secret_reveal_approval_work_inbox" in boot
     assert "current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')" in queries
     assert 'secret_reveal_inbox = secret_inbox_provider(user_id=user_id)' in queries
-    assert "secret_reveal_approval_inbox_items" in queries and panel
+    assert 'secret_reveal_approval_inbox_items' in queries and panel
     assert "tenant_approval_inbox['pending_count']" in queries
     assert "secret_reveal_inbox['pending_count']" in queries
     assert "secret_reveal_requester_inbox['ready_count']" in queries
     assert 'Protected Secret Reveal approval requests' in panel
     assert 'Review in Protected Secret Reveal' in panel
     assert 'hx-boost="false"' in panel
-    assert "kubernetes_secrets.approve_reveal" in source
+    assert 'kubernetes_secrets.approve_reveal' in source
     assert "SecretRevealRequest.status == 'pending'" in source
-    assert "SecretRevealRequest.expires_at > datetime.now(UTC)" in source
+    assert 'SecretRevealRequest.expires_at > datetime.now(UTC)' in source
     assert 'Secret value' not in panel
     assert 'from app.kubernetes.operations.secrets' not in queries
-
 
 
 def test_requester_sees_only_committed_approved_unexpired_own_work(monkeypatch):
@@ -178,7 +178,8 @@ def test_requester_sees_only_committed_approved_unexpired_own_work(monkeypatch):
 
     monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
     monkeypatch.setattr(
-        approval_inbox, 'url_for',
+        approval_inbox,
+        'url_for',
         lambda endpoint, **kw: '/reveal?reveal_view=' + kw['reveal_view'] + '&my_request_id=' + kw['my_request_id'],
     )
     queue_model = approval_inbox.SecretRevealRequest
@@ -225,7 +226,9 @@ def test_requester_without_reveal_permission_or_active_account_has_no_inbox_work
 
         monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
         assert approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42) == {
-            'items': [], 'ready_count': 0, 'total_count': 0,
+            'items': [],
+            'ready_count': 0,
+            'total_count': 0,
         }
         assert queue.conditions == ()
 
@@ -233,15 +236,15 @@ def test_requester_without_reveal_permission_or_active_account_has_no_inbox_work
 def test_requester_work_inbox_uses_shared_notification_deck_and_no_reveal_mutation():
     boot = (ROOT / 'app/bootstrap/blueprints.py').read_text(encoding='utf-8')
     queries = (ROOT / 'app/platform_operations/notifications/queries.py').read_text(encoding='utf-8')
-    panel = (
-        ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html'
-    ).read_text(encoding='utf-8')
+    panel = (ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html').read_text(
+        encoding='utf-8'
+    )
     source = (ROOT / 'app/kubernetes/operations/secrets/approval_inbox.py').read_text(encoding='utf-8')
     routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text(encoding='utf-8')
 
     assert "app.extensions['kaori_secret_reveal_requester_work_inbox'] = get_secret_reveal_requester_work_inbox" in boot
     assert "current_app.extensions.get('kaori_secret_reveal_requester_work_inbox')" in queries
-    assert "secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)" in queries
+    assert 'secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)' in queries
     assert "secret_reveal_requester_inbox['ready_count']" in queries
     assert "'secret_reveal_requester_inbox_items': secret_reveal_requester_inbox['items']" in queries
     assert "center.get('secret_reveal_requester_inbox_items', [])" in panel
@@ -249,7 +252,7 @@ def test_requester_work_inbox_uses_shared_notification_deck_and_no_reveal_mutati
     assert 'Ready to Reveal' in panel
     assert 'Open My Request' in panel
     assert 'hx-boost="false"' in panel
-    assert "SecretRevealRequest.requester_user_id == user_id" in source
+    assert 'SecretRevealRequest.requester_user_id == user_id' in source
     assert "SecretRevealRequest.status == 'approved'" in source
     assert "SecretRevealRequest.policy == 'approval_required'" in source
     assert "viewer.has_permission('kubernetes_secrets.reveal')" in source
@@ -257,7 +260,7 @@ def test_requester_work_inbox_uses_shared_notification_deck_and_no_reveal_mutati
     assert 'Secret value' not in panel
     assert 'from app.kubernetes.operations.secrets' not in queries
     assert "@permission_required('kubernetes_secrets.reveal')" in routes
-    assert "secret_reveal_requester_items" in panel.split('No assigned work', 1)[0]
+    assert 'secret_reveal_requester_items' in panel.split('No assigned work', 1)[0]
 
 
 def test_requester_active_work_requires_current_approved_owned_unexpired_state(monkeypatch):
@@ -295,7 +298,8 @@ def test_requester_active_work_requires_current_approved_owned_unexpired_state(m
     queue = ScopedQueue(record)
     names = ['requester_user_id', 'policy', 'status', 'expires_at', 'decided_at', 'id']
     monkeypatch.setattr(
-        approval_inbox, 'SecretRevealRequest',
+        approval_inbox,
+        'SecretRevealRequest',
         SimpleNamespace(query=queue, **{key: Field(key) for key in names}),
     )
     viewer = SimpleNamespace(
@@ -315,7 +319,8 @@ def test_requester_active_work_requires_current_approved_owned_unexpired_state(m
 
     monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
     monkeypatch.setattr(
-        approval_inbox, 'url_for',
+        approval_inbox,
+        'url_for',
         lambda endpoint, **kw: '/reveal?my_request_id=' + kw['my_request_id'],
     )
 

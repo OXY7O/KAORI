@@ -546,8 +546,7 @@ def test_capsule_quota_profiles_fail_closed_on_unsupported_base_controls() -> No
     tenant = _tenant()
     quota_only = _profile()
     assert all(
-        item['state'] != 'unsupported'
-        for item in _validate_resource_profile_base_controls(quota_only, tenant).values()
+        item['state'] != 'unsupported' for item in _validate_resource_profile_base_controls(quota_only, tenant).values()
     )
 
     with_defaults = _profile()
@@ -565,4 +564,7 @@ def test_capsule_quota_profiles_fail_closed_on_unsupported_base_controls() -> No
     # The same profile dimensions remain admitted by the separate Native authority.
     native = SimpleNamespace(provider_key='native_kubernetes')
     assert _validate_resource_profile_base_controls(with_defaults, native)['container_defaults']['state'] == 'managed'
-    assert _validate_resource_profile_base_controls(with_pvc_guardrails, native)['pvc_storage_policy']['state'] == 'managed'
+    assert (
+        _validate_resource_profile_base_controls(with_pvc_guardrails, native)['pvc_storage_policy']['state']
+        == 'managed'
+    )

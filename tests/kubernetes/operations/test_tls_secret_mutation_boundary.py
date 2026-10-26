@@ -144,7 +144,9 @@ def test_tls_patch_rereads_live_target_and_runs_one_dry_run_then_one_mutation(
 
     version = mutation.patch_tls_secret(
         SimpleNamespace(
-            cluster_id='cluster-1', namespace='default', secret_name='api-tls',
+            cluster_id='cluster-1',
+            namespace='default',
+            secret_name='api-tls',
             secret_uid='12345678-1234-4234-8234-123456789abc',
         ),
         b'certificate',
@@ -194,7 +196,8 @@ def test_tls_patch_rejects_recreated_secret_uid_before_dry_run(monkeypatch: pyte
     live = SimpleNamespace(
         type='kubernetes.io/tls',
         metadata=SimpleNamespace(resource_version='702', uid='12345678-1234-4234-8234-123456789abd'),
-        data={'tls.key': 'private'}, string_data=None,
+        data={'tls.key': 'private'},
+        string_data=None,
     )
     calls: list[object] = []
     api = SimpleNamespace(
@@ -205,10 +208,13 @@ def test_tls_patch_rejects_recreated_secret_uid_before_dry_run(monkeypatch: pyte
     with pytest.raises(ValueError, match='recreated since collection'):
         mutation.patch_tls_secret(
             SimpleNamespace(
-                cluster_id='cluster-1', namespace='default', secret_name='api-tls',
+                cluster_id='cluster-1',
+                namespace='default',
+                secret_name='api-tls',
                 secret_uid='12345678-1234-4234-8234-123456789abc',
             ),
-            b'certificate', b'private-key',
+            b'certificate',
+            b'private-key',
         )
     assert calls == []
     assert live.data is None
@@ -230,7 +236,8 @@ def test_tls_patch_requires_qualified_uid_on_both_sides(
     live = SimpleNamespace(
         type='kubernetes.io/tls',
         metadata=SimpleNamespace(resource_version='702', uid=live_uid),
-        data={}, string_data=None,
+        data={},
+        string_data=None,
     )
     calls: list[object] = []
     api = SimpleNamespace(
@@ -241,10 +248,13 @@ def test_tls_patch_requires_qualified_uid_on_both_sides(
     with pytest.raises(ValueError, match='identity evidence'):
         mutation.patch_tls_secret(
             SimpleNamespace(
-                cluster_id='cluster-1', namespace='default', secret_name='api-tls',
+                cluster_id='cluster-1',
+                namespace='default',
+                secret_name='api-tls',
                 secret_uid=committed_uid,
             ),
-            b'certificate', b'private-key',
+            b'certificate',
+            b'private-key',
         )
     assert calls == []
     assert live.data is None
@@ -257,10 +267,9 @@ def test_bulk_preflight_qualifies_uid_without_patching_secret(
     mutation.db.session.get = lambda model, cluster_id: SimpleNamespace(id=cluster_id)
     live = SimpleNamespace(
         type='kubernetes.io/tls',
-        metadata=SimpleNamespace(
-            resource_version='801', uid='12345678-1234-4234-8234-123456789abc'
-        ),
-        data={'tls.key': 'private'}, string_data=None,
+        metadata=SimpleNamespace(resource_version='801', uid='12345678-1234-4234-8234-123456789abc'),
+        data={'tls.key': 'private'},
+        string_data=None,
     )
     calls: list[object] = []
     api = SimpleNamespace(
@@ -268,12 +277,15 @@ def test_bulk_preflight_qualifies_uid_without_patching_secret(
         patch_namespaced_secret=lambda **kwargs: calls.append(kwargs),
     )
     monkeypatch.setattr(
-        mutation, 'build_kubernetes_client',
+        mutation,
+        'build_kubernetes_client',
         lambda cluster: SimpleNamespace(core_api=lambda: api),
     )
     version = mutation.preflight_tls_secret(
         SimpleNamespace(
-            cluster_id='cluster-1', namespace='default', secret_name='api-tls',
+            cluster_id='cluster-1',
+            namespace='default',
+            secret_name='api-tls',
             secret_uid='12345678-1234-4234-8234-123456789abc',
         )
     )

@@ -106,15 +106,9 @@ def test_expiry_window_remains_distinct_from_future_valid_from() -> None:
 
 
 def test_registry_and_tls_detail_explain_expiry_only_policy() -> None:
-    registry = (
-        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_table.html'
-    ).read_text()
-    detail = (
-        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html'
-    ).read_text()
-    standard = (
-        ROOT / 'docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md'
-    ).read_text()
+    registry = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_table.html').read_text()
+    detail = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html').read_text()
+    standard = (ROOT / 'docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md').read_text()
     assert 'Expiry-window posture' in registry
     assert 'check Valid From' in registry
     assert 'Expiry-window posture only' in detail
