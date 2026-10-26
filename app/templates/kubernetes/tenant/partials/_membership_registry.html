@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% set registry_id = "tenant-membership-registry" %}
 {% set loading_id = "tenant-membership-registry-loading" %}
 {% set query_params = {
@@ -154,7 +155,17 @@
                                       hx-disabled-elt="find button"
                                       class="flex justify-end">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit"
+                                    <button id="tenant-membership-revoke-submit-{{ membership.id }}"
+                                            type="submit"
+                                            class="hidden"
+                                            tabindex="-1"
+                                            aria-hidden="true">Confirm Membership Revoke</button>
+                                    <button type="button"
+                                            data-destructive-modal-open
+                                            data-destructive-modal-id="tenant-membership-revoke-modal"
+                                            data-destructive-submit-button-id="tenant-membership-revoke-submit-{{ membership.id }}"
+                                            data-destructive-target="{{ membership.subject_name }}"
+                                            data-destructive-scope="{{ membership.tenant.name }}"
                                             {% if not can_manage %}disabled aria-disabled="true"{% endif %}
                                             class="{{ table_ui.action_classes(true) }}">
                                         <i data-lucide="user-x" class="h-4 w-4" aria-hidden="true"></i>
@@ -178,6 +189,17 @@
                                         <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
                                         Reactivate
                                     </button>
+                                    {% if membership.principal_type not in ['user', 'group'] %}
+                                        {{ info_tip.render('membership-reactivate-' ~ membership.id,
+                                            'Reactivation unavailable',
+                                            'This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead.',
+                                            placement='left') }}
+                                    {% elif not can_manage %}
+                                        {{ info_tip.render('membership-reactivate-permission-' ~ membership.id,
+                                            'Reactivation requires permission',
+                                            'You do not have permission to manage Tenant Memberships.',
+                                            placement='left') }}
+                                    {% endif %}
                                 </form>
                             {% endif %}
                         </td>
@@ -207,3 +229,18 @@
         page_param='membership_page',
         per_page_param='membership_per_page') }}
 </section>
+{{ destructive_modal.render('tenant-membership-revoke-modal',
+    'Revoke Membership',
+    'Selected principal',
+    'KAORI preserves the Membership record and its authorization history.',
+    'tenant-membership-revoke-submit',
+    action_label='Revoke Membership',
+    notice='Revoke disables this Membership and dependent grants; restoring identity later does not restore previously revoked access.',
+    scope_value='Tenant Membership',
+    impact_items=[
+        ('user-x', 'Revoke Membership', 'The selected principal is no longer authorized through this Tenant Membership.'),
+        ('shield-x', 'Revoke dependent grants', 'Active Access Grants are revoked and their provider cleanup is reconciled.'),
+        ('history', 'Keep audit history', 'Membership and Access Grant evidence remain queryable for review.')
+    ],
+    warning='Review the principal and Tenant before confirming this governed access change.',
+    access_chrome=true) }}
