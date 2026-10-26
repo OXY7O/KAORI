@@ -64,7 +64,17 @@ def test_bot_controls_have_external_text_heading_and_one_harmonized_hub() -> Non
     assert 'data-auth-bot-form="configuration"' in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab
-    assert 'data-auth-bot-step-context="safety"' in tab
+    assert 'data-auth-bot-step-note="safety"' in tab
+
+
+def test_unconfigured_manager_sees_no_redundant_verify_helper() -> None:
+    tab = bot_tab()
+    assert 'Save complete provider configuration to make testing available.' not in tab
+    assert '{% elif not can_manage_authentication_security %}' in tab
+    assert 'Provider verification requires manage permission.' in tab
+    assert '{% if can_manage_authentication_security and bot_has_secret and bot_site_key and bot_hostname %}' in tab
+    assert 'data-auth-bot-form="verification-test"' in tab
+    assert 'data-auth-bot-step-note="verification"' in tab
 
 
 def test_bot_configuration_retains_only_supported_modes_and_safe_mutation() -> None:
