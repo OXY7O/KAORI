@@ -10,29 +10,49 @@
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">
-                        {% if page_key == 'top_consumers' %}
-                            Consumer Records
-                        {% elif page_key == 'capacity' %}
-                            Bucket Capacity Records
+            <div class="flex min-w-0 items-start gap-3">
+                {% if page_key == 'capacity' %}
+                    <span class="{{ table_ui.block_icon_classes() }}"
+                          aria-hidden="true">
+                        <i data-lucide="boxes" class="h-5 w-5"></i>
+                    </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">
+                            {% if page_key == 'top_consumers' %}
+                                Consumer Records
+                            {% elif page_key == 'capacity' %}
+                                Bucket Capacity Records
+                            {% else %}
+                                Bucket Request Path Records
+                            {% endif %}
+                        </h2>
+                        {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted {{ 'xl:whitespace-nowrap' if page_key == 'capacity' else 'max-w-4xl' }}">
+                        {% if page_key == 'capacity' %}
+                            Review usage, objects, and quotas; Inventory fills only supported missing bucket metrics.
+                        {% elif page_key == 'performance' %}
+                            Review bucket requests and errors. Request metrics never fall back to Inventory; labels distinguish missing series, unscraped metrics, and query failure.
                         {% else %}
-                            Bucket Request Path Records
+                            Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
                         {% endif %}
-                    </h2>
-                    {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
+                    </p>
                 </div>
-                <p class="mt-1 text-sm leading-6 text-content-muted {{ 'xl:whitespace-nowrap' if page_key == 'capacity' else 'max-w-4xl' }}">
-                    {% if page_key == 'capacity' %}
-                        Review usage, objects, and quotas; Inventory fills only supported missing bucket metrics.
-                    {% elif page_key == 'performance' %}
-                        Review bucket requests and errors. Request metrics never fall back to Inventory; labels distinguish missing series, unscraped metrics, and query failure.
-                    {% else %}
-                        Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
-                    {% endif %}
-                </p>
             </div>
+            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all'))) %}
+                <div class="flex shrink-0 items-center justify-end">
+                    {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
+                    target='#object-storage-bucket-table-panel',
+                    indicator='#object-storage-bucket-table-loading-indicator',
+                    sync='#object-storage-bucket-table-panel:replace',
+                    lead=false
+                    ) }}
+                </div>
+            {% endif %}
         </div>
         {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records') ) }}
     </header>
@@ -90,15 +110,6 @@
                         {% endfor %}
                     </select>
                 </div>
-            {% endif %}
-            {% if bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) %}
-                {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
-                table_ui.action_classes() ~ ' h-10 px-4',
-                hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
-                target='#object-storage-bucket-table-panel',
-                indicator='#object-storage-bucket-table-loading-indicator',
-                sync='#object-storage-bucket-table-panel:replace'
-                ) }}
             {% endif %}
         </form>
         <div class="overflow-x-auto">
