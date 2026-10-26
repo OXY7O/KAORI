@@ -184,7 +184,6 @@ Feature: Central Object Storage Analytics Data & Evidence
     Given a committed "<boundary>" observation of <observed>
     When KAORI evaluates its current operating boundary
     Then the boundary severity is "<severity>"
-    And an observed zero remains a valid observation rather than missing evidence
 
     Examples:
       | boundary            | observed | severity |
@@ -198,6 +197,14 @@ Feature: Central Object Storage Analytics Data & Evidence
       | Waiting Requests    | 1        | Warning  |
       | Offline Storage Nodes | 0      | Normal   |
       | Offline Storage Nodes | 1      | Critical |
+
+  Scenario: Observed zero is Normal and never confused with missing samples
+    Given committed waiting requests and offline node observations are both zero
+    And the committed request error ratio is 0.0 percent
+    When KAORI evaluates all four operating boundaries
+    Then these three observed boundaries show "Normal" with a measured zero
+    And any boundary without committed evidence independently shows "Unknown"
+    And an observed zero remains a valid observation rather than missing evidence
 
   Scenario: Missing anomaly evidence remains Unknown independently
     Given only one of the four boundary metrics has a committed observation
