@@ -154,16 +154,22 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
-    content_tabs = _read(ROOT / 'app/templates/components/content_tabs.html')
+    framed_tabs = _read(ROOT / 'app/templates/components/framed_workspace_tabs.html')
 
-    assert 'content_tabs.render_links(' in runtime
+    assert 'framed_tabs.render_navigation(' in runtime
     assert 'data-kaori-github-runtime-registry-tabs' in runtime
     assert 'id="github-runtime-evidence-registry"' in runtime
     assert "runtime_view == 'deliveries'" in runtime
     assert 'runtime_table_embedded = true' in runtime
     assert runtime.count('partials/_runtime_jobs.html') == 1
     assert runtime.count('partials/_runtime_deliveries.html') == 1
-    assert 'render_links(' in content_tabs
+    assert 'render_navigation(' in framed_tabs
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed_tabs
+    assert "hx_target='#github-runtime-evidence-registry'" in runtime
+    assert "hx_select='#github-runtime-evidence-registry'" in runtime
+    assert "hx_push_url='true'" in runtime
+    assert "('jobs', 'Recent Jobs', 'history'" in runtime
+    assert "('deliveries', 'Signed Webhook Deliveries', 'webhook'" in runtime
     for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
         assert f'data-kaori-runtime-registry-view="{kind}"' in page
         assert f"runtime_view='{kind}'" in page
@@ -192,3 +198,15 @@ def test_github_committed_repository_registry_is_full_width_sibling():
     assert 'inventory.total is none' in registry
     assert 'inventory.total == 0' in registry
     assert 'exact_default_branch_sha' in registry
+
+
+def test_runtime_health_uses_approved_labeled_guide_header():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    header = _read(ROOT / 'app/templates/components/connection_validation_header.html')
+    assert 'components/info_tip.html' in runtime
+    assert 'title_extra=info_tip.render(' in runtime
+    assert "'github-runtime-health-guide'" in runtime
+    assert "placement='right', variant='guide'" in runtime
+    assert 'title_extra=None' in header
+    assert '{% if title_extra %}{{ title_extra }}{% endif %}' in header
+    assert 'Signed webhook deliveries are transport evidence' in runtime
