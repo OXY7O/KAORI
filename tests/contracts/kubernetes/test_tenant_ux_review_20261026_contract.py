@@ -96,5 +96,5 @@ def test_unavailable_namespace_scope_does_not_echo_long_credential_identity() ->
     assert 'detail_row.static_detail_row(' in registry
     assert '_namespace_access_detail.html' in registry
     assert 'data-tenant-namespace-access-detail' in detail
-    assert 'access.get(\'service_account_name\')' in detail
+    assert "access.get('service_account_name')" in detail
     assert 'min-w-[1400px]' not in registry

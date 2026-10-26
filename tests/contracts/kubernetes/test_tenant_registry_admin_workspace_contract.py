@@ -2085,8 +2085,10 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
     assert "variant == 'critical'" in action
     assert 'bg-status-critical' in action
     for filename, routes in (
-        ('_credential_row_detail.html', ('renew_credential_route', 'resume_credential_route',
-                                         'suspend_credential_route', 'revoke_credential_route')),
+        (
+            '_credential_row_detail.html',
+            ('renew_credential_route', 'resume_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
+        ),
         ('_access_grant_row_detail.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
     ):
         detail = read(f'app/templates/kubernetes/tenant/partials/{filename}')
