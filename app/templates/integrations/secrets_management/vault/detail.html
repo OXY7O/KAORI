@@ -24,7 +24,7 @@
                 {% endcall %}
             </div>
             {{ posture.render("Vault connection posture", "Vault API Readiness",
-               "Ready" if readiness == "ready" else "Attention", "shield-check", "Vault API",
+               "Ready" if readiness == "ready" else ("Attention" if readiness in ["blocked", "degraded"] else "Configured"), "shield-check", "Vault API",
                readiness|replace("_"," ")|title, "Produced by Full Validation", "layers-3",
                "Validated Capabilities", (instance.capabilities or [])|length, "Observed provider APIs",
                url_for('vault.index'), posture_key='vault') }}

@@ -12,7 +12,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
-from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
@@ -21,6 +20,7 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.client impo
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
+from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.integration import IntegrationInstance
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
