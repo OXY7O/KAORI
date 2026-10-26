@@ -38,7 +38,7 @@ def test_mfa_guide_precedes_two_responsive_enrollment_cards() -> None:
     assert 'Scan the QR code or enter the setup key into a compatible TOTP application.' not in html
     assert 'whitespace-nowrap' not in html
     assert 'data-account-mfa-recovery-layout="action-context"' in html
-    assert 'xl:grid-cols-12 xl:items-start' in html
+    assert 'xl:grid-cols-12 xl:items-stretch' in html
     assert 'xl:col-span-7' in html  # Enrolled recovery only.
     assert 'xl:col-span-5' in html  # Enrolled recovery only.
     assert 'How to Activate MFA' in html
@@ -54,9 +54,9 @@ def test_mfa_guide_precedes_two_responsive_enrollment_cards() -> None:
 
 def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     html = source()
-    assert html.count('class="max-w-md"') == 1  # Enrolled recovery password only.
+    assert 'class="max-w-md"' not in html
     assert 'class="max-w-[21rem]"' not in html
-    assert 'class="max-w-sm"' in html  # Enrolled recovery verification remains bounded.
+    assert 'class="max-w-sm"' not in html  # Both recovery inputs now share one inline row.
     enrollment = html.split('data-account-mfa-steps="paired"', 1)[1].split(
         'data-account-mfa-recovery-layout="action-context"', 1
     )[0]
@@ -75,6 +75,36 @@ def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     assert 'pattern="[0-9]{6}"' in html
     assert 'maxlength="6"' in html
     assert 'autocomplete="one-time-code"' in html
+
+
+
+def test_mfa_recovery_regeneration_has_symmetric_cards_and_inline_form() -> None:
+    html = source()
+    recovery = html.split('data-account-mfa-recovery-layout="action-context"', 1)[1]
+    assert 'grid gap-4 xl:grid-cols-12 xl:items-stretch' in html
+    assert 'xl:col-span-7' in recovery
+    assert 'xl:col-span-5' in recovery
+    assert 'data-account-mfa-recovery-security="equal-height"' in recovery
+    assert 'data-account-mfa-regenerate-form="inline"' in recovery
+    assert 'class="mt-5 grid gap-3 lg:grid-cols-12 lg:items-end"' in recovery
+    assert 'min-w-0 lg:col-span-4' in recovery
+    assert "'lg:col-span-4' if can_change_password else 'lg:col-span-8'" in recovery
+    assert 'min-h-11 w-full items-center justify-center' in recovery
+    assert 'data-account-mfa-recovery-steps="compact"' in recovery
+    assert 'mt-auto pt-5' in recovery
+    assert 'sm:grid-cols-3' in recovery
+    for title in ('Verify your identity', 'Generate new codes', 'Save your new codes'):
+        assert title in recovery
+    assert recovery.index('id="mfa-regen-password"') < recovery.index('id="mfa-regen-code"')
+    assert recovery.index('id="mfa-regen-code"') < recovery.index('Regenerate Recovery Codes</span>')
+    assert 'flex flex-1 flex-col divide-y divide-outline-subtle' in recovery
+    assert 'Password and authenticator/recovery code required.' in recovery
+    assert 'Fresh sign-in and authenticator/recovery code required.' in recovery
+    assert 'Regeneration invalidates all unused recovery codes.' in recovery
+    assert 'Save new codes now; KAORI cannot show them again.' in recovery
+    assert 'whitespace-nowrap' not in recovery
+    assert 'Current-password verification and a valid authenticator' not in recovery
+    assert 'Save the replacement codes immediately when shown.' not in recovery
 
 
 def test_mfa_sensitive_mutations_keep_original_server_contracts() -> None:
