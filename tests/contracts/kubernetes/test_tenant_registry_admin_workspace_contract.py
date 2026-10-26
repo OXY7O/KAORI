@@ -302,7 +302,9 @@ def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_h
     assert 'Remove this grant while keeping the Membership intact.' in detail
     assert 'aria-label="Governed grant actions"' in detail
     assert 'Grant Context' in detail
-    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' in detail
+    assert 'sm:grid-cols-2 lg:grid-cols-4' in detail
+    assert 'lg:grid-cols-2' in detail
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' not in detail
     assert 'tenant.reconcile_access_grant_route' in detail
     assert 'tenant.revoke_access_grant_route' in detail
     assert 'No membership or RBAC mutation' in capsule
@@ -332,8 +334,11 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert '_access_grant_registry.html' in workspace
     assert 'name="access_inventory_view" value="grants"' in registry
     assert "'access_inventory_view': 'grants'" in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
     assert "query_params={'section': 'access-grants', 'access_inventory_view': 'grants'}" in registry
-    assert registry.count('name="access_inventory_view" value="grants"') == 4
+    # Registry owns Inspect/filter state; Reconcile and Revoke live in expanded evidence.
+    assert registry.count('name="access_inventory_view" value="grants"') == 2
+    assert detail.count('name="access_inventory_view" value="grants"') == 2
     assert "'grants', 'capsule', 'native'" in routes
     assert "access_inventory_view='capsule'" in workspace
     assert "access_inventory_view='native'" in workspace
@@ -593,7 +598,7 @@ def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
 def test_overview_operational_attention_has_section_intro_above_card() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
     assert 'components/section_intro.html' in overview
-    assert "aria-labelledby=\"tenant-operational-oversight-heading\"" in overview
+    assert 'aria-labelledby="tenant-operational-oversight-heading"' in overview
     assert "section_intro.render('Operational Oversight'," in overview
     assert 'Prioritized Tenant conditions and recent committed activity requiring operational review.' in overview
     assert "'tenant-operational-oversight-heading')" in overview
@@ -2109,7 +2114,12 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
     for filename, routes in (
         (
             '_credential_row_detail.html',
-            ('renew_credential_route', 'resume_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
+            (
+                'renew_credential_route',
+                'resume_credential_route',
+                'suspend_credential_route',
+                'revoke_credential_route',
+            ),
         ),
         ('_access_grant_row_detail.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
     ):
@@ -2120,7 +2130,8 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
             assert "action_button.classes('critical')" in detail
             assert "action_button.classes('secondary', full=true)" not in detail
             assert "action_button.classes('critical', full=true)" not in detail
-            assert 'class="mt-3 flex justify-end"' in detail
+            assert detail.count('class="ml-auto shrink-0"') == 2
+            assert 'lg:grid-cols-2' in detail
         else:
             assert "action_button.classes('secondary', full=true)" in detail
             assert "action_button.classes('critical', full=true)" in detail
@@ -2136,5 +2147,3 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
         assert 'detail_row.static_detail_row(' in source
         assert 'View Details' in source
         assert 'data-dialog-target="credential-more-actions-' not in source
-
-
