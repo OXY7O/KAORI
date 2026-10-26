@@ -96,6 +96,71 @@ def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
     assert 'partials/_performance_analysis.html' in performance
 
 
+def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contracts() -> None:
+    outlook = read(f'{PARTIALS}/_forecast_analysis.html')
+    workspace = read(f'{PARTIALS}/_forecast_workspace.html')
+    trend = read(f'{PARTIALS}/_trend.html')
+    buckets = read(f'{PARTIALS}/_bucket_forecasts.html')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    worker = read(f'{PARTIALS}/_forecast_worker_status.html')
+
+    for source, guide in (
+        (outlook, 'object-storage-forecast-operating-boundary-guide'),
+        (trend, 'object-storage-storage-usage-forecast-'),
+        (buckets, 'object-storage-bucket-forecast-watch-guide'),
+        (worker, 'object-storage-forecast-worker-refresh-guide'),
+    ):
+        assert 'components/info_tip.html' in source
+        assert 'info_tip.render(' in source
+        assert guide in source
+        assert "variant='guide'" in source
+
+    assert 'object_storage_trend_instance = "outlook"' in outlook
+    assert 'object_storage_trend_instance = "trend"' in workspace
+    assert "object_storage_trend_instance|default('trend')" in trend
+    assert 'Operational Reading' not in outlook
+    assert 'interpretation_callout(' not in outlook
+    for field in (
+        'metrics.forecast_display.growth_per_day',
+        'metrics.forecast_display.projected_7d',
+        'metrics.forecast_display.projected_30d',
+        'metrics.forecast_display.days_to_capacity',
+    ):
+        assert field in outlook
+
+    assert "compact_forecast_workspace = page_key == 'forecast' and trend_mode == 'forecast'" in trend
+    assert 'compact_overview_trend = compact_usage_overview or compact_forecast_overview or compact_forecast_workspace' in trend
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
+    assert 'data-object-storage-overview-trend-summary' in trend
+    assert 'data-object-storage-projection-points' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'data-object-storage-chart-container' in trend
+    assert 'Historical Growth / Day' in trend
+    assert "data-object-storage-capacity-trend-facts" in trend
+    assert "compact_usage_overview = page_key == 'overview' and trend_mode == 'usage'" in trend
+
+    separate_table = (
+        '</section>\n{% if bucket_forecasts %}\n'
+        '    {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}'
+    )
+    assert separate_table in buckets
+    assert 'data-object-storage-bucket-forecast-chart-panel' in buckets
+    assert "bucket_forecast_summary.ready_count|default(0)" in buckets
+    assert 'analysis_surface.evidence_shell_classes()' in records
+    assert 'data-kaori-object-storage-bucket-forecast-table' in records
+    assert 'table_ui.block_icon_classes()' in records
+    assert 'xl:whitespace-nowrap' in records
+    assert 'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.' in records
+    assert 'object-storage-bucket-forecast-table-loading-indicator' in records
+    assert 'forecast_bucket_per_page' in records
+    assert 'registry_ui.clear_filters_action' in records
+    assert 'analytics.object_storage_bucket_forecast_table' in records
+    assert 'forecast_history_state' in records
+    assert 'forecast_watch' in records
+    assert 'data-object-storage-forecast' not in worker
+    assert 'forecast_materialization.generated_at' in worker
+
+
 def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -> None:
     analysis = read(f'{PARTIALS}/_capacity_analysis.html')
     capacity = read(f'{PARTIALS}/_capacity_workspace.html')
@@ -327,6 +392,11 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_reconciliation.html',
         '_controls.html',
         '_recommendations_workspace.html',
+        '_forecast_analysis.html',
+        '_forecast_worker_status.html',
+        '_bucket_forecasts.html',
+        '_bucket_forecast_table.html',
+        '_trend.html',
     ):
         jinja.from_string(read(f'{PARTIALS}/{filename}'))
     jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
