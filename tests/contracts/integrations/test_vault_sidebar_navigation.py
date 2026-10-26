@@ -51,7 +51,7 @@ def test_active_sidebar_has_exactly_one_authorized_secrets_management_child(monk
     assert item['active']
     assert [entry['key'] for entry in item['children']] == [
         'overview', 'orchestration', 'observability', 'storage',
-        'registry', 'secrets_management', 'notifications',
+        'registry', 'secrets_management', 'source_control', 'notifications',
     ]
 
 

@@ -12,22 +12,31 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
+from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import (
+    issue_proof,
+    verified_secret,
+)
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import (
+    save_connection,
+    test_connection,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
-from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.integration import IntegrationInstance
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
-from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
-from app.security.credentials import CredentialEncryptionError
+from app.platform_operations.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.secrets_pki.pki_presentation import pki_public_readiness
 from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
+from app.security.credentials import CredentialEncryptionError
 
 logger = logging.getLogger(__name__)
 vault_bp = Blueprint('vault', __name__, url_prefix='/integrations/secrets-management/secrets-pki/vault')
@@ -46,11 +55,13 @@ def _notification() -> dict:
 
 def _evidence(instance: VaultInstance) -> dict:
     validation_id = get_active_validation_task_id(
-        integration_type='secrets_pki', operation='full_validation',
+        integration_type='secrets_pki',
+        operation='full_validation',
         integration_instance_id=instance.integration_instance_id,
     )
     runtime_id = get_active_validation_task_id(
-        integration_type='secrets_pki', operation='runtime_refresh',
+        integration_type='secrets_pki',
+        operation='runtime_refresh',
         integration_instance_id=instance.integration_instance_id,
     )
     return {
@@ -83,7 +94,8 @@ def index() -> ResponseReturnValue:
     if readiness_filter:
         filtered = filtered.filter(IntegrationInstance.readiness_status == readiness_filter)
     instances, pagination = paginate_query(
-        filtered, page=request.args.get('page', 1, type=int) or 1,
+        filtered,
+        page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     enabled = query.filter(
@@ -145,8 +157,10 @@ def new_instance() -> ResponseReturnValue:
                     message = 'Vault registration failed; review endpoint, encryption key and connection name.'
                 else:
                     record_operational_activity(
-                        user_id=int(current_user.id), event_type='vault_connection_registered',
-                        status='success', title='Vault Connection Registered',
+                        user_id=int(current_user.id),
+                        event_type='vault_connection_registered',
+                        status='success',
+                        title='Vault Connection Registered',
                         message='A Vault AppRole integration connection was registered.',
                         detail='Test Connection is not Full Validation; run provider validation next.',
                         action_url=url_for('vault.detail', instance_id=instance.id),
@@ -155,7 +169,11 @@ def new_instance() -> ResponseReturnValue:
                     return redirect(url_for('vault.detail', instance_id=instance.id))
     return render_template(
         'integrations/secrets_management/vault/form.html',
-        form=form, proof=proof, instance=None, message=message, notification_context=_notification(),
+        form=form,
+        proof=proof,
+        instance=None,
+        message=message,
+        notification_context=_notification(),
     )
 
 
@@ -192,8 +210,10 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                     message = 'Could not save Vault configuration; review the required encryption key.'
                 else:
                     record_operational_activity(
-                        user_id=int(current_user.id), event_type='vault_connection_updated',
-                        status='success', title='Vault Connection Updated',
+                        user_id=int(current_user.id),
+                        event_type='vault_connection_updated',
+                        status='success',
+                        title='Vault Connection Updated',
                         message='Vault connection configuration was saved.',
                         detail='Changed authentication or endpoint fields require a fresh Full Validation.',
                         action_url=url_for('vault.detail', instance_id=instance.id),
@@ -201,8 +221,12 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                     )
                     return redirect(url_for('vault.detail', instance_id=instance.id))
     return render_template(
-        'integrations/secrets_management/vault/form.html', form=form, instance=instance,
-        proof=proof, message=message, notification_context=_notification(),
+        'integrations/secrets_management/vault/form.html',
+        form=form,
+        instance=instance,
+        proof=proof,
+        message=message,
+        notification_context=_notification(),
     )
 
 
@@ -211,7 +235,8 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
 def detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     history, history_pagination = paginate_runtime_history(
-        'secrets_pki', str(instance.id),
+        'secrets_pki',
+        str(instance.id),
         page=request.args.get('history_page', 1, type=int) or 1,
         per_page=request.args.get('history_per_page', 5, type=int) or 5,
     )
@@ -225,15 +250,18 @@ def detail(instance_id: int) -> ResponseReturnValue:
     )
     return render_template(
         'integrations/secrets_management/vault/detail.html',
-        instance=instance, evidence=_evidence(instance),
+        instance=instance,
+        evidence=_evidence(instance),
         latest_runtime_observation=latest_runtime_observation,
         inventory_readiness=vault_inventory_readiness(instance),
         public_pki_readiness=pki_public_readiness(instance=instance),
         stored_cert_readiness=stored_pki_certificate_readiness(instance=instance),
-        runtime_history=history, runtime_history_pagination=history_pagination,
+        runtime_history=history,
+        runtime_history_pagination=history_pagination,
         can_view_secrets_pki=current_user.has_permission('secrets_pki.view'),
-        can_view_cert_analytics=(current_user.has_permission('secrets_pki.view')
-                                 and current_user.has_permission('analytics.view')),
+        can_view_cert_analytics=(
+            current_user.has_permission('secrets_pki.view') and current_user.has_permission('analytics.view')
+        ),
         notification_context=_notification(),
     )
 
@@ -246,14 +274,17 @@ def validate(instance_id: int) -> ResponseReturnValue:
         abort(409)
     try:
         enqueue_instance_validation(
-            integration_type='secrets_pki', integration_instance_id=instance.integration_instance_id,
+            integration_type='secrets_pki',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
         logger.exception('Vault validation could not be queued.')
         record_operational_activity(
-            user_id=int(current_user.id), event_type='vault_validation_queue_failed',
-            status='error', title='Vault Validation Not Queued',
+            user_id=int(current_user.id),
+            event_type='vault_validation_queue_failed',
+            status='error',
+            title='Vault Validation Not Queued',
             message='Verify Redis and the integration-validation worker.',
             detail='No Vault Full Validation job was admitted.',
             action_url=url_for('vault.detail', instance_id=instance.id),
@@ -270,14 +301,17 @@ def runtime_refresh(instance_id: int) -> ResponseReturnValue:
         abort(409)
     try:
         enqueue_runtime_health_refresh(
-            integration_type='secrets_pki', integration_instance_id=instance.integration_instance_id,
+            integration_type='secrets_pki',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
         logger.exception('Vault runtime refresh could not be queued.')
         record_operational_activity(
-            user_id=int(current_user.id), event_type='vault_runtime_queue_failed',
-            status='error', title='Vault Runtime Refresh Not Queued',
+            user_id=int(current_user.id),
+            event_type='vault_runtime_queue_failed',
+            status='error',
+            title='Vault Runtime Refresh Not Queued',
             message='Verify Redis and the integration-runtime worker.',
             detail='No Vault runtime refresh job was admitted.',
             action_url=url_for('vault.detail', instance_id=instance.id),
