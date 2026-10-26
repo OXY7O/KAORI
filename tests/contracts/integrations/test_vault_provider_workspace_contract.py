@@ -137,3 +137,9 @@ def test_vault_registration_reuses_actions_without_changing_proof_or_credentials
     assert 'enqueue_runtime_health_refresh(' in routes
     assert 'IntegrationRuntimeObservation.query.filter_by(' in routes
     assert 'latest_runtime_observation=latest_runtime_observation' in routes
+
+def test_vault_readiness_metadata_follows_existing_integration_lock():
+    validation = _partial('_detail_validation.html')
+    assert '{% set capability_metadata = [' in validation
+    assert "'Profile · Vault AppRole' if is_ready else 'No Committed Validation'" in validation
+    assert 'capability_metadata,' in validation
