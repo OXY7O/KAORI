@@ -105,6 +105,7 @@ def test_uat_templates_keep_committed_unknown_vs_zero_and_htmx_pagination():
     prefix = root / 'app/templates/integrations/source_control/github'
     inventory = (prefix / '_inventory_table.html').read_text()
     detail = (prefix / 'uat_detail.html').read_text()
+    validation = (prefix / 'partials/_detail_validation.html').read_text()
     assert 'inventory.total is none' in inventory
     assert 'inventory.total == 0' in inventory
     assert 'hx-target="#source-control-inventory"' in inventory
@@ -112,7 +113,7 @@ def test_uat_templates_keep_committed_unknown_vs_zero_and_htmx_pagination():
     assert 'hx-trigger="every 15s"' in inventory
     assert 'exact_default_branch_sha' in inventory
     assert 'revision_observed_at' in inventory
-    assert 'action_form.hidden_tag()' in detail
+    assert 'action_form.hidden_tag()' in validation
     assert 'integrations/components/_workspace.html' in detail
     assert '<style' not in inventory and '<style' not in detail
 
@@ -174,6 +175,9 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     root = Path(__file__).resolve().parents[2]
     detail = (root / 'app/templates/integrations/source_control/github/uat_detail.html').read_text()
     kernel = (root / 'app/integrations/source_control/source_control/providers/github/kernel_contract.py').read_text()
+    validation = (
+        root / 'app/templates/integrations/source_control/github/partials/_detail_validation.html'
+    ).read_text()
 
     provider_rows = (root / 'app/templates/integrations/partials/_domain_workspace.html').read_text()
     domain_service = (root / 'app/integrations/domain_service.py').read_text()
@@ -188,9 +192,9 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     assert 'provider_detail_posture.render(' in detail
     assert 'framed_workspace_tabs.render(' in detail
     assert 'url_for("github_source.index", tab="registry")' in detail
-    assert 'GitHub Full Validation' in detail
-    assert 'action_form.hidden_tag()' in detail
-    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
+    assert 'GitHub Full Validation' in validation
+    assert 'action_form.hidden_tag()' in validation
+    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
     assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in detail
     assert "readiness != 'ready'" in detail
     assert 'integrations/source_control/github/_inventory_table.html' in detail
@@ -247,6 +251,9 @@ def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -
         / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
     ).read_text()
     readiness = (root / 'app/integrations/source_control/source_control/providers/github/readiness.py').read_text()
+    validation = (
+        root / 'app/templates/integrations/source_control/github/partials/_detail_validation.html'
+    ).read_text()
 
     assert 'partials/_minimum_validation_permissions.html' in detail
     assert 'data-kaori-github-minimum-validation-permissions' in github
@@ -276,7 +283,7 @@ def test_github_minimum_validation_permissions_reuse_kubernetes_modal_family() -
     assert 'https://github.com/settings/installations' not in detail
     assert 'Configure Connection' in detail
     assert "url_for('github_source.new_connection')" not in detail
-    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in detail
+    assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
     assert 'GitHub permission changes require fresh Full Validation' in detail
 
 

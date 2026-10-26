@@ -1,0 +1,76 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
+{% set validation_observed = capability_summary.observed %}
+{% set validated_count = capability_summary.verified %}
+{% set total_count = capability_summary.total %}
+{% set readiness_percent = ((validated_count * 100 / total_count)|round(0, 'floor')|int) if total_count else 0 %}
+{% set provider_ready = readiness == 'ready' and validation_observed and capability_summary.required_missing == 0 %}
+{% set capability_metrics = [
+    {'icon': 'list-checks', 'tone': 'normal', 'label': 'Permission Verified', 'value': validated_count, 'description': 'App read permissions verified by committed Full Validation.' if validation_observed else 'No Full Validation evidence committed.'},
+    {'icon': 'shield-x', 'tone': 'critical' if validation_observed and capability_summary.required_missing else 'info', 'label': 'Required Gaps', 'value': capability_summary.required_missing if validation_observed else '—', 'description': 'Required Metadata and Contents read permissions.' if validation_observed else 'Not assessed until Full Validation.'},
+    {'icon': 'git-branch', 'tone': 'normal', 'label': 'Optional Coverage', 'value': capability_summary.optional_verified if validation_observed else '—', 'description': 'Optional read scopes, not proof of operational collection.'}
+] %}
+{% set capability_metadata = [('Profile · ' ~ capability_summary.profile) if validation_observed else 'No Committed Validation'] %}
+{% if not validation_observed %}
+    {% set next_action = 'Run Full Validation to assess GitHub App installation permissions.' %}
+{% elif not provider_ready %}
+    {% set next_action = 'Review missing GitHub App permissions and rerun Full Validation.' %}
+{% else %}
+    {% set next_action = 'Synchronize repositories separately to commit grants and exact source revisions.' %}
+{% endif %}
+<section class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
+         data-kaori-github-validation-workspace
+         data-kaori-provider-capability-matrix>
+    {% call connection_validation_header.render(
+        'GitHub Full Validation',
+        'Validate GitHub App installation identity and read permission contracts; repository evidence is synchronized separately.',
+        icon='scan-search'
+        ) %}
+        <form method="post"
+              action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}">
+            {{ action_form.hidden_tag() }}
+            <button type="submit" class="{{ action_button.classes('primary') }}">
+                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                Run Full Validation
+            </button>
+        </form>
+    {% endcall %}
+    <div class="space-y-4 p-4 sm:p-5">
+        {{ capability_readiness.render('GitHub Provider Readiness',
+                'Committed App permission evidence determines installation readiness.',
+                readiness if validation_observed else 'validation_required',
+                (readiness|replace('_', ' ')|title) if validation_observed else 'Not Validated',
+                'Permission-Verified Capabilities',
+                (validated_count ~ ' / ' ~ total_count) if validation_observed else 'Not Validated',
+                readiness_percent,
+                capability_metadata,
+                capability_metrics,
+                'Provider Ready' if provider_ready else ('Validation Required' if not validation_observed else 'Review Required Permissions'),
+                'Metadata and Contents read permissions are verified.' if provider_ready else ('No committed Full Validation evidence yet.' if not validation_observed else 'Current readiness or required permission coverage needs review.'),
+                'normal' if provider_ready else ('info' if not validation_observed else 'critical'),
+                'Full Validation assesses App permissions; GitHub owns grants; repository synchronization owns committed repository and SHA evidence.',
+                next_action
+                ) }}
+        {% if provider_ready %}
+            {% set decision_title = 'Provider Readiness Is Ready' %}
+            {% set decision_body = 'GitHub App permissions are verified. Repository inventory remains a separate synchronization.' %}
+            {% set decision_tone = 'normal' %}
+        {% elif validation_observed %}
+            {% set decision_title = 'Why Readiness Needs Attention' %}
+            {% set decision_body = next_action %}
+            {% set decision_tone = 'warning' %}
+        {% else %}
+            {% set decision_title = 'Why Full Validation Is Required' %}
+            {% set decision_body = 'Registration and Test Connection do not establish capability readiness or committed repository inventory.' %}
+            {% set decision_tone = 'info' %}
+        {% endif %}
+        {{ readiness_explanation.render(decision_title,
+                decision_body,
+                decision_tone,
+                [(capability_summary.required_missing ~ ' required gaps') if validation_observed else 'Required gaps not assessed',
+                 (capability_summary.optional_verified ~ ' optional scopes verified') if validation_observed else 'Optional scopes not assessed']) }}
+        {% include "integrations/source_control/github/partials/_capability_registry.html" %}
+    </div>
+</section>

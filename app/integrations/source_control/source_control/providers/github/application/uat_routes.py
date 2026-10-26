@@ -17,8 +17,12 @@ from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.integrations.capability_registry import build_capability_registry_view
 from app.extensions.db import db
 from app.integrations.source_control.repository_inventory import read_installation_inventory
+from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
+    github_capability_context,
+)
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionEditForm,
     GitHubInstallationSuccessorForm,
@@ -86,6 +90,24 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     return {'inventory': inventory, 'installation': installation}
 
 
+def _capability_context(canonical) -> dict:
+    """Server-backed registry from committed Full Validation, not a live GitHub GET."""
+    context = github_capability_context(canonical)
+    context['capability_registry'] = build_capability_registry_view(
+        context['capability_rows'],
+        query=request.args.get('query', ''),
+        requirement=request.args.get('requirement', 'all'),
+        status=request.args.get('status', 'all'),
+        page=request.args.get('page', 1, type=int),
+        per_page=request.args.get('per_page', 5, type=int),
+        search_fields=('label', 'category', 'description'),
+        distinguish_optional_gap=True,
+        distinguish_unverified=True,
+    )
+    context['capability_total'] = len(context['capability_rows'])
+    return context
+
+
 @github_uat_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
@@ -107,6 +129,8 @@ def index() -> ResponseReturnValue:
 def detail(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     canonical = installation.integration_instance
+    if canonical is None:
+        abort(409)
     jobs = (
         JobExecution.query.filter(
             or_(
@@ -122,6 +146,7 @@ def detail(installation_id: int) -> ResponseReturnValue:
         'integrations/source_control/github/uat_detail.html',
         **_inventory_context(installation),
         canonical=canonical,
+        **_capability_context(canonical),
         jobs=jobs,
         deliveries=(
             SourceWebhookDelivery.query.filter_by(installation_id=installation.id)
@@ -131,6 +156,22 @@ def detail(installation_id: int) -> ResponseReturnValue:
         ),
         action_form=FlaskForm(),
         feedback=request.args.get('feedback', ''),
+    )
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/validation/capabilities')
+@permission_required('integrations.manage')
+def capability_registry(installation_id: int) -> ResponseReturnValue:
+    """Filter committed GitHub permission evidence under existing UAT scope."""
+    installation = _installation_or_404(installation_id)
+    canonical = installation.integration_instance
+    if canonical is None:
+        abort(409)
+    return _response(
+        'integrations/source_control/github/partials/_capability_registry.html',
+        installation=installation,
+        canonical=canonical,
+        **_capability_context(canonical),
     )
 
 

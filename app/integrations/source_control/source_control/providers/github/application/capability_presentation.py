@@ -94,6 +94,15 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
             if unavailable
             else 'No committed Full Validation permission assessment is available for this capability.'
         )
+        status_key = (
+            'ready'
+            if verified
+            else 'unverified'
+            if not observed
+            else 'blocked'
+            if required
+            else 'optional_gap'
+        )
         rows.append(
             {
                 'key': capability.key,
@@ -103,7 +112,7 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
                 'required': required,
                 'available': verified,
                 'status_label': label,
-                'status_key': 'ready' if verified else ('unverified' if not observed else 'blocked' if required else 'optional_gap'),
+                'status_key': status_key,
                 'status_tone': 'normal' if verified else ('warning' if not observed else 'critical' if required else 'warning'),
                 'status_icon': 'circle-check' if verified else 'circle-help' if not observed else 'triangle-alert',
                 'probe': 'GitHub App installation permission assessment from committed Full Validation.',
