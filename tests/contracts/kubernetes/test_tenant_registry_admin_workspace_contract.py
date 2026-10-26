@@ -353,7 +353,8 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
         assert 'Provider Authority' in panel
         assert 'Inspection Target' in panel
         assert 'Inspection Evidence' in panel
-        assert '<details class="group min-w-0">' in panel
+        assert '_provider_access_evidence_rows.html' in panel
+        assert 'table_label.result_count(access_evidence_pagination.total_items)' in panel
         assert 'read-only' in panel.lower()
         assert 'bg-surface-hover px-5 py-4' in panel
 
@@ -361,18 +362,19 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
     assert 'recent_capsule_access_remediation' in capsule
     assert 'recent_native_access_remediation' in native
-    assert 'No committed external-access inspection yet.' in capsule
-    assert 'No committed Native RBAC observation yet.' in native
+    rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'No committed external-access inspection yet.' in rows
+    assert 'No committed Native RBAC observation yet.' in rows
     assert 'observe_capsule_external_access_route' in capsule
     assert 'observe_native_external_access_route' in native
     assert 'components/action_button.html' in native
     assert 'components/table_label.html' in native
     assert 'name="tenant_id"' in capsule
     assert 'name="tenant_id"' in native
-    assert 'Review Profile Match' in capsule
-    assert 'Review Profile Match' in native
-    assert 'Analyze Access Drift' in capsule
-    assert 'Analyze Native Access Drift' in native
+    assert 'Review Profile Match' in detail
+    assert 'Analyze Access Drift' in detail
+    assert 'Analyze Native Access Drift' in detail
 
 
 def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:

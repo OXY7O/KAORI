@@ -1,0 +1,235 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{# Committed provider evidence only. Static expansion uses the shared Intelligence disclosure runtime. #}
+<div class="bg-kaori-mist/40 px-4 py-4 sm:px-5" data-tenant-provider-evidence-detail>
+    <div class="min-w-0 overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold text-kaori-primary">Committed Access Observation</p>
+                <h5 class="mt-1 break-all text-sm font-semibold text-content-primary">
+                    {{ 'Capsule' if access_provider == 'capsule' else 'Native Kubernetes' }} · {{ evidence.tenant_id }}
+                </h5>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Inspected {{ event.created_at|user_datetime }} · Read-only provider snapshot; effective access is not reverified.
+                </p>
+            </div>
+            {{ table_label.metadata_label('Capsule' if access_provider == 'capsule' else 'Native Kubernetes', 'database') }}
+        </header>
+        <div class="grid min-w-0 divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            <section class="min-w-0 space-y-4 p-4 sm:p-5" aria-label="Observed provider access evidence">
+                <div>
+                    <h6 class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Provider Authority
+                    </h6>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ 'Capsule remains the owner of provider-side authorization.' if access_provider == 'capsule' else 'Kubernetes remains authoritative for Namespace RBAC.' }}
+                    </p>
+                </div>
+                {% if access_provider == 'capsule' %}
+                    <dl class="grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2">
+                        <div class="min-w-0">
+                            <dt class="text-xs text-content-muted">Capsule UID</dt>
+                            <dd class="mt-1 break-all font-mono text-xs text-content-primary">{{ evidence.provider_uid }}</dd>
+                        </div>
+                        <div class="min-w-0">
+                            <dt class="text-xs text-content-muted">Resource Version</dt>
+                            <dd class="mt-1 text-sm font-medium text-content-primary">{{ evidence.resource_version }}</dd>
+                        </div>
+                    </dl>
+                    <div>
+                        <h6 class="text-sm font-semibold text-content-primary">Observed Capsule Owners</h6>
+                        <div class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                            {% for owner in evidence.owners %}
+                                <p class="break-all px-3 py-2.5 text-sm text-content-secondary">
+                                    {{ owner.kind }} / {{ owner.name }}
+                                </p>
+                            {% else %}
+                                <p class="px-3 py-3 text-xs text-content-muted">No provider owners recorded in this observation.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-semibold text-content-primary">Provider Bindings</h6>
+                        <div class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                            {% for binding in evidence.bindings %}
+                                <div class="space-y-2 p-3">
+                                    <p class="break-all text-sm font-semibold text-content-primary">
+                                        {{ binding.cluster_role_name or 'Unknown ClusterRole' }}
+                                    </p>
+                                    <p class="text-xs text-content-muted">
+                                        {{ binding.source }} · {{ binding.ownership|title }}
+                                        · {{ binding.governance|replace('_', ' ')|title }}
+                                    </p>
+                                    {% for subject in binding.subjects %}
+                                        <p class="break-all font-mono text-xs text-content-secondary">
+                                            {{ subject.kind }} / {{ subject.name }}
+                                            {% if subject.namespace %}· {{ subject.namespace }}{% endif %}
+                                        </p>
+                                    {% else %}
+                                        <p class="text-xs text-content-muted">No subjects recorded for this binding.</p>
+                                    {% endfor %}
+                                    {% if can_manage and binding.ownership == 'external' %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.review_external_capsule_profile_route') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="access_inventory_view" value="capsule">
+                                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                            <input type="hidden" name="binding_index" value="{{ loop.index0 }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                                Review Profile Match
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <p class="px-3 py-3 text-xs text-content-muted">No provider bindings observed.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div>
+                        <h6 class="text-sm font-semibold text-content-primary">Observed Namespaces</h6>
+                        <div class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                            {% for namespace in evidence.namespaces %}
+                                <div class="space-y-1 p-3">
+                                    <p class="break-all text-sm font-semibold text-content-primary">{{ namespace.name }}</p>
+                                    <p class="break-all font-mono text-xs text-content-muted">
+                                        UID {{ namespace.uid }} · RV {{ namespace.resource_version }}
+                                    </p>
+                                </div>
+                            {% else %}
+                                <p class="px-3 py-3 text-xs text-content-muted">No governed namespaces observed.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-semibold text-content-primary">Observed RoleBindings</h6>
+                        <div class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                            {% for binding in evidence.bindings %}
+                                <div class="space-y-2 p-3">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="break-all text-sm font-semibold text-content-primary">{{ binding.namespace }} / {{ binding.name }}</p>
+                                            <p class="mt-1 break-all font-mono text-xs text-content-muted">{{ binding.role_ref.kind }} / {{ binding.role_ref.name }}</p>
+                                        </div>
+                                        {{ table_label.status_label(binding.ownership|replace('_', ' ')|title,
+                                            'info' if binding.ownership == 'kaori_correlated' else 'warning', size='compact') }}
+                                    </div>
+                                    {% for subject in binding.subjects %}
+                                        <p class="break-all font-mono text-xs text-content-secondary">
+                                            {{ subject.kind }} / {{ subject.name }}
+                                            {% if subject.namespace %}· {{ subject.namespace }}{% endif %}
+                                        </p>
+                                    {% endfor %}
+                                    {% if binding.claimed_grant_marker %}
+                                        <p class="break-all text-xs text-content-muted">
+                                            Unverified KAORI marker: {{ binding.claimed_grant_marker }}
+                                        </p>
+                                    {% endif %}
+                                    <p class="break-all text-xs text-content-muted">
+                                        UID {{ binding.uid }} · RV {{ binding.resource_version }}
+                                    </p>
+                                    {% if can_manage and binding.ownership == 'external_observed' %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.review_external_native_profile_route') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="access_inventory_view" value="native">
+                                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                            <input type="hidden" name="namespace" value="{{ binding.namespace }}">
+                                            <input type="hidden" name="binding_uid" value="{{ binding.uid }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                                Review Profile Match
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <p class="px-3 py-3 text-xs text-content-muted">No namespaced RoleBindings observed in the governed scope.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">
+                        Labels indicate possible correlation, not provider ownership or effective permissions.
+                        External principals remain authoritative at Kubernetes/IdP.
+                    </p>
+                {% endif %}
+            </section>
+            <section class="min-w-0 space-y-4 bg-surface-elevated p-4 sm:p-5"
+                     aria-label="Drift and governed next actions">
+                <div>
+                    <h6 class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <i data-lucide="triangle-alert" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Drift Findings
+                    </h6>
+                    {% if drift_event %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Latest independently committed analysis:
+                            {{ drift_event.created_at|user_datetime }}.
+                            This is not the inspection timestamp.
+                        </p>
+                        <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                            <p class="text-sm font-semibold text-content-primary">{{ drift.finding_count }} finding(s)</p>
+                            {% for finding in drift.findings or [] %}
+                                <div class="mt-2 border-t border-outline-subtle pt-2">
+                                    <p class="text-xs font-semibold text-content-primary">
+                                        {{ finding.code|replace('_', ' ')|title }}
+                                    </p>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
+                                        {{ finding.subject }} · {{ finding.action }}
+                                    </p>
+                                </div>
+                            {% else %}
+                                <p class="mt-2 text-xs text-content-muted">No findings recorded in this analysis.</p>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            No committed drift analysis for this Tenant. This does not establish zero findings.
+                        </p>
+                    {% endif %}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                        Declaration correlation only. Effective RBAC was not reverified.
+                        No automatic remediation was performed.
+                    </p>
+                </div>
+                {% if can_manage %}
+                    <div class="border-t border-outline-subtle pt-4">
+                        <h6 class="text-sm font-semibold text-content-primary">Available Actions</h6>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Review committed evidence before taking governed action.
+                        </p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <form method="post"
+                                  action="{{ url_for('tenant.analyze_capsule_external_access_route' if access_provider == 'capsule' else 'tenant.analyze_native_access_drift_route') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="access_inventory_view" value="{{ access_provider }}">
+                                <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                <button type="submit"
+                                        aria-label="{{ 'Analyze Access Drift' if access_provider == 'capsule' else 'Analyze Native Access Drift' }} for {{ evidence.tenant_id }}"
+                                        class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="scan-eye" class="h-4 w-4" aria-hidden="true"></i>
+                                    Analyze Drift
+                                </button>
+                            </form>
+                            {% if drift_event %}
+                                <form method="post"
+                                      action="{{ url_for('tenant.plan_capsule_access_remediation_route') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="access_inventory_view" value="{{ access_provider }}">
+                                    <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                    <button type="submit" class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
+                                        Prepare Remediation Decisions
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</div>

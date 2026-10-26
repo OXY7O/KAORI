@@ -6,8 +6,8 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_native_foreign_role_equivalence_is_review_only_and_provider_authoritative():
     service = (ROOT / 'app/kubernetes/tenant/external_access_profile_equivalence.py').read_text()
     routes = (ROOT / 'app/kubernetes/tenant/routes_access.py').read_text()
-    template = (ROOT / 'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html').read_text()
-    native_template = (ROOT / 'app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html').read_text()
+    template = (ROOT / 'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html').read_text()
+    native_template = template
     context = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text()
     assert "'import_authorized': False" in service
     assert "'effective_rbac_verified': False" in service

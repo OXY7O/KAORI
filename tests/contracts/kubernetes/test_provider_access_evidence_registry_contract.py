@@ -24,9 +24,9 @@ def test_provider_access_evidence_queries_are_committed_and_paged() -> None:
     assert "AuditEvent.metadata_json['status'].as_string()" in service
     assert "AuditEvent.metadata_json['tenant_id'].as_string().ilike(pattern)" in service
     assert 'AuditEvent.summary.ilike(pattern)' in service
-    assert "func.row_number()" in service
-    assert "drift_types[provider]" in service
-    assert "tenant_key.in_(tenant_ids)" in service
+    assert 'func.row_number()' in service
+    assert 'drift_types[provider]' in service
+    assert 'tenant_key.in_(tenant_ids)' in service
     assert "'access_evidence_drift_by_tenant': drift_by_tenant" in service
     assert 'get_provider_access_evidence_registry_context(' in routes
     assert "if active_view in {'capsule', 'native'}" in routes
@@ -48,19 +48,19 @@ def test_both_provider_registries_reuse_standard_filter_and_pagination() -> None
         assert "registry_ui.footer('tenant.tenants'" in panel
         assert "page_param='access_evidence_page'" in panel
         assert "per_page_param='access_evidence_per_page'" in panel
-        assert "access_evidence_pagination.allowed_per_page" in panel
+        assert 'access_evidence_pagination.allowed_per_page' in panel
         assert "'access_inventory_view': '" + provider + "'" in panel
         assert 'name="access_inventory_view" value="' + provider + '"' in panel
-        assert '{% for event in access_evidence_rows %}' in panel
+        assert '_provider_access_evidence_rows.html' in panel
         assert 'access_evidence_filters.status' in panel
         assert 'access_evidence_filters.search' in panel
         assert 'name="access_evidence_status"' in panel
         assert "'access_evidence_search'" in panel
         assert 'access_evidence_total }} records' in panel
-        assert 'sm:min-h-52 sm:py-12' in panel
-        assert 'No matching inspections found.' in panel
+        assert 'table_label.result_count(access_evidence_pagination.total_items)' in panel
+        assert 'No matching inspections found.' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
         assert 'role="status"' in panel
-        assert 'event.created_at|user_datetime' in panel
+        assert 'event.created_at|user_datetime' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
 
 
 def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> None:
@@ -73,8 +73,10 @@ def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> Non
     assert 'No automatic remediation was performed.' in native
     assert 'Inspect External Access' in capsule
     assert 'Inspect Native RBAC' in native
-    assert 'Review Profile Match' in capsule
-    assert 'Review Profile Match' in native
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'Review Profile Match' in detail
+    assert 'tenant.review_external_capsule_profile_route' in detail
+    assert 'tenant.review_external_native_profile_route' in detail
     for panel in (capsule, native):
         assert 'name="csrf_token"' in panel
         assert 'Not inspected' in panel
