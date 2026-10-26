@@ -40,6 +40,9 @@ def build_bucket_table_view(
     search = str(query_args.get('bucket_q') or '').strip()
     quota_state = str(query_args.get('bucket_quota_state') or 'all').strip().lower()
     quota_pressure = str(query_args.get('bucket_quota_pressure') or 'all').strip().lower()
+    usage_context = str(query_args.get('bucket_usage_context') or 'all').strip().lower()
+    if page_key != 'performance' or usage_context not in {'all', 'metrics', 'inventory', 'unavailable'}:
+        usage_context = 'all'
     if page_key != 'capacity' or quota_state not in {'all', 'configured', 'not_configured', 'unknown'}:
         quota_state = 'all'
     if page_key != 'capacity' or quota_pressure not in {'all', 'within', 'warning', 'critical'}:
@@ -49,6 +52,25 @@ def build_bucket_table_view(
     if search:
         needle = search.casefold()
         filtered = [row for row in filtered if needle in str(row.get('name') or '').casefold()]
+    if usage_context != 'all':
+        filtered = [
+            row
+            for row in filtered
+            if (
+                (usage_context == 'unavailable' and row.get('usage_bytes') is None)
+                or (
+                    usage_context == 'inventory'
+                    and row.get('usage_bytes') is not None
+                    and row.get('usage_source') == 'Committed Snapshot'
+                )
+                or (
+                    usage_context == 'metrics'
+                    and row.get('usage_bytes') is not None
+                    and row.get('usage_source') != 'Committed Snapshot'
+                )
+            )
+        ]
+
     if quota_state == 'configured':
         filtered = [row for row in filtered if row.get('quota_bytes') is not None]
     elif quota_state == 'not_configured':
@@ -88,6 +110,8 @@ def build_bucket_table_view(
         'bucket_q': search,
         'bucket_per_page': per_page,
     }
+    if page_key == 'performance':
+        query_params['bucket_usage_context'] = usage_context
     if page_key == 'capacity':
         query_params['bucket_quota_state'] = quota_state
         query_params['bucket_quota_pressure'] = quota_pressure
@@ -100,6 +124,7 @@ def build_bucket_table_view(
         'search': search,
         'quota_state': quota_state,
         'quota_pressure': quota_pressure,
+        'usage_context': usage_context,
         'pagination': {
             'page': page,
             'current_page': page,

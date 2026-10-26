@@ -31,8 +31,8 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
         ('missing time-series evidence falls back only where Inventory is explicitly supported.', boundary),
         ('Review usable capacity, consumption, headroom, and growth for the selected system.', capacity),
         ('Separate bucket governance pressure from physical capacity and spot storage concentration.', pressure),
-        ('Inventory is the explicit fallback when bucket metrics are absent.', buckets),
-        ('Request metrics never fall back to Inventory;', buckets),
+        ('Inventory fills only supported missing bucket metrics.', buckets),
+        ('Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.', buckets),
         (
             'Review S3 demand and reliability, then correlate queues, inflight work, node availability, '
             'and throughput.',
@@ -126,12 +126,12 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
 
     assert 'Committed inventory; provider configuration and live health remain integration-owned.' in system_detail
     assert 'Committed alerts from the selected provider.' in overview_alerts
-    assert 'Inflight requests indicate work, not pressure without a concurrency limit.' in performance
-    assert 'Waiting requests and offline nodes determine posture.' in performance
+    assert 'Inflight reflects work; waiting requests and offline nodes indicate pressure.' in performance
+    assert 'Waiting requests and offline nodes indicate pressure.' in performance
     assert '{{ metrics_source.provider_label }} range for {{ selected_time_range }}.' in trend
     assert 'Requests and errors remain separate; traffic alone is not unhealthy.' in trend
-    assert 'Request metrics never fall back to Inventory;' in buckets
-    assert 'missing series, unscraped metrics, and query failure.' in buckets
+    assert 'Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.' in buckets
+    assert 'missing samples, unscraped metrics, and query failures.' in buckets
     assert 'Inventory fallback is per field and only where supported.' in buckets
     assert 'Alertmanager/Metrics Source ALERTS report provider alerts;' in alert_summary
     assert 'If either evidence family is unavailable, posture stays Unknown' in alert_summary
@@ -294,7 +294,7 @@ def test_object_storage_evidence_summary_keeps_full_audit_and_unknown_states() -
     assert 'partials/_reconciliation.html' in context
     for state in ('Not Configured', 'No Current Samples', 'Metric Not Scraped', 'Runtime Query Failed'):
         assert state in context
-    assert 'Request and error metrics never fall back to Inventory.' in context
+    assert 'No Inventory fallback for request metrics.' in context
     assert 'Missing evidence stays Unknown' in context
     assert 'Additional Evidence Context' not in workspace
 

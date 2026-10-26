@@ -4,6 +4,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
+{% import "components/info_tip.html" as info_tip %}
 <section id="object-storage-bucket-table-panel"
          data-analytics-lazy-section="true"
          data-analytics-load-state="idle"
@@ -11,9 +12,9 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                {% if page_key == 'capacity' %}
+                {% if page_key in ['capacity', 'performance'] %}
                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                        <i data-lucide="boxes" class="h-5 w-5"></i>
+                        <i data-lucide="{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}" class="h-5 w-5"></i>
                     </span>
                 {% endif %}
                 <div class="min-w-0">
@@ -27,20 +28,31 @@
                                 Bucket Request Path Records
                             {% endif %}
                         </h2>
+                        {% if page_key == 'performance' %}
+                            {{ info_tip.render('object-storage-bucket-request-path-records-guide',
+                                                        'Bucket Request Path Records Guide',
+                                                        'This table compares committed per-bucket request and error signals with a separate usage context.',
+                                                        items=[
+                                                        'Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.',
+                                                        'Usage Context filters available Metrics Source, committed Inventory fallback, or unavailable usage observations.',
+                                                        'No Current Samples, Metric Not Scraped and Runtime Query Failed remain distinct evidence states; zero is not substituted for missing data.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
+                        {% endif %}
                         {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-muted {{ 'xl:whitespace-nowrap' if page_key == 'capacity' else 'max-w-4xl' }}">
+                    <p class="mt-1 text-sm leading-6 text-content-muted {{ 'xl:whitespace-nowrap' if page_key in ['capacity', 'performance'] else 'max-w-4xl' }}">
                         {% if page_key == 'capacity' %}
                             Review usage, objects, and quotas; Inventory fills only supported missing bucket metrics.
                         {% elif page_key == 'performance' %}
-                            Review bucket requests and errors. Request metrics never fall back to Inventory; labels distinguish missing series, unscraped metrics, and query failure.
+                            Review bucket requests and errors; source labels distinguish missing samples, unscraped metrics, and query failures.
                         {% else %}
                             Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
                         {% endif %}
                     </p>
                 </div>
             </div>
-            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all'))) %}
+            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) or (page_key == 'performance' and bucket_table.usage_context != 'all')) %}
                 <div class="flex shrink-0 items-center justify-end">
                     {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
                     table_ui.action_classes() ~ ' h-9 px-3',
@@ -84,6 +96,20 @@
                        class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>
                 {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
             </div>
+            {% if page_key == 'performance' %}
+                <div>
+                    <label for="object-storage-bucket-usage-context"
+                           class="{{ table_ui.filter_label_classes() }}">Usage Context</label>
+                    <select id="object-storage-bucket-usage-context"
+                            name="bucket_usage_context"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Usage Contexts'), ('metrics', 'Metrics Source'), ('inventory', 'Committed Inventory'), ('unavailable', 'Unavailable')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.usage_context == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
             {% if page_key == 'capacity' %}
                 <div>
                     <label for="object-storage-bucket-quota-state"

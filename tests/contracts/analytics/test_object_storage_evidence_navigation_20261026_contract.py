@@ -204,15 +204,15 @@ def test_capacity_workspace_recommendations_and_controls_use_title_level_kaori_g
     assert 'partials/_domain_evidence_context.html' in capacity
 
     assert 'components/info_tip.html' in recommendations
-    assert 'object-storage-capacity-recommendations-guide' in recommendations
-    assert "{% if page_key == 'capacity' %}" in recommendations
+    assert "'object-storage-' ~ page_key ~ '-recommendations-guide'" in recommendations
+    assert "{% if page_key == 'capacity' %}" not in recommendations
     assert '{{ recommendation_context_label }} Recommendations' in recommendations
     assert "placement='right', variant='guide'" in recommendations
     assert 'url_for(request.endpoint' in recommendations
 
-    assert 'object-storage-capacity-controls-readiness-guide' in controls
-    assert "if page_key == 'capacity' else ''" in controls
-    assert 'title_accessory=capacity_controls_guide' in controls
+    assert "'object-storage-analytics-controls-readiness-' ~ page_key ~ '-guide'" in controls
+    assert "if page_key == 'capacity' else ''" not in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
     assert 'data-analytics-controls-readiness' in shared
     assert "title_accessory=''" in shared
     assert '{% if title_accessory %}' in shared
@@ -220,6 +220,58 @@ def test_capacity_workspace_recommendations_and_controls_use_title_level_kaori_g
     assert '<h2 class="mt-1 {{ table_ui.block_title_classes() }}">{{ title }}</h2>' in shared
     assert 'hx-target="#object-storage-analytics-page"' in controls
     assert 'object-storage-capacity-workspace-guide' not in overview
+
+
+def test_performance_guides_copy_and_bucket_source_filter_follow_kaori_standard() -> None:
+    workspace = read(f'{PARTIALS}/_performance_workspace.html')
+    reliability = read(f'{PARTIALS}/_performance_analysis.html')
+    traffic = read(f'{PARTIALS}/_performance_traffic.html')
+    buckets = read(f'{PARTIALS}/_bucket_table.html')
+    recommendations = read(f'{PARTIALS}/_recommendations_workspace.html')
+    controls = read(f'{PARTIALS}/_controls.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
+
+    for source, guide_id in (
+        (workspace, 'object-storage-performance-workspace-guide'),
+        (reliability, 'object-storage-request-path-boundary-guide'),
+        (traffic, 'object-storage-throughput-request-direction-guide'),
+        (buckets, 'object-storage-bucket-request-path-records-guide'),
+    ):
+        assert guide_id in source
+        assert 'components/info_tip.html' in source
+        assert "variant='guide'" in source
+
+    assert 'Error ratio reflects reliability, not response latency or client experience.' in reliability
+    assert 'Inflight reflects work; waiting requests and offline nodes indicate pressure.' in reliability
+    assert 'metrics.error_ratio is not none' in reliability
+    assert 'Review boundary ≥ 5%' in reliability
+    assert 'Critical boundary ≥ 10%' in reliability
+    assert "metrics.performance.top_request_bucket_value ~ ' peak request rate · Coverage: '" in traffic
+    assert "metrics.performance.top_error_bucket_value ~ ' peak error ratio · Coverage: '" in traffic
+    assert 'metrics.performance.bucket_request_coverage_display' in traffic
+    assert 'metrics.performance.bucket_error_coverage_display' in traffic
+
+    assert "page_key in ['capacity', 'performance']" in buckets
+    assert "data-lucide=\"{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}\"" in buckets
+    assert 'Request metrics never fall back to Inventory' not in buckets
+    assert 'Request Rate and Error Rate are metrics-only' in buckets
+    assert "page_key == 'performance'" in buckets
+    assert 'name="bucket_usage_context"' in buckets
+    assert 'table_ui.filter_select_classes()' in buckets
+    assert 'registry_ui.clear_filters_action(' in buckets
+    assert 'lead=false' in buckets
+    assert "bucket_table.usage_context != 'all'" in buckets
+    assert 'bucket_usage_context' in service
+    assert "row.get('usage_source') == 'Committed Snapshot'" in service
+    assert "'tab': workspace_tab" not in service
+    assert "default=5" in service
+
+    assert "'object-storage-' ~ page_key ~ '-recommendations-guide'" in recommendations
+    assert 'data-object-storage-analytics-recommendations' in recommendations
+    assert "'object-storage-analytics-controls-readiness-' ~ page_key ~ '-guide'" in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert 'partials/_recommendations_workspace.html' not in overview
 
 
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:

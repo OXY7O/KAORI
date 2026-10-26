@@ -13,17 +13,15 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">{{ recommendation_context_label }} Recommendations</h3>
-                    {% if page_key == 'capacity' %}
-                        {{ info_tip.render('object-storage-capacity-recommendations-guide',
-                                                    'Capacity & Usage Recommendations Guide',
-                                                    'Recommendations are evidence-derived review guidance, not commands executed against the Object Storage provider.',
-                                                    items=[
-                                                    'Priority reflects the currently committed evidence and its source, not an independently confirmed incident.',
-                                                    'Review Evidence navigates to the owning analytics tab while preserving the selected system and observation window.',
-                                                    'If evidence is missing or stale, review source readiness before treating recommendations as operational actions.',
-                                                    ],
-                                                    placement='right', variant='guide') }}
-                    {% endif %}
+                    {{ info_tip.render('object-storage-' ~ page_key ~ '-recommendations-guide',
+                                                recommendation_context_label ~ ' Recommendations Guide',
+                                                'Evidence-derived recommendations are read-only review guidance, not commands sent to the provider.',
+                                                items=[
+                                                'Priority and suggested review areas are derived from the committed evidence for the selected system and window.',
+                                                'Review Evidence opens the owning analytics tab; a guidance item does not automatically mean an incident.',
+                                                'Missing, stale or incomplete sources require evidence review before operational action.',
+                                                ],
+                                                placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Contextual guidance derived from the committed evidence for this analytics workspace, selected system, and active observation window.</p>
             </div>
