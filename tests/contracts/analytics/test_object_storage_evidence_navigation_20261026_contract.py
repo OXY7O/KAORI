@@ -141,6 +141,34 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert 'dialog.close()' in controller
 
 
+def test_capacity_trend_and_quota_guides_reuse_shared_component_roles() -> None:
+    trend = read(f'{PARTIALS}/_trend.html')
+    pressure = read(f'{PARTIALS}/_capacity_pressure.html')
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+
+    assert 'object-storage-capacity-usage-trend-guide' in trend
+    assert "page_key == 'capacity' and trend_mode == 'usage'" in trend
+    assert 'data-object-storage-capacity-trend-facts' in trend
+    assert "analysis_surface.role_icon_classes('status', trend_summary.tone" in trend
+    assert "analysis_surface.role_icon_classes('insight', 'info', 'compact')" in trend
+    assert 'trend_summary.sample_count' in trend
+    assert 'trend_summary.delta_percent_display' in trend
+    assert 'object-storage-capacity-quota-pressure-guide' in pressure
+    assert "variant='guide'" in pressure
+    assert 'metrics.capacity_usage.quota_tone' in pressure
+    assert 'Inventory fills only supported missing bucket metrics.' in table
+    assert 'xl:whitespace-nowrap' in table
+    assert 'table_ui.filter_layout_classes()' in table
+    assert 'table_ui.filter_select_classes()' in table
+    assert 'bucket_quota_state' in table
+    assert 'bucket_quota_pressure' in table
+    assert 'clear_filters_action' in table
+    assert 'default=5' in service
+    assert "query_params['bucket_quota_state']" in service
+    assert "query_params['bucket_quota_pressure']" in service
+
+
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
     context = read(f'{PARTIALS}/_overview_evidence_context.html')
     reconciliation = read(f'{PARTIALS}/_reconciliation.html')
