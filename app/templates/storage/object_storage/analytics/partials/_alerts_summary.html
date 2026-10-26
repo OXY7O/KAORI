@@ -1,10 +1,22 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bell-ring" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Provider Alert &amp; Anomaly Overview</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Provider Alert &amp; Anomaly Overview</h2>
+                        {{ info_tip.render('object-storage-provider-alert-anomaly-overview-guide',
+                                                'Provider Alert & Anomaly Overview Guide',
+                                                'Provider alert lifecycle and KAORI metric-derived anomaly signals are separate committed evidence families.',
+                                                items=[
+                                                'Provider Alerts, Critical Alerts, and Warning Alerts summarize the selected resolved alert stream, with Alertmanager preferred over rule-state-only Metrics Source fallback.',
+                                                'Anomaly Signals count KAORI operating-boundary findings independently; neither source substitutes for the other.',
+                                                'An operational source with no active alerts is not proof of overall health; missing source evidence remains Unknown, never a fabricated zero.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Separate provider alert records from KAORI metric-derived operating signals while keeping both visible in one operational workspace.</p>
                 </div>
             </div>

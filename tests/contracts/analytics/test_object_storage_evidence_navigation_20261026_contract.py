@@ -87,11 +87,12 @@ def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
     ):
         assert marker in forecast
     for marker in (
-        'data-object-storage-alert-source-details',
+        'data-object-storage-alert-source-dialog',
         'partials/_alerts_source_evidence.html',
         "('signals', 'Anomaly Signals', 'list-tree')",
     ):
         assert marker in alerts
+    assert '<details' not in alerts
     assert 'partials/_bucket_table.html' in consumers
     assert 'partials/_performance_analysis.html' in performance
 
@@ -273,6 +274,72 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert 'data-kaori-dialog-open' in controller
     assert 'dialog.showModal()' in controller
     assert 'dialog.close()' in controller
+
+
+def test_alert_overview_guide_and_lifecycle_use_existing_native_dialog_standard() -> None:
+    summary = read(f'{PARTIALS}/_alerts_summary.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+    context = read(f'{PARTIALS}/_domain_evidence_context.html')
+    evidence = read(f'{PARTIALS}/_alerts_source_evidence.html')
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    controller = read('app/static/js/native_dialogs.js')
+
+    assert 'components/info_tip.html' in summary
+    assert 'object-storage-provider-alert-anomaly-overview-guide' in summary
+    assert "variant='guide'" in summary
+    assert "placement='right'" in summary
+    assert 'Provider Alert &amp; Anomaly Overview' in summary
+    assert 'alert_posture.total' in summary
+    assert 'alert_posture.critical' in summary
+    assert 'alert_posture.warning' in summary
+    assert 'metrics.signal_posture.critical_count' in summary
+    assert 'Provider alerts and anomaly signals are separate' in summary
+
+    dialog_id = 'object-storage-alert-source-dialog'
+    assert "page_key == 'alerts'" in context
+    assert 'data-object-storage-alert-source-modal-trigger' in context
+    assert 'data-kaori-dialog-open' in context
+    assert f'data-dialog-target="{dialog_id}"' in context
+    assert f'aria-controls="{dialog_id}"' in context
+    assert 'View Alert Source' in context
+    assert 'data-object-storage-central-evidence-link' in context
+    assert context.count('class="{{ evidence_action_classes }}"') == 3
+
+    assert f'<dialog id="{dialog_id}"' in workspace
+    assert 'data-object-storage-alert-source-dialog' in workspace
+    assert 'data-kaori-native-dialog' in workspace
+    assert 'kaori-native-dialog' in workspace
+    assert 'aria-labelledby="object-storage-alert-source-title"' in workspace
+    assert 'aria-describedby="object-storage-alert-source-description"' in workspace
+    assert 'max-h-[calc(100dvh-2rem)]' in workspace
+    assert 'overflow-y-auto' in workspace
+    assert workspace.count('data-kaori-dialog-close') == 2
+    assert workspace.count('partials/_alerts_source_evidence.html') == 1
+    assert 'alert_source_embedded = true' in workspace
+    assert '<details' not in workspace
+    assert 'Alert Source &amp; Lifecycle Details' in workspace
+
+    assert 'alert_source_embedded|default(false)' in evidence
+    assert '{% if not alert_source_embedded %}' in evidence
+    for preserved in (
+        'Selected Policy',
+        'Resolved Alert Source',
+        'Alertmanager Consumer',
+        'Alertmanager Authority',
+        'Metrics Source Fallback',
+        'selected_alert_source',
+        'alert_source.resolved_label',
+        'alertmanager.profile',
+    ):
+        assert preserved in evidence
+    assert 'Metrics Source ALERTS fallback preserves upstream alert-rule state' in evidence
+
+    assert 'data-kaori-native-dialog' in capacity
+    assert 'data-kaori-dialog-open' in controller
+    assert 'dialog.showModal()' in controller
+    assert 'dialog.close()' in controller
+    for template in (summary, workspace, context, evidence):
+        Environment().parse(template)
 
 
 def test_capacity_trend_and_quota_guides_reuse_shared_component_roles() -> None:
@@ -458,6 +525,8 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
         '_top_consumers_activity.html',
         '_forecast_workspace.html',
         '_alerts_workspace.html',
+        '_alerts_summary.html',
+        '_alerts_source_evidence.html',
         '_domain_evidence_context.html',
         '_overview_evidence_context.html',
         '_reconciliation.html',
