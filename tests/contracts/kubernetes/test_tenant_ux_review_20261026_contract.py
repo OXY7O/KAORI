@@ -44,7 +44,6 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
     assert "{% if can_manage and membership.principal_type in ['user', 'group'] %}" in registry
 
 
-
 def test_governed_confirmation_standard_is_reused_by_membership_and_group() -> None:
     membership = read('_membership_registry.html')
     group = read('_group_registry.html')
