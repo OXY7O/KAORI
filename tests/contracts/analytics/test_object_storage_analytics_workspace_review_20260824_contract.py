@@ -328,6 +328,37 @@ def test_object_storage_analytics_overview_headings_and_trend_description_align(
     assert 'compact_forecast_overview' in trend
 
 
+def test_object_storage_analysis_workspace_intros_follow_overview_section_standard() -> None:
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+
+    # Parse the actual composed template, not a hand-written substitute.
+    Environment().parse(index)
+    gate = "page_key in ['capacity', 'performance', 'forecast', 'top_consumers', 'alerts']"
+    heading = 'data-object-storage-domain-analysis-heading="{{ page_key }}"'
+    assert gate in index
+    assert index.count('data-object-storage-domain-analysis-heading') == 1
+    assert index.index('partials/_controls.html') < index.index(heading)
+    assert index.index(heading) < index.index("{% if page_key == 'overview' %}")
+    assert 'analysis_intros[page_key]' in index
+
+    intro = index.split(heading, 1)[1].split('</div>', 1)[0]
+    assert '<h2 class="text-base font-semibold text-content-primary">{{ analysis_intro[0] }}</h2>' in intro
+    assert '<p class="text-sm leading-6 text-content-secondary">{{ analysis_intro[1] }}</p>' in intro
+    assert index.count('data-object-storage-operational-posture-heading') == 1
+    assert index.count('data-object-storage-analysis-workspaces-heading') == 1
+
+    expected = (
+        ('capacity', 'Capacity & Usage Analysis', 'Review physical headroom, usage trends, bucket quotas, and committed evidence.'),
+        ('performance', 'Performance Analysis', 'Review request reliability, traffic direction, and bucket activity from committed evidence.'),
+        ('forecast', 'Forecast Analysis', 'Review projected usage, bucket forecasts, and worker-committed planning evidence.'),
+        ('top_consumers', 'Top Consumers Analysis', 'Review storage concentration, request activity, and bucket ownership.'),
+        ('alerts', 'Alerts & Anomalies Analysis', 'Review provider alert lifecycles and KAORI anomaly signals separately.'),
+    )
+    for key, title, description in expected:
+        assert f"'{key}': ('{title}', '{description}')," in index
+        assert f"{{% elif page_key == '{key}' %}}" in index
+
+
 def test_object_storage_overview_consumer_reading_is_compact_and_unknown_safe() -> None:
     consumers = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
 
