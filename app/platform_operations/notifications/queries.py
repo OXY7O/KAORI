@@ -96,6 +96,52 @@ def _user_job_query(user_id: int):
     )
 
 
+def _approval_work_inbox_projections(
+    user_id: int,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Read fail-closed, independently authoritative Work Inbox projections."""
+    # Tenant handoff has one authoritative committed approval, not one
+    # Notification per candidate approver. Reuse the shared Work Inbox surface
+    # while projecting status from the current plan/acknowledgment evidence.
+    # Tenant remains the decision authority. Flask's per-app composition root
+    # registers this read-only projection without a Notification -> Tenant import.
+    tenant_inbox_provider = current_app.extensions.get('kaori_tenant_approval_work_inbox')
+    if not callable(tenant_inbox_provider):
+        raise RuntimeError('Tenant approval Work Inbox provider is not registered.')
+    tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(tenant_approval_inbox, dict)
+        or not isinstance(tenant_approval_inbox.get('items'), list)
+        or not isinstance(tenant_approval_inbox.get('pending_count'), int)
+        or not isinstance(tenant_approval_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Tenant approval Work Inbox provider returned an invalid projection.')
+    secret_inbox_provider = current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')
+    if not callable(secret_inbox_provider):
+        raise RuntimeError('Secret Reveal approval Work Inbox provider is not registered.')
+    secret_reveal_inbox = secret_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(secret_reveal_inbox, dict)
+        or not isinstance(secret_reveal_inbox.get('items'), list)
+        or not isinstance(secret_reveal_inbox.get('pending_count'), int)
+        or not isinstance(secret_reveal_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Secret Reveal approval Work Inbox provider returned an invalid projection.')
+
+    requester_inbox_provider = current_app.extensions.get('kaori_secret_reveal_requester_work_inbox')
+    if not callable(requester_inbox_provider):
+        raise RuntimeError('Secret Reveal requester Work Inbox provider is not registered.')
+    secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(secret_reveal_requester_inbox, dict)
+        or not isinstance(secret_reveal_requester_inbox.get('items'), list)
+        or not isinstance(secret_reveal_requester_inbox.get('ready_count'), int)
+        or not isinstance(secret_reveal_requester_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Secret Reveal requester Work Inbox provider returned an invalid projection.')
+    return tenant_approval_inbox, secret_reveal_inbox, secret_reveal_requester_inbox
+
+
 def get_activity_center_context(
     *,
     user_id: int,
@@ -188,45 +234,9 @@ def get_activity_center_context(
         for notification in inbox_notifications
     ]
 
-    # Tenant handoff has one authoritative committed approval, not one
-    # Notification per candidate approver. Reuse the shared Work Inbox surface
-    # while projecting status from the current plan/acknowledgment evidence.
-    # Tenant remains the decision authority. Flask's per-app composition root
-    # registers this read-only projection without a Notification -> Tenant import.
-    tenant_inbox_provider = current_app.extensions.get('kaori_tenant_approval_work_inbox')
-    if not callable(tenant_inbox_provider):
-        raise RuntimeError('Tenant approval Work Inbox provider is not registered.')
-    tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)
-    if (
-        not isinstance(tenant_approval_inbox, dict)
-        or not isinstance(tenant_approval_inbox.get('items'), list)
-        or not isinstance(tenant_approval_inbox.get('pending_count'), int)
-        or not isinstance(tenant_approval_inbox.get('total_count'), int)
-    ):
-        raise RuntimeError('Tenant approval Work Inbox provider returned an invalid projection.')
-    secret_inbox_provider = current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')
-    if not callable(secret_inbox_provider):
-        raise RuntimeError('Secret Reveal approval Work Inbox provider is not registered.')
-    secret_reveal_inbox = secret_inbox_provider(user_id=user_id)
-    if (
-        not isinstance(secret_reveal_inbox, dict)
-        or not isinstance(secret_reveal_inbox.get('items'), list)
-        or not isinstance(secret_reveal_inbox.get('pending_count'), int)
-        or not isinstance(secret_reveal_inbox.get('total_count'), int)
-    ):
-        raise RuntimeError('Secret Reveal approval Work Inbox provider returned an invalid projection.')
-
-    requester_inbox_provider = current_app.extensions.get('kaori_secret_reveal_requester_work_inbox')
-    if not callable(requester_inbox_provider):
-        raise RuntimeError('Secret Reveal requester Work Inbox provider is not registered.')
-    secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)
-    if (
-        not isinstance(secret_reveal_requester_inbox, dict)
-        or not isinstance(secret_reveal_requester_inbox.get('items'), list)
-        or not isinstance(secret_reveal_requester_inbox.get('ready_count'), int)
-        or not isinstance(secret_reveal_requester_inbox.get('total_count'), int)
-    ):
-        raise RuntimeError('Secret Reveal requester Work Inbox provider returned an invalid projection.')
+    tenant_approval_inbox, secret_reveal_inbox, secret_reveal_requester_inbox = (
+        _approval_work_inbox_projections(user_id)
+    )
 
     # Actionable work is derived from committed request state; it is not
     # historical notification unread state and does not create another decision.
