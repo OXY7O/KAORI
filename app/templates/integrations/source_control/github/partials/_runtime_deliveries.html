@@ -182,14 +182,14 @@
                 {% endif %}
             {% endfor %}
             {{ pagination_ui.numeric_pages(delivery_pagination.page,
-                delivery_pagination.total_pages,
-                page_param='delivery_page',
-                hx_target='#github-runtime-deliveries',
-                hx_indicator='#github-runtime-deliveries-loading',
-                endpoint='github_source_uat.runtime_deliveries',
-                query_params={'tab': 'runtime', 'runtime_view': 'deliveries', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state, 'delivery_search': delivery_search, 'delivery_event': delivery_event},
-                hx_swap='outerHTML',
-                href_endpoint='github_source_uat.detail') }}
+                        delivery_pagination.total_pages,
+                        page_param='delivery_page',
+                        hx_target='#github-runtime-deliveries',
+                        hx_indicator='#github-runtime-deliveries-loading',
+                        endpoint='github_source_uat.runtime_deliveries',
+                        query_params={'tab': 'runtime', 'runtime_view': 'deliveries', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state, 'delivery_search': delivery_search, 'delivery_event': delivery_event},
+                        hx_swap='outerHTML',
+                        href_endpoint='github_source_uat.detail') }}
         </nav>
     </footer>
 </section>

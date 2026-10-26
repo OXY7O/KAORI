@@ -192,14 +192,14 @@
                 {% endif %}
             {% endfor %}
             {{ pagination_ui.numeric_pages(job_pagination.page,
-                job_pagination.total_pages,
-                page_param='job_page',
-                hx_target='#github-runtime-jobs',
-                hx_indicator='#github-runtime-jobs-loading',
-                endpoint='github_source_uat.runtime_jobs',
-                query_params={'tab': 'runtime', 'runtime_view': 'jobs', 'job_per_page': job_pagination.per_page, 'job_status': job_status, 'job_search': job_search, 'job_queue': job_queue},
-                hx_swap='outerHTML',
-                href_endpoint='github_source_uat.detail') }}
+                        job_pagination.total_pages,
+                        page_param='job_page',
+                        hx_target='#github-runtime-jobs',
+                        hx_indicator='#github-runtime-jobs-loading',
+                        endpoint='github_source_uat.runtime_jobs',
+                        query_params={'tab': 'runtime', 'runtime_view': 'jobs', 'job_per_page': job_pagination.per_page, 'job_status': job_status, 'job_search': job_search, 'job_queue': job_queue},
+                        hx_swap='outerHTML',
+                        href_endpoint='github_source_uat.detail') }}
         </nav>
     </footer>
 </section>
