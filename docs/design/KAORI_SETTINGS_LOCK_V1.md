@@ -174,3 +174,9 @@ verify actual responsive 1440/1280/1024/768/390/360 viewport and light/dark
 rendering, keyboard focus, success/failure states, and guarded MFA operations
 against the exact UAT candidate before human acceptance. Never attach
 screenshots containing live QR, seed or recovery codes.
+
+## MFA enrollment copy and input alignment — UAT-2 correction (#3228, 2026-10-26)
+
+Operator browser feedback on the **guide-above-forms, paired-Step 01/02** layout identifies two overflow-prone guide descriptions and inconsistent desktop enrollment input widths. Retain the already approved three summary cards, four-step single full-width guide, Step 01/02 side-by-side desktop geometry and mobile stacking. Guide step 1 reads **“Confirm your password or sign in again.”** and step 2 **“Scan QR or enter the setup key.”** These concise sentences are expected to fit as single lines on the reviewed desktop viewport, while still wrapping naturally when space is narrower; never force `whitespace-nowrap` or clipping.
+
+In the two unenrolled/pending MFA cards, the **Current Password** and **Verification Code** inputs use the available width within each card (`w-full`, consistent 3rem control height), without modifying the separate **enrolled recovery regeneration** form's bounded fields. Keep all form names, `begin|confirm|regenerate` actions, CSRF, fresh sign-in, QR/manual secret one-time handling, native six-digit OTP, shared toast, auditing, and policy source of truth unchanged. The presentation is not accepted until exact SHA browser and test evidence exists.
