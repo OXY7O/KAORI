@@ -480,3 +480,22 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 The operator previously reported **40 passing tests**, Access Final Lock and Sidebar Standard PASS on a previous Bot Protection SHA, with `ruff format --check` and `djlint --check` still failing. These are **not** new-SHA PASS evidence. Collect new output and assess formatter errors explicitly. Do not store secrets or Turnstile tokens in screenshots. Preserve separate provider-enabled functional/security UAT and explicit Human Acceptance; official admission HOLD.
+
+## Authentication Security submenu above Hero — Navigation UAT (#3316, 2026-10-26)
+
+Review the operator-approved placement change at exact `kaori/review/staging-uat` SHA. **Overview / Multi-Factor Authentication / Bot Protection / Session Security** must appear once as an existing KAORI **Tab Style 1 server submenu above the Hero**, *not* inside the rounded content card. Inspect 1440/1280/1024/768/390/360 light/dark, overflowing horizontal nav on mobile, active violet underline and `aria-current="page"`, keyboard/focus and tab-link fallback with HTMX disabled.
+
+All four links must preserve real query URLs, update `#authentication-security-page` (including menu + Hero + active content) with normal HTMX, push browser history, and restore active state correctly with browser back/forward. Full reload, unauthorized/invalid `?tab=`, read-only viewers, management form POST routes and shared Activity Audit should remain unchanged; no nested secondary tabs should appear beneath the Hero. Check the existing Role Registry summary (four metrics + four governance cards) and MFA/Bot controls remain intact.
+
+The previous candidate `ruff check`, Access Final Lock, Sidebar Standard PASS and 43/44 pytest PASS were not new SHA evidence; the one MFA test failure came from an obsolete `{{ current_mfa_label }}` direct text assertion after summary migration. The previous `ruff format --check` flagged three quote-only cases (Bot, MFA, four-tab contract). These source assertions and quotes have been updated in this scope, but **exact SHA execution is still required**. Existing `djlint --check` diff across many Jinja macro lines was reported; do not claim formatter PASS until exact-SHA output is clear.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_assurance_summary.html app/templates/access/authentication_security/partials/_page_content.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Keep prior UI/form/security acceptance separately evidenced, and never attach authentication secrets, Turnstile tokens or cookies.
