@@ -200,7 +200,7 @@
     {% else %}
         <p class="mt-3 text-xs text-content-muted">No committed drift analysis for this Tenant; zero findings are not implied.</p>
     {% endif %}
-    <p class="mt-3 text-xs leading-5 text-content-muted">Declaration correlation only. Effective RBAC was not reverified; no automatic remediation was performed.</p>
+    <p class="mt-3 text-xs leading-5 text-content-muted">Declaration correlation only. Effective RBAC was not reverified. No automatic remediation was performed.</p>
 </section>
                                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                                 <h5 class="text-sm font-semibold text-content-primary">Available Actions</h5>
@@ -213,7 +213,7 @@
                                             <input type="hidden" name="access_inventory_view" value="native">
                                             <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
                                             <button type="submit"
-                                                    aria-label="Analyze Access Drift for {{ evidence.tenant_id }}"
+                                                    aria-label="Analyze Native Access Drift for {{ evidence.tenant_id }}"
                                                     class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
                                                 <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Analyze Drift
