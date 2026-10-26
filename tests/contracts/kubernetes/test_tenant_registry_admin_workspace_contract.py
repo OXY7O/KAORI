@@ -410,9 +410,10 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'name="application_name"' in workspace
     assert 'Generate Human Access Token' in registry
     assert 'Generate Deployment Kubeconfig' in registry
-    assert 'Access Gateway' in registry
-    assert 'Pipeline Kubeconfig' in registry
-    assert 'title="{{ delivery_label }}"' in registry
+    credential_detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
+    assert 'Access Gateway' in credential_detail
+    assert 'Pipeline Kubeconfig' in credential_detail
+    assert 'delivery_label' in credential_detail
     assert 'Manually place the generated token into the approved access account' in registry
     assert 'JumpServer' not in registry
     assert 'JumpServer' not in workspace
