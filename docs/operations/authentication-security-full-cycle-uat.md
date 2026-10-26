@@ -440,3 +440,25 @@ python scripts/verify_settings_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 The user's earlier result of `26 passed` applies to a **previous MFA candidate**, not this updated design. Retain valid/invalid code, provider/local credential, one-time recovery, toast, audit and no-store Human UAT. Do not attach secrets or mark QA/Human Acceptance PASS before new exact-SHA evidence.
+
+## Bot Protection approved Overview/MFA visual alignment UAT (#3299, 2026-10-26)
+
+Visual redesign must be reviewed independently from any decision to enable the security policy. At the exact checked `kaori/review/staging-uat` SHA, verify **Access → Authentication Security → Bot Protection**:
+
+1. The canonical Bot Protection heading/Guide and actual `Enforced` or `Not Enabled` badge match the committed `bot_mode`, not the visual mockup's illustrative Enabled state.
+2. Three posture cards show **Protection Mode**, **Verification Adapter** (currently Cloudflare Turnstile), and **Provider Configuration**. `Not Configured` remains correct when credentials/hostname are missing; `Configured` is not equivalent to successful provider health.
+3. On desktop, two equal-height panels show **Protection Configuration** (3/5 width) and **Activation & Safety** (2/5). Form fields have explicit labels, 44px controls, adaptive site-key/hostname columns and original endpoint; right-side guide is Configure → Test → Enable, with one short security footer. At tablet/mobile widths both panels and cards stack without horizontal scrolling or clipped Turnstile widgets.
+4. In a manager session, Disabled/Always are the only choices. Save retains `csrf_token`, `provider_key=cloudflare_turnstile`, `site_key`, `hostname`, `secret_key` and the required impact checkbox. Secret remains write-only; viewer does not get a save/test form.
+5. With a complete saved *Disabled* configuration, **Test Turnstile** appears and submits a genuine widget token only over its existing server route. For missing credentials, show guidance rather than a fake CTA. `bot_tested_at` proves evidence recorded but is not by itself a live Ready badge. Changing keys/hostname clears evidence; Always must fail unless a matching live Siteverify test was successful within one hour.
+6. Validate fail-closed denied/expired/mismatched tokens, unavailable Cloudflare egress and provider downtime with a separate authorized break-glass administrator session; do not enable without a rehearsed recovery route. Check Local/LDAP/SSO, rate limit, login audit, logout and disabled rollback. Do not attach site/secret values, verification tokens or authenticated cookies to screenshots.
+
+Reuse quality gates:
+```bash
+ruff check tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py
+ruff format --check tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Record exact SHA, command output, desktop/light-dark/mobile screenshots with secret fields redacted, error/empty/read-only states and positive/negative security gate evidence. User acceptance cannot be declared from the prior MFA QA output. Official Developer Check, Full Admission and promotion to `kaori/staging`/`main` remain on HOLD.
