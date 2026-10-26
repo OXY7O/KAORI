@@ -136,6 +136,23 @@ def _schema_ready() -> bool:
     return required.issubset(set(inspect(db.engine).get_table_names()))
 
 
+def _fresh_collection(
+    *,
+    observed_count: int,
+    source_at: datetime | None,
+    committed_at: datetime | None,
+    instant: datetime,
+) -> bool:
+    """Preserve the bounded, time-qualified committed inventory admission check."""
+    return bool(
+        source_at is not None
+        and committed_at is not None
+        and 0 <= observed_count <= _MAX_RECORDS
+        and timedelta(0) <= instant - source_at <= _FRESHNESS
+        and timedelta(0) <= instant - committed_at <= _FRESHNESS
+    )
+
+
 def read_scoped_secret_registry(
     *,
     decision: ScopedRegistryDecision | None,
@@ -198,12 +215,11 @@ def read_scoped_secret_registry(
         if state is None or state.status != 'ready' or type(state.observed_count) is not int:
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         source_at, committed_at = _persisted_time(state.last_observed_at), _persisted_time(state.last_committed_at)
-        if (
-            source_at is None
-            or committed_at is None
-            or not 0 <= state.observed_count <= _MAX_RECORDS
-            or not timedelta(0) <= instant - source_at <= _FRESHNESS
-            or not timedelta(0) <= instant - committed_at <= _FRESHNESS
+        if not _fresh_collection(
+            observed_count=state.observed_count,
+            source_at=source_at,
+            committed_at=committed_at,
+            instant=instant,
         ):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         selected = db.session.execute(
