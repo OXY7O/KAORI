@@ -236,9 +236,9 @@ def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
 
 def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceCapabilityDefinition, ...]:
     if workspace.key == 'source_control':
-        from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
+        from app.integrations.source_control.uat_access import local_super_admin
 
-        if not uat_enabled() or not local_super_admin(user):
+        if not local_super_admin(user):
             return ()
     return tuple(tab for tab in workspace.capabilities if _has_any_permission(user, tab.permissions))
 
