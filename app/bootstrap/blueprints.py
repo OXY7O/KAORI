@@ -15,10 +15,10 @@ def register_blueprints(app: Flask) -> None:
     from app.integrations.observability.alert_source.providers.alertmanager.application.routes import alertmanager_bp
     from app.integrations.observability.metrics_source.application.routes import metrics_bp
     from app.integrations.registry.providers.harbor.application.routes import harbor_bp
+    from app.integrations.routes import integrations_bp
     from app.integrations.secrets_management.secrets_pki.providers.vault.application.routes import vault_bp
     from app.integrations.source_control.source_control.providers.github.application.routes import github_source_bp
     from app.integrations.source_control.source_control.providers.github.application.uat_routes import github_uat_bp
-    from app.integrations.routes import integrations_bp
     from app.integrations.storage.object_storage.providers.minio.application.routes import minio_bp
     from app.intelligence.alert_intelligence.routes import alert_intelligence_bp
     from app.intelligence.automation_control.routes import automation_control_bp
@@ -69,6 +69,7 @@ def register_blueprints(app: Flask) -> None:
     from app.reports.routes import reports_bp
     from app.secrets_pki.routes import secrets_pki_bp
     from app.security_posture.routes import security_posture_bp
+    from app.source_control.routes import source_control_bp
     from app.settings import bp as settings_bp
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
     from app.storage.object_storage.inventory.routes import object_storage_inventory_bp
@@ -115,6 +116,7 @@ def register_blueprints(app: Flask) -> None:
         auth_bp,
         access_bp,
         artifact_registry_bp,
+        source_control_bp,
         security_posture_bp,
         secrets_pki_bp,
         welcome_bp,

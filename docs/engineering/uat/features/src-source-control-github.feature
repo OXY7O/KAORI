@@ -246,3 +246,47 @@ Feature: Source Control — GitHub App connection, committed repository inventor
     Then no raw credential, webhook body, full Git clone, repository file content or token is retained in operational evidence
     And only bounded authorized metadata, exact source identity and sanitized audit are committed
 
+
+  # Product domain expansion #3375 — separate from GitHub connection lifecycle.
+  # Layer: UI; risk: Medium; evidence: authorized sidebar, breadcrumb, route and integration parity screenshots.
+  @UAT-SRC-030 @positive @medium @ui @specified @owner_review
+  Scenario: UAT-SRC-030 - Source Control operational workspace is distinct from GitHub integration
+    Given an authorized local Super Admin with the GitHub provider available and an active registered installation
+    When the administrator opens the Source Control product workspace from the Infrastructure navigation
+    Then Overview and Repositories appear with the Source Control product breadcrumb and shared Violet navigation
+    And Integrations then Source Control then GitHub remains the authority for credentials, validation and synchronization
+
+  # Layer: Both; risk: High; evidence: exact SHA, DB collection states, UI counts and absent provider network calls.
+  @UAT-SRC-031 @positive @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-SRC-031 - Product Overview reflects committed collection scope without inventing global inventory
+    Given one installation has a committed zero-grant generation and another has no committed collection
+    And a third installation has retained evidence from a degraded later refresh
+    When the administrator opens Source Control Overview and reviews installation collection coverage
+    Then the uncollected installation shows Unknown rather than zero and the confirmed zero remains an observed zero
+    And a degraded collection preserves its historical provenance without claiming current GitHub health
+    And per-installation grant counts are never added into a unique global repository total
+
+  # Layer: Both; risk: High; evidence: HTTP 403/404, no database/provider access outside scope, UI scope selector.
+  @UAT-SRC-032 @negative @high @ui @non_ui @specified @owner_review
+  Scenario: UAT-SRC-032 - Product Repositories deny unauthorized identities and installation scope guessing
+    Given one authorized local Super Admin and a second identity without the existing GitHub UAT grant
+    When the unauthorized user requests Source Control Overview or Repositories directly
+    Then the application denies the request server-side before querying committed product evidence
+    And missing or guessed cross-installation scope never returns another installation's repositories
+
+  # Layer: Both; risk: Medium; evidence: filtered committed read-back, URL, full SHA tooltip and 5-row pagination.
+  @UAT-SRC-033 @positive @medium @ui @non_ui @specified @owner_review
+  Scenario: UAT-SRC-033 - Product Repositories reuse installation-scoped SC-03 inventory with filters
+    Given the selected installation has at least six authorized committed repository grants and an observed default branch revision
+    When the administrator opens Repositories, selects that installation and changes search, visibility, archive and pagination
+    Then only the selected installation's committed grants are displayed with the default five rows
+    And an exact SHA and observation timestamp are shown only where an authorized committed revision exists
+    And HTMX and ordinary GET navigation preserve the same scoped filtering semantics
+
+  # Layer: UI; risk: Medium; evidence: light/dark screenshots at approved desktop and mobile widths, keyboard trace.
+  @UAT-SRC-034 @positive @medium @ui @specified @owner_review
+  Scenario: UAT-SRC-034 - Product workspace uses approved shared layouts and honest empty states
+    Given the Source Control product is evaluated at the approved responsive viewports and both themes
+    When the administrator visits Overview without collection, selects an installation, and opens its empty or filtered inventory
+    Then shared Hero, metric cards, tables, filter controls and state messages remain readable and keyboard accessible
+    And no unsupported PR, DORA, Actions or policy compliance measurement appears as ready or zero
