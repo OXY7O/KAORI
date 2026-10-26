@@ -51,12 +51,8 @@ def test_bot_controls_have_external_text_heading_and_one_harmonized_hub() -> Non
         'Configure Cloudflare Turnstile, verify the provider, and review activation safeguards in one workspace.'
         in intro
     )
-    assert tab.index('data-auth-security-bot-intro="above-card"') < tab.index(
-        'data-auth-security-bot-hub="true"'
-    )
-    assert tab.index('data-auth-security-bot-hub="true"') < tab.index(
-        'data-auth-bot-layout="configuration-safety"'
-    )
+    assert tab.index('data-auth-security-bot-intro="above-card"') < tab.index('data-auth-security-bot-hub="true"')
+    assert tab.index('data-auth-security-bot-hub="true"') < tab.index('data-auth-bot-layout="configuration-safety"')
     assert 'aria-labelledby="auth-security-bot-controls-heading"' in tab
     assert 'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm' in tab
     assert tab.index('data-auth-bot-layout="configuration-safety"') < tab.index('Protection Configuration')
