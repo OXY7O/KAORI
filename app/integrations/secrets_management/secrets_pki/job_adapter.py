@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from app.common.job_execution_presentation import present_job_execution
 from app.integrations.secrets_management.secrets_pki.sync_jobs import (
-    NoEligibleVaultInventoryTargets, build_vault_inventory_targets,
+    NoEligibleVaultInventoryTargets,
+    build_vault_inventory_targets,
     enqueue_vault_inventory_sync,
 )
 from app.models.job import JobExecution, JobPolicy

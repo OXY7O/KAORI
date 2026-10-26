@@ -12,10 +12,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
-    VaultClient, VaultProviderError,
+    VaultClient,
+    VaultProviderError,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
-    PublicCertificateEvidence, _parse_certificate,
+    PublicCertificateEvidence,
+    _parse_certificate,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import validate_auth_mount
 

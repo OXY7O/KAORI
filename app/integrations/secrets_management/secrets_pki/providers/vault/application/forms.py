@@ -7,9 +7,12 @@ from wtforms import BooleanField, IntegerField, PasswordField, SelectField, Stri
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
-from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import parse_approved_pki_mounts
+from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
+    parse_approved_pki_mounts,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
-    validate_auth_mount, validate_vault_endpoint,
+    validate_auth_mount,
+    validate_vault_endpoint,
 )
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.vault import VaultInstance
