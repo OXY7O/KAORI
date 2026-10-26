@@ -5,6 +5,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% block title %}Edit GitHub Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6" data-kaori-github-connection-edit>
@@ -12,7 +13,7 @@
             "Source Control Integration",
             "settings-2",
             "Edit GitHub Connection",
-            "Update canonical connection settings while preserving GitHub-owned identity and protected credentials.",
+            "Update GitHub connection settings and rotate credentials securely.",
             "git-branch",
             "GitHub REST API",
             "Registered Connection",
@@ -29,8 +30,18 @@
                 <form method="post"
                       action="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
                       class="space-y-5 p-4 sm:p-5"
-                      data-kaori-github-edit-form>
+                      data-kaori-github-edit-form
+                      id="github-app-edit-form"
+                      autocomplete="off"
+                      x-data="{ connectionVerified: false, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; $refs.connectionProof.value = ''; $refs.connectionTestResult.replaceChildren(); }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; $refs.connectionProof.value = event.detail?.proof || ''; } }"
+                      x-on:input.capture="invalidateConnectionTest($event)"
+                      x-on:change.capture="invalidateConnectionTest($event)"
+                      x-on:github-connection-tested.window="applyConnectionTest($event)">
                     {{ form.hidden_tag() }}
+                    <input type="hidden"
+                           name="connection_test_proof"
+                           x-ref="connectionProof"
+                           value="">
                     {% if message %}
                         {{ operational_callout.render("Configuration Review", message, icon="triangle-alert", tone="warning", variant="semantic") }}
                     {% endif %}
@@ -80,7 +91,7 @@
                             <div>
                                 <h2 id="github-edit-installation-binding"
                                     class="text-sm font-semibold text-content-primary">GitHub Installation Binding</h2>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Native identities and shared App credentials are preserved, not editable here.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Installation identity stays fixed; protected App credentials may be replaced below.</p>
                             </div>
                         </div>
                         <dl class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
@@ -95,7 +106,55 @@
                                 </div>
                             {% endfor %}
                         </dl>
-                        <p class="text-xs leading-5 text-content-secondary">Credential rotation and installation rebinding require a separately approved security workflow.</p>
+                        <p class="text-xs leading-5 text-content-secondary">A different App or installation is a new connection, not an in-place identity replacement. Historical evidence remains linked to this installation.</p>
+                    </section>
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated"
+                             aria-labelledby="github-edit-protected-credentials">
+                        {% call connection_validation_header.render(
+                            "App Credentials",
+                            "Leave fields empty to keep current encrypted values. Test before replacing credentials.",
+                            icon="shield-check"
+                            ) %}
+                            <button type="button"
+                                    hx-post="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
+                                    hx-include="#github-app-edit-form"
+                                    hx-vals='{"action":"test"}'
+                                    hx-target="#github-edit-connection-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-disabled-elt="this"
+                                    x-on:click="connectionVerified = false; $refs.connectionProof.value = ''; $refs.connectionTestResult.replaceChildren(); const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                    class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
+                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                                Test Connection
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-4 p-4 sm:p-5">
+                            <div id="github-edit-protected-credentials" class="space-y-1">
+                                <p class="text-sm font-semibold text-content-primary">Optional Credential Rotation</p>
+                                <p class="text-xs leading-5 text-content-secondary">Replacements are write-only. App credentials may be shared across installations; rotation resets their validation readiness.</p>
+                            </div>
+                            <div>
+                                <label for="{{ form.private_key_pem.id }}"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.private_key_pem.label.text }}</label>
+                                {{ form.private_key_pem(class_="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 font-mono text-sm leading-6 text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Blank keeps the existing encrypted PEM. Never paste a credential from another GitHub App.</p>
+                                {% for error in form.private_key_pem.errors %}
+                                    <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.webhook_secret.id }}"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.webhook_secret.label.text }}</label>
+                                {{ form.webhook_secret(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Blank keeps the stored webhook secret. Test Connection cannot verify a webhook secret against GitHub.</p>
+                                {% for error in form.webhook_secret.errors %}
+                                    <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div id="github-edit-connection-test-result"
+                             x-ref="connectionTestResult"
+                             aria-live="polite"></div>
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="github-edit-operational-controls">
@@ -108,7 +167,10 @@
                     <div class="flex flex-wrap items-center justify-end gap-3 border-t border-outline-subtle pt-5">
                         <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
-                        <button type="submit" class="{{ action_button.classes('primary') }}">
+                        <button type="submit"
+                                name="action"
+                                value="save"
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
@@ -118,9 +180,9 @@
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% set github_edit_flow = [
                     ('Review Connection', 'Confirm canonical name, environment and operational owner.'),
-                    ('Preserve Installation', 'GitHub-owned installation and App credentials remain unchanged.'),
-                    ('Save Changes', 'KAORI commits bounded configuration changes and audit evidence.'),
-                    ('Revalidate When Required', 'Environment or enablement changes require Full Validation.')
+                    ('Preserve Installation', 'GitHub App and installation identities remain unchanged.'),
+                    ('Test & Save', 'Test replacement App credentials before saving.'),
+                    ('Revalidate When Required', 'Credential or configuration changes require Full Validation.')
                 ] %}
                 {{ registration_context.render('GitHub Configuration Flow',
                     'Controlled KAORI connection edits.',
@@ -130,7 +192,7 @@
                     url_for('github_source.index', tab='registry'),
                     'Open Source Control Registry',
                     flow_icon='workflow',
-                    flow_note='Saving does not change repository grants in GitHub.',
+                    flow_note='Rotating an App credential resets validation for other linked installations.',
                     related_icon='git-branch',
                     authority_boundary='GitHub owns installation and repository access; KAORI owns canonical connection configuration and audit.') }}
             </aside>

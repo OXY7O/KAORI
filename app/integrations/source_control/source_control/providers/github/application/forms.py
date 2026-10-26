@@ -14,34 +14,43 @@ from app.kubernetes.cluster.constants import ENVIRONMENTS
 
 class GitHubAppConnectionForm(FlaskForm):
     name = StringField(
-        'Connection Name', validators=[DataRequired(), Length(min=2, max=160)],
+        'Connection Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
         render_kw={'placeholder': 'GitHub Production'},
     )
     environment = SelectField(
-        'Environment', choices=ENVIRONMENTS, validators=[DataRequired()],
+        'Environment',
+        choices=ENVIRONMENTS,
+        validators=[DataRequired()],
     )
     description = TextAreaField(
-        'Description', validators=[Optional(), Length(max=2000)],
+        'Description',
+        validators=[Optional(), Length(max=2000)],
         render_kw={'rows': 3, 'placeholder': 'Operational purpose and ownership context'},
     )
     app_id = StringField(
-        'GitHub App ID', validators=[DataRequired(), Length(max=80)],
+        'GitHub App ID',
+        validators=[DataRequired(), Length(max=80)],
         render_kw={'placeholder': '123456'},
     )
     installation_id = StringField(
-        'Installation ID', validators=[DataRequired(), Length(max=80)],
+        'Installation ID',
+        validators=[DataRequired(), Length(max=80)],
         render_kw={'placeholder': '654321'},
     )
     account_id = StringField(
-        'Organization / Account ID', validators=[DataRequired(), Length(max=80)],
+        'Organization / Account ID',
+        validators=[DataRequired(), Length(max=80)],
         render_kw={'placeholder': '789012'},
     )
     private_key_pem = TextAreaField(
-        'App Private Key (PEM)', validators=[DataRequired(), Length(max=20_000)],
+        'App Private Key (PEM)',
+        validators=[DataRequired(), Length(max=20_000)],
         render_kw={'rows': 5, 'spellcheck': 'false', 'autocomplete': 'off'},
     )
     webhook_secret = PasswordField(
-        'Webhook Secret', validators=[DataRequired(), Length(min=16, max=4096)],
+        'Webhook Secret',
+        validators=[DataRequired(), Length(min=16, max=4096)],
         render_kw={'autocomplete': 'new-password'},
     )
     enabled = BooleanField('Allow KAORI to Use This Connection', default=True)
@@ -69,13 +78,15 @@ class GitHubAppConnectionEditForm(FlaskForm):
     """Edit canonical connection settings without exposing shared App secrets."""
 
     name = StringField(
-        'Connection Name', validators=[DataRequired(), Length(min=2, max=160)],
+        'Connection Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
     )
     environment = SelectField(
         'Environment', choices=ENVIRONMENTS, validators=[DataRequired()],
     )
     description = TextAreaField(
-        'Description', validators=[Optional(), Length(max=2000)],
+        'Description',
+        validators=[Optional(), Length(max=2000)],
         render_kw={'rows': 3},
     )
     enabled = BooleanField('Allow KAORI to Use This Connection')
