@@ -439,7 +439,7 @@ def test_alerts_summary_verifier_uses_domain_copy_and_shared_preview_cap() -> No
 
     assert 'rows[:5]' in shared
     assert 'row_token, description in (' in verifier
-    assert 'f"description=\\'{description}\\'"' in verifier
+    assert 'f"description=\'{description}\'"' in verifier
     assert "'Intelligence findings are separate.'" in verifier
     assert "empty_label='No Active Cases'" in verifier
     assert "empty_title='No Active Alert Cases'" in verifier
