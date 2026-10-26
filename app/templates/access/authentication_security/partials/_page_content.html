@@ -40,9 +40,9 @@
             ) }}
         </div>
     </section>
-    <section class="rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-             aria-label="Authentication Security Workspace">
-        <div class="space-y-4 p-5 lg:p-6">
+    <section aria-label="Authentication Security Workspace"
+             data-auth-security-workspace="flat">
+        <div class="space-y-4">
             {% if active_tab == 'overview' %}
                 {% set mfa_active = mfa_policy_mode != 'disabled' %}
                 {% set bot_active = bot_mode == 'always' %}
@@ -67,9 +67,9 @@
                     ],
                     [
                         ('shield-check', 'Second-Factor Policy', 'Governed', 'MFA is evaluated after primary authentication.'),
-                        ('cloud', 'Provider Authority', 'External', 'Cloudflare Siteverify remains authoritative for Turnstile.'),
-                        ('log-out', 'Session Revocation', 'Generation', 'New logins replace previous session generations.'),
-                        ('history', 'Committed Evidence', 'Audit-Aware', 'Authentication activity records policy and login outcomes.')
+                        ('cloud', 'Provider Authority', 'External', 'Cloudflare validates Turnstile.'),
+                        ('log-out', 'Session Revocation', 'Generation', 'New logins revoke old sessions.'),
+                        ('history', 'Committed Evidence', 'Audit-Aware', 'Audit tracks policy and logins.')
                     ],
                     guide=info_tip.render(
                         'authentication-assurance-posture-guide',

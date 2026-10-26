@@ -499,3 +499,23 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Keep prior UI/form/security acceptance separately evidenced, and never attach authentication secrets, Turnstile tokens or cookies.
+
+## Authentication Security — remove redundant white wrapper and prevent governance wrapping (#3323, 2026-10-26)
+
+In the exact UAT candidate after #3316, verify **all four Authentication Security tabs** render the page-level submenu above Hero, then individual Role Registry-style cards directly below the Hero without another white rounded shadowed container around the entire workspace. The individual assurance summary, three policy/control cards and Operational Boundaries panel retain their own border/radius/shadow, and the outer semantic `Authentication Security Workspace` section remains accessible.
+
+At desktop 1440 / 1280 / the operator screenshot width (approximately 1150), the Overview compact governance statements for Provider Authority, Session Revocation and Committed Evidence should occupy **one complete readable line** with no clipped letters. Expected copy is: “Cloudflare validates Turnstile.”; “New logins revoke old sessions.”; “Audit tracks policy and logins.” On 1024/768/390/360 or zoomed views, natural wrapping is allowed; prohibit hidden overflow, ellipsis and horizontal scroll. Confirm right-side qualifiers, keyboard focus and light/dark contrast. All other tabs should preserve their forms, status badges, Guide, HTMX back/forward navigation, manager/view-only boundaries, and existing MFA/Bot security gates.
+
+The operator's preceding log reported **45 focused pytest PASS**, Access Final Lock PASS, Sidebar Standard PASS and Ruff check PASS on the prior SHA; `ruff format --check` FAILED on the workspace contract and `djlint --check` FAILED on the large content template. The scoped Ruff formatting adjustments are included here, but these historical values **do not establish PASS on the new SHA**. Treat the large inherited djlint multiline-Jinja formatter diff as an open gate until the existing djlint formatter is run and reviewed; do not suppress validation or rewrite security semantics blindly.
+
+Run at the new exact candidate SHA:
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Run the Visual QA and security-sensitive navigation/operation checks separately on the holding SHA. Record actual outcomes as PASS/FAIL/NOT RUN with sanitized evidence; no automatic human acceptance or promotion.

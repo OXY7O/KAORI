@@ -47,16 +47,14 @@ def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> 
     assert "prefix='authentication-security'" in template
     assert "hx_target='#authentication-security-page'" in template
     assert "'submenu_tabs': submenu_tabs" in source('app/access/authentication_security/__init__.py')
-    assert "None, href) for key, label, icon, href in tabs" in source(
-        'app/access/authentication_security/__init__.py'
-    )
+    assert 'None, href) for key, label, icon, href in tabs' in source('app/access/authentication_security/__init__.py')
     assert "'Enforced' if bot_mode == 'always' else 'Not Enabled'" in template
     assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in template
     assert 'Cloudflare Siteverify' in template
     assert 'Single active login generation' in template
     assert "url_for('access.authentication_security.save_bot_policy')" in template
-    assert "name=\"csrf_token\"" in template
-    assert "name=\"acknowledge_bot_impact\"" in template
+    assert 'name="csrf_token"' in template
+    assert 'name="acknowledge_bot_impact"' in template
     assert 'hx-post=' not in template
 
 
@@ -67,9 +65,7 @@ def test_authentication_security_submenu_uses_shared_server_route_tabs() -> None
     Environment().parse(template)
     assert 'data-authentication-security-submenu' in template
     assert 'workspace_tabs.render_navigation(' in template
-    assert template.index('workspace_tabs.render_navigation(') < template.index(
-        'page_hero.shell_classes()'
-    )
+    assert template.index('workspace_tabs.render_navigation(') < template.index('page_hero.shell_classes()')
     assert 'workspace_tabs.render_query_tabs(' not in template
     assert 'data-kaori-tab-variant="integrated-workspace-server"' in shared
     assert 'aria-current="page"' in shared
@@ -78,9 +74,44 @@ def test_authentication_security_submenu_uses_shared_server_route_tabs() -> None
     assert "hx_target='#authentication-security-page'" in template
     assert 'hx-sync="this:replace"' in template
     assert "'submenu_tabs': submenu_tabs" in route
-    assert "None, href) for key, label, icon, href in tabs" in route
+    assert 'None, href) for key, label, icon, href in tabs' in route
     assert route.count("url_for('access.authentication_security.index', tab=key)") == 1
     assert template.count('workspace_tabs.render_navigation(') == 1
+
+
+def test_authentication_security_workspace_does_not_wrap_its_standard_cards() -> None:
+    page = source('app/templates/access/authentication_security/partials/_page_content.html')
+    Environment().parse(page)
+    assert '<section aria-label="Authentication Security Workspace"' in page
+    assert 'data-auth-security-workspace="flat"' in page
+    assert '<div class="space-y-4">' in page
+    assert 'aria-label="Authentication Security Workspace">' not in page
+    assert 'class="space-y-4 p-5 lg:p-6"' not in page
+    assert page.count('assurance.render(') == 4
+    assert page.index('page_hero.shell_classes()') < page.index('data-auth-security-workspace="flat"')
+    assert 'workspace_tabs.render_navigation(' in page
+    assert 'workspace_tabs.render_query_tabs(' not in page
+
+
+def test_overview_governance_copy_stays_concise_without_truncation() -> None:
+    page = source('app/templates/access/authentication_security/partials/_page_content.html')
+    component = source('app/templates/access/authentication_security/partials/_assurance_summary.html')
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'mfa' %}", 1
+    )[0]
+    for copy in (
+        'Cloudflare validates Turnstile.',
+        'New logins revoke old sessions.',
+        'Audit tracks policy and logins.',
+    ):
+        assert copy in overview
+    assert 'Provider Authority' in overview
+    assert 'Session Revocation' in overview
+    assert 'Committed Evidence' in overview
+    assert 'whitespace-nowrap' not in component
+    assert 'text-ellipsis' not in component
+    assert 'overflow-hidden text-ellipsis' not in component
+    assert 'md:grid-cols-2 xl:grid-cols-4' in component
 
 
 def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
