@@ -227,7 +227,7 @@ def test_credential_expanded_detail_has_compact_governed_actions() -> None:
     assert 'lg:grid-cols-2' in template
     assert "action_button.classes('secondary')" in template
     assert "action_button.classes('critical')" in template
-    assert "full=true" not in template
+    assert 'full=true' not in template
     assert template.count('class="ml-auto shrink-0"') == 4
     assert 'data-credential-material-open' in template
     assert 'data-dialog-target="credential-material-request-{{ credential.id }}"' in template

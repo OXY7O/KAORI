@@ -19,9 +19,7 @@
                 </p>
             </div>
         </div>
-        <div class="shrink-0">
-            {{ table_label.special_label('Capsule Authority', 'maintenance', 'shield-check') }}
-        </div>
+        <div class="shrink-0">{{ table_label.special_label('Capsule Authority', 'maintenance', 'shield-check') }}</div>
     </header>
     <div class="px-5" data-tenant-provider-evidence-loading>
         {{ loading_bar.render('tenant-capsule-evidence-loading', label='Refreshing committed inspection evidence') }}
@@ -78,14 +76,14 @@
             <p class="mt-1 text-sm font-semibold text-content-primary">{{ access_evidence_review_required }} records</p>
         </div>
     </div>
-    {% set evidence_registry_id = 'tenant-capsule-evidence-registry' %}
-    {% set evidence_loading_id = 'tenant-capsule-evidence-loading' %}
+    {% set evidence_registry_id = "tenant-capsule-evidence-registry" %}
+    {% set evidence_loading_id = "tenant-capsule-evidence-loading" %}
     {% set evidence_query_params = {
-        'section': 'access-grants',
-        'access_inventory_view': 'capsule',
-        'access_evidence_search': access_evidence_filters.search,
-        'access_evidence_status': access_evidence_filters.status
-    } %}
+            'section': 'access-grants',
+            'access_inventory_view': 'capsule',
+            'access_evidence_search': access_evidence_filters.search,
+            'access_evidence_status': access_evidence_filters.status
+        } %}
     <section id="{{ evidence_registry_id }}"
              class="min-w-0 border-t border-outline-subtle"
              aria-label="Capsule committed inspection evidence">
@@ -102,13 +100,13 @@
             {% if access_evidence_filters.search or access_evidence_filters.status %}
                 <div class="flex shrink-0 items-center gap-2">
                     {{ registry_ui.clear_filters_link('tenant.tenants',
-                        evidence_registry_id,
-                        evidence_loading_id,
-                        access_evidence_pagination.per_page,
-                        table_ui.action_classes(),
-                        query_params={'section': 'access-grants', 'access_inventory_view': 'capsule'},
-                        page_param='access_evidence_page',
-                        per_page_param='access_evidence_per_page') }}
+                                        evidence_registry_id,
+                                        evidence_loading_id,
+                                        access_evidence_pagination.per_page,
+                                        table_ui.action_classes() ,
+                    query_params={'section': 'access-grants', 'access_inventory_view': 'capsule'},
+                    page_param='access_evidence_page',
+                    per_page_param='access_evidence_per_page') }}
                 </div>
             {% endif %}
         </header>
@@ -139,13 +137,13 @@
                     <label for="capsule-access-evidence-search"
                            class="{{ table_ui.filter_label_classes() }}">Search</label>
                     {{ table_ui.search_field('access_evidence_search',
-                        access_evidence_filters.search,
-                        'Tenant ID or event summary',
-                        id='capsule-access-evidence-search') }}
+                                        access_evidence_filters.search,
+                                        'Tenant ID or event summary',
+                                        id='capsule-access-evidence-search') }}
                 </div>
             {% endcall %}
         </div>
-        {% set access_provider = 'capsule' %}
+        {% set access_provider = "capsule" %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">
                 <caption class="sr-only">Committed Capsule access observations and expanded provider evidence</caption>
@@ -155,7 +153,8 @@
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Observed At</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Provider Evidence</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Status</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Action</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Action</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -164,16 +163,16 @@
             </table>
         </div>
         {{ registry_ui.footer('tenant.tenants',
-            evidence_registry_id,
-            evidence_loading_id,
-            access_evidence_pagination,
-            evidence_query_params,
-            access_evidence_pagination.allowed_per_page,
-            resource_label='Observations',
-            rows_aria_label='Observations per page',
-            control_name='capsule-access-evidence',
-            page_param='access_evidence_page',
-            per_page_param='access_evidence_per_page') }}
+                evidence_registry_id,
+                evidence_loading_id,
+                access_evidence_pagination,
+                evidence_query_params,
+                access_evidence_pagination.allowed_per_page,
+                resource_label='Observations',
+                rows_aria_label='Observations per page',
+                control_name='capsule-access-evidence',
+                page_param='access_evidence_page',
+                per_page_param='access_evidence_per_page') }}
     </section>
 </section>
 {% set scoped_access_profile_reviews = recent_external_access_profile_reviews|selectattr('metadata_json.provider', 'equalto', 'capsule')|list %}
@@ -192,7 +191,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <p class="break-all text-xs font-semibold text-content-primary">
                             {{ review.provider|replace('_', ' ') |title }} ·
-                            {% if review.namespace %}{{ review.namespace }} · {% endif %}
+                            {% if review.namespace %}{{ review.namespace }} ·{% endif %}
                             {{ review.role_kind }}/{{ review.role_name }}
                         </p>
                         {{ table_label.status_label('Review Required', 'warning') }}
