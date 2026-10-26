@@ -52,8 +52,9 @@ def build_app_jwt(app_id: str | int, private_key_pem: str, *, now: datetime | No
         raise GitHubAppAuthError('GitHub App signing credential must be an RSA private key.')
     header = _b64url(json.dumps({'alg': 'RS256', 'typ': 'JWT'}, separators=(',', ':')).encode('ascii'))
     claims = _b64url(
-        json.dumps({'iat': issued - 60, 'exp': issued + 480, 'iss': str(identifier)}, separators=(',', ':'))
-        .encode('ascii')
+        json.dumps({'iat': issued - 60, 'exp': issued + 480, 'iss': str(identifier)}, separators=(',', ':')).encode(
+            'ascii'
+        )
     )
     signing_input = f'{header}.{claims}'.encode('ascii')
     signature = key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())

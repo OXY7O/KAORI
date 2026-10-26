@@ -23,11 +23,16 @@ from app.platform_operations.jobs.execution import (
 
 
 @shared_task(
-    bind=True, name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory',
-    acks_late=True, reject_on_worker_lost=True,
+    bind=True,
+    name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory',
+    acks_late=True,
+    reject_on_worker_lost=True,
 )
 def sync_vault_inventory_task(
-    self, *, targets: list[dict[str, int]], requested_by_user_id: int | None,
+    self,
+    *,
+    targets: list[dict[str, int]],
+    requested_by_user_id: int | None,
     job_execution_id: int | None = None,
 ) -> dict[str, int | str]:
     """Run read-only scans; no credentials or sensitive paths in task arguments/results."""
@@ -41,14 +46,20 @@ def sync_vault_inventory_task(
         context.fail('Vault inventory target scope is invalid.', error_code='invalid_scope')
         return {'status': 'failed', 'synced_instances': 0, 'failed_scopes': count}
     context.start(
-        message='Preparing approved Vault metadata scopes.', total=count, percent=1,
-        stage='Preparing Inventory', target='Secrets & PKI',
+        message='Preparing approved Vault metadata scopes.',
+        total=count,
+        percent=1,
+        stage='Preparing Inventory',
+        target='Secrets & PKI',
     )
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
-                current=index - 1, total=count, percent=min(5 + 85 * (index - 1) // count, 90),
-                stage='Collecting Metadata', target='Vault Instance',
+                current=index - 1,
+                total=count,
+                percent=min(5 + 85 * (index - 1) // count, 90),
+                stage='Collecting Metadata',
+                target='Vault Instance',
             )
             current_mount: str | None = None
             instance_id = 0
@@ -73,7 +84,9 @@ def sync_vault_inventory_task(
                     current_mount = mount
                     # Do not print/log mount names or provider response objects.
                     context.checkpoint(
-                        current=index - 1, total=count, stage='Observing KV v2 Metadata',
+                        current=index - 1,
+                        total=count,
+                        stage='Observing KV v2 Metadata',
                         target='Approved Vault Scope',
                     )
                     # New client per mount; the AppRole token stays only in worker memory.
@@ -95,8 +108,10 @@ def sync_vault_inventory_task(
                     error_code='vault_inventory_timeout',
                 )
                 return {
-                    'status': 'failed', 'synced_instances': succeeded,
-                    'failed_scopes': failed + 1, 'committed_mounts': committed_mounts,
+                    'status': 'failed',
+                    'synced_instances': succeeded,
+                    'failed_scopes': failed + 1,
+                    'committed_mounts': committed_mounts,
                 }
             except Exception:
                 # Provider exceptions may contain URLs, paths or other secrets.
@@ -106,20 +121,26 @@ def sync_vault_inventory_task(
                     mark_kv2_inventory_failed(instance_id, current_mount)
                 failed += 1
             context.checkpoint(
-                current=index, total=count, percent=min(5 + 90 * index // count, 95),
-                stage='Scope Reconciliation', target='Vault Inventory',
+                current=index,
+                total=count,
+                percent=min(5 + 90 * index // count, 95),
+                stage='Scope Reconciliation',
+                target='Vault Inventory',
             )
         result = {
             'status': 'failed' if failed and not committed_mounts else ('partial' if failed else 'success'),
-            'synced_instances': succeeded, 'failed_scopes': failed,
-            'observed_secrets': secrets, 'committed_mounts': committed_mounts,
+            'synced_instances': succeeded,
+            'failed_scopes': failed,
+            'observed_secrets': secrets,
+            'committed_mounts': committed_mounts,
         }
         if failed and not committed_mounts:
-            context.fail('All approved Vault inventory scopes failed; committed history is retained.',
-                         error_code='vault_inventory_failed')
+            context.fail(
+                'All approved Vault inventory scopes failed; committed history is retained.',
+                error_code='vault_inventory_failed',
+            )
         else:
-            context.succeed(result_summary=result, result_type='secrets_pki_inventory',
-                            partial=bool(failed))
+            context.succeed(result_summary=result, result_type='secrets_pki_inventory', partial=bool(failed))
         return result
     except JobCancellationRequested:
         context.canceled()
@@ -127,11 +148,16 @@ def sync_vault_inventory_task(
 
 
 @shared_task(
-    bind=True, name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_pki',
-    acks_late=True, reject_on_worker_lost=True,
+    bind=True,
+    name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_pki',
+    acks_late=True,
+    reject_on_worker_lost=True,
 )
 def sync_vault_pki_task(
-    self, *, targets: list[dict[str, int]], requested_by_user_id: int | None,
+    self,
+    *,
+    targets: list[dict[str, int]],
+    requested_by_user_id: int | None,
     job_execution_id: int | None = None,
 ) -> dict[str, int | str]:
     """Qualified issuer/CA fingerprint collection; no private or PEM task payloads."""
@@ -154,14 +180,20 @@ def sync_vault_pki_task(
     committed = 0
     observed_issuers = 0
     context.start(
-        message='Preparing approved public Vault PKI scopes.', total=count,
-        percent=1, stage='Preparing Public PKI Inventory', target='Secrets & PKI',
+        message='Preparing approved public Vault PKI scopes.',
+        total=count,
+        percent=1,
+        stage='Preparing Public PKI Inventory',
+        target='Secrets & PKI',
     )
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
-                current=index - 1, total=count, percent=min(5 + 85 * (index - 1) // count, 90),
-                stage='Collecting Public PKI', target='Vault Instance',
+                current=index - 1,
+                total=count,
+                percent=min(5 + 85 * (index - 1) // count, 90),
+                stage='Collecting Public PKI',
+                target='Vault Instance',
             )
             instance_id = 0
             current_mount: str | None = None
@@ -173,7 +205,8 @@ def sync_vault_pki_task(
                 identity = instance.integration_instance
                 if (
                     identity.integration_type != 'secrets_pki'
-                    or identity.provider_key != 'vault' or not identity.enabled
+                    or identity.provider_key != 'vault'
+                    or not identity.enabled
                     or identity.lifecycle_status != 'active'
                     or identity.readiness_status != 'ready'
                 ):
@@ -184,7 +217,9 @@ def sync_vault_pki_task(
                 for mount in mounts:
                     current_mount = mount
                     context.checkpoint(
-                        current=index - 1, total=count, stage='Observing Public PKI Issuers',
+                        current=index - 1,
+                        total=count,
+                        stage='Observing Public PKI Issuers',
                         target='Approved Vault PKI Scope',
                     )
                     evidence = collect_pki_public_issuers(build_client(instance), mount=mount)
@@ -205,8 +240,10 @@ def sync_vault_pki_task(
                     error_code='vault_pki_timeout',
                 )
                 return {
-                    'status': 'failed', 'synced_instances': succeeded,
-                    'failed_scopes': failed + 1, 'committed_mounts': committed,
+                    'status': 'failed',
+                    'synced_instances': succeeded,
+                    'failed_scopes': failed + 1,
+                    'committed_mounts': committed,
                 }
             except Exception:
                 # Never expose provider errors/issuer identities/PEM material in job summaries.
@@ -215,13 +252,19 @@ def sync_vault_pki_task(
                     mark_pki_public_issuers_failed(instance_id, current_mount)
                 failed += 1
             context.checkpoint(
-                current=index, total=count, percent=min(5 + 90 * index // count, 95),
-                stage='PKI Evidence Reconciliation', target='Public PKI Inventory',
+                current=index,
+                total=count,
+                percent=min(5 + 90 * index // count, 95),
+                stage='PKI Evidence Reconciliation',
+                target='Public PKI Inventory',
             )
         status = 'failed' if failed and not committed else ('partial' if failed else 'success')
         result = {
-            'status': status, 'synced_instances': succeeded, 'failed_scopes': failed,
-            'observed_issuers': observed_issuers, 'committed_mounts': committed,
+            'status': status,
+            'synced_instances': succeeded,
+            'failed_scopes': failed,
+            'observed_issuers': observed_issuers,
+            'committed_mounts': committed,
         }
         if failed and not committed:
             context.fail(
@@ -230,24 +273,31 @@ def sync_vault_pki_task(
             )
         else:
             context.succeed(
-                result_summary=result, result_type='secrets_pki_public_pki',
+                result_summary=result,
+                result_type='secrets_pki_public_pki',
                 partial=bool(failed),
             )
         return result
     except JobCancellationRequested:
         context.canceled()
         return {
-            'status': 'canceled', 'synced_instances': succeeded, 'failed_scopes': failed,
+            'status': 'canceled',
+            'synced_instances': succeeded,
+            'failed_scopes': failed,
         }
 
 
 @shared_task(
     bind=True,
     name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_stored_certificates',
-    acks_late=True, reject_on_worker_lost=True,
+    acks_late=True,
+    reject_on_worker_lost=True,
 )
 def sync_vault_stored_certificates_task(
-    self, *, targets: list[dict[str, int]], requested_by_user_id: int | None,
+    self,
+    *,
+    targets: list[dict[str, int]],
+    requested_by_user_id: int | None,
     job_execution_id: int | None = None,
 ) -> dict[str, int | str]:
     """Read only stored public certs; task args/results contain no serial or PEM."""
@@ -273,13 +323,19 @@ def sync_vault_stored_certificates_task(
     observed = 0
     context.start(
         message='Preparing bounded Vault stored-certificate scopes.',
-        total=count, percent=1, stage='Preparing PKI Collection', target='Secrets & PKI',
+        total=count,
+        percent=1,
+        stage='Preparing PKI Collection',
+        target='Secrets & PKI',
     )
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
-                current=index - 1, total=count, percent=min(5 + 85 * (index - 1) // count, 90),
-                stage='Collecting Stored Public Certificates', target='Vault Instance',
+                current=index - 1,
+                total=count,
+                percent=min(5 + 85 * (index - 1) // count, 90),
+                stage='Collecting Stored Public Certificates',
+                target='Vault Instance',
             )
             instance_id = 0
             current_mount: str | None = None
@@ -290,8 +346,10 @@ def sync_vault_stored_certificates_task(
                     raise ValueError('Stored PKI source does not exist.')
                 identity = provider.integration_instance
                 if (
-                    identity.integration_type != 'secrets_pki' or identity.provider_key != 'vault'
-                    or not identity.enabled or identity.lifecycle_status != 'active'
+                    identity.integration_type != 'secrets_pki'
+                    or identity.provider_key != 'vault'
+                    or not identity.enabled
+                    or identity.lifecycle_status != 'active'
                     or identity.readiness_status != 'ready'
                 ):
                     raise ValueError('Stored PKI identity is not eligible.')
@@ -303,7 +361,9 @@ def sync_vault_stored_certificates_task(
                 for mount in mounts:
                     current_mount = mount
                     context.checkpoint(
-                        current=index - 1, total=count, stage='Reading Stored Certificates',
+                        current=index - 1,
+                        total=count,
+                        stage='Reading Stored Certificates',
                         target='Approved PKI Scope',
                     )
                     source = collect_pki_stored_certificates(build_client(provider), mount=mount)
@@ -324,8 +384,10 @@ def sync_vault_stored_certificates_task(
                     error_code='vault_stored_pki_timeout',
                 )
                 return {
-                    'status': 'failed', 'synced_instances': succeeded,
-                    'failed_scopes': failed + 1, 'committed_mounts': committed,
+                    'status': 'failed',
+                    'synced_instances': succeeded,
+                    'failed_scopes': failed + 1,
+                    'committed_mounts': committed,
                 }
             except Exception:
                 # Vault error strings may include Secret paths, certificate PEM or tokens.
@@ -334,13 +396,18 @@ def sync_vault_stored_certificates_task(
                     mark_stored_pki_certificates_failed(instance_id, current_mount)
                 failed += 1
             context.checkpoint(
-                current=index, total=count, percent=min(5 + 90 * index // count, 95),
-                stage='Stored Certificate Reconciliation', target='Public PKI Evidence',
+                current=index,
+                total=count,
+                percent=min(5 + 90 * index // count, 95),
+                stage='Stored Certificate Reconciliation',
+                target='Public PKI Evidence',
             )
         status = 'failed' if failed and not committed else ('partial' if failed else 'success')
         result = {
-            'status': status, 'synced_instances': succeeded,
-            'failed_scopes': failed, 'committed_mounts': committed,
+            'status': status,
+            'synced_instances': succeeded,
+            'failed_scopes': failed,
+            'committed_mounts': committed,
             'observed_stored_certificates': observed,
         }
         if failed and not committed:
@@ -350,13 +417,15 @@ def sync_vault_stored_certificates_task(
             )
         else:
             context.succeed(
-                result_summary=result, result_type='secrets_pki_stored_certificates',
+                result_summary=result,
+                result_type='secrets_pki_stored_certificates',
                 partial=bool(failed),
             )
         return result
     except JobCancellationRequested:
         context.canceled()
         return {
-            'status': 'canceled', 'synced_instances': succeeded,
+            'status': 'canceled',
+            'synced_instances': succeeded,
             'failed_scopes': failed,
         }

@@ -41,6 +41,4 @@ def probe_installation(installation: SourceInstallation) -> InstallationReadines
     """Read-only, bounded validation; never marks the provider Ready on its own."""
     client = build_client_for_installation(installation)
     assert installation.account is not None
-    return client.validate_installation(
-        installation.native_installation_id, installation.account.native_account_id
-    )
+    return client.validate_installation(installation.native_installation_id, installation.account.native_account_id)

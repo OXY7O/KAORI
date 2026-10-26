@@ -43,7 +43,8 @@ class GitHubRuntimeAdapter:
             _canonical(instance)
             evidence = probe_installation(instance)
             return {
-                'connected': True, 'installation_id': evidence.installation_id,
+                'connected': True,
+                'installation_id': evidence.installation_id,
                 'account_id': evidence.account_id,
                 'repository_scope': evidence.repository_selection,
                 'observed_at': evidence.observed_at.isoformat(),
@@ -70,7 +71,8 @@ class GitHubRuntimeAdapter:
             canonical.last_checked_at = now
             db.session.commit()
             return {
-                'connected': False, 'readiness_status': 'blocked',
+                'connected': False,
+                'readiness_status': 'blocked',
                 'reason': 'GitHub App installation authentication or scope validation failed.',
             }
 
@@ -93,7 +95,8 @@ class GitHubRuntimeAdapter:
         instance.last_observed_at = observation.observed_at
         db.session.commit()
         return {
-            'connected': True, 'readiness_status': assessment.status,
+            'connected': True,
+            'readiness_status': assessment.status,
             'capabilities': assessment.capability_states,
             'repository_scope': assessment.repository_scope,
             'reason': assessment.reason,
@@ -124,32 +127,43 @@ class GitHubRuntimeAdapter:
         is_healthy = status == 'healthy'
         unknown = status == 'not_observed'
         qualified = canonical.readiness_status == 'ready'
-        health = calculate_health((
-            HealthFactor(
-                'provider_health', 'GitHub App Health',
-                'success' if is_healthy else ('unknown' if unknown else 'failed'),
-                60, 100 if is_healthy else (50 if unknown else 0),
-            ),
-            HealthFactor(
-                'validation', 'Full Validation',
-                'success' if qualified else 'warning', 40, 100 if qualified else 50,
-            ),
-        ))
+        health = calculate_health(
+            (
+                HealthFactor(
+                    'provider_health',
+                    'GitHub App Health',
+                    'success' if is_healthy else ('unknown' if unknown else 'failed'),
+                    60,
+                    100 if is_healthy else (50 if unknown else 0),
+                ),
+                HealthFactor(
+                    'validation',
+                    'Full Validation',
+                    'success' if qualified else 'warning',
+                    40,
+                    100 if qualified else 50,
+                ),
+            )
+        )
         metadata = (canonical.metadata_json or {}).get('github_validation') or {}
         safe = metadata if isinstance(metadata, dict) else {}
         return RuntimeState(
             integration_type=self.integration_type,
-            provider_key='github', adapter_key='github_rest_v3',
-            instance_id=str(instance.id), instance_name=canonical.name,
+            provider_key='github',
+            adapter_key='github_rest_v3',
+            instance_id=str(instance.id),
+            instance_name=canonical.name,
             observed_at=canonical.last_checked_at or now,
             readiness=canonical.readiness_status or 'validation_required',
             health=health,
             diagnostics=(
                 DiagnosticResult(
-                    key='installation_auth', label='Installation Scope',
+                    key='installation_auth',
+                    label='Installation Scope',
                     category='runtime',
                     status='success' if is_healthy else ('unknown' if unknown else 'failed'),
-                    detail='GitHub App installation is reachable.' if is_healthy
+                    detail='GitHub App installation is reachable.'
+                    if is_healthy
                     else 'Installation state requires operator review.',
                 ),
             ),
@@ -157,7 +171,8 @@ class GitHubRuntimeAdapter:
                 profile=str(safe.get('profile') or _PROFILE),
                 compatibility_profile=None,
                 capabilities=tuple(
-                    key for key, value in dict(safe.get('capability_states') or {}).items()
+                    key
+                    for key, value in dict(safe.get('capability_states') or {}).items()
                     if value == 'permission_verified'
                 ),
                 observed_at=instance.last_observed_at or now,
