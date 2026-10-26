@@ -4,6 +4,10 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_registry.html" as registry_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}HashiCorp Vault Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
 {% set posture = "Healthy" if ready and not attention else ("Attention" if attention else ("Inactive" if registered else "Not Configured")) %}
@@ -62,69 +66,155 @@
                 </p>
             </div>
         {% else %}
-            <div class="overflow-hidden rounded-xl border border-outline-subtle">
-            <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                {{ table_label.metadata_label("Connection Registry", "database") }}
-                <h2 class="mt-2 text-base font-semibold text-content-primary">Vault Instances</h2>
-                <p class="mt-1 text-sm text-content-secondary">Provider validation is independent from Inventory, Metrics Source and Alert Source coverage.</p>
-            </div>
-            {% if instances %}
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-outline-subtle bg-surface-elevated text-content-secondary">
-                        <tr><th scope="col" class="px-5 py-3 font-semibold">Connection</th>
-                            <th scope="col" class="px-5 py-3 font-semibold">Environment</th>
-                            <th scope="col" class="px-5 py-3 font-semibold">Validation</th>
-                            <th scope="col" class="px-5 py-3 font-semibold">Vault Health</th>
-                            <th scope="col" class="px-5 py-3 font-semibold">Action</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline-subtle">
-                    {% for item in instances %}
-                    <tr>
-                        <td class="px-5 py-3 font-semibold text-content-primary">{{ item.name }}</td>
-                        <td class="px-5 py-3 text-content-secondary">{{ item.environment or "Unspecified" }}</td>
-                        <td class="px-5 py-3 text-content-secondary">{{ (item.readiness_status or "validation_required")|replace("_", " ")|title }}</td>
-                        <td class="px-5 py-3 text-content-secondary">{{ (item.validation_summary or {}).get("health_status", "Not Observed")|replace("_", " ")|title }}</td>
-                        <td class="px-5 py-3"><a class="font-semibold text-kaori-primary hover:underline" href="{{ url_for('vault.detail', instance_id=item.id) }}">View Details</a></td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="{{ pagination_ui.footer_classes() }}">
-                <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
-                <div class="{{ pagination_ui.summary_group_classes() }}">
-                    <div class="{{ pagination_ui.rows_group_classes() }}">
-                        <label for="vault-rows" class="sr-only">Connections per page</label>
-                        <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
-                                class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
-                            {% for value in pagination.allowed_per_page %}
-                                <option value="{{ url_for('vault.index', tab='registry', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
-                        {% if pagination.has_prev %}
-                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', tab='registry', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
-                        {% else %}
-                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
-                        {% endif %}
-                        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page, "tab": "registry"}) }}
-                        {% if pagination.has_next %}
-                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', tab='registry', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
-                        {% else %}
-                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
-                        {% endif %}
-                    </nav>
+            <section id="vault-connection-registry"
+                     class="{{ table_ui.block_classes(allow_overflow=true) }}"
+                     data-kaori-vault-full-table-registry
+                     data-kaori-canonical-registry="vault-connections">
+                {% set header_actions %}
+                    {% if registry_search or registry_environment or registry_readiness %}
+                        {{ registry_ui.clear_filters_action(url_for('vault.index', tab='registry', per_page=pagination.per_page),
+                            table_ui.action_classes(),
+                            hx_get=url_for('vault.index', tab='registry', per_page=pagination.per_page),
+                            target='#vault-connection-registry',
+                            select='#vault-connection-registry',
+                            indicator='#vault-registry-loading',
+                            push_url='true',
+                            sync='closest section:replace',
+                            marker='vault-connections') }}
+                    {% endif %}
+                {% endset %}
+                {% set header_guide %}
+                    {{ info_tip.render('vault-connection-registry-guide', 'Vault Connection Registry',
+                        'Registered Vault AppRole connections are canonical KAORI identities; provider validation and operational evidence remain separate.',
+                        [
+                            'Ready requires separately committed Full Validation.',
+                            'Vault owns Secret values, lease state, issuance and ACLs.',
+                            'Connection listing does not grant Secrets & PKI resource access.'
+                        ],
+                        placement='right', variant='guide') }}
+                {% endset %}
+                {{ table_ui.inventory_block_header('database', 'Vault Connection Registry',
+                    'Review configured Vault endpoints, environments, readiness and observed provider health.',
+                    'vault-registry-loading', 'Refreshing Vault connections', none,
+                    header_actions=header_actions, title_extra=header_guide,
+                    result_count=pagination.total_items) }}
+                <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                    <form method="get"
+                          action="{{ url_for('vault.index') }}"
+                          hx-get="{{ url_for('vault.index') }}"
+                          hx-trigger="change, input changed delay:400ms, submit"
+                          hx-target="#vault-connection-registry"
+                          hx-select="#vault-connection-registry"
+                          hx-swap="outerHTML"
+                          hx-push-url="true"
+                          hx-indicator="#vault-registry-loading"
+                          hx-sync="closest section:replace"
+                          data-kaori-canonical-registry-filter="vault-connections"
+                          class="{{ table_ui.filter_layout_classes() }}">
+                        <input type="hidden" name="tab" value="registry">
+                        <input type="hidden" name="page" value="1">
+                        <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+                        <div>
+                            <label for="vault-registry-search"
+                                   class="{{ table_ui.filter_label_classes() }}">Search Connection</label>
+                            <input id="vault-registry-search"
+                                   type="search"
+                                   name="q"
+                                   value="{{ registry_search }}"
+                                   maxlength="80"
+                                   autocomplete="off"
+                                   placeholder="Connection or endpoint"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </div>
+                        <div>
+                            <label for="vault-registry-environment"
+                                   class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                            <select id="vault-registry-environment"
+                                    name="environment"
+                                    class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Environments</option>
+                                {% for value, label in environment_options %}
+                                    <option value="{{ value }}"
+                                            {% if registry_environment == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vault-registry-readiness"
+                                   class="{{ table_ui.filter_label_classes() }}">Validation</label>
+                            <select id="vault-registry-readiness"
+                                    name="readiness"
+                                    class="{{ table_ui.filter_select_classes() }}">
+                                {% for value, label in [('', 'All States'), ('ready', 'Ready'), ('validation_required', 'Validation Required'), ('degraded', 'Degraded'), ('blocked', 'Blocked')] %}
+                                    <option value="{{ value }}"
+                                            {% if registry_readiness == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <noscript>
+                            <div class="flex items-end">
+                                <button type="submit"
+                                        class="{{ table_ui.action_classes() }}">Filter Results</button>
+                            </div>
+                        </noscript>
+                    </form>
                 </div>
-            </div>
-            {% else %}
-            <div class="p-6 text-center">
-                <p class="font-semibold text-content-primary">No Vault Connections Registered</p>
-                <p class="mt-2 text-sm text-content-secondary">Register an approved HTTPS Vault origin and least-privilege AppRole before collecting provider evidence.</p>
-            </div>
-            {% endif %}
-            </div>
+                <div class="w-full min-w-0 overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+                        <caption class="sr-only">Registered HashiCorp Vault provider connections.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%]">Connection</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Environment</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Validation</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Vault Health</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes(true) }} w-[15%]">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for item in instances %}
+                                {% set validation_state = item.readiness_status or 'validation_required' %}
+                                {% set observed_health = (item.validation_summary or {}).get('health_status', 'not_observed') %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_ui.title_cell(item.name, item.endpoint, 'key-round') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.environment or 'Unspecified' }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status(validation_state, validation_state|replace('_', ' ')|title, display='indicator') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status(observed_health, observed_health|replace('_', ' ')|title, display='indicator') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes(true) }}">
+                                        <a href="{{ url_for('vault.detail', instance_id=item.id) }}"
+                                           class="{{ table_ui.action_classes() }}">View Details</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="p-0">
+                                        {% set empty_state_icon = "key-round" %}
+                                        {% set empty_state_label = "No Results" %}
+                                        {% set empty_state_title = "No Matching Vault Connections" if registry_search or registry_environment or registry_readiness else "No Vault Connections Registered" %}
+                                        {% set empty_state_description = "Adjust the filters or clear them." if registry_search or registry_environment or registry_readiness else "Register an approved HTTPS Vault endpoint and least-privilege AppRole to begin." %}
+                                        {% include "components/states/_empty_state.html" %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {{ registry_ui.footer('vault.index',
+                    'vault-connection-registry',
+                    'vault-registry-loading',
+                    pagination,
+                    {'tab': 'registry', 'q': registry_search, 'environment': registry_environment, 'readiness': registry_readiness},
+                    pagination.allowed_per_page,
+                    resource_label='Connections',
+                    rows_aria_label='Vault connections per page',
+                    control_name='vault-connections') }}
+            </section>
         {% endif %}
     {% endcall %}
 </div>

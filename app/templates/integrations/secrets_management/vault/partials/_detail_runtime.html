@@ -1,0 +1,156 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "integrations/components/_runtime_decision.html" as runtime_decision %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set latest_runtime = latest_runtime_observation %}
+{% set runtime_health = latest_runtime.health_status if latest_runtime else 'not_observed' %}
+{% set runtime_observed = latest_runtime is not none %}
+{% set runtime_gate = 'ready' if runtime_observed and runtime_health in ['active', 'healthy'] else ('blocked' if runtime_observed and runtime_health in ['unhealthy', 'sealed', 'uninitialized', 'unavailable'] else ('degraded' if runtime_observed else 'not_observed')) %}
+<section class="{{ integration_ui.section_shell_classes() }} overflow-hidden"
+         data-kaori-vault-runtime-workspace>
+    {% call connection_validation_header.render('Vault Runtime Health & Diagnostics',
+        'Inspect committed runtime status and independently collected health history.',
+        icon='activity',
+        title_extra=info_tip.render('vault-runtime-guide', 'Vault Runtime Health',
+            'Runtime Refresh observes Vault health separately from Full Validation and Secrets & PKI inventory.',
+            [
+                'Health distinguishes active, standby, performance standby, sealed and unavailable states.',
+                'A successful registration or Full Validation is not proof of current runtime health.',
+                'The table uses committed KAORI observations, never a live page-load Vault request.'
+            ], placement='right', variant='guide')) %}
+        <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
+              method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+                    class="{{ action_button.classes('primary') }}"
+                    {% if not instance.enabled %}disabled{% endif %}>
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                Refresh Runtime
+            </button>
+        </form>
+    {% endcall %}
+    <div class="space-y-4 p-4 sm:p-5">
+        {% if evidence.runtime_job %}
+            <p role="status" class="text-xs text-content-secondary">
+                Runtime task: {{ evidence.runtime_job.get('status', 'pending') }} · {{ evidence.runtime_job.get('task_id', '') }}
+            </p>
+        {% endif %}
+        {{ runtime_decision.render(runtime_gate,
+            runtime_health|replace('_', ' ')|title,
+            runtime_health|replace('_', ' ')|title if runtime_observed else 'Not Observed',
+            'Latest committed Vault runtime health.',
+            'Observed' if runtime_observed else 'Not Observed',
+            'Vault health is independent from validation and collection.',
+            readiness if instance.enabled else 'disabled',
+            readiness|replace('_', ' ')|title if instance.enabled else 'Disabled',
+            'Full Validation establishes API readiness, not runtime health.',
+            [
+                ('Last Observation', latest_runtime.observed_at|user_datetime if runtime_observed else 'Not Observed'),
+                ('Observation Trigger', latest_runtime.trigger_type|replace('_', ' ')|title if runtime_observed else 'Not Observed'),
+                ('Runtime Status', instance.last_status or 'Not Observed')
+            ],
+            'Vault runtime state: ' ~ (runtime_health|replace('_', ' ')|title) if runtime_observed else 'Vault runtime has not yet been observed.',
+            1 if runtime_observed and runtime_gate != 'ready' else 0,
+            'Review Vault provider health and rerun Runtime Refresh.' if runtime_observed and runtime_gate != 'ready' else 'Run Runtime Refresh for committed health evidence.',
+            'Vault health does not imply KV v2, PKI or downstream consumer readiness.') }}
+    </div>
+</section>
+<section class="{{ table_ui.block_classes(allow_overflow=true) }}"
+         data-kaori-vault-runtime-history>
+    {% set history_guide %}
+        {{ info_tip.render('vault-runtime-history-guide', 'Committed Runtime History',
+            'Committed provider runtime observations are separate from capability validation and Secret metadata collections.',
+            [
+                'Each row belongs to this Vault connection.',
+                'A missing row is Not Observed, not a healthy provider assertion.'
+            ], placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('history', 'Committed Runtime History',
+        'Review Vault runtime health, trigger, observation and validation context.',
+        none, none, none, title_extra=history_guide) }}
+    <div class="w-full min-w-0 overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[680px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Committed Vault runtime history.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Runtime State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Trigger</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Observed</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Readiness</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in runtime_history %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.health_status, row.health_status|replace('_', ' ')|title, display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ row.trigger_type|replace('_', ' ')|title }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <time datetime="{{ row.observed_at.isoformat() }}"
+                                  title="{{ row.observed_at.isoformat() }}"
+                                  class="block whitespace-nowrap">{{ row.observed_at|user_datetime }}</time>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness, row.readiness|replace('_', ' ')|title, display='indicator') }}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="p-0">
+                            {% set empty_state_icon = "history" %}
+                            {% set empty_state_label = "Not Observed" %}
+                            {% set empty_state_title = "No Runtime Evidence Committed" %}
+                            {% set empty_state_description = "Run Runtime Refresh to record an independent provider-health observation." %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <span>Page {{ runtime_history_pagination.page }} of {{ runtime_history_pagination.total_pages }} · Committed Runtime Observations</span>
+            <form method="get"
+                  action="{{ url_for('vault.detail', instance_id=instance.id, _anchor='runtime') }}"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="history_page" value="1">
+                <label for="vault-history-rows">Rows</label>
+                <select id="vault-history-rows"
+                        name="history_per_page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for size in [5, 10, 25, 50] %}
+                        <option value="{{ size }}"
+                                {% if size == runtime_history_pagination.per_page %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav aria-label="Vault runtime history pagination"
+             class="{{ pagination_ui.navigation_group_classes() }}">
+            {% if runtime_history_pagination.has_prev %}
+                <a class="{{ pagination_ui.navigation_classes() }}"
+                   href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.prev_page, history_per_page=runtime_history_pagination.per_page, _anchor='runtime') }}">Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(runtime_history_pagination.page,
+                runtime_history_pagination.total_pages,
+                page_param='history_page',
+                query_params={'history_per_page': runtime_history_pagination.per_page, '_anchor': 'runtime'}) }}
+            {% if runtime_history_pagination.has_next %}
+                <a class="{{ pagination_ui.navigation_classes() }}"
+                   href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.next_page, history_per_page=runtime_history_pagination.per_page, _anchor='runtime') }}">Next</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next</span>
+            {% endif %}
+        </nav>
+    </footer>
+</section>

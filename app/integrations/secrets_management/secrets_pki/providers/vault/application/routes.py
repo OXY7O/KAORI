@@ -20,7 +20,9 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.client impo
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
+from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.integration import IntegrationInstance
+from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.security.credentials import CredentialEncryptionError
@@ -61,11 +63,29 @@ def _evidence(instance: VaultInstance) -> dict:
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
+    registered = query.count()
+    search = request.args.get('q', '').strip()[:80]
+    environment = request.args.get('environment', '').strip()
+    readiness_filter = request.args.get('readiness', '').strip()
+    valid_environments = {value for value, _label in ENVIRONMENTS}
+    if environment not in valid_environments:
+        environment = ''
+    if readiness_filter not in {'ready', 'validation_required', 'blocked', 'degraded'}:
+        readiness_filter = ''
+    filtered = query
+    if search:
+        filtered = filtered.filter(
+            IntegrationInstance.name.icontains(search, autoescape=True)
+            | VaultInstance.endpoint.icontains(search, autoescape=True)
+        )
+    if environment:
+        filtered = filtered.filter(IntegrationInstance.environment == environment)
+    if readiness_filter:
+        filtered = filtered.filter(IntegrationInstance.readiness_status == readiness_filter)
     instances, pagination = paginate_query(
-        query, page=request.args.get('page', 1, type=int) or 1,
+        filtered, page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    registered = query.count()
     enabled = query.filter(
         IntegrationInstance.enabled.is_(True),
         IntegrationInstance.lifecycle_status == 'active',
@@ -85,6 +105,10 @@ def index() -> ResponseReturnValue:
         attention=max(0, enabled - ready),
         disabled=max(0, registered - enabled),
         active_tab=tab if tab in {'coverage', 'registry'} else 'coverage',
+        registry_search=search,
+        registry_environment=environment,
+        registry_readiness=readiness_filter,
+        environment_options=ENVIRONMENTS,
         notification_context=_notification(),
     )
 
@@ -191,9 +215,18 @@ def detail(instance_id: int) -> ResponseReturnValue:
         page=request.args.get('history_page', 1, type=int) or 1,
         per_page=request.args.get('history_per_page', 5, type=int) or 5,
     )
+    latest_runtime_observation = (
+        IntegrationRuntimeObservation.query.filter_by(
+            integration_type='secrets_pki',
+            instance_id=str(instance.id),
+        )
+        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+        .first()
+    )
     return render_template(
         'integrations/secrets_management/vault/detail.html',
         instance=instance, evidence=_evidence(instance),
+        latest_runtime_observation=latest_runtime_observation,
         inventory_readiness=vault_inventory_readiness(instance),
         public_pki_readiness=pki_public_readiness(instance=instance),
         stored_cert_readiness=stored_pki_certificate_readiness(instance=instance),
