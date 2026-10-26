@@ -60,6 +60,17 @@ def _identity(value: object) -> int | None:
     return parsed if parsed > 0 and str(parsed) == value else None
 
 
+def _has_exact_vault_matcher(binding: IntegrationBinding) -> bool:
+    """Require one exact per-Vault Alert Source matcher."""
+    selector = binding.selector_json
+    matchers = selector.get('matchers') if isinstance(selector, dict) else None
+    return (
+        isinstance(matchers, list)
+        and len(matchers) == 1
+        and matchers[0] == {'label': 'vault_instance', 'operator': '=', 'value': binding.asset_key}
+    )
+
+
 def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBinding, IntegrationInstance] | None:
     if type(binding_id) is not int or binding_id < 1:
         return None
@@ -90,13 +101,7 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
         or source.lifecycle_status != 'active'
     ):
         return None
-    selector = binding.selector_json
-    matchers = selector.get('matchers') if isinstance(selector, dict) else None
-    if (
-        not isinstance(matchers, list)
-        or len(matchers) != 1
-        or matchers[0] != {'label': 'vault_instance', 'operator': '=', 'value': binding.asset_key}
-    ):
+    if not _has_exact_vault_matcher(binding):
         return None
     checked = _persisted_utc(binding.last_validated_at)
     if checked is None or not timedelta(0) <= now - checked <= _VALIDATION_AGE:
