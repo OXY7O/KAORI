@@ -277,28 +277,31 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'Inspect' in registry
-    assert 'Reconcile' in registry
-    assert 'Revoke' in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    assert 'View Details' in registry
+    assert 'Reconcile' in detail
+    assert 'Revoke' in detail
     assert 'def get_access_grant_registry_context(' in read_model
 
 
-def test_access_grant_registry_uses_compact_dialog_without_reconciliation_hover() -> None:
+def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_hover() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
     capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
     assert 'components/info_tip.html' not in registry
     assert 'access-grant-reconciliation-' not in registry
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
-    assert 'aria-label="Selected Access Grant"' in registry
-    assert 'title="{{ grant.membership.subject_name }}"' in registry
-    assert 'title="{{ grant.tenant.name }}"' in registry
-    assert 'Review provider evidence before changing grant access.' in registry
-    assert 'Retry reconciliation for this grant.' in registry
-    assert 'Remove grant access; Membership remains.' in registry
-    assert 'tenant.reconcile_access_grant_route' in registry
-    assert 'tenant.revoke_access_grant_route' in registry
-    assert registry.count('name="access_inventory_view" value="grants"') == 4
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_access_grant_row_detail.html' in registry
+    assert 'access-grant-more-actions-' not in registry
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'Retry reconciliation for this grant.' in detail
+    assert 'Remove grant access; Membership remains.' in detail
+    assert 'tenant.reconcile_access_grant_route' in detail
+    assert 'tenant.revoke_access_grant_route' in detail
     assert 'No membership or RBAC mutation' in capsule
     assert 'does not import IdP users' in capsule
     assert '<label for="access-grant-membership"' in form
@@ -417,6 +420,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'Reveal JumpServer Token' not in registry
     assert 'Generate CI/CD Kubeconfig' not in registry
 
+    detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
     assert "'Credential Lifecycle'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
@@ -427,42 +431,32 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
     assert 'table_ui.action_grid_classes(2)' not in registry
-    assert 'flex flex-wrap items-center justify-end gap-1.5' in registry
-    assert 'data-kaori-dialog-open' in registry
-    assert 'data-kaori-native-dialog' in registry
-    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in registry
-    assert 'aria-haspopup="dialog"' in registry
-    assert 'More Actions' in registry
-    assert 'Revoke Access' in registry
-    assert 'Revoke Credential' in registry
-    assert 'Suspend Credential' in registry
-    assert 'Renew Credential' in registry
-    assert 'No actions' in registry
-    assert 'Read-only' in registry
-    assert "credential.status == 'revoked'" in registry
-    assert "credential.status == 'suspended'" in registry
-    assert "credential.status in ['active', 'renewal_due']" in registry
-    assert "credential.reconciliation_status == 'ready'" in registry
-    assert 'and delivery_targets' in registry
-    # More is a shared native dialog outside the scrolling table, not a clipped popover.
-    assert registry.index('data-kaori-native-dialog') > registry.index('registry_ui.footer(')
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_credential_row_detail.html' in registry
+    assert 'credential-more-actions-' not in registry
+    assert 'Revoke Access' in detail
+    assert 'Revoke Credential' in detail
+    assert 'Suspend Credential' in detail
+    assert 'Renew' in detail
+    assert 'No actions' in detail
+    assert 'Read-only' in detail
+    assert "credential.status == 'revoked'" in detail
+    assert "credential.status == 'suspended'" in detail
+    assert "credential.reconciliation_status == 'ready'" in detail or registry
+    assert 'data-kaori-dialog-open' in detail
+    assert 'data-kaori-native-dialog' not in detail
     for route in (
         'renew_credential_route',
         'resume_credential_route',
         'suspend_credential_route',
         'revoke_credential_route',
     ):
-        assert route in registry
-    assert registry.count('hx-target="#tenant-admin-workspace"') == 5
-    assert 'name="csrf_token"' in registry
-    assert 'flex flex-wrap justify-end gap-1.5' not in registry
-    assert 'Type / Delivery' in registry
-    assert 'Owner / Delivery' not in registry
-    for action in ('Renew', 'Suspend', 'Resume', 'Revoke'):
-        assert action in registry
+        assert route in detail
+    assert 'name="csrf_token"' in detail
     assert 'components/one_time_secret.html' in registry
-    assert 'data-credential-material-open' in registry
-    assert 'Generate' in registry
+    assert 'data-credential-material-open' in detail
+    assert 'Generate' in detail
     assert 'Generate Kubeconfig' in registry
     assert 'data-credential-material-namespace' in registry
     assert 'data-credential-material-ttl' in registry
@@ -2085,28 +2079,30 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
 
 
-def test_credential_and_grant_dialog_mutations_use_canonical_workflow_actions() -> None:
+def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions() -> None:
     action = read('app/templates/components/action_button.html')
     assert "variant == 'critical'" in action
     assert 'bg-status-critical' in action
-    assert 'h-10' in action
-    for filename, expected_routes in (
-        (
-            '_credential_registry.html',
-            ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
-        ),
-        ('_access_grant_registry.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
+    for filename, routes in (
+        ('_credential_row_detail.html', ('renew_credential_route', 'resume_credential_route',
+                                         'suspend_credential_route', 'revoke_credential_route')),
+        ('_access_grant_row_detail.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
     ):
-        registry = read(f'app/templates/kubernetes/tenant/partials/{filename}')
-        assert '{% import "components/action_button.html" as action_button %}' in registry
-        assert 'class="{{ action_button.classes(\'secondary\', full=true) }}"' in registry
-        assert 'class="{{ action_button.classes(\'critical\', full=true) }}"' in registry
-        assert 'class="{{ table_ui.action_classes(true) }} w-full' not in registry
-        assert 'hx-target="#tenant-admin-workspace"' in registry
-        assert 'hx-disabled-elt="find button"' in registry
-        assert 'name="csrf_token"' in registry
-        assert 'data-kaori-native-dialog' in registry
-        for route in expected_routes:
-            assert route in registry
-        # Compact registry More launchers intentionally stay table action buttons.
-        assert 'table_ui.action_classes()' in registry
+        detail = read(f'app/templates/kubernetes/tenant/partials/{filename}')
+        assert 'components/action_button.html' in detail
+        assert "action_button.classes('secondary', full=true)" in detail
+        assert "action_button.classes('critical', full=true)" in detail
+        assert 'hx-target="#tenant-admin-workspace"' in detail
+        assert 'hx-disabled-elt="find button"' in detail
+        assert 'name="csrf_token"' in detail
+        assert 'data-kaori-native-dialog' not in detail
+        for route in routes:
+            assert route in detail
+    for registry in ('_credential_registry.html', '_access_grant_registry.html'):
+        source = read(f'app/templates/kubernetes/tenant/partials/{registry}')
+        assert 'detail_row.toggle_button(' in source
+        assert 'detail_row.static_detail_row(' in source
+        assert 'View Details' in source
+        assert 'data-dialog-target="credential-more-actions-' not in source
+
+
