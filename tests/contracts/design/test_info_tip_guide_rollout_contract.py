@@ -111,7 +111,7 @@ def test_github_title_guides_explicitly_render_the_labeled_guide_variant() -> No
     for template, identifier in GITHUB_TITLE_GUIDES.items():
         source = _read(template)
         expressions = re.findall(
-            r'info_tip\\.render\\([\\s\\S]*?\\)',
+            r'info_tip\.render\([\s\S]*?\)',
             source,
         )
         matching = [expression for expression in expressions if f"'{identifier}'" in expression]
