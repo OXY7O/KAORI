@@ -905,6 +905,47 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
         raise
 
 
+def _remediation_matches_access_observation(
+    *,
+    provider: str,
+    observation: dict[str, object],
+    drift: dict[str, object],
+    plan: dict[str, object],
+) -> bool:
+    """Display a decision only with its exact committed drift and provider observation."""
+    provider_key = 'capsule' if provider == 'capsule' else 'native_kubernetes'
+    drift_type = (
+        'kubernetes_tenant_access_drift_evidence'
+        if provider == 'capsule'
+        else 'kubernetes_tenant_native_access_drift_evidence'
+    )
+    source_observed_at = drift.get('source_observed_at') or drift.get('observation_checked_at')
+    if not (
+        plan.get('tenant_id')
+        and plan.get('tenant_id') == observation.get('tenant_id') == drift.get('tenant_id')
+        and plan.get('cluster_id') == observation.get('cluster_id') == drift.get('cluster_id')
+        and plan.get('provider') == provider_key
+        and plan.get('source_target_type') == drift_type
+        and plan.get('source_drift_evaluated_at')
+        and plan.get('source_drift_evaluated_at') == drift.get('evaluated_at')
+        and source_observed_at
+        and source_observed_at == observation.get('observed_at')
+        and plan.get('auto_mutation_performed') is False
+    ):
+        return False
+    if provider == 'native':
+        return bool(
+            observation.get('evidence_sha256')
+            and observation.get('evidence_sha256') == drift.get('source_evidence_sha256')
+        )
+    return bool(
+        observation.get('provider_uid')
+        and observation.get('resource_version')
+        and observation.get('provider_uid') == drift.get('observation_uid')
+        and observation.get('resource_version') == drift.get('observation_resource_version')
+    )
+
+
 def get_provider_access_evidence_registry_context(
     *,
     provider: str,
@@ -972,7 +1013,46 @@ def get_provider_access_evidence_registry_context(
             .all()
         )
         drift_by_tenant = {str((event.metadata_json or {}).get('tenant_id')): event for event in drift_events}
+    # Latest committed remediation is resolved by exact Tenant + provider in a
+    # single page-scoped query. Do not reuse the global recent-plan sidebar feed.
+    remediation_by_observation: dict[int, AuditEvent] = {}
+    if tenant_ids:
+        provider_key = 'capsule' if provider == 'capsule' else 'native_kubernetes'
+        latest_plan_ids = (
+            db.session.query(
+                AuditEvent.id.label('audit_event_id'),
+                func.row_number().over(partition_by=AuditEvent.target_id, order_by=AuditEvent.id.desc()).label('row_number'),
+            )
+            .filter(
+                AuditEvent.target_type == 'kubernetes_tenant_access_remediation_plan',
+                AuditEvent.target_id.in_(tenant_ids),
+                AuditEvent.metadata_json['provider'].as_string() == provider_key,
+            )
+            .subquery()
+        )
+        latest_plans = (
+            AuditEvent.query.join(latest_plan_ids, AuditEvent.id == latest_plan_ids.c.audit_event_id)
+            .filter(latest_plan_ids.c.row_number == 1)
+            .all()
+        )
+        plans_by_tenant = {event.target_id: event for event in latest_plans}
+        for observation_event in rows:
+            observation = observation_event.metadata_json or {}
+            tenant_id = str(observation.get('tenant_id') or '')
+            drift_event = drift_by_tenant.get(tenant_id)
+            plan_event = plans_by_tenant.get(tenant_id)
+            if not drift_event or not plan_event:
+                continue
+            if _remediation_matches_access_observation(
+                provider=provider,
+                observation=observation,
+                drift=drift_event.metadata_json or {},
+                plan=plan_event.metadata_json or {},
+            ):
+                remediation_by_observation[observation_event.id] = plan_event
+
     return {
+        'access_evidence_remediation_by_observation': remediation_by_observation,
         'access_evidence_drift_by_tenant': drift_by_tenant,
         'access_evidence_total': total_committed,
         'access_evidence_review_required': total_review_required,

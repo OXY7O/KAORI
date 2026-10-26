@@ -227,6 +227,9 @@
                 {% endif %}
             </section>
         </div>
+        {% if remediation_event %}
+            {% include 'kubernetes/tenant/partials/_provider_access_remediation_detail.html' %}
+        {% endif %}
         {% if access_provider == 'native' %}
             <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
                 <p class="text-xs leading-5 text-content-muted lg:whitespace-nowrap">

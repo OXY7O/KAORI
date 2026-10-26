@@ -11,7 +11,10 @@ def test_remediation_reuses_existing_governed_plan_for_native_and_capsule():
     plan = read('app/kubernetes/tenant/access_remediation_plan.py')
     analysis = read('app/kubernetes/tenant/access_drift_analysis.py')
     context = read('app/kubernetes/tenant/access_service.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    remediation = read('app/templates/kubernetes/tenant/partials/_provider_access_remediation_detail.html')
 
     assert 'latest_native_access_drift_evidence' in plan
     assert 'latest_tenant_access_drift_evidence' in plan
@@ -29,9 +32,12 @@ def test_remediation_reuses_existing_governed_plan_for_native_and_capsule():
     assert 'def latest_native_access_drift_evidence(' in analysis
     assert "'recent_native_access_remediation'" in context
     assert "'recent_capsule_access_remediation'" in context
-    assert 'recent_capsule_access_remediation + recent_native_access_remediation' in ui
-    assert 'Prepare Native Remediation Decisions' in ui
-    assert 'tenant.plan_capsule_access_remediation_route' in ui
+    assert "'access_evidence_remediation_by_observation': remediation_by_observation" in context
+    assert 'Governed Remediation Decisions' not in capsule
+    assert 'Governed Remediation Decisions' not in native
+    assert 'Governed Remediation' in remediation
+    assert 'Prepare Remediation Decisions' in detail
+    assert 'tenant.plan_capsule_access_remediation_route' in detail
 
 
 def test_remediation_planner_never_mutates_access_provider_automatically():
