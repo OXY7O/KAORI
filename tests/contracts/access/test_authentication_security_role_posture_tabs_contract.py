@@ -21,7 +21,7 @@ def tabs() -> dict[str, str]:
     )
     mfa, remaining = remaining.split("{% elif active_tab == 'bot' %}", 1)
     bot, session = remaining.split(
-        "{% else %}\n                {{ assurance.render(",
+        '{% else %}\n                {{ assurance.render(',
         1,
     )
     session = 'assurance.render(' + session

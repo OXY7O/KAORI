@@ -38,8 +38,18 @@ def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> 
 
     assert 'components/page_hero.html' in template
     assert 'components/workspace_tabs.html' in template
-    assert 'workspace_tabs.render_query_tabs(' in template
+    assert 'workspace_tabs.render_navigation(' in template
+    assert 'workspace_tabs.render_query_tabs(' not in template
+    assert template.index('workspace_tabs.render_navigation(') < template.index('page_hero.shell_classes()')
+    assert template.count('workspace_tabs.render_navigation(') == 1
+    assert 'data-authentication-security-submenu' in template
+    assert 'hx-sync="this:replace"' in template
+    assert "prefix='authentication-security'" in template
     assert "hx_target='#authentication-security-page'" in template
+    assert "'submenu_tabs': submenu_tabs" in source('app/access/authentication_security/__init__.py')
+    assert "None, href) for key, label, icon, href in tabs" in source(
+        'app/access/authentication_security/__init__.py'
+    )
     assert "'Enforced' if bot_mode == 'always' else 'Not Enabled'" in template
     assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in template
     assert 'Cloudflare Siteverify' in template
@@ -48,6 +58,29 @@ def test_authentication_security_does_not_mislabel_inactive_mfa_or_captcha() -> 
     assert "name=\"csrf_token\"" in template
     assert "name=\"acknowledge_bot_impact\"" in template
     assert 'hx-post=' not in template
+
+
+def test_authentication_security_submenu_uses_shared_server_route_tabs() -> None:
+    template = source('app/templates/access/authentication_security/partials/_page_content.html')
+    shared = source('app/templates/components/workspace_tabs.html')
+    route = source('app/access/authentication_security/__init__.py')
+    Environment().parse(template)
+    assert 'data-authentication-security-submenu' in template
+    assert 'workspace_tabs.render_navigation(' in template
+    assert template.index('workspace_tabs.render_navigation(') < template.index(
+        'page_hero.shell_classes()'
+    )
+    assert 'workspace_tabs.render_query_tabs(' not in template
+    assert 'data-kaori-tab-variant="integrated-workspace-server"' in shared
+    assert 'aria-current="page"' in shared
+    assert 'href="{{ tab_href }}"' in shared
+    assert 'hx-swap="outerHTML" hx-push-url="true"' in shared
+    assert "hx_target='#authentication-security-page'" in template
+    assert 'hx-sync="this:replace"' in template
+    assert "'submenu_tabs': submenu_tabs" in route
+    assert "None, href) for key, label, icon, href in tabs" in route
+    assert route.count("url_for('access.authentication_security.index', tab=key)") == 1
+    assert template.count('workspace_tabs.render_navigation(') == 1
 
 
 def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
