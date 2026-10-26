@@ -12,7 +12,7 @@ def bot_tab() -> str:
     page = TEMPLATE.read_text(encoding='utf-8')
     Environment().parse(page)
     return page.split("{% elif active_tab == 'bot' %}", 1)[1].split(
-        "{% else %}\n                {{ assurance.render(",
+        '{% else %}\n                {{ assurance.render(',
         1,
     )[0]
 
