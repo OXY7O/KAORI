@@ -469,3 +469,62 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
     ):
         jinja.from_string(read(f'{PARTIALS}/{filename}'))
     jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
+
+
+def test_top_consumers_titles_use_canonical_violet_kaori_guides() -> None:
+    storage = read(f'{PARTIALS}/_top_consumers_storage.html')
+    activity = read(f'{PARTIALS}/_top_consumers_activity.html')
+    table = read(f'{PARTIALS}/_bucket_table.html')
+
+    for template, title, guide in (
+        (storage, 'Storage Consumer Leaders', 'object-storage-consumer-storage-leaders-guide'),
+        (activity, 'Request Activity Leaders', 'object-storage-consumer-request-activity-leaders-guide'),
+        (table, 'Consumer Records', 'object-storage-consumer-records-guide'),
+    ):
+        assert 'components/info_tip.html' in template
+        assert title in template
+        assert guide in template
+        assert "variant='guide'" in template
+        assert "placement='right'" in template
+        Environment().parse(template)
+
+    assert "{% elif page_key == 'top_consumers' %}" in table
+    assert 'table_ui.block_icon_classes()' in table
+    assert 'Inventory never fills missing request or error metrics.' in table
+
+
+def test_consumer_records_filters_follow_shared_kaori_table_contract() -> None:
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+    header = table.split('</header>', 1)[0]
+    form = table.split('<form id="object-storage-bucket-table-filter"', 1)[1].split('</form>', 1)[0]
+
+    assert "page_key == 'top_consumers'" in table
+    for field in (
+        'bucket_q',
+        'bucket_usage_context',
+        'bucket_quota_state',
+        'bucket_quota_pressure',
+        'bucket_request_evidence',
+    ):
+        assert field in form
+    assert 'table_ui.filter_layout_classes()' in form
+    assert 'table_ui.filter_select_classes()' in form
+    assert 'data-analytics-lazy-section="true"' in table
+    assert 'hx-target="#object-storage-bucket-table-panel"' in form
+    assert 'hx-swap="outerHTML"' in form
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'consumer_filters_active' in header
+    assert 'lead=false' in header
+    assert 'bucket_per_page=bucket_table.pagination.per_page' in header
+    assert 'data-kaori-record-pagination' not in form
+    assert 'record_pagination.render(' in table
+
+    assert "page_key in {'performance', 'top_consumers'}" in service
+    assert "page_key in {'capacity', 'top_consumers'}" in service
+    assert "request_evidence == 'available'" in service
+    assert "row.get('request_rate') is not None" in service
+    assert "query_params['bucket_request_evidence'] = request_evidence" in service
+    assert "'request_evidence': request_evidence" in service
+    assert "default=5" in service or 'default=5' in service
+    Environment().parse(table)
