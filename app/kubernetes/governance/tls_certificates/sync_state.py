@@ -158,6 +158,39 @@ def _collection_freshness(
     return max(candidates, default=None), stale, exceptions
 
 
+def _tls_sync_status(
+    *,
+    active_job: JobExecution | None,
+    latest_job: JobExecution | None,
+    freshness_source: datetime | None,
+    collection_exceptions: bool,
+    is_stale: bool,
+) -> tuple[str, str, str, str]:
+    """Preserve the ordered, fail-closed TLS inventory posture labels."""
+    if active_job is not None and active_job.status == 'queued':
+        label, tone, icon = 'Queued', 'pending', 'clock-3'
+        helper = active_job.progress_message or 'Waiting for the inventory worker to start TLS certificate collection.'
+    elif active_job is not None:
+        label, tone, icon = 'Syncing', 'pending', 'loader-circle'
+        helper = active_job.progress_message or 'TLS certificate collection is running in the inventory worker.'
+    elif latest_job is not None and latest_job.status == 'failed':
+        label, tone, icon = 'Sync Failed', 'critical', 'circle-x'
+        helper = 'The most recent TLS collection failed. Review Jobs & Executions before retrying.'
+    elif freshness_source is None:
+        label, tone, icon = 'Not Collected', 'warning', 'clock-alert'
+        helper = 'Run the first TLS sync to establish certificate inventory freshness.'
+    elif collection_exceptions:
+        label, tone, icon = 'Collection Exceptions', 'warning', 'shield-alert'
+        helper = 'One or more TLS Secret or Ingress evidence sources are unavailable or incomplete.'
+    elif is_stale:
+        label, tone, icon = 'Stale', 'warning', 'clock-alert'
+        helper = 'TLS inventory is older than the configured automatic synchronization window.'
+    else:
+        label, tone, icon = 'Current', 'normal', 'circle-check'
+        helper = 'TLS certificate inventory is within the configured synchronization window.'
+    return label, tone, icon, helper
+
+
 def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     policy = get_or_create_job_policy('governance.tls_certificates.sync')
     base_query = JobExecution.query.filter(
@@ -224,27 +257,13 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         now=datetime.now(UTC),
     )
 
-    if active_job is not None and active_job.status == 'queued':
-        label, tone, icon = 'Queued', 'pending', 'clock-3'
-        helper = active_job.progress_message or 'Waiting for the inventory worker to start TLS certificate collection.'
-    elif active_job is not None:
-        label, tone, icon = 'Syncing', 'pending', 'loader-circle'
-        helper = active_job.progress_message or 'TLS certificate collection is running in the inventory worker.'
-    elif latest_job is not None and latest_job.status == 'failed':
-        label, tone, icon = 'Sync Failed', 'critical', 'circle-x'
-        helper = 'The most recent TLS collection failed. Review Jobs & Executions before retrying.'
-    elif freshness_source is None:
-        label, tone, icon = 'Not Collected', 'warning', 'clock-alert'
-        helper = 'Run the first TLS sync to establish certificate inventory freshness.'
-    elif collection_exceptions:
-        label, tone, icon = 'Collection Exceptions', 'warning', 'shield-alert'
-        helper = 'One or more TLS Secret or Ingress evidence sources are unavailable or incomplete.'
-    elif is_stale:
-        label, tone, icon = 'Stale', 'warning', 'clock-alert'
-        helper = 'TLS inventory is older than the configured automatic synchronization window.'
-    else:
-        label, tone, icon = 'Current', 'normal', 'circle-check'
-        helper = 'TLS certificate inventory is within the configured synchronization window.'
+    label, tone, icon, helper = _tls_sync_status(
+        active_job=active_job,
+        latest_job=latest_job,
+        freshness_source=freshness_source,
+        collection_exceptions=collection_exceptions,
+        is_stale=is_stale,
+    )
 
     progress_current = max(int(active_job.progress_current or 0), 0) if active_job is not None else 0
     progress_total = max(int(active_job.progress_total or 0), 0) if active_job is not None else 0
