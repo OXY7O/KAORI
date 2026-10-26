@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% set consumer = metrics.bucket_analysis|default({}, true) %}
 {% set top_usage = consumer.top_usage|default(none) %}
 {% set top_objects = consumer.top_objects|default(none) %}
@@ -7,7 +8,18 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Storage Consumer Leaders</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Storage Consumer Leaders</h2>
+                        {{ info_tip.render('object-storage-consumer-storage-leaders-guide',
+                                                'Storage Consumer Leaders Guide',
+                                                'Storage and object-count leaders use committed bucket evidence; ranking is not an alert or a capacity forecast.',
+                                                items=[
+                                                'Largest Usage and Usage Share describe observed storage concentration for this system.',
+                                                'Most Objects is a separate ownership signal and need not identify the largest storage consumer.',
+                                                'Missing or Inventory-fallback evidence remains source-qualified; quota coverage is not proof of free physical capacity.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Identify the buckets dominating known storage consumption and object population without conflating those rankings with request-path activity.</p>
                 </div>
             </div>
