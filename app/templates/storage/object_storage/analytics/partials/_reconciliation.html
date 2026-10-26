@@ -38,7 +38,8 @@
             <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
                 {% for item in metrics.reconciliation %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <th scope="row" class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
+                        <th scope="row"
+                            class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
                             {{ item.label }}
                         </th>
                         <td class="{{ table_ui.cell_classes() }} font-semibold tabular-nums text-content-primary">

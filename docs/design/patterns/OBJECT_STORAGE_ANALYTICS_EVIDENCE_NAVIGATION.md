@@ -17,7 +17,7 @@ Human-approved design review #3235; implementation issue #3260. This governs **O
 | Workspace | Evidence visible in context | Deep detail |
 | --- | --- | --- |
 | Analytics Overview | Single `Data & Evidence` tab; Operational Metrics Contract; committed source authorities; readiness; missing/non-applicable state; full audit reconciliation | Owned centralized panel |
-| Capacity & Usage | Committed snapshot source/status banner | `Summary` → expandable Inventory & Operational Reconciliation; `Quota & Buckets` owns quota/usage field evidence |
+| Capacity & Usage | Committed snapshot source/status banner; `View Reconciliation` action | Native read-only Reconciliation dialog via shared dialog controller; `Quota & Buckets` owns quota/usage field evidence |
 | Performance | Committed metrics-source/status banner | `Request Health`, `Traffic & Trend`, `Bucket Activity` |
 | Top Consumers | Committed metrics-source/status banner | `Consumer Records` and activity records with per-field provenance |
 | Forecast | Worker-materialized forecast state in context | `Worker & Method` retains generation/refresh/methodology; charts distinguish observed history from projection |
@@ -33,7 +33,7 @@ Human-approved design review #3235; implementation issue #3260. This governs **O
 
 ## UAT acceptance
 
-Validate one central tab; five domains without duplicate Evidence tabs; context status/source and link with `system_id`, `time_range`, `tab=evidence`; Capacity reconciliation disclosure; Forecast worker metadata; Alerts fallback detail; missing/partial states. Validate 6h and 24h, narrow/desktop and light/dark, keyboard/hover, real HTTP 200, and source formatting/pytest. This document does not equate static contract success with completed browser UAT.
+Validate one central tab; five domains without duplicate Evidence tabs; context status/source and link with `system_id`, `time_range`, `tab=evidence`; Capacity Reconciliation modal; Forecast worker metadata; Alerts fallback detail; missing/partial states. Validate 6h and 24h, narrow/desktop and light/dark, keyboard/hover, real HTTP 200, and source formatting/pytest. This document does not equate static contract success with completed browser UAT.
 
 Workstream delivery: issue #3260 → branch/commit → review PR to temporary `kaori/review/staging-uat` → operator UAT/acceptance. Official CI/CD, Full Admission, promotion and release remain on HOLD pending explicit user approval.
 
@@ -60,8 +60,8 @@ Feature: Central Object Storage Analytics Data & Evidence
 
   Scenario: Domain-specific evidence is preserved
     Given I open Capacity Summary
-    When I expand "Inventory & Operational Reconciliation"
-    Then committed Inventory and operational comparison are available
+    When I activate "View Reconciliation" beside "View Data & Evidence"
+    Then an accessible read-only modal displays committed Inventory and operational comparison
     Given I open Forecast Worker & Method
     Then I see the committed worker generation status and methodology
     Given I open Alerts Overview
@@ -89,4 +89,11 @@ Feature: Central Object Storage Analytics Data & Evidence
 - Source-authority descriptions and fallback rules use concise single-line copy at the desktop UAT viewport; retain full values in title attributes where clipping is necessary on narrower screens.
 - Committed Domain Coverage uses the existing table primitives and compact semantic status labels in four accessible columns: Domain, Committed Source, Readiness, Fallback Boundary. Color reflects each committed tone, never inferred health.
 - Inventory & Operational Reconciliation uses a single comparison table with Operational, Inventory, combined Delta/Variance as Drift, and semantic Assessment; embedded rendering hides redundant nested titles inside the Overview/Capacity disclosures. No committed metric arithmetic or evidence source has changed.
-- Gherkin visual QA: at 1440px verify one-line authority and boundary explanations, four semantic readiness badges, and legible Drift with both original delta and variance. At narrow viewports verify horizontal overflow rather than information loss, and keyboard accessibility of both disclosures.
+- Gherkin visual QA: at 1440px verify one-line authority and boundary explanations, four semantic readiness badges, and legible Drift with both original delta and variance. At narrow viewports verify horizontal overflow rather than information loss, and keyboard accessibility of Overview's disclosure and Capacity's modal.
+
+## 26 October 2026 — Capacity Summary human UAT refinement (#3277)
+
+- Title-adjacent `Capacity Operating Boundary` uses the canonical `info_tip.render(..., variant='guide')` with committed vs Inventory, physical headroom vs quota, and historical growth vs forecast boundaries. Visible posture, source and measurement values are unchanged.
+- Remove the redundant healthy-path Usage Direction paragraph. Missing/insufficient historical samples still receive their existing explicit warning, not fabricated growth.
+- In Capacity only, move Inventory & Operational Reconciliation from the bottom Summary disclosure into a read-only browser-native dialog. Its **View Reconciliation** trigger sits beside **View Data & Evidence** in the shared contextual evidence banner; both use identical action styles. The existing global `native_dialogs.js` owns focus, Escape, backdrop and close. Dialog body retains the shared Reconciliation table and embedded no-duplicate-heading mode; Overview's evidence disclosure remains unchanged.
+- UAT: verify open/close, focus restoration, 6h/24h source context, full Drift delta+variance and source-based Assessment, desktop/mobile table scrolling, light/dark, keyboard, no HTTP 500 or provider mutation. This is a human-review candidate until exact-head checks and actual browser evidence are recorded.
