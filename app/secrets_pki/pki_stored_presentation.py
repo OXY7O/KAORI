@@ -17,6 +17,17 @@ MAX_VAULT_SOURCES = 25
 MAX_PKI_SCOPES = 100
 
 
+def _source_requires_validation(source: VaultInstance) -> bool:
+    """Preserve the five existing Vault source qualification conditions."""
+    return (
+        source.integration_instance.readiness_status != 'ready'
+        or not source.integration_instance.enabled
+        or source.integration_instance.lifecycle_status != 'active'
+        or source.integration_instance.integration_type != 'secrets_pki'
+        or source.integration_instance.provider_key != 'vault'
+    )
+
+
 def stored_pki_certificate_readiness(
     *,
     instance: VaultInstance | None = None,
@@ -77,14 +88,7 @@ def stored_pki_certificate_readiness(
         )
         for item in matching
     ]
-    unvalidated = any(
-        source.integration_instance.readiness_status != 'ready'
-        or not source.integration_instance.enabled
-        or source.integration_instance.lifecycle_status != 'active'
-        or source.integration_instance.integration_type != 'secrets_pki'
-        or source.integration_instance.provider_key != 'vault'
-        for source in sources
-    )
+    unvalidated = any(_source_requires_validation(source) for source in sources)
     if not matching:
         state, label = (
             ('blocked', 'Vault Validation Required')
