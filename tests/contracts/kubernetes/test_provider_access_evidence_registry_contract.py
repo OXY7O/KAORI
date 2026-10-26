@@ -121,3 +121,48 @@ def test_native_authority_disclaimer_uses_full_width_detail_footer() -> None:
     assert detail.index('Labels indicate possible correlation') > detail.index(
         'aria-label="Drift and governed next actions"'
     )
+
+
+def test_committed_remediation_is_provider_scoped_and_observation_matched() -> None:
+    service = read('app/kubernetes/tenant/access_service.py')
+    rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    remediation = read('app/templates/kubernetes/tenant/partials/_provider_access_remediation_detail.html')
+
+    assert 'def _remediation_matches_access_observation(' in service
+    assert "'kubernetes_tenant_access_remediation_plan'" in service
+    assert 'AuditEvent.target_id.in_(tenant_ids)' in service
+    assert "AuditEvent.metadata_json['provider'].as_string() == provider_key" in service
+    assert 'source_drift_evaluated_at' in service
+    assert 'source_observed_at' in service
+    assert 'source_evidence_sha256' in service
+    assert 'observation_resource_version' in service
+    assert 'access_evidence_remediation_by_observation[observation_event.id]' not in service
+    assert 'remediation_by_observation[observation_event.id] = plan_event' in service
+    assert "'access_evidence_remediation_by_observation': remediation_by_observation" in service
+
+    assert 'access_evidence_remediation_by_observation.get(event.id)' in rows
+    assert "_provider_access_remediation_detail.html" in detail
+    assert '{% if remediation_event %}' in detail
+    assert 'data-tenant-access-remediation' in remediation
+    assert 'remediation_event.created_at|user_datetime' in remediation
+    assert 'plan.manual_review_count' in remediation
+    assert 'plan.explicit_reconcile_count' in remediation
+    assert "table_label.status_label(" in remediation
+    assert 'data-tenant-remediation-technical-evidence' in remediation
+    assert 'item.subject' in remediation
+    assert 'item.reason' in remediation
+    assert 'Preview only' in remediation
+    assert 'No Kubernetes mutation' in remediation
+
+
+def test_provider_remediation_no_longer_creates_bottom_page_accordion() -> None:
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    for panel in (capsule, native):
+        assert 'Governed Remediation Decisions · latest committed evidence' not in panel
+        assert 'all_access_remediation' not in panel
+        assert '<details class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">' not in panel
+    assert 'recent_capsule_access_remediation' not in capsule
+    assert 'recent_native_access_remediation' not in native
+
