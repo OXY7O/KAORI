@@ -1761,3 +1761,87 @@ djLint and one stale source contract FAIL; 75 pytest PASS and one FAIL,
 plus pre-existing UI style debt across other KAORI domains. Do not
 interpret that run as a PASS for this scope. Fresh executable checks and
 Human Acceptance are required on the new holding SHA.
+
+## 2026-10-26 — #3371 Source Control GitHub Gherkin scenario specification
+
+**Operator review boundary:** The operator stated the Source Control
+Integration page looks satisfactory **so far** on 2026-10-26 and requested
+Gherkin scenarios before proceeding to Secret Management. This is scoped
+visual feedback, not a blanket signed full-cycle/provider/security UAT PASS.
+Source candidate supplied by the operator:
+`kaori/review/staging-uat@25485d0ed248e4b9a2afda0b3bd62c9fd2ce18da`.
+Focused source-control pytest: **78 PASS**. Ruff Check: **PASS**.
+Ruff Format: **FAIL** (four files) and djLint: **FAIL** (two templates).
+These remain separate scoped quality findings on #3306; authoring a
+specification does not remediate them or make them PASS.
+
+**Gherkin authority and location:**
+`docs/engineering/uat/features/src-source-control-github.feature`
+contains **29** unique `UAT-SRC-001`–`029` reusable Source Control
+scenarios following #1738's existing Given/When/Then, stable IDs,
+risk/layer/status tags and no-false-PASS convention. The QA catalog,
+matrix, full detailed register and Gherkin index remain owned by #1738
+on its separate unmerged branch. Do not edit its scenario totals
+here; reconcile the Source Control contribution under that authority
+before catalog promotion.
+
+### Scenario groups and candidate existing test owners
+
+| IDs | Domain / intent | Candidate source/test owner |
+| --- | --- | --- |
+| SRC-001–004 | Provider-first navigation, pre-save Test Connection, validated registration, invalid identity/proof | `tests/ui/test_source_control_github_app_onboarding_contract.py`, `tests/unit/test_source_control_github_app_registration.py`, `tests/unit/test_source_control_github_registration_proof.py` |
+| SRC-005–007 | Configuration edit, credential rotation, successor history | `tests/unit/test_source_control_github_app_credentials.py`, `tests/unit/test_source_control_github_uat_scope.py` |
+| SRC-008–009 | Full Validation, permission readiness and rejection | `tests/unit/test_source_control_github_capability_workspace.py`, `tests/unit/test_source_control_github_app_job_admission.py` |
+| SRC-010–012 | Runtime Refresh, Recent Jobs and webhook receipt table | `tests/unit/test_source_control_github_runtime_inventory_workspace.py`, `tests/unit/test_source_control_github_uat_scope.py` |
+| SRC-013 | Signed webhook integrity, replay and cross-installation negatives | `tests/unit/test_source_control_github_app_webhook.py`, `tests/unit/test_source_control_github_app_webhook_inbox.py` |
+| SRC-014–018 | Sync toast/admission, blocked path, committed registry and filtered pagination | `tests/unit/test_source_control_github_repository_sync.py`, `tests/unit/test_source_control_repository_inventory_read.py`, `tests/unit/test_source_control_github_runtime_inventory_workspace.py` |
+| SRC-019–021 | Selected/All, stale generations, rename/archive/access-lost preservation | `tests/unit/test_source_control_github_repository_discovery.py`, `tests/unit/test_source_control_github_repository_commit.py`, `tests/unit/test_source_control_github_default_branch.py` |
+| SRC-022–024 | Delete Cancel, active-job blocker, evidence-preserving retirement | `tests/unit/test_source_control_github_uat_scope.py`, `tests/unit/test_source_control_github_runtime_inventory_workspace.py` |
+| SRC-025–026 | RBAC/CSRF, installation isolation | `tests/unit/test_source_control_github_uat_scope.py`, `tests/unit/test_source_control_repository_inventory_read.py` |
+| SRC-027–028 | Violet, accessibility, HTMX/normal GET, responsive themes | Existing KAORI UI/Playwright and `tests/ui/test_source_control_integration_workspace_contract.py` |
+| SRC-029 | PEM, webhook secret, token and payload retention negatives | `tests/unit/test_source_control_github_app_credentials.py`, `tests/unit/test_source_control_github_app_webhook.py` |
+
+The mappings above identify **candidate owners, not per-ID coverage**:
+a passing pytest suite is NOT an executed `UAT-SRC-*` scenario.
+Some negative, fault injection, multi-installation, destructive, provider
+and cross-viewport cases remain unimplemented or not exercised; never
+mark their requirements PASS from template/source assertions alone.
+
+### Exact-candidate evidence register (populate when manually executed)
+
+For every scenario ID, capture:
+
+- **Candidate**: `git rev-parse HEAD`, local dirty diff (`git status --short`),
+  actual Flask/worker state, fixture/sandbox installation identifiers
+  (non-secret), actor/role, timestamp (Asia/Jakarta).
+- **Actions and result**: Given/When/Then outcome as PASS, FAIL, BLOCKED or
+  NOT RUN, the expected versus observed committed/provider state, response
+  status, JobExecution/collection generation IDs and audit correlation.
+- **Evidence**: sanitized screenshot of before/after interaction, URL,
+  table filter, toast/Guide/modal/empty state, Python test/JUnit artifact,
+  worker trace, and committed DB read-back when relevant. No raw PEM, token,
+  webhook body or provider secrets.
+- **Reproducibility**: setup, controlled faults, cleanup, restored state and
+  follow-up issue/PR for failures. Real-provider UAT requires authorized
+  disposable GitHub App installations; local fixtures do not prove provider behavior.
+- **Acceptance**: actual operator/reviewer decision and scope separately from
+  automated Scenario-ID outcomes.
+
+### Local non-admission checks
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git merge --ff-only origin/kaori/review/staging-uat
+git rev-parse HEAD
+git status --short
+ruff check app/integrations/source_control/repository_inventory.py app/integrations/source_control/source_control/providers/github/application/{routes,uat_routes}.py tests/unit/test_source_control_{repository_inventory_read,github_runtime_inventory_workspace,github_uat_scope}.py
+ruff format --check app/integrations/source_control/repository_inventory.py app/integrations/source_control/source_control/providers/github/application/{routes,uat_routes}.py tests/unit/test_source_control_{repository_inventory_read,github_runtime_inventory_workspace,github_uat_scope}.py
+djlint --check app/templates/integrations/source_control/github/{uat_detail,_inventory_table}.html app/templates/integrations/source_control/github/partials/{_detail_inventory,_runtime_jobs}.html
+python -m pytest -q -p no:cacheprovider tests/unit/test_source_control_repository_inventory_read.py tests/unit/test_source_control_github_runtime_inventory_workspace.py tests/unit/test_source_control_github_uat_scope.py tests/ui/test_source_control_github_app_onboarding_contract.py tests/ui/test_source_control_integration_workspace_contract.py
+```
+
+Official Developer Check, Full Admission, promotion, release and
+provider mutation remain **HOLD** until independently authorized. The
+Secret Management UAT starts as its **own domain workstream**, not as an
+implicit validation or closure of Source Control's pending negative tests.

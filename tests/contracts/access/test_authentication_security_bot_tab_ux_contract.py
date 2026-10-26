@@ -60,7 +60,7 @@ def test_bot_controls_have_external_text_heading_and_one_harmonized_hub() -> Non
     assert tab.count('data-auth-bot-layout="configuration-safety"') == 1
     assert 'grid items-stretch gap-4 xl:grid-cols-5' in tab
     assert 'xl:col-span-3' in tab and 'xl:col-span-2' in tab
-    assert 'data-auth-bot-activation-layout="balanced"' in tab
+    assert 'data-auth-bot-activation-layout="single-level"' in tab
     assert 'data-auth-bot-form="configuration"' in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab
@@ -136,20 +136,30 @@ def test_bot_compact_governance_copy_and_removed_form_help() -> None:
     assert 'Change Impact' in tab
 
 
-def test_bot_activation_stages_fill_panel_with_safe_actionable_guidance() -> None:
+def test_bot_activation_uses_equal_single_level_steps_without_nested_cards() -> None:
     tab = bot_tab()
-    assert 'data-auth-bot-activation-layout="balanced"' in tab
+    assert 'data-auth-bot-activation-layout="single-level"' in tab
+    assert 'data-auth-bot-activation-layout="balanced"' not in tab
+    assert (
+        tab.count(
+            'flex min-w-0 flex-1 flex-col justify-center rounded-xl border border-outline-subtle bg-surface-subtle p-4'
+        )
+        == 3
+    )
     for step in ('configure', 'verify', 'enable'):
         assert f'data-auth-bot-activation-step="{step}"' in tab
-    for detail in ('configuration', 'verification', 'safety'):
-        assert f'data-auth-bot-step-context="{detail}"' in tab
-    for heading in ('Configuration prerequisites', 'One-use verification', 'Activation safeguards'):
-        assert heading in tab
-    assert 'Stored values do not prove availability.' in tab
-    assert 'Proof must be repeated after configuration changes.' in tab
-    assert 'Confirm independent recovery access first.' in tab
-    assert 'Missing or rejected verification blocks sign-in.' in tab
-    assert 'flex-1 flex-col justify-center' in tab
+    for note in ('configuration', 'verification', 'safety'):
+        assert f'data-auth-bot-step-note="{note}"' in tab
+    assert 'data-auth-bot-step-context=' not in tab
+    assert 'Configuration prerequisites' not in tab
+    assert 'One-use verification' not in tab
+    assert 'Activation safeguards' not in tab
+    assert 'Save site key, hostname and encrypted secret while Disabled.' in tab
+    assert 'Complete a fresh, one-use Cloudflare Siteverify challenge.' in tab
+    assert 'Repeat the test after any configuration change.' in tab
+    assert 'Select Always after successful proof for unchanged settings within one hour.' in tab
+    assert 'Confirm independent administrator recovery first.' in tab
+    assert 'Stored configuration is not proof of provider availability.' in tab
     assert "url_for('access.authentication_security.test_bot_provider')" in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab

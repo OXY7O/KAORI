@@ -911,5 +911,5 @@ def test_github_deletion_is_guarded_and_retains_source_evidence():
     assert "integration_type='source_control'" in delete
     assert 'guard.blocked' in delete
     assert "canonical.lifecycle_status = 'retired'" in delete
-    assert "canonical.enabled = False" in delete
+    assert 'canonical.enabled = False' in delete
     assert 'db.session.delete(' not in delete

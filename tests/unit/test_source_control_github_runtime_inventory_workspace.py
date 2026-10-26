@@ -392,19 +392,19 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     assert "'feedback_delivery': 'toast'" in routes
     assert 'Repository Sync Queued' in routes
     assert 'Repository Sync Blocked' in routes
-    assert "return redirect(detail_url)" in routes
+    assert 'return redirect(detail_url)' in routes
     assert 'data-kaori-github-delete-connection' in inventory
     assert 'Configure Connection</a>' not in inventory
-    assert "asset_owner_delete_modal.render(" in detail
+    assert 'asset_owner_delete_modal.render(' in detail
     assert "x-data='{ deleteModal: false" in detail
     assert "action_button.classes('critical')" in inventory
     assert 'Delete Connection' in inventory and 'Delete Connection' in modal
-    assert "def delete_connection(installation_id: int)" in routes
-    assert "provider_deletion_guard(" in routes
+    assert 'def delete_connection(installation_id: int)' in routes
+    assert 'provider_deletion_guard(' in routes
     assert 'if not FlaskForm().validate_on_submit():' in routes
     assert "canonical.lifecycle_status = 'retired'" in routes
-    assert "canonical.enabled = False" in routes
-    assert "IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)" in routes
+    assert 'canonical.enabled = False' in routes
+    assert 'IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)' in routes
     assert 'db.session.delete(installation)' not in routes
     assert 'db.session.delete(canonical)' not in routes
     assert "event_type='source_control_connection_retired'" in routes

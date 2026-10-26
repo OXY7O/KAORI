@@ -665,3 +665,83 @@ def test_registry_provider_health_limits_per_provider_source_reads_to_visible_pa
     assert 'RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids)' in latest
     assert 'for provider in scoped_providers:' not in latest
     assert 'snapshot.integration_instance_id' in latest
+
+
+def test_artifact_registry_overview_visual_uat_copy_preserves_shared_evidence_contract() -> None:
+    from jinja2 import Environment
+
+    consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
+    capacity = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+    forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
+    alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    response = read('app/templates/artifact_registry/partials/_overview_alert_response_guidance.html')
+    reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    shared_reporting = read('app/templates/components/reporting_dashboard_workspace.html')
+
+    for template in (consumers, capacity, forecast, alerts, response, reporting, shared_reporting):
+        Environment().parse(template)
+
+    # Screenshot 1: counts remain committed and dynamic; missing ETA is not zero days.
+    for key in ('project_count', 'horizon_count', 'high_utilization_count'):
+        assert f'overview.consumer_insights.{key}' in consumers
+    assert 'quota record(s)' in consumers
+    assert 'missing ETAs stay unknown/unprojected.' in consumers
+    assert 'xl:whitespace-nowrap' in consumers
+    assert 'Quota ETA: positive growth only' in consumers
+
+    # Screenshot 2: labels never collide with Used/Inventory provenance.
+    assert 'whitespace-nowrap text-xs font-semibold text-content-primary' in capacity
+    assert 'flex flex-col items-start gap-1' in capacity
+    assert "item.progress_label == 'Inventory'" in capacity
+    assert 'item.progress_percent is not none' in capacity
+    assert 'progress_bar.bar(item.progress_percent,' in capacity
+    assert 'Committed daily size delta.' in forecast
+    assert 'risk_conclusion.get(overview.capacity.risk' in forecast
+    for risk in ('Critical', 'Medium', 'Low', 'Unknown'):
+        assert f"'{risk}':" in forecast
+    assert 'title="{{ overview.capacity.risk_detail }} {{ overview.forecast.detail }}"' in forecast
+    assert 'xl:whitespace-nowrap' in forecast
+    assert 'truncate text-xs' in forecast  # pre-existing metric helper; no new conclusion truncation
+
+    # Screenshot 3: alert authority and all six steps remain present with compact copy.
+    assert 'Active Registry AlertCases and recent cases.' in alerts
+    assert "source_label='KAORI Alert Intelligence'" in alerts
+    for step, phrase in (
+        ('Validate', 'Confirm provider, snapshot freshness, and alert source.'),
+        ('Triage', 'Rank severity and scope; identify affected assets and owner.'),
+        ('Investigate', 'Correlate inventory, runtime, security, and alert evidence.'),
+        ('Respond', 'Run approved Registry response within safety guardrails.'),
+        ('Verify', 'Confirm recovery and refresh committed Registry evidence.'),
+        ('Record', 'Record decisions, actions, verification, and follow-up evidence.'),
+    ):
+        assert f"'{step}', '{phrase}'" in response
+    assert 'components/operational_alert_response.html' in response
+
+    # Screenshot 4: three-line-capable severity descriptions are short, not clipped.
+    assert 'Runtime, supply-chain or capacity risk. Triage ownership.' in response
+    assert 'Governance, tag or quota risk. Investigate first.' in response
+    assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in response
+
+    # Screenshots 5 and 6: Registry-specific wording, shared reporting defaults intact.
+    assert "'Committed snapshots'" in reporting
+    assert "generate_copy='Render committed Registry snapshots; review output.'" in reporting
+    assert 'generate_copy=None' in shared_reporting
+    assert "generate_copy or ('Render from ' ~ evidence_label ~ ' and review the result.')" in shared_reporting
+    assert 'reporting_workspace.summary(overview.reporting' in reporting
+    assert 'reporting_workspace.guidance(' in reporting
+    assert 'reporting_steps' in shared_reporting
+
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+    feature = standard.split('Feature: Artifact Registry Overview compact presentation', 1)[1]
+    assert feature.count('  Scenario: ') >= 5
+    for requirement in (
+        'Top Consumers',
+        'Forecast Conclusion',
+        'Alert Interpretation & Response',
+        'Critical and Warning',
+        'Evidence Backed',
+        'Generate',
+        '1440',
+        'mobile viewport',
+    ):
+        assert requirement in feature
