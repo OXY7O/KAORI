@@ -109,7 +109,7 @@ def test_workspace_routes_reuse_role_permission_and_violet_shell():
         marker = f"@secrets_pki_bp.get('/{kind}')"
         excerpt = routes.split(marker, 1)[1][:115]
         assert "@permission_required('secrets_pki.view')" in excerpt
-        assert f"('secrets_pki.' ~ slug)" not in routes
+        assert "('secrets_pki.' ~ slug)" not in routes
     assert '{% extends "layouts/app.html" %}' in html
     assert 'components/operational_metric_card.html' in html
     assert 'components/states/_blocked_state.html' in html

@@ -28,7 +28,6 @@ from app.models.secrets_pki_pki import (
 )
 from app.models.vault import VaultInstance
 
-
 ISSUER_UUID = '1ae8ce9d-2f70-0761-a465-8c9840a247a2'
 DAY = datetime(2026, 10, 22, tzinfo=UTC)
 

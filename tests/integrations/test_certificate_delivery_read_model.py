@@ -12,7 +12,8 @@ from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki_stored_certificates import (
-    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
 from app.secrets_pki.certificate_delivery_read_model import build_certificate_delivery_overlap

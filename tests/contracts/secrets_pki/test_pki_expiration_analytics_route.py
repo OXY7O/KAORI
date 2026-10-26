@@ -1,6 +1,5 @@
 """Direct Secrets & PKI Analytics route requires independent capability permissions."""
 
-from types import SimpleNamespace
 
 import pytest
 from flask import Flask

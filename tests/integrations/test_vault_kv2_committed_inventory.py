@@ -8,16 +8,22 @@ from cryptography.fernet import Fernet
 from flask import Flask
 
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.commit_inventory import (
-    commit_kv2_inventory, mark_kv2_inventory_failed,
+    commit_kv2_inventory,
+    mark_kv2_inventory_failed,
 )
+from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
-    KV2CollectionEvidence, KV2SecretEvidence, KV2VersionEvidence,
+    KV2CollectionEvidence,
+    KV2SecretEvidence,
+    KV2VersionEvidence,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
-    SecretIdentity, SecretInventoryCollectionState, SecretProviderRepresentation, SecretVersionObservation,
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
 )
 from app.models.vault import VaultInstance
 
