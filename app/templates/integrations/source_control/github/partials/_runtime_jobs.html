@@ -84,9 +84,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <div data-kaori-filter-action class="flex items-end">
-                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
-            </div>
+            <noscript>
+                <div class="flex items-end">
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Filter Results</button>
+                </div>
+            </noscript>
         </form>
     </div>
     <div class="w-full min-w-0 max-w-full overflow-x-auto">
@@ -94,10 +96,10 @@
             <caption class="sr-only">Recent Jobs for the selected GitHub installation.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[35%]">Operation</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[29%]">Created</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Queue</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[37%]">Operation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Created</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Queue</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Status</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -106,8 +108,22 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_ui.title_cell(job.operation|replace('_', ' ')|title, 'Job #' ~ job.id, 'history') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ job.created_at }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ job.queue_name }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {% if job.created_at %}
+                                <time datetime="{{ job.created_at.isoformat() }}"
+                                      title="{{ job.created_at.isoformat() }}"
+                                      class="block whitespace-nowrap">
+                                    <span class="block font-medium text-content-primary">{{ job.created_at.strftime('%d %b %Y') }}</span>
+                                    <span class="block text-xs tabular-nums text-content-muted">{{ job.created_at.strftime('%H:%M:%S') }} UTC</span>
+                                </time>
+                            {% else %}
+                                <span class="text-content-muted">Not observed</span>
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <code class="break-words text-xs font-medium text-content-secondary"
+                                  title="{{ job.queue_name or 'Not assigned' }}">{{ job.queue_name or 'Not assigned' }}</code>
+                        </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ integration_status(job.status, display='indicator') }}</td>
                     </tr>
                 {% else %}

@@ -84,9 +84,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <div data-kaori-filter-action class="flex items-end">
-                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
-            </div>
+            <noscript>
+                <div class="flex items-end">
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Filter Results</button>
+                </div>
+            </noscript>
         </form>
     </div>
     <div class="w-full min-w-0 max-w-full overflow-x-auto">
