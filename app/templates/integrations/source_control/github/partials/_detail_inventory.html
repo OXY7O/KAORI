@@ -21,7 +21,7 @@
                 'GitHub remains authoritative for grants; KAORI does not revoke access here.',
                 'Installation replacement preserves separate predecessor evidence.'
             ],
-            placement='right')
+            placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">

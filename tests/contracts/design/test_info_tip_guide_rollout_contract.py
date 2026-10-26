@@ -53,6 +53,9 @@ TITLE_GUIDE_TEMPLATES = (
     'kubernetes/tenant/partials/_tenant_registry.html',
     'kubernetes/tenant/partials/_group_registry.html',
     'kubernetes/tenant/partials/_membership_registry.html',
+    'integrations/source_control/github/uat_detail.html',
+    'integrations/source_control/github/partials/_detail_validation.html',
+    'integrations/source_control/github/partials/_detail_inventory.html',
 )
 
 

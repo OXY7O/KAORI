@@ -7,7 +7,8 @@
 <section id="github-runtime-jobs"
          class="{{ 'min-w-0' if runtime_table_embedded|default(false) else ui.section_shell_classes() }}"
          data-kaori-github-runtime-jobs
-         data-kaori-server-filtered-registry>
+         data-kaori-server-filtered-registry
+         data-kaori-runtime-registry-view="jobs">
     {% if not runtime_table_embedded|default(false) %}
         <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
