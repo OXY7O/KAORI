@@ -797,7 +797,7 @@ def test_github_successor_route_and_ui_keep_existing_evidence_separate() -> None
     edit = (root / 'app/templates/integrations/source_control/github/edit.html').read_text()
     replacement = (root / 'app/templates/integrations/source_control/github/replace.html').read_text()
     assert "@github_uat_bp.route('/installations/<int:installation_id>/replace', methods=['GET', 'POST'])" in routes
-    assert "@permission_required('integrations.manage')\\ndef replace_installation(" in routes
+    assert "@permission_required('integrations.manage')\ndef replace_installation(" in routes
     assert 'predecessor = _installation_or_404(installation_id)' in routes
     assert 'form.validate_on_submit()' in routes
     assert 'verify_github_successor_proof(' in routes
