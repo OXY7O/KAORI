@@ -42,7 +42,7 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
     assert "snapshot.get('operation') != 'runtime_refresh'" in routes
     assert 'validate_snapshot_access(' in routes
     assert 'integration_instance_id=installation.integration_instance_id' in routes
-    assert "FlaskForm().validate_on_submit()" in routes
+    assert 'FlaskForm().validate_on_submit()' in routes
     assert 'provider.refresh(' not in routes
     assert 'requests.get(' not in routes
     assert 'jobs' in jobs and 'deliveries' in deliveries
@@ -57,9 +57,9 @@ def test_history_registries_are_scoped_server_filtered_paginated():
 
     assert "JobExecution.integration_type == 'source_control'" in routes
     assert 'JobExecution.integration_instance_id == installation.integration_instance_id' in routes
-    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
     assert "operation='runtime_refresh'" in routes
-    assert "runtime_refresh_job" in routes
+    assert 'runtime_refresh_job' in routes
     assert 'paginate_query(' in routes
     for panel, field in ((jobs, 'job_per_page'), (deliveries, 'delivery_per_page')):
         assert 'data-kaori-server-filtered-registry' in panel
@@ -98,10 +98,10 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'components/pagination.html' in registry
     assert '[5, 10, 25, 50]' in registry
     assert 'hx-trigger="every 15s"' in registry
-    assert "read_installation_inventory(" in routes
+    assert 'read_installation_inventory(' in routes
     assert 'authorized_installation_id=installation.id' in routes
-    assert "committed_generation == 0" in projection
-    assert "total=None" in projection
+    assert 'committed_generation == 0' in projection
+    assert 'total=None' in projection
     assert 'github.com/settings' not in inventory
 
 
@@ -167,7 +167,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
         assert "data-kaori-auto-submit" in page
         assert "registry_ui.clear_filters_action(" in page
     assert routes.count('runtime_table_embedded=True') == 2
-    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
 
 
 def test_github_committed_repository_registry_is_full_width_sibling():
@@ -182,7 +182,7 @@ def test_github_committed_repository_registry_is_full_width_sibling():
     assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in registry
     assert '<caption class="sr-only">' in registry
     assert 'scope="col"' in registry
-    assert 'table_ui.block_classes' in table
+    assert 'macro block_classes(' in table
     assert 'inventory.total is none' in registry
     assert 'inventory.total == 0' in registry
     assert 'exact_default_branch_sha' in registry

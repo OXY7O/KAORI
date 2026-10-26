@@ -47,14 +47,14 @@ def test_unvalidated_installation_does_not_fabricate_ready_or_required_gaps():
     )
     assert len(registry['rows']) == 5
     assert registry['pagination']['total_items'] == 6
-    assert len(build_capability_registry_view(
-        context['capability_rows'], status='blocked',
-        distinguish_optional_gap=True, distinguish_unverified=True,
-    )['rows']) == 0
-    assert len(build_capability_registry_view(
-        context['capability_rows'], status='unverified',
-        distinguish_optional_gap=True, distinguish_unverified=True,
-    )['rows']) == 5
+    for status, expected in [('blocked', 0), ('unverified', 5)]:
+        result = build_capability_registry_view(
+            context['capability_rows'],
+            status=status,
+            distinguish_optional_gap=True,
+            distinguish_unverified=True,
+        )
+        assert len(result['rows']) == expected
 
 
 def test_committed_capabilities_do_not_imply_repository_inventory_sync():
@@ -73,14 +73,20 @@ def test_committed_capabilities_do_not_imply_repository_inventory_sync():
     assert summary['required_missing'] == 0
     assert summary['optional_verified'] == 1
     assert {row['key'] for row in rows['capability_rows'] if row['available']} == {
-        'repository_inventory', 'source_revision', 'workflow_runs',
+        'repository_inventory',
+        'source_revision',
+        'workflow_runs',
     }
     assert all('permission' in row['probe'].lower() for row in rows['capability_rows'])
     assert all('synchroniz' not in row['evidence'].lower() for row in rows['capability_rows'])
     assert all('required' in row and 'status_key' in row for row in rows['capability_rows'])
     view = build_capability_registry_view(
-        rows['capability_rows'], requirement='optional', status='optional_gap',
-        per_page=5, distinguish_optional_gap=True, distinguish_unverified=True,
+        rows['capability_rows'],
+        requirement='optional',
+        status='optional_gap',
+        per_page=5,
+        distinguish_optional_gap=True,
+        distinguish_unverified=True,
     )
     assert len(view['rows']) == 3
     assert all(not row['required'] and not row['available'] for row in view['rows'])
@@ -91,9 +97,7 @@ def test_partial_and_unknown_capability_states_cannot_become_verified():
     assert rows['capability_summary']['required_missing'] == 1
     assert rows['capability_summary']['verified'] == 1
     assert next(row for row in rows['capability_rows'] if row['key'] == 'source_revision')['available'] is False
-    stale = github_capability_context(
-        _canonical({'source_revision': 'permission_verified'}, profile='invalid-profile')
-    )
+    stale = github_capability_context(_canonical({'source_revision': 'permission_verified'}, profile='invalid-profile'))
     assert stale['capability_summary']['observed'] is False
     assert stale['capability_summary']['verified'] == 0
     missing_timestamp = github_capability_context(
@@ -108,9 +112,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     inventory = (TEMPLATES / 'partials/_detail_inventory.html').read_text()
     registry = (TEMPLATES / 'partials/_capability_registry.html').read_text()
     routes = ROUTES.read_text()
-    shared_readiness = (
-        ROOT / 'app/templates/integrations/components/_capability_readiness.html'
-    ).read_text()
+    shared_readiness = (ROOT / 'app/templates/integrations/components/_capability_readiness.html').read_text()
     for token in (
         'components/connection_validation_header.html',
         'integrations/components/_capability_readiness.html',
@@ -149,7 +151,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert 'def _capability_context(canonical)' in routes
     assert 'def capability_registry(installation_id: int)' in routes
     assert "@permission_required('integrations.manage')\ndef capability_registry(" in routes
-    assert "installation = _installation_or_404(installation_id)" in routes
+    assert 'installation = _installation_or_404(installation_id)' in routes
     assert 'build_capability_registry_view(' in routes
     assert 'distinguish_unverified=True' in routes
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
@@ -168,14 +170,24 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
 def test_registry_filters_search_pagination_and_unknown_status():
     rows = github_capability_context(_canonical())['capability_rows']
     result = build_capability_registry_view(
-        rows, query='pull', page=1, per_page=5, search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True, distinguish_unverified=True,
+        rows,
+        query='pull',
+        page=1,
+        per_page=5,
+        search_fields=('label', 'category', 'description'),
+        distinguish_optional_gap=True,
+        distinguish_unverified=True,
     )
     assert result['pagination']['total_items'] == 1
     assert result['rows'][0]['key'] == 'pull_requests'
-    assert build_capability_registry_view(
-        rows, status='ready', distinguish_unverified=True,
-    )['rows'] == []
+    assert (
+        build_capability_registry_view(
+            rows,
+            status='ready',
+            distinguish_unverified=True,
+        )['rows']
+        == []
+    )
 
 
 def test_github_capability_modal_preserves_unverified_semantics():
