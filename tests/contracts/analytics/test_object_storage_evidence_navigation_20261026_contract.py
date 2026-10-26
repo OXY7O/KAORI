@@ -140,6 +140,7 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert "dialog.showModal()" in controller
     assert "dialog.close()" in controller
 
+
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
     context = read(f'{PARTIALS}/_overview_evidence_context.html')
     reconciliation = read(f'{PARTIALS}/_reconciliation.html')
