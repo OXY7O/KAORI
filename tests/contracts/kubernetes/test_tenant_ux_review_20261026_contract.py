@@ -144,6 +144,34 @@ def test_access_grant_and_credential_actions_are_in_expanded_evidence() -> None:
     assert 'one_time_secret.request_dialog' in read('_credential_registry.html')
 
 
+def test_access_grant_expanded_detail_compiles_as_jinja() -> None:
+    """Reject malformed template statements before they reach the Tenant page."""
+    Environment(autoescape=True).parse(read('_access_grant_row_detail.html'))
+
+
+def test_access_grant_detail_has_compact_context_and_right_aligned_actions() -> None:
+    detail = read('_access_grant_row_detail.html')
+    group = read('_group_registry.html')
+
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'aria-label="Governed grant actions"' in detail
+    assert 'Grant Context' in detail
+    assert 'Governed Actions' in detail
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' in detail
+    assert "action_button.classes('secondary')" in detail
+    assert "action_button.classes('critical')" in detail
+    assert "action_button.classes('secondary', full=true)" not in detail
+    assert "action_button.classes('critical', full=true)" not in detail
+    assert detail.count('class="mt-3 flex justify-end"') == 2
+    assert detail.count('name="csrf_token"') == 2
+    assert detail.count('name="access_inventory_view" value="grants"') == 2
+    assert 'tenant.reconcile_access_grant_route' in detail
+    assert 'tenant.revoke_access_grant_route' in detail
+    assert "if grant.status == 'active'" in detail
+    assert 'Retire requires revoked Memberships and reconciled grants.' in group
+    assert 'Retirement is blocked while active Memberships' not in group
+
+
 def test_capsule_and_native_loading_bars_follow_owning_header() -> None:
     for provider in ('_external_capsule_access_inventory.html', '_native_namespace_rbac_inventory.html'):
         template = read(provider)

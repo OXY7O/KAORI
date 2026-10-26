@@ -298,8 +298,11 @@ def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_h
     assert '_access_grant_row_detail.html' in registry
     assert 'access-grant-more-actions-' not in registry
     assert 'aria-label="Selected Access Grant"' in detail
-    assert 'Retry reconciliation for this grant.' in detail
-    assert 'Remove grant access; Membership remains.' in detail
+    assert 'Retry provider-side reconciliation for this committed grant.' in detail
+    assert 'Remove this grant while keeping the Membership intact.' in detail
+    assert 'aria-label="Governed grant actions"' in detail
+    assert 'Grant Context' in detail
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' in detail
     assert 'tenant.reconcile_access_grant_route' in detail
     assert 'tenant.revoke_access_grant_route' in detail
     assert 'No membership or RBAC mutation' in capsule
@@ -2112,8 +2115,15 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
     ):
         detail = read(f'app/templates/kubernetes/tenant/partials/{filename}')
         assert 'components/action_button.html' in detail
-        assert "action_button.classes('secondary', full=true)" in detail
-        assert "action_button.classes('critical', full=true)" in detail
+        if filename == '_access_grant_row_detail.html':
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
+            assert "action_button.classes('secondary', full=true)" not in detail
+            assert "action_button.classes('critical', full=true)" not in detail
+            assert 'class="mt-3 flex justify-end"' in detail
+        else:
+            assert "action_button.classes('secondary', full=true)" in detail
+            assert "action_button.classes('critical', full=true)" in detail
         assert 'hx-target="#tenant-admin-workspace"' in detail
         assert 'hx-disabled-elt="find button"' in detail
         assert 'name="csrf_token"' in detail
