@@ -45,17 +45,7 @@
             ) }}
         </div>
     {% endif %}
-    {% if runtime_table_embedded|default(false) and job_status %}
-        <div class="flex justify-end border-b border-outline-subtle px-4 py-2.5">
-            {{ registry_ui.clear_filters_action(
-                url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs'),
-                table_ui.action_classes(),
-                hx_get=url_for('github_source_uat.runtime_jobs', installation_id=installation.id, job_per_page=job_pagination.per_page),
-                target='#github-runtime-jobs',
-                indicator='#github-runtime-jobs-loading'
-            ) }}
-        </div>
-    {% endif %}
+    
     <form method="get"
           action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs') }}"
           hx-get="{{ url_for('github_source_uat.runtime_jobs', installation_id=installation.id) }}"
