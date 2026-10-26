@@ -5,10 +5,10 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set latest_runtime = runtime_history[0] if runtime_history else none %}
+{% set latest_runtime = latest_runtime_observation %}
 {% set runtime_health = latest_runtime.health_status if latest_runtime else 'not_observed' %}
 {% set runtime_observed = latest_runtime is not none %}
-{% set runtime_gate = 'ready' if runtime_observed and runtime_health in ['active', 'healthy'] else ('blocked' if runtime_observed and runtime_health in ['sealed', 'uninitialized', 'unavailable'] else ('degraded' if runtime_observed else 'not_observed')) %}
+{% set runtime_gate = 'ready' if runtime_observed and runtime_health in ['active', 'healthy'] else ('blocked' if runtime_observed and runtime_health in ['unhealthy', 'sealed', 'uninitialized', 'unavailable'] else ('degraded' if runtime_observed else 'not_observed')) %}
 <section class="{{ integration_ui.section_shell_classes() }} overflow-hidden"
          data-kaori-vault-runtime-workspace>
     {% call connection_validation_header.render('Vault Runtime Health & Diagnostics',
