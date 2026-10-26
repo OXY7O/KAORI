@@ -404,3 +404,24 @@ python scripts/verify_settings_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Actual scan and authentication evidence must use a fresh rotated setup key; redact QR, manual seed, password, OTP and recovery codes from screenshots. Official admission remains HOLD until separately authorized.
+
+## MFA enrolled recovery — symmetric panel UAT (#3228, 2026-10-26)
+
+The operator approved a replacement recovery layout for the **enrolled** factor state; historical vertically stacked recovery input expectations above are superseded only for the enrolled view. On the exact holding SHA, navigate **Settings → Account & Authentication → Multi-Factor Authentication** using an authorized enrolled disposable/local test account:
+
+1. Desktop (1440×900 / 1280×800): left Regenerate Recovery Codes and right Recovery Security cards have matching visible heights. The left has a single horizontal input + input + action row with label/accessibility preserved; the lower region shows three procedural steps. The right has three compact icon-labelled security statements, normally one line each if space permits. Do not shrink or clip text to manufacture this state.
+2. Tablet/mobile (1024×768, 768×1024, 390×844, 360×800): both cards and all controls stack naturally with no horizontal scroll, clipped input or disappearing action. Check both light/dark themes and keyboard focus.
+3. With local auth, Current Password must appear and remain required. With external/provider auth, no misleading Current Password control is rendered; fresh-login and TOTP/recovery verification remain required by the server. Inspect exact POST action `regenerate`, two required value names only when authorized, CSRF token and correct loading/toast/errors.
+4. In an isolated authorized test identity, incorrect password/code must not regenerate codes, audit false success or leak secrets. Valid regeneration invalidates previously unused recovery codes and displays replacements only once, with the approved Operational Toast and Activity Audit correlation. Check that refresh cannot re-display one-time plaintext. Do not attach any QR, setup key, password, OTP or recovery code as evidence.
+5. Record commands/actual outputs, source SHA, browser viewport/theme observations, redacted screenshots and Human Acceptance decision separately. Do not infer manual PASS from source contracts.
+
+Focused regression (reuse existing gates):
+```bash
+ruff check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+ruff format --check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+djlint --check app/templates/settings/account/partials/_mfa.html
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py tests/contracts/settings/test_settings_final_lock_contract.py
+python scripts/verify_settings_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Official CI/CD admission remains **HOLD** until explicitly authorized.
