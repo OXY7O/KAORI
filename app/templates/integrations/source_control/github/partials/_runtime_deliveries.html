@@ -20,7 +20,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 {% if delivery_state %}
                     {{ registry_ui.clear_filters_action(
-                        url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime'),
+                        url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'),
                         table_ui.action_classes(),
                         hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=1, delivery_per_page=delivery_pagination.per_page),
                         target='#github-runtime-deliveries',
@@ -44,7 +44,7 @@
         </div>
     {% endif %}
     <form method="get"
-          action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime') }}"
+          action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries') }}"
           hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id) }}"
           hx-target="#github-runtime-deliveries"
           hx-swap="outerHTML"
@@ -97,7 +97,7 @@
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <span>Showing {{ delivery_pagination.start_item }}–{{ delivery_pagination.end_item }} of {{ delivery_pagination.total_items }} Deliveries</span>
             <form method="get"
-                  action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime') }}"
+                  action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries') }}"
                   hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id) }}"
                   hx-target="#github-runtime-deliveries"
                   hx-swap="outerHTML"
@@ -117,7 +117,7 @@
         <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="GitHub Deliveries pagination">
             {% for direction, page, allowed in [('Previous', delivery_pagination.prev_page, delivery_pagination.has_prev), ('Next', delivery_pagination.next_page, delivery_pagination.has_next)] %}
                 {% if allowed %}
-                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state) }}"
+                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries', delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state) }}"
                        hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state) }}"
                        hx-target="#github-runtime-deliveries" hx-swap="outerHTML"
                        hx-indicator="#github-runtime-deliveries-loading"
@@ -132,7 +132,7 @@
                 hx_target='#github-runtime-deliveries',
                 hx_indicator='#github-runtime-deliveries-loading',
                 endpoint='github_source_uat.runtime_deliveries',
-                query_params={'tab': 'runtime', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state},
+                query_params={'tab': 'runtime', 'runtime_view': 'deliveries', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state},
                 hx_swap='outerHTML',
                 href_endpoint='github_source_uat.detail') }}
         </nav>
