@@ -17,6 +17,7 @@ def test_vault_operational_links_are_explicitly_role_gated():
     for endpoint in ('overview', 'inventory', 'lifecycle', 'certificate_analytics'):
         assert "url_for('secrets_pki." + endpoint + "')" in page
     assert 'The independent <code>secrets_pki.view</code> permission is required' in page
-    assert 'instance_id=instance.id' not in page.split(
-        'id="vault-operational-evidence-title"'
-    )[1].split('id="vault-detail-tabs"')[0]
+    assert (
+        'instance_id=instance.id'
+        not in page.split('id="vault-operational-evidence-title"')[1].split('id="vault-detail-tabs"')[0]
+    )

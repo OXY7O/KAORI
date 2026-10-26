@@ -8,11 +8,16 @@ from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
     table = ScopeAccessPolicy.__table__
     assert table.name == 'access_scope_policies'
-    assert {'principal_user_id', 'permission_key', 'integration_instance_id',
-            'scope_level', 'provider_namespace', 'mount', 'current_revision'} <= set(table.columns)
-    foreign_targets = {
-        fk.target_fullname for col in table.columns for fk in col.foreign_keys
-    }
+    assert {
+        'principal_user_id',
+        'permission_key',
+        'integration_instance_id',
+        'scope_level',
+        'provider_namespace',
+        'mount',
+        'current_revision',
+    } <= set(table.columns)
+    foreign_targets = {fk.target_fullname for col in table.columns for fk in col.foreign_keys}
     assert 'users.id' in foreign_targets
     assert 'permissions.key' in foreign_targets
     assert 'integration_instances.id' in foreign_targets

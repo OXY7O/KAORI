@@ -80,7 +80,7 @@ def test_save_always_targets_create_or_edit_after_test_render_roundtrip() -> Non
         "if provider else url_for('identity_providers.test_configuration')"
     )
     assert template.count(test_url) == 1, 'only Test Connection may submit to the test endpoint'
-    assert routes.index("return redirect(url_for('identity_providers.index'))", routes.index('def create(')) > routes.index(
-        'create_identity_provider(configuration_from_form(form))', routes.index('def create(')
-    )
-    assert "registration_proof=registration_proof" in routes
+    assert routes.index(
+        "return redirect(url_for('identity_providers.index'))", routes.index('def create(')
+    ) > routes.index('create_identity_provider(configuration_from_form(form))', routes.index('def create('))
+    assert 'registration_proof=registration_proof' in routes
