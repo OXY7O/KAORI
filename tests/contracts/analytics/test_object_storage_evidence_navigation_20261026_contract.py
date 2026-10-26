@@ -139,7 +139,7 @@ def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contract
     assert 'data-object-storage-forecast-interpretation' in trend
     assert 'data-object-storage-chart-container' in trend
     assert 'Historical Growth / Day' in trend
-    assert "data-object-storage-capacity-trend-facts" in trend
+    assert 'data-object-storage-capacity-trend-facts' in trend
     assert "compact_usage_overview = page_key == 'overview' and trend_mode == 'usage'" in trend
 
     separate_table = (
@@ -148,7 +148,7 @@ def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contract
     )
     assert separate_table in buckets
     assert 'data-object-storage-bucket-forecast-chart-panel' in buckets
-    assert "bucket_forecast_summary.ready_count|default(0)" in buckets
+    assert 'bucket_forecast_summary.ready_count|default(0)' in buckets
     assert 'analysis_surface.evidence_shell_classes()' in records
     assert 'data-kaori-object-storage-bucket-forecast-table' in records
     assert 'table_ui.block_icon_classes()' in records
