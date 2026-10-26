@@ -84,13 +84,29 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     per_page = request.args.get('per_page', 5, type=int) or 5
     if per_page not in (5, 10, 25, 50):
         per_page = 5
+    inventory_search = request.args.get('inventory_search', '').strip()[:80]
+    inventory_visibility = request.args.get('inventory_visibility', '').strip().lower()
+    if inventory_visibility not in {'public', 'private', 'internal', 'unknown'}:
+        inventory_visibility = ''
+    inventory_archived = request.args.get('inventory_archived', '').strip().lower()
+    if inventory_archived not in {'active', 'archived', 'unknown'}:
+        inventory_archived = ''
     inventory = read_installation_inventory(
         db.session,
         authorized_installation_id=installation.id,
         page=page,
         per_page=per_page,
+        search=inventory_search,
+        visibility=inventory_visibility,
+        archived=inventory_archived,
     )
-    return {'inventory': inventory, 'installation': installation}
+    return {
+        'inventory': inventory,
+        'installation': installation,
+        'inventory_search': inventory_search,
+        'inventory_visibility': inventory_visibility,
+        'inventory_archived': inventory_archived,
+    }
 
 
 def _validation_job_for(canonical, *, operation: str = 'full_validation') -> dict | None:

@@ -50,6 +50,7 @@ class InventoryPage:
     total: int | None
     page: int
     per_page: int
+    matching_total: int | None = None
 
 
 def read_installation_inventory(
@@ -58,6 +59,9 @@ def read_installation_inventory(
     authorized_installation_id: int,
     page: int = 1,
     per_page: int = 5,
+    search: str = '',
+    visibility: str = '',
+    archived: str = '',
 ) -> InventoryPage:
     """Never silently broadens scope to all installations/accounts.
 
@@ -75,6 +79,10 @@ def read_installation_inventory(
         raise ValueError('Source Control inventory page must be positive.')
     if per_page not in _ALLOWED_PAGE_SIZES or isinstance(per_page, bool):
         raise ValueError('Source Control inventory pagination uses standard KAORI page sizes.')
+
+    search = str(search).strip()[:80]
+    visibility = visibility if visibility in {'public', 'private', 'internal', 'unknown'} else ''
+    archived = archived if archived in {'active', 'archived', 'unknown'} else ''
 
     state = session.get(SourceRepositoryCollectionState, authorized_installation_id)
     if state is None or state.committed_generation == 0:
@@ -114,6 +122,23 @@ def read_installation_inventory(
             SourceRepositoryGrant.valid_until.is_(None),
         )
     )
+    filters = []
+    if search:
+        filters.append(
+            SourceRepository.full_name.icontains(search, autoescape=True)
+            | SourceRepository.native_repository_id.icontains(search, autoescape=True)
+        )
+    if visibility == 'unknown':
+        filters.append(SourceRepository.visibility.is_(None))
+    elif visibility:
+        filters.append(SourceRepository.visibility == visibility)
+    if archived == 'unknown':
+        filters.append(SourceRepository.archived.is_(None))
+    elif archived:
+        filters.append(SourceRepository.archived.is_(archived == 'archived'))
+    if filters:
+        scoped = scoped.where(*filters)
+
     count_query = (
         select(func.count())
         .select_from(SourceRepositoryGrant)
@@ -123,9 +148,24 @@ def read_installation_inventory(
         )
     )
     total = int(session.execute(count_query).scalar_one())
+    if filters:
+        matching_query = (
+            select(func.count())
+            .select_from(SourceRepositoryGrant)
+            .join(SourceRepository, SourceRepositoryGrant.repository_id == SourceRepository.id)
+            .where(
+                SourceRepositoryGrant.installation_id == authorized_installation_id,
+                SourceRepositoryGrant.valid_until.is_(None),
+                *filters,
+            )
+        )
+        matching_total = int(session.execute(matching_query).scalar_one())
+    else:
+        matching_total = total
+    effective_page = min(page, max(1, (matching_total + per_page - 1) // per_page))
     data = session.execute(
         scoped.order_by(SourceRepository.full_name, SourceRepository.id)
-        .limit(per_page).offset((page - 1) * per_page)
+        .limit(per_page).offset((effective_page - 1) * per_page)
     ).all()
     return InventoryPage(
         installation_id=authorized_installation_id,
@@ -150,5 +190,5 @@ def read_installation_inventory(
             )
             for repository, status, sha, tip_observed_at in data
         ),
-        page=page, per_page=per_page,
+        page=effective_page, per_page=per_page, matching_total=matching_total,
     )
