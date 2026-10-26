@@ -340,7 +340,8 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
     assert 'hx-push-url="true"' in settings_tabs
 
     assert 'def _access_inventory_view() -> str:' in routes
-    assert "'active_access_inventory_view': _access_inventory_view()" in routes
+    assert "'active_access_inventory_view': active_view" in routes
+    assert 'active_view = _access_inventory_view()' in routes
     assert "request.values.get('access_inventory_view')" in routes
     assert "'HX-Replace-Url'" in routes
 
@@ -352,7 +353,7 @@ def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidenc
         assert 'Provider Authority' in panel
         assert 'Inspection Target' in panel
         assert 'Inspection Evidence' in panel
-        assert 'rounded-xl border border-dashed' in panel
+        assert '<details class="group min-w-0">' in panel
         assert 'read-only' in panel.lower()
         assert 'bg-surface-hover px-5 py-4' in panel
 
