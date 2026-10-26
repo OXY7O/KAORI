@@ -326,9 +326,7 @@ def update_github_connection_configuration(
         ).all()
 
     invalidates_readiness = (
-        canonical.environment != environment
-        or bool(canonical.enabled) != bool(enabled)
-        or credential_changed
+        canonical.environment != environment or bool(canonical.enabled) != bool(enabled) or credential_changed
     )
     canonical.name = validated_name
     canonical.environment = environment

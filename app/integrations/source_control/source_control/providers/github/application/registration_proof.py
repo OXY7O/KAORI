@@ -87,3 +87,46 @@ def verify_github_registration_proof(
     if not hmac.compare_digest(str(payload.get('fingerprint') or ''), _fingerprint(values)):
         return False, 'Connection settings changed after testing. Run Test Connection again.'
     return True, ''
+
+
+_SUCCESSOR_PROOF_SALT = 'source-control-github-installation-successor-proof-v1'
+
+
+def _successor_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(secret_key=current_app.config['SECRET_KEY'], salt=_SUCCESSOR_PROOF_SALT)
+
+
+def issue_github_successor_proof(
+    *, user_id: int, predecessor_installation_id: int, values: GitHubConnectionInput
+) -> str:
+    """Proof binds the tested replacement and the preserved predecessor."""
+    return _successor_serializer().dumps(
+        {
+            'user_id': int(user_id),
+            'predecessor_installation_id': int(predecessor_installation_id),
+            'fingerprint': _fingerprint(values),
+        }
+    )
+
+
+def verify_github_successor_proof(
+    *, token: str | None, user_id: int, predecessor_installation_id: int,
+    values: GitHubConnectionInput
+) -> tuple[bool, str]:
+    if not token:
+        return False, 'Test the replacement installation before registration.'
+    try:
+        payload = _successor_serializer().loads(token, max_age=REGISTRATION_PROOF_MAX_AGE_SECONDS)
+    except SignatureExpired:
+        return False, 'The replacement test expired. Test the installation again.'
+    except BadSignature:
+        return False, 'Replacement test proof is invalid. Test the installation again.'
+    if not isinstance(payload, dict):
+        return False, 'Replacement test proof is invalid.'
+    if (
+        payload.get('user_id') != int(user_id)
+        or payload.get('predecessor_installation_id') != int(predecessor_installation_id)
+        or not hmac.compare_digest(str(payload.get('fingerprint') or ''), _fingerprint(values))
+    ):
+        return False, 'Replacement configuration or installation context changed. Test again.'
+    return True, ''

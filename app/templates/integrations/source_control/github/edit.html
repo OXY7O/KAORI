@@ -109,7 +109,14 @@
                                 </div>
                             {% endfor %}
                         </dl>
-                        <p class="text-xs leading-5 text-content-secondary">A different App or installation is a new connection, not an in-place identity replacement. Historical evidence remains linked to this installation.</p>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-xs leading-5 text-content-secondary">Switch installations without deleting this connection or its historical evidence.</p>
+                            <a href="{{ url_for('github_source_uat.replace_installation', installation_id=installation.id) }}"
+                               class="{{ action_button.classes('secondary') }} shrink-0">
+                                <i data-lucide="git-branch-plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Replace Installation
+                            </a>
+                        </div>
                     </section>
                     <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated"
                              aria-labelledby="github-edit-protected-credentials">
