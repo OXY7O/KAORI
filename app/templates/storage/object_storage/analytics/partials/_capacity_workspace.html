@@ -39,6 +39,7 @@
                     <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted" aria-hidden="true"></i>
                 </summary>
                 <div class="border-t border-outline-subtle p-4">
+                    {% set reconciliation_embedded = true %}
                     {% include "storage/object_storage/analytics/partials/_reconciliation.html" %}
                 </div>
             </details>
