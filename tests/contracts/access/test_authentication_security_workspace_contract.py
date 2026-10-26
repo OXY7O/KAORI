@@ -152,6 +152,21 @@ def test_overview_control_areas_and_operational_boundaries_share_one_section() -
     assert page.count('assurance.render(') == 4
 
 
+def test_overview_heading_is_text_only_and_still_above_its_control_card() -> None:
+    page = source('app/templates/access/authentication_security/partials/_page_content.html')
+    Environment().parse(page)
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
+    header = overview.split('data-auth-security-control-intro="above-card"', 1)[1].split('</header>', 1)[0]
+    assert 'Authentication Security Control Areas' in header
+    assert 'Review authentication controls, ownership boundaries, and related access workspaces.' in header
+    assert 'data-lucide="layout-grid"' not in overview
+    assert '<span' not in header
+    assert overview.index('data-auth-security-control-intro="above-card"') < overview.index(
+        'data-auth-security-overview-hub="true"'
+    )
+    assert 'data-auth-security-boundaries="harmonized"' in overview
+
+
 def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
     routes = source('app/access/authentication_security/__init__.py')
     assert "return requested if requested in supported else 'overview'" in routes

@@ -557,3 +557,21 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Record source SHA, each command's actual results, redacted desktop/mobile screenshots, negative/positive authorization and browser behavior, and the human acceptance decision. Official admission, `kaori/staging`, main and release remain HOLD.
+
+## Icon-free Overview heading and unified MFA detail layout UAT (#3344, 2026-10-26)
+
+At exact `kaori/review/staging-uat` SHA, inspect Overview and MFA in the browser. **Overview** `Authentication Security Control Areas` must show only the title/subtitle above its existing bounded box; **no decorative heading icon/badge**, while all three control cards and harmonized two-column Operational Boundaries survive unchanged. **MFA** must have one external title/subtitle `Multi-Factor Authentication Controls` **above** one bounded card with original Policy Configuration + Enforcement Modes 3/2 grid, followed by an internal `Account Enrollment & Recovery` subsection with a dividing border, soft surface, one inset badge/action row and original Settings link. There must be no detached Enrollment card below the unified box.
+
+Check 1440,1280,1024,768,390,360 widths, both color themes, 200% zoom, keyboard tabbing and screenreader heading/order; verify no clipping, double borders or excessive spacing and that both the manager edit form and read-only viewer render correctly. Exercise supported MFA policy choices with only authorized test users and preserve impact acknowledgement, session generation revocation, enrollment and recovery safety. Do not change policy or expose TOTP/recovery codes for visual testing. Retain HTMX query-tab navigation, URL history and native fallback. Check Bot/Session other-tab regression separately.
+
+Earlier operator-reported **48 focused pytest PASS, Ruff/Ruff Format PASS, Access Final Lock PASS, Sidebar Standard PASS** were for a *previous SHA*; **djlint FAIL** on the large `_page_content.html` template was an unresolved existing formatting gate. Source modifications here do not prove new gate success. Execute the exact-SHA commands below and record evidence; review any formatter change without bypassing the original `djlint` command:
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Collect redacted screenshots, actual command results, and Human Acceptance; defer Full Admission, `kaori/staging`/`main` promotion and release until explicitly authorized.
