@@ -215,7 +215,7 @@
                     {% include "integrations/source_control/github/partials/_detail_runtime.html" %}
                 </div>
                 <div id="github-panel-inventory"
-                     x-data='{ deleteModal: false, deleteName: {{ canonical.name|tojson }}, deleteUrl: {{ url_for("github_source_uat.delete_connection", installation_id=installation.id)|tojson }} }'
+                     x-data='{ deleteModal: false, deleteName: {{ canonical.name|tojson }}, deleteUrl: {{ url_for("github_source_uat.delete_connection", installation_id=installation.id) |tojson }} }'
                      role="tabpanel"
                      aria-labelledby="github-tab-inventory"
                      x-show="activeTab === 'inventory'"
@@ -223,8 +223,8 @@
                      class="space-y-4">
                     {% include "integrations/source_control/github/partials/_detail_inventory.html" %}
                     {{ asset_owner_delete_modal.render('Delete GitHub Connection',
-                        'Removes the connection from active KAORI use. Existing repository grants, revisions, JobExecution, and audit history are retained. GitHub App permissions are not revoked.',
-                        'KAORI connection lifecycle only') }}
+                                        'Removes the connection from active KAORI use. Existing repository grants, revisions, JobExecution, and audit history are retained. GitHub App permissions are not revoked.',
+                                        'KAORI connection lifecycle only') }}
                 </div>
             </div>
         </section>
