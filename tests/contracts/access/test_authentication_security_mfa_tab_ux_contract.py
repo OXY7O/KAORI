@@ -42,9 +42,7 @@ def test_mfa_controls_have_external_heading_and_one_harmonized_container() -> No
     assert 'data-auth-security-mfa-intro="above-card"' in tab
     assert 'Multi-Factor Authentication Controls' in tab
     assert 'Manage MFA enforcement, recovery boundaries, and personal enrollment in one workspace.' in tab
-    assert tab.index('data-auth-security-mfa-intro="above-card"') < tab.index(
-        'data-auth-security-mfa-hub="true"'
-    )
+    assert tab.index('data-auth-security-mfa-intro="above-card"') < tab.index('data-auth-security-mfa-hub="true"')
     assert tab.index('data-auth-security-mfa-hub="true"') < tab.index('Policy Configuration')
     assert tab.index('Policy Configuration') < tab.index('Enforcement Modes')
     assert tab.index('Enforcement Modes') < tab.index('data-auth-security-mfa-enrollment="harmonized"')
@@ -57,6 +55,15 @@ def test_mfa_controls_have_external_heading_and_one_harmonized_container() -> No
     assert 'Recovery Codes' in tab
     assert "url_for('settings.account', tab='mfa')" in tab
     assert 'flex flex-wrap items-center justify-between' in tab
+
+
+def test_mfa_assurance_descriptions_fit_desktop_without_truncation() -> None:
+    tab = _mfa_tab()
+    assert "'Factor Ownership', 'Self-Service', 'Users keep their own recovery codes.'" in tab
+    assert "'Factor Enrollment', 'User-Owned', 'Admins cannot retrieve MFA secrets.'" in tab
+    assert "'Policy Transition', 'Revocation', 'Policy changes revoke prior sessions.'" in tab
+    assert 'Each user enrolls and stores personal recovery codes.' not in tab
+    assert 'Changes invalidate existing and Remember Me sessions.' not in tab
 
 
 def test_mfa_tab_displays_effective_committed_policy_without_fake_coverage() -> None:
