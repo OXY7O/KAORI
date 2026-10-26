@@ -600,6 +600,50 @@ def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> N
     jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
 
 
+def test_alert_anomaly_signal_tab_explains_every_committed_boundary() -> None:
+    records = read(f'{PARTIALS}/_alerts_signal_records.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    analysis = read('app/storage/object_storage/analytics/analysis.py')
+    overview = read(f'{PARTIALS}/_alerts_summary.html')
+    recommendations = read('app/storage/object_storage/analytics/recommendations.py')
+
+    assert 'components/table_primitives.html' in records
+    assert 'components/info_tip.html' in records
+    assert 'object-storage-anomaly-signal-evaluation-guide' in records
+    assert "variant='guide'" in records
+    assert "placement='right'" in records
+    assert 'advanced Intelligence correlations' in records
+    assert 'data-object-storage-boundary-evaluations' in records
+    assert 'data-object-storage-boundary-table' in records
+    assert "table_ui.table_classes('min-w-[740px]')" in records
+    assert 'table_ui.head_classes()' in records
+    assert 'table_ui.body_classes()' in records
+    assert 'table_ui.row_classes()' in records
+    assert 'table_ui.cell_classes()' in records
+    assert 'overflow-x-auto' in records
+    assert 'scope="row"' in records
+    assert 'scope="col"' in records
+    assert 'sr-only' in records
+    assert 'metrics.boundary_evaluations' in records
+    for field in ('title', 'observed', 'threshold', 'severity', 'evaluation'):
+        assert f'boundary.{field}' in records
+    assert "table_label.status_label(boundary.severity|title, boundary.severity, size='compact')" in records
+    assert 'not a provider alert or an automated root-cause diagnosis' in records
+
+    assert 'partials/_alerts_signal_records.html' in workspace
+    assert "('signals', 'Anomaly Signals', 'list-tree')" in workspace
+    assert 'metric_boundary_evaluations' in analysis
+    assert "committed_metrics['boundary_evaluations'] = metric_boundary_evaluations(" in service
+    assert "dict(page_metrics.get('alerts') or _unavailable_alert_metrics())" in service
+    assert "if page_key == 'alerts':" in service
+    assert 'read_analytics_snapshot' in service
+    assert 'metric_risk_signals(' in service
+    assert 'metric_risk_signals' in recommendations or "metrics.get('signals')" in recommendations
+    assert 'metrics.signal_posture.critical_count + metrics.signal_posture.warning_count' in overview
+    Environment().parse(records)
+
+
 def test_performance_trend_and_forecast_records_use_canonical_kaori_guides() -> None:
     trend = read(f'{PARTIALS}/_trend.html')
     records = read(f'{PARTIALS}/_bucket_forecast_table.html')
@@ -626,7 +670,7 @@ def test_performance_trend_and_forecast_records_use_canonical_kaori_guides() -> 
 
     header = records.split('</header>', 1)[0]
     assert 'Bucket Forecast Records' in header
-    assert "table_label.result_count(forecast_table.pagination.total_items)" in header
+    assert 'table_label.result_count(forecast_table.pagination.total_items)' in header
     assert 'Forecast Ready requires usable committed history' in header
     assert 'Forecast Watch and quota ETA are worker planning signals' in header
     assert 'data-kaori-object-storage-bucket-forecast-table' in records
