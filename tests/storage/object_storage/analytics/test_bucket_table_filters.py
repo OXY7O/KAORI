@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
+
+
+class _System:
+    id = 42
 
 
 ROWS = [
@@ -19,7 +21,7 @@ def view(**query: str) -> dict:
         ROWS,
         query,
         page_key='capacity',
-        system=SimpleNamespace(id=42),
+        system=_System(),
         time_range='6h',
     )
 
@@ -73,7 +75,7 @@ def test_invalid_quota_filters_fail_to_all_without_leaking_into_other_workspaces
         ROWS,
         {'bucket_quota_state': 'critical', 'bucket_quota_pressure': 'critical'},
         page_key='top_consumers',
-        system=SimpleNamespace(id=42),
+        system=_System(),
         time_range='24h',
     )
     assert len(other['rows']) == 5
