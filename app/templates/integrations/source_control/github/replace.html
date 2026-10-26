@@ -117,30 +117,33 @@
                              x-ref="connectionTestResult"
                              aria-live="polite"></div>
                     </section>
-                    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-outline-subtle pt-5">
-                        <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
-                           class="{{ action_button.classes('secondary') }}">Cancel</a>
-                        <button type="submit"
-                                name="action"
-                                value="replace"
-                                class="{{ action_button.classes('primary') }}">
-                            <i data-lucide="git-branch-plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Register Replacement
-                        </button>
+                    <div class="flex flex-col gap-3 border-t border-outline-subtle pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-xs leading-5 text-content-secondary">Original connection and evidence remain intact.</p>
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
+                               class="{{ action_button.classes('secondary') }}">Cancel</a>
+                            <button type="submit"
+                                    name="action"
+                                    value="replace"
+                                    class="{{ action_button.classes('primary') }}">
+                                <i data-lucide="git-branch-plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register Replacement
+                            </button>
+                        </div>
                     </div>
                 </form>
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set replacement_flow = [('Enter New Identity', 'Change the GitHub App, installation, account IDs and unique name.'), ('Test Replacement', 'Verify provider-owned identity and repository selection.'), ('Register Successor', 'Save a separate canonical installation, preserving the predecessor.'), ('Validate & Transition', 'Run Full Validation, then separately retire the previous connection if approved.')] %}
+                {% set replacement_flow = [('Enter New Identity', 'Change the GitHub App, installation, account IDs and unique name.'), ('Test Replacement', 'Verify provider-owned identity and repository selection.'), ('Register Successor', 'Save a separate canonical installation, preserving the predecessor.'), ('Validate & Transition', 'Run Full Validation before retiring the old.')] %}
                 {{ registration_context.render('GitHub Replacement Flow',
                                 'Controlled provider identity transition.',
                                 replacement_flow,
                                 'Source Control Registry',
-                                'Compare the old and replacement connection identities and committed evidence.',
+                                'Compare old and new connection evidence.',
                                 url_for('github_source.index', tab='registry') ,
                 'Open Source Control Registry',
                 flow_icon='workflow',
-                flow_note='No repository grants or existing historical evidence are migrated automatically.',
+                flow_note='Grants and evidence are not migrated.',
                 related_icon='git-branch',
                 authority_boundary='GitHub authorizes App and installation access; KAORI preserves both generations of evidence.') }}
             </aside>
