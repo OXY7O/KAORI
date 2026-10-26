@@ -12,7 +12,9 @@ def bot_tab() -> str:
     page = TEMPLATE.read_text(encoding='utf-8')
     Environment().parse(page)
     return page.split("{% elif active_tab == 'bot' %}", 1)[1].split(
-        '{% else %}\n                <div>\n                    <h2 class="text-base font-semibold text-content-primary">Session Security</h2>',
+        '{% else %}\\n                <div>\\n'
+        '                    <h2 class="text-base font-semibold text-content-primary">'
+        'Session Security</h2>',
         1,
     )[0]
 
@@ -90,9 +92,7 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
 
 
 def test_bot_server_admission_is_unchanged_and_proof_is_fresh() -> None:
-    routes = (ROOT / 'app/access/authentication_security/__init__.py').read_text(
-        encoding='utf-8'
-    )
+    routes = (ROOT / 'app/access/authentication_security/__init__.py').read_text(encoding='utf-8')
     assert "if request.form.get('acknowledge_bot_impact') != 'yes':" in routes
     assert "if request.form.get('provider_key') != 'cloudflare_turnstile':" in routes
     assert 'mode == BotPolicyMode.ALWAYS' in routes
