@@ -644,39 +644,33 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Configure, verify, then enable protection.</p>
                             </div>
                         </header>
-                        <ol class="flex flex-1 flex-col divide-y divide-outline-subtle px-5"
+                        <ol class="flex flex-1 flex-col gap-3 p-4"
                             data-auth-bot-activation="ordered"
-                            data-auth-bot-activation-layout="balanced">
-                            <li class="flex min-w-0 flex-1 flex-col justify-center gap-3 py-5"
+                            data-auth-bot-activation-layout="single-level">
+                            <li class="flex min-w-0 flex-1 flex-col justify-center rounded-xl border border-outline-subtle bg-surface-subtle p-4"
                                 data-auth-bot-activation-step="configure">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
                                           aria-hidden="true">1</span>
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-content-primary">Configure Provider</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Save the site key, matching hostname and encrypted secret while Disabled.</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Save site key, hostname and encrypted secret while Disabled.</p>
+                                        <p class="mt-2 text-xs leading-5 text-content-muted"
+                                           data-auth-bot-step-note="configuration">Keep the three provider settings consistent.</p>
                                     </div>
                                 </div>
-                                <div class="ml-11 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2"
-                                     data-auth-bot-step-context="configuration">
-                                    <p class="text-xs font-semibold text-content-primary">Configuration prerequisites</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Site key, allowed hostname and secret must be saved together. Stored values do not prove availability.</p>
-                                </div>
                             </li>
-                            <li class="flex min-w-0 flex-1 flex-col justify-center py-5"
+                            <li class="flex min-w-0 flex-1 flex-col justify-center rounded-xl border border-outline-subtle bg-surface-subtle p-4"
                                 data-auth-bot-activation-step="verify">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
                                           aria-hidden="true">2</span>
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-content-primary">Test Verification</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Complete a real one-use challenge with Cloudflare Siteverify.</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Complete a fresh, one-use Cloudflare Siteverify challenge.</p>
+                                        <p class="mt-2 text-xs leading-5 text-content-muted"
+                                           data-auth-bot-step-note="verification">Repeat the test after any configuration change.</p>
                                     </div>
-                                </div>
-                                <div class="ml-11 mt-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2"
-                                     data-auth-bot-step-context="verification">
-                                    <p class="text-xs font-semibold text-content-primary">One-use verification</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Siteverify checks a fresh token. Proof must be repeated after configuration changes.</p>
                                 </div>
                                 {% if can_manage_authentication_security and bot_has_secret and bot_site_key and bot_hostname %}
                                     <form method="post"
@@ -700,21 +694,19 @@
                                         {{ 'Save complete provider configuration to make testing available.' if can_manage_authentication_security else 'Provider verification requires manage permission.' }}
                                     </p>
                                 {% endif %}
+
                             </li>
-                            <li class="flex min-w-0 flex-1 flex-col justify-center gap-3 py-5"
+                            <li class="flex min-w-0 flex-1 flex-col justify-center rounded-xl border border-outline-subtle bg-surface-subtle p-4"
                                 data-auth-bot-activation-step="enable">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
                                           aria-hidden="true">3</span>
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-content-primary">Enable Protection</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Select Always and save after a successful test of the unchanged configuration within one hour.</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Select Always after successful proof for unchanged settings within one hour.</p>
+                                        <p class="mt-2 text-xs leading-5 text-content-muted"
+                                           data-auth-bot-step-note="safety">Confirm independent administrator recovery first.</p>
                                     </div>
-                                </div>
-                                <div class="ml-11 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2"
-                                     data-auth-bot-step-context="safety">
-                                    <p class="text-xs font-semibold text-content-primary">Activation safeguards</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Confirm independent recovery access first. Missing or rejected verification blocks sign-in.</p>
                                 </div>
                             </li>
                         </ol>

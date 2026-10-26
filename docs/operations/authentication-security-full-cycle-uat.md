@@ -636,3 +636,22 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 If `djlint --check` still fails, use the already standard `djlint --reformat` on only the affected partial in a scoped formatter remediation work branch, review all formatting-only lines and rerun the original checks. Official Full Admission, `kaori/staging`, `main`, release remain HOLD.
+
+## Bot single-level Activation & Safety panel UAT (#3372, 2026-10-26)
+
+Review **Access → Authentication Security → Bot Protection** on the actual `kaori/review/staging-uat` SHA after merging #3372. With Bot unconfigured/Disabled, the right **Activation & Safety** panel must align with the left form: the original header remains, and three similarly weighted **single-level** numbered cards fill the body at comfortable spacing. There are **no extra nested context boxes**. Content is action-first, muted subordinate notes remain legible, and the existing provider-authority/recovery footer stays separated beneath the cards. Use the same Violet semantic surfaces, radius, focus and typography as the surrounding workspace.
+
+Verify 1440/1280/1150/1024/768/390/360 widths, light/dark mode, 200% zoom, keyboard focus/aria heading, horizontal clipping and when `bot_has_secret and bot_site_key and bot_hostname` is true. The conditional *real* Cloudflare Turnstile challenge and Test Turnstile POST must still appear for managers; view-only and incomplete provider states must show truthful guidance without fake readiness. Test negative/fail-closed and proof freshness/reconfiguration in authorized UAT using redacted screenshots only; the session's other three tabs are regression scope, not redesigned.
+
+**Latest operator-reported prior SHA**: Ruff check PASS, Ruff Format PASS (6 files), `djlint --check` FAIL on `_page_content.html` and two spare blank lines in `_assurance_summary.html`, focused pytest **61 PASS / 3 FAIL** (all three stale `test_authentication_security_overview_refinement_contract.py` assertions), Access Final Lock PASS, Sidebar Navigation PASS. This implementation adjusts the three assertions and the small shared-template whitespace issue; **does not prove new-SHA Ruff, djlint, pytest, or visual PASS**. The remaining broad page formatting diff must be handled by existing `djlint --reformat` in a reviewed scoped formatter change, then re-run the unchanged check (not disabled or waived).
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_*contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_overview_refinement_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Require explicit Human Acceptance before any official Developer Check/Full Admission, promotion to `kaori/staging`, `main`, or release.

@@ -23,7 +23,7 @@ def test_template_parses_and_reuses_existing_kaori_shared_components() -> None:
     assert 'components/page_hero.html' in source
     assert 'components/table_label.html' in source
     assert 'components/workspace_tabs.html' in source
-    assert 'workspace_tabs.render_query_tabs(' in source
+    assert 'workspace_tabs.render_navigation(' in source
     assert 'authentication-security-page' in source
 
 
@@ -54,7 +54,7 @@ def test_overview_has_three_grounded_posture_tiles_and_operational_hierarchy() -
     assert "'required_all': 'Required · All Users'" in overview
     assert 'bot_has_secret and bot_site_key and bot_hostname' in overview
     assert 'Single active login generation' in overview
-    assert 'Configured adapters do not prove provider availability' in overview
+    assert 'Configured adapters do not establish external provider availability or individual enrollment.' in overview
 
 
 def test_overview_reuses_existing_access_tab_routes_and_never_mutates_policy() -> None:
@@ -75,7 +75,12 @@ def test_kaori_canonical_posture_guide_replaces_inline_header_help() -> None:
     assert "'Authentication assurance posture'" in overview
     assert "variant='guide'" in overview
     assert "placement='right'" in overview
-    assert 'aria-labelledby="authentication-posture-heading"' in overview
+    shared = (ROOT / 'app/templates/access/authentication_security/partials/_assurance_summary.html').read_text(
+        encoding='utf-8'
+    )
+    assert "'authentication-posture'," in overview
+    assert 'aria-labelledby="{{ id }}-heading"' in shared
+    assert 'id="{{ id }}-heading"' in shared
     assert 'Current KAORI policy and session enforcement at a glance.' not in overview
     assert 'Review enforcement boundaries and open the appropriate policy workspace.' not in overview
     assert 'rounded-xl border border-outline-default bg-surface-card' in overview
