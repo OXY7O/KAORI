@@ -197,3 +197,56 @@ def test_unavailable_namespace_scope_does_not_echo_long_credential_identity() ->
     assert 'data-tenant-namespace-access-detail' in detail
     assert "access.get('service_account_name')" in detail
     assert 'min-w-[1400px]' not in registry
+
+
+def test_provider_inventory_headers_use_right_aligned_authority_labels() -> None:
+    for filename, authority in (
+        ('_external_capsule_access_inventory.html', 'Capsule Authority'),
+        ('_native_namespace_rbac_inventory.html', 'Kubernetes Authority'),
+    ):
+        template = read(filename)
+        assert 'flex-wrap items-start justify-between gap-3' in template
+        assert f"table_label.special_label('{authority}', 'maintenance', 'shield-check')" in template
+        assert template.index(f"table_label.special_label('{authority}'") < template.index(
+            'data-tenant-provider-evidence-loading'
+        )
+
+
+def test_credential_expanded_detail_has_compact_governed_actions() -> None:
+    template = read('_credential_row_detail.html')
+    registry = read('_credential_registry.html')
+    assert 'data-credential-lifecycle-detail' in template
+    assert 'Credential Context' in template
+    assert 'sm:grid-cols-2 lg:grid-cols-4' in template
+    assert 'Reconciliation' in template
+    assert 'Renewal Review' in template
+    assert 'Valid Until' in template
+    assert 'Application' in template
+    assert 'Purpose' in template
+    assert 'aria-label="Credential governed actions"' in template
+    assert 'lg:grid-cols-2' in template
+    assert "action_button.classes('secondary')" in template
+    assert "action_button.classes('critical')" in template
+    assert "full=true" not in template
+    assert template.count('class="ml-auto shrink-0"') == 4
+    assert 'data-credential-material-open' in template
+    assert 'data-dialog-target="credential-material-request-{{ credential.id }}"' in template
+    assert 'one_time_secret.request_dialog' in registry
+    assert 'Generate' in template
+    assert 'Renew' in template
+    assert 'Resume' in template
+    assert 'Suspend' in template
+    assert 'Revoke Credential' in template
+    assert "credential.status == 'suspended'" in template
+    assert "credential.status == 'revoked'" in template
+    assert "credential.reconciliation_status == 'ready'" in template
+    assert 'hx-disabled-elt="find button"' in template
+    assert template.count('name="csrf_token"') == 4
+    for route in (
+        'renew_credential_route',
+        'resume_credential_route',
+        'suspend_credential_route',
+        'revoke_credential_route',
+    ):
+        assert route in template
+    Environment(autoescape=True).parse(template)
