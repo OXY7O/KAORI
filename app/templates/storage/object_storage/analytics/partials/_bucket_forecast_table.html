@@ -27,9 +27,9 @@
                 </div>
             </div>
             {% if forecast_table %}
-                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
-                     data-kaori-table-header-actions>
-                    {% if filters_active %}
+                <div class="{{ 'flex' if filters_active else 'hidden' }} shrink-0 flex-wrap items-center justify-end gap-2"
+                     data-kaori-table-header-actions
+                     data-kaori-forecast-clear-filters>
                         {{ registry_ui.clear_filters_action(url_for(forecast_table.page_endpoint,
                                                 system_id=system.id,
                                                 history_window=selected_forecast_history_window,
@@ -43,8 +43,8 @@
                         forecast_bucket_per_page=forecast_table.pagination.per_page),
                         target='#object-storage-bucket-forecast-table-panel',
                         indicator='#object-storage-bucket-forecast-table-loading-indicator',
-                        sync='#object-storage-bucket-forecast-table-panel:replace') }}
-                    {% endif %}
+                        sync='#object-storage-bucket-forecast-table-panel:replace',
+                        lead=false) }}
                 </div>
             {% endif %}
         </div>
