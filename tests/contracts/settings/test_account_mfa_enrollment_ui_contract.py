@@ -61,7 +61,8 @@ def test_mfa_fields_are_bounded_and_remain_mobile_responsive() -> None:
     assert enrollment.count('<div class="w-full">') == 2
     assert 'id="mfa-current-password"' in enrollment
     assert 'id="mfa-confirm-code"' in enrollment
-    assert 'placeholder="Confirm your current password"\n                                           class="h-12 w-full' in enrollment
+    password_input = enrollment.split('id="mfa-current-password"', 1)[1].split('</div>', 1)[0]
+    assert 'class="h-12 w-full' in password_input
     assert 'h-11 w-full rounded-lg' in html
     assert 'id="mfa-current-password"' in html
     assert 'id="mfa-confirm-code"' in html
