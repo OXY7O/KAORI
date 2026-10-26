@@ -25,7 +25,10 @@ def _source(**overrides):
 
 def _count(state, field='observed_issuer_count', max_count=24):
     return qualified_committed_pki_count(
-        state, instant=NOW, count_field=field, max_count=max_count,
+        state,
+        instant=NOW,
+        count_field=field,
+        max_count=max_count,
     )
 
 
@@ -42,20 +45,23 @@ def test_current_generation_boundary_is_within_last_24_hours(delta):
     assert (result == 1) is (delta >= 0)
 
 
-@pytest.mark.parametrize('change', [
-    {'status': 'stale'},
-    {'status': 'failed'},
-    {'status': 'partial'},
-    {'last_observed_at': None},
-    {'last_committed_at': None},
-    {'last_observed_at': NOW + timedelta(seconds=1)},
-    {'last_committed_at': NOW + timedelta(seconds=1)},
-    {'last_committed_at': NOW - timedelta(minutes=6)},
-    {'observed_issuer_count': -1},
-    {'observed_issuer_count': 25},
-    {'observed_issuer_count': True},
-    {'observed_issuer_count': '1'},
-])
+@pytest.mark.parametrize(
+    'change',
+    [
+        {'status': 'stale'},
+        {'status': 'failed'},
+        {'status': 'partial'},
+        {'last_observed_at': None},
+        {'last_committed_at': None},
+        {'last_observed_at': NOW + timedelta(seconds=1)},
+        {'last_committed_at': NOW + timedelta(seconds=1)},
+        {'last_committed_at': NOW - timedelta(minutes=6)},
+        {'observed_issuer_count': -1},
+        {'observed_issuer_count': 25},
+        {'observed_issuer_count': True},
+        {'observed_issuer_count': '1'},
+    ],
+)
 def test_unknown_failed_future_malformed_or_out_of_range_is_not_a_zero(change):
     assert _count(_source(**change)) is None
 

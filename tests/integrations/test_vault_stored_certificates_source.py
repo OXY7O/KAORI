@@ -24,7 +24,8 @@ def certificate():
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'private.workload.example')])
     return (
         x509.CertificateBuilder()
-        .subject_name(name).issuer_name(name)
+        .subject_name(name)
+        .issuer_name(name)
         .public_key(private_key.public_key())
         .serial_number(101)
         .not_valid_before(datetime.now(UTC) - timedelta(days=1))
@@ -40,7 +41,8 @@ def client(monkeypatch):
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.internal.example:8200')
     provider = VaultClient(
         endpoint='https://vault.internal.example:8200',
-        role_id='observer', secret_id='not-a-real-credential',
+        role_id='observer',
+        secret_id='not-a-real-credential',
     )
     monkeypatch.setattr(provider, 'login', lambda: 'ephemeral-token')
     return provider
@@ -55,12 +57,14 @@ def test_only_list_stored_and_read_public_certificate(client, certificate, monke
         if path == '/v1/pki/certs':
             return 200, {'data': {'keys': ['65']}}
         if path == '/v1/pki/cert/65':
-            return 200, {'data': {
-                'certificate': certificate,
-                'private_key': 'NEVER-READ-OR-STORE',
-                'issuer_id': 'private-source-id',
-                'revocation_time': 1234,
-            }}
+            return 200, {
+                'data': {
+                    'certificate': certificate,
+                    'private_key': 'NEVER-READ-OR-STORE',
+                    'issuer_id': 'private-source-id',
+                    'revocation_time': 1234,
+                }
+            }
         pytest.fail('Unexpected provider endpoint or privileged mutation')
 
     monkeypatch.setattr(client, '_request', fake_request)

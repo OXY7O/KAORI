@@ -27,7 +27,8 @@ def certificate():
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'Kaori Test CA')])
     cert = (
         x509.CertificateBuilder()
-        .subject_name(name).issuer_name(name)
+        .subject_name(name)
+        .issuer_name(name)
         .public_key(private_key.public_key())
         .serial_number(101)
         .not_valid_before(datetime.now(UTC) - timedelta(days=2))
@@ -44,7 +45,8 @@ def client(monkeypatch):
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.internal.example:8200')
     instance = VaultClient(
         endpoint='https://vault.internal.example:8200',
-        role_id='test-reader', secret_id='not-persisted',
+        role_id='test-reader',
+        secret_id='not-persisted',
     )
     monkeypatch.setattr(instance, 'login', lambda: 'ephemeral-token')
     return instance
@@ -57,16 +59,17 @@ def test_collects_only_public_certificate_properties(client, certificate, monkey
         calls.append((path, method, token))
         assert token == 'ephemeral-token'
         if path == '/v1/pki/issuers':
-            return 200, {'data': {'keys': [ISSUER_ID],
-                                  'key_info': {ISSUER_ID: {'issuer_name': 'root-ca'}}}}
+            return 200, {'data': {'keys': [ISSUER_ID], 'key_info': {ISSUER_ID: {'issuer_name': 'root-ca'}}}}
         if path == f'/v1/pki/issuer/{ISSUER_ID}/json':
-            return 200, {'data': {
-                'certificate': certificate,
-                'ca_chain': [certificate],
-                'private_key': 'PRIVATE-KEY-NEVER-COPY',
-                'private_key_type': 'exported',
-                'key_id': 'test-only-key-id',
-            }}
+            return 200, {
+                'data': {
+                    'certificate': certificate,
+                    'ca_chain': [certificate],
+                    'private_key': 'PRIVATE-KEY-NEVER-COPY',
+                    'private_key_type': 'exported',
+                    'key_id': 'test-only-key-id',
+                }
+            }
         pytest.fail('Only public PKI issuer endpoints may be queried')
 
     monkeypatch.setattr(client, '_request', fake_request)

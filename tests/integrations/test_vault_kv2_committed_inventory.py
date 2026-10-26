@@ -40,21 +40,34 @@ def store():
     db.init_app(app)
     with app.app_context():
         tables = [
-            IntegrationInstance.__table__, VaultInstance.__table__,
-            SecretIdentity.__table__, SecretProviderRepresentation.__table__,
-            SecretVersionObservation.__table__, SecretInventoryCollectionState.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
+            SecretIdentity.__table__,
+            SecretProviderRepresentation.__table__,
+            SecretVersionObservation.__table__,
+            SecretInventoryCollectionState.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         identity = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault', adapter_key='vault_http_v1',
-            name='test-vault', environment='testing', enabled=True, readiness_status='ready',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='test-vault',
+            environment='testing',
+            enabled=True,
+            readiness_status='ready',
         )
         db.session.add(identity)
         db.session.flush()
         connection = VaultInstance(
-            integration_instance_id=identity.id, endpoint='https://vault.example.test',
-            auth_mount='approle', role_id='reader', secret_id='test-only',
-            timeout=5, verify_ssl=True, kv2_mounts=['secret'],
+            integration_instance_id=identity.id,
+            endpoint='https://vault.example.test',
+            auth_mount='approle',
+            role_id='reader',
+            secret_id='test-only',
+            timeout=5,
+            verify_ssl=True,
+            kv2_mounts=['secret'],
         )
         db.session.add(connection)
         db.session.commit()
@@ -72,14 +85,20 @@ def _snapshot(at: datetime, names=('team/db',), *, version=1, complete=True):
         complete=complete,
         records=tuple(
             KV2SecretEvidence(
-                mount='secret', path=name,
-                current_version=version, oldest_version=1, max_versions=0,
+                mount='secret',
+                path=name,
+                current_version=version,
+                oldest_version=1,
+                max_versions=0,
                 cas_required=True,
-                versions=(KV2VersionEvidence(
-                    version=version,
-                    created_time='2026-10-22T00:00:00Z',
-                    deletion_time=None, destroyed=False,
-                ),),
+                versions=(
+                    KV2VersionEvidence(
+                        version=version,
+                        created_time='2026-10-22T00:00:00Z',
+                        deletion_time=None,
+                        destroyed=False,
+                    ),
+                ),
             )
             for name in names
         ),
@@ -223,9 +242,15 @@ def test_destroyed_version_evidence_cannot_revert_to_not_destroyed(store):
     at = datetime(2026, 10, 22, tzinfo=UTC)
     initial = _snapshot(at)
     secret = initial.records[0]
-    destroyed = replace(initial, records=(replace(
-        secret, versions=(replace(secret.versions[0], destroyed=True),),
-    ),))
+    destroyed = replace(
+        initial,
+        records=(
+            replace(
+                secret,
+                versions=(replace(secret.versions[0], destroyed=True),),
+            ),
+        ),
+    )
     commit_kv2_inventory(store, destroyed)
     with pytest.raises(ValueError, match='cannot reverse'):
         commit_kv2_inventory(store, _snapshot(at + timedelta(minutes=1)))

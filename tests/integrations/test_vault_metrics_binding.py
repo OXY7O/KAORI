@@ -13,7 +13,8 @@ from app.integrations.observability.metrics_source.binding_validators import vau
 def _binding(instance_id='42', *, selector=None):
     return SimpleNamespace(
         asset_key=instance_id,
-        selector_json=selector or {
+        selector_json=selector
+        or {
             'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': instance_id}],
         },
     )
@@ -28,26 +29,36 @@ def _client(*, value='1', age=2, count=1, name='vault_core_active'):
 
     def query(expression):
         queries.append(expression)
-        return {'status': 'success', 'data': {
-            'resultType': 'vector', 'result': [record] * count,
-        }}
+        return {
+            'status': 'success',
+            'data': {
+                'resultType': 'vector',
+                'result': [record] * count,
+            },
+        }
 
     return SimpleNamespace(query=query, queries=queries)
 
 
 def _run(monkeypatch, client, binding=None, *, provider='vault', enabled=True):
     identity = SimpleNamespace(
-        id=42, integration_type='secrets_pki', provider_key=provider,
-        lifecycle_status='active', enabled=enabled,
+        id=42,
+        integration_type='secrets_pki',
+        provider_key=provider,
+        lifecycle_status='active',
+        enabled=enabled,
     )
     monkeypatch.setattr(
-        vault_validator, 'db',
+        vault_validator,
+        'db',
         SimpleNamespace(session=SimpleNamespace(get=lambda cls, pk: identity if pk == 42 else None)),
     )
     profile = get_binding_validation_profile('prometheus_http', 'vault_instance')
     assert profile is not None
     return vault_validator.validate_vault_metrics_binding(
-        client=client, binding=binding or _binding(), profile=profile,
+        client=client,
+        binding=binding or _binding(),
+        profile=profile,
     )
 
 
@@ -95,10 +106,12 @@ def test_selector_requires_exact_safe_label_and_canonical_instance_id(monkeypatc
         {'matchers': [{'label': 'job', 'operator': '=', 'value': 'vault'}]},
         {'matchers': [{'label': 'vault_instance', 'operator': '=~', 'value': '.*'}]},
         {'matchers': [{'label': 'vault_instance', 'operator': '=', 'value': 'another'}]},
-        {'matchers': [
-            {'label': 'vault_instance', 'operator': '=', 'value': '42'},
-            {'label': 'instance', 'operator': '=~', 'value': '.*'},
-        ]},
+        {
+            'matchers': [
+                {'label': 'vault_instance', 'operator': '=', 'value': '42'},
+                {'label': 'instance', 'operator': '=~', 'value': '.*'},
+            ]
+        },
     ):
         client = _client()
         result = _run(monkeypatch, client, _binding(selector=selector))
@@ -113,9 +126,11 @@ def test_other_provider_identity_is_not_admitted_as_vault(monkeypatch):
 
 
 def test_invalid_metric_response_and_provider_errors_are_sanitized(monkeypatch):
-    source = SimpleNamespace(query=lambda _expression: (_ for _ in ()).throw(
-        RuntimeError('https://vault.example/private/token'),
-    ))
+    source = SimpleNamespace(
+        query=lambda _expression: (_ for _ in ()).throw(
+            RuntimeError('https://vault.example/private/token'),
+        )
+    )
     result = _run(monkeypatch, source)
     assert result.status == 'degraded'
     assert 'vault.example' not in result.message
@@ -131,6 +146,7 @@ def test_vault_asset_uses_the_same_label_in_the_shared_binding_picker():
     assert definition.integration_type == 'secrets_pki'
     assert definition.selector_label == 'vault_instance'
 
+
 def _range_client(*, variant='ready'):
     source = _client()
     source.range_queries = []
@@ -141,7 +157,8 @@ def _range_client(*, variant='ready'):
         points = [[ts, '1'] for ts in range(window_start, window_end + 1, 300)]
         record = {
             'metric': {
-                '__name__': 'vault_core_active', 'vault_instance': '42',
+                '__name__': 'vault_core_active',
+                'vault_instance': '42',
                 'instance': 'private-hostname-not-to-persist',
             },
             'values': points,
@@ -241,8 +258,12 @@ def test_history_query_never_runs_for_unqualified_instant_source(monkeypatch):
     assert result.status == 'blocked'
     assert source.queries == []
     assert source.range_queries == []
-    result = _run(monkeypatch, source, _binding(
-        selector={'matchers': [{'label': 'job', 'operator': '=', 'value': 'vault'}]},
-    ))
+    result = _run(
+        monkeypatch,
+        source,
+        _binding(
+            selector={'matchers': [{'label': 'job', 'operator': '=', 'value': 'vault'}]},
+        ),
+    )
     assert result.status == 'blocked'
     assert source.range_queries == []

@@ -44,23 +44,36 @@ def store():
     db.init_app(app)
     with app.app_context():
         tables = [
-            IntegrationInstance.__table__, VaultInstance.__table__,
-            PKIIssuerIdentity.__table__, PKIPublicCertificateObservation.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
+            PKIIssuerIdentity.__table__,
+            PKIPublicCertificateObservation.__table__,
             PKIIssuerCollectionState.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         identity = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault',
-            adapter_key='vault_http_v1', name='pki-test',
-            environment='testing', enabled=True, readiness_status='ready',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='pki-test',
+            environment='testing',
+            enabled=True,
+            readiness_status='ready',
         )
         db.session.add(identity)
         db.session.flush()
-        db.session.add(VaultInstance(
-            integration_instance_id=identity.id, endpoint='https://vault.test.invalid',
-            auth_mount='approle', role_id='readonly', secret_id='not-retained',
-            timeout=5, verify_ssl=True, pki_mounts=['pki'],
-        ))
+        db.session.add(
+            VaultInstance(
+                integration_instance_id=identity.id,
+                endpoint='https://vault.test.invalid',
+                auth_mount='approle',
+                role_id='readonly',
+                secret_id='not-retained',
+                timeout=5,
+                verify_ssl=True,
+                pki_mounts=['pki'],
+            )
+        )
         db.session.commit()
         try:
             yield identity.id
@@ -71,18 +84,27 @@ def store():
 
 def _snapshot(at=DAY, *, fingerprint='a' * 64, issuer_id=ISSUER_UUID, complete=True, empty=False):
     cert = PublicCertificateEvidence(
-        fingerprint_sha256=fingerprint, serial_hex='123abc',
-        subject='CN=Internal Issuer May Be Sensitive', issuer='CN=Sensitive Root',
-        valid_from=DAY-timedelta(days=2), valid_until=DAY+timedelta(days=365),
-        is_ca=True, self_issued=False, dns_names=('private.domain.invalid',),
+        fingerprint_sha256=fingerprint,
+        serial_hex='123abc',
+        subject='CN=Internal Issuer May Be Sensitive',
+        issuer='CN=Sensitive Root',
+        valid_from=DAY - timedelta(days=2),
+        valid_until=DAY + timedelta(days=365),
+        is_ca=True,
+        self_issued=False,
+        dns_names=('private.domain.invalid',),
     )
     record = PKIIssuerEvidence(
-        issuer_id=issuer_id, issuer_name='sensitive-issuer-label',
-        certificate=cert, chain_fingerprints=('b' * 64,),
+        issuer_id=issuer_id,
+        issuer_name='sensitive-issuer-label',
+        certificate=cert,
+        chain_fingerprints=('b' * 64,),
     )
     return PKIIssuerCollection(
-        mount='pki', observed_at=at,
-        issuers=() if empty else (record,), complete=complete,
+        mount='pki',
+        observed_at=at,
+        issuers=() if empty else (record,),
+        complete=complete,
     )
 
 
@@ -105,14 +127,25 @@ def test_public_evidence_never_persists_subject_san_pem_issuer_label_or_secrets(
     commit_pki_public_issuers(store, _snapshot())
     for model in (PKIIssuerIdentity, PKIPublicCertificateObservation, PKIIssuerCollectionState):
         columns = {col.name for col in model.__table__.columns}
-        assert not columns.intersection({
-            'subject', 'issuer_name', 'san', 'dns_names', 'private_key',
-            'pem', 'client_token', 'secret_id', 'raw_response',
-        })
-    data = repr([
-        (c.fingerprint_sha256, c.serial_hex, c.chain_fingerprints)
-        for c in PKIPublicCertificateObservation.query.all()
-    ])
+        assert not columns.intersection(
+            {
+                'subject',
+                'issuer_name',
+                'san',
+                'dns_names',
+                'private_key',
+                'pem',
+                'client_token',
+                'secret_id',
+                'raw_response',
+            }
+        )
+    data = repr(
+        [
+            (c.fingerprint_sha256, c.serial_hex, c.chain_fingerprints)
+            for c in PKIPublicCertificateObservation.query.all()
+        ]
+    )
     for sensitive in ('Sensitive', 'sensitive-issuer-label', 'private.domain.invalid', 'not-retained'):
         assert sensitive not in data
 
@@ -120,18 +153,19 @@ def test_public_evidence_never_persists_subject_san_pem_issuer_label_or_secrets(
 def test_empty_after_nonempty_and_partial_source_cannot_erase_issuer_history(store):
     commit_pki_public_issuers(store, _snapshot())
     with pytest.raises(ValueError, match='empty'):
-        commit_pki_public_issuers(store, _snapshot(DAY+timedelta(minutes=1), empty=True))
+        commit_pki_public_issuers(store, _snapshot(DAY + timedelta(minutes=1), empty=True))
     with pytest.raises(ValueError, match='incomplete'):
-        commit_pki_public_issuers(store, _snapshot(DAY+timedelta(minutes=1), complete=False))
+        commit_pki_public_issuers(store, _snapshot(DAY + timedelta(minutes=1), complete=False))
     assert PKIIssuerIdentity.query.one().observation_status == 'observed'
     assert PKIIssuerCollectionState.query.one().observed_issuer_count == 1
 
 
 def test_unseen_issuer_is_unknown_not_revoked_or_deleted(store):
     commit_pki_public_issuers(store, _snapshot())
-    newer = replace(_snapshot(DAY+timedelta(minutes=3)), issuers=(
-        replace(_snapshot().issuers[0], issuer_id='40e903ae-9b5c-4ca0-890e-6b4f0ac4ea66'),
-    ))
+    newer = replace(
+        _snapshot(DAY + timedelta(minutes=3)),
+        issuers=(replace(_snapshot().issuers[0], issuer_id='40e903ae-9b5c-4ca0-890e-6b4f0ac4ea66'),),
+    )
     summary = commit_pki_public_issuers(store, newer)
     assert summary.not_observed_issuer_count == 1
     previous = PKIIssuerIdentity.query.filter_by(provider_issuer_id=ISSUER_UUID).one()
@@ -175,10 +209,18 @@ def test_out_of_order_or_conflicting_fingerprint_observations_fail_closed(store)
     assert PKIPublicCertificateObservation.query.one().serial_hex == '123abc'
 
 
-@pytest.mark.parametrize('configured', [
-    'pki/../secret', 'pki,', 'pki,pki', 'pki%2fhidden',
-    'a,b,c,d,e', ' pki/', '../pki',
-])
+@pytest.mark.parametrize(
+    'configured',
+    [
+        'pki/../secret',
+        'pki,',
+        'pki,pki',
+        'pki%2fhidden',
+        'a,b,c,d,e',
+        ' pki/',
+        '../pki',
+    ],
+)
 def test_invalid_or_overbroad_pki_mount_scope_is_rejected(configured):
     with pytest.raises(ValueError):
         parse_approved_pki_mounts(configured)

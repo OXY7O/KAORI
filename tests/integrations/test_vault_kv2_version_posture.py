@@ -32,29 +32,44 @@ def committed_store():
     db.init_app(app)
     with app.app_context():
         tables = [
-            IntegrationInstance.__table__, VaultInstance.__table__,
-            SecretIdentity.__table__, SecretProviderRepresentation.__table__,
-            SecretVersionObservation.__table__, SecretInventoryCollectionState.__table__,
+            IntegrationInstance.__table__,
+            VaultInstance.__table__,
+            SecretIdentity.__table__,
+            SecretProviderRepresentation.__table__,
+            SecretVersionObservation.__table__,
+            SecretInventoryCollectionState.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         source = IntegrationInstance(
-            integration_type='secrets_pki', provider_key='vault',
-            adapter_key='vault_http_v1', name='hidden-vault',
-            environment='testing', enabled=True,
-            lifecycle_status='active', readiness_status='ready',
+            integration_type='secrets_pki',
+            provider_key='vault',
+            adapter_key='vault_http_v1',
+            name='hidden-vault',
+            environment='testing',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='ready',
         )
         db.session.add(source)
         db.session.flush()
         vault = VaultInstance(
-            integration_instance_id=source.id, endpoint='https://vault.invalid',
-            auth_mount='approle', role_id='fixture', secret_id='fake-test-credential',
-            timeout=5, verify_ssl=True, kv2_mounts=['secret'],
+            integration_instance_id=source.id,
+            endpoint='https://vault.invalid',
+            auth_mount='approle',
+            role_id='fixture',
+            secret_id='fake-test-credential',
+            timeout=5,
+            verify_ssl=True,
+            kv2_mounts=['secret'],
         )
         state = SecretInventoryCollectionState(
             integration_instance_id=source.id,
-            provider_namespace='', mount='secret',
-            status='ready', observed_count=0,
-            last_observed_at=AT, last_committed_at=AT,
+            provider_namespace='',
+            mount='secret',
+            status='ready',
+            observed_count=0,
+            last_observed_at=AT,
+            last_committed_at=AT,
         )
         db.session.add_all([vault, state])
         db.session.commit()
@@ -73,22 +88,30 @@ def _add_secret(source_id, state, *, deletion_time=None, destroyed=False):
     item = SecretProviderRepresentation(
         secret_identity=SecretIdentity(lifecycle_status='discovered'),
         integration_instance_id=source_id,
-        provider_key='vault', provider_namespace='', mount='secret',
+        provider_key='vault',
+        provider_namespace='',
+        mount='secret',
         path='private/secret-path-must-never-appear',
-        path_sha256='a' * 64, representation_role='material_authority',
-        observation_status='observed', current_version=1,
-        oldest_version=1, max_versions=0, cas_required=True,
+        path_sha256='a' * 64,
+        representation_role='material_authority',
+        observation_status='observed',
+        current_version=1,
+        oldest_version=1,
+        max_versions=0,
+        cas_required=True,
         last_observed_at=AT,
     )
     db.session.add(item)
     db.session.flush()
-    db.session.add(SecretVersionObservation(
-        representation_id=item.id,
-        version=1,
-        destroyed=destroyed,
-        provider_deletion_time=deletion_time,
-        last_observed_at=AT,
-    ))
+    db.session.add(
+        SecretVersionObservation(
+            representation_id=item.id,
+            version=1,
+            destroyed=destroyed,
+            provider_deletion_time=deletion_time,
+            last_observed_at=AT,
+        )
+    )
     state.observed_count += 1
     db.session.commit()
     return item
@@ -101,13 +124,16 @@ def test_true_empty_only_after_fresh_complete_committed_scan(committed_store):
     assert result['available'] == 0
 
 
-@pytest.mark.parametrize(('deletion_time', 'destroyed', 'expected'), [
-    (None, False, 'available'),
-    ('2026-10-23T00:00:00Z', False, 'scheduled_deletion'),
-    ('2026-10-21T00:00:00Z', False, 'soft_deleted'),
-    (None, True, 'destroyed'),
-    ('not-a-date', False, 'unknown'),
-])
+@pytest.mark.parametrize(
+    ('deletion_time', 'destroyed', 'expected'),
+    [
+        (None, False, 'available'),
+        ('2026-10-23T00:00:00Z', False, 'scheduled_deletion'),
+        ('2026-10-21T00:00:00Z', False, 'soft_deleted'),
+        (None, True, 'destroyed'),
+        ('not-a-date', False, 'unknown'),
+    ],
+)
 def test_version_posture_uses_committed_metadata_only(committed_store, deletion_time, destroyed, expected):
     source_id, state = committed_store
     _add_secret(source_id, state, deletion_time=deletion_time, destroyed=destroyed)
@@ -187,6 +213,7 @@ def test_missing_source_scan_is_not_a_valid_zero(committed_store):
     db.session.commit()
     assert _read()['status'] == 'incomplete_evidence'
     assert _read()['available'] is None
+
 
 @pytest.mark.parametrize('field', ['last_committed_at', 'last_observed_at'])
 def test_future_source_timestamp_blocks_empty_snapshot(committed_store, field):
