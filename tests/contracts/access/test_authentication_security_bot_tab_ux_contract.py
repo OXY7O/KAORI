@@ -91,6 +91,41 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert config_at < test_at
 
 
+def test_bot_compact_governance_copy_and_removed_form_help() -> None:
+    tab = bot_tab()
+    for label, qualifier, detail in (
+        ('Challenge Boundary', 'Fail Closed', 'Failed verification blocks sign-in.'),
+        ('One-Use Proof', 'Siteverify', 'Cloudflare verifies one-use tokens.'),
+        ('Activation Evidence', 'One Hour', 'Always requires fresh proof.'),
+        ('Recovery Access', 'Required', 'Confirm recovery before enabling.'),
+    ):
+        assert f"'{label}', '{qualifier}', '{detail}'" in tab
+    assert 'Adaptive mode is deferred until committed risk signals are validated.' not in tab
+    assert 'Encrypted at rest; never displayed or recorded in Activity Audit.' not in tab
+    assert 'name="secret_key"' in tab
+    assert 'type="password"' in tab
+    assert 'Change Impact' in tab
+
+
+def test_bot_activation_stages_fill_panel_with_safe_actionable_guidance() -> None:
+    tab = bot_tab()
+    assert 'data-auth-bot-activation-layout="balanced"' in tab
+    for step in ('configure', 'verify', 'enable'):
+        assert f'data-auth-bot-activation-step="{step}"' in tab
+    for detail in ('configuration', 'verification', 'safety'):
+        assert f'data-auth-bot-step-context="{detail}"' in tab
+    for heading in ('Configuration prerequisites', 'One-use verification', 'Activation safeguards'):
+        assert heading in tab
+    assert 'Stored values do not prove availability.' in tab
+    assert 'Proof must be repeated after configuration changes.' in tab
+    assert 'Confirm independent recovery access first.' in tab
+    assert 'Missing or rejected verification blocks sign-in.' in tab
+    assert 'flex-1 flex-col justify-center' in tab
+    assert "url_for('access.authentication_security.test_bot_provider')" in tab
+    assert 'data-auth-bot-form="verification-test"' in tab
+    assert 'class="cf-turnstile"' in tab
+
+
 def test_bot_server_admission_is_unchanged_and_proof_is_fresh() -> None:
     routes = (ROOT / 'app/access/authentication_security/__init__.py').read_text(encoding='utf-8')
     assert "if request.form.get('acknowledge_bot_impact') != 'yes':" in routes
