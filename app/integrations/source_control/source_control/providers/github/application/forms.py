@@ -75,18 +75,34 @@ class GitHubAppConnectionForm(FlaskForm):
 
 
 class GitHubAppConnectionEditForm(FlaskForm):
-    """Edit canonical connection settings without exposing shared App secrets."""
+    """Edit canonical metadata with optional write-only credential replacements."""
 
     name = StringField(
         'Connection Name',
         validators=[DataRequired(), Length(min=2, max=160)],
     )
     environment = SelectField(
-        'Environment', choices=ENVIRONMENTS, validators=[DataRequired()],
+        'Environment',
+        choices=ENVIRONMENTS,
+        validators=[DataRequired()],
     )
     description = TextAreaField(
         'Description',
         validators=[Optional(), Length(max=2000)],
         render_kw={'rows': 3},
     )
+    private_key_pem = TextAreaField(
+        'Replacement App Private Key (PEM)',
+        validators=[Optional(), Length(max=20_000)],
+        render_kw={'rows': 5, 'spellcheck': 'false', 'autocomplete': 'off'},
+    )
+    webhook_secret = PasswordField(
+        'Replacement Webhook Secret',
+        validators=[Optional(), Length(min=16, max=4096)],
+        render_kw={'autocomplete': 'new-password'},
+    )
     enabled = BooleanField('Allow KAORI to Use This Connection')
+
+    def clear_sensitive_fields(self) -> None:
+        self.private_key_pem.data = ''
+        self.webhook_secret.data = ''
