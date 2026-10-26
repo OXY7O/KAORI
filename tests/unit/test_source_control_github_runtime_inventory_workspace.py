@@ -271,15 +271,15 @@ def test_runtime_filter_controls_and_kaori_tab_counters():
             assert f'{field}={field}' in page
             assert f'<input type="hidden" name="{field}"' in page or field == fields[0]
         assert 'hx-trigger="change, input changed delay:400ms, submit"' in page
-        assert "registry_ui.clear_filters_action(" in page
+        assert 'registry_ui.clear_filters_action(' in page
         assert f"runtime_view='{view}'" in page
 
     assert "JobExecution.integration_type == 'source_control'" in routes
-    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
-    assert "JobExecution.queue_name == job_queue" in routes
-    assert "SourceWebhookDelivery.event_type == delivery_event" in routes
-    assert "JobExecution.operation.ilike(" in routes
-    assert "SourceWebhookDelivery.action.ilike(" in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
+    assert 'JobExecution.queue_name == job_queue' in routes
+    assert 'SourceWebhookDelivery.event_type == delivery_event' in routes
+    assert 'JobExecution.operation.ilike(' in routes
+    assert 'SourceWebhookDelivery.action.ilike(' in routes
     assert "request.args.get('job_search', '').strip()[:80]" in routes
     assert "request.args.get('delivery_search', '').strip()[:80]" in routes
     assert '.limit(50)' in routes
@@ -295,3 +295,27 @@ def test_runtime_search_escapes_sql_like_wildcards():
     assert _runtime_search_pattern('runtime_refresh') == r'%runtime\_refresh%'
     assert _runtime_search_pattern('100%') == r'%100\%%'
     assert _runtime_search_pattern('job') == '%job%'
+
+
+def test_runtime_history_filters_are_automatic_and_rows_are_readable():
+    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
+    deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
+
+    for panel in (jobs, deliveries):
+        assert 'hx-trigger="change, input changed delay:400ms, submit"' in panel
+        assert 'data-kaori-canonical-registry-filter=' in panel
+        assert 'registry_ui.clear_filters_action(' in panel
+        assert 'Apply Filters' not in panel
+        assert '<noscript>' in panel
+        assert '<button type="submit"' in panel
+        assert 'Filter Results' in panel
+
+    # Keep server-authoritative JobExecution fields and show a compact date/time pair.
+    assert 'table_ui.title_cell(job.operation' in jobs
+    assert "'Job #' ~ job.id" in jobs
+    assert 'job.created_at.isoformat()' in jobs
+    assert "job.created_at.strftime('%d %b %Y')" in jobs
+    assert "job.created_at.strftime('%H:%M:%S')" in jobs
+    assert 'tabular-nums' in jobs
+    assert "job.queue_name or 'Not assigned'" in jobs
+    assert "integration_status(job.status, display='indicator')" in jobs

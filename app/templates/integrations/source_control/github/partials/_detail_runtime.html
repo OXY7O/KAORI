@@ -119,9 +119,9 @@
          class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          data-kaori-github-runtime-registry-tabs>
     {% set runtime_tabs = [
-        ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs')),
-        ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'))
-    ] %}
+            ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs')),
+            ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'))
+        ] %}
     {{ framed_tabs.render_navigation(runtime_tabs,
         runtime_view,
         prefix='github-runtime-history',
