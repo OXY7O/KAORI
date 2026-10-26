@@ -188,6 +188,18 @@ def test_forecast_records_htmx_swap_does_not_destroy_unrelated_chart_canvases() 
     assert 'hx-swap="outerHTML"' in records
 
 
+def test_forecast_records_partial_owns_its_macros_when_rendered_directly_by_htmx() -> None:
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+
+    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in records
+    assert 'analysis_surface.evidence_shell_classes()' in records
+    assert "def object_storage_bucket_forecast_table()" in routes
+    assert "'storage/object_storage/analytics/partials/_bucket_forecast_table.html'" in routes
+    assert "get_object_storage_bucket_forecast_table_context(request.args)" in routes
+    Environment().parse(records)
+
+
 def test_forecast_clear_filters_remains_accessible_before_and_after_htmx_response() -> None:
     records = read(f'{PARTIALS}/_bucket_forecast_table.html')
     script = read('app/static/js/storage/object_storage/analytics.js')
