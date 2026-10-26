@@ -42,16 +42,16 @@ def _aware(value: datetime) -> datetime:
 
 
 def _validate_kv2_collection_evidence(evidence: KV2CollectionEvidence) -> None:
-        if not evidence.complete:
-            raise ValueError('Incomplete KV v2 evidence cannot be committed.')
-        if evidence.observed_at.tzinfo is None:
-            raise ValueError('KV v2 observed time must be timezone-aware.')
-        if not evidence.mount or len(evidence.mount) > 160:
-            raise ValueError('KV v2 mount is invalid for committed inventory.')
-        if len(evidence.records) > 200:
-            raise ValueError('KV v2 inventory exceeds the commit bound.')
-        if len({row.path for row in evidence.records}) != len(evidence.records):
-            raise ValueError('KV v2 metadata contains duplicate path identities.')
+    if not evidence.complete:
+        raise ValueError('Incomplete KV v2 evidence cannot be committed.')
+    if evidence.observed_at.tzinfo is None:
+        raise ValueError('KV v2 observed time must be timezone-aware.')
+    if not evidence.mount or len(evidence.mount) > 160:
+        raise ValueError('KV v2 mount is invalid for committed inventory.')
+    if len(evidence.records) > 200:
+        raise ValueError('KV v2 inventory exceeds the commit bound.')
+    if len({row.path for row in evidence.records}) != len(evidence.records):
+        raise ValueError('KV v2 metadata contains duplicate path identities.')
 
 
 def _is_eligible_kv2_source(
