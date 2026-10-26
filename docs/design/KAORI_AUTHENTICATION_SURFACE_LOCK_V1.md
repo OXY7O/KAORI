@@ -240,3 +240,11 @@ The scoped regression test is
 hashes are **not** silently updated: accept the revised screenshot in local
 human UAT first, then regenerate/review baseline evidence through the approved
 process. This addendum is not an admission or release approval.
+
+## Pending MFA sign-in challenge presentation — Dev Container UAT (#3290, 2026-10-26)
+
+After a successful primary Local, LDAP or browser SSO credential check, the existing restricted MFA challenge remains the sole second-factor completion surface. Operator-approved presentation uses a **centered upper hierarchy** inside the existing Violet-auth card: centered shield icon, compact Multi-Factor Authentication context, **Verify Your Sign In** heading and two short explanatory statements. Use the exact readable content **“Use your authenticator app or a recovery code.”** and **“Access continues after successful verification.”** Avoid wide stacked security paragraphs, oversized whitespace, truncated copy, fake QR/scan buttons or a new authentication mode.
+
+Keep the single native WTForms Verification Code control accepting either six-digit TOTP or an unused recovery code; its real server-side form still owns the CSRF hidden token, validation and submit. Primary action remains **Verify & Sign In**, followed by a clearly separated **Start a New Sign In** link to the existing login route. Use the established authenticated-shell color tokens, `max-w-lg` ergonomic width, visible keyboard focus and natural mobile wrapping. A visual separator is decorative only.
+
+This approval changes no pending-auth cookie/session issuance rules, expiry, rate limits, CSRF, RBAC, provider flow, audit or recovery consumption. The restricted page must never imply successful application access before valid MFA. UAT evidence requires both accessibility/light/dark/mobile appearance and actual positive/negative MFA with no sensitive challenge material stored in screenshots.
