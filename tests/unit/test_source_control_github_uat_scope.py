@@ -648,13 +648,11 @@ def test_github_edit_route_handles_test_proof_and_clears_secrets() -> None:
     routes = (
         root / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
     ).read_text()
-    forms = (
-        root / 'app/integrations/source_control/source_control/providers/github/application/forms.py'
-    ).read_text()
+    forms = (root / 'app/integrations/source_control/source_control/providers/github/application/forms.py').read_text()
     detail = (root / 'app/templates/integrations/source_control/github/edit.html').read_text()
 
-    assert "verify_github_registration_proof(" in routes
-    assert "issue_github_registration_proof(" in routes
+    assert 'verify_github_registration_proof(' in routes
+    assert 'issue_github_registration_proof(' in routes
     assert "action not in {'test', 'save'}" in routes
     assert 'build_edit_connection_input(' in routes
     assert 'form.clear_sensitive_fields()' in routes
@@ -662,10 +660,10 @@ def test_github_edit_route_handles_test_proof_and_clears_secrets() -> None:
     assert "response.headers['HX-Trigger']" in routes
     assert 'replacement_private_key_pem=replacement_pem' in routes
     assert 'replacement_webhook_secret=replacement_webhook' in routes
-    assert "shared_app_credential_rotation" in routes
-    assert "private_key_pem = TextAreaField(" in forms
-    assert "webhook_secret = PasswordField(" in forms
-    assert "def clear_sensitive_fields(self)" in forms
+    assert 'shared_app_credential_rotation' in routes
+    assert 'private_key_pem = TextAreaField(' in forms
+    assert 'webhook_secret = PasswordField(' in forms
+    assert 'def clear_sensitive_fields(self)' in forms
     assert 'x-on:github-connection-tested.window' in detail
     assert 'hx-target="#github-edit-connection-test-result"' in detail
     assert 'name="connection_test_proof"' in detail
@@ -673,3 +671,151 @@ def test_github_edit_route_handles_test_proof_and_clears_secrets() -> None:
     assert 'form.private_key_pem.data' not in detail
     assert 'form.webhook_secret.data' not in detail
     assert '-----BEGIN ' not in detail
+
+
+def test_github_successor_input_preserves_predecessor_and_reuses_shared_app_secret() -> None:
+    from app.integrations.source_control.source_control.providers.github import registration
+
+    credential = SimpleNamespace(
+        id=44, enabled=True, host_key='github.com', native_app_id='123',
+        private_key_pem='-----BEGIN PRIVATE KEY-----\\nlegacy',
+        webhook_secret='existing-webhook-secret-example',
+    )
+    canonical = SimpleNamespace(
+        id=8, integration_type='source_control', provider_key='github',
+        adapter_key='github_rest_v3', environment='development',
+        description='original connection', enabled=True,
+    )
+    predecessor = SimpleNamespace(
+        id=3, provider_key='github', host_key='github.com',
+        native_app_id='123', native_installation_id='456',
+        integration_instance_id=8, integration_instance=canonical,
+        github_app_credential=credential,
+    )
+    values = registration.build_successor_connection_input(
+        predecessor,
+        successor_name='GitHub New Installation',
+        app_id='123',
+        installation_id='987',
+        account_id='789',
+        private_key_pem=None,
+        webhook_secret=None,
+    )
+    assert (str(values.app_id), str(values.installation_id), str(values.account_id)) == (
+        '123', '987', '789',
+    )
+    assert values.private_key_pem == credential.private_key_pem
+    assert values.webhook_secret == credential.webhook_secret
+    assert canonical.id == 8
+    assert predecessor.native_installation_id == '456'
+
+    with pytest.raises(ValueError, match='different GitHub App or Installation'):
+        registration.build_successor_connection_input(
+            predecessor,
+            successor_name='Duplicate Native Binding',
+            app_id='123', installation_id='456', account_id='789',
+            private_key_pem=None, webhook_secret=None,
+        )
+    with pytest.raises(ValueError, match='requires a new PEM'):
+        registration.build_successor_connection_input(
+            predecessor,
+            successor_name='Another GitHub App',
+            app_id='456', installation_id='987', account_id='789',
+            private_key_pem=None, webhook_secret=None,
+        )
+    with pytest.raises(registration.GitHubProviderError, match='Shared GitHub App credentials'):
+        registration.build_successor_connection_input(
+            predecessor,
+            successor_name='Changed Shared Secret',
+            app_id='123', installation_id='987', account_id='789',
+            private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
+            webhook_secret='other-webhook-secret-example',
+        )
+    new_app = registration.build_successor_connection_input(
+        predecessor,
+        successor_name='Different New App',
+        app_id='456', installation_id='987', account_id='789',
+        private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
+        webhook_secret='other-webhook-secret-example',
+    )
+    assert new_app.app_id == '456'
+    assert new_app.webhook_secret == 'other-webhook-secret-example'
+    assert predecessor.native_app_id == '123'
+
+
+def test_github_successor_proof_is_bound_to_predecessor_identity_and_user() -> None:
+    from app.integrations.source_control.source_control.providers.github.application import (
+        registration_proof,
+    )
+    from app.integrations.source_control.source_control.providers.github.registration import (
+        GitHubConnectionInput,
+    )
+
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'test-successor-source-bound-proof'
+    values = GitHubConnectionInput(
+        name='Successor Test', environment='development', description=None,
+        app_id='456', installation_id='987', account_id='789',
+        private_key_pem='-----BEGIN PRIVATE KEY-----\\nnew',
+        webhook_secret='other-webhook-secret-example',
+    )
+    with app.app_context():
+        proof = registration_proof.issue_github_successor_proof(
+            user_id=21, predecessor_installation_id=3, values=values,
+        )
+        assert registration_proof.verify_github_successor_proof(
+            token=proof, user_id=21, predecessor_installation_id=3, values=values,
+        )[0]
+        assert not registration_proof.verify_github_successor_proof(
+            token=proof, user_id=22, predecessor_installation_id=3, values=values,
+        )[0]
+        assert not registration_proof.verify_github_successor_proof(
+            token=proof, user_id=21, predecessor_installation_id=4, values=values,
+        )[0]
+        updated = GitHubConnectionInput(
+            name=values.name, environment=values.environment,
+            description=values.description, app_id=values.app_id,
+            installation_id='999', account_id=values.account_id,
+            private_key_pem=values.private_key_pem, webhook_secret=values.webhook_secret,
+        )
+        assert not registration_proof.verify_github_successor_proof(
+            token=proof, user_id=21, predecessor_installation_id=3, values=updated,
+        )[0]
+        assert not registration_proof.verify_github_successor_proof(
+            token=None, user_id=21, predecessor_installation_id=3, values=values,
+        )[0]
+
+
+def test_github_successor_route_and_ui_keep_existing_evidence_separate() -> None:
+    root = Path(__file__).resolve().parents[2]
+    routes = (
+        root / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+    ).read_text()
+    registration = (
+        root / 'app/integrations/source_control/source_control/providers/github/registration.py'
+    ).read_text()
+    edit = (root / 'app/templates/integrations/source_control/github/edit.html').read_text()
+    replacement = (root / 'app/templates/integrations/source_control/github/replace.html').read_text()
+    assert "@github_uat_bp.route('/installations/<int:installation_id>/replace', methods=['GET', 'POST'])" in routes
+    assert "@permission_required('integrations.manage')\\ndef replace_installation(" in routes
+    assert 'predecessor = _installation_or_404(installation_id)' in routes
+    assert 'form.validate_on_submit()' in routes
+    assert 'verify_github_successor_proof(' in routes
+    assert 'issue_github_successor_proof(' in routes
+    assert 'successor = save_tested_connection(values)' in routes
+    assert "'predecessor_installation_id': predecessor.id" in routes
+    assert "'successor_installation_id': successor.id" in routes
+    assert 'build_successor_connection_input(' in registration
+    assert 'Save Changes' in edit
+    assert "url_for('github_source_uat.replace_installation', installation_id=installation.id)" in edit
+    assert 'data-kaori-github-installation-replacement' in replacement
+    assert 'form.hidden_tag()' in replacement
+    assert 'name="connection_test_proof"' in replacement
+    assert 'Test Replacement' in replacement
+    assert 'Register Replacement' in replacement
+    assert "hx-vals='{\"action\":\"test\"}'" in replacement
+    assert 'x-on:github-connection-tested.window' in replacement
+    assert 'form.private_key_pem.data' not in replacement
+    assert 'form.webhook_secret.data' not in replacement
+    assert 'installation.native_app_id =' not in routes
+    assert 'installation.native_installation_id =' not in routes

@@ -21,16 +21,21 @@ from app.extensions.db import db
 from app.integrations.source_control.repository_inventory import read_installation_inventory
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionEditForm,
+    GitHubInstallationSuccessorForm,
 )
 from app.integrations.source_control.source_control.providers.github.application.registration_proof import (
     issue_github_registration_proof,
+    issue_github_successor_proof,
     verify_github_registration_proof,
+    verify_github_successor_proof,
 )
 from app.integrations.source_control.source_control.providers.github.job_admission import (
     enqueue_github_app_job,
 )
 from app.integrations.source_control.source_control.providers.github.registration import (
     build_edit_connection_input,
+    build_successor_connection_input,
+    save_tested_connection,
     test_connection,
     update_github_connection_configuration,
 )
@@ -262,6 +267,113 @@ def edit_connection(installation_id: int) -> ResponseReturnValue:
         message=message,
     )
     if rejection and request.method == 'POST' and form.errors == {}:
+        response.status_code = 409
+    return response
+
+
+@github_uat_bp.route('/installations/<int:installation_id>/replace', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def replace_installation(installation_id: int) -> ResponseReturnValue:
+    """Register an authenticated successor without deleting or rebinding past evidence."""
+    predecessor = _installation_or_404(installation_id)
+    canonical = predecessor.integration_instance
+    if canonical is None:
+        abort(409)
+    form = GitHubInstallationSuccessorForm()
+    if request.method == 'GET':
+        form.successor_name.data = f'{canonical.name} Replacement'
+        form.app_id.data = predecessor.native_app_id
+        form.installation_id.data = predecessor.native_installation_id
+        form.account_id.data = predecessor.account.native_account_id if predecessor.account else ''
+    action = str(request.form.get('action') or '').strip() if request.method == 'POST' else ''
+    inline_test = request.headers.get('HX-Request') == 'true' and action == 'test'
+    message = None
+    proof = None
+    rejected = False
+
+    if request.method == 'POST' and action not in {'test', 'replace'}:
+        abort(400)
+    if form.validate_on_submit():
+        try:
+            values = build_successor_connection_input(
+                predecessor,
+                successor_name=str(form.successor_name.data or ''),
+                app_id=str(form.app_id.data or ''),
+                installation_id=str(form.installation_id.data or ''),
+                account_id=str(form.account_id.data or ''),
+                private_key_pem=str(form.private_key_pem.data or ''),
+                webhook_secret=str(form.webhook_secret.data or ''),
+            )
+            if action == 'test':
+                test_connection(values)
+                proof = issue_github_successor_proof(
+                    user_id=int(current_user.id),
+                    predecessor_installation_id=predecessor.id,
+                    values=values,
+                )
+                message = 'Replacement installation verified. Registration still requires Save and Full Validation.'
+            else:
+                valid, message = verify_github_successor_proof(
+                    token=str(request.form.get('connection_test_proof') or ''),
+                    user_id=int(current_user.id),
+                    predecessor_installation_id=predecessor.id,
+                    values=values,
+                )
+                if not valid:
+                    rejected = True
+                else:
+                    # The shared onboarding authority rechecks the same native
+                    # identity and grants before creating a separate canonical record.
+                    successor = save_tested_connection(values)
+                    record_operational_activity(
+                        user_id=int(current_user.id),
+                        event_type='source_control_installation_replaced',
+                        status='success',
+                        title='GitHub Replacement Registered',
+                        message='A verified successor was registered without deleting the previous installation.',
+                        detail='Validate the successor before independently deactivating the predecessor.',
+                        action_url=url_for('github_source_uat.detail', installation_id=successor.id),
+                        metadata={
+                            'predecessor_installation_id': predecessor.id,
+                            'successor_installation_id': successor.id,
+                            'previous_integration_instance_id': canonical.id,
+                            'successor_integration_instance_id': successor.integration_instance_id,
+                        },
+                        queue_feedback=True,
+                    )
+                    return redirect(url_for('github_source_uat.detail', installation_id=successor.id))
+        except (ValueError, GitHubProviderError, CredentialEncryptionError):
+            message = 'Replacement could not be verified or registered. Review identity and App credentials.'
+            rejected = True
+        except SQLAlchemyError:
+            message = 'Replacement could not be saved. Review installation registration.'
+            rejected = True
+        finally:
+            form.clear_sensitive_fields()
+    elif request.method == 'POST':
+        message = 'Review the replacement fields and try again.'
+        rejected = True
+        form.clear_sensitive_fields()
+    if inline_test:
+        response = _response(
+            'integrations/source_control/github/partials/_connection_test_result.html',
+            verified=bool(proof),
+            message=message,
+        )
+        if proof:
+            response.headers['HX-Trigger'] = json.dumps(
+                {'github-connection-tested': {'connected': True, 'proof': proof}}
+            )
+        return response
+
+    response = _response(
+        'integrations/source_control/github/replace.html',
+        installation=predecessor,
+        canonical=canonical,
+        form=form,
+        message=message,
+    )
+    if rejected and not form.errors:
         response.status_code = 409
     return response
 

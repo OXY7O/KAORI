@@ -1365,3 +1365,66 @@ connections to Validation Required.
 
 No official Developer Check, Full Admission, staging/main promotion or release
 until the operator explicitly authorizes the next gate.
+
+
+## 2026-10-26 — #3280 Governed GitHub Installation Replacement from Edit
+
+**User feedback:** App ID, Installation ID and Account ID displayed read-only made changing
+installation identity look like a destructive delete/recreate operation. KAORI now
+provides **Edit GitHub Connection → Replace Installation**, preserving the
+current integration and offering editable App/Installation/Account IDs on a
+dedicated replacement form. The existing connection's IDs remain immutable:
+they are committed-evidence identity anchors, and mutating them in-place would
+relabel historical grants, jobs, source references, and webhook deliveries.
+
+**Successor semantics:** Clicking Replace Installation opens the same provider
+edit Hero/context pattern, with three editable provider-native IDs, a unique
+successor connection name, and optional write-only PEM/webhook secret fields.
+Test Replacement → short-lived, user/predecessor/bound-form signed proof →
+Register Replacement. Save uses existing `save_tested_connection`, which
+rechecks live GitHub identity and creates a **new** canonical
+`IntegrationInstance` and `SourceInstallation` with readiness
+`validation_required`, empty committed inventory, no automatic sync. It
+retains the original installation, grants, revisions, logs, and audit records.
+The user can test and later independently deactivate the predecessor. This
+is an in-workspace successor operation, **not** in-place reassignment of its
+historical identity, nor forced manual Delete + Register.
+
+For the **same App ID** with a new installation, the existing protected
+credential is reused on the server (blank PEM/webhook replacement fields).
+For a **different App ID**, both new credentials are required and encrypted
+under the new App identity. A new credential supplied for an existing App ID
+must match the stored protected credential; rotate that shared credential
+using the existing edit operation before registering another installation.
+The existing same-native-installation identity cannot be duplicated.
+
+**Security:** Existing `integrations.manage`, local super-admin UAT
+admission and CSRF controls apply to both GET/POST. Provider calls happen only
+on explicit Test/Save, not GET. Signed successor proof uses a distinct salt
+and binds requesting user, predecessor installation, proposed native identity,
+successor name, environment, and credential fingerprint; expires under the
+existing registration-proof interval. Secret values must not appear in logs,
+HTML on GET or failed POST, audit metadata, or JobExecution. Proof is not
+a substitute for the save-time live recheck. Provider authorization stays
+authoritative.
+
+**UAT:** In an explicitly disposable GitHub App environment, inspect
+Edit Connection → Replace Installation at desktop/mobile, light/dark and
+keyboard. Verify native IDs are editable only in replacement context; test a
+different Installation ID with same App credential; test a different App with
+provided PEM/webhook. Reject unchanged App/Installation pair, duplicate name,
+invalid App/account ID, proof from another user/predecessor, changed fields
+after Test, invalid/missing proof and unauthorized/CSRF submissions.
+Confirm old record still shows its prior repository evidence and status;
+new connection is Validation Required/Not Observed and needs separate
+Full Validation and repository synchronization. No automatic predecessor
+retirement. Gather source-SHA audit and screenshots before Human Acceptance.
+
+**Operator QA on older SHA:** Ruff Check PASS, djLint PASS, focused pytest
+50 passed, navigation/sidebar PASS; Ruff Format failed 2 files:
+`registration.py` and `test_source_control_github_uat_scope.py`.
+Exact diff hunks are corrected in the successor work branch, but the final
+merged SHA must be validated again before claiming PASS.
+
+Official Developer Check, Full Admission, `kaori/staging`, `main`,
+deployment and release remain HOLD.

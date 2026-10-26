@@ -106,3 +106,38 @@ class GitHubAppConnectionEditForm(FlaskForm):
     def clear_sensitive_fields(self) -> None:
         self.private_key_pem.data = ''
         self.webhook_secret.data = ''
+
+
+class GitHubInstallationSuccessorForm(FlaskForm):
+    """Test and register a new provider identity without erasing its predecessor."""
+
+    successor_name = StringField(
+        'Replacement Connection Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
+    )
+    app_id = StringField(
+        'GitHub App ID',
+        validators=[DataRequired(), Length(max=80)],
+    )
+    installation_id = StringField(
+        'Installation ID',
+        validators=[DataRequired(), Length(max=80)],
+    )
+    account_id = StringField(
+        'Account ID',
+        validators=[DataRequired(), Length(max=80)],
+    )
+    private_key_pem = TextAreaField(
+        'New App Private Key (PEM)',
+        validators=[Optional(), Length(max=20_000)],
+        render_kw={'rows': 5, 'autocomplete': 'off', 'spellcheck': 'false'},
+    )
+    webhook_secret = PasswordField(
+        'New Webhook Secret',
+        validators=[Optional(), Length(min=16, max=4096)],
+        render_kw={'autocomplete': 'new-password'},
+    )
+
+    def clear_sensitive_fields(self) -> None:
+        self.private_key_pem.data = ''
+        self.webhook_secret.data = ''
