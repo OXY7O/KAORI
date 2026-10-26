@@ -3,31 +3,24 @@
 <section class="min-w-0 bg-kaori-mist/40 p-3 sm:p-4"
          data-tenant-namespace-access-detail>
     <div class="min-w-0 overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
-        <header class="border-b border-outline-subtle bg-kaori-soft/40 px-4 py-4 sm:px-5">
-            <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
-                <div class="flex min-w-0 flex-1 items-start gap-3">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="network" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">
-                            Committed Namespace Access
-                        </p>
-                        <h4 class="mt-1 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
-                            {{ access.get('namespace') or access.get('service_account_name') or 'Access Package' }}
-                        </h4>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            Read-only access context from committed KAORI records.
-                        </p>
-                    </div>
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="network" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Committed Namespace Access</h4>
+                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                        {{ access.get('namespace') or access.get('service_account_name') or 'Access Package' }}
+                    </p>
                 </div>
-                {% if access.get('error') %}
-                    {{ table_label.status_label('Evidence Unavailable', 'warning') }}
-                {% else %}
-                    {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
-                {% endif %}
             </div>
+            {% if access.get('error') %}
+                {{ table_label.status_label('Evidence Unavailable', 'warning') }}
+            {% else %}
+                {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
+            {% endif %}
         </header>
         {% if access.get('error') %}
             <div class="flex min-w-0 items-start gap-3 px-4 py-5 sm:px-5">
