@@ -499,87 +499,241 @@
                     </a>
                 </section>
             {% elif active_tab == 'bot' %}
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 class="text-base font-semibold text-content-primary">Bot Protection</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Provider-neutral verification, separate from Identity Providers and MFA.</p>
-                    </div>
-                    {{ table_label.status_indicator_label('Enforced' if bot_mode == 'always' else 'Not Enabled', 'warning' if bot_mode == 'always' else 'unknown') }}
-                </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Verification Adapters</h3>
-                    {% for provider in bot_providers %}
-                        <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-3">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">{{ provider.label }}</p>
-                                <p class="text-xs leading-5 text-content-muted">Server-side Siteverify adapter; provider instance configuration is stored by KAORI.</p>
+                <section class="overflow-visible rounded-xl border border-outline-default bg-surface-card"
+                         aria-labelledby="bot-protection-heading"
+                         data-auth-bot-posture="committed">
+                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="bot" class="h-5 w-5"></i>
+                            </span>
+                            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                <h2 id="bot-protection-heading"
+                                    class="text-base font-semibold text-content-primary">Bot Protection</h2>
+                                {{ info_tip.render(
+                                    'bot-protection-guide',
+                                    'Bot Protection',
+                                    'Turnstile challenges are checked before primary sign-in or external SSO.',
+                                    [
+                                        'Disabled — no Turnstile challenge is required at sign-in.',
+                                        'Always — all sign-ins require a successful one-use Cloudflare Siteverify token.',
+                                        'Save a complete provider configuration while disabled, then test it before enabling Always.',
+                                        'Stored credentials do not prove provider availability. A successful test is valid for one hour only when configuration is unchanged.',
+                                        'Before enabling, confirm approved recovery access and outbound HTTPS to Cloudflare.'
+                                    ],
+                                    placement='right',
+                                    variant='guide'
+                                ) }}
                             </div>
-                            {{ table_label.status_indicator_label('Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'normal' if bot_has_secret and bot_site_key and bot_hostname else 'unknown') }}
                         </div>
-                    {% endfor %}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">An enabled challenge verifies the one-use Turnstile token with the Cloudflare Siteverify endpoint before checking credentials or beginning SSO. Provider health is not inferred from stored keys.</p>
-                    {% if can_manage_authentication_security and bot_has_secret and bot_site_key and bot_hostname %}
-                        <form method="post"
-                              action="{{ url_for('access.authentication_security.test_bot_provider') }}"
-                              class="mt-5 space-y-3 border-t border-outline-subtle pt-5">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <h4 class="text-sm font-semibold text-content-primary">Test Provider Verification</h4>
-                            <p class="text-xs leading-5 text-content-muted">A successful live Siteverify proof authorizes activation for one hour. Editing provider keys or hostname clears prior test evidence.</p>
-                            <div class="cf-turnstile" data-sitekey="{{ bot_site_key }}" data-action="login"></div>
-                            <button type="submit"
-                                    class="inline-flex min-h-11 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-5 text-sm font-semibold text-content-primary hover:bg-surface-hover">Test Turnstile</button>
-                            {% if bot_tested_at %}
-                                <p class="text-xs font-semibold text-status-normal-text">A provider verification test has been recorded. Re-test before activation if it is older than one hour.</p>
-                            {% endif %}
-                        </form>
-                        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-                    {% endif %}
-                    {% if can_manage_authentication_security %}
-                        <form method="post"
-                              action="{{ url_for('access.authentication_security.save_bot_policy') }}"
-                              class="mt-5 space-y-4 border-t border-outline-subtle pt-5">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="provider_key" value="cloudflare_turnstile">
-                            <div>
-                                <label for="bot-policy-mode" class="block text-sm font-semibold text-content-primary">Protection Mode</label>
-                                <select id="bot-policy-mode" name="bot_mode"
-                                        class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                                    <option value="disabled" {% if bot_mode == 'disabled' %}selected{% endif %}>Disabled</option>
-                                    <option value="always" {% if bot_mode == 'always' %}selected{% endif %}>Always — require Turnstile on every login</option>
-                                </select>
-                                <p class="mt-1 text-xs text-content-muted">Adaptive risk policy is deferred until committed failure signals are validated.</p>
+                        {{ table_label.status_indicator_label('Enforced' if bot_mode == 'always' else 'Not Enabled', 'warning' if bot_mode == 'always' else 'unknown') }}
+                    </header>
+                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold text-content-muted">Protection Mode</p>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                </span>
                             </div>
-                            <div class="grid gap-4 sm:grid-cols-2">
+                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ 'Always' if bot_mode == 'always' else 'Disabled' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Committed KAORI enforcement policy</p>
+                        </article>
+                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold text-content-muted">Verification Adapter</p>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="cloud" class="h-4 w-4"></i>
+                                </span>
+                            </div>
+                            {% for provider in bot_providers %}
+                                <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ provider.label }}</p>
+                            {% endfor %}
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Cloudflare Siteverify · server-side</p>
+                        </article>
+                        <article class="flex min-w-0 flex-col bg-surface-card p-4 lg:p-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold text-content-muted">Provider Configuration</p>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="key-round" class="h-4 w-4"></i>
+                                </span>
+                            </div>
+                            <p class="mt-2 text-lg font-bold tracking-tight text-content-primary">{{ 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Saved instance data, not provider health</p>
+                        </article>
+                    </div>
+                </section>
+                <div class="grid items-stretch gap-4 xl:grid-cols-5"
+                     data-auth-bot-layout="configuration-safety">
+                    <section class="flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
+                             aria-labelledby="bot-policy-config-heading">
+                        <header class="flex items-center gap-3 border-b border-outline-subtle pb-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 id="bot-policy-config-heading"
+                                    class="text-sm font-semibold text-content-primary">Protection Configuration</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Configure Cloudflare Turnstile before enabling sign-in protection.</p>
+                            </div>
+                        </header>
+                        {% if can_manage_authentication_security %}
+                            <form method="post"
+                                  action="{{ url_for('access.authentication_security.save_bot_policy') }}"
+                                  class="mt-5 space-y-5"
+                                  data-auth-bot-form="configuration">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="provider_key" value="cloudflare_turnstile">
                                 <div>
-                                    <label for="bot-site-key" class="block text-sm font-semibold text-content-primary">Public Site Key</label>
-                                    <input id="bot-site-key" name="site_key" type="text" maxlength="255"
-                                           value="{{ bot_site_key or '' }}"
-                                           class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                    <label for="bot-policy-mode"
+                                           class="block text-sm font-semibold text-content-primary">Protection Mode</label>
+                                    <select id="bot-policy-mode"
+                                            name="bot_mode"
+                                            class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                        <option value="disabled" {% if bot_mode == 'disabled' %}selected{% endif %}>Disabled</option>
+                                        <option value="always" {% if bot_mode == 'always' %}selected{% endif %}>Always — require Turnstile on every login</option>
+                                    </select>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Adaptive mode is deferred until committed risk signals are validated.</p>
+                                </div>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div class="min-w-0">
+                                        <label for="bot-site-key"
+                                               class="block text-sm font-semibold text-content-primary">Public Site Key</label>
+                                        <input id="bot-site-key"
+                                               name="site_key"
+                                               type="text"
+                                               maxlength="255"
+                                               value="{{ bot_site_key or '' }}"
+                                               placeholder="Enter Turnstile site key"
+                                               class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    </div>
+                                    <div class="min-w-0">
+                                        <label for="bot-hostname"
+                                               class="block text-sm font-semibold text-content-primary">Allowed Hostname</label>
+                                        <input id="bot-hostname"
+                                               name="hostname"
+                                               type="text"
+                                               maxlength="253"
+                                               value="{{ bot_hostname or '' }}"
+                                               placeholder="kaori.example.com"
+                                               class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label for="bot-hostname" class="block text-sm font-semibold text-content-primary">Allowed Hostname</label>
-                                    <input id="bot-hostname" name="hostname" type="text" maxlength="253"
-                                           value="{{ bot_hostname or '' }}" placeholder="kaori.example.com"
-                                           class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                    <label for="bot-secret-key"
+                                           class="block text-sm font-semibold text-content-primary">Verification Secret</label>
+                                    <input id="bot-secret-key"
+                                           name="secret_key"
+                                           type="password"
+                                           maxlength="256"
+                                           autocomplete="new-password"
+                                           placeholder="{{ 'Leave blank to retain encrypted secret' if bot_has_secret else 'Enter Turnstile secret' }}"
+                                           class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Encrypted at rest; never displayed or recorded in Activity Audit.</p>
                                 </div>
+                                <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                                    <i data-lucide="shield-alert"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
+                                       aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-status-warning-text">Change Impact</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Always requires working outbound HTTPS to Cloudflare. Missing or rejected verification fails closed and can block sign-in.</p>
+                                    </div>
+                                </div>
+                                <label class="flex items-start gap-3 text-sm leading-6 text-content-secondary">
+                                    <input type="checkbox"
+                                           name="acknowledge_bot_impact"
+                                           value="yes"
+                                           required
+                                           class="mt-1 h-4 w-4 shrink-0 accent-kaori-primary">
+                                    <span>I confirm the approved recovery procedure before changing Bot Protection.</span>
+                                </label>
+                                <button type="submit"
+                                        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                                    Save Bot Protection
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="mt-5 rounded-lg border border-outline-default bg-surface-subtle p-4 text-sm leading-6 text-content-secondary">Protection configuration is read-only for your permission scope.</p>
+                        {% endif %}
+                    </section>
+                    <section class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2"
+                             aria-labelledby="bot-activation-heading">
+                        <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="list-checks" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 id="bot-activation-heading"
+                                    class="text-sm font-semibold text-content-primary">Activation &amp; Safety</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Configure, verify, then enable protection.</p>
                             </div>
-                            <div>
-                                <label for="bot-secret-key" class="block text-sm font-semibold text-content-primary">Verification Secret</label>
-                                <input id="bot-secret-key" name="secret_key" type="password" maxlength="256"
-                                       autocomplete="new-password"
-                                       placeholder="{{ 'Leave blank to retain encrypted secret' if bot_has_secret else 'Enter Turnstile secret' }}"
-                                       class="mt-1 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                                <p class="mt-1 text-xs text-content-muted">Stored encrypted with KAORI's existing credential encryption key. Never displayed or recorded in Activity Audit.</p>
+                        </header>
+                        <ol class="flex flex-1 flex-col divide-y divide-outline-subtle px-5"
+                            data-auth-bot-activation="ordered">
+                            <li class="flex min-w-0 flex-1 items-start gap-3 py-4">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">1</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Configure Provider</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Save the site key, matching hostname and encrypted secret while Disabled.</p>
+                                </div>
+                            </li>
+                            <li class="min-w-0 flex-1 py-4">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                          aria-hidden="true">2</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">Test Verification</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Complete a real one-use challenge with Cloudflare Siteverify.</p>
+                                    </div>
+                                </div>
+                                {% if can_manage_authentication_security and bot_has_secret and bot_site_key and bot_hostname %}
+                                    <form method="post"
+                                          action="{{ url_for('access.authentication_security.test_bot_provider') }}"
+                                          class="mt-4 space-y-3"
+                                          data-auth-bot-form="verification-test">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="cf-turnstile" data-sitekey="{{ bot_site_key }}" data-action="login"></div>
+                                        <button type="submit"
+                                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                            Test Turnstile
+                                        </button>
+                                        {% if bot_tested_at %}
+                                            <p class="text-xs leading-5 text-content-muted">Verification evidence recorded. Re-test if older than one hour or after changing credentials.</p>
+                                        {% endif %}
+                                    </form>
+                                    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                                {% else %}
+                                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                                        {{ 'Save complete provider configuration to make testing available.' if can_manage_authentication_security else 'Provider verification requires manage permission.' }}
+                                    </p>
+                                {% endif %}
+                            </li>
+                            <li class="flex min-w-0 flex-1 items-start gap-3 py-4">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">3</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Enable Protection</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Select Always and save after a successful test of the unchanged configuration within one hour.</p>
+                                </div>
+                            </li>
+                        </ol>
+                        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-4">
+                            <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <p>Stored configuration is not proof of provider availability. Confirm independent administrator recovery before activation.</p>
                             </div>
-                            <label class="flex items-start gap-3 text-xs leading-5 text-content-secondary">
-                                <input type="checkbox" name="acknowledge_bot_impact" value="yes" required
-                                       class="mt-1 h-4 w-4 accent-kaori-primary">
-                                <span>Enabling Turnstile requires outbound HTTPS to Cloudflare and will reject sign-in if verification fails or the provider is unavailable. Confirm an approved recovery procedure before activation.</span>
-                            </label>
-                            <button type="submit"
-                                    class="inline-flex min-h-11 items-center justify-center rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Save Bot Protection</button>
-                        </form>
-                    {% endif %}
+                        </footer>
+                    </section>
                 </div>
             {% else %}
                 <div>
