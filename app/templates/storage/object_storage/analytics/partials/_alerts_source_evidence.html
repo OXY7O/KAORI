@@ -1,9 +1,12 @@
 {% set alert_source_embedded = alert_source_embedded|default(false) %}
-<section class="{{ 'space-y-4' if alert_source_embedded else analysis_surface.snapshot_shell_classes() }}">
+<section class="{{ 'space-y-5' if alert_source_embedded else analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-alert-lifecycle-content>
     {% if not alert_source_embedded %}
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="radio-tower" class="h-5 w-5"></i></span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="radio-tower" class="h-5 w-5"></i>
+                </span>
                 <div class="min-w-0">
                     <h2 class="text-base font-semibold text-content-primary">Alert Source Evidence</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider selection and lifecycle capability without conflating alert records with KAORI metric-derived signals.</p>
@@ -11,27 +14,78 @@
             </div>
         </header>
     {% endif %}
-    <div class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle">
-        <div class="grid gap-px md:grid-cols-3">
-            <article class="bg-surface-card p-5">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Selected Policy</p>
-                <p class="mt-2 text-base font-semibold text-content-primary">{{ 'Automatic' if selected_alert_source == 'auto' else selected_alert_source|title }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Automatic prefers Alertmanager, then falls back to Metrics Source.</p>
+    <div class="{{ 'space-y-3' if alert_source_embedded else 'space-y-3 p-4 sm:p-6' }}"
+         data-object-storage-alert-source-resolution>
+        <div class="space-y-1">
+            <h3 class="text-sm font-semibold text-content-primary">Source Resolution</h3>
+            <p class="text-xs leading-5 text-content-muted">How the configured policy resolves committed alert evidence for this Object Storage system.</p>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-3">
+            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.role_icon_classes('brand', 'info', 'compact') }}" aria-hidden="true">
+                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Selected Policy</p>
+                </div>
+                <p class="mt-3 break-words text-base font-semibold text-content-primary">
+                    {{ 'Automatic' if selected_alert_source == 'auto' else selected_alert_source|title }}
+                </p>
+                <p class="mt-2 text-xs leading-5 text-content-muted">Automatic prefers Alertmanager, then falls back to Metrics Source.</p>
             </article>
-            <article class="bg-surface-card p-5">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Resolved Alert Source</p>
-                <p class="mt-2 text-base font-semibold text-content-primary">{{ alert_source.resolved_label }}</p>
+            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', 'info', 'compact') }}" aria-hidden="true">
+                        <i data-lucide="radio-tower" class="h-4 w-4"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Resolved Alert Source</p>
+                </div>
+                <p class="mt-3 break-words text-base font-semibold text-content-primary">{{ alert_source.resolved_label }}</p>
                 <div class="mt-2">{{ table_label.status_label(alert_source.label, alert_source.tone) }}</div>
             </article>
-            <article class="bg-surface-card p-5">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Alertmanager Consumer</p>
-                <p class="mt-2 text-base font-semibold text-content-primary">{{ alertmanager.profile }}</p>
+            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', 'info', 'compact') }}" aria-hidden="true">
+                        <i data-lucide="server" class="h-4 w-4"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Alertmanager Consumer</p>
+                </div>
+                <p class="mt-3 break-words text-base font-semibold text-content-primary">{{ alertmanager.profile }}</p>
                 <div class="mt-2">{{ table_label.status_label(alertmanager.label, alertmanager.tone) }}</div>
             </article>
+        </div>
     </div>
-    </div>
-    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout('Alertmanager Authority', 'Lifecycle-rich alert evidence', 'When Alertmanager is resolved, KAORI can present receiver, silence, inhibition, and provider lifecycle state from the governed object-storage binding.', icon='bell-ring', role='evidence') }}
-        {{ analysis_surface.interpretation_callout('Metrics Source Fallback', 'Rule-state evidence only', 'Metrics Source ALERTS fallback preserves upstream alert-rule state when Alertmanager is unavailable, but it does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata.', icon='activity', role='insight') }}
+    <div class="{{ 'space-y-3' if alert_source_embedded else 'space-y-3 border-t border-outline-subtle p-4 sm:p-6' }}"
+         data-object-storage-alert-lifecycle-boundaries>
+        <div class="space-y-1">
+            <h3 class="text-sm font-semibold text-content-primary">Lifecycle Capability Boundaries</h3>
+            <p class="text-xs leading-5 text-content-muted">The resolved source determines which lifecycle details KAORI can present.</p>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-2">
+            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', 'info', 'compact') }}" aria-hidden="true">
+                        <i data-lucide="bell-ring" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Alertmanager Authority</p>
+                        <h4 class="mt-1 text-sm font-semibold text-content-primary">Lifecycle-rich alert evidence</h4>
+                    </div>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-content-secondary">When Alertmanager is resolved, KAORI can present receiver, silence, inhibition, and provider lifecycle state from the governed object-storage binding.</p>
+            </article>
+            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.role_icon_classes('insight', 'info', 'compact') }}" aria-hidden="true">
+                        <i data-lucide="activity" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Metrics Source Fallback</p>
+                        <h4 class="mt-1 text-sm font-semibold text-content-primary">Rule-state evidence only</h4>
+                    </div>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-content-secondary">Metrics Source ALERTS fallback preserves upstream alert-rule state when Alertmanager is unavailable, but it does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata.</p>
+            </article>
+        </div>
     </div>
 </section>

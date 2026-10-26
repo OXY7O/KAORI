@@ -255,7 +255,10 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert f'data-dialog-target="{dialog_id}"' in context
     assert f'aria-controls="{dialog_id}"' in context
     assert 'View Reconciliation' in context
-    assert context.count('class="{{ evidence_action_classes }}"') == 2
+    capacity_actions = context.split("{% if page_key == 'capacity' %}", 1)[1].split(
+        "{% elif page_key == 'alerts' %}", 1
+    )[0]
+    assert capacity_actions.count('class="{{ evidence_action_classes }}"') == 1
     assert 'data-object-storage-central-evidence-link' in context
 
     assert f'<dialog id="{dialog_id}"' in capacity
@@ -339,6 +342,54 @@ def test_alert_overview_guide_and_lifecycle_use_existing_native_dialog_standard(
     assert 'dialog.showModal()' in controller
     assert 'dialog.close()' in controller
     for template in (summary, workspace, context, evidence):
+        Environment().parse(template)
+
+
+def test_provider_alert_records_header_and_source_dialog_have_distinct_kaori_hierarchy() -> None:
+    records = read(f'{PARTIALS}/_alert_records.html')
+    evidence = read(f'{PARTIALS}/_alerts_source_evidence.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+
+    header = records.split('</header>', 1)[0]
+    assert 'table_ui.block_icon_classes()' in header
+    assert 'data-lucide="bell-ring"' in header
+    assert 'Provider Alert Records' in header
+    assert 'table_label.result_count(alert_table.pagination.total_items)' in header
+    assert 'xl:whitespace-nowrap' in header
+    assert 'Review provider alerts; Alertmanager supplies lifecycle details' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'hx-target="#object-storage-alert-records"' in records
+
+    assert 'data-object-storage-alert-lifecycle-content' in evidence
+    assert 'data-object-storage-alert-source-resolution' in evidence
+    assert 'data-object-storage-alert-lifecycle-boundaries' in evidence
+    assert evidence.index('data-object-storage-alert-source-resolution') < evidence.index(
+        'data-object-storage-alert-lifecycle-boundaries'
+    )
+    assert 'Source Resolution' in evidence
+    assert 'Lifecycle Capability Boundaries' in evidence
+    assert 'lg:grid-cols-3' in evidence
+    assert 'lg:grid-cols-2' in evidence
+    assert 'analysis_surface.role_icon_classes(' in evidence
+    assert "alert_source_embedded|default(false)" in evidence
+    assert "if not alert_source_embedded" in evidence
+    assert 'analysis_surface.interpretation_callout(' not in evidence
+    assert 'selected_alert_source' in evidence
+    assert 'alert_source.resolved_label' in evidence
+    assert 'table_label.status_label(alert_source.label, alert_source.tone)' in evidence
+    assert 'table_label.status_label(alertmanager.label, alertmanager.tone)' in evidence
+    for boundary in (
+        'Alertmanager Authority',
+        'Lifecycle-rich alert evidence',
+        'Metrics Source Fallback',
+        'Rule-state evidence only',
+        'does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata',
+    ):
+        assert boundary in evidence
+    assert '<dialog id="object-storage-alert-source-dialog"' in workspace
+    assert workspace.count('partials/_alerts_source_evidence.html') == 1
+    assert workspace.count('data-kaori-dialog-close') == 2
+    for template in (records, evidence, workspace):
         Environment().parse(template)
 
 

@@ -82,7 +82,9 @@ def test_invalid_quota_filters_and_top_consumer_scoping_do_not_leak_to_performan
         time_range='24h',
     )
     assert [row['name'] for row in other['rows']] == ['critical']
-    assert other['query_params']['bucket_quota_state'] == 'critical'
+    assert other['quota_state'] == 'all'
+    assert other['quota_pressure'] == 'critical'
+    assert other['query_params']['bucket_quota_state'] == 'all'
     assert other['query_params']['bucket_quota_pressure'] == 'critical'
 
     performance = build_bucket_table_view(
