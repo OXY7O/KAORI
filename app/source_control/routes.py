@@ -4,16 +4,26 @@ from __future__ import annotations
 
 from flask import Blueprint, abort, make_response, render_template, request
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.integrations.source_control.repository_inventory import read_installation_inventory
-from app.integrations.source_control.uat_access import require_uat_access
+from app.integrations.source_control.uat_access import local_super_admin
 from app.source_control.presentation import build_source_control_overview
 
 source_control_bp = Blueprint('source_control', __name__, url_prefix='/source-control')
 
 _PAGE_SIZES = (5, 10, 25, 50)
+
+
+def _require_product_uat_access() -> None:
+    """Product UAT access is independent of GitHub provider readiness.
+
+    General resource-scoped viewing remains denied until #724 admission.
+    """
+    if not local_super_admin(current_user):
+        abort(403)
 
 
 def _uncached_render(template: str, **context) -> ResponseReturnValue:
@@ -27,7 +37,7 @@ def _uncached_render(template: str, **context) -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def overview() -> ResponseReturnValue:
     """UAT-only until production installation-scoped authorization is admitted."""
-    require_uat_access()
+    _require_product_uat_access()
     return _uncached_render(
         'source_control/overview.html',
         scope=build_source_control_overview(),
@@ -38,7 +48,7 @@ def overview() -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def repositories() -> ResponseReturnValue:
     """Explicit scope only; never fall back to a tenant-wide repository query."""
-    require_uat_access()
+    _require_product_uat_access()
     scope = build_source_control_overview()
     raw_installation_id = request.args.get('installation_id', '').strip()
     selected = None
