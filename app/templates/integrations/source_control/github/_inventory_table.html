@@ -21,27 +21,27 @@
          hx-indicator="#github-inventory-loading">
     {% set header_actions %}
         {% if filters_active %}
-            {{ registry_ui.clear_filters_action(url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page),
-                table_ui.action_classes(),
-                hx_get=url_for('github_source_uat.inventory_table', installation_id=installation.id, page=1, per_page=inventory.per_page),
-                target='#source-control-inventory',
-                select='#source-control-inventory',
-                indicator='#github-inventory-loading',
-                sync='closest section:replace',
-                marker='source-control-inventory') }}
+            {{ registry_ui.clear_filters_action(url_for('github_source_uat.detail', installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('github_source_uat.inventory_table', installation_id=installation.id, page=1, per_page=inventory.per_page),
+            target='#source-control-inventory',
+            select='#source-control-inventory',
+            indicator='#github-inventory-loading',
+            sync='closest section:replace',
+            marker='source-control-inventory') }}
         {% endif %}
         {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Committed' if inventory.total is not none else 'Not Observed', display='text') }}
-        {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ (inventory.coverage|replace('_', ' ')|title), display='text') }}
+        {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ (inventory.coverage|replace('_', ' ') |title), display='text') }}
     {% endset %}
     {% set header_guide %}
         {{ info_tip.render('github-repository-registry-guide', 'Committed Repository Registry',
-            'Only installation-scoped committed grants and exact revisions are shown; GitHub retains provider authority.',
-            [
+                'Only installation-scoped committed grants and exact revisions are shown; GitHub retains provider authority.',
+                [
                 'Unknown means no committed collection, not zero grants.',
                 'Search, visibility, and repository state filter committed grant rows only.',
                 'Full SHA and observation timestamp remain available for each row.'
-            ],
-            placement='right', variant='guide') }}
+                ],
+                placement='right', variant='guide') }}
     {% endset %}
     {{ table_ui.inventory_block_header('blocks', 'Committed Repository Registry',
         'Review authorized repository grants and exact default-branch revisions from committed KAORI evidence.',
@@ -159,7 +159,7 @@
                                 {{ table_ui.title_cell(row.full_name or 'Unknown repository', visibility_text ~ ' · ' ~ state_text, 'folder-git-2') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ integration_status(row.access_status, row.access_status|replace('_', ' ')|title, display='indicator') }}
+                                {{ integration_status(row.access_status, row.access_status|replace('_', ' ') |title, display='indicator') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
                                 <code class="break-words text-xs font-medium text-content-secondary"
@@ -215,8 +215,12 @@
                 <input type="hidden" name="tab" value="inventory">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="inventory_search" value="{{ inventory_search }}">
-                <input type="hidden" name="inventory_visibility" value="{{ inventory_visibility }}">
-                <input type="hidden" name="inventory_archived" value="{{ inventory_archived }}">
+                <input type="hidden"
+                       name="inventory_visibility"
+                       value="{{ inventory_visibility }}">
+                <input type="hidden"
+                       name="inventory_archived"
+                       value="{{ inventory_archived }}">
                 <label for="github-inventory-per-page">Rows</label>
                 <select id="github-inventory-per-page"
                         name="per_page"
@@ -246,14 +250,14 @@
                 {% endif %}
             {% endfor %}
             {{ pagination_ui.numeric_pages(inventory.page,
-                total_pages,
-                page_param='page',
-                hx_target='#source-control-inventory',
-                hx_indicator='#github-inventory-loading',
-                endpoint='github_source_uat.inventory_table',
-                query_params={'tab': 'inventory', 'per_page': inventory.per_page, 'inventory_search': inventory_search, 'inventory_visibility': inventory_visibility, 'inventory_archived': inventory_archived},
-                hx_swap='outerHTML',
-                href_endpoint='github_source_uat.detail') }}
+                        total_pages,
+                        page_param='page',
+                        hx_target='#source-control-inventory',
+                        hx_indicator='#github-inventory-loading',
+                        endpoint='github_source_uat.inventory_table',
+                        query_params={'tab': 'inventory', 'per_page': inventory.per_page, 'inventory_search': inventory_search, 'inventory_visibility': inventory_visibility, 'inventory_archived': inventory_archived},
+                        hx_swap='outerHTML',
+                        href_endpoint='github_source_uat.detail') }}
         </nav>
     </footer>
 </section>

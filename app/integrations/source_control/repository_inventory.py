@@ -14,10 +14,10 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.models.source_control import (
+    SourceReference,
     SourceRepository,
     SourceRepositoryCollectionState,
     SourceRepositoryGrant,
-    SourceReference,
     SourceRevision,
 )
 
@@ -81,9 +81,7 @@ def read_installation_inventory(
         raise ValueError('Source Control inventory pagination uses standard KAORI page sizes.')
 
     search = str(search).strip()[:80]
-    visibility = (
-        visibility if visibility in {'public', 'private', 'internal', 'unknown'} else ''
-    )
+    visibility = visibility if visibility in {'public', 'private', 'internal', 'unknown'} else ''
     archived = archived if archived in {'active', 'archived', 'unknown'} else ''
 
     state = session.get(SourceRepositoryCollectionState, authorized_installation_id)
@@ -91,15 +89,22 @@ def read_installation_inventory(
         return InventoryPage(
             installation_id=authorized_installation_id,
             collection_status='not_collected' if state is None else state.status,
-            coverage='unknown', selection_scope='unknown',
-            collected_at=None, observed_count=None, rows=(), total=None,
-            page=page, per_page=per_page,
+            coverage='unknown',
+            selection_scope='unknown',
+            collected_at=None,
+            observed_count=None,
+            rows=(),
+            total=None,
+            page=page,
+            per_page=per_page,
         )
 
     scoped = (
         select(
-            SourceRepository, SourceRepositoryGrant.access_status,
-            SourceRevision.commit_sha, SourceReference.last_observed_at,
+            SourceRepository,
+            SourceRepositoryGrant.access_status,
+            SourceRevision.commit_sha,
+            SourceReference.last_observed_at,
         )
         .join(
             SourceRepositoryGrant,
@@ -167,7 +172,8 @@ def read_installation_inventory(
     effective_page = min(page, max(1, (matching_total + per_page - 1) // per_page))
     data = session.execute(
         scoped.order_by(SourceRepository.full_name, SourceRepository.id)
-        .limit(per_page).offset((effective_page - 1) * per_page)
+        .limit(per_page)
+        .offset((effective_page - 1) * per_page)
     ).all()
     return InventoryPage(
         installation_id=authorized_installation_id,

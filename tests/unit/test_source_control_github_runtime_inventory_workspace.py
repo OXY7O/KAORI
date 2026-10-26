@@ -328,9 +328,12 @@ def test_committed_repository_registry_uses_kaori_full_table_and_spacing():
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
 
     assert 'id="github-panel-inventory"' in detail
-    assert 'class="space-y-4"' in detail.split('id="github-panel-inventory"', 1)[1].split(
-        '{% include "integrations/source_control/github/partials/_detail_inventory.html" %}', 1
-    )[0]
+    assert (
+        'class="space-y-4"'
+        in detail.split('id="github-panel-inventory"', 1)[1].split(
+            '{% include "integrations/source_control/github/partials/_detail_inventory.html" %}', 1
+        )[0]
+    )
     for token in (
         'table_ui.inventory_block_header(',
         'title_extra=header_guide',
@@ -365,7 +368,7 @@ def test_committed_repository_filters_preserve_installation_authority():
     assert "inventory_visibility not in {'public', 'private', 'internal', 'unknown'}" in routes
     assert "inventory_archived not in {'active', 'archived', 'unknown'}" in routes
     assert 'authorized_installation_id=installation.id' in routes
-    assert "matching_total: int | None = None" in projection
+    assert 'matching_total: int | None = None' in projection
     assert 'SourceRepository.full_name.icontains(search, autoescape=True)' in projection
     assert 'SourceRepositoryGrant.installation_id == authorized_installation_id' in projection
     assert 'SourceRepositoryGrant.valid_until.is_(None)' in projection
