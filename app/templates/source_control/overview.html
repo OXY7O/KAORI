@@ -1,0 +1,129 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% import "components/table.html" as table_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}Source Control Overview · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="source-control-overview" class="min-w-0 space-y-6" data-kaori-source-control-product>
+        {{ page_hero.operational_dashboard(
+            'Source Control', 'git-branch', 'Source Control Overview',
+            'Explore committed repository visibility, collection coverage, and delivery evidence readiness across authorized GitHub installations.',
+            [
+                ('database-zap', 'Committed Inventory'),
+                ('git-branch', 'GitHub Provider'),
+                ('shield-check', 'Installation-Scoped Evidence')
+            ],
+            'Authorized GitHub App Installations',
+            'Manage GitHub Integrations', url_for('integrations.source_control'),
+            data_authority='Committed KAORI State',
+            state='normal' if scope.committed_count else 'blocked',
+            blocked_title='Source Inventory Not Collected',
+            blocked_info='Register and validate a GitHub App installation, then sync authorized repositories to commit evidence.'
+        ) }}
+
+        <section aria-label="Source Control inventory signals" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {{ metric_card.render('Registered Installations',
+                scope.installation_count ~ ('+' if scope.has_more else ''),
+                'Active GitHub.com connections in the bounded authorized UAT scope.',
+                'git-branch', source_label='KAORI Integration Registry') }}
+            {{ metric_card.render('Committed Inventory Scopes',
+                scope.committed_count,
+                'Installations with a retained successful inventory generation.',
+                'database-zap', source_label='SC-03 Collection Evidence') }}
+            {{ metric_card.render('Uncollected Scopes',
+                scope.uncollected_count,
+                'No successful committed collection for these visible installations.',
+                'circle-help', source_label='SC-03 Collection Evidence') }}
+            {{ metric_card.render('Latest Inventory Commit',
+                scope.latest_committed_at|user_date if scope.latest_committed_at else 'Unknown',
+                'Latest retained collection among listed installations; not live GitHub health.',
+                'clock-3', source_label='KAORI Committed State') }}
+        </section>
+
+        {% call section_card.render('Installation Inventory Coverage',
+            'Each row describes one explicit installation grant. Repository totals are not summed across overlapping installations.',
+            'folder-git-2', action_href=url_for('source_control.repositories'),
+            action_label='Explore Repositories', body_classes='p-0') %}
+            {% if scope.has_more %}
+                <p class="border-b border-outline-subtle p-4 text-sm text-status-warning-text" role="status">
+                    Showing the first 50 authorized active installations only. Counts on this page are not organization-wide totals.
+                </p>
+            {% endif %}
+            {% if not scope.installations %}
+                {% set empty_state_icon = 'folder-git-2' %}
+                {% set empty_state_label = 'No Connections' %}
+                {% set empty_state_title = 'No Active GitHub Installations' %}
+                {% set empty_state_description = 'Register an authorized GitHub App connection in Integrations. Missing collection evidence is not zero repositories.' %}
+                {% set empty_state_action_url = url_for('integrations.source_control') %}
+                {% set empty_state_action_label = 'Open Source Control Integrations' %}
+                {% include "components/states/_empty_state.html" %}
+            {% else %}
+                <div class="w-full min-w-0 overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[840px]') }}">
+                        <caption class="sr-only">Committed inventory coverage per GitHub App installation.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Installation</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed Repositories</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Committed</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for item in scope.installations %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_ui.title_cell(item.connection.name,
+                                            'Installation #' ~ item.installation.native_installation_id,
+                                            'git-branch') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else 'not_observed',
+                                            item.collection_status|replace('_', ' ')|title,
+                                            display='indicator') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.coverage|replace('_', ' ')|title }}</td>
+                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">
+                                        {{ item.observed_count if item.observed_count is not none else 'Unknown' }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ item.last_committed_at|user_datetime if item.last_committed_at else 'Not Collected' }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
+                                           class="{{ table_ui.action_classes() }}">View Inventory</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        {% endcall %}
+
+        {% call section_card.render('Evidence & Analytics Boundaries',
+            'Source Control combines trustworthy engineering evidence without replacing GitHub or inventing unavailable measurements.',
+            'shield-check') %}
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Available: Repository Inventory</h3>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">
+                        GitHub App installation grants, repository metadata, default branch, exact observed SHA and collection provenance when committed.
+                        An older retained snapshot is not current provider health.
+                    </p>
+                </div>
+                <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Not Yet Qualified: Engineering Flow</h3>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">
+                        PR review latency, CI outcomes, DORA measures, governance compliance and source-to-deployment lineage require dedicated
+                        authorized collection and correlation evidence. No derived score or success rate is inferred from repository counts.
+                    </p>
+                </div>
+            </div>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}
