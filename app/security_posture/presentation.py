@@ -74,6 +74,27 @@ def _scanner_findings(source_ids: list[int]) -> Any:
     )
 
 
+def _security_finding_rows(page_rows: Any) -> list[dict[str, Any]]:
+    """Present ranked, scoped registry findings without changing their ordering."""
+    rows = [
+        {
+            'cve_id': row.cve_id,
+            'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', row.cve_id or '')),
+            'severity': next(
+                (key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'
+            ),
+            'finding_count': int(row.finding_count or 0),
+            'artifact_count': int(row.artifact_count or 0),
+            'binding_count': int(row.binding_count or 0),
+            'digest_binding_count': int(row.digest_binding_count or 0),
+            'reference_binding_count': int(row.reference_binding_count or 0),
+            'observed_at': row.observed_at,
+        }
+        for row in page_rows
+    ]
+    return rows
+
+
 def build_security_posture(
     *,
     can_view_registry: bool,
@@ -159,22 +180,7 @@ def build_security_posture(
         page=positive_int(page),
         per_page=per_page,
     )
-    rows = [
-        {
-            'cve_id': row.cve_id,
-            'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', row.cve_id or '')),
-            'severity': next(
-                (key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'
-            ),
-            'finding_count': int(row.finding_count or 0),
-            'artifact_count': int(row.artifact_count or 0),
-            'binding_count': int(row.binding_count or 0),
-            'digest_binding_count': int(row.digest_binding_count or 0),
-            'reference_binding_count': int(row.reference_binding_count or 0),
-            'observed_at': row.observed_at,
-        }
-        for row in page_rows
-    ]
+    rows = _security_finding_rows(page_rows)
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
