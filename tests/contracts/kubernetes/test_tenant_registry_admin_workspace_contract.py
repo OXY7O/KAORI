@@ -2133,8 +2133,8 @@ def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions(
             assert detail.count('class="ml-auto shrink-0"') == 2
             assert 'lg:grid-cols-2' in detail
         else:
-            assert "action_button.classes('secondary', full=true)" in detail
-            assert "action_button.classes('critical', full=true)" in detail
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
         assert 'hx-target="#tenant-admin-workspace"' in detail
         assert 'hx-disabled-elt="find button"' in detail
         assert 'name="csrf_token"' in detail
