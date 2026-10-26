@@ -1,4 +1,5 @@
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -8,7 +9,18 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capacity &amp; Usage Overview</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Capacity Operating Boundary</h2>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Capacity Operating Boundary</h2>
+                        {{ info_tip.render('object-storage-capacity-operating-boundary-guide',
+                                                    'Capacity Operating Boundary Guide',
+                                                    'Read committed capacity and usage as observed evidence, not as live provider health or a capacity forecast.',
+                                                    items=[
+                                                    'Usable Capacity and Current Usage reflect available committed operational measurements; Remaining Headroom retains its displayed evidence source.',
+                                                    'Inventory is point-in-time, while Usage Direction and Growth / Day describe observed samples in the selected time window.',
+                                                    'Bucket quotas are governance limits, not physical free capacity; unknown or incomplete evidence must not be interpreted as Healthy.',
+                                                    ],
+                                                    placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                         Review usable capacity, consumption, headroom, and growth for the selected system.
                     </p>
@@ -93,13 +105,11 @@
                     </dd>
                 </div>
             </dl>
-            <p class="mt-4 text-xs leading-5 text-content-secondary">
-                {% if metrics.capacity_usage.trend_evidence_available %}
-                    Growth describes observed usage direction inside {{ selected_time_range }}; it is not a capacity-exhaustion forecast.
-                {% else %}
+            {% if not metrics.capacity_usage.trend_evidence_available %}
+                <p class="mt-4 text-xs leading-5 text-content-secondary">
                     At least two valid historical samples are required before a growth direction can be established.
-                {% endif %}
-            </p>
+                </p>
+            {% endif %}
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
