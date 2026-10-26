@@ -519,3 +519,22 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Run the Visual QA and security-sensitive navigation/operation checks separately on the holding SHA. Record actual outcomes as PASS/FAIL/NOT RUN with sanitized evidence; no automatic human acceptance or promotion.
+
+## Overview consolidated control areas — visual regression UAT (#3332, 2026-10-26)
+
+The approved Overview composition after the separate **Authentication Assurance Posture** is now a single **Authentication Security Control Areas** card with icon/title/subtitle. Its body contains exactly three intact detailed control cards (Multi-Factor Authentication, Bot Protection, Session Security) with real status, review links and descriptions; below a subtle divider is **Operational Boundaries** with original Governed Here and Managed Elsewhere columns. There must be no separately bordered Operational Boundaries card and no page-wide white workspace wrapper. Other MFA, Bot Protection and Session Security tabs remain unchanged, with the canonical submenu above the Hero.
+
+Verify at an exact SHA with 1440/1280/1024/768/390/360 widths, both themes, zoom and keyboard navigation: title precedes control cards, boundary section follows the three cards, card spacing/alignment is consistent, no horizontally clipped text or redundant border surface, and Overview links navigate to the correct server route with and without HTMX. Validate read-only vs manager permissions and that all existing security enforcement, CSRF, failed/valid Turnstile and MFA policy changes have unchanged behavior (don't enable Always without separate reviewed provider/recovery UAT). Record sanitized browser evidence; never include credentials, TOTP, recovery codes or Turnstile tokens.
+
+The most recent operator-provided *previous SHA* output was Ruff check PASS, **Ruff Format FAIL** (workspace contract line 99), **djlint FAIL** (large template multi-line Jinja formatting), **47 pytest PASS**, Access Final Lock PASS, and Sidebar Standard PASS. The exact reported Ruff line has been changed to the formatter-proposed form, but new-SHA quality gate execution and djlint remediation remain pending unless independently evidenced. Do not infer PASS from earlier test results.
+
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_*contract.py
+ruff format --check tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_page_content.html app/templates/access/authentication_security/partials/_assurance_summary.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Human Acceptance, official Developer Check, Full Admission, staging/main promotion and release remain on HOLD.
