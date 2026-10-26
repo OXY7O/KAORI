@@ -9,7 +9,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-
 _HOST_LABEL = re.compile(r'[a-z0-9](?:[a-z0-9-]*[a-z0-9])?')
 _FULL_COMMIT_SHA = re.compile(r'[0-9a-f]{40,128}')
 
@@ -125,8 +124,10 @@ class SourceReferenceIdentity:
     def __post_init__(self) -> None:
         ref = str(self.full_ref).strip()
         if not (
-            ref.startswith('refs/heads/') and len(ref) > len('refs/heads/')
-            or ref.startswith('refs/tags/') and len(ref) > len('refs/tags/')
+            ref.startswith('refs/heads/')
+            and len(ref) > len('refs/heads/')
+            or ref.startswith('refs/tags/')
+            and len(ref) > len('refs/tags/')
         ):
             raise ValueError('Source reference must be a full branch or tag ref.')
         if any(char.isspace() for char in ref):
