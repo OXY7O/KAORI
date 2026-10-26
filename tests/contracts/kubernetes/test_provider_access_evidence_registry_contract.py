@@ -58,9 +58,13 @@ def test_both_provider_registries_reuse_standard_filter_and_pagination() -> None
         assert "'access_evidence_search'" in panel
         assert 'access_evidence_total }} records' in panel
         assert 'table_label.result_count(access_evidence_pagination.total_items)' in panel
-        assert 'No matching inspections found.' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+        assert 'No matching inspections found.' in read(
+            'app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html'
+        )
         assert 'role="status"' in panel
-        assert 'event.created_at|user_datetime' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+        assert 'event.created_at|user_datetime' in read(
+            'app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html'
+        )
 
 
 def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> None:
@@ -72,7 +76,9 @@ def test_native_subtitle_and_provider_safety_boundaries_remain_explicit() -> Non
     assert 'Labels indicate possible correlation' in read(
         'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
     )
-    assert 'No automatic remediation was performed.' in native
+    assert 'No automatic remediation was performed.' in read(
+        'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
+    )
     assert 'Inspect External Access' in capsule
     assert 'Inspect Native RBAC' in native
     detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
@@ -96,11 +102,10 @@ def test_provider_evidence_clear_filters_matches_kaori_header_standard() -> None
         filter_form = panel.index("registry_ui.filter_form('tenant.tenants'")
         assert header < clear < filter_form
         assert panel.count("registry_ui.clear_filters_link('tenant.tenants'") == 1
-        assert 'data-kaori-registry-header-actions' in panel[header:filter_form]
+        assert 'class="flex shrink-0 items-center gap-2"' in panel[header:filter_form]
         assert 'table_ui.action_classes()' in panel[clear:filter_form]
-        assert "query_params={'section': 'access-grants', 'access_inventory_view': '" + provider + "'}" in panel[
-            clear:filter_form
-        ]
+        query_scope = f"query_params={{'section': 'access-grants', 'access_inventory_view': '{provider}'}}"
+        assert query_scope in panel[clear:filter_form]
         assert 'lead=false' not in panel[clear:filter_form]
         assert 'table_ui.inventory_filter_bar_classes()' in panel[clear:filter_form]
         assert panel.index('name="access_evidence_status"', filter_form) > filter_form

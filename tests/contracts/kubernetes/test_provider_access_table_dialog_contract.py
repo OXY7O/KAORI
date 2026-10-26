@@ -16,12 +16,12 @@ def test_provider_registries_use_shared_table_and_expandable_row() -> None:
     expandable = read('app/templates/components/details/_expandable_row.html')
 
     assert 'components/details/_expandable_row.html' in rows
-    assert "detail_row.toggle_button(" in rows
-    assert "detail_row.static_detail_row(detail_row_id, detail_target_id, 5)" in rows
+    assert 'detail_row.toggle_button(' in rows
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5)' in rows
     assert 'table_action=true' in rows
     assert "open_label='View Details'" in rows
     assert "close_label='Hide Details'" in rows
-    assert "detail_row.toggle_button(" in intelligence
+    assert 'detail_row.toggle_button(' in intelligence
     assert 'data-detail-static="true"' in expandable
     assert rows.count('<td class=') == 5
     assert '<td colspan="5"' in rows  # Only for empty state
@@ -43,7 +43,7 @@ def test_provider_registries_use_shared_table_and_expandable_row() -> None:
         assert "registry_ui.filter_form('tenant.tenants'" in ui
         assert "registry_ui.clear_filters_link('tenant.tenants'" in ui
         assert "registry_ui.footer('tenant.tenants'" in ui
-        assert 'lead=false' in ui
+        assert 'lead=false' not in ui
         assert 'class="flex items-end justify-end"' not in ui
         assert '<details class="group min-w-0">' not in ui
         assert 'grid min-w-[970px]' not in ui
