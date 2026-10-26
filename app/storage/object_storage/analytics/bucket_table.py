@@ -55,9 +55,7 @@ def build_bucket_table_view(
         filtered = [row for row in filtered if row.get('quota_state') == 'not_configured']
     elif quota_state == 'unknown':
         filtered = [
-            row
-            for row in filtered
-            if row.get('quota_bytes') is None and row.get('quota_state') != 'not_configured'
+            row for row in filtered if row.get('quota_bytes') is None and row.get('quota_state') != 'not_configured'
         ]
 
     if quota_pressure != 'all':
