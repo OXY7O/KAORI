@@ -1,87 +1,85 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_registry.html" as registry_ui %}
-{% import "integrations/components/_workspace.html" as ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="github-runtime-deliveries"
-         class="{{ 'min-w-0' if runtime_table_embedded|default(false) else ui.section_shell_classes() }}"
+         class="{{ 'min-w-0' if runtime_table_embedded|default(false) else table_ui.block_classes(allow_overflow=true) }}"
          data-kaori-github-runtime-deliveries
          data-kaori-server-filtered-registry
-         data-kaori-runtime-registry-view="deliveries">
-    {% if not runtime_table_embedded|default(false) %}
-        <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-start gap-3">
-                {{ ui.palette_icon('webhook', 'brand', size='sm') }}
-                <div>
-                    <h3 class="text-base font-semibold text-content-primary">Signed Webhook Deliveries</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Committed signed transport receipts; not repository collection evidence.</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {% if delivery_state %}
-                    {{ registry_ui.clear_filters_action(
-                        url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'),
-                        table_ui.action_classes(),
-                        hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=1, delivery_per_page=delivery_pagination.per_page),
-                        target='#github-runtime-deliveries',
-                        indicator='#github-runtime-deliveries-loading'
-                        ) }}
-                {% endif %}
-            {{ integration_status('ready' if delivery_pagination.total_items else 'not_observed', delivery_pagination.total_items ~ ' Deliveries', display='text') }}
-            </div>
-        </div>
-        </header>
-    {% endif %}
-    {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
-    {% if runtime_table_embedded|default(false) and delivery_state %}
-        <div class="flex justify-end border-b border-outline-subtle px-4 py-2.5">
+         data-kaori-runtime-registry-view="deliveries"
+         data-kaori-full-table-registry="deliveries">
+    {% set header_actions %}
+        {% if delivery_state %}
             {{ registry_ui.clear_filters_action(
-                url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'),
+                url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries', delivery_per_page=delivery_pagination.per_page),
                 table_ui.action_classes(),
-                hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_per_page=delivery_pagination.per_page),
+                hx_get=url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=1, delivery_per_page=delivery_pagination.per_page),
                 target='#github-runtime-deliveries',
-                indicator='#github-runtime-deliveries-loading'
-            ) }}
-        </div>
-    {% endif %}
-    
-    <form method="get"
-          action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries') }}"
-          hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id) }}"
-          hx-target="#github-runtime-deliveries"
-          hx-swap="outerHTML"
-          hx-trigger="change"
-          hx-indicator="#github-runtime-deliveries-loading"
-          class="{{ ui.filter_region_classes() }}">
-        <input type="hidden" name="delivery_page" value="1">
-        <input type="hidden" name="delivery_per_page" value="{{ delivery_pagination.per_page }}">
-        <label class="block max-w-sm">
-            <span class="{{ ui.control_label_classes() }}">Processing State</span>
-            <select name="delivery_state" class="{{ ui.control_classes() }}">
-                {% for value, label in [('', 'All States'), ('received', 'Received'), ('queued', 'Queued'), ('processing', 'Processing'), ('processed', 'Processed'), ('completed', 'Completed'), ('failed', 'Failed'), ('ignored', 'Ignored')] %}
-                    <option value="{{ value }}" {% if delivery_state == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
-    </form>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes() }}">
+                indicator='#github-runtime-deliveries-loading',
+                select='#github-runtime-deliveries',
+                sync='closest section:replace',
+                marker='github-runtime-deliveries') }}
+        {% endif %}
+    {% endset %}
+    {% set header_guide %}
+        {{ info_tip.render('github-runtime-deliveries-guide', 'Signed Webhook Deliveries',
+            'Signed webhook receipts are transport evidence, not proof of synchronized repository inventory.',
+            [
+                'Only signed delivery receipt metadata is displayed.',
+                'Secret material and raw payloads are excluded.',
+                'Zero deliveries does not mean installation failure.'
+            ],
+            placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('webhook', 'Signed Webhook Deliveries',
+        'Signed webhook transport receipts scoped to the installation; not repository collection evidence.',
+        'github-runtime-deliveries-loading', 'Refreshing Signed Webhook Deliveries', none,
+        header_actions=header_actions, title_extra=header_guide,
+        result_count=delivery_pagination.total_items) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form method="get"
+              aria-label="Signed Webhook Deliveries filters"
+              action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries') }}"
+              hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id) }}"
+              hx-target="#github-runtime-deliveries"
+              hx-select="#github-runtime-deliveries"
+              hx-swap="outerHTML"
+              hx-trigger="change"
+              hx-sync="closest section:replace"
+              hx-indicator="#github-runtime-deliveries-loading"
+              data-kaori-canonical-registry-filter="github-runtime-deliveries"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="delivery_page" value="1">
+            <input type="hidden" name="delivery_per_page" value="{{ delivery_pagination.per_page }}">
+            <input type="hidden" name="tab" value="runtime">
+            <input type="hidden" name="runtime_view" value="deliveries">
+            <div>
+                <label for="github-runtime-deliveries-status" class="{{ table_ui.filter_label_classes() }}">Processing State</label>
+                <select id="github-runtime-deliveries-status" name="delivery_state" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('', 'All States'), ('received', 'Received'), ('queued', 'Queued'), ('processing', 'Processing'), ('processed', 'Processed'), ('completed', 'Completed'), ('failed', 'Failed'), ('ignored', 'Ignored')] %}
+                        <option value="{{ value }}" {% if delivery_state == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Signed Webhook Deliveries for the selected GitHub installation.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Event</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Received</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Attempts / Job</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Processing State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Event</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Received</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Attempts / Job</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Processing State</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for delivery in deliveries %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="font-semibold text-content-primary">{{ delivery.event_type|replace('_', ' ')|title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ delivery.action or 'No action' }}</p>
+                            {{ table_ui.title_cell(delivery.event_type|replace('_', ' ')|title, delivery.action or 'No action', 'webhook') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ delivery.received_at }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -91,13 +89,21 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="4" class="p-5 text-center text-sm text-content-muted">No signed webhook receipts match the current filter.</td>
+                        <td colspan="4" class="p-0">
+                            {% set empty_state_icon = 'webhook' %}
+                            {% set empty_state_label = 'No Results' %}
+                            {% set empty_state_title = 'No Matching Webhook Deliveries' if delivery_state else 'No Signed Webhook Deliveries' %}
+                            {% set empty_state_description = 'Choose another processing state to inspect signed receipts.' if delivery_state else 'Signed webhook receipts will appear once received and committed.' %}
+                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <footer class="{{ pagination_ui.footer_classes() }}">
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-canonical-registry-footer="github-runtime-deliveries">
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <span>Showing {{ delivery_pagination.start_item }}–{{ delivery_pagination.end_item }} of {{ delivery_pagination.total_items }} Deliveries</span>
             <form method="get"
@@ -106,12 +112,15 @@
                   hx-target="#github-runtime-deliveries"
                   hx-swap="outerHTML"
                   hx-indicator="#github-runtime-deliveries-loading"
-                  class="{{ pagination_ui.rows_group_classes() }}">
+                  class="{{ pagination_ui.rows_group_classes() }}"
+                  data-kaori-page-size-control="github-runtime-deliveries">
                 <input type="hidden" name="delivery_page" value="1">
                 <input type="hidden" name="delivery_state" value="{{ delivery_state }}">
                 <label for="github-runtime-delivery-size">Rows</label>
                 <select id="github-runtime-delivery-size" name="delivery_per_page"
-                        data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                        data-kaori-auto-submit
+                        aria-label="Signed Webhook Deliveries rows per page"
+                        class="{{ pagination_ui.page_size_classes() }}">
                     {% for value in delivery_pagination.allowed_per_page %}
                         <option value="{{ value }}" {% if value == delivery_pagination.per_page %}selected{% endif %}>{{ value }}</option>
                     {% endfor %}

@@ -1639,3 +1639,21 @@ Verify desktop/mobile, light/dark, keyboard/touch Guide interaction, tab
 selection and URL history, HTMX table filtering, and no-JS link fallback.
 Executable tests, startup, and Human Visual Acceptance remain pending
 on this candidate SHA. Official CI/CD / Full Admission / promotion HOLD.
+
+
+## 2026-10-26 — #3306 Full Table KAORI runtime registry
+
+Recent Jobs and Signed Webhook Deliveries retain the approved Tab Style 2,
+but now reuse the canonical full table components, not only compact controls.
+Each tab has `table_ui.inventory_block_header` (icon/title/help text/result
+count/labeled Guide/conditional clear/loading), canonical filter layout and
+controls, full-width responsive `table_ui.table_classes` with accessible
+caption and column scopes, `table_ui.title_cell`, committed semantic status,
+shared no-data/no-filter-results empty state, and table-specific Rows and
+numeric pagination. Default Rows=5, URL and HTMX view state, permission scopes,
+and distinct provider evidence ownership remain unchanged. No live provider
+queries, destructive actions, secrets or raw webhook payloads in these tables.
+
+Ruff Format and djLint from the user's prior Dev Container log were not
+passing for the previous SHA. Recheck the new merged SHA rather than claiming
+source inspection as executable QA. Human desktop/mobile/light/dark UAT HOLD.

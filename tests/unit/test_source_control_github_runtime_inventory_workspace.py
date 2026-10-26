@@ -65,7 +65,8 @@ def test_history_registries_are_scoped_server_filtered_paginated():
         assert 'data-kaori-server-filtered-registry' in panel
         assert 'components/table.html' in panel
         assert 'components/pagination.html' in panel
-        assert 'components/loading_bar.html' in panel
+        # Loading is owned by the canonical table header rather than a page-local import.
+        assert 'table_ui.inventory_block_header(' in panel
         assert 'hx-swap="outerHTML"' in panel
         assert 'data-kaori-auto-submit' in panel
         assert field in panel
@@ -210,3 +211,39 @@ def test_runtime_health_uses_approved_labeled_guide_header():
     assert 'title_extra=None' in header
     assert '{% if title_extra %}{{ title_extra }}{% endif %}' in header
     assert 'Signed webhook deliveries are transport evidence' in runtime
+
+
+def test_runtime_history_uses_full_kaori_table_components():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    shared_table = _read(ROOT / 'app/templates/components/table.html')
+    shared_registry = _read(ROOT / 'app/templates/components/table_registry.html')
+    assert 'framed_tabs.render_navigation(' in runtime
+    assert 'macro inventory_block_header(' in shared_table
+    assert 'macro clear_filters_action(' in shared_registry
+    for filename, view in (('_runtime_jobs.html', 'jobs'), ('_runtime_deliveries.html', 'deliveries')):
+        page = _read(GITHUB / 'partials' / filename)
+        assert f'data-kaori-full-table-registry="{view}"' in page
+        for token in (
+            'table_ui.inventory_block_header(',
+            'title_extra=header_guide',
+            "variant='guide'",
+            'registry_ui.clear_filters_action(',
+            'table_ui.inventory_filter_bar_classes()',
+            'table_ui.filter_layout_classes()',
+            'table_ui.filter_select_classes()',
+            'data-kaori-canonical-registry-filter',
+            'hx-sync="closest section:replace"',
+            "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')",
+            'table_ui.title_cell(',
+            '<caption class="sr-only">',
+            'scope="col"',
+            'components/states/_empty_state.html',
+            'data-kaori-canonical-registry-footer',
+            'data-kaori-page-size-control',
+            'data-kaori-auto-submit',
+            'pagination_ui.numeric_pages(',
+            'integration_status(',
+        ):
+            assert token in page, (filename, token)
+        assert f"runtime_view='{view}'" in page
+        assert 'payload_sha256' not in page
