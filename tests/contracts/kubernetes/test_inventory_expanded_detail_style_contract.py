@@ -121,20 +121,16 @@ def test_kubernetes_inventory_headers_follow_approved_three_row_shared_grammar()
     permission = read('app/templates/access/permissions/partials/_permission_detail.html')
     modal_host = read('app/templates/components/resource_detail_modal.html')
 
-    assert (
-        "macro workspace_header(description, icon='panel-top-open', context_items=none, compact=false)"
-        in shared
-    )
+    assert "macro workspace_header(description, icon='panel-top-open', context_items=none, compact=false)" in shared
     assert 'data-kaori-detail-header-layout="title-description-context"' in shared
     assert 'macro header_context_row(items)' in shared
     assert 'data-resource-detail-header-context' in shared
-    assert (
-        "table_label.metadata_label(item.label, item.icon|default(none), true, 'detail')"
-        in shared
-    )
+    assert "table_label.metadata_label(item.label, item.icon|default(none), true, 'detail')" in shared
     header = shared.split('{% macro workspace_header(', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert header.index('{{ caller() }}') < header.index('{{ description }}') < header.index(
-        'header_context_row(context_items)'
+    assert (
+        header.index('{{ caller() }}')
+        < header.index('{{ description }}')
+        < header.index('header_context_row(context_items)')
     )
     assert "'text-xs leading-5 text-content-muted' if compact" in header
 
@@ -153,8 +149,7 @@ def test_kubernetes_inventory_headers_follow_approved_three_row_shared_grammar()
         assert 'detail.header_identity_row()' in header_content, relative
         assert 'detail.inventory_title(' in header_content, relative
         assert (
-            'table_label.status_indicator_label(' in header_content
-            or "item.type == 'StorageClass'" in header_content
+            'table_label.status_indicator_label(' in header_content or "item.type == 'StorageClass'" in header_content
         ), relative
 
     assert "'label': cluster.kubernetes_version" in cluster

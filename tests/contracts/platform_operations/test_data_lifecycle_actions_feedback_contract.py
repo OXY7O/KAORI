@@ -3,6 +3,7 @@
 Source checks complement (but cannot replace) PostgreSQL, worker, browser
 and Notification Deck acceptance in the approved disposable DevContainer.
 """
+
 import ast
 from pathlib import Path
 
@@ -39,8 +40,8 @@ def test_alert_policy_title_uses_existing_accessible_guide_only_for_incidents() 
 
 def test_four_operator_actions_keep_safety_authenticity_and_progressive_enhancement() -> None:
     template = read(WORKSPACE)
-    assert 'url_for(\'platform_operations.data_lifecycle.save_policy\')' in template
-    assert 'url_for(\'platform_operations.data_lifecycle.preview\'' in template
+    assert "url_for('platform_operations.data_lifecycle.save_policy')" in template
+    assert "url_for('platform_operations.data_lifecycle.preview'" in template
     assert template.count("url_for('platform_operations.data_lifecycle.run')") == 4
     assert 'name="mode" value="archive_only"' in template
     assert 'name="mode" value="archive_and_cleanup"' in template
@@ -64,23 +65,31 @@ def test_preview_and_manual_execution_return_full_page_without_htmx() -> None:
         assert "'platform_operations/data_lifecycle/partials/_domain_workspace.html'" in handler
         assert "return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)" in handler
 
-    assert '@permission_required(\'platform_operations.view_data_lifecycle\')' in routes
-    assert '@permission_required(\'platform_operations.manage_data_lifecycle\')' in routes
-    assert "domain_name=_mutation_domain()" in run
+    assert "@permission_required('platform_operations.view_data_lifecycle')" in routes
+    assert "@permission_required('platform_operations.manage_data_lifecycle')" in routes
+    assert 'domain_name=_mutation_domain()' in run
     assert "mode=str(request.form.get('mode') or 'archive_only')" in run
     assert '_context(preview=True)' in preview
 
 
 def test_foreground_toast_and_deck_visibility_use_canonical_existing_policy() -> None:
     metadata = {'job_execution_id': 45, 'feedback_delivery': 'toast'}
-    assert _feedback_delivery(
-        event_type='data_lifecycle_execution_requested', status='info', metadata=metadata,
-    ) == 'toast'
-    assert _feedback_delivery(
-        event_type='data_lifecycle_execution_requested',
-        status='info',
-        metadata={'job_execution_id': 45},
-    ) == 'activity_center'
+    assert (
+        _feedback_delivery(
+            event_type='data_lifecycle_execution_requested',
+            status='info',
+            metadata=metadata,
+        )
+        == 'toast'
+    )
+    assert (
+        _feedback_delivery(
+            event_type='data_lifecycle_execution_requested',
+            status='info',
+            metadata={'job_execution_id': 45},
+        )
+        == 'activity_center'
+    )
     assert OperationalDeliveryPolicy.DECK_ON_FAILURE.deck_visible('success') is False
     assert OperationalDeliveryPolicy.DECK_ON_FAILURE.deck_visible('info') is False
     assert OperationalDeliveryPolicy.DECK_ON_FAILURE.deck_visible('warning') is True
@@ -89,7 +98,8 @@ def test_foreground_toast_and_deck_visibility_use_canonical_existing_policy() ->
     service = read(SERVICE)
     tree = ast.parse(service)
     calls = [
-        node for node in ast.walk(tree)
+        node
+        for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
         and node.func.id == 'record_operational_activity'
@@ -109,9 +119,9 @@ def test_shared_oob_toast_and_activity_evidence_are_not_replaced_with_custom_ui(
     template = read(WORKSPACE)
     oob = read('app/templates/components/operation_feedback_oob.html')
     toast = read('app/templates/components/operational_toast.html')
-    assert "components/operation_feedback_oob.html" in template
-    assert "components/operational_toast.html" in oob
+    assert 'components/operation_feedback_oob.html' in template
+    assert 'components/operational_toast.html' in oob
     assert "delivery=operation_feedback.delivery|default('toast')" in oob
     assert 'hx-swap-oob="beforeend:#operational-toast-stack"' in toast
-    assert "notification_deck_visible" in oob
-    assert "data-operational-notification-refresh" in toast
+    assert 'notification_deck_visible' in oob
+    assert 'data-operational-notification-refresh' in toast

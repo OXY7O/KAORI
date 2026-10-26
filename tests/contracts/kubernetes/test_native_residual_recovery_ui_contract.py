@@ -169,7 +169,8 @@ def test_recovery_prepare_form_is_compact_with_unchanged_governed_inputs():
     Environment().parse(partial)
     Environment().parse(detail)
     form = next(
-        item for item in re.findall(r'<form\b.*?</form>', partial, flags=re.DOTALL)
+        item
+        for item in re.findall(r'<form\b.*?</form>', partial, flags=re.DOTALL)
         if 'data-native-residual-prepare-form' in item
     )
     assert 'max-w-2xl' not in form
@@ -192,14 +193,12 @@ def test_recovery_prepare_form_is_compact_with_unchanged_governed_inputs():
 
 def test_native_handback_title_uses_existing_kaori_guide_without_extra_provider_action():
     detail = source(DETAIL)
-    handback = detail.split('id="tenant-native-handback"', 1)[1].split(
-        'id="tenant-capsule-handback"', 1
-    )[0]
+    handback = detail.split('id="tenant-native-handback"', 1)[1].split('id="tenant-capsule-handback"', 1)[0]
     assert handback.count("info_tip.render('tenant-native-platform-handback-guide'") == 1
     assert "'Platform Admin Handback & Re-adopt'" in handback
     assert "variant='guide'" in handback
     assert 'Fresh Discovery and explicit Review Adoption are separate from handback.' in handback
-    assert "tenant.verify_native_successor_handback_route" in handback
+    assert 'tenant.verify_native_successor_handback_route' in handback
     assert handback.count('name="confirm_successor_handback"') == 1
     assert 'name="release_plan_sha256"' in handback
     assert detail.count('<form method="post"') == 23
@@ -209,9 +208,7 @@ def test_residual_recovery_uses_balanced_assessment_and_plan_columns():
     partial = source(PARTIAL)
     Environment().parse(partial)
     assert partial.count('data-native-residual-recovery-workspace') == 1
-    workspace = partial.split('data-native-residual-recovery-workspace', 1)[1].split(
-        '        {% endif %}', 1
-    )[0]
+    workspace = partial.split('data-native-residual-recovery-workspace', 1)[1].split('        {% endif %}', 1)[0]
     assert 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in partial
     assert 'aria-labelledby="tenant-recovery-assessment-heading"' in workspace
     assert 'aria-labelledby="tenant-recovery-prepare-heading"' in workspace

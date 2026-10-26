@@ -71,8 +71,8 @@ def test_bulk_tls_confirmation_reuses_native_dialog_and_current_checked_target_s
     assert 'x-text="selectedCount - 3"' in template
     assert 'Existing TLS material will be replaced' in template
     assert 'no automatic rollback.' in template
-    assert 'action_button.classes(\'secondary\')' in template
-    assert 'action_button.classes(\'primary\')' in template
+    assert "action_button.classes('secondary')" in template
+    assert "action_button.classes('primary')" in template
     assert '@htmx:before-request="$refs.bulkConfirmDialog?.close()"' in template
     assert 'updateModal' not in template
     assert 'x-show="updateModal"' not in template

@@ -32,7 +32,7 @@ def test_scoped_storage_and_streamed_dependency_candidates_preserve_relation_cou
     assert 'max_nodes=family_budget,' in repo
     assert '_load_service_selector_index(cluster_ids, namespace)' in repo
     assert 'yield_per(256)' in repo
-    assert 'totals[\'pod\'] = matching_total' in repo
+    assert "totals['pod'] = matching_total" in repo
     assert 'func.json_array_length(PodInventory.configuration_references) > 0' in repo
     assert 'func.json_array_length(PodInventory.persistent_volume_claims) > 0' in repo
     assert 'query.filter(referenced_pod.exists())' in repo

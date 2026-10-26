@@ -3,6 +3,7 @@
 Pure snapshots/mocks ensure no real PostgreSQL row, worker or archive object
 is modified. DevContainer end-to-end and human Visual QA are separate gates.
 """
+
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -54,7 +55,8 @@ def _snapshot(**changes: object) -> SimpleNamespace:
     ],
 )
 def test_serve_window_preserves_pending_fresh_and_stale_servable(
-    changes: dict[str, object], eligible: bool,
+    changes: dict[str, object],
+    eligible: bool,
 ) -> None:
     assert adapter._eligible_for_boundary(_snapshot(**changes), cutoff_at=CUTOFF) is eligible
 
@@ -62,7 +64,10 @@ def test_serve_window_preserves_pending_fresh_and_stale_servable(
 def test_serve_window_defaults_to_generated_at_plus_freshness_when_expiry_missing() -> None:
     generated = CUTOFF - timedelta(hours=5)
     snapshot = _snapshot(
-        expires_at=None, generated_at=generated, freshness_minutes=30, stale_grace_minutes=240,
+        expires_at=None,
+        generated_at=generated,
+        freshness_minutes=30,
+        stale_grace_minutes=240,
     )
     # 30 minutes freshness + four hours grace has expired at the cutoff.
     assert adapter._eligible_for_boundary(snapshot, cutoff_at=CUTOFF) is True
@@ -78,7 +83,9 @@ def test_cleanup_rechecks_rows_and_excludes_refreshed_and_pending(monkeypatch: p
         _snapshot(id=18, updated_at=CUTOFF + timedelta(days=1)),
         _snapshot(id=19, status='pending'),
         _snapshot(
-            id=20, expires_at=CUTOFF - timedelta(minutes=30), stale_grace_minutes=120,
+            id=20,
+            expires_at=CUTOFF - timedelta(minutes=30),
+            stale_grace_minutes=120,
         ),
     ]
 
@@ -100,10 +107,13 @@ def test_cleanup_rechecks_rows_and_excludes_refreshed_and_pending(monkeypatch: p
 
     monkeypatch.setattr(adapter, 'AnalyticsSnapshot', SimpleNamespace(id=Column(), query=Query()))
     monkeypatch.setattr(
-        adapter, 'db', SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'))),
+        adapter,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append('commit'))),
     )
     deleted = adapter.AnalyticsSnapshotArchiveDomain._delete_safe_batch(
-        [17, 18, 19, 20], cutoff_at=CUTOFF,
+        [17, 18, 19, 20],
+        cutoff_at=CUTOFF,
     )
     assert deleted == 1
     assert calls == [[17, 18, 19, 20], [17]]
@@ -126,7 +136,8 @@ def test_analytics_manual_archive_buttons_create_canonical_job_with_info_toast(m
     app = Flask(__name__)
     app.config['RETENTION_CELERY_QUEUE'] = 'maintenance'
     domain = SimpleNamespace(
-        name='analytics_snapshot', cleanup_supported=True,
+        name='analytics_snapshot',
+        cleanup_supported=True,
         build_policy=lambda: _fake_policy(enabled=True),
     )
     job = SimpleNamespace(id=27, celery_task_id='synthetic-uat-task')
@@ -139,7 +150,9 @@ def test_analytics_manual_archive_buttons_create_canonical_job_with_info_toast(m
         patch(f'{SERVICE}.url_for', return_value='/test/jobs'),
     ):
         feedback = queue_lifecycle_execution(
-            domain_name='analytics_snapshot', mode=mode, user_id=7,
+            domain_name='analytics_snapshot',
+            mode=mode,
+            user_id=7,
         )
 
     queued = queue.call_args.kwargs
@@ -159,7 +172,8 @@ def test_analytics_manual_archive_buttons_create_canonical_job_with_info_toast(m
 @pytest.mark.parametrize('cleanup', [False, True])
 def test_analytics_manual_engine_with_no_eligible_data_creates_no_archive(cleanup: bool) -> None:
     domain = SimpleNamespace(
-        name='analytics_snapshot', cleanup_supported=True,
+        name='analytics_snapshot',
+        cleanup_supported=True,
         build_policy=lambda: _fake_policy(enabled=True),
         inspect_boundary=lambda _policy: SimpleNamespace(record_count=0, maximum_record_id=None),
     )
@@ -176,7 +190,9 @@ def test_analytics_manual_engine_with_no_eligible_data_creates_no_archive(cleanu
         patch('app.platform_operations.data_lifecycle.retention.service.ArchiveArtifact') as artifact,
     ):
         result = run_retention_archive(
-            domain_name='analytics_snapshot', trigger_type='manual', cleanup=cleanup,
+            domain_name='analytics_snapshot',
+            trigger_type='manual',
+            cleanup=cleanup,
         )
     assert result['status'] == 'no_data'
     assert result['record_count'] == 0
@@ -186,7 +202,8 @@ def test_analytics_manual_engine_with_no_eligible_data_creates_no_archive(cleanu
 
 def test_disabled_analytics_policy_does_not_queue_job_and_warns_in_deck() -> None:
     domain = SimpleNamespace(
-        name='analytics_snapshot', cleanup_supported=True,
+        name='analytics_snapshot',
+        cleanup_supported=True,
         build_policy=lambda: _fake_policy(enabled=False),
     )
     with (
@@ -197,7 +214,9 @@ def test_disabled_analytics_policy_does_not_queue_job_and_warns_in_deck() -> Non
         patch(f'{SERVICE}.url_for', return_value='/test/lifecycle'),
     ):
         feedback = queue_lifecycle_execution(
-            domain_name='analytics_snapshot', mode='archive_only', user_id=7,
+            domain_name='analytics_snapshot',
+            mode='archive_only',
+            user_id=7,
         )
     queue.assert_not_called()
     assert feedback['status'] == 'warning'
@@ -208,7 +227,8 @@ def test_failed_analytics_archive_dispatch_emits_error_toast_and_deck() -> None:
     app = Flask(__name__)
     app.config['RETENTION_CELERY_QUEUE'] = 'maintenance'
     domain = SimpleNamespace(
-        name='analytics_snapshot', cleanup_supported=True,
+        name='analytics_snapshot',
+        cleanup_supported=True,
         build_policy=lambda: _fake_policy(enabled=True),
     )
     with (
@@ -221,7 +241,9 @@ def test_failed_analytics_archive_dispatch_emits_error_toast_and_deck() -> None:
         patch(f'{SERVICE}.url_for', return_value='/test/lifecycle'),
     ):
         feedback = queue_lifecycle_execution(
-            domain_name='analytics_snapshot', mode='archive_only', user_id=7,
+            domain_name='analytics_snapshot',
+            mode='archive_only',
+            user_id=7,
         )
     rollback.assert_called_once()
     assert feedback['status'] == 'error'
@@ -231,7 +253,8 @@ def test_failed_analytics_archive_dispatch_emits_error_toast_and_deck() -> None:
 
 def test_analytics_policy_save_is_committed_through_standard_feedback() -> None:
     domain = SimpleNamespace(
-        name='analytics_snapshot', cleanup_supported=True,
+        name='analytics_snapshot',
+        cleanup_supported=True,
         build_policy=lambda: _fake_policy(enabled=True),
     )
     with (
@@ -265,11 +288,11 @@ def test_preview_is_read_only_and_all_four_actions_use_shared_ui() -> None:
     assert 'Pending and still-serveable snapshots stay hot.' in source
     assert 'Archiving requires both stale grace and hot retention to have elapsed.' in source
     assert source.count('type="submit"') == 3
-    assert source.count("hx-disabled-elt=\"find button[type='submit']\"") == 3
+    assert source.count('hx-disabled-elt="find button[type=\'submit\']"') == 3
     assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 3
     assert 'name="mode" value="archive_only"' in source
     assert 'name="mode" value="archive_and_cleanup"' in source
-    assert 'hx-get="{{ url_for(\'platform_operations.data_lifecycle.preview\'' in source
+    assert "hx-get=\"{{ url_for('platform_operations.data_lifecycle.preview'" in source
     assert 'hx-target="#data-lifecycle-domain-workspace"' in source
 
     routes = (ROOT / 'app/platform_operations/data_lifecycle/routes.py').read_text(encoding='utf-8')

@@ -136,7 +136,7 @@ def test_review8_reveal_target_horizontal_alignment_uses_shared_fields() -> None
     assert '{{ form_field.label_row("Namespace") }}' in workspace
     assert '{{ form_field.label_row("Secret", "Live", "normal", "radio") }}' in workspace
     assert 'flex min-h-6 items-center justify-between gap-2' in form_field
-    assert "table_label.status_label(status_text, status_tone, status_icon)" in form_field
+    assert 'table_label.status_label(status_text, status_tone, status_icon)' in form_field
 
     # Use the same select height, padding, focus ring, and disabled state.
     assert 'class="{{ form_field.select_classes() }}"' in page

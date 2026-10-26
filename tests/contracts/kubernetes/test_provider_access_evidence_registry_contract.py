@@ -142,13 +142,13 @@ def test_committed_remediation_is_provider_scoped_and_observation_matched() -> N
     assert "'access_evidence_remediation_by_observation': remediation_by_observation" in service
 
     assert 'access_evidence_remediation_by_observation.get(event.id)' in rows
-    assert "_provider_access_remediation_detail.html" in detail
+    assert '_provider_access_remediation_detail.html' in detail
     assert '{% if remediation_event %}' in detail
     assert 'data-tenant-access-remediation' in remediation
     assert 'remediation_event.created_at|user_datetime' in remediation
     assert 'plan.manual_review_count' in remediation
     assert 'plan.explicit_reconcile_count' in remediation
-    assert "table_label.status_label(" in remediation
+    assert 'table_label.status_label(' in remediation
     assert 'data-tenant-remediation-technical-evidence' in remediation
     assert 'item.subject' in remediation
     assert 'item.reason' in remediation
@@ -165,4 +165,3 @@ def test_provider_remediation_no_longer_creates_bottom_page_accordion() -> None:
         assert '<details class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">' not in panel
     assert 'recent_capsule_access_remediation' not in capsule
     assert 'recent_native_access_remediation' not in native
-

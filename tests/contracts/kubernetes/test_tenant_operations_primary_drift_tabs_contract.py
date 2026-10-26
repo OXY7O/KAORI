@@ -107,9 +107,9 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
         Environment().parse(source)
         assert 'components/table.html' in source
         assert 'components/table_registry.html' in source
-        assert "table_ui.inventory_block_header(" in source
+        assert 'table_ui.inventory_block_header(' in source
         assert 'result_count=' in source
-        assert "header_actions=header_actions" in source
+        assert 'header_actions=header_actions' in source
         assert 'registry_ui.clear_filters_link(' in source
         assert 'registry_ui.filter_form(' in source
         assert "aria_label='Filter " in source
@@ -120,7 +120,7 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
         assert query_key + '_search' in source
         assert filters + '.tenant_id' in source
         assert filters + '.search' in source
-        assert "name=\"tab\" value=\"allocation-drift\"" in source
+        assert 'name="tab" value="allocation-drift"' in source
         assert "min-w-[840px] !table-fixed' if " + rows + " else '!table-fixed'" in source
         assert 'min-w-[1450px]' not in source
         for header in ('Tenant', 'Provider / Authority', 'Status', 'Allocation Difference', 'Details'):
@@ -171,10 +171,10 @@ def test_capsule_drift_filters_are_committed_and_independently_paginated() -> No
     for source in (quota, shared):
         assert "str(drift_tenant_id or '').strip()" in source
         assert "str(drift_search or '').strip()[:160]" in source
-        assert "normalized_search.casefold()" in source
-        assert "paginate_sequence(" in source
-    assert "tenant.provider_reference" in quota
-    assert "intent.resource_name" in shared
+        assert 'normalized_search.casefold()' in source
+        assert 'paginate_sequence(' in source
+    assert 'tenant.provider_reference' in quota
+    assert 'intent.resource_name' in shared
     # UI gets already-committed rows, no new request-time direct provider read.
     for template in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):
         source = read('app/templates/kubernetes/tenant/partials/' + template)
@@ -274,17 +274,19 @@ def test_capsule_drift_info_tip_and_reconciliation_decision_cards() -> None:
         assert '{% import "components/info_tip.html" as info_tip %}' in source
         assert 'table_ui.block_classes(allow_overflow=true)' in source
         assert '{% set title_info %}' in source
-        assert "info_tip.render(" in source
+        assert 'info_tip.render(' in source
         assert info_id in source
         assert "variant='guide'" in source
-        assert "title_extra=title_info" in source
-        assert "result_count=" in source
-        assert source.index("title_extra=title_info") < source.index("result_count=")
+        assert 'title_extra=title_info' in source
+        assert 'result_count=' in source
+        assert source.index('title_extra=title_info') < source.index('result_count=')
         assert 'data-kaori-native-dialog' in source
         assert "table_label.metadata_label('Provider Write', icon='server-cog')" in source
         assert "table_label.metadata_label('Commit Only', icon='file-check-2')" in source
         assert 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2' in source
-        assert source.count('flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover') == 2
+        assert (
+            source.count('flex min-w-0 flex-col gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover') == 2
+        )
         assert 'Reapply KAORI quota via Capsule after validation.' in source
         assert 'Commit verified provider quota as KAORI intent. No provider write.' in source
         # Separate scoped POST actions are still protected by the original gate and CSRF.
@@ -292,4 +294,4 @@ def test_capsule_drift_info_tip_and_reconciliation_decision_cards() -> None:
         assert source.count('<form method="post"') == 2
         assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
         assert 'data-kaori-dialog-close' in source
-        assert "table_ui.action_classes()" in source
+        assert 'table_ui.action_classes()' in source
