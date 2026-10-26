@@ -235,6 +235,11 @@ def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
 
 
 def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceCapabilityDefinition, ...]:
+    if workspace.key == 'source_control':
+        from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
+
+        if not uat_enabled() or not local_super_admin(user):
+            return ()
     return tuple(tab for tab in workspace.capabilities if _has_any_permission(user, tab.permissions))
 
 
@@ -248,6 +253,8 @@ def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDe
 
 
 def _workspace_key(endpoint: str) -> str | None:
+    if endpoint.startswith('source_control.'):
+        return 'source_control'
     if endpoint.startswith('secrets_pki.'):
         return 'secrets_pki'
     if endpoint.startswith('security_posture.'):
@@ -291,6 +298,7 @@ def _workspace_key(endpoint: str) -> str | None:
 
 
 _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
+    'source_control': {'source_control.repositories': 'repositories'},
     'secrets_pki': {'secrets_pki.overview': 'overview', 'secrets_pki.inventory': 'inventory'},
     'settings': {'settings.account': 'account'},
     'integrations': {
