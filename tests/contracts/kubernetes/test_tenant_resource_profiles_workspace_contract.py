@@ -1917,7 +1917,7 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'grid gap-3 border-t' not in exposure
     assert 'sm:grid-cols-2' not in exposure
 
-    budget = overview.split('How allocation budgets work', 1)[1].split('</details>', 1)[0]
+    budget = overview.split('<dialog id="{{ budget_guide_dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
     assert budget.index('Request budget formula') < budget.index('Logical storage policy')
     assert budget.index('Logical storage policy') < budget.index('ResourceQuota boundary')
     assert 'tenant-allocation-budget-formula-heading' in budget
