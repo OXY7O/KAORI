@@ -107,10 +107,10 @@ def test_namespace_access_detail_has_grouped_visual_hierarchy_and_safe_provenanc
     assert 'No effective access is asserted by this record.' in detail
     assert 'table_label.status_label(' in detail
     assert 'table_label.metadata_label(' in detail
-    assert 'access.get(\'credential_public_id\')' in detail
-    assert 'access.get(\'renewal_due_at\')|user_datetime' in detail
-    assert 'access.get(\'valid_until\')|user_datetime' in detail
-    assert 'access.get(\'approved_access_methods\') or []' in detail
+    assert "access.get('credential_public_id')" in detail
+    assert "access.get('renewal_due_at')|user_datetime" in detail
+    assert "access.get('valid_until')|user_datetime" in detail
+    assert "access.get('approved_access_methods') or []" in detail
     assert 'bg-surface-elevated' in detail
     assert 'bg-surface-hover' in detail
     assert 'min-w-[1400px]' not in registry
