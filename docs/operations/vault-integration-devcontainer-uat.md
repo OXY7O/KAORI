@@ -99,3 +99,39 @@ python scripts/verify_ui_style.py
 and real Vault sandbox UAT are NOT RUN when this document is authored. Prior
 Source Control results (Ruff/djLint PASS and 78 pytest PASS) apply to that
 capability only and cannot establish Vault UAT or acceptance.
+
+## 2026-10-26 — QA feedback after first Vault UI parity merge
+
+**Operator supplied a Dev Container log**, but did not include an exact
+`git rev-parse HEAD` in the paste. Accordingly results below belong to
+the tested working tree only; they cannot be attributed to a later SHA.
+
+| Check | Operator-observed result | Disposition |
+| --- | --- | --- |
+| Ruff Check | FAIL — two I001 import blocks (Vault routes, Vault workspace contract) | Sorted on #3384 follow-up branch; exact-HEAD rerun required |
+| Ruff Format | FAIL — same two Python files | Applied report-driven line wrapping/quotes; exact-HEAD rerun required |
+| djLint | FAIL — seven Vault templates | Applied all seven exact formatter diffs from the supplied log; exact-HEAD rerun required |
+| Focused pytest | 21 PASS / 1 FAIL | Prior test expected sidebar children without Source Control; now aligns with approved current sidebar |
+| Integrations Final Lock | ERROR — IndexError on missing `capability_metadata` | Vault now passes profile metadata into the existing shared Capability Readiness contract |
+| UI Reuse | PASS — 0 inline debt | Existing evidence only; rerun on exact HEAD |
+| UI Style | FAIL — 16 violations across Access, Notifications, Kubernetes, Intelligence, Settings, Secrets & PKI | External cross-domain findings; **not** waived or fixed by Vault-only follow-up |
+
+The failing sidebar assertion did not indicate a missing or duplicated
+Secrets Management navigation entry; it only omitted the subsequently approved
+Source Control sibling from its literal expected order. No navigation catalog
+or RBAC behavior was changed. Existing Vault UI should not be modified merely
+to satisfy obsolete assertions.
+
+The shared Integration verifier's `capability_metadata` expectation is
+preserved, not disabled. Vault identifies the AppRole profile only when
+Full Validation is ready, and shows No Committed Validation otherwise.
+
+No changes to the Vault provider adapter, Secrets data plane, SecretID,
+PKI/KV v2 collector, permissions, migrations or production API were made.
+
+**Outstanding human acceptance:** rerun all focused commands in the prior
+section at the exact current holding SHA, then test safe Flask rendering,
+light/dark, mobile, forms, filter/pagination, independent committed evidence,
+RBAC and toast/error states. The external UI Style findings remain a
+separate global gate; don't claim Full Admission PASS based on the scoped
+Vault rerun alone.
