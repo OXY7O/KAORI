@@ -129,7 +129,10 @@ def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contract
         assert field in outlook
 
     assert "compact_forecast_workspace = page_key == 'forecast' and trend_mode == 'forecast'" in trend
-    assert 'compact_overview_trend = compact_usage_overview or compact_forecast_overview or compact_forecast_workspace' in trend
+    assert (
+        'compact_overview_trend = compact_usage_overview or compact_forecast_overview or compact_forecast_workspace'
+        in trend
+    )
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
     assert 'data-object-storage-overview-trend-summary' in trend
     assert 'data-object-storage-projection-points' in trend
@@ -150,7 +153,10 @@ def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contract
     assert 'data-kaori-object-storage-bucket-forecast-table' in records
     assert 'table_ui.block_icon_classes()' in records
     assert 'xl:whitespace-nowrap' in records
-    assert 'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.' in records
+    assert (
+        'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.'
+        in records
+    )
     assert 'object-storage-bucket-forecast-table-loading-indicator' in records
     assert 'forecast_bucket_per_page' in records
     assert 'registry_ui.clear_filters_action' in records
