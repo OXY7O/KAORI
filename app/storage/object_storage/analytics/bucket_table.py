@@ -46,7 +46,8 @@ def build_bucket_table_view(
         'all', 'metrics', 'inventory', 'unavailable'
     }:
         usage_context = 'all'
-    if page_key not in {'capacity', 'top_consumers'} or quota_state not in {'all', 'configured', 'not_configured', 'unknown'}:
+    allowed_quota_states = {'all', 'configured', 'not_configured', 'unknown'}
+    if page_key not in {'capacity', 'top_consumers'} or quota_state not in allowed_quota_states:
         quota_state = 'all'
     if page_key not in {'capacity', 'top_consumers'} or quota_pressure not in {'all', 'within', 'warning', 'critical'}:
         quota_pressure = 'all'
