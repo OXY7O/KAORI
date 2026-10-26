@@ -199,6 +199,60 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
     return installation
 
 
+def build_edit_connection_input(
+    installation: SourceInstallation,
+    *,
+    name: str,
+    environment: str,
+    description: str | None,
+    enabled: bool,
+    replacement_private_key_pem: str | None = None,
+    replacement_webhook_secret: str | None = None,
+) -> GitHubConnectionInput:
+    """Resolve protected App secrets inside the request, never in HTML or logs."""
+    credential = installation.github_app_credential
+    account = installation.account
+    canonical = installation.integration_instance
+    if (
+        installation.provider_key != 'github'
+        or installation.host_key != 'github.com'
+        or canonical is None
+        or canonical.integration_type != 'source_control'
+        or canonical.provider_key != 'github'
+        or canonical.adapter_key != 'github_rest_v3'
+        or canonical.id != installation.integration_instance_id
+        or credential is None
+        or not credential.enabled
+        or credential.host_key != 'github.com'
+        or credential.native_app_id != installation.native_app_id
+        or account is None
+        or account.provider_key != 'github'
+        or account.host_key != 'github.com'
+    ):
+        raise GitHubProviderError('GitHub installation and protected credential do not match.')
+    return GitHubConnectionInput(
+        name=name,
+        environment=environment,
+        description=description,
+        app_id=installation.native_app_id,
+        installation_id=installation.native_installation_id,
+        account_id=account.native_account_id,
+        private_key_pem=replacement_private_key_pem or credential.private_key_pem,
+        webhook_secret=replacement_webhook_secret or credential.webhook_secret,
+        enabled=enabled,
+    )
+
+
+def _reset_github_validation(canonical: IntegrationInstance) -> None:
+    canonical.readiness_status = 'validation_required'
+    canonical.health_status = None
+    canonical.last_checked_at = None
+    canonical.last_error = None
+    metadata = dict(canonical.metadata_json or {})
+    metadata.pop('github_validation', None)
+    canonical.metadata_json = metadata
+
+
 def update_github_connection_configuration(
     installation: SourceInstallation,
     *,
@@ -206,11 +260,14 @@ def update_github_connection_configuration(
     environment: str,
     description: str | None,
     enabled: bool,
+    replacement_private_key_pem: str | None = None,
+    replacement_webhook_secret: str | None = None,
 ) -> bool:
-    """Edit KAORI metadata without rebinding or changing shared GitHub App secrets.
+    """Edit KAORI connection; rotate shared App credentials after live recheck.
 
-    Returns whether the environment/operational access change invalidated
-    Full Validation. Historical committed source evidence remains untouched.
+    GitHub-owned installation identity and committed repository evidence are
+    immutable. Credential replacement resets Full Validation for every
+    installation using that encrypted App credential.
     """
     canonical = installation.integration_instance
     if (
@@ -231,26 +288,63 @@ def update_github_connection_configuration(
     if clean_description is not None and len(clean_description) > 2000:
         raise ValueError('Connection description is too long.')
     duplicate = IntegrationInstance.query.filter_by(
-        integration_type='source_control', name=validated_name,
+        integration_type='source_control',
+        name=validated_name,
     ).first()
     if duplicate is not None and duplicate.id != canonical.id:
         raise ValueError('A Source Control connection with that name already exists.')
 
+    replacement_private_key_pem = replacement_private_key_pem or None
+    replacement_webhook_secret = replacement_webhook_secret or None
+    credential_changed = bool(replacement_private_key_pem or replacement_webhook_secret)
+    credential = None
+    affected_connections = []
+    values = None
+    if credential_changed:
+        values = build_edit_connection_input(
+            installation,
+            name=validated_name,
+            environment=environment,
+            description=clean_description,
+            enabled=enabled,
+            replacement_private_key_pem=replacement_private_key_pem,
+            replacement_webhook_secret=replacement_webhook_secret,
+        )
+        observed = test_connection(values)
+        app_id, installation_id, account_id = _verified_ids(values)
+        if (
+            str(observed.app_id) != app_id
+            or str(observed.installation_id) != installation_id
+            or str(observed.account_id) != account_id
+            or observed.repository_selection not in {'all', 'selected'}
+        ):
+            raise GitHubProviderError('Replacement App credential did not match the registered installation.')
+        credential = installation.github_app_credential
+        assert credential is not None
+        affected_connections = SourceInstallation.query.filter_by(
+            github_app_credential_id=credential.id,
+        ).all()
+
     invalidates_readiness = (
-        canonical.environment != environment or bool(canonical.enabled) != bool(enabled)
+        canonical.environment != environment
+        or bool(canonical.enabled) != bool(enabled)
+        or credential_changed
     )
     canonical.name = validated_name
     canonical.environment = environment
     canonical.description = clean_description
     canonical.enabled = bool(enabled)
     if invalidates_readiness:
-        canonical.readiness_status = 'validation_required'
-        canonical.health_status = None
-        canonical.last_checked_at = None
-        canonical.last_error = None
-        metadata = dict(canonical.metadata_json or {})
-        metadata.pop('github_validation', None)
-        canonical.metadata_json = metadata
+        _reset_github_validation(canonical)
+    if credential_changed:
+        assert credential is not None and values is not None
+        if replacement_private_key_pem:
+            credential.private_key_pem = values.private_key_pem
+        if replacement_webhook_secret:
+            credential.webhook_secret = values.webhook_secret
+        for affected in affected_connections:
+            if affected.integration_instance is not None:
+                _reset_github_validation(affected.integration_instance)
     try:
         db.session.commit()
     except Exception:
