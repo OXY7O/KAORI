@@ -5,6 +5,7 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/info_tip.html" as info_tip %}
+{% set consumer_filters_active = page_key == 'top_consumers' and bucket_table and (bucket_table.usage_context != 'all' or bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all' or bucket_table.request_evidence != 'all') %}
 <section id="object-storage-bucket-table-panel"
          data-analytics-lazy-section="true"
          data-analytics-load-state="idle"
@@ -16,6 +17,11 @@
                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
                         <i data-lucide="{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}"
                            class="h-5 w-5"></i>
+                    </span>
+                {% endif %}
+                {% if page_key == 'top_consumers' %}
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="table-2" class="h-5 w-5"></i>
                     </span>
                 {% endif %}
                 <div class="min-w-0">
@@ -39,6 +45,16 @@
                                                         'No Current Samples, Metric Not Scraped and Runtime Query Failed remain distinct evidence states; zero is not substituted for missing data.',
                                                         ],
                                                         placement='right', variant='guide') }}
+                        {% elif page_key == 'top_consumers' %}
+                            {{ info_tip.render('object-storage-consumer-records-guide',
+                                                        'Consumer Records Guide',
+                                                        'Compare source-qualified bucket usage, quotas, request demand, and errors without treating missing samples as zero.',
+                                                        items=[
+                                                        'Usage Context differentiates Metrics Source, committed Inventory fallback, and unavailable usage.',
+                                                        'Quota State and Quota Pressure follow observed configured quotas; unknown quota evidence does not imply free capacity.',
+                                                        'Request Evidence filters committed request-rate availability only; Inventory never fills missing request or error metrics.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         {% endif %}
                         {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
                     </div>
@@ -53,7 +69,7 @@
                     </p>
                 </div>
             </div>
-            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) or (page_key == 'performance' and bucket_table.usage_context != 'all')) %}
+            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) or (page_key == 'performance' and bucket_table.usage_context != 'all') or consumer_filters_active) %}
                 <div class="flex shrink-0 items-center justify-end">
                     {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
                     table_ui.action_classes() ~ ' h-9 px-3',
@@ -81,7 +97,7 @@
               hx-indicator="#object-storage-bucket-table-loading-indicator"
               hx-trigger="keyup[event.target.name === 'bucket_q'] changed delay:450ms, search[event.target.name === 'bucket_q'], change[event.target.name !== 'bucket_q']"
               class="{{ table_ui.filter_layout_classes() }} {{ table_ui.inventory_filter_bar_classes() }}"
-              aria-label="{{ 'Bucket capacity filters' if page_key == 'capacity' else 'Bucket records filters' }}">
+              aria-label="{{ 'Bucket capacity filters' if page_key == 'capacity' else ('Consumer records filters' if page_key == 'top_consumers' else 'Bucket records filters') }}">
             <input type="hidden" name="system_id" value="{{ system.id }}">
             <input type="hidden" name="time_range" value="{{ selected_time_range }}">
             <input type="hidden" name="page_key" value="{{ page_key }}">
@@ -97,7 +113,7 @@
                        class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>
                 {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
             </div>
-            {% if page_key == 'performance' %}
+            {% if page_key in ['performance', 'top_consumers'] %}
                 <div>
                     <label for="object-storage-bucket-usage-context"
                            class="{{ table_ui.filter_label_classes() }}">Usage Context</label>
@@ -111,7 +127,7 @@
                     </select>
                 </div>
             {% endif %}
-            {% if page_key == 'capacity' %}
+            {% if page_key in ['capacity', 'top_consumers'] %}
                 <div>
                     <label for="object-storage-bucket-quota-state"
                            class="{{ table_ui.filter_label_classes() }}">Quota State</label>
@@ -133,6 +149,20 @@
                         {% for value, label in [('all', 'All Pressure'), ('within', 'Within Quota'), ('warning', 'Pressure (85–<95%)'), ('critical', 'Critical (≥95%)')] %}
                             <option value="{{ value }}"
                                     {% if bucket_table.quota_pressure == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if page_key == 'top_consumers' %}
+                <div>
+                    <label for="object-storage-consumer-request-evidence"
+                           class="{{ table_ui.filter_label_classes() }}">Request Evidence</label>
+                    <select id="object-storage-consumer-request-evidence"
+                            name="bucket_request_evidence"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Request Evidence'), ('available', 'Available'), ('unavailable', 'Unavailable')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.request_evidence == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
