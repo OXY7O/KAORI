@@ -38,11 +38,40 @@ def build_bucket_table_view(
     time_range: str,
 ) -> dict[str, Any]:
     search = str(query_args.get('bucket_q') or '').strip()
+    quota_state = str(query_args.get('bucket_quota_state') or 'all').strip().lower()
+    quota_pressure = str(query_args.get('bucket_quota_pressure') or 'all').strip().lower()
+    if page_key != 'capacity' or quota_state not in {'all', 'configured', 'not_configured', 'unknown'}:
+        quota_state = 'all'
+    if page_key != 'capacity' or quota_pressure not in {'all', 'within', 'warning', 'critical'}:
+        quota_pressure = 'all'
+
+    filtered = list(rows)
     if search:
         needle = search.casefold()
-        filtered = [row for row in rows if needle in str(row.get('name') or '').casefold()]
-    else:
-        filtered = list(rows)
+        filtered = [row for row in filtered if needle in str(row.get('name') or '').casefold()]
+    if quota_state == 'configured':
+        filtered = [row for row in filtered if row.get('quota_bytes') is not None]
+    elif quota_state == 'not_configured':
+        filtered = [row for row in filtered if row.get('quota_state') == 'not_configured']
+    elif quota_state == 'unknown':
+        filtered = [
+            row
+            for row in filtered
+            if row.get('quota_bytes') is None and row.get('quota_state') != 'not_configured'
+        ]
+
+    if quota_pressure != 'all':
+        filtered = [
+            row
+            for row in filtered
+            if row.get('quota_bytes') is not None
+            and row.get('quota_utilization') is not None
+            and (
+                (quota_pressure == 'within' and row['quota_utilization'] < 85)
+                or (quota_pressure == 'warning' and 85 <= row['quota_utilization'] < 95)
+                or (quota_pressure == 'critical' and row['quota_utilization'] >= 95)
+            )
+        ]
 
     per_page = _positive_int(query_args.get('bucket_per_page'), default=5)
     if per_page not in {5, 10, 25, 50}:
@@ -61,6 +90,9 @@ def build_bucket_table_view(
         'bucket_q': search,
         'bucket_per_page': per_page,
     }
+    if page_key == 'capacity':
+        query_params['bucket_quota_state'] = quota_state
+        query_params['bucket_quota_pressure'] = quota_pressure
     workspace_tab = _workspace_tab(page_key)
     if workspace_tab is not None:
         query_params['tab'] = workspace_tab
@@ -68,6 +100,8 @@ def build_bucket_table_view(
     return {
         'rows': page_rows,
         'search': search,
+        'quota_state': quota_state,
+        'quota_pressure': quota_pressure,
         'pagination': {
             'page': page,
             'current_page': page,

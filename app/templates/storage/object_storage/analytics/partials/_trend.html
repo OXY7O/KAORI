@@ -44,6 +44,16 @@
                                                         'Interpret no samples or partial coverage as missing evidence, never fabricated zero.',
                                                         ],
                                                         placement='right', variant='guide') }}
+                        {% elif page_key == 'capacity' and trend_mode == 'usage' %}
+                            {{ info_tip.render('object-storage-capacity-usage-trend-guide',
+                                                        'Storage Usage Trend Guide',
+                                                        'The chart shows committed samples in the selected analysis window, not a point-in-time Inventory reading or capacity projection.',
+                                                        items=[
+                                                        'Observed Samples counts usable historical points for the selected window; insufficient history must remain unavailable.',
+                                                        'Window Direction, Window Change, and Growth / Day describe the observed history; increasing usage alone is not a capacity alert.',
+                                                        'Inventory is point-in-time and does not supply missing historical range samples or forecast results.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         {% elif compact_forecast_overview %}
                             {{ info_tip.render('object-storage-overview-forecast-trend-guide',
                                                         'Storage Usage Forecast Guide',
@@ -149,24 +159,52 @@
                     Committed history is observed; the dashed 30-day projection is a planning estimate.
                 </p>
             {% elif trend_mode != 'performance' %}
-                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {% set capacity_standalone_trend = page_key == 'capacity' and trend_mode == 'usage' %}
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                     {% if capacity_standalone_trend %}data-object-storage-capacity-trend-facts{% endif %}>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">Observed Samples</p>
+                        {% if capacity_standalone_trend %}
+                            <span class="{{ analysis_surface.role_icon_classes('brand', 'info', 'compact') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                            </span>
+                        {% endif %}
+                        <p class="{{ 'mt-2 ' if capacity_standalone_trend else '' }}{{ analysis_surface.metric_label_classes() }}">Observed Samples</p>
                         <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ trend_summary.sample_count|default(trend|length) }}</p>
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">Window Direction</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ trend_summary.direction_label|default(trend_summary.direction|default('Unknown') |title) }}</p>
+                        {% if capacity_standalone_trend %}
+                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown'), 'compact') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ trend_summary.icon|default('activity') }}" class="h-3.5 w-3.5"></i>
+                            </span>
+                        {% endif %}
+                        <p class="{{ 'mt-2 ' if capacity_standalone_trend else '' }}{{ analysis_surface.metric_label_classes() }}">Window Direction</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ trend_summary.direction_label|default(trend_summary.direction|default('Unknown') |title) }}
+                        </p>
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">Window Change</p>
+                        {% if capacity_standalone_trend %}
+                            <span class="{{ analysis_surface.role_icon_classes('status', trend_summary.tone|default('unknown'), 'compact') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
+                            </span>
+                        {% endif %}
+                        <p class="{{ 'mt-2 ' if capacity_standalone_trend else '' }}{{ analysis_surface.metric_label_classes() }}">Window Change</p>
                         <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">
                             {{ trend_summary.delta_display|default("N/A") }}
                             {% if trend_summary.delta_percent_display|default('') %}· {{ trend_summary.delta_percent_display }}{% endif %}
                         </p>
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
+                        {% if capacity_standalone_trend %}
+                            <span class="{{ analysis_surface.role_icon_classes('insight', 'info', 'compact') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                            </span>
+                        {% endif %}
+                        <p class="{{ 'mt-2 ' if capacity_standalone_trend else '' }}{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
                         <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day if trend_mode == 'forecast' else trend_summary.growth_per_day_display|default("N/A") }}</p>
                     </article>
                 </div>
