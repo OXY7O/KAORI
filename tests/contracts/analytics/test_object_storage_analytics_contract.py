@@ -274,7 +274,8 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and anomaly signals are separate' in alerts_summary
     assert 'Provider Alert Records' in alert_records
-    assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
+    assert 'Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.' in alert_records
+    assert 'Metrics Source ALERTS fallback preserves upstream alert-rule state' in alert_source_evidence
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
