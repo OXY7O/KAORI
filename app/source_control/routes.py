@@ -52,7 +52,7 @@ def repositories() -> ResponseReturnValue:
         archived = ''
 
     if raw_installation_id:
-        if not raw_installation_id.isascii() or not raw_installation_id.isdecimal():
+        if len(raw_installation_id) > 18 or not raw_installation_id.isascii() or not raw_installation_id.isdecimal():
             abort(404)
         installation_id = int(raw_installation_id)
         if installation_id < 1:
