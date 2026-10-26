@@ -600,3 +600,17 @@ Staging UAT for #654 must demonstrate:
 5. Overcommitted state after simulated/real capacity contraction without rewriting existing Tenant allocations;
 6. recovery after capacity increases or Tenant commitment is reduced;
 7. persisted decision history with snapshot cutoff and policy/budget inputs.
+
+
+### Capacity Allocation Tabs and Full Budget Registry (2026-10-26 UAT)
+
+The current Resource Profiles → Capacity Governance workspace presents **Tenant Allocation Overview** and **Allocation Budget** as two query-backed tabs within one shared KAORI tab surface, matching the Membership Registry navigation standard.
+
+- The **Overview** tab keeps the committed per-cluster charts, explicit unknown/stale evidence, CPU/Memory Limit Exposure, explanations, and Tenant Contributions read-only inspection.
+- The **Allocation Budget** tab replaces the older per-cluster `View More` dialog with a full canonical server-backed table. Each Ready cluster contributes one row per resource (CPU Requests, Memory Requests, Pod Slots, and Logical Storage) with Budget, Committed, Headroom, ratio/progress or unavailable evidence, and cluster state/freshness.
+- Filters are Search, Environment, Capacity State, Evidence, and Resource; the shared registry handles latest-request-wins HTMX filtering, conditional Clear Filters, page reset, rows-per-page, and pagination. Pagination counts **clusters**, while each displayed cluster expands into the selected resource rows.
+- The read-only percentage and headroom values continue to be produced by `build_tenant_allocation_bars` from the existing committed #654 evidence, never recalculated from formatted strings or observed workload utilization.
+- `Unknown` and `Not Governed` explicitly retain unavailable ratios; they are not zero budget or free headroom. Logical Storage remains a governed *admission ceiling*, not backend physical capacity.
+- The capacity policy form remains outside the inner tabs. Switching tabs does not perform a provider mutation or alter admission authority.
+
+This UX supersedes the older modal/table presentation described in the historical **Allocation Budget registry and detail visual hierarchy (#1053)** subsection above; that subsection remains for implementation history, not as the current UAT UI contract.
