@@ -941,7 +941,46 @@ def get_provider_access_evidence_registry_context(
         page=page,
         per_page=per_page,
     )
+    # Drift findings are separate committed analyses, not part of an inspection.
+    # Resolve the newest per Tenant on the current page without N+1 provider reads.
+    drift_by_tenant: dict[str, AuditEvent] = {}
+    tenant_ids = {
+        str((event.metadata_json or {}).get('tenant_id'))
+        for event in rows
+        if (event.metadata_json or {}).get('tenant_id')
+    }
+    drift_types = {
+        'capsule': 'kubernetes_tenant_access_drift_evidence',
+        'native': 'kubernetes_tenant_native_access_drift_evidence',
+    }
+    if tenant_ids:
+        tenant_key = AuditEvent.metadata_json['tenant_id'].as_string()
+        latest_ids = (
+            db.session.query(
+                AuditEvent.id.label('audit_event_id'),
+                func.row_number()
+                .over(partition_by=tenant_key, order_by=AuditEvent.id.desc())
+                .label('row_number'),
+            )
+            .filter(
+                AuditEvent.target_type == drift_types[provider],
+                tenant_key.in_(tenant_ids),
+            )
+            .subquery()
+        )
+        drift_events = (
+            AuditEvent.query.join(
+                latest_ids, AuditEvent.id == latest_ids.c.audit_event_id
+            )
+            .filter(latest_ids.c.row_number == 1)
+            .all()
+        )
+        drift_by_tenant = {
+            str((event.metadata_json or {}).get('tenant_id')): event
+            for event in drift_events
+        }
     return {
+        'access_evidence_drift_by_tenant': drift_by_tenant,
         'access_evidence_total': total_committed,
         'access_evidence_review_required': total_review_required,
         'access_evidence_rows': rows,
