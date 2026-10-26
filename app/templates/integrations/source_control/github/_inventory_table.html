@@ -5,8 +5,8 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set page_sizes = [5, 10, 25, 50] %}
 {% set total_pages = ((inventory.total + inventory.per_page - 1) // inventory.per_page) if inventory.total else 1 %}
-<div id="source-control-inventory"
-     class="min-w-0"
+<section id="source-control-inventory"
+     class="{{ table_ui.block_classes(allow_overflow=true) }} min-w-0"
      data-kaori-github-inventory-registry
      aria-live="polite"
      hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page, per_page=inventory.per_page) }}"
@@ -116,4 +116,4 @@
             {% endfor %}
         </nav>
     </footer>
-</div>
+</section>
