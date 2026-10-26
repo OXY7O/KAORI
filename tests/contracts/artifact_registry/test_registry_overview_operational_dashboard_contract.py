@@ -685,7 +685,7 @@ def test_artifact_registry_overview_visual_uat_copy_preserves_shared_evidence_co
     for key in ('project_count', 'horizon_count', 'high_utilization_count'):
         assert f'overview.consumer_insights.{key}' in consumers
     assert 'quota record(s)' in consumers
-    assert 'missing horizons stay unknown.' in consumers
+    assert 'missing ETAs stay unknown/unprojected.' in consumers
     assert 'xl:whitespace-nowrap' in consumers
     assert 'Quota ETA: positive growth only' in consumers
 
