@@ -10,7 +10,7 @@
          data-kaori-runtime-registry-view="deliveries"
          data-kaori-full-table-registry="deliveries">
     {% set header_actions %}
-        {% if delivery_state %}
+        {% if delivery_state or delivery_search or delivery_event %}
             {{ registry_ui.clear_filters_action(
                 url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries', delivery_per_page=delivery_pagination.per_page),
                 table_ui.action_classes(),
@@ -45,7 +45,7 @@
               hx-target="#github-runtime-deliveries"
               hx-select="#github-runtime-deliveries"
               hx-swap="outerHTML"
-              hx-trigger="change"
+              hx-trigger="change, input changed delay:400ms, submit"
               hx-sync="closest section:replace"
               hx-indicator="#github-runtime-deliveries-loading"
               data-kaori-canonical-registry-filter="github-runtime-deliveries"
@@ -55,12 +55,37 @@
             <input type="hidden" name="tab" value="runtime">
             <input type="hidden" name="runtime_view" value="deliveries">
             <div>
+                <label for="github-runtime-deliveries-search" class="{{ table_ui.filter_label_classes() }}">Search Event</label>
+                <input id="github-runtime-deliveries-search"
+                       type="search"
+                       name="delivery_search"
+                       value="{{ delivery_search }}"
+                       maxlength="80"
+                       autocomplete="off"
+                       placeholder="Event type or action"
+                       class="{{ table_ui.filter_input_classes() }}">
+            </div>
+            <div>
+                <label for="github-runtime-deliveries-event" class="{{ table_ui.filter_label_classes() }}">Event Type</label>
+                <select id="github-runtime-deliveries-event"
+                        name="delivery_event"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Events</option>
+                    {% for option in delivery_event_options %}
+                        <option value="{{ option }}" {% if option == delivery_event %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label for="github-runtime-deliveries-status" class="{{ table_ui.filter_label_classes() }}">Processing State</label>
                 <select id="github-runtime-deliveries-status" name="delivery_state" class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [('', 'All States'), ('received', 'Received'), ('queued', 'Queued'), ('processing', 'Processing'), ('processed', 'Processed'), ('completed', 'Completed'), ('failed', 'Failed'), ('ignored', 'Ignored')] %}
                         <option value="{{ value }}" {% if delivery_state == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+            </div>
+            <div data-kaori-filter-action class="flex items-end">
+                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
             </div>
         </form>
     </div>
@@ -92,8 +117,8 @@
                         <td colspan="4" class="p-0">
                             {% set empty_state_icon = 'webhook' %}
                             {% set empty_state_label = 'No Results' %}
-                            {% set empty_state_title = 'No Matching Webhook Deliveries' if delivery_state else 'No Signed Webhook Deliveries' %}
-                            {% set empty_state_description = 'Choose another processing state to inspect signed receipts.' if delivery_state else 'Signed webhook receipts will appear once received and committed.' %}
+                            {% set empty_state_title = 'No Matching Webhook Deliveries' if delivery_state or delivery_search or delivery_event else 'No Signed Webhook Deliveries' %}
+                            {% set empty_state_description = 'Choose another processing state to inspect signed receipts.' if delivery_state or delivery_search or delivery_event else 'Signed webhook receipts will appear once received and committed.' %}
                             {% set empty_state_min_height = 'min-h-[160px]' %}
                             {% include "components/states/_empty_state.html" %}
                         </td>
@@ -116,6 +141,8 @@
                   data-kaori-page-size-control="github-runtime-deliveries">
                 <input type="hidden" name="delivery_page" value="1">
                 <input type="hidden" name="delivery_state" value="{{ delivery_state }}">
+                <input type="hidden" name="delivery_search" value="{{ delivery_search }}">
+                <input type="hidden" name="delivery_event" value="{{ delivery_event }}">
                 <label for="github-runtime-delivery-size">Rows</label>
                 <select id="github-runtime-delivery-size" name="delivery_per_page"
                         data-kaori-auto-submit
@@ -130,8 +157,8 @@
         <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="GitHub Deliveries pagination">
             {% for direction, page, allowed in [('Previous', delivery_pagination.prev_page, delivery_pagination.has_prev), ('Next', delivery_pagination.next_page, delivery_pagination.has_next)] %}
                 {% if allowed %}
-                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries', delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state) }}"
-                       hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state) }}"
+                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries', delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state, delivery_search=delivery_search, delivery_event=delivery_event) }}"
+                       hx-get="{{ url_for('github_source_uat.runtime_deliveries', installation_id=installation.id, delivery_page=page, delivery_per_page=delivery_pagination.per_page, delivery_state=delivery_state, delivery_search=delivery_search, delivery_event=delivery_event) }}"
                        hx-target="#github-runtime-deliveries" hx-swap="outerHTML"
                        hx-indicator="#github-runtime-deliveries-loading"
                        class="{{ pagination_ui.navigation_classes(false) }}">{{ direction }}</a>
@@ -145,7 +172,7 @@
                 hx_target='#github-runtime-deliveries',
                 hx_indicator='#github-runtime-deliveries-loading',
                 endpoint='github_source_uat.runtime_deliveries',
-                query_params={'tab': 'runtime', 'runtime_view': 'deliveries', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state},
+                query_params={'tab': 'runtime', 'runtime_view': 'deliveries', 'delivery_per_page': delivery_pagination.per_page, 'delivery_state': delivery_state, 'delivery_search': delivery_search, 'delivery_event': delivery_event},
                 hx_swap='outerHTML',
                 href_endpoint='github_source_uat.detail') }}
         </nav>
