@@ -176,7 +176,8 @@ def test_capacity_bucket_header_uses_shared_icon_and_right_aligned_clear_filters
 
     assert "page_key == 'capacity'" in header
     assert 'table_ui.block_icon_classes()' in header
-    assert 'data-lucide="boxes"' in header
+    assert "page_key in ['capacity', 'performance']" in header
+    assert "data-lucide=\"{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}\"" in header
     assert 'Bucket Capacity Records' in header
     assert 'table_label.result_count(' in header
     assert 'registry_ui.clear_filters_action(' in header
@@ -265,7 +266,7 @@ def test_performance_guides_copy_and_bucket_source_filter_follow_kaori_standard(
     assert 'bucket_usage_context' in service
     assert "row.get('usage_source') == 'Committed Snapshot'" in service
     assert "'tab': workspace_tab" not in service
-    assert "default=5" in service
+    assert 'default=5' in service
 
     assert "'object-storage-' ~ page_key ~ '-recommendations-guide'" in recommendations
     assert 'data-object-storage-analytics-recommendations' in recommendations
