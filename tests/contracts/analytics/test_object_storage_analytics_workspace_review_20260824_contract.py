@@ -41,7 +41,7 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
         ('Missing evidence stays Unknown.', performance),
         ('throughput alone does not indicate health or saturation.', traffic),
         ('These are planning signals, not active alerts.', forecasts),
-        ('Filters affect only these records and preserve the selected system and history window.', forecast_table),
+        ('Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.', forecast_table),
         ('Metrics Source ALERTS provides narrower rule-state evidence.', alerts),
         ("('Stale · Failed', 'warning')", materialization),
     )
@@ -348,14 +348,34 @@ def test_object_storage_analysis_workspace_intros_follow_overview_section_standa
     assert index.count('data-object-storage-analysis-workspaces-heading') == 1
 
     expected = (
-        ('capacity', 'Capacity & Usage Analysis', 'Review physical headroom, usage trends, bucket quotas, and committed evidence.'),
-        ('performance', 'Performance Analysis', 'Review request reliability, traffic direction, and bucket activity from committed evidence.'),
-        ('forecast', 'Forecast Analysis', 'Review projected usage, bucket forecasts, and worker-committed planning evidence.'),
-        ('top_consumers', 'Top Consumers Analysis', 'Review storage concentration, request activity, and bucket ownership.'),
-        ('alerts', 'Alerts & Anomalies Analysis', 'Review provider alert lifecycles and KAORI anomaly signals separately.'),
+        (
+            'capacity',
+            'Capacity & Usage Analysis',
+            'Review physical headroom, usage trends, bucket quotas, and committed evidence.',
+        ),
+        (
+            'performance',
+            'Performance Analysis',
+            'Review request reliability, traffic direction, and bucket activity from committed evidence.',
+        ),
+        (
+            'forecast',
+            'Forecast Analysis',
+            'Review projected usage, bucket forecasts, and worker-committed planning evidence.',
+        ),
+        (
+            'top_consumers',
+            'Top Consumers Analysis',
+            'Review storage concentration, request activity, and bucket ownership.',
+        ),
+        (
+            'alerts',
+            'Alerts & Anomalies Analysis',
+            'Review provider alert lifecycles and KAORI anomaly signals separately.',
+        ),
     )
     for key, title, description in expected:
-        assert f"'{key}': ('{title}', '{description}')," in index
+        assert f"'{key}': ('{title}', '{description}')" in index
         assert f"{{% elif page_key == '{key}' %}}" in index
 
 

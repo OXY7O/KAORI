@@ -6,7 +6,8 @@
 {% set trend_summary = metrics.request_trend_summary|default({}, true) if trend_mode == 'performance' else (metrics.forecast_history_summary|default({}, true) if trend_mode == 'forecast' else metrics.usage_trend_summary|default({}, true)) %}
 {% set compact_usage_overview = page_key == 'overview' and trend_mode == 'usage' %}
 {% set compact_forecast_overview = page_key == 'overview' and trend_mode == 'forecast' %}
-{% set compact_overview_trend = compact_usage_overview or compact_forecast_overview %}
+{% set compact_forecast_workspace = page_key == 'forecast' and trend_mode == 'forecast' %}
+{% set compact_overview_trend = compact_usage_overview or compact_forecast_overview or compact_forecast_workspace %}
 <section class="{{ analysis_surface.evidence_shell_classes() }}"
          data-object-storage-trend-panel
          data-object-storage-chart-mode="{{ trend_mode }}"
@@ -64,6 +65,16 @@
                                                         'Do not equate projected capacity demand with a current provider alert.',
                                                         ],
                                                         placement='right', variant='guide') }}
+                        {% elif compact_forecast_workspace %}
+                            {{ info_tip.render('object-storage-storage-usage-forecast-' ~ object_storage_trend_instance|default('trend') ~ '-guide',
+                                                        'Storage Usage Forecast Guide',
+                                                        'Committed historical usage is observed evidence; the dashed 30-day line is a worker planning projection.',
+                                                        items=[
+                                                        'Observed samples and historical growth describe committed history, not guaranteed future capacity demand.',
+                                                        'The dashed linear projection uses the current forecast-worker baseline.',
+                                                        'Missing history and forecast evidence remain unavailable rather than zero or Healthy.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
@@ -82,7 +93,7 @@
                     {{ table_label.metadata_label(selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
                     {{ table_label.metadata_label(trend|length ~ ' Samples', 'database', size='compact') }}
                     {{ table_label.status_label(trend_summary.direction_label|default('Unknown') , trend_summary.tone|default('unknown'), size='compact') }}
-                {% elif compact_forecast_overview %}
+                {% elif compact_forecast_overview or compact_forecast_workspace %}
                     {{ table_label.metadata_label(trend|length ~ ' Samples', 'database', size='compact') }}
                     {{ table_label.metadata_label(selected_forecast_history_window|upper ~ ' History', 'calendar-range', size='compact') }}
                     {{ table_label.status_label(trend_summary.direction_label|default('Unknown') , trend_summary.tone|default('unknown'), size='compact') }}
@@ -153,7 +164,7 @@
                    data-object-storage-trend-interpretation>
                     The selected {{ selected_time_range }} trend reflects committed range evidence; Inventory is point-in-time, not a growth forecast.
                 </p>
-            {% elif compact_forecast_overview %}
+            {% elif compact_forecast_overview or compact_forecast_workspace %}
                 <p class="mt-3 text-xs leading-5 text-content-muted"
                    data-object-storage-forecast-interpretation>
                     Committed history is observed; the dashed 30-day projection is a planning estimate.

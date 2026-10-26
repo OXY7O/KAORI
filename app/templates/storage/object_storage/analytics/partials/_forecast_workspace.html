@@ -41,6 +41,7 @@
              hidden
              class="space-y-4">
             {% if forecast_materialization.usable %}
+                {% set object_storage_trend_instance = "trend" %}
                 {% include "storage/object_storage/analytics/partials/_trend.html" %}
             {% else %}
                 {% include "storage/object_storage/analytics/partials/_forecast_unavailable.html" %}
