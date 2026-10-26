@@ -8,7 +8,7 @@
 {% set readiness = instance.readiness_status or "validation_required" %}
 {% set summary = instance.validation_summary or {} %}
 <div class="kaori-integration-semantic space-y-6"
-     x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime'], 'configuration', 'vault-detail-tabs')"
+     x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], 'configuration', 'vault-detail-tabs')"
      x-on:hashchange.window="syncTab()" x-on:popstate.window="syncTab()">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
@@ -24,7 +24,7 @@
                 {% endcall %}
             </div>
             {{ posture.render("Vault connection posture", "Vault API Readiness",
-               "Ready" if readiness == "ready" else "Attention", "shield-check", "Vault API",
+               "Ready" if readiness == "ready" else ("Attention" if readiness in ["blocked", "degraded"] else "Configured"), "shield-check", "Vault API",
                readiness|replace("_"," ")|title, "Produced by Full Validation", "layers-3",
                "Validated Capabilities", (instance.capabilities or [])|length, "Observed provider APIs",
                url_for('vault.index'), posture_key='vault') }}
@@ -63,145 +63,42 @@
     </section>
     <section id="vault-detail-tabs" class="{{ integration_ui.section_shell_classes() }}">
         {{ tabs.render([
-          ("configuration", "Configuration", "settings-2", instance.environment or "Unspecified"),
-          ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_"," ")|title),
-          ("runtime", "Runtime & History", "activity", summary.get("health_status", "Not Observed")|replace("_"," ")|title)
-        ], prefix="vault", aria_label="Vault Connection Domains") }}
+            ('configuration', 'Configuration', 'settings-2', instance.environment or 'Unspecified'),
+            ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+            ('runtime', 'Runtime & History', 'activity', 'Jobs & Evidence'),
+            ('inventory', 'Inventory & Lifecycle', 'database', 'Committed Evidence')
+        ], prefix='vault', aria_label='Vault Connection Domains') }}
         <div class="p-4 sm:p-5 lg:p-6">
-            <div id="vault-panel-configuration" role="tabpanel" aria-labelledby="vault-tab-configuration"
-                 x-show="activeTab === 'configuration'">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
-                    <a href="{{ url_for('vault.edit_instance', instance_id=instance.id) }}" class="rounded-lg border border-outline-default px-3 py-2 text-sm font-semibold text-kaori-primary">Edit Connection</a>
-                </div>
-                <dl class="mt-4 grid gap-4 sm:grid-cols-2 text-sm">
-                    <div><dt class="text-content-muted">Approved Endpoint</dt><dd class="mt-1 font-medium text-content-primary">{{ instance.endpoint }}</dd></div>
-                    <div><dt class="text-content-muted">Namespace</dt><dd class="mt-1 font-medium text-content-primary">{{ instance.namespace or "Root" }}</dd></div>
-                    <div><dt class="text-content-muted">Authentication</dt><dd class="mt-1 font-medium text-content-primary">AppRole ({{ instance.auth_mount }})</dd></div>
-                    <div><dt class="text-content-muted">TLS Policy</dt><dd class="mt-1 font-medium text-content-primary">Verified HTTPS</dd></div>
-                    <div><dt class="text-content-muted">Connection State</dt><dd class="mt-1 font-medium text-content-primary">{{ "Enabled" if instance.enabled else "Disabled" }}</dd></div>
-                    <div><dt class="text-content-muted">SecretID</dt><dd class="mt-1 font-medium text-content-primary">Encrypted · Not Displayed</dd></div>
-                    <div><dt class="text-content-muted">Approved KV v2 Mounts</dt><dd class="mt-1 font-medium text-content-primary">{{ (instance.kv2_mounts or [])|length }} configured (metadata only)</dd></div>
-                </dl>
+            <div id="vault-panel-configuration"
+                 role="tabpanel"
+                 aria-labelledby="vault-tab-configuration"
+                 x-show="activeTab === 'configuration'"
+                 class="space-y-4">
+                {% include "integrations/secrets_management/vault/partials/_detail_configuration.html" %}
             </div>
-            <div id="vault-panel-validation" role="tabpanel" aria-labelledby="vault-tab-validation"
-                 x-show="activeTab === 'validation'" x-cloak class="space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div><h2 class="text-base font-semibold text-content-primary">Full Validation</h2>
-                        <p class="mt-1 text-sm text-content-secondary">{{ instance.validation_message or "No capability validation has been collected." }}</p></div>
-                    <form action="{{ url_for('vault.validate', instance_id=instance.id) }}" method="post">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" {{ "disabled" if not instance.enabled else "" }} class="rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white">Run Full Validation</button>
-                    </form>
-                </div>
-                <p class="text-sm text-content-secondary">Vault version: {{ instance.detected_version or "Not Detected" }}</p>
-                <p class="text-sm text-content-secondary">Version compatibility: {{ (instance.compatibility_status or 'Not Validated')|replace('_',' ')|title }}</p>
-                <p class="text-sm text-content-secondary">Optional mount metadata: {{ summary.get("mount_metadata", "Not Validated")|replace("_"," ")|title }}</p>
-                <div class="flex flex-wrap gap-2">
-                {% for cap in instance.capabilities or [] %}
-                    <span class="rounded-md border border-outline-default bg-surface-elevated px-2 py-1 text-xs font-medium text-content-secondary">{{ cap|replace("_"," ")|title }}</span>
-                {% else %}
-                    <p class="text-sm text-content-muted">Capabilities Not Validated</p>
-                {% endfor %}
-                </div>
-                {% if evidence.validation_job %}<p class="text-xs text-content-muted" role="status">Validation task: {{ evidence.validation_job.get('status', 'pending') }} · {{ evidence.validation_job.get('task_id', '') }}</p>{% endif %}
+            <div id="vault-panel-validation"
+                 role="tabpanel"
+                 aria-labelledby="vault-tab-validation"
+                 x-show="activeTab === 'validation'"
+                 x-cloak
+                 class="space-y-4">
+                {% include "integrations/secrets_management/vault/partials/_detail_validation.html" %}
             </div>
-            <div id="vault-panel-runtime" role="tabpanel" aria-labelledby="vault-tab-runtime"
-                 x-show="activeTab === 'runtime'" x-cloak class="space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div><h2 class="text-base font-semibold text-content-primary">Runtime & History</h2>
-                        <p class="mt-1 text-sm text-content-secondary">Lightweight health refresh does not rewrite capabilities.</p></div>
-                    <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}" method="post">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" {{ "disabled" if not instance.enabled else "" }} class="rounded-lg border border-outline-default px-4 py-2 text-sm font-semibold text-content-primary">Refresh Runtime</button>
-                    </form>
-                </div>
-                <dl class="grid gap-4 text-sm sm:grid-cols-2">
-                    <div><dt class="text-content-muted">Observed Vault State</dt><dd class="mt-1 font-semibold text-content-primary">{{ summary.get('health_status', 'Not Observed')|replace("_"," ")|title }}</dd></div>
-                    <div><dt class="text-content-muted">Runtime Status</dt><dd class="mt-1 font-semibold text-content-primary">{{ instance.last_status or "Not Observed" }}</dd></div>
-                </dl>
-                <p class="text-xs text-content-secondary">Health states distinguish active, standby, performance standby, sealed, uninitialized, DR secondary and unavailable.</p>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-labelledby="vault-stored-pki-readiness">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 id="vault-stored-pki-readiness" class="text-sm font-semibold text-content-primary">PKI Stored Certificates</h3>
-                            <p class="mt-1 text-xs text-content-muted">Optional authenticated LIST /certs; only retained certificates, not total issuance or deployment.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}" class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div><dt class="text-xs text-content-muted">Evidence</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.label }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed PKI Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Observed Stored Certificates</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. no_store/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-labelledby="vault-pki-public-status">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 id="vault-pki-public-status" class="text-sm font-semibold text-content-primary">PKI Public Issuer Evidence</h3>
-                            <p class="mt-1 text-xs text-content-muted">Committed public certificate fingerprints and issuer freshness. Provider readiness does not prove PKI LIST/read access.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div><dt class="text-xs text-content-muted">Collection State</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.label }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Approved PKI Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unavailable' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed Mount Coverage</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.committed_mounts if public_pki_readiness.committed_mounts is not none else 'Not Collected' }} / {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unknown' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Observed Public Issuers</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ public_pki_readiness.observed_issuers if public_pki_readiness.observed_issuers is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ public_pki_readiness.last_committed_at|user_datetime if public_pki_readiness.last_committed_at else 'Never' }}. Trust/revocation and delivered certificate status are not evaluated.</p>
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                         aria-labelledby="vault-inventory-posture-title">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <h3 id="vault-inventory-posture-title" class="text-sm font-semibold text-content-primary">KV v2 Inventory Evidence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Committed metadata only. Vault API readiness does not independently prove permission to list KV v2 metadata.</p>
-                        </div>
-                        {% if current_user.has_permission('jobs.view') %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
-                               class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                        {% endif %}
-                    </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div><dt class="text-xs text-content-muted">Collection State</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.state|replace('_', ' ')|title }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Approved Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.approved_mount_count }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Committed Coverage</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.committed_mount_count }} / {{ inventory_readiness.approved_mount_count }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Last Observed Secret Records</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.observed_secret_count if inventory_readiness.observed_secret_count is not none else 'Not Collected' }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last committed: {{ inventory_readiness.last_committed_at|user_datetime if inventory_readiness.last_committed_at else 'Never' }}. Partial or stale evidence is not a zero-count or deletion claim.</p>
-                </section>
-                <div class="border-t border-outline-subtle pt-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Committed Runtime History</h3>
-                    {% for row in runtime_history %}
-                    <article class="mt-3 flex flex-wrap justify-between gap-3 rounded-lg border border-outline-subtle p-3 text-sm">
-                        <div>
-                            <p class="font-semibold text-content-primary">{{ row.health_status|replace("_", " ")|title }}</p>
-                            <p class="text-xs text-content-muted">{{ row.trigger_type|title }} · {{ row.observed_at }}</p>
-                        </div>
-                        <p class="text-content-secondary">{{ row.readiness|replace("_", " ")|title }}</p>
-                    </article>
-                    {% else %}
-                    <p class="mt-3 text-sm text-content-muted">No runtime evidence has been committed.</p>
-                    {% endfor %}
-                    {% if runtime_history_pagination.has_prev or runtime_history_pagination.has_next %}
-                    <nav class="mt-3 flex items-center gap-4 text-sm" aria-label="Vault runtime history pages">
-                        {% if runtime_history_pagination.has_prev %}
-                        <a class="text-kaori-primary" href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.prev_page, _anchor='runtime') }}">Previous</a>
-                        {% endif %}
-                        <span class="text-content-muted">Page {{ runtime_history_pagination.page }} / {{ runtime_history_pagination.total_pages }}</span>
-                        {% if runtime_history_pagination.has_next %}
-                        <a class="text-kaori-primary" href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.next_page, _anchor='runtime') }}">Next</a>
-                        {% endif %}
-                    </nav>
-                    {% endif %}
-                </div>
-                {% if evidence.runtime_job %}<p class="text-xs text-content-muted" role="status">Runtime task: {{ evidence.runtime_job.get('status', 'pending') }} · {{ evidence.runtime_job.get('task_id', '') }}</p>{% endif %}
+            <div id="vault-panel-runtime"
+                 role="tabpanel"
+                 aria-labelledby="vault-tab-runtime"
+                 x-show="activeTab === 'runtime'"
+                 x-cloak
+                 class="space-y-4">
+                {% include "integrations/secrets_management/vault/partials/_detail_runtime.html" %}
+            </div>
+            <div id="vault-panel-inventory"
+                 role="tabpanel"
+                 aria-labelledby="vault-tab-inventory"
+                 x-show="activeTab === 'inventory'"
+                 x-cloak
+                 class="space-y-4">
+                {% include "integrations/secrets_management/vault/partials/_detail_inventory.html" %}
             </div>
         </div>
     </section>
