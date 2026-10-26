@@ -331,7 +331,10 @@ def test_github_edit_metadata_and_provider_identity_do_not_leak_or_mutate(monkey
         health_status='healthy',
         last_checked_at='yesterday',
         last_error=None,
-        metadata_json={'github_validation': {'capability_states': {'source_revision': 'permission_verified'}}, 'provider_label': 'GitHub'},
+        metadata_json={
+            'github_validation': {'capability_states': {'source_revision': 'permission_verified'}},
+            'provider_label': 'GitHub',
+        },
     )
     installation = SimpleNamespace(
         id=7,
@@ -571,7 +574,12 @@ def test_github_credential_rotation_rejects_mismatched_provider_identity(monkeyp
     monkeypatch.setattr(
         registration,
         'test_connection',
-        lambda _: SimpleNamespace( app_id='999', installation_id='456', account_id='789', repository_selection='selected', ),
+        lambda _: SimpleNamespace(
+            app_id='999',
+            installation_id='456',
+            account_id='789',
+            repository_selection='selected',
+        ),
     )
     with pytest.raises(registration.GitHubProviderError, match='did not match'):
         registration.update_github_connection_configuration(
