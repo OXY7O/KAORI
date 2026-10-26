@@ -183,22 +183,28 @@
                                       hx-disabled-elt="find button"
                                       class="flex justify-end">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit"
-                                            {% if not can_manage or membership.principal_type not in ['user', 'group'] %}disabled aria-disabled="true"{% endif %}
-                                            class="{{ table_ui.action_classes() }}">
-                                        <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
-                                        Reactivate
-                                    </button>
-                                    {% if membership.principal_type not in ['user', 'group'] %}
+                                    {% if can_manage and membership.principal_type in ['user', 'group'] %}
+                                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                                            <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
+                                            Reactivate
+                                        </button>
+                                    {% else %}
+                                        {# The same visual control opens KAORI guidance, never a separate ? / i icon. #}
+                                        {% if membership.principal_type not in ['user', 'group'] %}
+                                            {% set reactivate_title = 'Reactivation unavailable' %}
+                                            {% set reactivate_reason = 'This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead.' %}
+                                        {% else %}
+                                            {% set reactivate_title = 'Reactivation requires permission' %}
+                                            {% set reactivate_reason = 'You do not have permission to manage Tenant Memberships.' %}
+                                        {% endif %}
                                         {{ info_tip.render('membership-reactivate-' ~ membership.id,
-                                            'Reactivation unavailable',
-                                            'This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead.',
-                                            placement='left') }}
-                                    {% elif not can_manage %}
-                                        {{ info_tip.render('membership-reactivate-permission-' ~ membership.id,
-                                            'Reactivation requires permission',
-                                            'You do not have permission to manage Tenant Memberships.',
-                                            placement='left') }}
+                                            reactivate_title,
+                                            reactivate_reason,
+                                            placement='left',
+                                            button_text='Reactivate',
+                                            button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help',
+                                            variant='action',
+                                            trigger_icon='user-check') }}
                                     {% endif %}
                                 </form>
                             {% endif %}

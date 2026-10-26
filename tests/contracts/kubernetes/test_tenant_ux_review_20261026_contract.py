@@ -30,9 +30,18 @@ def test_membership_revoke_requires_confirmed_destructive_action() -> None:
     assert "destructive_modal.render('tenant-membership-revoke-modal'" in registry
     assert "url_for('tenant.revoke_membership_route'" in registry
     assert 'name="csrf_token"' in registry
+    assert "membership.principal_type in ['user', 'group']" in registry
     assert "membership.principal_type not in ['user', 'group']" in registry
     assert 'Reactivation unavailable' in registry
     assert 'Reactivation requires permission' in registry
+    assert "button_text='Reactivate'" in registry
+    assert "variant='action'" in registry
+    assert "trigger_icon='user-check'" in registry
+    assert "button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help'" in registry
+    assert 'membership-reactivate-permission-' not in registry
+    assert "placement='left'" in registry
+    assert "action=\"{{ url_for('tenant.reactivate_membership_route'" in registry
+    assert "{% if can_manage and membership.principal_type in ['user', 'group'] %}" in registry
 
 
 def test_group_modals_use_distinct_context_and_destructive_review() -> None:
