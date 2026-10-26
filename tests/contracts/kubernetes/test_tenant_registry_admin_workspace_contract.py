@@ -472,6 +472,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
 def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_namespace_access_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_namespace_access_detail.html')
     read_model = read('app/kubernetes/tenant/admin_workspace.py')
 
     assert 'Effective Namespace Access' in workspace
@@ -484,10 +485,11 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     assert "'Namespace Access Registry'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
-    assert 'approved_access_methods' in registry
-    assert 'credential.token' not in registry
-    assert 'credential.kubeconfig' not in registry
-    assert 'private_key' not in registry
+    assert '_namespace_access_detail.html' in registry
+    assert 'approved_access_methods' in detail
+    assert 'credential.token' not in registry + detail
+    assert 'credential.kubeconfig' not in registry + detail
+    assert 'private_key' not in registry + detail
     assert 'def get_namespace_access_registry_context(' in read_model
     assert 'paginate_sequence(' in read_model
 
