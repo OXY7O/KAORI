@@ -1332,7 +1332,7 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
     assert "'allocation_page'" not in routes
     assert "'allocation_per_page'" not in routes
-    assert "if active_view == 'capacity' and selected is not None:" in routes
+    assert "if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:" in routes
     assert 'get_resource_profile_workspace_context()' in routes
     assert 'build_capacity_governance_summaries' in capacity
 
@@ -1916,7 +1916,10 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'ResourceQuota enforces limits but does not reserve resources on Kubernetes nodes.' in budget
     assert 'data-lucide="database"' in budget
     assert 'sm:grid-cols-2' in budget
-    assert 'group-open:rotate-180' in overview
+    assert 'data-dialog-target="{{ budget_guide_dialog_id }}"' in overview
+    assert 'id="{{ budget_guide_dialog_id }}"' in overview
+    assert 'data-kaori-native-dialog' in overview
+    assert 'group-open:rotate-180' not in overview
     assert 'allocation_overview.bars' in overview
     assert "exposure.display[field ~ '_committed']" in overview
     assert "exposure.display[field ~ '_threshold']" in overview
