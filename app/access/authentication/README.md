@@ -134,6 +134,23 @@ Executable bootstrap and recovery instructions must use `components/terminal_com
 - Authentication request evidence stores `request.path`, never callback query strings, so OAuth authorization codes are excluded from the audit record.
 - Production proxy trust remains centralized in `ProxyFix`; authentication reads `request.remote_addr` only.
 
+## Transient Database Failure Contract
+
+A database pool timeout or transient SQLAlchemy error during Flask-Login user
+resolution is **not** evidence of account/session revocation. The user loader
+must fail closed (no authenticated identity for that request) without clearing
+an existing signed session or its remember-cookie state. The unauthorized
+handler returns HTTP 503 with `Cache-Control: no-store` and a short retry hint
+rather than issuing a second readiness query and login redirect while the
+pool is unavailable.
+
+On the next request, KAORI again validates authoritative user existence,
+session generation, account state, provider ownership, and role admission.
+Verified missing users, invalid identifiers, revoked generations, or failed
+admission **still invalidate the session and remember cookie**. The database
+failure marker lasts for one Flask request only; it never grants access and
+must not be treated as a successful authentication or authorization result.
+
 ## Readiness Contract
 
 Authentication is not ready until these tables exist:
