@@ -25,8 +25,6 @@ from app.models.source_control import SourceWebhookDelivery
 from app.platform_operations.jobs.constants import TERMINAL_JOB_STATUSES
 
 
-
-
 def _record_preclaim_failure(session: Session, delivery_id: int, now: datetime) -> None:
     """Back off validation failures that occurred before any dispatch claim.
 

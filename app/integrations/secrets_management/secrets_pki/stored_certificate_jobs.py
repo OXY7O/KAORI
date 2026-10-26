@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from app.common.job_execution_presentation import present_job_execution
 from app.integrations.secrets_management.secrets_pki.pki_sync_jobs import (
-    NoEligibleVaultPKITargets, build_vault_pki_targets,
+    NoEligibleVaultPKITargets,
+    build_vault_pki_targets,
 )
 from app.models.job import JobExecution, JobPolicy
 from app.models.vault import VaultInstance

@@ -11,7 +11,7 @@ import hashlib
 import hmac
 import json
 from dataclasses import dataclass
-from typing import Mapping
+from collections.abc import Mapping
 from uuid import UUID
 
 _MAX_WEBHOOK_BYTES = 262_144
