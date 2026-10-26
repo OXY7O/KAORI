@@ -99,5 +99,5 @@ def test_no_mutation_or_fabricated_headroom_in_budget_table() -> None:
     assert 'Ratio unavailable' in registry
     assert "bar.key == 'storage_bytes'" in registry
     assert 'Storage is a logical admission ceiling' in registry
-    assert "state='Unknown' if key != 'storage_bytes' else 'Not Governed'" in calculations
+    assert "'state': 'Unknown' if key != 'storage_bytes' else 'Not Governed'" in calculations
     assert 'def build_tenant_allocation_bars(' in calculations
