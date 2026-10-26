@@ -14,14 +14,14 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">{{ recommendation_context_label }} Recommendations</h3>
                     {{ info_tip.render('object-storage-' ~ page_key ~ '-recommendations-guide',
-                                                recommendation_context_label ~ ' Recommendations Guide',
-                                                'Evidence-derived recommendations are read-only review guidance, not commands sent to the provider.',
-                                                items=[
-                                                'Priority and suggested review areas are derived from the committed evidence for the selected system and window.',
-                                                'Review Evidence opens the owning analytics tab; a guidance item does not automatically mean an incident.',
-                                                'Missing, stale or incomplete sources require evidence review before operational action.',
-                                                ],
-                                                placement='right', variant='guide') }}
+                                        recommendation_context_label ~ ' Recommendations Guide',
+                                        'Evidence-derived recommendations are read-only review guidance, not commands sent to the provider.',
+                                        items=[
+                                        'Priority and suggested review areas are derived from the committed evidence for the selected system and window.',
+                                        'Review Evidence opens the owning analytics tab; a guidance item does not automatically mean an incident.',
+                                        'Missing, stale or incomplete sources require evidence review before operational action.',
+                                        ],
+                                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Contextual guidance derived from the committed evidence for this analytics workspace, selected system, and active observation window.</p>
             </div>

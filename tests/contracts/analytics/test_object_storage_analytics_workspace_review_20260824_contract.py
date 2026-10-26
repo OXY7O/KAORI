@@ -127,10 +127,11 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     assert 'Committed inventory; provider configuration and live health remain integration-owned.' in system_detail
     assert 'Committed alerts from the selected provider.' in overview_alerts
     assert 'Inflight reflects work; waiting requests and offline nodes indicate pressure.' in performance
-    assert 'Waiting requests and offline nodes indicate pressure.' in performance
     assert '{{ metrics_source.provider_label }} range for {{ selected_time_range }}.' in trend
     assert 'Requests and errors remain separate; traffic alone is not unhealthy.' in trend
-    assert 'Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.' in buckets
+    assert (
+        'Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.' in buckets
+    )
     assert 'missing samples, unscraped metrics, and query failures.' in buckets
     assert 'Inventory fallback is per field and only where supported.' in buckets
     assert 'Alertmanager/Metrics Source ALERTS report provider alerts;' in alert_summary

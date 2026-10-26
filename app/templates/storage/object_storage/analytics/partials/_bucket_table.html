@@ -14,7 +14,8 @@
             <div class="flex min-w-0 items-start gap-3">
                 {% if page_key in ['capacity', 'performance'] %}
                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                        <i data-lucide="{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}" class="h-5 w-5"></i>
+                        <i data-lucide="{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}"
+                           class="h-5 w-5"></i>
                     </span>
                 {% endif %}
                 <div class="min-w-0">
