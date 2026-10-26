@@ -101,7 +101,7 @@ def test_product_overview_preserves_verified_zero_unknown_and_degraded_history(c
 @pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1', '9' * 64])
 def test_repository_scope_rejects_malformed_installation_id_without_query(monkeypatch, value):
     app = Flask(__name__)
-    monkeypatch.setattr(routes, 'require_uat_access', lambda: None)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
     monkeypatch.setattr(
         routes,
         'build_source_control_overview',
@@ -121,7 +121,7 @@ def test_repository_scope_rejects_malformed_installation_id_without_query(monkey
 
 def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
     app = Flask(__name__)
-    monkeypatch.setattr(routes, 'require_uat_access', lambda: None)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
     monkeypatch.setattr(
         routes,
         'build_source_control_overview',
@@ -150,7 +150,7 @@ def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoi
     def deny():
         raise Forbidden()
 
-    monkeypatch.setattr(routes, 'require_uat_access', deny)
+    monkeypatch.setattr(routes, '_require_product_uat_access', deny)
     monkeypatch.setattr(
         routes,
         'build_source_control_overview',
@@ -170,13 +170,14 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     assert workspace.section == 'Infrastructure'
     assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories']
     user = SimpleNamespace(is_authenticated=True, has_permission=lambda _: True)
-    monkeypatch.setattr(uat_access, 'uat_enabled', lambda: True)
     monkeypatch.setattr(uat_access, 'local_super_admin', lambda user: False)
     assert _visible_capabilities(workspace, user) == ()
     monkeypatch.setattr(uat_access, 'local_super_admin', lambda user: True)
     assert len(_visible_capabilities(workspace, user)) == 2
-    monkeypatch.setattr(uat_access, 'uat_enabled', lambda: False)
-    assert _visible_capabilities(workspace, user) == ()
+    # The product navigation remains available for UAT actors even if the
+    # first provider has not yet completed availability/readiness.
+    monkeypatch.setattr(uat_access, 'provider_kind', lambda *_: SimpleNamespace(available=False))
+    assert len(_visible_capabilities(workspace, user)) == 2
 
 
 def test_product_templates_use_existing_source_control_inventory_contract():
