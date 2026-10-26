@@ -8,18 +8,23 @@
 <section id="object-storage-bucket-forecast-table-panel"
          data-analytics-lazy-section="true"
          data-analytics-load-state="idle"
-         class="border-t border-outline-subtle bg-surface-card"
+         class="{{ analysis_surface.evidence_shell_classes() }}"
          data-kaori-object-storage-bucket-forecast-table>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base font-semibold leading-6 text-content-primary">Bucket Forecast Records</h3>
-                    {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="table-2" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">Bucket Forecast Records</h3>
+                        {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted xl:whitespace-nowrap">
+                        Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.
+                    </p>
                 </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Review forecast-ready and evidence-gap buckets. Filters affect only these records and preserve the selected system and history window.
-                </p>
             </div>
             {% if forecast_table %}
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
