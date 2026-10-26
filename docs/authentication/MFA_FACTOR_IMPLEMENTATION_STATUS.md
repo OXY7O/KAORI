@@ -44,3 +44,17 @@ python -m pytest -q -p no:cacheprovider tests/access/authentication/test_mfa_pol
 ```
 
 Official admission remains HOLD by operator instruction.
+
+## Challenge-screen presentation checkpoint — centered Verify Your Sign In (#3290, 2026-10-26)
+
+**Source-only UX scope:** `app/templates/access/authentication/mfa_challenge.html` now centers the shield, short MFA context, heading and two concise instructions, followed by the unchanged server-owned Verification Code / Verify & Sign In form and Start a New Sign In action. No new QR scanner, segmented OTP input, external provider, persistence or authentication control is introduced. The same field supports a valid six-digit authenticator code or unused recovery code.
+
+**Dev Container validation:**
+```bash
+ruff check tests/contracts/access/authentication/test_mfa_challenge_visual_contract.py
+ruff format --check tests/contracts/access/authentication/test_mfa_challenge_visual_contract.py
+djlint --check app/templates/access/authentication/mfa_challenge.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/authentication/test_mfa_challenge_visual_contract.py tests/contracts/access/authentication/test_authentication_surface_final_lock_contract.py tests/access/authentication/test_mfa_policy_contract.py
+python scripts/verify_authentication_surface_final_lock.py
+```
+Browser UAT must compare 1440/1280 desktop, 390/360 mobile, keyboard navigation and both themes. With an authorized disposable account and an enabled enrolled factor, verify invalid/expired/replayed TOTP and consumed recovery codes fail without authentication, while valid TOTP or unused recovery code completes the previously pending login and audit once. Preserve rate-limits, attempt expiry, CSRF and Start a New Sign In behavior; never attach actual TOTP or recovery codes. **Runtime QA and Human Acceptance are pending** until evidence is collected at the exact holding SHA; official admission stays on HOLD.
