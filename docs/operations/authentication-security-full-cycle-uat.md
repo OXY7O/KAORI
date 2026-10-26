@@ -387,3 +387,20 @@ the entire QR and key area before storing screenshots); never retain genuine
 QR, manual seed, OTP or recovery codes in issue or CI artifacts.
 Classify local execution as PASS/FAIL/BLOCKED/NOT RUN at its actual SHA;
 no automatic Human Acceptance or official admission.
+
+## MFA UAT-2 red-marked visual feedback and contract repair (#3228 / #3251, 2026-10-26)
+
+Operator screenshot marks guide step 1 and step 2 descriptions (#1/#2) as wrapping and Current Password (#3) as narrower than Verification Code. Recheck at the selected Dev Container **holding SHA**: descriptions should read "Confirm your password or sign in again." and "Scan QR or enter the setup key.", fitting one line at the reviewed 1159px desktop image width but wrapping on smaller screens; Current Password and Verification Code should each span the available width of their Step 01/02 cards (not the entire page). Recovery regeneration sizing and the QR/manual-secret warning surface remain unchanged. Verify 1440×900, 1280×800, 1024×768, 768×1024, 390×844 and 360×800 in light/dark; confirm keyboard focus, form validation, pending/enrolled states and no overflow.
+
+The provided previous run (before this correction) reported `ruff check` PASS, `djlint --check` PASS, Settings Final Lock PASS and Sidebar Standard PASS; `ruff format --check` FAIL in the MFA UI contract and pytest **25 PASS / 1 FAIL** because the feedback regression asserted the obsolete inline `mfa_feedback` name. The newer #3261 toast instead calls `message = _mfa_account_error_message(exc)` and emits a safe transient error toast. The bounded test fix under #3251 validates the live source pattern rather than reviving inline feedback; **do not ascribe the previous PASS values to the new SHA**.
+
+Run focused exact-SHA QA again:
+```bash
+ruff check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+ruff format --check tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py
+djlint --check app/templates/settings/account/partials/_mfa.html
+python -m pytest -q -p no:cacheprovider tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py tests/contracts/settings/test_settings_final_lock_contract.py
+python scripts/verify_settings_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+Actual scan and authentication evidence must use a fresh rotated setup key; redact QR, manual seed, password, OTP and recovery codes from screenshots. Official admission remains HOLD until separately authorized.
