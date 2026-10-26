@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/details/_expandable_row.html" as detail_row %}
 {% set registry_id = "tenant-namespace-access-registry" %}
 {% set loading_id = "tenant-namespace-access-registry-loading" %}
 {% set query_params = {
@@ -90,83 +91,74 @@
             </div>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1400px] !table-fixed') }}">
-            <caption class="sr-only">Tenant namespace access registry.</caption>
+    {# Compact desktop registry; detail owns long values, never an oversized table minimum. #}
+    <div class="hidden w-full min-w-0 lg:block">
+        <table class="{{ table_ui.table_classes('!table-fixed') }}">
+            <caption class="sr-only">Tenant namespace access packages and expandable non-secret evidence</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Cluster</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Identity</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Access</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Credential</th>
-                    <th scope="col"
-                        class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Validity</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant / Cluster</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Identity</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Access</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for access in namespace_access_registry_rows %}
-                    {% if access.get('error') %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                {{ table_ui.title_cell(access.get('service_account_name') , 'Access evidence unavailable', 'triangle-alert') }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
-                                   title="{{ access.get('tenant_name') }}">{{ access.get("tenant_name") }}</p>
-                            </td>
-                            <td colspan="4" class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
-                                   title="{{ access.get('error') }}">{{ access.get("error") }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes(action=true) }}">
-                                {{ table_label.status_label('Evidence Unavailable', 'warning') }}
-                            </td>
-                        </tr>
-                    {% else %}
-                        {% set credential_tone = 'normal' if access.get('credential_status') in ['active', 'renewal_due'] else ('warning' if access.get('credential_status') in ['rotating', 'suspended'] else 'critical') %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.namespace_identity(access.get('namespace') ) }}</td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
-                                   title="{{ access.get('tenant_name') }}">{{ access.get("tenant_name") }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                                   title="{{ access.get('environment') |title }}">{{ access.get("environment") |title }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
-                                   title="{{ access.get('cluster_name') }}">{{ access.get("cluster_name") }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
-                                   title="{{ access.get('service_account_name') }}">{{ access.get("service_account_name") }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                                   title="{{ access.get('credential_type') |replace('_', ' ')|title }}">{{ access.get("credential_type") |replace('_', ' ')|title }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                {{ table_label.metadata_label(access.get('access_profile') |replace('_', ' ')|title) }}
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                                   title="{{ access.get('approved_access_methods') |join(', ')|replace('_', ' ')|title }}">
-                                    {{ access.get("approved_access_methods") |join(', ')|replace('_', ' ')|title }}
+                    {% set credential_tone = 'normal' if access.get('credential_status') in ['active', 'renewal_due'] else ('warning' if access.get('credential_status') in ['rotating', 'suspended'] else 'critical') %}
+                    {% set detail_target_id = 'namespace-access-evidence-' ~ namespace_access_pagination.page ~ '-' ~ loop.index %}
+                    {% set detail_row_id = detail_target_id ~ '-row' %}
+                    <tr class="{{ table_ui.row_classes() }} bg-surface-card">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <div class="min-w-0">
+                                {{ table_ui.title_cell(access.get('namespace') or access.get('service_account_name') or 'Unknown Namespace', '', 'folder-tree') }}
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
+                               title="{{ access.get('tenant_name') }}">{{ access.get('tenant_name') }}</p>
+                            <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
+                               title="{{ access.get('cluster_name') }}">{{ access.get('cluster_name') or 'Cluster unavailable' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
+                               title="{{ access.get('service_account_name') }}">
+                                {{ access.get('service_account_name') or 'Unknown Identity' }}
+                            </p>
+                            <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
+                               title="{{ access.get('credential_type')|replace('_', ' ')|title }}">
+                                {{ access.get('credential_type')|replace('_', ' ')|title }}
+                            </p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            {% if access.get('error') %}
+                                {{ table_label.status_label('Unavailable', 'warning') }}
+                            {% else %}
+                                {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
+                                <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
+                                   title="{{ access.get('access_profile')|replace('_', ' ')|title }}">
+                                    {{ access.get('access_profile')|replace('_', ' ')|title }}
                                 </p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                                   title="{{ access.get('purpose') }}">{{ access.get("purpose") }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <p class="text-xs font-semibold text-content-secondary min-w-0 max-w-full truncate"
-                                   title="Review {{ access.get('renewal_due_at') |user_datetime }}">Review {{ access.get("renewal_due_at") |user_datetime }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
-                                   title="Valid until {{ access.get('valid_until') |user_datetime }}">Valid until {{ access.get("valid_until") |user_datetime }}</p>
-                            </td>
-                        </tr>
-                    {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            {{ detail_row.toggle_button('tenant-namespace-access',
+                                loop.index ~ '-' ~ namespace_access_pagination.page,
+                                '',
+                                detail_target_id,
+                                detail_row_id,
+                                open_label='View Details',
+                                close_label='Hide Details',
+                                table_action=true) }}
+                        </td>
+                    </tr>
+                    {% call detail_row.static_detail_row(detail_row_id, detail_target_id, 5, content_classes='w-full min-w-0') %}
+                        {% include 'kubernetes/tenant/partials/_namespace_access_detail.html' %}
+                    {% endcall %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="p-0">
+                        <td colspan="5" class="p-0">
                             {% set empty_state_icon = "route" %}
                             {% set empty_state_title = "No Namespace Access Found" %}
                             {% set empty_state_description = "Namespace access appears after eligible grants and credentials are committed." %}
@@ -176,6 +168,59 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    {# Compact cards keep every record accessible without horizontal scrolling on narrow screens. #}
+    <div class="min-w-0 divide-y divide-outline-subtle lg:hidden"
+         aria-label="Namespace access packages">
+        {% for access in namespace_access_registry_rows %}
+            {% set credential_tone = 'normal' if access.get('credential_status') in ['active', 'renewal_due'] else ('warning' if access.get('credential_status') in ['rotating', 'suspended'] else 'critical') %}
+            <article class="min-w-0 space-y-3 bg-surface-card p-4">
+                <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ access.get('namespace') or access.get('service_account_name') or 'Unknown Namespace' }}
+                        </p>
+                        <p class="mt-1 break-words text-xs text-content-muted">
+                            {{ access.get('tenant_name') }} · {{ access.get('environment')|default('Not assigned', true)|title }}
+                        </p>
+                    </div>
+                    {% if access.get('error') %}
+                        {{ table_label.status_label('Unavailable', 'warning') }}
+                    {% else %}
+                        {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
+                    {% endif %}
+                </div>
+                <dl class="grid min-w-0 gap-3 text-xs sm:grid-cols-2">
+                    <div class="min-w-0">
+                        <dt class="text-content-muted">Cluster</dt>
+                        <dd class="mt-1 break-words font-medium text-content-primary">{{ access.get('cluster_name') or 'Unavailable' }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                        <dt class="text-content-muted">Identity</dt>
+                        <dd class="mt-1 break-all font-medium text-content-primary">
+                            {{ access.get('service_account_name') or 'Unknown Identity' }}
+                        </dd>
+                    </div>
+                </dl>
+                <details class="group min-w-0" data-tenant-namespace-access-mobile-detail>
+                    <summary class="{{ table_ui.action_classes() }} list-none [&::-webkit-details-marker]:hidden">
+                        <span class="group-open:hidden">View Details</span>
+                        <span class="hidden group-open:inline">Hide Details</span>
+                        <i data-lucide="chevron-down"
+                           class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                           aria-hidden="true"></i>
+                    </summary>
+                    <div class="mt-3 min-w-0">
+                        {% include 'kubernetes/tenant/partials/_namespace_access_detail.html' %}
+                    </div>
+                </details>
+            </article>
+        {% else %}
+            {% set empty_state_icon = "route" %}
+            {% set empty_state_title = "No Namespace Access Found" %}
+            {% set empty_state_description = "Namespace access appears after eligible grants and credentials are committed." %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endfor %}
     </div>
     {{ registry_ui.footer('tenant.tenants',
         registry_id,
