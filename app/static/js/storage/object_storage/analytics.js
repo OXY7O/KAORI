@@ -300,8 +300,9 @@
         if (chartInsideSwap(window[bucketForecastChartKey], target)) destroyBucketForecastChart()
     })
     document.body.addEventListener('htmx:afterSwap', (event) => {
-        const target = event.detail?.target || event.target
-        if (!target?.isConnected) return
+        let target = event.detail?.target
+        if (!target?.isConnected) target = event.target
+        if (!target?.isConnected || target === document.body) return
         renderAll(target)
         syncForecastClearFilters(target)
     })
