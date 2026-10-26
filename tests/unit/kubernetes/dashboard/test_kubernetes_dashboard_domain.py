@@ -89,25 +89,32 @@ def test_kubernetes_fleet_freshness_uses_committed_coverage_not_scope_hint() -> 
     assert mixed[1].status == 'Ready'
     assert mixed[2].status == 'Partial'
 
-def test_forecast_conclusion_is_compact_and_uses_committed_summary_values() -> None:
-    assert forecast_insight(
-        {
-            'horizon_days': 90,
-            'summary': {
-                'highest_projected_label': 'Pods',
-                'highest_projected_percent': 46.2,
-            },
-        }
-    ) == '90-day forecast peak: Pods 46%; review worker headroom.'
 
-    assert forecast_insight(
-        {
-            'horizon_days': 60,
-            'summary': {
-                'highest_projected_label': 'Memory',
-                'highest_projected_percent': 92.4,
-            },
-        }
-    ) == '60-day forecast peak: Memory 92%; review worker headroom.'
+def test_forecast_conclusion_is_compact_and_uses_committed_summary_values() -> None:
+    assert (
+        forecast_insight(
+            {
+                'horizon_days': 90,
+                'summary': {
+                    'highest_projected_label': 'Pods',
+                    'highest_projected_percent': 46.2,
+                },
+            }
+        )
+        == '90-day forecast peak: Pods 46%; review worker headroom.'
+    )
+
+    assert (
+        forecast_insight(
+            {
+                'horizon_days': 60,
+                'summary': {
+                    'highest_projected_label': 'Memory',
+                    'highest_projected_percent': 92.4,
+                },
+            }
+        )
+        == '60-day forecast peak: Memory 92%; review worker headroom.'
+    )
 
     assert forecast_insight({}) == 'Forecast snapshot loaded from analytics forecast service.'

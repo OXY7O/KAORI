@@ -12,16 +12,20 @@ from app.integrations.source_control.source_control.providers.github.webhook imp
 
 def _source(event_type='workflow_run', repository_id='501'):
     return SimpleNamespace(
-        id=9, installation_id=7,
-        processing_state='received', event_type=event_type,
+        id=9,
+        installation_id=7,
+        processing_state='received',
+        event_type=event_type,
         repository_native_id_hint=repository_id,
     )
 
 
 def _installation():
     return SimpleNamespace(
-        id=7, integration_instance_id=13,
-        provider_key='github', host_key='github.com',
+        id=7,
+        integration_instance_id=13,
+        provider_key='github',
+        host_key='github.com',
     )
 
 
@@ -41,7 +45,8 @@ class StubSession:
 
 def _admit(monkeypatch):
     monkeypatch.setattr(
-        reconciliation_intent, '_eligible_installation',
+        reconciliation_intent,
+        '_eligible_installation',
         lambda _: 'never-return-raw-secret-in-intent',
     )
 
@@ -50,7 +55,9 @@ def test_current_grant_yields_repository_record_identity(monkeypatch):
     _admit(monkeypatch)
     session = StubSession(_source(), SimpleNamespace(id=501))
     intent = reconciliation_intent.resolve_reconciliation_intent(
-        session=session, installation=_installation(), delivery_record_id=9,
+        session=session,
+        installation=_installation(),
+        delivery_record_id=9,
     )
     assert intent.scope == 'repository'
     assert intent.repository_record_id == 501
@@ -65,7 +72,9 @@ def test_unknown_or_revoked_grant_cannot_target_payload_repository(monkeypatch):
     _admit(monkeypatch)
     session = StubSession(_source(repository_id='999'), repository=None)
     intent = reconciliation_intent.resolve_reconciliation_intent(
-        session=session, installation=_installation(), delivery_record_id=9,
+        session=session,
+        installation=_installation(),
+        delivery_record_id=9,
     )
     assert intent.scope == 'installation'
     assert intent.repository_record_id is None
@@ -76,7 +85,9 @@ def test_installation_changes_require_grant_reconciliation(monkeypatch, event):
     _admit(monkeypatch)
     session = StubSession(_source(event_type=event), repository=SimpleNamespace(id=501))
     intent = reconciliation_intent.resolve_reconciliation_intent(
-        session=session, installation=_installation(), delivery_record_id=9,
+        session=session,
+        installation=_installation(),
+        delivery_record_id=9,
     )
     assert intent.scope == 'installation'
     assert session.executions == 0
@@ -88,18 +99,23 @@ def test_delivery_from_other_installation_is_denied(monkeypatch):
     delivery.installation_id = 88
     with pytest.raises(GitHubWebhookError, match='does not belong'):
         reconciliation_intent.resolve_reconciliation_intent(
-            session=StubSession(delivery), installation=_installation(), delivery_record_id=9,
+            session=StubSession(delivery),
+            installation=_installation(),
+            delivery_record_id=9,
         )
 
 
 def test_unadmitted_provider_denies_even_committed_delivery(monkeypatch):
     monkeypatch.setattr(
-        reconciliation_intent, '_eligible_installation',
+        reconciliation_intent,
+        '_eligible_installation',
         lambda _: (_ for _ in ()).throw(GitHubWebhookError('not admitted')),
     )
     with pytest.raises(GitHubWebhookError, match='not admitted'):
         reconciliation_intent.resolve_reconciliation_intent(
-            session=StubSession(_source()), installation=_installation(), delivery_record_id=9,
+            session=StubSession(_source()),
+            installation=_installation(),
+            delivery_record_id=9,
         )
 
 
@@ -110,7 +126,9 @@ def test_terminal_or_reserved_delivery_is_not_replayed(monkeypatch, status):
     delivery.processing_state = status
     with pytest.raises(GitHubWebhookError, match='not awaiting'):
         reconciliation_intent.resolve_reconciliation_intent(
-            session=StubSession(delivery), installation=_installation(), delivery_record_id=9,
+            session=StubSession(delivery),
+            installation=_installation(),
+            delivery_record_id=9,
         )
 
 

@@ -119,13 +119,19 @@ def test_queued_job_deck_renders_without_live_worker_inspection(
 
     app = Flask(__name__)
     app.extensions['kaori_tenant_approval_work_inbox'] = lambda **_kwargs: {
-        'items': [], 'pending_count': 0, 'total_count': 0,
+        'items': [],
+        'pending_count': 0,
+        'total_count': 0,
     }
     app.extensions['kaori_secret_reveal_approval_work_inbox'] = lambda **_kwargs: {
-        'items': [], 'pending_count': 0, 'total_count': 0,
+        'items': [],
+        'pending_count': 0,
+        'total_count': 0,
     }
     app.extensions['kaori_secret_reveal_requester_work_inbox'] = lambda **_kwargs: {
-        'items': [], 'ready_count': 0, 'total_count': 0,
+        'items': [],
+        'ready_count': 0,
+        'total_count': 0,
     }
 
     with app.app_context():

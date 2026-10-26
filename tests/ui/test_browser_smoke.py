@@ -15,7 +15,6 @@ def test_login_surface_renders_across_canonical_viewports(configured_page: Page,
     expect(page.locator('body')).to_be_visible()
 
 
-
 def test_numeric_pagination_survives_repeated_htmx_renders(page: Page) -> None:
     """A second HTMX render must not turn KAORI's numeric links into inert anchors."""
     page.set_content(
@@ -105,7 +104,6 @@ def test_numeric_pagination_survives_repeated_htmx_renders(page: Page) -> None:
     assert parse_qs(urlsplit(next_link.get_attribute('hx-get') or '').query)['page'] == ['3']
 
 
-
 def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) -> None:
     """Verify Session must navigate and focus, even after HTMX swaps table rows."""
     html = """
@@ -129,11 +127,11 @@ def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) 
     </body></html>
     """
     page.route(
-        "http://kaori.test/**",
-        lambda route: route.fulfill(status=200, content_type="text/html", body=html),
+        'http://kaori.test/**',
+        lambda route: route.fulfill(status=200, content_type='text/html', body=html),
     )
-    page.goto("http://kaori.test/reveal?reveal_view=mine&my_page=2")
-    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.goto('http://kaori.test/reveal?reveal_view=mine&my_page=2')
+    page.add_script_tag(path=str(ROOT / 'app/static/js/secret_reveal_workspace.js'))
     page.evaluate(
         """() => {
             window.stepUpScrollCalls = 0;
@@ -146,12 +144,12 @@ def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) 
         }"""
     )
 
-    page.get_by_role("link", name="Verify Session").click()
-    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
-    assert page.evaluate("window.stepUpScrollCalls") == 1
-    assert urlsplit(page.url).fragment == "reveal-session-step-up"
-    assert parse_qs(urlsplit(page.url).query)["my_page"] == ["2"]
-    assert parse_qs(urlsplit(page.url).query)["reveal_view"] == ["mine"]
+    page.get_by_role('link', name='Verify Session').click()
+    expect(page.locator('[data-reveal-step-up-password]')).to_be_focused()
+    assert page.evaluate('window.stepUpScrollCalls') == 1
+    assert urlsplit(page.url).fragment == 'reveal-session-step-up'
+    assert parse_qs(urlsplit(page.url).query)['my_page'] == ['2']
+    assert parse_qs(urlsplit(page.url).query)['reveal_view'] == ['mine']
 
     # Poll/filter updates replace the table. Delegation keeps the action live.
     page.evaluate(
@@ -162,16 +160,15 @@ def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) 
             document.activeElement.blur();
         }"""
     )
-    page.get_by_role("link", name="Verify Session").click()
-    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
-    assert page.evaluate("window.stepUpScrollCalls") == 2
+    page.get_by_role('link', name='Verify Session').click()
+    expect(page.locator('[data-reveal-step-up-password]')).to_be_focused()
+    assert page.evaluate('window.stepUpScrollCalls') == 2
 
     # Without a password input (external identity), focus the guidance panel.
-    page.locator("[data-reveal-step-up-password]").evaluate("(element) => element.remove()")
-    page.get_by_role("link", name="Verify Session").click()
-    expect(page.locator("#reveal-session-step-up")).to_be_focused()
-    assert page.evaluate("window.stepUpScrollCalls") == 3
-
+    page.locator('[data-reveal-step-up-password]').evaluate('(element) => element.remove()')
+    page.get_by_role('link', name='Verify Session').click()
+    expect(page.locator('#reveal-session-step-up')).to_be_focused()
+    assert page.evaluate('window.stepUpScrollCalls') == 3
 
 
 def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> None:
@@ -202,11 +199,11 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
         </body></html>
         """
     page.route(
-        "http://kaori.test/**",
-        lambda route: route.fulfill(status=200, content_type="text/html", body=html),
+        'http://kaori.test/**',
+        lambda route: route.fulfill(status=200, content_type='text/html', body=html),
     )
-    page.goto("http://kaori.test/reveal?reveal_view=mine")
-    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.goto('http://kaori.test/reveal?reveal_view=mine')
+    page.add_script_tag(path=str(ROOT / 'app/static/js/secret_reveal_workspace.js'))
     page.evaluate(
         """() => {
             const main = document.querySelector('[data-kaori-main-scroll]');
@@ -221,12 +218,10 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
 
     # The Step-Up is already on-screen, so repeated clicks must not move the
     # dashboard or expose a blank strip below its nested scrolling surface.
-    page.evaluate(
-        """() => document.querySelector('[data-reveal-step-up-trigger]').click()"""
-    )
-    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
+    page.evaluate("""() => document.querySelector('[data-reveal-step-up-trigger]').click()""")
+    expect(page.locator('[data-reveal-step-up-password]')).to_be_focused()
     assert page.evaluate("document.querySelector('[data-kaori-main-scroll]').scrollTop") == 0
-    assert page.evaluate("window.scrollMeasurements.length") == 0
+    assert page.evaluate('window.scrollMeasurements.length') == 0
 
     # Move only the main scroll container away from the Step-Up. The handler
     # must move that container back within its natural min/max scroll bounds.
@@ -237,7 +232,7 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
             document.querySelector('[data-reveal-step-up-trigger]').click();
         }"""
     )
-    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
+    expect(page.locator('[data-reveal-step-up-password]')).to_be_focused()
     result = page.evaluate(
         """() => {
             const main = document.querySelector('[data-kaori-main-scroll]');
@@ -249,13 +244,12 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
             };
         }"""
     )
-    assert len(result["calls"]) == 1
-    assert result["calls"][0]["behavior"] == "auto"
-    assert 0 <= result["y"] <= result["maxY"]
-    assert result["y"] < 750
-    assert result["bodyY"] == 0
-    assert urlsplit(page.url).fragment == "reveal-session-step-up"
-
+    assert len(result['calls']) == 1
+    assert result['calls'][0]['behavior'] == 'auto'
+    assert 0 <= result['y'] <= result['maxY']
+    assert result['y'] < 750
+    assert result['bodyY'] == 0
+    assert urlsplit(page.url).fragment == 'reveal-session-step-up'
 
 
 def test_my_requests_owns_temporary_reveal_and_clears_on_tab_change(page: Page) -> None:
@@ -275,8 +269,8 @@ def test_my_requests_owns_temporary_reveal_and_clears_on_tab_change(page: Page) 
         </main>
         """
     )
-    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_value.js"))
-    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.add_script_tag(path=str(ROOT / 'app/static/js/secret_reveal_value.js'))
+    page.add_script_tag(path=str(ROOT / 'app/static/js/secret_reveal_workspace.js'))
     page.evaluate(
         """() => {
             const host = document.querySelector('#reveal-value-output');
@@ -288,19 +282,18 @@ def test_my_requests_owns_temporary_reveal_and_clears_on_tab_change(page: Page) 
             document.dispatchEvent(new CustomEvent('htmx:load', { detail: { elt: host } }));
         }"""
     )
-    expect(page.locator("#reveal-value-output")).to_be_focused()
-    expect(page.locator("[data-protected-value]")).to_have_text("synthetic-test-value")
-    assert page.locator("#reveal-value-output").get_attribute("hx-history") == "false"
+    expect(page.locator('#reveal-value-output')).to_be_focused()
+    expect(page.locator('[data-protected-value]')).to_have_text('synthetic-test-value')
+    assert page.locator('#reveal-value-output').get_attribute('hx-history') == 'false'
     page.evaluate(
         """() => window.dispatchEvent(new CustomEvent('secret-reveal:tab-changed', {
             detail: { tab: 'new' }
         }))"""
     )
-    expect(page.locator("[data-protected-value]")).to_have_count(0)
-    expect(page.locator("[data-protected-value-panel]")).to_contain_text(
-        "The one-time Secret value was cleared when leaving My Requests."
+    expect(page.locator('[data-protected-value]')).to_have_count(0)
+    expect(page.locator('[data-protected-value-panel]')).to_contain_text(
+        'The one-time Secret value was cleared when leaving My Requests.'
     )
-
 
 
 def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page: Page) -> None:
@@ -326,11 +319,11 @@ def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page
         </body></html>
     """
     page.route(
-        "http://kaori.test/**",
-        lambda route: route.fulfill(status=200, content_type="text/html", body=html),
+        'http://kaori.test/**',
+        lambda route: route.fulfill(status=200, content_type='text/html', body=html),
     )
-    page.goto("http://kaori.test/reveal?reveal_view=mine&my_page=2")
-    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.goto('http://kaori.test/reveal?reveal_view=mine&my_page=2')
+    page.add_script_tag(path=str(ROOT / 'app/static/js/secret_reveal_workspace.js'))
     page.evaluate(
         """() => {
             const main = document.querySelector('[data-kaori-main-scroll]');
@@ -342,8 +335,8 @@ def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page
             };
         }"""
     )
-    page.get_by_role("link", name="Continue to Approved Requests").click()
-    expect(page.locator("[data-reveal-once-action]")).to_be_focused()
+    page.get_by_role('link', name='Continue to Approved Requests').click()
+    expect(page.locator('[data-reveal-once-action]')).to_be_focused()
     first = page.evaluate(
         """() => {
             const main = document.querySelector('[data-kaori-main-scroll]');
@@ -355,20 +348,18 @@ def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page
             };
         }"""
     )
-    assert len(first["calls"]) == 1
-    assert first["calls"][0]["behavior"] == "auto"
-    assert 0 < first["scrollTop"] <= first["maxScroll"]
-    assert first["documentScroll"] == 0
-    assert parse_qs(urlsplit(page.url).query)["my_page"] == ["2"]
-    assert urlsplit(page.url).fragment == "my-secret-reveal-requests"
+    assert len(first['calls']) == 1
+    assert first['calls'][0]['behavior'] == 'auto'
+    assert 0 < first['scrollTop'] <= first['maxScroll']
+    assert first['documentScroll'] == 0
+    assert parse_qs(urlsplit(page.url).query)['my_page'] == ['2']
+    assert urlsplit(page.url).fragment == 'my-secret-reveal-requests'
 
     # Clicking the CTA again while its target is visible must not scroll.
     # Use the DOM click to avoid Playwright scrolling the link itself into view.
-    page.evaluate(
-        """() => document.querySelector('[data-reveal-approved-requests-trigger]').click()"""
-    )
-    expect(page.locator("[data-reveal-once-action]")).to_be_focused()
-    assert page.evaluate("window.approvedScrollCalls.length") == 1
+    page.evaluate("""() => document.querySelector('[data-reveal-approved-requests-trigger]').click()""")
+    expect(page.locator('[data-reveal-once-action]')).to_be_focused()
+    assert page.evaluate('window.approvedScrollCalls.length') == 1
 
     # HTMX may replace My Requests and remove all approved rows. The CTA
     # must focus the registry header instead of jumping a full-screen card.
@@ -378,7 +369,7 @@ def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page
             document.querySelector('[data-reveal-approved-requests-trigger]').click();
         }"""
     )
-    expect(page.locator("#my-secret-reveal-requests")).to_be_focused()
+    expect(page.locator('#my-secret-reveal-requests')).to_be_focused()
     final = page.evaluate(
         """() => {
             const main = document.querySelector('[data-kaori-main-scroll]');
@@ -386,5 +377,5 @@ def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page
                      bodyY: document.documentElement.scrollTop };
         }"""
     )
-    assert 0 <= final["y"] <= final["maxY"]
-    assert final["bodyY"] == 0
+    assert 0 <= final['y'] <= final['maxY']
+    assert final['bodyY'] == 0

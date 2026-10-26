@@ -26,6 +26,7 @@ def test_admin_posture_requires_policy_on_canonical_ready_cluster():
 def test_configured_policy_does_not_claim_live_operational_evidence():
     assert _status(eligible=1) != 'Operational'
 
+
 def test_admin_overview_projects_only_real_controls_and_committed_evidence(monkeypatch):
     from flask import Flask
 
@@ -79,4 +80,3 @@ def test_admin_overview_retains_no_live_proof_when_all_configuration_exists(monk
     assert summary['administration_status_label'] == 'Verification Required'
     assert summary['administration_controls'][0]['status_label'] == 'Verification Required'
     assert summary['administration_controls'][0]['metrics'][1][2] == '1 / 1'
-
