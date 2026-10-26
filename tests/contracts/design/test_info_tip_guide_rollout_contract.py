@@ -1,5 +1,6 @@
 """Guide label only on approved title-level KAORI Info Tips (#1680)."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -95,3 +96,39 @@ def test_guide_variant_keeps_inline_field_help_default_icon() -> None:
     assert 'aria-controls="{{ id }}-tooltip"' in component
     assert 'portal.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
+
+
+# Prevent a repeat of #3306: a generic info tip immediately after a section
+# title silently renders the field-level icon-only variant.
+GITHUB_TITLE_GUIDES = {
+    'integrations/source_control/github/uat_detail.html': 'github-connection-contract-guide',
+    'integrations/source_control/github/partials/_detail_validation.html': 'github-full-validation-guide',
+    'integrations/source_control/github/partials/_detail_inventory.html': 'github-inventory-lifecycle-guide',
+}
+
+
+def test_github_title_guides_explicitly_render_the_labeled_guide_variant() -> None:
+    for template, identifier in GITHUB_TITLE_GUIDES.items():
+        source = _read(template)
+        expressions = re.findall(
+            r'info_tip\\.render\\([\\s\\S]*?\\)',
+            source,
+        )
+        matching = [expression for expression in expressions if f"'{identifier}'" in expression]
+        assert len(matching) == 1, (template, identifier)
+        assert "variant='guide'" in matching[0], (template, identifier)
+        assert "placement='right'" in matching[0], (template, identifier)
+        assert "button_text=" not in matching[0], (template, identifier)
+
+    detail = _read('integrations/source_control/github/uat_detail.html')
+    validation = _read('integrations/source_control/github/partials/_detail_validation.html')
+    inventory = _read('integrations/source_control/github/partials/_detail_inventory.html')
+    assert 'title_extra=connection_title_tip' in detail
+    assert 'title_extra=info_tip.render(' in validation
+    assert 'title_extra=info_tip.render(' in inventory
+
+    component = _read('components/info_tip.html')
+    assert 'data-kaori-info-tip-variant="{{ \'guide\' if guide_variant else \'icon\' }}"' in component
+    assert '<span>Guide</span>' in component
+    assert 'data-lucide="info"' in component
+    assert 'data-lucide="circle-help"' not in component

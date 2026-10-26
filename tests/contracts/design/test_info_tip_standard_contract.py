@@ -85,7 +85,8 @@ def test_guide_variant_renders_compact_label_and_reuses_existing_popover() -> No
     assert 'Review committed evidence.' in guide and 'One point' in guide
 
     assert 'data-kaori-info-tip-variant="icon"' in icon
-    assert 'data-lucide="circle-help"' in icon
+    assert 'data-lucide="info"' in icon
+    assert 'data-lucide="circle-help"' not in icon
     assert '<span>Guide</span>' not in icon
     assert 'role="tooltip"' in icon
 
@@ -99,6 +100,8 @@ def test_title_level_guides_share_existing_portal_controller() -> None:
     assert "guide_variant = variant == 'guide' and not button_text" in source
     assert 'data-kaori-info-tip-preview' in source
     assert "variant='guide'" in doc
+    assert 'information glyph, never a question-mark icon' in doc
+    assert 'data-lucide="circle-help"' not in source
     assert 'field-level' in doc
     assert 'portal.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script

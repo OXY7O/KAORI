@@ -567,7 +567,13 @@ Review one main page at a time using this sequence:
       icon-only help is reserved for field-/row-specific content
       (`components/INFO_TIP.md`, `components/TABLE_AND_LABEL.md`).
       Existing Guide rollout regression inventory must include new
-      title-level consumers.
+      title-level consumers. Check the **rendered DOM** for
+      `data-kaori-info-tip-variant="guide"` and the visible `Guide`
+      label beside the title; a source-level `info_tip.render` check
+      alone is insufficient. Do not use a solitary `?` or `i` in
+      place of the title-level label. If a UAT screenshot differs from
+      approved Guide markup, verify the running holding SHA and reload
+      the server-rendered page before adding UI overrides.
 - [ ] Existing shared components were reused.
 - [ ] No copied hero, pagination, table, label, or right-rail classes were introduced.
 - [ ] Font roles match the hierarchy.
