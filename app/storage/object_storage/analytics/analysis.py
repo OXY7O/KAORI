@@ -256,17 +256,19 @@ def metric_boundary_evaluations(
         else:
             observed = f'{value:.1f}%' if key in {'capacity', 'errors'} else f'{value:,.0f}'
             if key == 'capacity':
-                severity = (
-                    'critical' if value >= CAPACITY_CRITICAL_PERCENT
-                    else 'warning' if value >= CAPACITY_WARNING_PERCENT
-                    else 'normal'
-                )
+                if value >= CAPACITY_CRITICAL_PERCENT:
+                    severity = 'critical'
+                elif value >= CAPACITY_WARNING_PERCENT:
+                    severity = 'warning'
+                else:
+                    severity = 'normal'
             elif key == 'errors':
-                severity = (
-                    'critical' if value >= ERROR_CRITICAL_PERCENT
-                    else 'warning' if value >= ERROR_WARNING_PERCENT
-                    else 'normal'
-                )
+                if value >= ERROR_CRITICAL_PERCENT:
+                    severity = 'critical'
+                elif value >= ERROR_WARNING_PERCENT:
+                    severity = 'warning'
+                else:
+                    severity = 'normal'
             elif key == 'waiting':
                 severity = 'warning' if value > 0 else 'normal'
             else:
