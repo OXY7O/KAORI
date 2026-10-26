@@ -119,8 +119,8 @@
                                 <time datetime="{{ job.created_at.isoformat() }}"
                                       title="{{ job.created_at.isoformat() }}"
                                       class="block whitespace-nowrap">
-                                    <span class="block font-medium text-content-primary">{{ job.created_at.strftime('%d %b %Y') }}</span>
-                                    <span class="block text-xs tabular-nums text-content-muted">{{ job.created_at.strftime('%H:%M:%S') }} UTC</span>
+                                    <span class="block font-medium text-content-primary">{{ job.created_at.strftime("%d %b %Y") }}</span>
+                                    <span class="block text-xs tabular-nums text-content-muted">{{ job.created_at.strftime("%H:%M:%S") }} UTC</span>
                                 </time>
                             {% else %}
                                 <span class="text-content-muted">Not observed</span>

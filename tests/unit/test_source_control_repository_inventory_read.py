@@ -171,3 +171,71 @@ def test_branch_change_does_not_fabricate_latest_sha_for_unobserved_ref(read_db)
     page = read_installation_inventory(session, authorized_installation_id=installations[0])
     assert page.rows[0].default_branch == 'main'
     assert page.rows[0].exact_default_branch_sha is None
+
+
+def test_committed_repository_filters_use_matching_counts_and_authorized_scope(read_db):
+    session, installations = read_db
+    installation_id = installations[0]
+
+    baseline = read_installation_inventory(session, authorized_installation_id=installation_id)
+    assert baseline.total == 1
+    assert baseline.matching_total == 1
+
+    by_name = read_installation_inventory(
+        session, authorized_installation_id=installation_id, search='PRIVATE-REPO'
+    )
+    assert by_name.total == 1
+    assert by_name.matching_total == 1
+    assert by_name.rows[0].full_name == 'org/private-repo'
+
+    by_native_id = read_installation_inventory(
+        session, authorized_installation_id=installation_id, search='15'
+    )
+    assert by_native_id.matching_total == 1
+
+    no_match = read_installation_inventory(
+        session, authorized_installation_id=installation_id, visibility='public'
+    )
+    assert no_match.total == 1
+    assert no_match.matching_total == 0
+    assert no_match.rows == ()
+    assert no_match.page == 1
+
+    archived = read_installation_inventory(
+        session, authorized_installation_id=installation_id, archived='archived'
+    )
+    assert archived.matching_total == 0
+    unknown_state = read_installation_inventory(
+        session, authorized_installation_id=installation_id, archived='unknown'
+    )
+    assert unknown_state.matching_total == 1
+
+    other = read_installation_inventory(
+        session,
+        authorized_installation_id=installations[1],
+        search='private',
+        visibility='private',
+    )
+    assert other.total is None
+    assert other.matching_total is None
+    assert other.rows == ()
+
+
+def test_committed_repository_search_is_literal_and_pages_clamp(read_db):
+    session, installations = read_db
+    installation_id = installations[0]
+
+    for literal in ('%', '_', 'not-present'):
+        result = read_installation_inventory(
+            session, authorized_installation_id=installation_id, search=literal
+        )
+        assert result.total == 1
+        assert result.matching_total == 0
+        assert result.rows == ()
+
+    last = read_installation_inventory(
+        session, authorized_installation_id=installation_id, page=99, per_page=5
+    )
+    assert last.page == 1
+    assert last.total == last.matching_total == 1
+    assert len(last.rows) == 1

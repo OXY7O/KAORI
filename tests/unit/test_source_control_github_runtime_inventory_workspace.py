@@ -314,8 +314,63 @@ def test_runtime_history_filters_are_automatic_and_rows_are_readable():
     assert 'table_ui.title_cell(job.operation' in jobs
     assert "'Job #' ~ job.id" in jobs
     assert 'job.created_at.isoformat()' in jobs
-    assert "job.created_at.strftime('%d %b %Y')" in jobs
-    assert "job.created_at.strftime('%H:%M:%S')" in jobs
+    assert 'job.created_at.strftime("%d %b %Y")' in jobs
+    assert 'job.created_at.strftime("%H:%M:%S")' in jobs
     assert 'tabular-nums' in jobs
     assert "job.queue_name or 'Not assigned'" in jobs
     assert "integration_status(job.status, display='indicator')" in jobs
+
+
+def test_committed_repository_registry_uses_kaori_full_table_and_spacing():
+    detail = _read(GITHUB / 'uat_detail.html')
+    registry = _read(GITHUB / '_inventory_table.html')
+    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
+
+    assert 'id="github-panel-inventory"' in detail
+    assert 'class="space-y-4"' in detail.split('id="github-panel-inventory"', 1)[1].split(
+        '{% include "integrations/source_control/github/partials/_detail_inventory.html" %}', 1
+    )[0]
+    for token in (
+        'table_ui.inventory_block_header(',
+        'title_extra=header_guide',
+        'data-kaori-full-table-registry="repository-inventory"',
+        'table_ui.inventory_filter_bar_classes()',
+        'table_ui.filter_layout_classes()',
+        'data-kaori-canonical-registry-filter="source-control-inventory"',
+        'hx-trigger="change, input changed delay:400ms, submit"',
+        'registry_ui.clear_filters_action(',
+        'table_ui.title_cell(',
+        'pagination_ui.numeric_pages(',
+        'data-kaori-canonical-registry-footer="source-control-inventory"',
+        'components/states/_empty_state.html',
+    ):
+        assert token in registry
+    assert 'Apply Filters' not in registry
+    assert '<noscript>' in registry
+    assert 'inventory.total is none' in registry
+    assert 'inventory.total == 0' in registry
+    assert 'matching_total == 0' in registry
+    assert 'row.exact_default_branch_sha' in registry
+    assert 'observed_at.isoformat()' in registry
+    assert 'job.created_at.strftime("%d %b %Y")' in jobs
+
+
+def test_committed_repository_filters_preserve_installation_authority():
+    routes = _read(ROUTES)
+    projection = _read(ROOT / 'app/integrations/source_control/repository_inventory.py')
+    registry = _read(GITHUB / '_inventory_table.html')
+
+    assert "request.args.get('inventory_search', '').strip()[:80]" in routes
+    assert "inventory_visibility not in {'public', 'private', 'internal', 'unknown'}" in routes
+    assert "inventory_archived not in {'active', 'archived', 'unknown'}" in routes
+    assert 'authorized_installation_id=installation.id' in routes
+    assert "matching_total: int | None = None" in projection
+    assert 'SourceRepository.full_name.icontains(search, autoescape=True)' in projection
+    assert 'SourceRepositoryGrant.installation_id == authorized_installation_id' in projection
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in projection
+    assert 'matching_total = total' in projection
+    assert 'effective_page = min(page,' in projection
+    for field in ('inventory_search', 'inventory_visibility', 'inventory_archived'):
+        assert f'name="{field}"' in registry
+        assert f"'{field}': {field}" in registry
+        assert f'{field}={field}' in registry

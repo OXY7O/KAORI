@@ -1682,3 +1682,42 @@ source inspection as executable QA. Human desktop/mobile/light/dark UAT HOLD.
 - Fresh Dev Container Ruff, Ruff Format, djLint, pytest, route startup,
   light/dark/mobile table and filter UAT must be collected on the new merge
   SHA; the earlier 67 passed / 1 failed belongs to the previous candidate.
+
+
+## 2026-10-26 — #3306 Inventory & Lifecycle full-table and layout UAT correction
+
+Operator screenshot confirms the committed registry and lifecycle decision
+surfaces were visually attached because the Inventory tab panel lacked the
+existing `space-y-4` composition used by Runtime & History. The holding UAT
+correction restores the shared spacing at the tab-panel owner rather than
+adding margin to the table partial.
+
+Committed Repository Registry now composes the standard KAORI table header
+(icon, title, labeled Guide, result count, conditional Clear Filters, semantic
+commit/coverage, loading), canonical three-field filter bar (Search Repository,
+Visibility, Repository State), title/identity row, semantic Access status,
+default branch and exact SHA, compact observed date/time, three-way empty
+state (unobserved vs committed zero vs filtered zero), Rows 5/10/25/50,
+and numeric Previous/Next pagination. Filters query committed installation-
+scoped rows before pagination and preserve Rows/active filter parameters.
+Search is case-insensitive, literal (SQL wildcards escaped) and bounded to
+80 characters. The decision card's Committed Grants remains the **unfiltered**
+grant count, while the full-table result count and pagination use matching
+rows. Unknown inventory remains unknown even with active filters.
+No GitHub provider read, mutation, repository deletion, secret or scope
+expansion is introduced.
+
+Historical operator QA on the prior holding SHA: Ruff Check and Ruff Format
+PASS, focused 58 pytest PASS, djLint FAIL for two `strftime` quote styles in
+Recent Jobs. The source correction changes both to djLint's requested
+double-quoted format, and the regression contract reflects that exact
+rendering. This is **source-corrected only**, not an executable PASS on the
+new candidate. Re-run Ruff, Ruff Format, djLint, focused source-control
+projection and UI contract pytest, and browser/keyboard/light-dark/mobile
+Visual QA before Human Acceptance. Official admission remains HOLD.
+
+Human scenario: navigate Integrations → Source Control → GitHub installation →
+Inventory & Lifecycle. Confirm visible 16px-ish standard separation, table
+header/count/Guide, filter in-place updates, Clear Filters, empty results,
+Rows, numeric pages, full SHA tooltip, accurate date/time and accessibility.
+Then verify unobserved collection does not display a false zero.
