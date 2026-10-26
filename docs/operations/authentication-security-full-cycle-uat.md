@@ -462,3 +462,21 @@ python scripts/verify_access_final_lock.py
 python scripts/verify_sidebar_navigation_standard.py
 ```
 Record exact SHA, command output, desktop/light-dark/mobile screenshots with secret fields redacted, error/empty/read-only states and positive/negative security gate evidence. User acceptance cannot be declared from the prior MFA QA output. Official Developer Check, Full Admission and promotion to `kaori/staging`/`main` remain on HOLD.
+
+## Four-tab Authentication Security Role Registry Overview UAT (#3305, 2026-10-26)
+
+The user-selected Role Registry visual standard is now the under-Hero summary layout for **Overview, Multi-Factor Authentication, Bot Protection and Session Security**. Verify that each tab starts with the same compact bordered icon/title/short explanation + source-backed status badge, followed by four metric cells and four smaller principle/boundary cards (responsive `md:2 / xl:4` layout). Do not infer live provider health, population, active-device count, completeness or required-factor coverage where the authoritative backend has not committed such evidence.
+
+At an exact holding branch commit check browser widths 1440, 1280, 1024, 768, 390 and 360 in light/dark. Confirm accessible headings, visible focus, no horizontal scrolling or clipped labels, Info Tip Guide positioning and correct HTMX tab transitions. Check each tab in view-only vs manager sessions, configured/unconfigured bot instance, Disabled/Always, and all documented MFA policy modes. Preserve the existing original forms, CSRF, permission scopes, live Turnstile widget/test-before-enforcement, MFA policy revocation acknowledgment, and sign-in/failure handling.
+
+**Runtime commands:**
+```bash
+git rev-parse HEAD
+ruff check tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+ruff format --check tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py
+djlint --check app/templates/access/authentication_security/partials/_assurance_summary.html app/templates/access/authentication_security/partials/_page_content.html
+python -m pytest -q -p no:cacheprovider tests/contracts/access/test_authentication_security_role_posture_tabs_contract.py tests/contracts/access/test_authentication_security_workspace_contract.py tests/contracts/access/test_authentication_security_mfa_tab_ux_contract.py tests/contracts/access/test_authentication_security_bot_tab_ux_contract.py tests/access/authentication/test_bot_protection_turnstile.py
+python scripts/verify_access_final_lock.py
+python scripts/verify_sidebar_navigation_standard.py
+```
+The operator previously reported **40 passing tests**, Access Final Lock and Sidebar Standard PASS on a previous Bot Protection SHA, with `ruff format --check` and `djlint --check` still failing. These are **not** new-SHA PASS evidence. Collect new output and assess formatter errors explicitly. Do not store secrets or Turnstile tokens in screenshots. Preserve separate provider-enabled functional/security UAT and explicit Human Acceptance; official admission HOLD.
