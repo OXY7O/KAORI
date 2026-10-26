@@ -10,7 +10,7 @@
     <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-start gap-3">
-                {{ ui.palette_icon('history', 'brand', size='sm') }}
+                {{ ui.palette_icon('webhook', 'brand', size='sm') }}
                 <div>
                     <h3 class="text-base font-semibold text-content-primary">Signed Webhook Deliveries</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Committed signed transport receipts; not repository collection evidence.</p>
@@ -18,7 +18,7 @@
             </div>
             {{ integration_status('ready' if delivery_pagination.total_items else 'not_observed', delivery_pagination.total_items ~ ' Deliveries', display='text') }}
         </div>
-        {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing job history') }}
+        {{ loading_bar.render('github-runtime-deliveries-loading', label='Refreshing signed webhook receipts') }}
     </header>
     <form method="get"
           action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime') }}"

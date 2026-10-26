@@ -1492,3 +1492,53 @@ matches `integration_type=source_control` and the exact canonical instance
 before returning a result. The tab readiness badge is refreshed using the
 shared OOB badge macro. No new worker/task/queue or provider GET on normal
 workspace rendering was introduced.
+
+
+## 2026-10-26 — #3306 Runtime & Inventory parity / review holding UAT
+
+**UI authority:** reuse Kubernetes Runtime Health & Diagnostics and Inventory &
+Lifecycle decision layout, Alertmanager shared Runtime Decision, and KAORI
+shared connection header, table, pagination, status, loading and worker
+poller. GitHub Full Validation header/boundary explanations are shortened,
+without altering readiness semantics.
+
+**Runtime & History:** Runtime Refresh is the existing admission-gated
+`enqueue_github_app_job(operation='runtime_refresh')`; the same local
+super-admin + `integrations.manage` + CSRF restrictions apply. A permitted,
+record-scoped status poll returns only the current canonical instance's
+JobExecution result; worker access and provider calls remain separate from
+GET. Runtime health is not inferred from installation registration or
+Full Validation. The Runtime Decision, current evidence, paginated/filtered
+JobExecution history and signed webhook delivery receipts are distinct
+evidence areas. Webhook receipts are transport evidence, not repository
+collection, and secrets/payload hashes are not projected.
+
+**Inventory & Lifecycle:** `read_installation_inventory` remains the
+sole installation-authorized committed repository read projection. Its
+`total=None` indicates *Unknown* when no committed complete generation
+exists, distinct from a committed `total=0`. The decision shows freshness,
+coverage, connection lifecycle context and provider evidence ownership.
+Boundaries describe GitHub permission authority and preserved predecessor
+history; they do NOT authorize deletion, move old evidence, or create a new
+provider identity. Sync Repositories is separate and gated by Full
+Validation. Registry uses KAORI shared table/page controls, default five,
+standard 5/10/25/50 Rows and existing HTMX polling.
+
+### Acceptance evidence to capture
+1. Run Ruff Check, Ruff Format, djLint and scoped pytest on exact holding
+   SHA. Prior **65 pytest passed** is older-SHA evidence. Format failures
+   identified in the operator's previous QA logs need a new PASS.
+2. Desktop 1440x900 / mobile 390x844, light/dark. Compare Header/Runtime
+   Decision/Inventory & Lifecycle with Kubernetes and Alertmanager.
+3. Runtime not observed vs completed Runtime Refresh; job/delivery empty,
+   filter, pagination, active loader/status polling, forbidden access and
+   CSRF handling. Cross-installation task snapshots must return 404.
+4. Inventory Unknown vs committed zero vs committed nonzero, exact SHA,
+   pagination, and freshness; refresh does not broaden installation scope
+   or call GitHub directly.
+5. Run authorised Full Validation, then Sync Repositories separately.
+   Verify no unsolicited provider mutation, no automatic lifecycle
+   deletion or successor migration. Human Visual Acceptance required.
+
+No official Developer Check, Full Admission, staging/main promotion or
+release until the operator accepts this holding UAT.

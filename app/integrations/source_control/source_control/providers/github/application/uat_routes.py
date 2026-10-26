@@ -17,9 +17,9 @@ from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.capability_registry import build_capability_registry_view
-from app.common.pagination import paginate_query
 from app.integrations.source_control.repository_inventory import read_installation_inventory
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
     github_capability_context,
@@ -139,13 +139,14 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     """Bounded, installation-scoped committed JobExecution and delivery evidence."""
     job_status = request.args.get('job_status', '').strip()
     delivery_state = request.args.get('delivery_state', '').strip()
-    allowed_jobs = {'queued', 'running', 'retrying', 'succeeded', 'partially_succeeded', 'failed', 'canceled'}
+    allowed_jobs = {'queued', 'running', 'retrying', 'cancel_requested', 'succeeded', 'partially_succeeded', 'failed', 'canceled', 'expired'}
     allowed_delivery = {'received', 'queued', 'processing', 'processed', 'completed', 'failed', 'ignored'}
     if job_status not in allowed_jobs:
         job_status = ''
     if delivery_state not in allowed_delivery:
         delivery_state = ''
     jobs_query = JobExecution.query.filter(
+        JobExecution.integration_type == 'source_control',
         or_(
             JobExecution.integration_instance_id == installation.integration_instance_id,
             JobExecution.scope_key == f'installation:{installation.id}',
@@ -168,6 +169,7 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     )
     last_refresh = (
         JobExecution.query.filter_by(
+            integration_type='source_control',
             integration_instance_id=installation.integration_instance_id,
             operation='runtime_refresh',
         )
