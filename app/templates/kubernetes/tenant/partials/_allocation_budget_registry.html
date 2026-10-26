@@ -21,25 +21,25 @@
     {% set header_actions %}
         {% if capacity_filters.search or capacity_filters.environment or capacity_filters.state or capacity_filters.evidence or capacity_filters.resource %}
             {{ registry_ui.clear_filters_link('tenant.resource_profiles',
-                capacity_registry_id,
-                capacity_loading_id,
-                capacity_pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'view': 'capacity', 'allocation_view': 'budget', 'allocation_cluster_id': allocation_cluster_id},
-                page_param='capacity_page',
-                per_page_param='capacity_per_page') }}
+                        capacity_registry_id,
+                        capacity_loading_id,
+                        capacity_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'view': 'capacity', 'allocation_view': 'budget', 'allocation_cluster_id': allocation_cluster_id},
+            page_param='capacity_page',
+            per_page_param='capacity_per_page') }}
         {% endif %}
     {% endset %}
     {% set title_info %}
         {{ info_tip.render('allocation-budget-status-tip',
-            'Allocation Budget status',
-            'Cluster posture is derived from committed Budget, requests, and remaining Headroom.',
-            [
+                'Allocation Budget status',
+                'Cluster posture is derived from committed Budget, requests, and remaining Headroom.',
+                [
                 'Unknown capacity evidence is never treated as free headroom.',
                 'CPU, Memory and Pods represent request commitments, not actual usage.',
                 'Storage is a logical admission ceiling, not physical backend free space.'
-            ],
-            placement='right', variant='guide') }}
+                ],
+                placement='right', variant='guide') }}
     {% endset %}
     {{ table_ui.inventory_block_header('chart-no-axes-combined',
         'Allocation Budget',
@@ -61,13 +61,17 @@
             per_page_param='capacity_per_page') %}
             <input type="hidden" name="view" value="capacity">
             <input type="hidden" name="allocation_view" value="budget">
-            <input type="hidden" name="allocation_cluster_id" value="{{ allocation_cluster_id }}">
+            <input type="hidden"
+                   name="allocation_cluster_id"
+                   value="{{ allocation_cluster_id }}">
             <div>
-                <label for="capacity-budget-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="capacity-budget-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('capacity_search', capacity_filters.search, 'Cluster name or environment', id='capacity-budget-search') }}
             </div>
             <div>
-                <label for="capacity-environment-filter" class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <label for="capacity-environment-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
                 <select id="capacity-environment-filter"
                         name="capacity_environment"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -79,7 +83,8 @@
                 </select>
             </div>
             <div>
-                <label for="capacity-state-filter" class="{{ table_ui.filter_label_classes() }}">Capacity State</label>
+                <label for="capacity-state-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Capacity State</label>
                 <select id="capacity-state-filter"
                         name="capacity_state"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -91,27 +96,33 @@
                 </select>
             </div>
             <div>
-                <label for="capacity-evidence-filter" class="{{ table_ui.filter_label_classes() }}">Evidence</label>
+                <label for="capacity-evidence-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Evidence</label>
                 <select id="capacity-evidence-filter"
                         name="capacity_evidence"
                         class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Evidence</option>
                     {% for state in capacity_evidence_options %}
                         <option value="{{ state|lower }}"
-                                {% if capacity_filters.evidence == state|lower %}selected{% endif %}>{{ state|replace('_', ' ')|title }}</option>
+                                {% if capacity_filters.evidence == state|lower %}selected{% endif %}>{{ state|replace('_', ' ') |title }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="capacity-resource-filter" class="{{ table_ui.filter_label_classes() }}">Resource</label>
+                <label for="capacity-resource-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Resource</label>
                 <select id="capacity-resource-filter"
                         name="capacity_resource"
                         class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Resources</option>
-                    <option value="cpu" {% if capacity_filters.resource == 'cpu' %}selected{% endif %}>CPU Requests</option>
-                    <option value="memory_bytes" {% if capacity_filters.resource == 'memory_bytes' %}selected{% endif %}>Memory Requests</option>
-                    <option value="pods" {% if capacity_filters.resource == 'pods' %}selected{% endif %}>Pod Slots</option>
-                    <option value="storage_bytes" {% if capacity_filters.resource == 'storage_bytes' %}selected{% endif %}>Logical Storage</option>
+                    <option value="cpu"
+                            {% if capacity_filters.resource == 'cpu' %}selected{% endif %}>CPU Requests</option>
+                    <option value="memory_bytes"
+                            {% if capacity_filters.resource == 'memory_bytes' %}selected{% endif %}>Memory Requests</option>
+                    <option value="pods"
+                            {% if capacity_filters.resource == 'pods' %}selected{% endif %}>Pod Slots</option>
+                    <option value="storage_bytes"
+                            {% if capacity_filters.resource == 'storage_bytes' %}selected{% endif %}>Logical Storage</option>
                 </select>
             </div>
         {% endcall %}
