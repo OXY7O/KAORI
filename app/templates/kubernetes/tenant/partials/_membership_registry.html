@@ -236,17 +236,16 @@
         per_page_param='membership_per_page') }}
 </section>
 {{ destructive_modal.render('tenant-membership-revoke-modal',
-    'Revoke Membership',
-    'Selected principal',
-    'KAORI preserves the Membership record and its authorization history.',
-    'tenant-membership-revoke-submit',
-    action_label='Revoke Membership',
-    notice='Revoke disables this Membership and dependent grants; restoring identity later does not restore previously revoked access.',
-    scope_value='Tenant Membership',
-    impact_items=[
-        ('user-x', 'Revoke Membership', 'The selected principal is no longer authorized through this Tenant Membership.'),
-        ('shield-x', 'Revoke dependent grants', 'Active Access Grants are revoked and their provider cleanup is reconciled.'),
-        ('history', 'Keep audit history', 'Membership and Access Grant evidence remain queryable for review.')
-    ],
-    warning='Review the principal and Tenant before confirming this governed access change.',
-    access_chrome=true) }}
+'Revoke Membership',
+'Selected principal',
+'KAORI preserves the Membership record and its authorization history.',
+'tenant-membership-revoke-submit',
+action_label='Revoke Membership',
+notice='Reactivating this Membership later will not restore revoked Access Grants; new authorization is required.',
+scope_value='Tenant Membership',
+impact_items=[
+('user-x', 'Disable Membership', 'The principal loses authorization through this Tenant Membership.'),
+('shield-x', 'Revoke dependent grants', 'Active Access Grants are revoked and provider cleanup is reconciled.'),
+('history', 'Preserve audit history', 'Membership and Access Grant evidence remain available for review.')
+],
+presentation='membership') }}
