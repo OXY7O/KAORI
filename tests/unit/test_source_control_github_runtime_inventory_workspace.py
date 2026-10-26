@@ -271,15 +271,15 @@ def test_runtime_filter_controls_and_kaori_tab_counters():
             assert f'{field}={field}' in page
             assert f'<input type="hidden" name="{field}"' in page or field == fields[0]
         assert 'hx-trigger="change, input changed delay:400ms, submit"' in page
-        assert "registry_ui.clear_filters_action(" in page
+        assert 'registry_ui.clear_filters_action(' in page
         assert f"runtime_view='{view}'" in page
 
     assert "JobExecution.integration_type == 'source_control'" in routes
-    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
-    assert "JobExecution.queue_name == job_queue" in routes
-    assert "SourceWebhookDelivery.event_type == delivery_event" in routes
-    assert "JobExecution.operation.ilike(" in routes
-    assert "SourceWebhookDelivery.action.ilike(" in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
+    assert 'JobExecution.queue_name == job_queue' in routes
+    assert 'SourceWebhookDelivery.event_type == delivery_event' in routes
+    assert 'JobExecution.operation.ilike(' in routes
+    assert 'SourceWebhookDelivery.action.ilike(' in routes
     assert "request.args.get('job_search', '').strip()[:80]" in routes
     assert "request.args.get('delivery_search', '').strip()[:80]" in routes
     assert '.limit(50)' in routes
