@@ -28,37 +28,49 @@ class CapabilityCopy:
 
 _CAPABILITIES = (
     CapabilityCopy(
-        'repository_inventory', 'Repository Inventory', 'Inventory',
+        'repository_inventory',
+        'Repository Inventory',
+        'Inventory',
         'Checks App metadata permission needed to discover granted repositories.',
         'Permits a separate authorized repository inventory synchronization.',
         'Run Full Validation; then synchronize repositories separately.',
     ),
     CapabilityCopy(
-        'source_revision', 'Source Revision', 'Source Control',
+        'source_revision',
+        'Source Revision',
+        'Source Control',
         'Checks read access for exact default-branch SHA evidence.',
         'Supports committed source revision correlation after synchronization.',
         'Grant Contents: read and rerun Full Validation if unavailable.',
     ),
     CapabilityCopy(
-        'pull_requests', 'Pull Requests', 'Collaboration',
+        'pull_requests',
+        'Pull Requests',
+        'Collaboration',
         'Checks optional Pull Requests: read permission.',
         'Supports authorized pull-request correlations, not historical coverage by itself.',
         'Grant Pull Requests: read only when an approved workflow requires it.',
     ),
     CapabilityCopy(
-        'workflow_runs', 'Workflow Runs', 'Automation',
+        'workflow_runs',
+        'Workflow Runs',
+        'Automation',
         'Checks optional Actions: read permission.',
         'Allows workflow run evidence when an authorized collection exists.',
         'Grant Actions: read only for approved workflow correlation.',
     ),
     CapabilityCopy(
-        'check_runs', 'Check Runs', 'Assurance',
+        'check_runs',
+        'Check Runs',
+        'Assurance',
         'Checks optional Checks: read permission.',
         'Allows check-run correlation with committed source evidence.',
         'Grant Checks: read only for approved check-run collection.',
     ),
     CapabilityCopy(
-        'deployments', 'Deployments', 'Delivery',
+        'deployments',
+        'Deployments',
+        'Delivery',
         'Checks optional Deployments: read permission.',
         'Allows deployment correlation when explicitly authorized.',
         'Grant Deployments: read only for approved deployment correlation.',
@@ -106,13 +118,7 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
             else 'No committed Full Validation permission assessment is available for this capability.'
         )
         status_key = (
-            'ready'
-            if verified
-            else 'unverified'
-            if not observed
-            else 'blocked'
-            if required
-            else 'optional_gap'
+            'ready' if verified else 'unverified' if not observed else 'blocked' if required else 'optional_gap'
         )
         rows.append(
             {
@@ -145,20 +151,21 @@ def github_capability_context(canonical: Any) -> dict[str, Any]:
                 'success_criteria': f'Full Validation confirms {required_label} for this installation.',
                 'configuration_guidance': 'Manage the GitHub App installation grants in GitHub.',
                 'impact': capability.impact,
-                'remediation': [] if verified else [
+                'remediation': []
+                if verified
+                else [
                     'Review the installation permissions in GitHub.',
                     'Rerun Full Validation and separately authorize collection where relevant.',
                 ],
                 'evidence': evidence_text,
                 'next_action': 'No permission change required; repository evidence needs its own synchronization.'
-                if verified else capability.next_action,
+                if verified
+                else capability.next_action,
             }
         )
 
     verified_count = sum(bool(row['available']) for row in rows)
-    required_missing = (
-        sum(row['required'] and not row['available'] for row in rows) if observed else None
-    )
+    required_missing = sum(row['required'] and not row['available'] for row in rows) if observed else None
     return {
         'capability_rows': rows,
         'capability_summary': {

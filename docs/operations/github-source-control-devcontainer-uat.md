@@ -1542,3 +1542,32 @@ standard 5/10/25/50 Rows and existing HTMX polling.
 
 No official Developer Check, Full Admission, staging/main promotion or
 release until the operator accepts this holding UAT.
+
+
+## 2026-10-26 — #3306 Human UAT follow-up (Toast, Help, Tabs, Registry)
+
+- **Configuration feedback:** existing `record_operational_activity(..., queue_feedback=True)`
+  remains authoritative and creates the standard dismissible operational
+  success toast. The duplicate persistent `Connection Operation` callout
+  is suppressed for `configuration_updated` and
+  `configuration_revalidation_required`, while blocking/error callouts
+  remain visible. No new toast runtime or direct provider change.
+- **KAORI hover info:** Connection Contract, GitHub Full Validation and
+  Repository Inventory & Lifecycle use the existing accessible
+  `components/info_tip.html` popover. Shared connection header gains
+  optional `title_extra` for additive reuse.
+- **Evidence Boundary:** compact copy preserves GitHub as grants authority,
+  KAORI as committed repository/revision evidence owner.
+- **Runtime & History:** one server-owned compact `content_tabs.render_links`
+  registry with Recent Jobs / Signed Webhook Deliveries; selected view via
+  `?tab=runtime&runtime_view=jobs|deliveries` supports browser history and
+  no-JS navigation. Both underlying server-backed HTMX table fragments
+  retain their own filter, Clear Filters, 5-row default, Rows, pagination
+  and loading. Scope/authorization remains installation-specific.
+- **Inventory & Lifecycle:** committed Repository Registry is a separate,
+  full-width `table_ui.block_classes` section after the decision card
+  using existing table/pagination; never confuse Unknown with committed 0,
+  or sync grants automatically.
+- **Evidence pending:** run executable Ruff/djLint/pytest and desktop/mobile
+  light/dark/keyboard/HTMX Visual QA on exact merge SHA. This is still
+  temporary holding UAT, not Human Acceptance or official CI/CD admission.

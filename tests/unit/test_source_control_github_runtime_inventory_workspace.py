@@ -42,7 +42,7 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
     assert "snapshot.get('operation') != 'runtime_refresh'" in routes
     assert 'validate_snapshot_access(' in routes
     assert 'integration_instance_id=installation.integration_instance_id' in routes
-    assert "FlaskForm().validate_on_submit()" in routes
+    assert 'FlaskForm().validate_on_submit()' in routes
     assert 'provider.refresh(' not in routes
     assert 'requests.get(' not in routes
     assert 'jobs' in jobs and 'deliveries' in deliveries
@@ -57,9 +57,9 @@ def test_history_registries_are_scoped_server_filtered_paginated():
 
     assert "JobExecution.integration_type == 'source_control'" in routes
     assert 'JobExecution.integration_instance_id == installation.integration_instance_id' in routes
-    assert "SourceWebhookDelivery.query.filter_by(installation_id=installation.id)" in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
     assert "operation='runtime_refresh'" in routes
-    assert "runtime_refresh_job" in routes
+    assert 'runtime_refresh_job' in routes
     assert 'paginate_query(' in routes
     for panel, field in ((jobs, 'job_per_page'), (deliveries, 'delivery_per_page')):
         assert 'data-kaori-server-filtered-registry' in panel
@@ -98,17 +98,91 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'components/pagination.html' in registry
     assert '[5, 10, 25, 50]' in registry
     assert 'hx-trigger="every 15s"' in registry
-    assert "read_installation_inventory(" in routes
+    assert 'read_installation_inventory(' in routes
     assert 'authorized_installation_id=installation.id' in routes
-    assert "committed_generation == 0" in projection
-    assert "total=None" in projection
+    assert 'committed_generation == 0' in projection
+    assert 'total=None' in projection
     assert 'github.com/settings' not in inventory
 
 
 def test_copy_is_short_and_provider_evidence_not_overclaimed():
     validation = _read(GITHUB / 'partials/_detail_validation.html')
     assert 'Validate GitHub App identity and read permissions before repository sync.' in validation
-    assert 'GitHub owns grants; KAORI commits inventory and SHA after sync.' in validation
+    assert 'GitHub owns permissions; KAORI commits inventory and exact source revisions after synchronization.' in validation
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
     assert 'not repository synchronization or provider-side runtime history' in runtime
     assert 'registration' not in runtime.lower()
+
+
+def test_github_connection_save_uses_operational_toast_not_persistent_banner():
+    detail = _read(GITHUB / 'uat_detail.html')
+    routes = _read(ROUTES)
+    app = _read(ROOT / 'app/templates/layouts/app.html')
+
+    assert "feedback not in ['configuration_updated', 'configuration_revalidation_required']" in detail
+    assert "'configuration_updated':" in detail
+    assert "feedback in feedback_map and feedback not in" in detail
+    assert "event_type='source_control_connection_updated'" in routes
+    assert "queue_feedback=True" in routes
+    assert "components/operational_toast.html" in app
+
+
+def test_github_header_help_reuses_accessible_kaori_info_tip():
+    detail = _read(GITHUB / 'uat_detail.html')
+    validation = _read(GITHUB / 'partials/_detail_validation.html')
+    inventory = _read(GITHUB / 'partials/_detail_inventory.html')
+    header = _read(ROOT / 'app/templates/components/connection_validation_header.html')
+
+    assert "title_extra=connection_title_tip" in detail
+    assert "github-connection-contract-guide" in detail
+    assert "github-full-validation-guide" in validation
+    assert "github-inventory-lifecycle-guide" in inventory
+    assert "components/info_tip.html" in validation
+    assert "components/info_tip.html" in inventory
+    assert "title_extra=None" in header
+    assert "if title_extra" in header
+
+
+def test_github_runtime_history_is_one_accessible_two_tab_registry():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
+    deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
+    routes = _read(ROUTES)
+    content_tabs = _read(ROOT / 'app/templates/components/content_tabs.html')
+
+    assert "content_tabs.render_links(" in runtime
+    assert "data-kaori-github-runtime-registry-tabs" in runtime
+    assert "id=\"github-runtime-evidence-registry\"" in runtime
+    assert "runtime_view == 'deliveries'" in runtime
+    assert "runtime_table_embedded = true" in runtime
+    assert runtime.count('partials/_runtime_jobs.html') == 1
+    assert runtime.count('partials/_runtime_deliveries.html') == 1
+    assert "render_links(" in content_tabs
+    for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
+        assert f'data-kaori-runtime-registry-view="{kind}"' in page
+        assert f"runtime_view='{kind}'" in page
+        assert "runtime_table_embedded|default(false)" in page
+        assert "components/pagination.html" in page
+        assert "components/loading_bar.html" in page
+        assert "data-kaori-auto-submit" in page
+        assert "registry_ui.clear_filters_action(" in page
+    assert routes.count('runtime_table_embedded=True') == 2
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
+
+
+def test_github_committed_repository_registry_is_full_width_sibling():
+    decision = _read(GITHUB / 'partials/_detail_inventory.html')
+    registry = _read(GITHUB / '_inventory_table.html')
+    table = _read(ROOT / 'app/templates/components/table.html')
+
+    assert 'github-inventory-lifecycle-guide' in decision
+    assert decision.index('</section>\n{% include "integrations/source_control/github/_inventory_table.html" %}') > 0
+    assert '<section id="source-control-inventory"' in registry
+    assert 'table_ui.block_classes(allow_overflow=true)' in registry
+    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in registry
+    assert '<caption class="sr-only">' in registry
+    assert 'scope="col"' in registry
+    assert 'macro block_classes(' in table
+    assert 'inventory.total is none' in registry
+    assert 'inventory.total == 0' in registry
+    assert 'exact_default_branch_sha' in registry

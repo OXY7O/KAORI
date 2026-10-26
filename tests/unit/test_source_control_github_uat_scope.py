@@ -181,9 +181,7 @@ def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secre
     validation = (
         root / 'app/templates/integrations/source_control/github/partials/_detail_validation.html'
     ).read_text()
-    inventory = (
-        root / 'app/templates/integrations/source_control/github/partials/_detail_inventory.html'
-    ).read_text()
+    inventory = (root / 'app/templates/integrations/source_control/github/partials/_detail_inventory.html').read_text()
     deliveries = (
         root / 'app/templates/integrations/source_control/github/partials/_runtime_deliveries.html'
     ).read_text()

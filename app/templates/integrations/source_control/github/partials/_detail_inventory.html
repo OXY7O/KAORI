@@ -2,6 +2,7 @@
 {% import "integrations/components/_workspace.html" as ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set committed = inventory.total is not none %}
 {% set can_sync = readiness == 'ready' %}
@@ -11,7 +12,16 @@
     {% call connection_validation_header.render(
         'Repository Inventory & Lifecycle',
         'Review committed repository grants, revision freshness, provider authority, and lifecycle guardrails.',
-        icon='database'
+        icon='database',
+        title_extra=info_tip.render('github-inventory-lifecycle-guide',
+            'GitHub Repository Inventory & Lifecycle',
+            'KAORI displays committed installation-scoped repository grants, exact revisions, and lifecycle boundaries.',
+            [
+                'Unknown means no committed complete collection, not zero repositories.',
+                'GitHub remains authoritative for grants; KAORI does not revoke access here.',
+                'Installation replacement preserves separate predecessor evidence.'
+            ],
+            placement='right')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
@@ -86,5 +96,5 @@
                class="{{ action_button.classes('secondary') }}">Configure Connection</a>
         </div>
     </div>
-    {% include "integrations/source_control/github/_inventory_table.html" %}
 </section>
+{% include "integrations/source_control/github/_inventory_table.html" %}

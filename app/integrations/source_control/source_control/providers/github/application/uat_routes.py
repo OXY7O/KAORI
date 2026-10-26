@@ -140,8 +140,15 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     job_status = request.args.get('job_status', '').strip()
     delivery_state = request.args.get('delivery_state', '').strip()
     allowed_jobs = {
-        'queued', 'running', 'retrying', 'cancel_requested', 'succeeded',
-        'partially_succeeded', 'failed', 'canceled', 'expired',
+        'queued',
+        'running',
+        'retrying',
+        'cancel_requested',
+        'succeeded',
+        'partially_succeeded',
+        'failed',
+        'canceled',
+        'expired',
     }
     allowed_delivery = {'received', 'queued', 'processing', 'processed', 'completed', 'failed', 'ignored'}
     if job_status not in allowed_jobs:
@@ -153,7 +160,7 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         or_(
             JobExecution.integration_instance_id == installation.integration_instance_id,
             JobExecution.scope_key == f'installation:{installation.id}',
-        )
+        ),
     ).order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
     if job_status:
         jobs_query = jobs_query.filter(JobExecution.status == job_status)
@@ -526,6 +533,7 @@ def runtime_jobs(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/partials/_runtime_jobs.html',
         installation=installation,
+        runtime_table_embedded=True,
         **_runtime_context(installation),
     )
 
@@ -539,6 +547,7 @@ def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/partials/_runtime_deliveries.html',
         installation=installation,
+        runtime_table_embedded=True,
         **_runtime_context(installation),
     )
 
@@ -563,9 +572,7 @@ def runtime_refresh(installation_id: int) -> ResponseReturnValue:
         )
     if request.headers.get('HX-Request') == 'true':
         return _render_runtime_content(installation, runtime_refresh_job=job)
-    return redirect(
-        url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_queued')
-    )
+    return redirect(url_for('github_source_uat.detail', installation_id=installation_id, feedback='runtime_queued'))
 
 
 @github_uat_bp.get('/installations/<int:installation_id>/runtime/refresh/status/<string:task_id>')
@@ -573,14 +580,18 @@ def runtime_refresh(installation_id: int) -> ResponseReturnValue:
 def runtime_refresh_status(installation_id: int, task_id: str) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(
-        snapshot,
-        integration_type='source_control',
-        integration_instance_id=installation.integration_instance_id,
-    ) or snapshot.get('operation') != 'runtime_refresh':
+    if (
+        not validate_snapshot_access(
+            snapshot,
+            integration_type='source_control',
+            integration_instance_id=installation.integration_instance_id,
+        )
+        or snapshot.get('operation') != 'runtime_refresh'
+    ):
         abort(404)
     response = _render_runtime_content(installation, runtime_refresh_job=snapshot)
     return validation_poll_response(response.get_data(as_text=True), snapshot=snapshot)
+
 
 @github_uat_bp.post('/installations/<int:installation_id>/validate')
 @permission_required('integrations.manage')

@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "integrations/components/_provider_operational_context.html" as operational_context %}
@@ -59,7 +60,7 @@
                 posture_key="github") }}
             </div>
         </section>
-        {% if feedback in feedback_map %}
+        {% if feedback in feedback_map and feedback not in ['configuration_updated', 'configuration_revalidation_required'] %}
             {{ operational_callout.render("Connection Operation",
                         feedback_map[feedback],
                         icon="info",
@@ -85,10 +86,22 @@
                             {% set github_connection_status %}
                                 {{ integration_status(readiness, display='text') }}
                             {% endset %}
+                            {% set connection_title_tip %}
+                                {{ info_tip.render('github-connection-contract-guide',
+                                    'GitHub Connection Contract',
+                                    'KAORI owns the canonical connection identity and audit context. GitHub owns App installations and repository permissions.',
+                                    [
+                                        'Saving descriptive settings preserves the existing provider installation identity.',
+                                        'Grant changes or App credential rotation require a fresh Full Validation.',
+                                        'Repository evidence is committed only after separately authorized synchronization.'
+                                    ],
+                                    placement='right') }}
+                            {% endset %}
                             {{ ui.section_header('file-key-2',
                                                         'Connection Contract',
                                                         'Canonical identity, installation access, provider authority, and operational ownership for this GitHub connection.',
-                                                        action_html=github_connection_status) }}
+                                                        action_html=github_connection_status,
+                                                        title_extra=connection_title_tip) }}
                             <section aria-labelledby="github-connection-summary-title"
                                      data-kaori-connection-summary>
                                 <h3 id="github-connection-summary-title" class="sr-only">Connection Summary</h3>
