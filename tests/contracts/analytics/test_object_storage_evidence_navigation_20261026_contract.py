@@ -39,7 +39,11 @@ def test_domain_context_preserves_source_authority_and_deep_link() -> None:
     routes = read('app/storage/object_storage/analytics/routes.py')
 
     assert "url_for('analytics.object_storage_overview'" in component
-    for query in ('system_id=system.id', 'time_range=selected_time_range', "tab='evidence'"):
+    for query in (
+        'system_id=system.id',
+        'time_range=selected_time_range',
+        "tab='evidence'",
+    ):
         assert query in component
     assert 'data-object-storage-central-evidence-link' in component
     assert 'data-object-storage-domain-evidence-context' in component
@@ -59,7 +63,9 @@ def test_domain_context_preserves_source_authority_and_deep_link() -> None:
     ):
         assert source in component
     assert "default('Unknown')" in component
-    assert "context_status = analytics_materialization.label|default('Unavailable')" in component
+    assert (
+        "context_status = analytics_materialization.label|default('Unavailable')" in component
+    )
     assert "context_status = forecast_materialization.label|default('Unavailable')" in component
 
 
@@ -91,7 +97,7 @@ def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
     assert 'partials/_performance_analysis.html' in performance
 
 
-def test_overview_evidence_coverage_and_embedded_reconciliation_follow_kaori_table_standard() -> None:
+def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
     context = read(f'{PARTIALS}/_overview_evidence_context.html')
     reconciliation = read(f'{PARTIALS}/_reconciliation.html')
     capacity = read(f'{PARTIALS}/_capacity_workspace.html')
