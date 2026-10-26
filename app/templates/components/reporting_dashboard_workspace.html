@@ -119,12 +119,12 @@
         </aside>
     {% endcall %}
 {%- endmacro %}
-{% macro guidance(scope_label, evidence_label, narrow_scope_label) -%}
+{% macro guidance(scope_label, evidence_label, narrow_scope_label, generate_copy=None) -%}
     {% set reporting_steps = [
             ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
             ('02', 'layout-template', 'Select', 'Choose the report and narrowest scope for accurate results.'),
             ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, and ownership.'),
-            ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review the result.'),
+            ('04', 'file-check-2', 'Generate', generate_copy or ('Render from ' ~ evidence_label ~ ' and review the result.')),
             ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
             ('06', 'archive', 'Retain', 'Preserve the artifact and supporting audit evidence for traceability.')
         ] %}
