@@ -78,14 +78,14 @@ def test_every_tab_has_shared_header_inside_single_accessible_control_hub() -> N
     assert 'data-auth-security-card-header="{{ id }}"' in shared
     assert 'table_label.status_indicator_label(status, status_tone)' in shared
     for name, tab in data.items():
+        key = 'session' if name == 'sessions' else name
+        intro = 'control' if name == 'overview' else key
+        hub_marker = f'data-auth-security-{key}-hub="true"'
+        intro_marker = f'data-auth-security-{intro}-intro="above-card"'
         assert tab.count('assurance.control_header(') == 1, name
-        assert tab.count(f'data-auth-security-{name if name != "sessions" else "session"}-hub="true"') == 1
-        intro = 'control' if name == 'overview' else name if name != 'sessions' else 'session'
-        assert f'data-auth-security-{intro}-intro="above-card"' in tab
-        header_index = tab.index('assurance.control_header(')
-        hub_index = tab.index(f'data-auth-security-{name if name != "sessions" else "session"}-hub="true"')
-        intro_index = tab.index(f'data-auth-security-{intro}-intro="above-card"')
-        assert intro_index < hub_index < header_index
+        assert tab.count(hub_marker) == 1
+        assert intro_marker in tab
+        assert tab.index(intro_marker) < tab.index(hub_marker) < tab.index('assurance.control_header(')
     assert source.count('assurance.render(') == 4
     assert source.count('assurance.control_header(') == 4
 
