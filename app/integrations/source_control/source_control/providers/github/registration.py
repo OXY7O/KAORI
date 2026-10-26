@@ -349,3 +349,70 @@ def update_github_connection_configuration(
         db.session.rollback()
         raise
     return invalidates_readiness
+
+
+def build_successor_connection_input(
+    predecessor: SourceInstallation,
+    *,
+    successor_name: str,
+    app_id: str,
+    installation_id: str,
+    account_id: str,
+    private_key_pem: str | None,
+    webhook_secret: str | None,
+) -> GitHubConnectionInput:
+    """Prepare a new installation without overwriting predecessor evidence."""
+    canonical = predecessor.integration_instance
+    credential = predecessor.github_app_credential
+    if (
+        predecessor.provider_key != 'github'
+        or predecessor.host_key != 'github.com'
+        or canonical is None
+        or canonical.integration_type != 'source_control'
+        or canonical.provider_key != 'github'
+        or canonical.adapter_key != 'github_rest_v3'
+        or canonical.id != predecessor.integration_instance_id
+    ):
+        raise GitHubProviderError('Predecessor is not a canonical GitHub connection.')
+    try:
+        new_app_id = str(_positive_provider_id(app_id))
+        new_installation_id = str(_positive_provider_id(installation_id))
+        new_account_id = str(_positive_provider_id(account_id))
+    except ValueError as exc:
+        raise ValueError('GitHub App, installation, and account IDs must be positive integers.') from exc
+    if new_app_id == predecessor.native_app_id and new_installation_id == predecessor.native_installation_id:
+        raise ValueError('The replacement must use a different GitHub App or Installation ID.')
+
+    same_app = new_app_id == predecessor.native_app_id
+    if same_app and (
+        credential is None
+        or not credential.enabled
+        or credential.host_key != 'github.com'
+        or credential.native_app_id != new_app_id
+    ):
+        raise GitHubProviderError('Protected GitHub App credential is unavailable.')
+    if not same_app and (not private_key_pem or not webhook_secret):
+        raise ValueError('A different GitHub App requires a new PEM and webhook secret.')
+    if same_app and (private_key_pem or webhook_secret):
+        if (
+            not private_key_pem
+            or not webhook_secret
+            or not _same_secret(credential.private_key_pem, private_key_pem)
+            or not _same_secret(credential.webhook_secret, webhook_secret)
+        ):
+            raise GitHubProviderError(
+                'Shared GitHub App credentials must match the existing protected App; use credential rotation separately.'
+            )
+    values = GitHubConnectionInput(
+        name=_validate_name(successor_name),
+        environment=str(canonical.environment or ''),
+        description=canonical.description,
+        app_id=new_app_id,
+        installation_id=new_installation_id,
+        account_id=new_account_id,
+        private_key_pem=credential.private_key_pem if same_app else str(private_key_pem),
+        webhook_secret=credential.webhook_secret if same_app else str(webhook_secret),
+        enabled=bool(canonical.enabled),
+    )
+    _validate_configuration(values)
+    return values
