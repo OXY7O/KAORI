@@ -29,7 +29,7 @@
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'GitHub Full Validation',
-        'Validate GitHub App installation identity and read permission contracts; repository evidence is synchronized separately.',
+        'Validate GitHub App identity and read permissions before repository sync.',
         icon='scan-search',
         loading_id='github-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -70,7 +70,7 @@
                 'Provider Ready' if provider_ready else ('Validation Required' if not validation_observed else 'Review Required Permissions'),
                 'Metadata and Contents read permissions are verified.' if provider_ready else ('No committed Full Validation evidence yet.' if not validation_observed else 'Current readiness or required permission coverage needs review.'),
                 'normal' if provider_ready else ('info' if not validation_observed else 'critical'),
-                'Full Validation assesses App permissions; GitHub owns grants; repository synchronization owns committed repository and SHA evidence.',
+                'GitHub owns grants; KAORI commits inventory and SHA after sync.',
                 next_action
                 ) }}
         {% if provider_ready %}

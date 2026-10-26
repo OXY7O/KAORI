@@ -1,0 +1,90 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set committed = inventory.total is not none %}
+{% set can_sync = readiness == 'ready' %}
+<section class="{{ ui.section_shell_classes() }} font-sans"
+         data-kaori-github-inventory-lifecycle
+         data-kaori-inventory-lifecycle-decision>
+    {% call connection_validation_header.render(
+        'Repository Inventory & Lifecycle',
+        'Review committed repository grants, revision freshness, provider authority, and lifecycle guardrails.',
+        icon='database'
+        ) %}
+        <form method="post"
+              action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
+            {{ action_form.hidden_tag() }}
+            <button type="submit" class="{{ action_button.classes('primary') }}"
+                    {% if not can_sync %}disabled{% endif %}>
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                Sync Repositories
+            </button>
+        </form>
+    {% endcall %}
+    <div class="border-b border-outline-subtle bg-surface-subtle">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+            <div class="flex items-start gap-3">
+                {{ ui.palette_icon('database-zap', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Inventory & Lifecycle Decision</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Collection freshness, authoritative grants, evidence retention, and next controlled action.</p>
+                </div>
+            </div>
+            {{ integration_status('ready' if committed else 'not_observed', 'Committed' if committed else 'Not Observed', display='text') }}
+        </header>
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+             data-kaori-github-inventory-snapshot>
+            {% for label, value, helper, icon, tone in [
+                ('Committed Grants', inventory.total if committed else 'Unknown', 'Grant relationships; unknown is not zero', 'git-branch', 'normal' if committed else 'unknown'),
+                ('Coverage', inventory.coverage|replace('_', ' ')|title, 'Latest committed collection scope' if committed else 'Not yet committed', 'scan-search', 'normal' if committed else 'unknown'),
+                ('Snapshot Freshness', inventory.collected_at or 'Not Observed', 'Last successful committed collection', 'clock', 'info'),
+                ('Lifecycle Gate', 'Eligible' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Canonical connection lifecycle, not a deletion approval', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
+            ] %}
+                <article class="min-w-0 bg-surface-card p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                            <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
+                        </div>
+                        {{ ui.palette_icon(icon, tone, size='md') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2" data-kaori-inventory-lifecycle-boundary>
+            <section class="bg-surface-card px-4 py-4 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ ui.palette_icon('shield-check', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-content-primary">Provider Authority</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">GitHub owns installations and repository permissions. KAORI commits only authorized, effective-dated grants and exact revisions after synchronization.</p>
+                    </div>
+                </div>
+            </section>
+            <section class="bg-surface-card px-4 py-4 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ ui.palette_icon('archive-restore', 'info', size='sm') }}
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-content-primary">Historical Evidence Preserved</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Replacing an installation creates a successor; existing grants, revisions, JobExecution, and audit history remain linked to the predecessor.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div class="flex items-start gap-3">
+                {{ ui.palette_icon('route', 'brand', size='sm') }}
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Next Lifecycle Action</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Review collection freshness and exact revisions; resynchronize after grant changes.' if committed and can_sync else ('Run Sync Repositories to commit inventory evidence.' if can_sync else 'Complete Full Validation before repository synchronization.') }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
+               class="{{ action_button.classes('secondary') }}">Configure Connection</a>
+        </div>
+    </div>
+    {% include "integrations/source_control/github/_inventory_table.html" %}
+</section>
