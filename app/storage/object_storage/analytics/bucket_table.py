@@ -43,7 +43,10 @@ def build_bucket_table_view(
     usage_context = str(query_args.get('bucket_usage_context') or 'all').strip().lower()
     request_evidence = str(query_args.get('bucket_request_evidence') or 'all').strip().lower()
     if page_key not in {'performance', 'top_consumers'} or usage_context not in {
-        'all', 'metrics', 'inventory', 'unavailable'
+        'all',
+        'metrics',
+        'inventory',
+        'unavailable',
     }:
         usage_context = 'all'
     allowed_quota_states = {'all', 'configured', 'not_configured', 'unknown'}
@@ -79,9 +82,7 @@ def build_bucket_table_view(
 
     if request_evidence != 'all':
         filtered = [
-            row
-            for row in filtered
-            if (row.get('request_rate') is not None) == (request_evidence == 'available')
+            row for row in filtered if (row.get('request_rate') is not None) == (request_evidence == 'available')
         ]
 
     if quota_state == 'configured':
