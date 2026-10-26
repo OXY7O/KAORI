@@ -56,6 +56,7 @@ def index():
     tabs = tuple(
         (key, label, icon, url_for('access.authentication_security.index', tab=key)) for key, label, icon in _TABS
     )
+    submenu_tabs = tuple((key, label, icon, None, href) for key, label, icon, href in tabs)
     row = db.session.get(AuthenticationSecurityPolicy, 1)
     context = {
         'bot_mode': row.bot_mode if row is not None else 'disabled',
@@ -66,6 +67,7 @@ def index():
         'bot_tested_at': row.bot_tested_at if row is not None else None,
         'active_tab': active_tab,
         'tabs': tabs,
+        'submenu_tabs': submenu_tabs,
         'mfa_modes': tuple(mode.value for mode in MfaPolicyMode),
         'mfa_policy_mode': mfa_policy_mode(),
         'can_manage_authentication_security': current_user.has_permission('identity_providers.manage'),
