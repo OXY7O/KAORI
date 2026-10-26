@@ -329,6 +329,60 @@ def fail_vault_alert_observations(
     return True
 
 
+def _qualified_snapshot_payload(
+    payload: object, *, binding: IntegrationBinding, source: IntegrationInstance
+) -> dict[str, Any] | None:
+    """Fail closed unless the stored observation belongs to the exact binding and source."""
+    if (
+        not isinstance(payload, dict)
+        or type(payload.get('schema_version')) is not int
+        or payload['schema_version'] != 1
+        or type(payload.get('source_binding_id')) is not int
+        or payload['source_binding_id'] != binding.id
+        or type(payload.get('source_integration_id')) is not int
+        or payload['source_integration_id'] != source.id
+        or not isinstance(payload.get('status'), str)
+        or payload['status'] not in {'qualified', 'unobserved'}
+    ):
+        return None
+    return payload
+
+
+def _validated_snapshot_alert_handle(entry: object, *, created: datetime, instant: datetime) -> str | None:
+    """Validate one committed alert entry without trusting its payload schema."""
+    if not isinstance(entry, dict) or set(entry) != {
+        'handle',
+        'source_state',
+        'severity',
+        'starts_at',
+    }:
+        return None
+    handle, state, severity, started = (
+        entry['handle'],
+        entry['source_state'],
+        entry['severity'],
+        entry['starts_at'],
+    )
+    if (
+        not isinstance(handle, str)
+        or _HANDLE.fullmatch(handle) is None
+        or not isinstance(state, str)
+        or state not in _STATES.values()
+        or not isinstance(severity, str)
+        or severity not in _SEVERITIES
+        or not isinstance(started, str)
+        or len(started) > 64
+    ):
+        return None
+    try:
+        started_at = _start_at(started, now=created)
+    except _UnsafeSource:
+        return None
+    if started_at > instant + timedelta(minutes=5):
+        return None
+    return handle
+
+
 def read_vault_alert_observations(
     *,
     binding_id: int,
@@ -357,18 +411,8 @@ def read_vault_alert_observations(
     expires = _persisted_utc(snapshot.expires_at)
     if created is None or expires is None or not created <= instant <= expires or expires - created != _TTL:
         return {'state': 'stale', 'entries': None}
-    payload = snapshot.payload_json
-    if (
-        not isinstance(payload, dict)
-        or type(payload.get('schema_version')) is not int
-        or payload['schema_version'] != 1
-        or type(payload.get('source_binding_id')) is not int
-        or payload['source_binding_id'] != binding.id
-        or type(payload.get('source_integration_id')) is not int
-        or payload['source_integration_id'] != source.id
-        or not isinstance(payload.get('status'), str)
-        or payload['status'] not in {'qualified', 'unobserved'}
-    ):
+    payload = _qualified_snapshot_payload(snapshot.payload_json, binding=binding, source=source)
+    if payload is None:
         return {'state': 'unavailable', 'entries': None}
     entries = payload.get('entries')
     if not isinstance(entries, list) or len(entries) > _MAX_ALERTS:
@@ -386,35 +430,8 @@ def read_vault_alert_observations(
         return {'state': 'unavailable', 'entries': None}
     handles: list[str] = []
     for entry in entries:
-        if not isinstance(entry, dict) or set(entry) != {
-            'handle',
-            'source_state',
-            'severity',
-            'starts_at',
-        }:
-            return {'state': 'unavailable', 'entries': None}
-        handle, state, severity, started = (
-            entry['handle'],
-            entry['source_state'],
-            entry['severity'],
-            entry['starts_at'],
-        )
-        if (
-            not isinstance(handle, str)
-            or _HANDLE.fullmatch(handle) is None
-            or not isinstance(state, str)
-            or state not in _STATES.values()
-            or not isinstance(severity, str)
-            or severity not in _SEVERITIES
-            or not isinstance(started, str)
-            or len(started) > 64
-        ):
-            return {'state': 'unavailable', 'entries': None}
-        try:
-            started_at = _start_at(started, now=created)
-        except _UnsafeSource:
-            return {'state': 'unavailable', 'entries': None}
-        if started_at > instant + timedelta(minutes=5):
+        handle = _validated_snapshot_alert_handle(entry, created=created, instant=instant)
+        if handle is None:
             return {'state': 'unavailable', 'entries': None}
         handles.append(handle)
     if len(handles) != len(set(handles)):
