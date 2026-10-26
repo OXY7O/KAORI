@@ -137,8 +137,8 @@ def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -
     assert 'item.delta_percent_display' in reconciliation
     assert 'item.tone' in reconciliation
     assert 'data-kaori-dialog-open' in controller
-    assert "dialog.showModal()" in controller
-    assert "dialog.close()" in controller
+    assert 'dialog.showModal()' in controller
+    assert 'dialog.close()' in controller
 
 
 def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
