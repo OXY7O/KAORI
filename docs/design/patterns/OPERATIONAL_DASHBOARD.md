@@ -286,3 +286,87 @@ A dashboard-family change must update, in the same work item:
 6. the latest alignment audit for material decisions.
 
 Run the operational dashboard verifier and its focused dashboard characterization/contract suites before UAT.
+
+## Artifact Registry Overview visual UAT — 26 October 2026 (#3373)
+
+The six screenshot findings are **presentation-only** adjustments to the conforming
+`Artifact Registry → Overview` Operational Dashboard. They do not change provider
+authority, alert-state evaluation, metrics, quota risk thresholds, committed
+snapshot availability, report ownership, or the shared dashboard structure.
+
+- Top Consumers shows a concise desktop Consumer Insights sentence while retaining
+  **dynamic** project counts, numeric quota-ETA coverage, missing-horizon/Unknown
+  semantics, and source metadata. No absent ETA becomes an exhaustion date.
+- Capacity Snapshot keeps long Artifact Footprint/Quota Utilization headings on a
+  single line, moving the **Inventory/Used/Free** metadata to its own subordinate
+  row rather than obscuring or truncating the source label; values and progress
+  tracks remain unchanged. Forecast tiles use shorter evidence-qualified helpers.
+- Forecast Conclusion has a compact descriptive sentence selected by the already
+  calculated **Critical/Medium/Low/Unknown** risk. Its `title` retains both full
+  original source explanations, including the committed Inventory/Metrics Source
+  evidence boundary; the visible text never creates a forecast or new classification.
+- Alert Summary and the standard six-step Alert Interpretation & Response flow
+  use concise domain-owned descriptions. Critical/Warning interpretation copy
+  targets **three readable lines** in the narrow desktop peer card, and the six
+  workflow steps target **one line** where width permits. No truncation of severity
+  or provider lifecycle evidence.
+- Reporting uses the shared `reporting_dashboard_workspace.guidance()` macro with
+  a **Registry-only** optional `generate_copy` input. Its default is unchanged
+  for Kubernetes/Object Storage and other consumers. Evidence Backed is
+  `Committed snapshots` within the explicit Registry provider scope; the Generate
+  action remains read-only output from committed Registry snapshots, rendered in
+  approximately two lines on the peer grid.
+- Native responsive wrapping remains supported below the desktop breakpoint:
+  never hide critical meanings with forced ellipsis or synthetic metrics.
+
+### Gherkin — visual acceptance (pending operator replay)
+
+```gherkin
+Feature: Artifact Registry Overview compact presentation
+
+  Scenario: Top Consumers retains quota evidence while showing concise text
+    Given I selected a Registry provider with committed quota analytics
+    When I open Overview and select Capacity & Demand
+    Then Consumer Insights shows committed project and quota-horizon counts
+    And its desktop helper occupies one readable line
+    And missing numerical quota ETAs are not treated as zero-day forecasts
+
+  Scenario: Capacity and Forecast descriptions preserve their evidence boundary
+    Given I selected a Registry provider with committed Inventory and Analytics
+    When I view Capacity Snapshot and Forecast & Growth Risk
+    Then Artifact Footprint and Quota Utilization headings occupy one desktop line
+    And their Inventory and Used labels remain visible
+    And Footprint Growth has a concise one-line evidence helper
+    And Forecast Conclusion remains a one-line description of the current risk
+    And the full committed source explanation remains available
+    And Unknown risk never becomes Healthy
+
+  Scenario: Alerts interpretation stays readable without losing response steps
+    Given KAORI Alert Intelligence contains active Registry AlertCases
+    When I open Alerts Summary and Alert Interpretation & Response
+    Then the Alerts Summary helper is one desktop line
+    And Validate, Triage, Investigate, Respond, Verify and Record remain in order
+    And each workflow step has concise one-line desktop guidance
+    And Critical and Warning guidance each fits within three readable desktop lines
+    And the descriptions retain severity and response ownership
+
+  Scenario: Reporting uses Registry-specific wording without changing shared Reports
+    Given a selected Registry provider has committed reporting scope
+    When I open Reporting Summary and Reporting Workflow
+    Then Evidence Backed displays a concise one-line committed-source label
+    And Generate guidance fits within two readable desktop lines
+    And report generation remains owned by the Reports workspace
+    And other consumers retain the shared default Generate text
+
+  Scenario: The Registry Overview remains accessible on responsive screens
+    Given I have a desktop viewport of 1440 by 900
+    When I review Registry Overview in light mode and dark mode
+    Then no adjusted guidance is clipped or overlaps another control
+    When I review the same sections on a mobile viewport
+    Then text may wrap naturally and the full semantics remain accessible
+    And no section triggers new live provider requests
+```
+
+Record screenshots, theme, browser, viewport, branch SHA, source state, and
+per-scenario PASS/FAIL. Source-level contract checks are not visual/browser
+execution evidence. Official admission and promotion remain HOLD.

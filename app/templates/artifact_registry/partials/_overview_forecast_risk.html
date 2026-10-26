@@ -12,7 +12,7 @@
     {% if overview.forecast.available %}
         <div class="space-y-4">
             {% set forecast_metrics = [
-                            ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed footprint delta per day.'),
+                            ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed daily size delta.'),
                             ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Artifact change per day.'),
                             ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Quota ETA with positive growth.')
                         ] %}
@@ -80,8 +80,14 @@
                         <h3 class="text-sm font-semibold text-content-primary">Forecast Conclusion</h3>
                         {{ table_label.status_label(overview.forecast.risk, forecast_tone, size='detail') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ overview.capacity.risk_detail }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ overview.forecast.detail }}</p>
+                    {% set risk_conclusion = {
+                        'Critical': 'Critical quota pressure; review committed growth evidence.',
+                        'Medium': 'Developing quota pressure; review committed growth evidence.',
+                        'Low': 'Quota headroom available; growth uses committed evidence.',
+                        'Unknown': 'Quota outlook uncertain; committed evidence is incomplete.'
+                        } %}
+                    <p class="mt-2 text-xs leading-5 text-content-secondary xl:whitespace-nowrap"
+                       title="{{ overview.capacity.risk_detail }} {{ overview.forecast.detail }}">{{ risk_conclusion.get(overview.capacity.risk, risk_conclusion['Unknown']) }}</p>
                 </div>
             </div>
         </div>
