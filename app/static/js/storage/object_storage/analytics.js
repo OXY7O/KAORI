@@ -264,8 +264,36 @@
         return Boolean(chart?.canvas && target && (target === chart.canvas || target.contains?.(chart.canvas)))
     }
 
-    document.addEventListener('DOMContentLoaded', () => renderAll(document))
+    function syncForecastClearFilters(root = document) {
+        const panel = root.matches?.('#object-storage-bucket-forecast-table-panel')
+            ? root
+            : root.querySelector?.('#object-storage-bucket-forecast-table-panel')
+        if (!panel) return
+        const form = panel.querySelector('#object-storage-bucket-forecast-table-filter')
+        const action = panel.querySelector('[data-kaori-forecast-clear-filters]')
+        if (!form || !action) return
+
+        const search = form.elements.namedItem('forecast_q')?.value?.trim() || ''
+        const watch = form.elements.namedItem('forecast_watch')?.value || 'all'
+        const history = form.elements.namedItem('forecast_history_state')?.value || 'all'
+        const active = Boolean(search || watch !== 'all' || history !== 'all')
+        action.classList.toggle('hidden', !active)
+        action.classList.toggle('flex', active)
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAll(document)
+        syncForecastClearFilters(document)
+    })
     document.addEventListener('kaori:analytics-tab-visible', (event) => renderAll(event.target))
+    document.addEventListener('change', (event) => {
+        const form = event.target.closest?.('#object-storage-bucket-forecast-table-filter')
+        if (form) syncForecastClearFilters(form.closest('#object-storage-bucket-forecast-table-panel'))
+    })
+    document.addEventListener('input', (event) => {
+        const form = event.target.closest?.('#object-storage-bucket-forecast-table-filter')
+        if (form) syncForecastClearFilters(form.closest('#object-storage-bucket-forecast-table-panel'))
+    })
     document.body.addEventListener('htmx:beforeSwap', (event) => {
         const target = event.detail?.target || event.target
         if (chartInsideSwap(window[chartKey], target)) destroyChart()
@@ -275,5 +303,6 @@
         const target = event.detail?.target || event.target
         if (!target?.isConnected) return
         renderAll(target)
+        syncForecastClearFilters(target)
     })
 })()
