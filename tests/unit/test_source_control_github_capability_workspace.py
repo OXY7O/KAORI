@@ -119,6 +119,11 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
         'data-kaori-provider-capability-matrix',
         'Run Full Validation',
         'action_form.hidden_tag()',
+        'integrations/components/_validation_poller.html',
+        'integrations/components/_provider_job_status.html',
+        'framed_workspace_tabs.badge_oob(',
+        'hx-post="{{ url_for(\'github_source_uat.validate\', installation_id=installation.id) }}"',
+        'hx-indicator="#github-validation-loading"',
     ):
         assert token in validation
     for token in (
@@ -147,6 +152,12 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert 'build_capability_registry_view(' in routes
     assert 'distinguish_unverified=True' in routes
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
+    assert 'def _validation_job_for(canonical)' in routes
+    assert 'get_active_validation_task_id(' in routes
+    assert 'def validation_status(installation_id: int, task_id: str)' in routes
+    assert 'validate_snapshot_access(' in routes
+    assert 'validation_poll_response(' in routes
+    assert 'integration_instance_id=installation.integration_instance_id' in routes
     assert "url_for('github_source_uat.synchronize', installation_id=installation.id)" in detail
     assert 'provider_key' not in registry
     assert 'credential.private_key_pem' not in registry

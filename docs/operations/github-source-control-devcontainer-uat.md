@@ -1481,3 +1481,14 @@ CSRF gate and canonical JobExecution admission.
 
 **Gate state:** Human UAT pending; official Developer Check / Full Admission,
 `kaori/staging`, `main` and release HOLD.
+
+
+**Canonical validation loading:** The GitHub Full Validation header now also
+reuses the existing validation worker's active-task snapshot, shared
+loading/header, job status, 1.5s poller, record-scoped status access guard
+and HTMX region replacement. The legacy non-HTMX POST redirect remains
+supported; the new status GET requires local authorized UAT access and
+matches `integration_type=source_control` and the exact canonical instance
+before returning a result. The tab readiness badge is refreshed using the
+shared OOB badge macro. No new worker/task/queue or provider GET on normal
+workspace rendering was introduced.
