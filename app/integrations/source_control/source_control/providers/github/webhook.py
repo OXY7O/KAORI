@@ -33,6 +33,21 @@ class VerifiedGitHubDelivery:
     repository_id: int | None
 
 
+def _verify_webhook_signature(*, payload: bytes, headers: Mapping[str, str], webhook_secret: str) -> None:
+    """Validate the exact signed transport bytes before inspecting event metadata."""
+    if not webhook_secret or not isinstance(webhook_secret, str):
+        raise GitHubWebhookError('GitHub webhook verification credential is unavailable.')
+    signature = str(headers.get('X-Hub-Signature-256') or '')
+    if len(signature) != 71 or not signature.startswith('sha256='):
+        raise GitHubWebhookError('GitHub webhook signature is missing or invalid.')
+    supplied_hex = signature[7:]
+    if any(char not in '0123456789abcdef' for char in supplied_hex):
+        raise GitHubWebhookError('GitHub webhook signature format is invalid.')
+    expected = hmac.new(webhook_secret.encode('utf-8'), payload, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, supplied_hex):
+        raise GitHubWebhookError('GitHub webhook signature verification failed.')
+
+
 def verify_webhook(
     *,
     payload: bytes,
@@ -47,17 +62,7 @@ def verify_webhook(
     """
     if not isinstance(payload, bytes) or not payload or len(payload) > _MAX_WEBHOOK_BYTES:
         raise GitHubWebhookError('GitHub webhook body is absent or exceeds the size limit.')
-    if not webhook_secret or not isinstance(webhook_secret, str):
-        raise GitHubWebhookError('GitHub webhook verification credential is unavailable.')
-    signature = str(headers.get('X-Hub-Signature-256') or '')
-    if len(signature) != 71 or not signature.startswith('sha256='):
-        raise GitHubWebhookError('GitHub webhook signature is missing or invalid.')
-    supplied_hex = signature[7:]
-    if any(char not in '0123456789abcdef' for char in supplied_hex):
-        raise GitHubWebhookError('GitHub webhook signature format is invalid.')
-    expected = hmac.new(webhook_secret.encode('utf-8'), payload, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(expected, supplied_hex):
-        raise GitHubWebhookError('GitHub webhook signature verification failed.')
+    _verify_webhook_signature(payload=payload, headers=headers, webhook_secret=webhook_secret)
     content_type = str(headers.get('Content-Type') or '').split(';', 1)[0].strip().lower()
     if content_type != 'application/json':
         raise GitHubWebhookError('GitHub webhook content type is unsupported.')
