@@ -6,7 +6,7 @@ import inspect
 from types import SimpleNamespace
 
 import pytest
-from flask import Flask
+from flask import Flask, Response
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 
@@ -37,7 +37,9 @@ class _Session:
         self.rollbacks += 1
 
 
-def _invoke_signed_ingress(monkeypatch: pytest.MonkeyPatch, handler_error: Exception | None):
+def _invoke_signed_ingress(
+    monkeypatch: pytest.MonkeyPatch, handler_error: Exception | None
+) -> tuple[int | Exception, _Session]:
     session = _Session()
     monkeypatch.setattr(routes, 'SourceInstallation', SimpleNamespace(query=_InstallationQuery()))
     monkeypatch.setattr(routes, 'db', SimpleNamespace(session=session))
@@ -63,6 +65,7 @@ def _invoke_signed_ingress(monkeypatch: pytest.MonkeyPatch, handler_error: Excep
         endpoint = inspect.unwrap(routes.receive_signed_webhook)
         if handler_error is None:
             response = endpoint()
+            assert isinstance(response, Response)
             return response.status_code, session
         with pytest.raises(Exception) as raised:
             endpoint()
@@ -87,7 +90,9 @@ def test_authenticated_delivery_returns_202_after_durable_commit(monkeypatch: py
     ],
 )
 def test_rejected_or_unavailable_ingress_rolls_back(
-    monkeypatch: pytest.MonkeyPatch, error: Exception, http_status: int
+    monkeypatch: pytest.MonkeyPatch,
+    error: Exception,
+    http_status: int,
 ) -> None:
     raised, session = _invoke_signed_ingress(monkeypatch, error)
     assert isinstance(raised, HTTPException)
