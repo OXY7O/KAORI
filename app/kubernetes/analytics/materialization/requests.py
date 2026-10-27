@@ -171,7 +171,7 @@ def _dataset_source_is_ready(
             if source == 'metrics_source':
                 return metrics_source_ready
             return alertmanager_ready or metrics_source_ready
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Could not evaluate analytics source readiness for %s on cluster %s.',
             dataset_key,
@@ -458,7 +458,7 @@ def resolve_materialized_request(
             cluster=cluster,
             parameters=normalized,
         )
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Could not resolve analytics source dependency for %s on cluster %s.',
             dataset_key,
