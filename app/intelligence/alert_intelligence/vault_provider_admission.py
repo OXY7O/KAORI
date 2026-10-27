@@ -185,6 +185,68 @@ def _eligible_existing_provider_case(case: AlertCase | None, *, case_key: str, v
     )
 
 
+def _apply_qualified_case_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    binding: IntegrationBinding,
+    source_id: int,
+    observed: datetime,
+    actor_user_id: int,
+) -> tuple[int, int] | None:
+    """Apply only qualified candidates within the original caller-owned transaction."""
+    changed_create = 0
+    changed_refresh = 0
+    for candidate in candidates:
+        action = candidate['action']
+        if action not in {'create_candidate', 'refresh_candidate'}:
+            continue
+        case_key = candidate.get('case_key')
+        severity = candidate.get('severity')
+        if not _eligible_case_identity(case_key, severity):
+            return None
+        if action == 'create_candidate':
+            if candidate.get('existing_case_id') is not None:
+                return None
+            _new_case(
+                case_key=case_key,
+                severity=severity,
+                vault_id=binding.asset_key,
+                binding_id=binding.id,
+                source_id=source_id,
+                observed=observed,
+                actor_id=actor_user_id,
+            )
+            changed_create += 1
+            continue
+
+        existing_id = candidate.get('existing_case_id')
+        if type(existing_id) is not int or existing_id < 1:
+            return None
+        case = db.session.get(AlertCase, existing_id)
+        if case is None or not _eligible_existing_provider_case(
+            case, case_key=case_key, vault_id=binding.asset_key
+        ):
+            return None
+        prior = _persisted_utc(case.last_seen_at)
+        if prior is not None and observed <= prior:
+            continue  # Same generation is idempotent; never duplicate events.
+        if case.severity != severity:
+            case.previous_severity = case.severity
+            case.severity = severity
+            case.severity_changed_at = observed
+        case.last_seen_at = observed
+        _event(
+            case,
+            event_type='provider_alert_observed',
+            actor_id=actor_user_id,
+            summary='Vault source condition remains firing in fresh committed evidence.',
+        )
+        _audit(case, actor_id=actor_user_id, action='vault_provider_alert_observed')
+        changed_refresh += 1
+
+    return changed_create, changed_refresh
+
+
 def admit_vault_provider_cases(
     *,
     binding_id: int,
@@ -254,59 +316,17 @@ def admit_vault_provider_cases(
         if len(to_create) > _MAX_CREATE:
             db.session.rollback()
             return _result('capacity_blocked')
-        changed_create = 0
-        changed_refresh = 0
-        for candidate in candidates:
-            action = candidate['action']
-            if action not in {'create_candidate', 'refresh_candidate'}:
-                continue
-            case_key = candidate.get('case_key')
-            severity = candidate.get('severity')
-            if not _eligible_case_identity(case_key, severity):
-                db.session.rollback()
-                return _result('blocked')
-            if action == 'create_candidate':
-                if candidate.get('existing_case_id') is not None:
-                    db.session.rollback()
-                    return _result('blocked')
-                _new_case(
-                    case_key=case_key,
-                    severity=severity,
-                    vault_id=binding.asset_key,
-                    binding_id=binding.id,
-                    source_id=source.id,
-                    observed=observed,
-                    actor_id=actor_user_id,
-                )
-                changed_create += 1
-                continue
-
-            existing_id = candidate.get('existing_case_id')
-            if type(existing_id) is not int or existing_id < 1:
-                db.session.rollback()
-                return _result('blocked')
-            case = db.session.get(AlertCase, existing_id)
-            if case is None or not _eligible_existing_provider_case(
-                case, case_key=case_key, vault_id=binding.asset_key
-            ):
-                db.session.rollback()
-                return _result('blocked')
-            prior = _persisted_utc(case.last_seen_at)
-            if prior is not None and observed <= prior:
-                continue  # Same generation is idempotent; never duplicate events.
-            if case.severity != severity:
-                case.previous_severity = case.severity
-                case.severity = severity
-                case.severity_changed_at = observed
-            case.last_seen_at = observed
-            _event(
-                case,
-                event_type='provider_alert_observed',
-                actor_id=actor_user_id,
-                summary='Vault source condition remains firing in fresh committed evidence.',
-            )
-            _audit(case, actor_id=actor_user_id, action='vault_provider_alert_observed')
-            changed_refresh += 1
+        changed = _apply_qualified_case_candidates(
+            candidates,
+            binding=binding,
+            source_id=source.id,
+            observed=observed,
+            actor_user_id=actor_user_id,
+        )
+        if changed is None:
+            db.session.rollback()
+            return _result('blocked')
+        changed_create, changed_refresh = changed
 
         if changed_create or changed_refresh:
             db.session.commit()
