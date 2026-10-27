@@ -38,6 +38,7 @@ def test_ready_qualified_pki_population_keeps_critical_recommendation(monkeypatc
     assert findings[0]['severity'] == 'critical'
     assert findings[0]['priority'] == 'P1'
     evidence = findings[0]['evidence']
+    assert isinstance(evidence, dict)
     assert evidence['observed_stored_certificates'] == 5
     assert evidence['expired'] == 1
     assert evidence['trust_verified'] is False
