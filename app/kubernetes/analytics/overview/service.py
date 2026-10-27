@@ -398,7 +398,7 @@ def _resolve_selected_cluster(
             )
             if resolution.selected is not None:
                 return cluster
-    except Exception:
+    except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError):
         pass
 
     return clusters[0]
@@ -1497,7 +1497,7 @@ def _call_optional_snapshot(
 ) -> dict[str, Any] | None:
     try:
         module = __import__(module_path, fromlist=['*'])
-    except Exception:
+    except ImportError:
         _log_optional_snapshot_failure(
             module_path=module_path,
             function_name=None,
