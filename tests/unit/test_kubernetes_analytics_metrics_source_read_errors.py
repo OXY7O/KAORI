@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from flask import Flask
@@ -14,7 +16,7 @@ from app.kubernetes.analytics.utilization import materialization as utilization_
 from app.kubernetes.analytics.workload import service as workload_module
 
 
-def _raise(error: Exception):
+def _raise(error: Exception) -> Callable[..., None]:
     def throw(*_args: object, **_kwargs: object) -> None:
         raise error
 
@@ -29,7 +31,7 @@ def _cluster() -> SimpleNamespace:
     return SimpleNamespace(id=17, name='Review Cluster')
 
 
-def _stub_cluster(monkeypatch: pytest.MonkeyPatch, module: object) -> SimpleNamespace:
+def _stub_cluster(monkeypatch: pytest.MonkeyPatch, module: Any) -> SimpleNamespace:
     cluster = _cluster()
     query = SimpleNamespace(order_by=lambda *_args: SimpleNamespace(all=lambda: [cluster]))
     monkeypatch.setattr(module.Cluster, 'query', query)
@@ -43,7 +45,12 @@ def _stub_cluster(monkeypatch: pytest.MonkeyPatch, module: object) -> SimpleName
 
 @pytest.mark.parametrize(
     'error',
-    [SQLAlchemyError('SQL unavailable'), RuntimeError('missing context'), TypeError('invalid type'), ValueError('bad value')],
+    [
+        SQLAlchemyError('SQL unavailable'),
+        RuntimeError('missing context'),
+        TypeError('invalid type'),
+        ValueError('bad value'),
+    ],
 )
 @pytest.mark.parametrize('view', ['summary', 'trend', 'node'])
 def test_expected_utilization_query_failure_remains_blocked(
@@ -163,7 +170,9 @@ def test_expected_workload_status_error_keeps_empty_payload(
     monkeypatch.setattr(
         workload_module,
         'WorkloadAnalysisService',
-        lambda _util: SimpleNamespace(requirements=lambda: SimpleNamespace(ok=True), get_metrics_source_status=_raise(error)),
+        lambda _util: SimpleNamespace(
+            requirements=lambda: SimpleNamespace(ok=True), get_metrics_source_status=_raise(error)
+        ),
     )
 
     result = workload_module.get_workload_analysis_context({})
