@@ -17,6 +17,26 @@ class DeliveryPagination:
     per_page: int = 5
 
 
+@dataclass(frozen=True, slots=True)
+class ChannelRegistryFilters:
+    page: int = 1
+    per_page: int = 5
+    search: str = ''
+    provider: str = ''
+    state: str = ''
+    lifecycle: str = 'active'
+
+
+@dataclass(frozen=True, slots=True)
+class DeliveryRegistryFilters:
+    pagination: DeliveryPagination = DeliveryPagination()
+    event_key: str = ''
+    provider: str = ''
+    domain: str = ''
+    severity: str = ''
+    status: str = ''
+
+
 _PROVIDER_LABELS = provider_labels()
 
 

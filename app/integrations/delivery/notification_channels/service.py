@@ -36,7 +36,8 @@ from app.integrations.delivery.notification_channels.providers import (
 )
 from app.integrations.delivery.notification_channels.service_helpers import (
     _PROVIDER_LABELS,
-    DeliveryPagination,
+    ChannelRegistryFilters,
+    DeliveryRegistryFilters,
     _alert_message,
     _channel_view,
     _credential_map,
@@ -46,6 +47,9 @@ from app.integrations.delivery.notification_channels.service_helpers import (
     _normalize_severity,
     _provider_label,
     _reset_channel_validation,
+)
+from app.integrations.delivery.notification_channels.service_helpers import (
+    DeliveryPagination as DeliveryPagination,
 )
 from app.integrations.delivery.notification_channels.service_helpers import (
     recent_delivery_summary as recent_delivery_summary,
@@ -243,57 +247,47 @@ def notification_overview_metrics() -> dict[str, Any]:
 
 def get_notification_channels_payload(
     *,
-    channel_page: int = 1,
-    channel_per_page: int = 5,
-    channel_search: str = '',
-    channel_provider: str = '',
-    channel_state: str = '',
-    channel_lifecycle: str = 'active',
+    channel_filters: ChannelRegistryFilters = ChannelRegistryFilters(),
+    delivery_filters: DeliveryRegistryFilters = DeliveryRegistryFilters(),
     include_overview: bool = False,
-    delivery_pagination: DeliveryPagination = DeliveryPagination(),
-    delivery_event_key: str = '',
-    delivery_provider: str = '',
-    delivery_domain: str = '',
-    delivery_severity: str = '',
-    delivery_status: str = '',
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
-    normalized_channel_search = str(channel_search or '').strip()[:160]
-    normalized_provider = str(channel_provider or '').strip().lower()
+    normalized_channel_search = str(channel_filters.search or '').strip()[:160]
+    normalized_provider = str(channel_filters.provider or '').strip().lower()
     normalized_provider = normalized_provider if normalized_provider in _PROVIDER_LABELS else ''
-    normalized_state = str(channel_state or '').strip().lower()
+    normalized_state = str(channel_filters.state or '').strip().lower()
     normalized_state = normalized_state if normalized_state in {'enabled', 'disabled'} else ''
-    normalized_lifecycle = 'retired' if channel_lifecycle == 'retired' else 'active'
+    normalized_lifecycle = 'retired' if channel_filters.lifecycle == 'retired' else 'active'
     if normalized_lifecycle == 'retired':
         normalized_state = ''
     channel_rows, channel_pagination = _channel_registry_page(
-        page=channel_page,
-        per_page=channel_per_page,
+        page=channel_filters.page,
+        per_page=channel_filters.per_page,
         search=normalized_channel_search,
         provider=normalized_provider,
         state=normalized_state,
         lifecycle=normalized_lifecycle,
     )
-    normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
-    normalized_delivery_provider = str(delivery_provider or '').strip().lower()
+    normalized_delivery_key = str(delivery_filters.event_key or '').strip()[:255]
+    normalized_delivery_provider = str(delivery_filters.provider or '').strip().lower()
     normalized_delivery_provider = (
         normalized_delivery_provider if normalized_delivery_provider in _PROVIDER_LABELS else ''
     )
-    normalized_delivery_domain = str(delivery_domain or '').strip()
+    normalized_delivery_domain = str(delivery_filters.domain or '').strip()
     normalized_delivery_domain = (
         normalized_delivery_domain if normalized_delivery_domain in {item['value'] for item in domain_options()} else ''
     )
-    normalized_delivery_severity = str(delivery_severity or '').strip().lower()
+    normalized_delivery_severity = str(delivery_filters.severity or '').strip().lower()
     normalized_delivery_severity = (
         normalized_delivery_severity if normalized_delivery_severity in _SEVERITY_RANK else ''
     )
-    normalized_delivery_status = str(delivery_status or '').strip().lower()
+    normalized_delivery_status = str(delivery_filters.status or '').strip().lower()
     normalized_delivery_status = (
         normalized_delivery_status if normalized_delivery_status in {'queued', 'sent', 'failed', 'skipped'} else ''
     )
     delivery_rows, delivery_window = _delivery_registry_page(
-        page=delivery_pagination.page,
-        per_page=delivery_pagination.per_page,
+        page=delivery_filters.pagination.page,
+        per_page=delivery_filters.pagination.per_page,
         event_key=normalized_delivery_key,
         provider=normalized_delivery_provider,
         domain=normalized_delivery_domain,
