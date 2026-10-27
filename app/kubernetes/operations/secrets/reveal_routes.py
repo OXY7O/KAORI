@@ -19,6 +19,8 @@ from app.extensions.limiter import limiter
 from app.kubernetes.operations.operation_flow import cluster_required
 from app.kubernetes.operations.secrets.reveal_service import (
     ActiveRevealRequestExists,
+    MyRevealFilters,
+    PendingRevealFilters,
     PendingRevealPagination,
     create_reveal_request,
     decide_reveal_request,
@@ -86,18 +88,22 @@ def _reveal_status_context() -> dict[str, Any]:
         **get_reveal_page_context(
             user_id=current_user.id,
             can_approve=can_approve,
-            my_page=request.args.get('my_page', 1, type=int) or 1,
-            my_per_page=request.args.get('my_per_page', 5, type=int) or 5,
-            my_search=request.args.get('my_search', ''),
-            my_status=request.args.get('my_status', ''),
-            my_sort=request.args.get('my_sort', 'newest'),
-            my_request_id=request.args.get('my_request_id', ''),
-            pending_pagination=PendingRevealPagination(
-                page=request.args.get('pending_page', 1, type=int) or 1,
-                per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+            my_filters=MyRevealFilters(
+                page=request.args.get('my_page', 1, type=int) or 1,
+                per_page=request.args.get('my_per_page', 5, type=int) or 5,
+                search=request.args.get('my_search', ''),
+                status=request.args.get('my_status', ''),
+                sort=request.args.get('my_sort', 'newest'),
+                request_id=request.args.get('my_request_id', ''),
             ),
-            pending_search=request.args.get('pending_search', ''),
-            pending_sort=request.args.get('pending_sort', 'oldest'),
+            pending_filters=PendingRevealFilters(
+                pagination=PendingRevealPagination(
+                    page=request.args.get('pending_page', 1, type=int) or 1,
+                    per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+                ),
+                search=request.args.get('pending_search', ''),
+                sort=request.args.get('pending_sort', 'oldest'),
+            ),
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
