@@ -106,7 +106,8 @@ def test_eligible_metrics_binding_remains_admissible(monkeypatch: pytest.MonkeyP
 
 @pytest.mark.parametrize('source', ['alertmanager', 'metrics_source'])
 def test_eligible_alert_binding_remains_admissible(monkeypatch: pytest.MonkeyPatch, source: str) -> None:
-    candidate = lambda **_kwargs: SimpleNamespace(selected=object(), candidates=())
+    def candidate(**_kwargs: object) -> SimpleNamespace:
+        return SimpleNamespace(selected=object(), candidates=())
     if source == 'alertmanager':
         monkeypatch.setattr(job_adapter, 'resolve_alertmanager_sources', candidate)
     else:
