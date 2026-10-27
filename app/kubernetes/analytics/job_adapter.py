@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.job_execution_presentation import present_job_execution
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
@@ -83,7 +84,7 @@ def _metrics_source_dataset_eligible(
             required_binding_capabilities=source_binding_capabilities(dataset_key),
             required_technical_capabilities=source_technical_capabilities(dataset_key),
         )
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         _append_eligibility_diagnostic(
             diagnostics,
             f'{dataset_key} on {cluster.name}: source resolution failed: {exc}',
@@ -124,7 +125,7 @@ def _alert_dataset_eligible(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster.id),
             )
-        except Exception as exc:
+        except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
             _append_eligibility_diagnostic(
                 diagnostics,
                 f'{dataset_key} on {cluster.name}: Alertmanager resolution failed: {exc}',
@@ -150,7 +151,7 @@ def _alert_dataset_eligible(
                 required_binding_capabilities=('metrics',),
                 required_technical_capabilities=('instant_query',),
             )
-        except Exception as exc:
+        except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
             _append_eligibility_diagnostic(
                 diagnostics,
                 f'{dataset_key} on {cluster.name}: Metrics Source fallback resolution failed: {exc}',
