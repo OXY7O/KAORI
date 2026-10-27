@@ -6,6 +6,7 @@ The policy evaluator and Vault Secret Registry are intentionally NOT enabled.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from app.extensions.db import db
@@ -118,6 +119,12 @@ def _commit_transition(
     db.session.commit()
 
 
+@dataclass(frozen=True, slots=True)
+class ScopeGrantValidity:
+    effective_from: datetime
+    effective_until: datetime
+
+
 def request_scope_grant(
     *,
     actor_user_id: int,
@@ -126,8 +133,7 @@ def request_scope_grant(
     scope_level: str,
     provider_namespace: str | None,
     mount: str | None,
-    effective_from: datetime,
-    effective_until: datetime,
+    validity: ScopeGrantValidity,
     reason_code: str,
 ) -> ScopeAccessPolicy:
     """Create draft only; requesting a policy NEVER activates a permit."""
@@ -139,7 +145,9 @@ def request_scope_grant(
         provider_namespace=provider_namespace,
         mount=mount,
     )
-    starts, ends = _window(effective_from, 'Start'), _window(effective_until, 'End')
+    if not isinstance(validity, ScopeGrantValidity):
+        raise ScopedGrantRejected('Grant validity or reason is invalid.')
+    starts, ends = _window(validity.effective_from, 'Start'), _window(validity.effective_until, 'End')
     if starts >= ends or ends <= datetime.now(UTC) or reason_code not in _REASON_CODES:
         raise ScopedGrantRejected('Grant validity or reason is invalid.')
     policy = ScopeAccessPolicy()
