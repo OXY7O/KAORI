@@ -253,6 +253,22 @@ def _reset_github_validation(canonical: IntegrationInstance) -> None:
     canonical.metadata_json = metadata
 
 
+def _require_canonical_github_connection(installation: SourceInstallation) -> IntegrationInstance:
+    """Retain the exact identity checks before editing a GitHub connection."""
+    canonical = installation.integration_instance
+    if (
+        installation.provider_key != 'github'
+        or installation.host_key != 'github.com'
+        or canonical is None
+        or canonical.integration_type != 'source_control'
+        or canonical.provider_key != 'github'
+        or canonical.adapter_key != 'github_rest_v3'
+        or canonical.id != installation.integration_instance_id
+    ):
+        raise ValueError('GitHub installation is not a canonical Source Control connection.')
+    return canonical
+
+
 def update_github_connection_configuration(
     installation: SourceInstallation,
     *,
@@ -269,17 +285,7 @@ def update_github_connection_configuration(
     immutable. Credential replacement resets Full Validation for every
     installation using that encrypted App credential.
     """
-    canonical = installation.integration_instance
-    if (
-        installation.provider_key != 'github'
-        or installation.host_key != 'github.com'
-        or canonical is None
-        or canonical.integration_type != 'source_control'
-        or canonical.provider_key != 'github'
-        or canonical.adapter_key != 'github_rest_v3'
-        or canonical.id != installation.integration_instance_id
-    ):
-        raise ValueError('GitHub installation is not a canonical Source Control connection.')
+    canonical = _require_canonical_github_connection(installation)
 
     validated_name = _validate_name(name)
     if environment not in {value for value, _label in ENVIRONMENTS}:
