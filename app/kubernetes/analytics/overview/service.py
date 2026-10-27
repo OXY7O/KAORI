@@ -1515,13 +1515,13 @@ def _call_optional_snapshot(
         except TypeError:
             try:
                 result = func(kwargs.get('cluster_id'))
-            except Exception:
+            except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError, KeyError):
                 _log_optional_snapshot_failure(
                     module_path=module_path,
                     function_name=function_name,
                 )
                 continue
-        except Exception:
+        except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError, KeyError):
             _log_optional_snapshot_failure(
                 module_path=module_path,
                 function_name=function_name,
