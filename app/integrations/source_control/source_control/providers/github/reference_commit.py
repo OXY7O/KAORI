@@ -105,11 +105,10 @@ def publish_default_branch_revision(
         )
     ).scalar_one_or_none()
     if revision is None:
-        revision = SourceRevision(
-            repository_id=repo.id,
-            commit_sha=evidence.commit_sha,
-            last_observed_at=evidence.observed_at,
-        )
+        revision = SourceRevision()
+        revision.repository_id = repo.id
+        revision.commit_sha = evidence.commit_sha
+        revision.last_observed_at = evidence.observed_at
         session.add(revision)
         session.flush()
     elif _utc(revision.last_observed_at) < evidence.observed_at:
@@ -118,13 +117,12 @@ def publish_default_branch_revision(
     created = ref is None
     moved = created or ref.current_revision_id != revision.id
     if ref is None:
-        ref = SourceReference(
-            repository_id=repo.id,
-            full_ref=evidence.full_ref,
-            state='observed',
-            current_revision_id=revision.id,
-            last_observed_at=evidence.observed_at,
-        )
+        ref = SourceReference()
+        ref.repository_id = repo.id
+        ref.full_ref = evidence.full_ref
+        ref.state = 'observed'
+        ref.current_revision_id = revision.id
+        ref.last_observed_at = evidence.observed_at
         session.add(ref)
         session.flush()
     else:
@@ -133,13 +131,11 @@ def publish_default_branch_revision(
         ref.last_observed_at = evidence.observed_at
 
     if moved:
-        session.add(
-            SourceReferenceTransition(
-                reference_id=ref.id,
-                target_revision_id=revision.id,
-                transition_state='observed' if created else 'moved',
-                observed_at=evidence.observed_at,
-            )
-        )
+        transition = SourceReferenceTransition()
+        transition.reference_id = ref.id
+        transition.target_revision_id = revision.id
+        transition.transition_state = 'observed' if created else 'moved'
+        transition.observed_at = evidence.observed_at
+        session.add(transition)
     session.commit()
     return moved
