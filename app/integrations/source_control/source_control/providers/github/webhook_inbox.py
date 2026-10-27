@@ -95,17 +95,16 @@ def claim_verified_delivery(
             raise GitHubWebhookError('GitHub webhook delivery identity was reused with different content.')
         return WebhookClaim(verified.delivery_id, installation.id, False)
 
-    record = SourceWebhookDelivery(
-        installation_id=installation.id,
-        delivery_id=verified.delivery_id,
-        payload_sha256=digest,
-        event_type=verified.event,
-        action=verified.action,
-        repository_native_id_hint=str(verified.repository_id) if verified.repository_id is not None else None,
-        processing_state='received',
-        received_at=datetime.now(UTC),
-        attempt_count=0,
-    )
+    record = SourceWebhookDelivery()
+    record.installation_id = installation.id
+    record.delivery_id = verified.delivery_id
+    record.payload_sha256 = digest
+    record.event_type = verified.event
+    record.action = verified.action
+    record.repository_native_id_hint = str(verified.repository_id) if verified.repository_id is not None else None
+    record.processing_state = 'received'
+    record.received_at = datetime.now(UTC)
+    record.attempt_count = 0
     try:
         # Savepoint preserves the outer transaction on concurrent duplicate
         # delivery races. Database uniqueness remains the race authority.
