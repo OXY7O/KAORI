@@ -155,7 +155,9 @@ def test_unexpected_shared_metrics_context_defect_propagates(monkeypatch: pytest
             context_module.build_analysis_utilization_context({}, check_metrics_source_connection=mode != 'review')
 
 
-@pytest.mark.parametrize('error', [SQLAlchemyError('db down'), RuntimeError('context absent'), ValueError('bad source')])
+@pytest.mark.parametrize(
+    'error', [SQLAlchemyError('db down'), RuntimeError('context absent'), ValueError('bad source')]
+)
 def test_expected_workload_status_error_keeps_empty_payload(
     monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
@@ -201,7 +203,9 @@ def test_unexpected_workload_status_defect_propagates(monkeypatch: pytest.Monkey
         workload_module.get_workload_analysis_context({})
 
 
-@pytest.mark.parametrize('error', [SQLAlchemyError('db down'), RuntimeError('context absent'), ValueError('bad source')])
+@pytest.mark.parametrize(
+    'error', [SQLAlchemyError('db down'), RuntimeError('context absent'), ValueError('bad source')]
+)
 def test_expected_capacity_source_failure_keeps_blocked_status(
     monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
