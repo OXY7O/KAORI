@@ -356,3 +356,11 @@ def get_secret_reveal_approvers(*, exclude_user_id: int) -> list[User]:
         .order_by(User.id.asc())
         .all()
     )
+
+
+def _as_aware(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
