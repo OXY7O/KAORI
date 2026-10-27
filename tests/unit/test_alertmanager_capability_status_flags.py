@@ -30,6 +30,8 @@ def test_alertmanager_optional_capability_is_classified_without_legacy_keyword(m
     context = workspace_web.instance_context(SimpleNamespace(integration_instance_id=21))
 
     assert len(context['capability_registry']['rows']) == 2
-    assert recorded['status_flags'] == CapabilityStatusFlags(optional_gap=True)
-    filtered = original(rows, status_flags=recorded['status_flags'], status='optional_gap')
+    flags = recorded['status_flags']
+    assert isinstance(flags, CapabilityStatusFlags)
+    assert flags == CapabilityStatusFlags(optional_gap=True)
+    filtered = original(rows, status_flags=flags, status='optional_gap')
     assert filtered['rows'] == [rows[1]]
