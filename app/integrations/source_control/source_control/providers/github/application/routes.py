@@ -8,6 +8,7 @@ written until full provider admission is approved.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
@@ -68,6 +69,157 @@ def _notification() -> dict:
     return get_navigation_notification_context(user_id=int(current_user.id))
 
 
+def _github_committed_coverage_projection(
+    selected_coverage_query: str,
+    selected_coverage_environment: str,
+    selected_coverage_status: str,
+    requested_coverage_page: int,
+    requested_coverage_per_page: int,
+) -> dict[str, Any]:
+    # Only committed generations with effective-dated grants are coverage
+    # evidence. A tested/registered installation alone is not inventory.
+    coverage_base = (
+        db.session.query(
+            SourceRepositoryGrant,
+            SourceRepository,
+            SourceInstallation,
+            IntegrationInstance,
+            SourceRepositoryCollectionState,
+        )
+        .join(SourceRepository, SourceRepository.id == SourceRepositoryGrant.repository_id)
+        .join(SourceInstallation, SourceInstallation.id == SourceRepositoryGrant.installation_id)
+        .join(IntegrationInstance, IntegrationInstance.id == SourceInstallation.integration_instance_id)
+        .join(
+            SourceRepositoryCollectionState,
+            SourceRepositoryCollectionState.installation_id == SourceInstallation.id,
+        )
+        .filter(
+            SourceRepositoryGrant.valid_until.is_(None),
+            SourceRepositoryCollectionState.committed_generation > 0,
+            SourceInstallation.provider_key == 'github',
+            SourceInstallation.host_key == 'github.com',
+            SourceRepository.provider_key == 'github',
+            SourceRepository.host_key == 'github.com',
+            IntegrationInstance.integration_type == 'source_control',
+            IntegrationInstance.provider_key == 'github',
+            IntegrationInstance.lifecycle_status == 'active',
+        )
+    )
+    grants = coverage_base.count()
+    committed_collections = (
+        SourceRepositoryCollectionState.query.join(
+            SourceInstallation,
+            SourceInstallation.id == SourceRepositoryCollectionState.installation_id,
+        )
+        .join(
+            IntegrationInstance,
+            IntegrationInstance.id == SourceInstallation.integration_instance_id,
+        )
+        .filter(
+            SourceRepositoryCollectionState.committed_generation > 0,
+            SourceInstallation.provider_key == 'github',
+            SourceInstallation.host_key == 'github.com',
+            IntegrationInstance.integration_type == 'source_control',
+            IntegrationInstance.provider_key == 'github',
+            IntegrationInstance.lifecycle_status == 'active',
+        )
+        .count()
+    )
+
+    coverage_query = coverage_base
+    if selected_coverage_query:
+        coverage_term = f'%{selected_coverage_query}%'
+        coverage_query = coverage_query.filter(
+            or_(
+                SourceRepository.full_name.ilike(coverage_term),
+                SourceRepository.name.ilike(coverage_term),
+                IntegrationInstance.name.ilike(coverage_term),
+                SourceInstallation.native_installation_id.ilike(coverage_term),
+            )
+        )
+    if selected_coverage_environment:
+        coverage_query = coverage_query.filter(IntegrationInstance.environment == selected_coverage_environment)
+    if selected_coverage_status:
+        coverage_query = coverage_query.filter(SourceRepositoryCollectionState.coverage == selected_coverage_status)
+    coverage_rows, coverage_pagination = paginate_query(
+        coverage_query.order_by(
+            SourceRepository.full_name.asc(),
+            SourceInstallation.id.asc(),
+            SourceRepositoryGrant.id.asc(),
+        ),
+        page=requested_coverage_page,
+        per_page=requested_coverage_per_page,
+    )
+    coverage_environment_options = [
+        item[0] for item in coverage_base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
+    ]
+    coverage_status_options = [
+        item[0]
+        for item in coverage_base.with_entities(SourceRepositoryCollectionState.coverage).distinct().all()
+        if item[0]
+    ]
+    return {
+        'grants': grants,
+        'committed_collections': committed_collections,
+        'coverage_rows': coverage_rows,
+        'coverage_pagination': coverage_pagination,
+        'coverage_environment_options': coverage_environment_options,
+        'coverage_status_options': coverage_status_options,
+    }
+
+
+def _github_committed_connection_projection(
+    base: Any,
+    selected_query: str,
+    selected_environment: str,
+    selected_readiness: str,
+    requested_page: int,
+    requested_per_page: int,
+) -> dict[str, Any]:
+    query = base
+    if selected_query:
+        term = f'%{selected_query}%'
+        query = query.filter(
+            or_(
+                IntegrationInstance.name.ilike(term),
+                IntegrationInstance.description.ilike(term),
+            )
+        )
+    if selected_environment:
+        query = query.filter(IntegrationInstance.environment == selected_environment)
+    if selected_readiness:
+        query = query.filter(IntegrationInstance.readiness_status == selected_readiness)
+
+    rows, pagination = paginate_query(
+        query.order_by(IntegrationInstance.created_at.desc(), IntegrationInstance.id.desc()),
+        page=requested_page,
+        per_page=requested_per_page,
+    )
+    installations = (
+        SourceInstallation.query.filter(
+            SourceInstallation.integration_instance_id.in_([row.id for row in rows]),
+            SourceInstallation.provider_key == 'github',
+            SourceInstallation.host_key == 'github.com',
+        ).all()
+        if rows
+        else []
+    )
+    installation_by_instance = {row.integration_instance_id: row for row in installations}
+    environment_options = [
+        item[0] for item in base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
+    ]
+    readiness_options = [
+        item[0] for item in base.with_entities(IntegrationInstance.readiness_status).distinct().all() if item[0]
+    ]
+    return {
+        'rows': rows,
+        'pagination': pagination,
+        'installation_by_instance': installation_by_instance,
+        'environment_options': environment_options,
+        'readiness_options': readiness_options,
+    }
+
+
 @github_source_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
@@ -99,124 +251,33 @@ def index() -> ResponseReturnValue:
         total = base.count()
         ready = base.filter_by(enabled=True, lifecycle_status='active', readiness_status='ready').count()
 
-        # Only committed generations with effective-dated grants are coverage
-        # evidence. A tested/registered installation alone is not inventory.
-        coverage_base = (
-            db.session.query(
-                SourceRepositoryGrant,
-                SourceRepository,
-                SourceInstallation,
-                IntegrationInstance,
-                SourceRepositoryCollectionState,
-            )
-            .join(SourceRepository, SourceRepository.id == SourceRepositoryGrant.repository_id)
-            .join(SourceInstallation, SourceInstallation.id == SourceRepositoryGrant.installation_id)
-            .join(IntegrationInstance, IntegrationInstance.id == SourceInstallation.integration_instance_id)
-            .join(
-                SourceRepositoryCollectionState,
-                SourceRepositoryCollectionState.installation_id == SourceInstallation.id,
-            )
-            .filter(
-                SourceRepositoryGrant.valid_until.is_(None),
-                SourceRepositoryCollectionState.committed_generation > 0,
-                SourceInstallation.provider_key == 'github',
-                SourceInstallation.host_key == 'github.com',
-                SourceRepository.provider_key == 'github',
-                SourceRepository.host_key == 'github.com',
-                IntegrationInstance.integration_type == 'source_control',
-                IntegrationInstance.provider_key == 'github',
-                IntegrationInstance.lifecycle_status == 'active',
-            )
+        coverage = _github_committed_coverage_projection(
+            selected_coverage_query,
+            selected_coverage_environment,
+            selected_coverage_status,
+            requested_coverage_page,
+            requested_coverage_per_page,
         )
-        grants = coverage_base.count()
-        committed_collections = (
-            SourceRepositoryCollectionState.query.join(
-                SourceInstallation,
-                SourceInstallation.id == SourceRepositoryCollectionState.installation_id,
-            )
-            .join(
-                IntegrationInstance,
-                IntegrationInstance.id == SourceInstallation.integration_instance_id,
-            )
-            .filter(
-                SourceRepositoryCollectionState.committed_generation > 0,
-                SourceInstallation.provider_key == 'github',
-                SourceInstallation.host_key == 'github.com',
-                IntegrationInstance.integration_type == 'source_control',
-                IntegrationInstance.provider_key == 'github',
-                IntegrationInstance.lifecycle_status == 'active',
-            )
-            .count()
-        )
+        grants = coverage['grants']
+        committed_collections = coverage['committed_collections']
+        coverage_rows = coverage['coverage_rows']
+        coverage_pagination = coverage['coverage_pagination']
+        coverage_environment_options = coverage['coverage_environment_options']
+        coverage_status_options = coverage['coverage_status_options']
 
-        coverage_query = coverage_base
-        if selected_coverage_query:
-            coverage_term = f'%{selected_coverage_query}%'
-            coverage_query = coverage_query.filter(
-                or_(
-                    SourceRepository.full_name.ilike(coverage_term),
-                    SourceRepository.name.ilike(coverage_term),
-                    IntegrationInstance.name.ilike(coverage_term),
-                    SourceInstallation.native_installation_id.ilike(coverage_term),
-                )
-            )
-        if selected_coverage_environment:
-            coverage_query = coverage_query.filter(IntegrationInstance.environment == selected_coverage_environment)
-        if selected_coverage_status:
-            coverage_query = coverage_query.filter(SourceRepositoryCollectionState.coverage == selected_coverage_status)
-        coverage_rows, coverage_pagination = paginate_query(
-            coverage_query.order_by(
-                SourceRepository.full_name.asc(),
-                SourceInstallation.id.asc(),
-                SourceRepositoryGrant.id.asc(),
-            ),
-            page=requested_coverage_page,
-            per_page=requested_coverage_per_page,
+        registry = _github_committed_connection_projection(
+            base,
+            selected_query,
+            selected_environment,
+            selected_readiness,
+            requested_page,
+            requested_per_page,
         )
-        coverage_environment_options = [
-            item[0] for item in coverage_base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
-        ]
-        coverage_status_options = [
-            item[0]
-            for item in coverage_base.with_entities(SourceRepositoryCollectionState.coverage).distinct().all()
-            if item[0]
-        ]
-
-        query = base
-        if selected_query:
-            term = f'%{selected_query}%'
-            query = query.filter(
-                or_(
-                    IntegrationInstance.name.ilike(term),
-                    IntegrationInstance.description.ilike(term),
-                )
-            )
-        if selected_environment:
-            query = query.filter(IntegrationInstance.environment == selected_environment)
-        if selected_readiness:
-            query = query.filter(IntegrationInstance.readiness_status == selected_readiness)
-
-        rows, pagination = paginate_query(
-            query.order_by(IntegrationInstance.created_at.desc(), IntegrationInstance.id.desc()),
-            page=requested_page,
-            per_page=requested_per_page,
-        )
-        installations = (
-            SourceInstallation.query.filter(
-                SourceInstallation.integration_instance_id.in_([row.id for row in rows]),
-                SourceInstallation.provider_key == 'github',
-                SourceInstallation.host_key == 'github.com',
-            ).all()
-            if rows
-            else []
-        )
-        installation_by_instance = {row.integration_instance_id: row for row in installations}
-        environment_options = [
-            item[0] for item in base.with_entities(IntegrationInstance.environment).distinct().all() if item[0]
-        ]
-        readiness_options = [
-            item[0] for item in base.with_entities(IntegrationInstance.readiness_status).distinct().all() if item[0]
-        ]
+        rows = registry['rows']
+        pagination = registry['pagination']
+        installation_by_instance = registry['installation_by_instance']
+        environment_options = registry['environment_options']
+        readiness_options = registry['readiness_options']
     else:
         # No provider admission means the inventory is not observed, not ready.
         total = ready = grants = None
