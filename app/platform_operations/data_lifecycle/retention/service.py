@@ -34,13 +34,14 @@ from app.models.archive import (
 from app.models.user import User
 from app.platform_operations.data_lifecycle.retention import archive_support
 from app.platform_operations.data_lifecycle.retention.archive_support import (
-    _write_jsonl_gzip,
-    _iter_archive_record_ids,
     _build_archive_file_stem,
-    _sha256_file,
+    _estimate_archive_size,
+    _isoformat,
+    _iter_archive_record_ids,
     _normalize_trigger_type,
     _serialize_policy,
-    _isoformat,
+    _sha256_file,
+    _write_jsonl_gzip,
 )
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.lock import retention_lock
@@ -715,14 +716,6 @@ def _build_archive_object_prefix(artifact: ArchiveArtifact) -> str:
     root_prefix = str(current_app.config.get('ARCHIVE_OBJECT_PREFIX', 'archives') or 'archives').strip().strip('/')
     return '/'.join([root_prefix, artifact.domain, generated_at.strftime('%Y'), generated_at.strftime('%m')])
 
-
-def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
-    estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
-    if callable(estimator):
-        estimate = cast(Callable[[ArchiveBoundary, RetentionPolicy], object], estimator)(boundary, policy)
-        if isinstance(estimate, (int, float, str)):
-            return max(int(estimate or 0), 0)
-    return archive_support.estimate_uncompressed_size(boundary.record_count)
 
 
 def _archive_supplements_for_artifact(
