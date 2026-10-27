@@ -19,7 +19,8 @@ def app() -> Flask:
 
 def test_return_url_keeps_bounded_form_filters_as_query_data(app: Flask) -> None:
     with app.test_request_context(
-        '/', method='POST',
+        '/',
+        method='POST',
         data={
             'channel_search': '  team & shared  ',
             'channel_provider': 'email',
@@ -60,7 +61,8 @@ def test_return_url_keeps_action_and_lifecycle_override(
     app: Flask, overrides: dict[str, str | int], expected: dict[str, list[str]]
 ) -> None:
     with app.test_request_context(
-        '/', method='POST',
+        '/',
+        method='POST',
         data={'channel_lifecycle': 'retired', 'channel_page': '8'},
     ):
         target = routes._channel_return_url(**overrides)
@@ -74,7 +76,8 @@ def test_return_url_keeps_action_and_lifecycle_override(
 
 def test_return_url_discards_invalid_or_unbounded_page_and_unknown_fields(app: Flask) -> None:
     with app.test_request_context(
-        '/', method='POST',
+        '/',
+        method='POST',
         data={
             'channel_search': 'x' * 150,
             'channel_page': '-3',
