@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import inspect, select, tuple_
 from sqlalchemy.exc import SQLAlchemyError
@@ -203,17 +203,13 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
             if _utc(row[5]) != _utc(source[5]):
                 return _result('incomplete', 'PKI Certificate Generation Mismatch')
             _record_validity_window(row, instant=instant, counts=result, expiry=expiry)
-        observed_times = [_utc(row[5]) for row in state_by_scope.values()]
-        if any(observed is None for observed in observed_times):
-            return _result('incomplete', 'PKI Validity Evidence Incomplete or Stale')
-        qualified_times = [observed for observed in observed_times if observed is not None]
         return _result(
             'ready',
             'Qualified Stored Certificate Validity Windows',
             counts=result,
             expiry_counts=expiry,
             count=len(rows),
-            last_observed_at=max(qualified_times),
+            last_observed_at=cast(datetime, max(_utc(row[5]) for row in state_by_scope.values())),
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return _result('unavailable', 'PKI Validity Evidence Unavailable')
