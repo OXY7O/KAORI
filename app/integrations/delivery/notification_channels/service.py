@@ -995,5 +995,3 @@ def _channel_matches(
         event_type=event_type,
         severity=severity,
     )
-
-
