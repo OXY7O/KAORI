@@ -98,13 +98,13 @@ def build_operational_evidence_workspace(
             _metric('Verified Rotation Cutovers', None, 'Consumer version readback not yet committed.', 'refresh-cw'),
             _metric(
                 'Observed Public TLS Overlap',
-                delivery.get('overlapping_certificates') if qualified else None,
+                delivery.get('overlapping_certificates') if delivery is not None and qualified else None,
                 'Only an observed public certificate match, not delivery proof.',
                 'shield-check',
             ),
             _metric(
                 'TLS Secrets Matched',
-                delivery.get('matching_kubernetes_tls_secrets') if qualified else None,
+                delivery.get('matching_kubernetes_tls_secrets') if delivery is not None and qualified else None,
                 'Separately authorized Kubernetes TLS evidence only.',
                 'waypoints',
             ),
