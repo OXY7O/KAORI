@@ -30,7 +30,7 @@ from app.platform_operations.kubernetes.secret_reveal.service import (
     get_secret_reveal_cluster,
     rollback_secret_reveal_settings_transaction,
 )
-from app.platform_operations.notifications.feedback import queue_operational_feedback
+from app.platform_operations.notifications.feedback import OperationalActionPresentation, queue_operational_feedback
 from app.platform_operations.notifications.service import record_operational_activity, stage_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
@@ -114,21 +114,33 @@ def _record_settings_activity(
     metadata: dict[str, object],
     durable_with_operation: bool = False,
 ) -> dict[str, Any]:
-    writer = stage_operational_activity if durable_with_operation else record_operational_activity
-    return writer(
+    action_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal')
+    evidence = {
+        **metadata,
+        'secret_value_recorded': False,
+        'kubeconfig_recorded': False,
+    }
+    if durable_with_operation:
+        return stage_operational_activity(
+            user_id=current_user.id,
+            event_type=event_type,
+            status=status,
+            title=title,
+            message=message,
+            action_url=action_url,
+            action=OperationalActionPresentation(label='Open Kubernetes Administration', icon='server-cog'),
+            metadata=evidence,
+        )
+    return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
         title=title,
         message=message,
-        action_url=url_for('platform_operations.kubernetes.index', tab='secret-reveal'),
+        action_url=action_url,
         action_label='Open Kubernetes Administration',
         action_icon='server-cog',
-        metadata={
-            **metadata,
-            'secret_value_recorded': False,
-            'kubeconfig_recorded': False,
-        },
+        metadata=evidence,
     )
 
 
