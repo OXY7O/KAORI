@@ -350,7 +350,7 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
         if job is not None:
             canonical = job_snapshot(job)
             payload = {**canonical, **payload}
-    except Exception:
+    except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
         canonical = {}
     if isinstance(result.info, dict):
         payload.update(result.info)
