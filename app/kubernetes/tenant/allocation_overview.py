@@ -14,7 +14,6 @@ from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
-
 from app.kubernetes.tenant.capacity import CapacityVector
 from app.kubernetes.tenant.capacity_allocation_state import (
     _TERMINAL_NAMESPACE_ALLOCATION_STATUSES,
@@ -305,7 +304,11 @@ def _project_capacity_allocation_overview(
 
 
 def _filter_capacity_governance_rows(
-    context: dict[str, Any], *, capacity_rows: list[Any], args: Any, filters: dict[str, str]
+    context: dict[str, Any],
+    *,
+    capacity_rows: list[Any],
+    args: Any,
+    filters: dict[str, str],
 ) -> None:
     capacity_search = filters['search']
     capacity_environment = filters['environment']
