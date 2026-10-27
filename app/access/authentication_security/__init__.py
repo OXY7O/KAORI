@@ -179,6 +179,61 @@ def save_mfa_policy():
     return redirect(url_for('access.authentication_security.index', tab='mfa'))
 
 
+def _validate_bot_credential_fields(site_key: str, hostname: str, submitted_secret: str) -> None:
+    """Preserve bounded, non-whitespace credential validation before policy writes."""
+    if len(site_key) > 255 or len(hostname) > 253 or len(submitted_secret) > 256:
+        abort(400)
+    if submitted_secret and any(char.isspace() for char in submitted_secret):
+        abort(400)
+
+
+def _bot_configuration_qualified(site_key: str, hostname: str, effective_secret: str) -> bool:
+    candidate = TurnstileVerificationConfig(
+        secret_key=effective_secret, expected_hostname=hostname, expected_action='login'
+    )
+    return bool(
+        site_key
+        and site_key.isascii()
+        and not any(char.isspace() for char in site_key)
+        and _configuration_ready(candidate)
+    )
+
+
+def _bot_configuration_changed(
+    policy: AuthenticationSecurityPolicy, site_key: str, hostname: str, submitted_secret: str
+) -> bool:
+    return (
+        policy.bot_provider_key != 'cloudflare_turnstile'
+        or policy.bot_site_key != (site_key or None)
+        or policy.bot_hostname != (hostname or None)
+        or (bool(submitted_secret) and submitted_secret != policy.bot_secret_key)
+    )
+
+
+def _validate_bot_enablement(
+    policy: AuthenticationSecurityPolicy,
+    *,
+    mode: BotPolicyMode,
+    site_key: str,
+    effective_secret: str,
+    ready: bool,
+    config_changed: bool,
+) -> None:
+    """Keep test credentials, proof freshness and rollback as activation preconditions."""
+    if mode == BotPolicyMode.ALWAYS:
+        if not (current_app.debug or current_app.testing):
+            if site_key in TEST_SITE_KEYS or effective_secret in TEST_SECRET_KEYS:
+                db.session.rollback()
+                abort(409, description='Turnstile test credentials cannot be enabled in production.')
+        tested = policy.bot_tested_at
+        if tested is not None and tested.tzinfo is None:
+            tested = tested.replace(tzinfo=UTC)
+        recent = tested is not None and timedelta(0) <= datetime.now(UTC) - tested <= timedelta(hours=1)
+        if not ready or config_changed or not recent:
+            db.session.rollback()
+            abort(409, description='Save disabled configuration and successfully test Turnstile before enabling.')
+
+
 @bp.post('/bot/policy')
 @permission_required('identity_providers.manage')
 def save_bot_policy():
@@ -196,10 +251,7 @@ def save_bot_policy():
     site_key = str(request.form.get('site_key') or '').strip()
     hostname = str(request.form.get('hostname') or '').strip().lower()
     submitted_secret = str(request.form.get('secret_key') or '')
-    if len(site_key) > 255 or len(hostname) > 253 or len(submitted_secret) > 256:
-        abort(400)
-    if submitted_secret and any(char.isspace() for char in submitted_secret):
-        abort(400)
+    _validate_bot_credential_fields(site_key, hostname, submitted_secret)
 
     actor = current_user._get_current_object()
     try:
@@ -209,33 +261,12 @@ def save_bot_policy():
             db.session.add(policy)
         old_mode = policy.bot_mode
         effective_secret = submitted_secret or policy.bot_secret_key or ''
-        candidate = TurnstileVerificationConfig(
-            secret_key=effective_secret, expected_hostname=hostname, expected_action='login'
+        ready = _bot_configuration_qualified(site_key, hostname, effective_secret)
+        config_changed = _bot_configuration_changed(policy, site_key, hostname, submitted_secret)
+        _validate_bot_enablement(
+            policy, mode=mode, site_key=site_key, effective_secret=effective_secret,
+            ready=ready, config_changed=config_changed,
         )
-        ready = bool(
-            site_key
-            and site_key.isascii()
-            and not any(char.isspace() for char in site_key)
-            and _configuration_ready(candidate)
-        )
-        config_changed = (
-            policy.bot_provider_key != 'cloudflare_turnstile'
-            or policy.bot_site_key != (site_key or None)
-            or policy.bot_hostname != (hostname or None)
-            or (bool(submitted_secret) and submitted_secret != policy.bot_secret_key)
-        )
-        if mode == BotPolicyMode.ALWAYS:
-            if not (current_app.debug or current_app.testing):
-                if site_key in TEST_SITE_KEYS or effective_secret in TEST_SECRET_KEYS:
-                    db.session.rollback()
-                    abort(409, description='Turnstile test credentials cannot be enabled in production.')
-            tested = policy.bot_tested_at
-            if tested is not None and tested.tzinfo is None:
-                tested = tested.replace(tzinfo=UTC)
-            recent = tested is not None and timedelta(0) <= datetime.now(UTC) - tested <= timedelta(hours=1)
-            if not ready or config_changed or not recent:
-                db.session.rollback()
-                abort(409, description='Save disabled configuration and successfully test Turnstile before enabling.')
         if config_changed:
             policy.bot_tested_at = None
         policy.bot_provider_key = 'cloudflare_turnstile'
