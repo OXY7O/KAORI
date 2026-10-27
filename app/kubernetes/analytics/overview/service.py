@@ -6,6 +6,7 @@ from typing import Any, SupportsFloat, SupportsIndex
 
 from flask import current_app, has_app_context
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.analytics.coercion import as_dict as _as_dict
 from app.common.analytics.params import get_allowed_time_ranges
@@ -328,7 +329,7 @@ def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]
                 AnalyticsSnapshot.dataset_key.in_(tuple(OVERVIEW_SNAPSHOT_DATASETS)),
             )
         ).all()
-    except Exception:
+    except (SQLAlchemyError, TypeError, ValueError):
         snapshots = []
 
     return present_snapshot_summary(
@@ -378,7 +379,7 @@ def _resolve_selected_cluster(
                 .distinct()
             ).all()
         }
-    except Exception:
+    except (SQLAlchemyError, TypeError, ValueError):
         ready_cluster_ids = set()
 
     for cluster in clusters:
