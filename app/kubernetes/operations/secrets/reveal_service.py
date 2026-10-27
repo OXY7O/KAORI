@@ -30,6 +30,9 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_namespace_policy,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
+    _as_aware as _as_aware,
+)
+from app.kubernetes.operations.secrets.reveal_policy import (
     _lock_active_request_scope as _lock_active_request_scope,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
@@ -100,14 +103,6 @@ class RevealedSecretValue:
 
 def _now() -> datetime:
     return datetime.now(UTC)
-
-
-def _as_aware(value: datetime | None) -> datetime | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
 
 
 def _required(value: str | None, label: str, *, max_length: int | None = None) -> str:
