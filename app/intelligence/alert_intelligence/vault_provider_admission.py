@@ -223,9 +223,7 @@ def _apply_qualified_case_candidates(
         if type(existing_id) is not int or existing_id < 1:
             return None
         case = db.session.get(AlertCase, existing_id)
-        if case is None or not _eligible_existing_provider_case(
-            case, case_key=case_key, vault_id=binding.asset_key
-        ):
+        if case is None or not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key):
             return None
         prior = _persisted_utc(case.last_seen_at)
         if prior is not None and observed <= prior:
