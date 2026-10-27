@@ -50,10 +50,7 @@ _RANGE_ORDER = {
 logger = logging.getLogger(__name__)
 
 
-def _append_eligibility_diagnostic(
-    diagnostics: list[str] | None,
-    message: str,
-) -> None:
+def _append_eligibility_diagnostic(diagnostics: list[str] | None, message: str) -> None:
     normalized = str(message or '').strip()
     if diagnostics is not None and normalized and normalized not in diagnostics:
         diagnostics.append(normalized[:1000])
