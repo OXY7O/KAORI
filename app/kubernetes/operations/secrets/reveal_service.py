@@ -275,19 +275,29 @@ class PendingRevealPagination:
     per_page: int = 5
 
 
+@dataclass(frozen=True, slots=True)
+class MyRevealFilters:
+    page: int = 1
+    per_page: int = 5
+    search: str = ''
+    status: str = ''
+    sort: str = 'newest'
+    request_id: str = ''
+
+
+@dataclass(frozen=True, slots=True)
+class PendingRevealFilters:
+    pagination: PendingRevealPagination = PendingRevealPagination()
+    search: str = ''
+    sort: str = 'oldest'
+
+
 def get_reveal_page_context(
     *,
     user_id: int,
     can_approve: bool,
-    my_page: int = 1,
-    my_per_page: int = 5,
-    my_search: str = '',
-    my_status: str = '',
-    my_sort: str = 'newest',
-    my_request_id: str = '',
-    pending_pagination: PendingRevealPagination = PendingRevealPagination(),
-    pending_search: str = '',
-    pending_sort: str = 'oldest',
+    my_filters: MyRevealFilters = MyRevealFilters(),
+    pending_filters: PendingRevealFilters = PendingRevealFilters(),
 ) -> dict[str, Any]:
 
     now = _now()
@@ -302,16 +312,16 @@ def get_reveal_page_context(
         else_=SecretRevealRequest.status,
     )
     # Restrict to the requester first; filtering is SQL-backed and never reads Secret values.
-    search = str(my_search or '').strip()[:120]
+    search = str(my_filters.search or '').strip()[:120]
     allowed_statuses = {'pending', 'approved', 'revealed', 'denied', 'expired'}
-    state_filter = str(my_status or '').strip().lower()
+    state_filter = str(my_filters.status or '').strip().lower()
     if state_filter not in allowed_statuses:
         state_filter = ''
-    ordering = 'oldest' if my_sort == 'oldest' else 'newest'
+    ordering = 'oldest' if my_filters.sort == 'oldest' else 'newest'
 
     # Exact linked-request selection is strictly scoped to the current requester.
     # Notification IDs never convey authority or permit another user's request reads.
-    focus_id = str(my_request_id or '').strip()[:80]
+    focus_id = str(my_filters.request_id or '').strip()[:80]
     my_query = SecretRevealRequest.query.filter_by(requester_user_id=user_id)
     if focus_id:
         my_query = my_query.filter(SecretRevealRequest.id == focus_id)
@@ -331,7 +341,7 @@ def get_reveal_page_context(
         my_query = my_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
     else:
         my_query = my_query.order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
-    my_requests, my_window = paginate_query(my_query, page=my_page, per_page=my_per_page)
+    my_requests, my_window = paginate_query(my_query, page=my_filters.page, per_page=my_filters.per_page)
     # Preserve the existing Reveal template keys without keeping a separate
     # page-size policy or a second hand-written pagination algorithm.
     my_pagination = {
@@ -345,8 +355,8 @@ def get_reveal_page_context(
 
     # The approval permission boundary precedes all searches/pagination.
     # Only request metadata is queried; never Secret payloads.
-    pending_search_value = str(pending_search or '').strip()[:120]
-    pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'
+    pending_search_value = str(pending_filters.search or '').strip()[:120]
+    pending_ordering = 'newest' if pending_filters.sort == 'newest' else 'oldest'
     pending_requests: list[SecretRevealRequest] = []
     if can_approve:
         pending_query = SecretRevealRequest.query.filter(
@@ -371,15 +381,15 @@ def get_reveal_page_context(
             pending_query = pending_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
         pending_requests, pending_window = paginate_query(
             pending_query,
-            page=pending_pagination.page,
-            per_page=pending_pagination.per_page,
+            page=pending_filters.pagination.page,
+            per_page=pending_filters.pagination.per_page,
         )
     else:
         pending_window = pagination_payload(
             build_pagination_window(
                 total_items=0,
-                page=pending_pagination.page,
-                per_page=pending_pagination.per_page,
+                page=pending_filters.pagination.page,
+                per_page=pending_filters.pagination.per_page,
             )
         )
     pending_pagination_payload = {
