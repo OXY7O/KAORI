@@ -26,9 +26,7 @@ def _snapshot() -> dict[str, object]:
 
 def _findings(monkeypatch: pytest.MonkeyPatch, snapshot: dict[str, object]) -> list[dict[str, object]]:
     monkeypatch.setattr(recommendations, 'build_stored_pki_validity_posture', lambda: snapshot)
-    return recommendations.build_secrets_pki_recommendation_findings(
-        {recommendations._RULE_KEY: {'status': 'enabled'}}
-    )
+    return recommendations.build_secrets_pki_recommendation_findings({recommendations._RULE_KEY: {'status': 'enabled'}})
 
 
 def test_ready_qualified_pki_population_keeps_critical_recommendation(monkeypatch: pytest.MonkeyPatch) -> None:
