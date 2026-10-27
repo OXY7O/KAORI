@@ -10,7 +10,9 @@ def read(relative: str) -> str:
 def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
     source = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
     body = source.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
-    assert 'pending_pagination: PendingRevealPagination = PendingRevealPagination()' in body
+    assert 'pending_filters: PendingRevealFilters = PendingRevealFilters()' in body
+    assert 'pagination: PendingRevealPagination = PendingRevealPagination()' in source
+    assert 'my_filters: MyRevealFilters = MyRevealFilters()' in body
     assert 'class PendingRevealPagination:' in source
     assert 'per_page: int = 5' in source
     assert 'my_requests, my_window = paginate_query(' in body
@@ -24,17 +26,21 @@ def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
 
 def test_reveal_route_preserves_separate_htmx_windows() -> None:
     routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
-    assert "my_per_page=request.args.get('my_per_page', 5, type=int) or 5" in routes
-    assert 'pending_pagination=PendingRevealPagination(' in routes
+    assert 'my_filters=MyRevealFilters(' in routes
+    assert "per_page=request.args.get('my_per_page', 5, type=int) or 5" in routes
+    assert 'pending_filters=PendingRevealFilters(' in routes
+    assert 'pagination=PendingRevealPagination(' in routes
     assert "per_page=request.args.get('pending_per_page', 5, type=int) or 5" in routes
 
 
 def test_review7_my_requests_uses_sql_filters_with_requester_isolation() -> None:
     service = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
     block = service.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
-    assert 'my_search: str' in block
-    assert 'my_status: str' in block
-    assert 'my_sort: str' in block
+    my_fields = service.split('class MyRevealFilters:', 1)[1].split('class PendingRevealFilters:', 1)[0]
+    assert 'search: str' in my_fields
+    assert 'status: str' in my_fields
+    assert 'sort: str' in my_fields
+    assert 'my_filters: MyRevealFilters = MyRevealFilters()' in block
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in block
     assert 'autoescape=True' in block
     assert 'effective_status == state_filter' in block
@@ -68,8 +74,9 @@ def test_review7_my_requests_uses_canonical_filter_loading_table_and_footer() ->
     assert "per_page_param='my_per_page'" in source
     assert "name='reveal_view'" not in source
     assert 'value="mine"' in source
-    assert "my_search=request.args.get('my_search', '')" in routes
-    assert "my_status=request.args.get('my_status', '')" in routes
+    assert 'my_filters=MyRevealFilters(' in routes
+    assert "search=request.args.get('my_search', '')" in routes
+    assert "status=request.args.get('my_status', '')" in routes
 
 
 def test_my_reveal_requests_use_approved_header_loading_filter_and_result_count() -> None:
@@ -165,9 +172,10 @@ def test_pending_approval_table_uses_full_canonical_registry_and_permission_scop
 
     # The filtered data remains permissioned by the backend, not client labels.
     assert 'if can_approve:' in service
-    assert "SecretRevealRequest.query.filter_by(status='pending')" in service
-    assert "pending_search_value = str(pending_search or '').strip()[:120]" in service
-    assert "pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'" in service
+    assert "SecretRevealRequest.status == 'pending'" in service
+    assert 'SecretRevealRequest.expires_at > now' in service
+    assert "pending_search_value = str(pending_filters.search or '').strip()[:120]" in service
+    assert "pending_ordering = 'newest' if pending_filters.sort == 'newest' else 'oldest'" in service
     assert 'func.lower(SecretRevealRequest.secret_name).contains(pending_term, autoescape=True)' in service
     assert 'func.lower(SecretRevealRequest.namespace).contains(pending_term, autoescape=True)' in service
     assert 'func.lower(SecretRevealRequest.key_name).contains(pending_term, autoescape=True)' in service
@@ -176,8 +184,9 @@ def test_pending_approval_table_uses_full_canonical_registry_and_permission_scop
     assert 'SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc()' in service
     assert "'pending_reveal_filters': {'search': pending_search_value, 'sort': pending_ordering}" in service
     assert "@permission_required('kubernetes_secrets.approve_reveal')" in routes
-    assert "pending_search=request.args.get('pending_search', '')" in routes
-    assert "pending_sort=request.args.get('pending_sort', 'oldest')" in routes
+    assert 'pending_filters=PendingRevealFilters(' in routes
+    assert "search=request.args.get('pending_search', '')" in routes
+    assert "sort=request.args.get('pending_sort', 'oldest')" in routes
 
 
 def test_pending_decision_editor_preserves_security_and_prevents_poll_loss() -> None:
@@ -232,8 +241,9 @@ def test_reveal_history_read_does_not_expire_globally_or_load_all_approvers() ->
     assert 'def effective_status(self) -> str:' in model
     assert "return 'expired' if deadline <=" in model
 
-    approvers = service.split('def get_secret_reveal_approvers(', 1)[1]
-    approvers = approvers.split('\ndef rollback_secret_reveal_transaction(', 1)[0]
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
+    assert 'get_secret_reveal_approvers as get_secret_reveal_approvers' in service
+    approvers = policy.split('def get_secret_reveal_approvers(', 1)[1]
     assert 'Permission.key ==' in approvers
     assert 'Role.is_active.is_(True)' in approvers
     assert 'User.role_id.in_(authorized_roles)' in approvers

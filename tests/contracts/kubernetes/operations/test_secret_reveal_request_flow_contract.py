@@ -171,10 +171,12 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     )[0]
     assert 'my_request_id=record.id' in requester_notification
     assert "_anchor='my-secret-reveal-requests'" not in requester_notification
-    assert "my_request_id=request.args.get('my_request_id', '')" in routes
+    assert "request_id=request.args.get('my_request_id', '')" in routes
 
     # Ownership is a prerequisite to exact request selection, not a fallback.
-    assert "my_request_id: str = ''" in service
+    assert "request_id: str = ''" in service
+    assert 'class MyRevealFilters:' in service
+    assert 'my_filters: MyRevealFilters = MyRevealFilters()' in service
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in service
     assert 'my_query = my_query.filter(SecretRevealRequest.id == focus_id)' in service
     assert service.index('query.filter_by(requester_user_id=user_id)') < service.index(
