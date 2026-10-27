@@ -46,6 +46,73 @@ def _timestamp(value: datetime | None) -> datetime | None:
     return value.astimezone(UTC) if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
 
+def _valid_vault_mount_scope_request(
+    actor_user_id: int, instance_id: int, provider_namespace: str, mount: str, permission_key: str
+) -> bool:
+    """Exact Vault mount scope only: no wildcard, inherited scope or malformed identity."""
+    return not (
+        type(actor_user_id) is not int
+        or actor_user_id <= 0
+        or type(instance_id) is not int
+        or instance_id <= 0
+        or permission_key != _SENSITIVE_PERMISSION
+        or not isinstance(provider_namespace, str)
+        or not isinstance(mount, str)
+        or not mount
+        or len(provider_namespace) > 255
+        or len(mount) > 160
+        or '*' in mount
+    )
+
+
+def _vault_mount_actor_allowed(actor: User | None, permission_key: str) -> bool:
+    """Explicit active-role permission, without local super-admin shortcut."""
+    return not (
+        actor is None
+        or not actor.is_active
+        or actor.role_record is None
+        or not actor.role_record.is_active
+        or permission_key not in actor.role_record.permission_keys()
+    )
+
+
+def _ready_vault_mount_source(source: IntegrationInstance | None) -> bool:
+    return not (
+        source is None
+        or source.integration_type != 'secrets_pki'
+        or source.provider_key != 'vault'
+        or not source.enabled
+        or source.lifecycle_status != 'active'
+        or source.readiness_status != 'ready'
+    )
+
+
+def _eligible_vault_mount_revision_end(
+    current: ScopeAccessPolicyRevision | None, *, instant: datetime
+) -> datetime | None:
+    """Only active, separately approved, effective exact revision is eligible."""
+    if (
+        current is None
+        or current.lifecycle_status != 'active'
+        or current.approved_by_user_id is None
+        or current.approved_by_user_id == current.requested_by_user_id
+        or current.approved_at is None
+    ):
+        return None
+    starts, ends = _timestamp(current.effective_from), _timestamp(current.effective_until)
+    approved = _timestamp(current.approved_at)
+    if (
+        starts is None
+        or ends is None
+        or approved is None
+        or starts > instant
+        or instant >= ends
+        or approved > instant
+    ):
+        return None
+    return ends
+
+
 def evaluate_exact_vault_scope(
     *,
     actor_user_id: int,
@@ -61,19 +128,7 @@ def evaluate_exact_vault_scope(
     No default inheritance from the instance to the namespace/mount.
     This read-only result is a *precondition*, not an exportable permit.
     """
-    if (
-        type(actor_user_id) is not int
-        or actor_user_id <= 0
-        or type(instance_id) is not int
-        or instance_id <= 0
-        or permission_key != _SENSITIVE_PERMISSION
-        or not isinstance(provider_namespace, str)
-        or not isinstance(mount, str)
-        or not mount
-        or len(provider_namespace) > 255
-        or len(mount) > 160
-        or '*' in mount
-    ):
+    if not _valid_vault_mount_scope_request(actor_user_id, instance_id, provider_namespace, mount, permission_key):
         return ScopeAdmission('deny', 'invalid_scope')
     instant = _timestamp(now or datetime.now(UTC))
     if instant is None:
@@ -81,24 +136,11 @@ def evaluate_exact_vault_scope(
 
     try:
         actor = db.session.get(User, actor_user_id)
-        if (
-            actor is None
-            or not actor.is_active
-            or actor.role_record is None
-            or not actor.role_record.is_active
-            or permission_key not in actor.role_record.permission_keys()
-        ):
+        if not _vault_mount_actor_allowed(actor, permission_key):
             # Do not inherit the local super-admin's global permission shortcut.
             return ScopeAdmission('deny', 'permission_required')
         source = db.session.get(IntegrationInstance, instance_id)
-        if (
-            source is None
-            or source.integration_type != 'secrets_pki'
-            or source.provider_key != 'vault'
-            or not source.enabled
-            or source.lifecycle_status != 'active'
-            or source.readiness_status != 'ready'
-        ):
+        if not _ready_vault_mount_source(source):
             return ScopeAdmission('deny', 'source_unqualified')
         vault = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
         if vault is None or (vault.namespace or '') != provider_namespace or mount not in (vault.kv2_mounts or ()):
@@ -131,24 +173,8 @@ def evaluate_exact_vault_scope(
             if lock_for_read:
                 revisions = revisions.with_for_update(of=ScopeAccessPolicyRevision)
             current = revisions.first()
-            if (
-                current is None
-                or current.lifecycle_status != 'active'
-                or current.approved_by_user_id is None
-                or current.approved_by_user_id == current.requested_by_user_id
-                or current.approved_at is None
-            ):
-                continue
-            starts, ends = _timestamp(current.effective_from), _timestamp(current.effective_until)
-            approved = _timestamp(current.approved_at)
-            if (
-                starts is None
-                or ends is None
-                or approved is None
-                or starts > instant
-                or instant >= ends
-                or approved > instant
-            ):
+            ends = _eligible_vault_mount_revision_end(current, instant=instant)
+            if ends is None or current is None:
                 continue
             approved_matches.append((policy, current, ends))
             if len(approved_matches) > 1:
