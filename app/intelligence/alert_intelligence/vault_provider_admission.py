@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -199,6 +199,9 @@ def _apply_qualified_case_candidates(
         severity = candidate.get('severity')
         if not _eligible_case_identity(case_key, severity):
             return None
+        # Runtime-validated as strings by the canonical identity qualification.
+        case_key = cast(str, case_key)
+        severity = cast(str, severity)
         if action == 'create_candidate':
             if candidate.get('existing_case_id') is not None:
                 return None
