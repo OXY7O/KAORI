@@ -17,7 +17,9 @@ from app.integrations.delivery.notification_channels.lifecycle import (
     retire_channel,
 )
 from app.integrations.delivery.notification_channels.service import (
+    ChannelRegistryFilters,
     DeliveryPagination,
+    DeliveryRegistryFilters,
     create_channel,
     get_channel,
     get_notification_channels_payload,
@@ -43,22 +45,26 @@ def index() -> ResponseReturnValue:
     requested_tab = str(request.args.get('tab') or 'overview').strip().lower()
     active_tab = 'channels' if edit_id else (requested_tab if requested_tab in _WORKSPACE_TABS else 'overview')
     payload = get_notification_channels_payload(
-        channel_page=request.args.get('channel_page', default=1, type=int),
-        channel_per_page=request.args.get('channel_per_page', default=5, type=int),
-        channel_search=request.args.get('channel_search', ''),
-        channel_provider=request.args.get('channel_provider', ''),
-        channel_state=request.args.get('channel_state', ''),
-        channel_lifecycle=request.args.get('channel_lifecycle', 'active'),
-        include_overview=active_tab == 'overview',
-        delivery_pagination=DeliveryPagination(
-            page=request.args.get('delivery_page', default=1, type=int),
-            per_page=request.args.get('delivery_per_page', default=5, type=int),
+        channel_filters=ChannelRegistryFilters(
+            page=request.args.get('channel_page', default=1, type=int),
+            per_page=request.args.get('channel_per_page', default=5, type=int),
+            search=request.args.get('channel_search', ''),
+            provider=request.args.get('channel_provider', ''),
+            state=request.args.get('channel_state', ''),
+            lifecycle=request.args.get('channel_lifecycle', 'active'),
         ),
-        delivery_event_key=request.args.get('delivery_event_key', ''),
-        delivery_provider=request.args.get('delivery_provider', ''),
-        delivery_domain=request.args.get('delivery_domain', ''),
-        delivery_severity=request.args.get('delivery_severity', ''),
-        delivery_status=request.args.get('delivery_status', ''),
+        include_overview=active_tab == 'overview',
+        delivery_filters=DeliveryRegistryFilters(
+            pagination=DeliveryPagination(
+                page=request.args.get('delivery_page', default=1, type=int),
+                per_page=request.args.get('delivery_per_page', default=5, type=int),
+            ),
+            event_key=request.args.get('delivery_event_key', ''),
+            provider=request.args.get('delivery_provider', ''),
+            domain=request.args.get('delivery_domain', ''),
+            severity=request.args.get('delivery_severity', ''),
+            status=request.args.get('delivery_status', ''),
+        ),
         can_view_reports=current_user.has_permission('reports.view'),
     )
     edit_channel = get_channel(edit_id) if edit_id else None
