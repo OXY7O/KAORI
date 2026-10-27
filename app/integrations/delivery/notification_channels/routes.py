@@ -263,7 +263,7 @@ def _channel_return_query() -> dict[str, str | int]:
 def _channel_return_url(**overrides: str | int) -> str:
     """Encode bounded POST return filters as URL data, never Flask options."""
     query = {'tab': 'channels', **_channel_return_query(), **overrides}
-    return f"{url_for('notification_channels.index')}?{urlencode(query)}"
+    return f'{url_for("notification_channels.index")}?{urlencode(query)}'
 
 
 def _queue_configuration_feedback(errors: list[str], *, provider_key: str) -> None:
