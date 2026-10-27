@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from flask_sqlalchemy.session import Session as FlaskSession
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, scoped_session
 
@@ -54,7 +55,7 @@ class InventoryPage:
 
 
 def read_installation_inventory(
-    session: Session | scoped_session[Session],
+    session: Session | scoped_session[Session] | scoped_session[FlaskSession],
     *,
     authorized_installation_id: int,
     page: int = 1,
