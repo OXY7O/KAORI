@@ -7,6 +7,7 @@ reimplements OTP cryptography and never sends secrets to external QR endpoints.
 from __future__ import annotations
 
 import base64
+import binascii
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -47,7 +48,7 @@ def mfa_decision(user: User) -> MfaPolicyDecision:
 def _totp(secret: str) -> TOTP:
     try:
         key = base64.b32decode(secret, casefold=False)
-    except (ValueError, base64.binascii.Error) as exc:
+    except (ValueError, binascii.Error) as exc:
         raise MfaVerificationError('MFA factor is unavailable.') from exc
     return TOTP(key, 6, hashes.SHA1(), 30)
 
@@ -74,7 +75,9 @@ def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
         raise MfaVerificationError('MFA is already enrolled.')
     existing = AuthenticationMfaFactor.query.filter_by(user_id=user.id).with_for_update().first()
     secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
-    factor = existing if existing is not None else AuthenticationMfaFactor(user_id=user.id)
+    factor = existing if existing is not None else AuthenticationMfaFactor()
+    if existing is None:
+        factor.user_id = user.id
     factor.totp_secret = secret
     factor.enabled = False
     factor.last_accepted_step = None
