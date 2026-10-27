@@ -23,10 +23,10 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _quota_differences,
     _quota_from_global_resource,
     _shared_authority_context,
-    _source_reference,
-    _tenant_evidence,
     _SHARED_CAPABILITY,
     _SHARED_SCOPE,
+    _source_reference,
+    _tenant_evidence,
     build_capsule_shared_drift_action_state,
 )
 from app.kubernetes.tenant.service import (
