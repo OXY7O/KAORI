@@ -49,9 +49,7 @@ def test_expected_source_read_failure_reports_not_ready(monkeypatch: pytest.Monk
 
 
 def test_unexpected_source_read_defect_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        materialized_requests, '_metrics_source_resolution', _raises(LookupError('unexpected defect'))
-    )
+    monkeypatch.setattr(materialized_requests, '_metrics_source_resolution', _raises(LookupError('unexpected defect')))
 
     with Flask(__name__).app_context():
         with pytest.raises(LookupError, match='unexpected defect'):
@@ -67,9 +65,12 @@ def test_selected_committed_source_keeps_dataset_ready(monkeypatch: pytest.Monke
         lambda **_kwargs: SimpleNamespace(selected=object()),
     )
 
-    assert materialized_requests._dataset_source_is_ready(
-        dataset_key=CAPACITY_DATASET_KEY, cluster=_cluster(), parameters={}
-    ) is True
+    assert (
+        materialized_requests._dataset_source_is_ready(
+            dataset_key=CAPACITY_DATASET_KEY, cluster=_cluster(), parameters={}
+        )
+        is True
+    )
 
 
 def _stub_materialized_request(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -125,9 +126,7 @@ def _empty_sql_scalars(_statement: object) -> SimpleNamespace:
 
 
 def _stub_empty_overview_sql(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        overview_service, 'db', SimpleNamespace(session=SimpleNamespace(scalars=_empty_sql_scalars))
-    )
+    monkeypatch.setattr(overview_service, 'db', SimpleNamespace(session=SimpleNamespace(scalars=_empty_sql_scalars)))
 
 
 @pytest.mark.parametrize('error', [SQLAlchemyError('DB down'), RuntimeError('context missing')])
