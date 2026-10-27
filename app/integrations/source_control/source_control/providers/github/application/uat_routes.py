@@ -8,8 +8,9 @@ No API calls during GET; committed KAORI state is the only read source.
 from __future__ import annotations
 
 import json
+from urllib.parse import urlencode
 
-from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf import FlaskForm
@@ -70,11 +71,20 @@ github_uat_bp = Blueprint(
 )
 
 
-def _response(name: str, **context) -> ResponseReturnValue:
+def _response(name: str, **context) -> Response:
     response = make_response(render_template(name, **context))
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     return response
+
+
+def _detail_url(installation_id: int, **overrides: str) -> str:
+    """Keep user-controlled query values as URL data, not url_for options."""
+    filters = request.args.to_dict(flat=True)
+    filters.update(overrides)
+    url = url_for('github_source_uat.detail', installation_id=installation_id)
+    query = urlencode(filters)
+    return f'{url}?{query}' if query else url
 
 
 def _installation_or_404(installation_id: int) -> SourceInstallation:
@@ -115,7 +125,7 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     }
 
 
-def _render_validation_content(installation: SourceInstallation, *, validation_job=None) -> ResponseReturnValue:
+def _render_validation_content(installation: SourceInstallation, *, validation_job=None) -> Response:
     canonical = installation.integration_instance
     if canonical is None:
         abort(409)
@@ -149,7 +159,7 @@ def _capability_context(canonical) -> dict:
 
 def _render_runtime_content(
     installation: SourceInstallation, *, runtime_refresh_job=None, runtime_feedback: str = ''
-) -> ResponseReturnValue:
+) -> Response:
     canonical = installation.integration_instance
     if canonical is None:
         abort(409)
@@ -233,7 +243,7 @@ def _render_github_edit_connection_result(
     test_proof: str | None,
     message: str | None,
     rejection: bool,
-) -> ResponseReturnValue:
+) -> Response:
     """Preserve the exact HTMX proof and rejected-post response contract."""
     if inline_test:
         response = _response(
@@ -498,7 +508,7 @@ def inventory_table(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     context = _inventory_context(installation)
     if request.headers.get('HX-Request') != 'true':
-        return redirect(url_for('github_source_uat.detail', installation_id=installation_id, **request.args))
+        return redirect(_detail_url(installation_id))
     return _response('integrations/source_control/github/_inventory_table.html', **context)
 
 
@@ -507,13 +517,7 @@ def inventory_table(installation_id: int) -> ResponseReturnValue:
 def runtime_jobs(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     if request.headers.get('HX-Request') != 'true':
-        return redirect(
-            url_for(
-                'github_source_uat.detail',
-                installation_id=installation_id,
-                **{**request.args.to_dict(flat=True), 'tab': 'runtime', 'runtime_view': 'jobs'},
-            )
-        )
+        return redirect(_detail_url(installation_id, tab='runtime', runtime_view='jobs'))
     return _response(
         'integrations/source_control/github/partials/_runtime_jobs.html',
         installation=installation,
@@ -527,13 +531,7 @@ def runtime_jobs(installation_id: int) -> ResponseReturnValue:
 def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     if request.headers.get('HX-Request') != 'true':
-        return redirect(
-            url_for(
-                'github_source_uat.detail',
-                installation_id=installation_id,
-                **{**request.args.to_dict(flat=True), 'tab': 'runtime', 'runtime_view': 'deliveries'},
-            )
-        )
+        return redirect(_detail_url(installation_id, tab='runtime', runtime_view='deliveries'))
     return _response(
         'integrations/source_control/github/partials/_runtime_deliveries.html',
         installation=installation,
