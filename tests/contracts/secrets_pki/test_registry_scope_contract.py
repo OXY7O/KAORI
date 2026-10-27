@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.secrets_pki.registry_scope import admit_secret_registry_scope
+from app.secrets_pki.registry_scope import SecretRegistryCollectionState, admit_secret_registry_scope
 
 AT = datetime(2026, 10, 22, 12, tzinfo=UTC)
 
@@ -22,6 +22,15 @@ def accepted(**changes):
         'now': AT + timedelta(minutes=2),
     }
     args.update(changes)
+    source_ready = args.pop('source_ready')
+    generation_complete = args.pop('generation_complete')
+    args.setdefault(
+        'collection_state',
+        SecretRegistryCollectionState(
+            source_ready=source_ready,
+            generation_complete=generation_complete,
+        ),
+    )
     return admit_secret_registry_scope(**args)
 
 
@@ -59,6 +68,8 @@ def test_missing_or_wrong_scope_never_exposes_inventory_count(change):
     [
         {'source_ready': False},
         {'generation_complete': False},
+        {'collection_state': None},
+        {'collection_state': {'source_ready': True, 'generation_complete': True}},
         {'committed_at': None},
         {'committed_at': AT - timedelta(hours=26)},
         {'committed_at': AT + timedelta(hours=1)},
