@@ -130,11 +130,10 @@ def commit_pki_public_issuers(
             .with_for_update()
         ).scalar_one_or_none()
         if state is None:
-            state = PKIIssuerCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=namespace,
-                mount=evidence.mount,
-            )
+            state = PKIIssuerCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = namespace
+            state.mount = evidence.mount
             db.session.add(state)
             db.session.flush()
         if not evidence.issuers and (state.observed_issuer_count or 0) > 0:
@@ -163,12 +162,11 @@ def commit_pki_public_issuers(
             observed.add(item.issuer_id)
             issuer = by_source.get(item.issuer_id)
             if issuer is None:
-                issuer = PKIIssuerIdentity(
-                    integration_instance_id=integration_instance_id,
-                    provider_namespace=namespace,
-                    mount=evidence.mount,
-                    provider_issuer_id=item.issuer_id,
-                )
+                issuer = PKIIssuerIdentity()
+                issuer.integration_instance_id = integration_instance_id
+                issuer.provider_namespace = namespace
+                issuer.mount = evidence.mount
+                issuer.provider_issuer_id = item.issuer_id
                 db.session.add(issuer)
                 by_source[item.issuer_id] = issuer
                 db.session.flush()
@@ -178,16 +176,15 @@ def commit_pki_public_issuers(
             current = item.certificate
             certificate = known.get(current.fingerprint_sha256)
             if certificate is None:
-                certificate = PKIPublicCertificateObservation(
-                    issuer_identity_id=issuer.id,
-                    fingerprint_sha256=current.fingerprint_sha256,
-                    serial_hex=current.serial_hex,
-                    valid_from=_utc(current.valid_from),
-                    valid_until=_utc(current.valid_until),
-                    is_ca=current.is_ca,
-                    self_issued=current.self_issued,
-                    chain_fingerprints=','.join(item.chain_fingerprints),
-                )
+                certificate = PKIPublicCertificateObservation()
+                certificate.issuer_identity_id = issuer.id
+                certificate.fingerprint_sha256 = current.fingerprint_sha256
+                certificate.serial_hex = current.serial_hex
+                certificate.valid_from = _utc(current.valid_from)
+                certificate.valid_until = _utc(current.valid_until)
+                certificate.is_ca = current.is_ca
+                certificate.self_issued = current.self_issued
+                certificate.chain_fingerprints = ','.join(item.chain_fingerprints)
                 db.session.add(certificate)
             else:
                 if (
@@ -251,11 +248,10 @@ def mark_pki_public_issuers_failed(integration_instance_id: int, mount: str) -> 
             mount=mount,
         ).first()
         if state is None:
-            state = PKIIssuerCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=namespace,
-                mount=mount,
-            )
+            state = PKIIssuerCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = namespace
+            state.mount = mount
             db.session.add(state)
         state.status = 'stale' if state.last_committed_at is not None else 'failed'
         state.last_error = 'PKI public issuer collection unavailable; retained evidence unchanged.'

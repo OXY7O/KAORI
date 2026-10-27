@@ -109,11 +109,10 @@ def commit_stored_pki_certificates(
             .with_for_update()
         ).scalar_one_or_none()
         if state is None:
-            state = PKIStoredCertificateCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=namespace,
-                mount=evidence.mount,
-            )
+            state = PKIStoredCertificateCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = namespace
+            state.mount = evidence.mount
             db.session.add(state)
             db.session.flush()
         timestamp = _aware(evidence.observed_at)
@@ -142,15 +141,14 @@ def commit_stored_pki_certificates(
             observed.add(serial)
             entry = by_serial.get(serial)
             if entry is None:
-                entry = PKIStoredCertificateObservation(
-                    integration_instance_id=integration_instance_id,
-                    provider_namespace=namespace,
-                    mount=evidence.mount,
-                    serial_hex=serial,
-                    fingerprint_sha256=certificate.fingerprint_sha256,
-                    valid_from=_aware(certificate.valid_from),
-                    valid_until=_aware(certificate.valid_until),
-                )
+                entry = PKIStoredCertificateObservation()
+                entry.integration_instance_id = integration_instance_id
+                entry.provider_namespace = namespace
+                entry.mount = evidence.mount
+                entry.serial_hex = serial
+                entry.fingerprint_sha256 = certificate.fingerprint_sha256
+                entry.valid_from = _aware(certificate.valid_from)
+                entry.valid_until = _aware(certificate.valid_until)
                 db.session.add(entry)
             elif (
                 entry.fingerprint_sha256 != certificate.fingerprint_sha256
@@ -198,11 +196,10 @@ def mark_stored_pki_certificates_failed(integration_instance_id: int, mount: str
             mount=mount,
         ).first()
         if state is None:
-            state = PKIStoredCertificateCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=provider.namespace or '',
-                mount=mount,
-            )
+            state = PKIStoredCertificateCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = provider.namespace or ''
+            state.mount = mount
             db.session.add(state)
         state.status = 'stale' if state.last_committed_at else 'failed'
         state.last_error = 'Stored PKI certificate collection unavailable; prior history retained.'
