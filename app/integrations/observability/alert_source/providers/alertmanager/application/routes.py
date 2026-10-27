@@ -8,7 +8,7 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import is_htmx_request
-from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.observability.alert_source.providers.alertmanager.application.edit_web import (
     edit_instance_response,
@@ -350,7 +350,7 @@ def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
         page=request.args.get('page', 1),
         per_page=request.args.get('per_page', 5),
         search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True),
     )
     return render_template(
         'integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html', **context
