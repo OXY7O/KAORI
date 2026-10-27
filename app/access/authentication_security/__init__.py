@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask_login import current_user, logout_user
@@ -109,7 +110,7 @@ def save_mfa_policy():
     if request.form.get('acknowledge_policy_impact') != 'yes':
         abort(400)
 
-    actor = current_user._get_current_object()
+    actor = cast(User, current_user._get_current_object())
     if requested in (MfaPolicyMode.REQUIRED_PRIVILEGED, MfaPolicyMode.REQUIRED_ALL):
         # A mandatory policy cannot strand the final local recovery authority.
         recovery_admins = User.query.filter_by(
@@ -121,7 +122,9 @@ def save_mfa_policy():
     try:
         policy = db.session.get(AuthenticationSecurityPolicy, 1, with_for_update=True)
         if policy is None:
-            policy = AuthenticationSecurityPolicy(id=1, mfa_mode='disabled')
+            policy = AuthenticationSecurityPolicy()
+            policy.id = 1
+            policy.mfa_mode = 'disabled'
             db.session.add(policy)
         previous = policy.mfa_mode
         changed = previous != requested.value
@@ -253,11 +256,14 @@ def save_bot_policy():
     submitted_secret = str(request.form.get('secret_key') or '')
     _validate_bot_credential_fields(site_key, hostname, submitted_secret)
 
-    actor = current_user._get_current_object()
+    actor = cast(User, current_user._get_current_object())
     try:
         policy = db.session.get(AuthenticationSecurityPolicy, 1, with_for_update=True)
         if policy is None:
-            policy = AuthenticationSecurityPolicy(id=1, mfa_mode='disabled', bot_mode='disabled')
+            policy = AuthenticationSecurityPolicy()
+            policy.id = 1
+            policy.mfa_mode = 'disabled'
+            policy.bot_mode = 'disabled'
             db.session.add(policy)
         old_mode = policy.bot_mode
         effective_secret = submitted_secret or policy.bot_secret_key or ''
@@ -305,7 +311,7 @@ def test_bot_provider():
         validate_csrf(request.form.get('csrf_token'))
     except ValidationError:
         abort(400)
-    actor = current_user._get_current_object()
+    actor = cast(User, current_user._get_current_object())
     try:
         policy = db.session.get(AuthenticationSecurityPolicy, 1, with_for_update=True)
         if policy is None or not policy.bot_site_key or not policy.bot_secret_key or not policy.bot_hostname:
