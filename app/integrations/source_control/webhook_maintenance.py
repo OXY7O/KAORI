@@ -6,10 +6,11 @@ Maintains the existing KAORI maintenance queue and JobExecution authority.
 
 from __future__ import annotations
 
+from typing import cast
+
 from celery import shared_task
 from flask import current_app
 from sqlalchemy.orm import Session
-from typing import cast
 
 from app.extensions.db import db
 from app.integrations.source_control.source_control.providers.github.webhook_recovery import (
