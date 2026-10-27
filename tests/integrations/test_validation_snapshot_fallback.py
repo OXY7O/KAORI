@@ -45,6 +45,24 @@ def test_expected_canonical_read_error_falls_back_to_terminal_celery_state(monke
     assert snapshot['is_complete'] is True
 
 
+
+@pytest.mark.parametrize('error', [TypeError('invalid snapshot field'), ValueError('invalid snapshot value')])
+def test_expected_canonical_snapshot_serialization_error_uses_celery_state(monkeypatch, error: Exception) -> None:
+    def broken_snapshot(_job: object) -> None:
+        raise error
+
+    monkeypatch.setattr(job_service, 'get_job_by_task_id', lambda _task_id: object())
+    monkeypatch.setattr(job_service, 'job_snapshot', broken_snapshot)
+    monkeypatch.setattr(state, 'get_validation_metadata', lambda _task_id: {})
+
+    with _app_with_celery_result('PENDING').app_context():
+        snapshot = state.build_validation_snapshot('validation-task')
+
+    assert snapshot['celery_state'] == 'PENDING'
+    assert snapshot['is_active'] is True
+    assert snapshot['is_complete'] is False
+
+
 def test_unexpected_canonical_read_defect_is_not_silently_hidden(monkeypatch) -> None:
     def unexpected(_task_id: str) -> None:
         raise LookupError('unexpected canonical job contract defect')
