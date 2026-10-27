@@ -35,7 +35,7 @@ from app.kubernetes.operations.secrets.reveal_policy import (
 from app.kubernetes.operations.secrets.reveal_policy import (
     get_secret_reveal_approvers as get_secret_reveal_approvers,
 )
-from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest, User
+from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import stage_operational_activity
 
