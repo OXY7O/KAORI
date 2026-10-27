@@ -133,13 +133,12 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
             ):
                 raise GitHubProviderError('GitHub App credential differs from the existing protected registration.')
         else:
-            app_credential = GitHubAppCredential(
-                host_key='github.com',
-                native_app_id=app_id,
-                private_key_pem=values.private_key_pem,
-                webhook_secret=values.webhook_secret,
-                enabled=True,
-            )
+            app_credential = GitHubAppCredential()
+            app_credential.host_key = 'github.com'
+            app_credential.native_app_id = app_id
+            app_credential.private_key_pem = values.private_key_pem
+            app_credential.webhook_secret = values.webhook_secret
+            app_credential.enabled = True
             db.session.add(app_credential)
             db.session.flush()
 
@@ -147,50 +146,47 @@ def save_tested_connection(values: GitHubConnectionInput) -> SourceInstallation:
             provider_key='github', host_key='github.com', native_account_id=account_id
         ).first()
         if account is None:
-            account = SourceAccount(
-                provider_key='github',
-                host_key='github.com',
-                native_account_id=account_id,
-                account_type=observed.account_type,
-            )
+            account = SourceAccount()
+            account.provider_key = 'github'
+            account.host_key = 'github.com'
+            account.native_account_id = account_id
+            account.account_type = observed.account_type
             db.session.add(account)
             db.session.flush()
         else:
             account.account_type = observed.account_type
 
-        identity = IntegrationInstance(
-            integration_type='source_control',
-            provider_key='github',
-            adapter_key='github_rest_v3',
-            name=name,
-            environment=str(values.environment or '').strip() or None,
-            description=values.description,
-            enabled=bool(values.enabled),
-            lifecycle_status='active',
-            readiness_status='validation_required',
-            health_status=None,
-            metadata_json={
-                'provider_label': 'GitHub',
-                'protocol': 'github_rest_v3',
-                'source_host': 'github.com',
-                'auth_type': 'github_app',
-                'repository_selection': observed.repository_selection,
-            },
-        )
+        identity = IntegrationInstance()
+        identity.integration_type = 'source_control'
+        identity.provider_key = 'github'
+        identity.adapter_key = 'github_rest_v3'
+        identity.name = name
+        identity.environment = str(values.environment or '').strip() or None
+        identity.description = values.description
+        identity.enabled = bool(values.enabled)
+        identity.lifecycle_status = 'active'
+        identity.readiness_status = 'validation_required'
+        identity.health_status = None
+        identity.metadata_json = {
+            'provider_label': 'GitHub',
+            'protocol': 'github_rest_v3',
+            'source_host': 'github.com',
+            'auth_type': 'github_app',
+            'repository_selection': observed.repository_selection,
+        }
         db.session.add(identity)
         db.session.flush()
-        installation = SourceInstallation(
-            integration_instance_id=identity.id,
-            provider_key='github',
-            host_key='github.com',
-            native_app_id=app_id,
-            native_installation_id=installation_id,
-            account_id=account.id,
-            github_app_credential_id=app_credential.id,
-            repository_scope=observed.repository_selection,
-            grant_status='unknown',
-            last_observed_at=observed.observed_at,
-        )
+        installation = SourceInstallation()
+        installation.integration_instance_id = identity.id
+        installation.provider_key = 'github'
+        installation.host_key = 'github.com'
+        installation.native_app_id = app_id
+        installation.native_installation_id = installation_id
+        installation.account_id = account.id
+        installation.github_app_credential_id = app_credential.id
+        installation.repository_scope = observed.repository_selection
+        installation.grant_status = 'unknown'
+        installation.last_observed_at = observed.observed_at
         db.session.add(installation)
         db.session.commit()
     except Exception:
