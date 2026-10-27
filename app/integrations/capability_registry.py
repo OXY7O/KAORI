@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from app.common.pagination import PER_PAGE_OPTIONS, paginate_sequence
@@ -14,6 +15,12 @@ def _value(row: Any, name: str, default: Any = None) -> Any:
     return getattr(row, name, default)
 
 
+@dataclass(frozen=True, slots=True)
+class CapabilityStatusFlags:
+    optional_gap: bool = False
+    unverified: bool = False
+
+
 def build_capability_registry_view(
     rows: Sequence[Any],
     *,
@@ -23,8 +30,7 @@ def build_capability_registry_view(
     page: Any = 1,
     per_page: Any = 5,
     search_fields: tuple[str, ...] = ('label', 'category'),
-    distinguish_optional_gap: bool = False,
-    distinguish_unverified: bool = False,
+    status_flags: CapabilityStatusFlags = CapabilityStatusFlags(),
 ) -> dict[str, Any]:
     """Return one normalized KAORI capability-registry view.
 
@@ -39,9 +45,9 @@ def build_capability_registry_view(
         normalized_requirement = 'all'
 
     allowed_statuses = {'all', 'ready', 'blocked'}
-    if distinguish_optional_gap:
+    if status_flags.optional_gap:
         allowed_statuses.add('optional_gap')
-    if distinguish_unverified:
+    if status_flags.unverified:
         allowed_statuses.add('unverified')
     normalized_status = str(status or 'all').strip().lower()
     if normalized_status not in allowed_statuses:
@@ -53,11 +59,11 @@ def build_capability_registry_view(
         required = bool(_value(row, 'required', False))
         available = bool(_value(row, 'available', False))
         requirement_key = 'required' if required else 'optional'
-        if distinguish_unverified and _value(row, 'status_key') == 'unverified':
+        if status_flags.unverified and _value(row, 'status_key') == 'unverified':
             status_key = 'unverified'
         elif available:
             status_key = 'ready'
-        elif distinguish_optional_gap and not required:
+        elif status_flags.optional_gap and not required:
             status_key = 'optional_gap'
         else:
             status_key = 'blocked'
