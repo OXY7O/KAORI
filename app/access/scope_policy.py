@@ -169,6 +169,15 @@ def evaluate_exact_vault_scope(
         return ScopeAdmission('unavailable', 'policy_evidence_unavailable')
 
 
+def _approved_instance_case_revision(revision: ScopeAccessPolicyRevision) -> bool:
+    """Keep exact active, separately approved instance-case policy evidence."""
+    return not (
+        revision.lifecycle_status != 'active'
+        or revision.approved_by_user_id is None
+        or revision.approved_by_user_id == revision.requested_by_user_id
+    )
+
+
 def evaluate_exact_vault_instance_case_scope(
     *,
     actor_user_id: int,
@@ -231,12 +240,7 @@ def evaluate_exact_vault_instance_case_scope(
                 .with_for_update(of=ScopeAccessPolicyRevision)
                 .first()
             )
-            if (
-                revision is None
-                or revision.lifecycle_status != 'active'
-                or revision.approved_by_user_id is None
-                or revision.approved_by_user_id == revision.requested_by_user_id
-            ):
+            if revision is None or not _approved_instance_case_revision(revision):
                 continue
             start = _timestamp(revision.effective_from)
             end = _timestamp(revision.effective_until)
