@@ -10,7 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import and_, func, select
+from flask_sqlalchemy.session import Session as FlaskSession
+from sqlalchemy import and_, func, literal, select
 from sqlalchemy.orm import Session, scoped_session
 
 from app.models.source_control import (
@@ -54,7 +55,7 @@ class InventoryPage:
 
 
 def read_installation_inventory(
-    session: Session | scoped_session[Session],
+    session: Session | scoped_session[FlaskSession],
     *,
     authorized_installation_id: int,
     page: int = 1,
@@ -114,7 +115,7 @@ def read_installation_inventory(
             SourceReference,
             and_(
                 SourceReference.repository_id == SourceRepository.id,
-                SourceReference.full_ref == ('refs/heads/' + SourceRepository.default_branch),
+                SourceReference.full_ref == (literal('refs/heads/') + SourceRepository.default_branch),
             ),
         )
         .outerjoin(
