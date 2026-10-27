@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy import or_
@@ -58,7 +58,7 @@ def _available() -> bool:
     return provider_kind('source_control', 'github').available
 
 
-def _respond(template: str, **context) -> ResponseReturnValue:
+def _respond(template: str, **context) -> Response:
     response = make_response(render_template(template, **context))
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Pragma'] = 'no-cache'
