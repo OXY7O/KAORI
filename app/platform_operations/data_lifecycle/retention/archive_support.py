@@ -3,11 +3,11 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from app.models.archive import ArchiveArtifact
 from app.platform_operations.data_lifecycle.retention.types import ArchiveBoundary, RetentionPolicy
@@ -102,3 +102,12 @@ def _isoformat(value: datetime | None) -> str | None:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     return value.astimezone(UTC).isoformat()
+
+
+def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
+    estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
+    if callable(estimator):
+        estimate = cast(Callable[[ArchiveBoundary, RetentionPolicy], object], estimator)(boundary, policy)
+        if isinstance(estimate, (int, float, str)):
+            return max(int(estimate or 0), 0)
+    return estimate_uncompressed_size(boundary.record_count)
