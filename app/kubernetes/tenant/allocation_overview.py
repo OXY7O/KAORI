@@ -12,6 +12,9 @@ from typing import Any
 
 from sqlalchemy.orm import joinedload
 
+from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
+
 from app.kubernetes.tenant.capacity import CapacityVector
 from app.kubernetes.tenant.capacity_allocation_state import (
     _TERMINAL_NAMESPACE_ALLOCATION_STATUSES,
@@ -212,3 +215,98 @@ def _partition_tenant_contributions(
             }
         )
     return results
+
+
+def build_resource_profile_capacity_workspace(
+    context: dict[str, Any], *, active_view: str, args: Any
+) -> None:
+    """Project only committed Capacity/Allocation evidence into the resource-profile workspace."""
+capacity_search = str(args.get('capacity_search') or '').strip()
+allocation_view = str(args.get('allocation_view') or 'overview').strip().lower()
+if allocation_view not in {'overview', 'budget'}:
+    allocation_view = 'overview'
+context['active_allocation_view'] = allocation_view
+capacity_environment = str(args.get('capacity_environment') or '').strip().lower()
+capacity_state = str(args.get('capacity_state') or '').strip()
+capacity_evidence = str(args.get('capacity_evidence') or '').strip().lower()
+capacity_resource = str(args.get('capacity_resource') or '').strip()
+if capacity_resource not in {'', 'cpu', 'memory_bytes', 'pods', 'storage_bytes'}:
+    capacity_resource = ''
+capacity_rows = list(context.get('capacity_governance') or [])
+context['capacity_environment_options'] = sorted(
+    {str(item['cluster'].environment).strip() for item in capacity_rows if item['cluster'].environment}
+)
+context['capacity_state_options'] = sorted({str(item['state']) for item in capacity_rows if item.get('state')})
+context['capacity_evidence_options'] = sorted(
+    {str(item.get('snapshot_state') or 'unknown') for item in capacity_rows}
+)
+context['capacity_resource'] = capacity_resource
+
+# Read-only cluster visual projection uses the same committed #654 summaries
+# already resolved for this page. Only one cluster's Tenant contributions are
+# queried on the Capacity tab (no provider calls or speculative admission).
+selection = str(args.get('allocation_cluster_id') or '').strip()
+selected = next(
+    (row for row in capacity_rows if str(row['cluster'].id) == selection),
+    capacity_rows[0] if capacity_rows else None,
+)
+context['allocation_cluster_options'] = capacity_rows
+context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
+context['allocation_overview'] = None
+context['allocation_tenant_rows'] = []
+context['allocation_tenant_matches'] = 0
+context['allocation_tenant_total'] = 0
+context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
+allocation_search = str(args.get('allocation_search') or '').strip()
+context['allocation_search'] = allocation_search
+if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:
+    bars = build_tenant_allocation_bars(selected)
+    context['allocation_overview'] = {
+        'cluster': selected['cluster'],
+        'summary': selected,
+        'bars': bars,
+        'tightest_headroom': describe_tightest_headroom(bars, selected['state']),
+        'cutoff': present_user_datetime(selected.get('data_cutoff')),
+    }
+    tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
+    context['allocation_tenant_total'] = len(tenant_rows)
+    context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
+    tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
+    context['allocation_tenant_rows'] = tenant_rows
+    context['allocation_tenant_matches'] = len(tenant_rows)
+if capacity_search:
+    needle = capacity_search.casefold()
+    capacity_rows = [
+        item
+        for item in capacity_rows
+        if needle in str(item['cluster'].name).casefold() or needle in str(item['cluster'].environment).casefold()
+    ]
+if capacity_environment:
+    capacity_rows = [
+        item for item in capacity_rows if str(item['cluster'].environment).lower() == capacity_environment
+    ]
+if capacity_state:
+    capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]
+if capacity_evidence:
+    capacity_rows = [
+        item for item in capacity_rows if str(item.get('snapshot_state') or 'unknown').lower() == capacity_evidence
+    ]
+capacity_items, capacity_pagination = paginate_sequence(
+    capacity_rows,
+    page=args.get('capacity_page', 1, type=int) or 1,
+    per_page=args.get('capacity_per_page', 5, type=int) or 5,
+)
+context['capacity_governance'] = capacity_items
+# Reuse the read-only #1034 presentation percentages for each visible
+# committed #654 Allocation Budget row; no new evidence or admission path.
+context['capacity_budget_bars'] = {
+    str(item['cluster'].id): build_tenant_allocation_bars(item) for item in capacity_items
+}
+context['capacity_pagination'] = capacity_pagination
+context['capacity_filters'] = {
+    'search': capacity_search,
+    'environment': capacity_environment,
+    'state': capacity_state,
+    'evidence': capacity_evidence,
+    'resource': capacity_resource,
+}
