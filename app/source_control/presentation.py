@@ -52,11 +52,11 @@ def build_source_control_overview() -> dict:
                 'connection': connection,
                 'collection': collection,
                 'committed': committed,
-                'observed_count': collection.observed_count if committed else None,
-                'coverage': collection.coverage if committed else 'unknown',
-                'selection_scope': collection.repository_scope if committed else 'unknown',
+                'observed_count': collection.observed_count if collection is not None and committed else None,
+                'coverage': collection.coverage if collection is not None and committed else 'unknown',
+                'selection_scope': collection.repository_scope if collection is not None and committed else 'unknown',
                 'collection_status': collection.status if collection is not None else 'not_collected',
-                'last_committed_at': collection.last_committed_at if committed else None,
+                'last_committed_at': collection.last_committed_at if collection is not None and committed else None,
             }
         )
     committed_dates = [item['last_committed_at'] for item in installations if item['last_committed_at']]
