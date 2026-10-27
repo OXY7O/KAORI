@@ -100,8 +100,10 @@ def _request(ids, *, mount='kv', namespace=''):
         scope_level='vault_mount',
         provider_namespace=namespace,
         mount=mount,
-        effective_from=now - timedelta(minutes=1),
-        effective_until=now + timedelta(days=1),
+        validity=scoped_grants.ScopeGrantValidity(
+            effective_from=now - timedelta(minutes=1),
+            effective_until=now + timedelta(days=1),
+        ),
         reason_code='operational_access',
     )
 
@@ -198,8 +200,10 @@ def test_foreign_mount_and_unauthorized_actor_fail_closed(scope_store):
             scope_level='instance',
             provider_namespace=None,
             mount=None,
-            effective_from=datetime.now(UTC),
-            effective_until=datetime.now(UTC) + timedelta(days=1),
+            validity=scoped_grants.ScopeGrantValidity(
+                effective_from=datetime.now(UTC),
+                effective_until=datetime.now(UTC) + timedelta(days=1),
+            ),
             reason_code='operational_access',
         )
     assert ScopeAccessPolicy.query.count() == 0
@@ -285,8 +289,10 @@ def test_instance_only_grant_is_not_inherited_to_vault_mount(scope_store):
         scope_level='instance',
         provider_namespace=None,
         mount=None,
-        effective_from=now - timedelta(minutes=1),
-        effective_until=now + timedelta(days=1),
+        validity=scoped_grants.ScopeGrantValidity(
+            effective_from=now - timedelta(minutes=1),
+            effective_until=now + timedelta(days=1),
+        ),
         reason_code='audit_review',
     )
     scoped_grants.approve_scope_grant(
