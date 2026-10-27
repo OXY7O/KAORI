@@ -9,8 +9,6 @@ from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.common.navigation import build_navigation_breadcrumb
-from app.common.pagination import paginate_sequence
-from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant import routes_access as _routes_access
 from app.kubernetes.tenant import routes_credentials as _routes_credentials
 from app.kubernetes.tenant.admin_workspace import (
@@ -22,13 +20,7 @@ from app.kubernetes.tenant.allocation_drift import (
     build_allocation_drift_action_state,
     reapply_kaori_allocation_intent_committed,
 )
-from app.kubernetes.tenant.allocation_overview import (
-    build_tenant_allocation_bars,
-    build_tenant_contribution_rows,
-    describe_tightest_headroom,
-    filter_tenant_contribution_rows,
-    summarize_tenant_contributions,
-)
+from app.kubernetes.tenant.allocation_overview import build_resource_profile_capacity_workspace
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
@@ -425,95 +417,7 @@ def resource_profiles():
         )
     )
 
-    capacity_search = str(request.args.get('capacity_search') or '').strip()
-    allocation_view = str(request.args.get('allocation_view') or 'overview').strip().lower()
-    if allocation_view not in {'overview', 'budget'}:
-        allocation_view = 'overview'
-    context['active_allocation_view'] = allocation_view
-    capacity_environment = str(request.args.get('capacity_environment') or '').strip().lower()
-    capacity_state = str(request.args.get('capacity_state') or '').strip()
-    capacity_evidence = str(request.args.get('capacity_evidence') or '').strip().lower()
-    capacity_resource = str(request.args.get('capacity_resource') or '').strip()
-    if capacity_resource not in {'', 'cpu', 'memory_bytes', 'pods', 'storage_bytes'}:
-        capacity_resource = ''
-    capacity_rows = list(context.get('capacity_governance') or [])
-    context['capacity_environment_options'] = sorted(
-        {str(item['cluster'].environment).strip() for item in capacity_rows if item['cluster'].environment}
-    )
-    context['capacity_state_options'] = sorted({str(item['state']) for item in capacity_rows if item.get('state')})
-    context['capacity_evidence_options'] = sorted(
-        {str(item.get('snapshot_state') or 'unknown') for item in capacity_rows}
-    )
-    context['capacity_resource'] = capacity_resource
-
-    # Read-only cluster visual projection uses the same committed #654 summaries
-    # already resolved for this page. Only one cluster's Tenant contributions are
-    # queried on the Capacity tab (no provider calls or speculative admission).
-    selection = str(request.args.get('allocation_cluster_id') or '').strip()
-    selected = next(
-        (row for row in capacity_rows if str(row['cluster'].id) == selection),
-        capacity_rows[0] if capacity_rows else None,
-    )
-    context['allocation_cluster_options'] = capacity_rows
-    context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
-    context['allocation_overview'] = None
-    context['allocation_tenant_rows'] = []
-    context['allocation_tenant_matches'] = 0
-    context['allocation_tenant_total'] = 0
-    context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
-    allocation_search = str(request.args.get('allocation_search') or '').strip()
-    context['allocation_search'] = allocation_search
-    if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:
-        bars = build_tenant_allocation_bars(selected)
-        context['allocation_overview'] = {
-            'cluster': selected['cluster'],
-            'summary': selected,
-            'bars': bars,
-            'tightest_headroom': describe_tightest_headroom(bars, selected['state']),
-            'cutoff': present_user_datetime(selected.get('data_cutoff')),
-        }
-        tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
-        context['allocation_tenant_total'] = len(tenant_rows)
-        context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
-        tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
-        context['allocation_tenant_rows'] = tenant_rows
-        context['allocation_tenant_matches'] = len(tenant_rows)
-    if capacity_search:
-        needle = capacity_search.casefold()
-        capacity_rows = [
-            item
-            for item in capacity_rows
-            if needle in str(item['cluster'].name).casefold() or needle in str(item['cluster'].environment).casefold()
-        ]
-    if capacity_environment:
-        capacity_rows = [
-            item for item in capacity_rows if str(item['cluster'].environment).lower() == capacity_environment
-        ]
-    if capacity_state:
-        capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]
-    if capacity_evidence:
-        capacity_rows = [
-            item for item in capacity_rows if str(item.get('snapshot_state') or 'unknown').lower() == capacity_evidence
-        ]
-    capacity_items, capacity_pagination = paginate_sequence(
-        capacity_rows,
-        page=request.args.get('capacity_page', 1, type=int) or 1,
-        per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
-    )
-    context['capacity_governance'] = capacity_items
-    # Reuse the read-only #1034 presentation percentages for each visible
-    # committed #654 Allocation Budget row; no new evidence or admission path.
-    context['capacity_budget_bars'] = {
-        str(item['cluster'].id): build_tenant_allocation_bars(item) for item in capacity_items
-    }
-    context['capacity_pagination'] = capacity_pagination
-    context['capacity_filters'] = {
-        'search': capacity_search,
-        'environment': capacity_environment,
-        'state': capacity_state,
-        'evidence': capacity_evidence,
-        'resource': capacity_resource,
-    }
+    build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)
 
     return render_template(
         'kubernetes/tenant/resource_profiles.html',
