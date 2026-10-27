@@ -17,7 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
-from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.source_control.repository_inventory import read_installation_inventory
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
@@ -141,8 +141,7 @@ def _capability_context(canonical) -> dict:
         page=request.args.get('page', 1, type=int),
         per_page=request.args.get('per_page', 5, type=int),
         search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True,
-        distinguish_unverified=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True),
     )
     context['capability_total'] = len(context['capability_rows'])
     return context
