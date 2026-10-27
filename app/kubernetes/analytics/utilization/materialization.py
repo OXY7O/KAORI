@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any, cast
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.dependencies import (
     cluster_required_blocker,
@@ -253,7 +254,7 @@ def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, 
         )
     except MetricsSourceError as exc:
         base['dependency_blocker'] = metrics_source_connection_blocker(cluster, detail=str(exc))
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Unable to materialize utilization summary for cluster %s.',
             cluster.name,
@@ -289,7 +290,7 @@ def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, An
         )
     except MetricsSourceError as exc:
         return {'cluster': cluster, 'dependency_blocker': metrics_source_connection_blocker(cluster, detail=str(exc))}
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception('Unable to materialize utilization trend for cluster %s.', cluster.name)
         return {'cluster': cluster, 'dependency_blocker': metrics_source_connection_blocker(cluster, detail=str(exc))}
 
@@ -327,7 +328,7 @@ def get_utilization_node_context(query_args: Mapping[str, Any]) -> dict[str, Any
         )
     except MetricsSourceError as exc:
         return {'cluster': cluster, 'dependency_blocker': metrics_source_connection_blocker(cluster, detail=str(exc))}
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Unable to materialize utilization node detail for cluster %s.',
             cluster.name,

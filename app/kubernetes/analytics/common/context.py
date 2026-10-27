@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.analytics.params import get_query_value, get_selected_time_range
 from app.common.dependencies import (
@@ -139,7 +140,7 @@ def build_analysis_utilization_context(
         try:
             metrics_source = MetricsService(cluster)
             utilization_service = UtilizationService(metrics_source)
-        except Exception as exc:
+        except (MetricsSourceError, SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
             current_app.logger.exception(
                 'Metrics Source service initialization failed for cluster %s.',
                 cluster.name,
@@ -207,7 +208,7 @@ def build_analysis_utilization_context(
             }
         )
         return clusters, cluster, None, base_context
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Metrics Source service initialization failed for cluster %s.',
             cluster.name,
@@ -250,7 +251,7 @@ def build_analysis_utilization_context(
             }
         )
         return clusters, cluster, None, base_context
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(
             'Metrics Source health check failed for cluster %s.',
             cluster.name,
