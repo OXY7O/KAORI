@@ -153,5 +153,3 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         'last_runtime_refresh': last_refresh,
         'runtime_refresh_job': _validation_job_for(installation.integration_instance, operation='runtime_refresh'),
     }
-
-
