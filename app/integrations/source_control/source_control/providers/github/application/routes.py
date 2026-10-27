@@ -481,6 +481,7 @@ def receive_signed_webhook() -> ResponseReturnValue:
     )
     if len(candidates) != 1:
         abort(401)
+    committed = False
     try:
         claim_verified_delivery(
             installation=candidates[0],
@@ -489,13 +490,17 @@ def receive_signed_webhook() -> ResponseReturnValue:
             session=db.session,
         )
         db.session.commit()
+        committed = True
     except GitHubWebhookError:
-        db.session.rollback()
         abort(401)
-    except Exception:
-        db.session.rollback()
+    except (SQLAlchemyError, ValueError, TypeError, RuntimeError):
         # The response cannot include DB diagnostics, signatures or PEM.
         abort(503)
+    finally:
+        # Roll back even on unexpected defects; no failed ingress may leave
+        # an uncommitted authenticated envelope in the request session.
+        if not committed:
+            db.session.rollback()
 
     response = make_response('', 202)
     response.headers['Cache-Control'] = 'no-store, max-age=0'
