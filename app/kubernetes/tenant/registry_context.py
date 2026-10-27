@@ -16,6 +16,7 @@ from app.kubernetes.tenant.capacity_governance import (
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.resource_profile_controls import (
+    _recorded_allocation_advanced_controls,
     _tenant_capability_statuses,
     evaluate_resource_profile_advanced_controls,
 )
@@ -710,37 +711,6 @@ def _namespace_profile_version(record: TenantNamespace) -> object:
     if record.resource_profile_version:
         return record.resource_profile_version
     return _namespace_profile_lineage(record).get('profile_version')
-
-
-def _recorded_allocation_advanced_controls(record: TenantNamespace) -> dict[str, Any]:
-    """Return only version-matched, committed capability evaluation evidence.
-
-    This is NOT evidence that another provider domain executed the control.
-    """
-    evidence = record.provisioning_evidence_json or {}
-    recorded = evidence.get('advanced_profile_controls') if isinstance(evidence, Mapping) else None
-    if not isinstance(recorded, Mapping) or record.resource_profile is None:
-        return {'recorded': False, 'controls': {}}
-    if (
-        recorded.get('source_profile_id') != record.resource_profile.public_id
-        or recorded.get('source_profile_version') != record.resource_profile_version
-    ):
-        return {'recorded': False, 'controls': {}}
-    controls = recorded.get('controls') or {}
-    return {
-        'recorded': isinstance(controls, Mapping),
-        'controls': {
-            key: {
-                'requested': bool(value.get('requested')),
-                'state': str(value.get('state') or 'unknown'),
-                'reason': str(value.get('reason') or ''),
-            }
-            for key, value in dict(controls).items()
-            if isinstance(value, Mapping)
-        }
-        if isinstance(controls, Mapping)
-        else {},
-    }
 
 
 def _allocation_advanced_preflight_state(
