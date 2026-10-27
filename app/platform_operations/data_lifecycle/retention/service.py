@@ -48,6 +48,7 @@ from app.platform_operations.data_lifecycle.retention.lock import retention_lock
 from app.platform_operations.data_lifecycle.retention.policy_service import get_policy
 from app.platform_operations.data_lifecycle.retention.types import (
     ArchiveBoundary,
+    ArchiveHistoryFilters,
     ArchiveSupplement,
     PartialCleanupError,
     RetentionPolicy,
@@ -307,11 +308,7 @@ def paginate_archives(
     domain_name: str | None,
     page: int = 1,
     per_page: int = 5,
-    status: str = 'all',
-    trigger_type: str = 'all',
-    operation_mode: str = 'all',
-    storage_backend: str = 'all',
-    search: str = '',
+    filters: ArchiveHistoryFilters = ArchiveHistoryFilters(),
     exclude_domains: tuple[str, ...] = (),
 ):
     normalized_page = max(int(page or 1), 1)
@@ -325,16 +322,16 @@ def paginate_archives(
     if domain_name:
         query = query.filter(ArchiveArtifact.domain == domain_name)
 
-    if status != 'all':
-        query = query.filter(ArchiveArtifact.status == status)
-    if trigger_type != 'all':
-        query = query.filter(ArchiveArtifact.trigger_type == trigger_type)
-    if operation_mode != 'all':
-        query = query.filter(ArchiveArtifact.operation_mode == operation_mode)
-    if storage_backend != 'all':
-        query = query.filter(ArchiveArtifact.storage_backend == storage_backend)
+    if filters.status != 'all':
+        query = query.filter(ArchiveArtifact.status == filters.status)
+    if filters.trigger_type != 'all':
+        query = query.filter(ArchiveArtifact.trigger_type == filters.trigger_type)
+    if filters.operation_mode != 'all':
+        query = query.filter(ArchiveArtifact.operation_mode == filters.operation_mode)
+    if filters.storage_backend != 'all':
+        query = query.filter(ArchiveArtifact.storage_backend == filters.storage_backend)
 
-    normalized_search = str(search or '').strip()
+    normalized_search = str(filters.search or '').strip()
     if normalized_search:
         pattern = f'%{normalized_search}%'
         query = query.filter(

@@ -32,7 +32,7 @@ from app.platform_operations.data_lifecycle.retention.policy_service import (
     get_policy,
 )
 from app.platform_operations.data_lifecycle.retention.service import paginate_archives, preview_retention
-from app.platform_operations.data_lifecycle.retention.types import RetentionPolicy
+from app.platform_operations.data_lifecycle.retention.types import ArchiveHistoryFilters, RetentionPolicy
 
 _ARCHIVE_PER_PAGE_OPTIONS = (5, 10, 25, 50)
 _ARCHIVE_STATUS_OPTIONS = (
@@ -257,11 +257,13 @@ def build_data_lifecycle_context(
             domain_name=None if history_domain == 'all' else history_domain,
             page=archive_page,
             per_page=archive_per_page,
-            status=history_filters['status'],
-            trigger_type=history_filters['trigger_type'],
-            operation_mode=history_filters['operation_mode'],
-            storage_backend=history_filters['storage_backend'],
-            search=history_filters['search'],
+            filters=ArchiveHistoryFilters(
+                status=history_filters['status'],
+                trigger_type=history_filters['trigger_type'],
+                operation_mode=history_filters['operation_mode'],
+                storage_backend=history_filters['storage_backend'],
+                search=history_filters['search'],
+            ),
             exclude_domains=() if allowed_audit_event else ('audit_event',),
         )
         total = int(history_pagination.total or 0)

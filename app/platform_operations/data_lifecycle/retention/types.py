@@ -19,6 +19,15 @@ class RetentionPolicy:
     settings: dict[str, Any] | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ArchiveHistoryFilters:
+    status: str = 'all'
+    trigger_type: str = 'all'
+    operation_mode: str = 'all'
+    storage_backend: str = 'all'
+    search: str = ''
+
+
 @dataclass(frozen=True)
 class ArchiveBoundary:
     selected_at: datetime
