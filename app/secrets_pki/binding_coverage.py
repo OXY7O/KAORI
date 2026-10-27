@@ -245,9 +245,12 @@ def _qualified_alert_sample(
         or sample.get('identity_observed') is not True
     ):
         return 'needs_validation', None, None
-    counts = {key: sample.get(key) for key in _ALERT_SAMPLE_COUNTS}
-    if any(type(value) is not int or value < 0 for value in counts.values()):
-        return 'needs_validation', None, None
+    counts: dict[str, int] = {}
+    for key in _ALERT_SAMPLE_COUNTS:
+        value = sample.get(key)
+        if type(value) is not int or value < 0:
+            return 'needs_validation', None, None
+        counts[key] = value
     total = counts['observed_rows']
     if (
         not 1 <= total <= 100

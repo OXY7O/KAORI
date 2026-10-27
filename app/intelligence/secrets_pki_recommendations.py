@@ -36,9 +36,12 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
     if snapshot.get('status') != 'ready':
         # Unknown/stale/partial is not zero evidence or an assertion of safety.
         return []
-    counts = {key: snapshot.get(key) for key in _COUNT_KEYS}
-    if any(type(value) is not int or value < 0 for value in counts.values()):
-        return []
+    counts: dict[str, int] = {}
+    for key in _COUNT_KEYS:
+        value = snapshot.get(key)
+        if type(value) is not int or value < 0:
+            return []
+        counts[key] = value
     if (
         counts['observed_stored_certificates']
         != counts['within_validity_window'] + counts['not_yet_valid'] + counts['expired'] + counts['unknown']
