@@ -75,14 +75,13 @@ def reserve_generation(session: Session, installation: SourceInstallation) -> Re
     _admitted(installation)
     state = session.get(SourceRepositoryCollectionState, installation.id, with_for_update=True)
     if state is None:
-        state = SourceRepositoryCollectionState(
-            installation_id=installation.id,
-            next_generation=0,
-            committed_generation=0,
-            status='not_collected',
-            repository_scope='unknown',
-            coverage='unknown',
-        )
+        state = SourceRepositoryCollectionState()
+        state.installation_id = installation.id
+        state.next_generation = 0
+        state.committed_generation = 0
+        state.status = 'not_collected'
+        state.repository_scope = 'unknown'
+        state.coverage = 'unknown'
         session.add(state)
         session.flush()
     state.next_generation += 1
@@ -180,11 +179,10 @@ def publish_generation(
             .with_for_update()
         ).scalar_one_or_none()
         if repo is None:
-            repo = SourceRepository(
-                provider_key=installation.provider_key,
-                host_key=installation.host_key,
-                native_repository_id=item.native_id,
-            )
+            repo = SourceRepository()
+            repo.provider_key = installation.provider_key
+            repo.host_key = installation.host_key
+            repo.native_repository_id = item.native_id
             session.add(repo)
             session.flush()
         # A second installation can observe the same native repository. An
@@ -225,15 +223,13 @@ def publish_generation(
     # respecting the partial unique DB index even if SQLAlchemy reorders DML.
     session.flush()
     for repository_id, status, start in new_grants:
-        session.add(
-            SourceRepositoryGrant(
-                installation_id=installation.id,
-                repository_id=repository_id,
-                access_status=status,
-                valid_from=start,
-                last_observed_at=observation_time,
-            )
-        )
+        grant = SourceRepositoryGrant()
+        grant.installation_id = installation.id
+        grant.repository_id = repository_id
+        grant.access_status = status
+        grant.valid_from = start
+        grant.last_observed_at = observation_time
+        session.add(grant)
 
     state.committed_generation = lease.generation
     state.pending_generation = None
