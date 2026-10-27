@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.kubernetes.governance.tls_certificates.eso_reconciliation import (
+    ESOTargetEvidence,
     normalize_eso_readback,
     qualify_eso_reconciliation,
 )
@@ -49,7 +50,17 @@ def evaluate(raw=None, **overrides):
         'now': NOW,
     }
     kwargs.update(overrides)
-    return qualify_eso_reconciliation(receipt, **kwargs)
+    target = ESOTargetEvidence(
+        target_cluster_id=kwargs.pop('target_cluster_id'),
+        target_namespace=kwargs.pop('target_namespace'),
+        target_secret_uid=kwargs.pop('target_secret_uid'),
+        current_secret_uid=kwargs.pop('current_secret_uid'),
+        target_fingerprint_sha256=kwargs.pop('target_fingerprint_sha256'),
+        target_owner_refs=kwargs.pop('target_owner_refs'),
+        target_observed_at=kwargs.pop('target_observed_at'),
+        current_identity_observed_at=kwargs.pop('current_identity_observed_at'),
+    )
+    return qualify_eso_reconciliation(receipt, target=target, **kwargs)
 
 
 def test_current_controller_candidate_never_proves_vault_or_materialization():
