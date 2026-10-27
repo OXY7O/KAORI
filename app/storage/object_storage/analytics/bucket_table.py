@@ -95,11 +95,7 @@ def _filter_bucket_rows(
         needle = search.casefold()
         filtered = [row for row in filtered if needle in str(row.get('name') or '').casefold()]
     if usage_context != 'all':
-        filtered = [
-            row
-            for row in filtered
-            if _matches_usage_context(row, usage_context)
-        ]
+        filtered = [row for row in filtered if _matches_usage_context(row, usage_context)]
 
     if request_evidence != 'all':
         filtered = [
@@ -116,11 +112,7 @@ def _filter_bucket_rows(
         ]
 
     if quota_pressure != 'all':
-        filtered = [
-            row
-            for row in filtered
-            if _matches_quota_pressure(row, quota_pressure)
-        ]
+        filtered = [row for row in filtered if _matches_quota_pressure(row, quota_pressure)]
     return filtered
 
 
