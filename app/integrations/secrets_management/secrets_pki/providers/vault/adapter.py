@@ -62,10 +62,11 @@ class VaultRuntimeAdapter:
             db.session.commit()
             return {'connected': False, 'readiness_status': 'blocked', 'reason': str(exc)}
         instance.detected_version = connection['version']
-        instance.capabilities = ['health', 'approle', 'token_lookup'] + (
+        capabilities = ['health', 'approle', 'token_lookup'] + (
             ['mount_metadata'] if capability['mount_metadata'] == 'available' else []
         )
-        compatibility = evaluate_compatibility('vault', connection['version'], instance.capabilities)
+        instance.capabilities = capabilities
+        compatibility = evaluate_compatibility('vault', connection['version'], capabilities)
         instance.compatibility_status = compatibility.status
         instance.compatibility_profile = compatibility.profile_key
         instance.capability_profile = _CAPABILITY_PROFILE
