@@ -95,7 +95,7 @@ def _release_stale_validation_lock(client: Redis, key: str) -> bool:
         from app.platform_operations.jobs.service import get_job_by_task_id
 
         job = get_job_by_task_id(owner_task_id)
-    except Exception:
+    except (SQLAlchemyError, RuntimeError):
         logger.exception('Could not verify validation lock owner %s for %s.', owner_task_id, key)
         return False
     if job is not None and str(job.status) in ACTIVE_JOB_STATUSES:
