@@ -192,7 +192,10 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
                 **dict.fromkeys(_STATES, 0),
                 'coverage': 'Committed current-generation KV v2 version metadata only',
             }
-        generations = {row[0]: _utc(ready[(row[1], row[2], row[3])][5]) for row in records}
+        generation_candidates = {row[0]: _utc(ready[(row[1], row[2], row[3])][5]) for row in records}
+        if any(instant is None for instant in generation_candidates.values()):
+            return _blocked('Lifecycle Generation Mismatch', 'incomplete_evidence')
+        generations = {key: instant for key, instant in generation_candidates.items() if instant is not None}
         if any(_utc(row[4]) != generations[row[0]] for row in records):
             return _blocked('Lifecycle Generation Mismatch', 'incomplete_evidence')
         versions = (
