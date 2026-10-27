@@ -27,6 +27,20 @@ class ESOReadback:
     observed_at: datetime
 
 
+@dataclass(frozen=True, slots=True, repr=False)
+class ESOTargetEvidence:
+    """Immutable current TLS target evidence; hide identity from repr/logs."""
+
+    target_cluster_id: str
+    target_namespace: str
+    target_secret_uid: str | None
+    current_secret_uid: str | None
+    target_fingerprint_sha256: str | None
+    target_owner_refs: object
+    target_observed_at: datetime
+    current_identity_observed_at: datetime | None
+
+
 @dataclass(frozen=True, slots=True)
 class ESOAssessment:
     status: Status
@@ -139,14 +153,7 @@ def normalize_eso_readback(
 def qualify_eso_reconciliation(
     receipt: ESOReadback | None,
     *,
-    target_cluster_id: str,
-    target_namespace: str,
-    target_secret_uid: str | None,
-    current_secret_uid: str | None,
-    target_fingerprint_sha256: str | None,
-    target_owner_refs: object,
-    target_observed_at: datetime,
-    current_identity_observed_at: datetime | None,
+    target: ESOTargetEvidence,
     controller_source_state: str,
     tls_source_state: str,
     now: datetime,
@@ -157,7 +164,9 @@ def qualify_eso_reconciliation(
     the Vault source. A caller must supply an independent Kubernetes UID
     readback; absence cannot silently become proof of materialization.
     """
-    instant, target_time, identity_time = _time(now), _time(target_observed_at), _time(current_identity_observed_at)
+    if not isinstance(target, ESOTargetEvidence):
+        return ESOAssessment('unknown')
+    instant, target_time, identity_time = _time(now), _time(target.target_observed_at), _time(target.current_identity_observed_at)
     if (
         instant is None
         or receipt is None
@@ -165,10 +174,10 @@ def qualify_eso_reconciliation(
         or identity_time is None
         or controller_source_state != 'ready'
         or tls_source_state != 'ready'
-        or receipt.cluster_id != target_cluster_id
-        or receipt.namespace != target_namespace
-        or not _scope(target_cluster_id)
-        or not _scope(target_namespace)
+        or receipt.cluster_id != target.target_cluster_id
+        or receipt.namespace != target.target_namespace
+        or not _scope(target.target_cluster_id)
+        or not _scope(target.target_namespace)
         or not all(
             _recent(item, now=instant)
             for item in (
@@ -182,8 +191,8 @@ def qualify_eso_reconciliation(
         or identity_time < target_time
     ):
         return ESOAssessment('unknown')
-    uid, current_uid = _uid(target_secret_uid), _uid(current_secret_uid)
-    fingerprint = target_fingerprint_sha256
+    uid, current_uid = _uid(target.target_secret_uid), _uid(target.current_secret_uid)
+    fingerprint = target.target_fingerprint_sha256
     if (
         uid is None
         or uid != current_uid
@@ -192,7 +201,7 @@ def qualify_eso_reconciliation(
         or any(char not in '0123456789abcdef' for char in fingerprint)
     ):
         return ESOAssessment('unknown')
-    owners = validate_committed_controller_owners(target_owner_refs)
+    owners = validate_committed_controller_owners(target.target_owner_refs)
     if owners != [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': receipt.controller_uid}]:
         return ESOAssessment('unknown')
     if not receipt.ready:
