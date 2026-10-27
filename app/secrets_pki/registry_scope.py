@@ -27,6 +27,14 @@ class SecretRegistryCollectionState:
     generation_complete: bool
 
 
+def _committed_collection_ready(state: object) -> bool:
+    return (
+        isinstance(state, SecretRegistryCollectionState)
+        and state.source_ready is True
+        and state.generation_complete is True
+    )
+
+
 def admit_secret_registry_scope(
     *,
     has_view_permission: bool,
@@ -60,9 +68,7 @@ def admit_secret_registry_scope(
     ):
         return denied
     if (
-        not isinstance(collection_state, SecretRegistryCollectionState)
-        or collection_state.source_ready is not True
-        or collection_state.generation_complete is not True
+        not _committed_collection_ready(collection_state)
         or not isinstance(now, datetime)
         or now.tzinfo is None
         or committed_at is None
