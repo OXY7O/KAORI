@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -145,6 +146,45 @@ def _new_case(
     return case
 
 
+def _qualified_case_candidates(plan: dict[str, object]) -> list[dict[str, Any]] | None:
+    """Allow only bounded, suppressed-route committed planner candidates."""
+    candidates = plan.get('candidates')
+    if (
+        plan.get('status') != 'qualified'
+        or not isinstance(candidates, list)
+        or not 1 <= len(candidates) <= _MAX_PLAN
+        or any(
+            not isinstance(candidate, dict) or candidate.get('proposed_routing_state') != 'suppressed'
+            for candidate in candidates
+        )
+    ):
+        return None
+    return candidates
+
+
+def _eligible_case_identity(case_key: object, severity: object) -> bool:
+    return not (
+        not isinstance(case_key, str)
+        or _CASE_KEY_RE.fullmatch(case_key) is None
+        or not isinstance(severity, str)
+        or severity not in {'critical', 'warning', 'info'}
+    )
+
+
+def _eligible_existing_provider_case(case: AlertCase | None, *, case_key: str, vault_id: str) -> bool:
+    """Only a matching suppressed firing case may be refreshed."""
+    return not (
+        case is None
+        or case.case_key != case_key
+        or case.domain != 'secrets_pki'
+        or case.asset_key != vault_id
+        or case.source_type != 'provider_alert'
+        or case.source_state != 'firing'
+        or case.workflow_state == 'closed'
+        or case.routing_state != 'suppressed'
+    )
+
+
 def admit_vault_provider_cases(
     *,
     binding_id: int,
@@ -205,16 +245,8 @@ def admit_vault_provider_cases(
             db.session.rollback()
             return _result('unavailable')
         plan = build_vault_provider_case_plan(binding_id=binding_id, now=instant)
-        candidates = plan.get('candidates')
-        if (
-            plan.get('status') != 'qualified'
-            or not isinstance(candidates, list)
-            or not 1 <= len(candidates) <= _MAX_PLAN
-            or any(
-                not isinstance(candidate, dict) or candidate.get('proposed_routing_state') != 'suppressed'
-                for candidate in candidates
-            )
-        ):
+        candidates = _qualified_case_candidates(plan)
+        if candidates is None:
             db.session.rollback()
             return _result('unavailable')
 
@@ -230,12 +262,7 @@ def admit_vault_provider_cases(
                 continue
             case_key = candidate.get('case_key')
             severity = candidate.get('severity')
-            if (
-                not isinstance(case_key, str)
-                or _CASE_KEY_RE.fullmatch(case_key) is None
-                or not isinstance(severity, str)
-                or severity not in {'critical', 'warning', 'info'}
-            ):
+            if not _eligible_case_identity(case_key, severity):
                 db.session.rollback()
                 return _result('blocked')
             if action == 'create_candidate':
@@ -259,15 +286,8 @@ def admit_vault_provider_cases(
                 db.session.rollback()
                 return _result('blocked')
             case = db.session.get(AlertCase, existing_id)
-            if (
-                case is None
-                or case.case_key != case_key
-                or case.domain != 'secrets_pki'
-                or case.asset_key != binding.asset_key
-                or case.source_type != 'provider_alert'
-                or case.source_state != 'firing'
-                or case.workflow_state == 'closed'
-                or case.routing_state != 'suppressed'
+            if case is None or not _eligible_existing_provider_case(
+                case, case_key=case_key, vault_id=binding.asset_key
             ):
                 db.session.rollback()
                 return _result('blocked')
