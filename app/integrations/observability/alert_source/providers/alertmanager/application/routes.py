@@ -5,6 +5,7 @@ import logging
 from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import is_htmx_request
@@ -633,7 +634,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     }
     try:
         removed_binding = remove_alertmanager_binding(binding_id)
-    except Exception as exc:
+    except SQLAlchemyError as exc:
         logger.exception('Alertmanager binding deletion failed for binding %s.', binding_id)
         feedback = record_instance_activity(
             user_id=int(current_user.id),
@@ -716,7 +717,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
                 operation_feedback=feedback,
             )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
-    except Exception as exc:
+    except SQLAlchemyError as exc:
         logger.exception('Alertmanager instance deletion failed for %s.', instance_id)
         feedback = record_instance_activity(
             user_id=int(current_user.id),
