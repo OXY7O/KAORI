@@ -8,7 +8,7 @@ identity here. Per-asset findings require separately admitted source scoping.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from app.secrets_pki.pki_validity_posture import build_stored_pki_validity_posture
 
@@ -36,9 +36,10 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
     if snapshot.get('status') != 'ready':
         # Unknown/stale/partial is not zero evidence or an assertion of safety.
         return []
-    counts = {key: snapshot.get(key) for key in _COUNT_KEYS}
-    if any(type(value) is not int or value < 0 for value in counts.values()):
+    unvalidated_counts = {key: snapshot.get(key) for key in _COUNT_KEYS}
+    if any(type(value) is not int or value < 0 for value in unvalidated_counts.values()):
         return []
+    counts = cast(dict[str, int], unvalidated_counts)
     if (
         counts['observed_stored_certificates']
         != counts['within_validity_window'] + counts['not_yet_valid'] + counts['expired'] + counts['unknown']
