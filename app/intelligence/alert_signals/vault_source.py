@@ -246,11 +246,10 @@ def commit_vault_alert_observations(
         )
     except _UnsafeSource:
         if snapshot is None:
-            snapshot = AlertSignalSnapshot(
-                domain='secrets_pki',
-                asset_key=binding.asset_key,
-                signal_key=SIGNAL_KEY,
-            )
+            snapshot = AlertSignalSnapshot()
+            snapshot.domain = 'secrets_pki'
+            snapshot.asset_key = binding.asset_key
+            snapshot.signal_key = SIGNAL_KEY
             db.session.add(snapshot)
         snapshot.status = 'failed'
         snapshot.payload_json = None
@@ -262,11 +261,10 @@ def commit_vault_alert_observations(
         db.session.commit()
         return {'state': 'blocked', 'observed_rows': None}
     if snapshot is None:
-        snapshot = AlertSignalSnapshot(
-            domain='secrets_pki',
-            asset_key=binding.asset_key,
-            signal_key=SIGNAL_KEY,
-        )
+        snapshot = AlertSignalSnapshot()
+        snapshot.domain = 'secrets_pki'
+        snapshot.asset_key = binding.asset_key
+        snapshot.signal_key = SIGNAL_KEY
         db.session.add(snapshot)
     snapshot.status = 'ready'
     snapshot.payload_json = {
@@ -310,11 +308,10 @@ def fail_vault_alert_observations(
         signal_key=SIGNAL_KEY,
     ).first()
     if snapshot is None:
-        snapshot = AlertSignalSnapshot(
-            domain='secrets_pki',
-            asset_key=binding.asset_key,
-            signal_key=SIGNAL_KEY,
-        )
+        snapshot = AlertSignalSnapshot()
+        snapshot.domain = 'secrets_pki'
+        snapshot.asset_key = binding.asset_key
+        snapshot.signal_key = SIGNAL_KEY
         db.session.add(snapshot)
     previous = _persisted_utc(snapshot.generated_at)
     if previous is not None and instant < previous:
