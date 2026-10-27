@@ -46,6 +46,8 @@ from app.integrations.delivery.notification_channels.service_helpers import (
     _normalize_severity,
     _provider_label,
     _reset_channel_validation,
+)
+from app.integrations.delivery.notification_channels.service_helpers import (
     recent_delivery_summary as recent_delivery_summary,
 )
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
