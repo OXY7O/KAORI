@@ -35,8 +35,8 @@ from app.integrations.delivery.notification_channels.providers import (
     provider_catalog,
 )
 from app.integrations.delivery.notification_channels.service_helpers import (
-    DeliveryPagination,
     _PROVIDER_LABELS,
+    DeliveryPagination,
     _alert_message,
     _channel_view,
     _credential_map,
@@ -46,7 +46,7 @@ from app.integrations.delivery.notification_channels.service_helpers import (
     _normalize_severity,
     _provider_label,
     _reset_channel_validation,
-    recent_delivery_summary,
+    recent_delivery_summary as recent_delivery_summary,
 )
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.report import Report
