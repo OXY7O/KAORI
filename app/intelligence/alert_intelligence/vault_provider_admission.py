@@ -171,9 +171,7 @@ def _eligible_case_identity(case_key: object, severity: object) -> bool:
     )
 
 
-def _eligible_existing_provider_case(
-    case: AlertCase | None, *, case_key: str, vault_id: str
-) -> bool:
+def _eligible_existing_provider_case(case: AlertCase | None, *, case_key: str, vault_id: str) -> bool:
     """Only a matching suppressed firing case may be refreshed."""
     return not (
         case is None
@@ -288,7 +286,9 @@ def admit_vault_provider_cases(
                 db.session.rollback()
                 return _result('blocked')
             case = db.session.get(AlertCase, existing_id)
-            if not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key):
+            if case is None or not _eligible_existing_provider_case(
+                case, case_key=case_key, vault_id=binding.asset_key
+            ):
                 db.session.rollback()
                 return _result('blocked')
             prior = _persisted_utc(case.last_seen_at)
