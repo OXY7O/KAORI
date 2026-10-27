@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Literal, cast
 from uuid import UUID
 
 from sqlalchemy import func, inspect, select
@@ -222,6 +222,7 @@ def read_scoped_secret_registry(
             instant=instant,
         ):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
+        source_at = cast(datetime, source_at)
         selected = db.session.execute(
             select(
                 SecretProviderRepresentation.id,
@@ -251,8 +252,9 @@ def read_scoped_secret_registry(
         if not chosen:
             return ScopedSecretPage('ready', len(selected), page, per_page, ())
         representation_ids = [row.id for row in chosen]
-        observed_versions = dict(
-            db.session.execute(
+        observed_versions = {
+            int(representation_id): int(version_count)
+            for representation_id, version_count in db.session.execute(
                 select(SecretVersionObservation.representation_id, func.count(SecretVersionObservation.id))
                 .where(
                     SecretVersionObservation.representation_id.in_(representation_ids),
@@ -260,7 +262,7 @@ def read_scoped_secret_registry(
                 )
                 .group_by(SecretVersionObservation.representation_id)
             ).all()
-        )
+        }
         if any(not 1 <= observed_versions.get(row.id, 0) <= 100 for row in chosen):
             return _denied(page=page, per_page=per_page, status='source_unavailable')
         return ScopedSecretPage(
