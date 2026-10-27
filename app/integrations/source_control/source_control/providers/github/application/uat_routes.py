@@ -361,6 +361,42 @@ def capability_registry(installation_id: int) -> ResponseReturnValue:
     )
 
 
+def _render_github_edit_connection_result(
+    *,
+    installation: SourceInstallation,
+    canonical: IntegrationInstance,
+    form: GitHubAppConnectionEditForm,
+    inline_test: bool,
+    test_proof: str | None,
+    message: str | None,
+    rejection: bool,
+) -> ResponseReturnValue:
+    """Preserve the exact HTMX proof and rejected-post response contract."""
+    if inline_test:
+        response = _response(
+            'integrations/source_control/github/partials/_connection_test_result.html',
+            verified=bool(test_proof),
+            message=message,
+        )
+        if test_proof:
+            response.headers['HX-Trigger'] = json.dumps(
+                {'github-connection-tested': {'connected': True, 'proof': test_proof}}
+            )
+        return response
+
+    response = _response(
+        'integrations/source_control/github/edit.html',
+        installation=installation,
+        canonical=canonical,
+        form=form,
+        message=message,
+    )
+    if rejection and request.method == 'POST' and form.errors == {}:
+        response.status_code = 409
+    return response
+
+
+
 @github_uat_bp.route('/installations/<int:installation_id>/edit', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
 def edit_connection(installation_id: int) -> ResponseReturnValue:
@@ -476,29 +512,15 @@ def edit_connection(installation_id: int) -> ResponseReturnValue:
         rejection = True
         form.clear_sensitive_fields()
 
-    if inline_test:
-        response = _response(
-            'integrations/source_control/github/partials/_connection_test_result.html',
-            verified=bool(test_proof),
-            message=message,
-        )
-        if test_proof:
-            response.headers['HX-Trigger'] = json.dumps(
-                {'github-connection-tested': {'connected': True, 'proof': test_proof}}
-            )
-        return response
-
-    response = _response(
-        'integrations/source_control/github/edit.html',
+    return _render_github_edit_connection_result(
         installation=installation,
         canonical=canonical,
         form=form,
+        inline_test=inline_test,
+        test_proof=test_proof,
         message=message,
+        rejection=rejection,
     )
-    if rejection and request.method == 'POST' and form.errors == {}:
-        response.status_code = 409
-    return response
-
 
 @github_uat_bp.route('/installations/<int:installation_id>/replace', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
