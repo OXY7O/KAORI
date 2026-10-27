@@ -62,7 +62,8 @@ def test_expected_utilization_query_failure_remains_blocked(
         get_node_names=_raise(error),
     )
     monkeypatch.setattr(
-        utilization_module, '_dependency_context',
+        utilization_module,
+        '_dependency_context',
         lambda _args: (_cluster(), service, {'dependency_blocker': None}),
     )
     monkeypatch.setattr(utilization_module, '_recommendation_context', lambda *_args: {})
@@ -88,7 +89,8 @@ def test_unexpected_utilization_programming_defect_propagates(monkeypatch: pytes
         get_node_names=_raise(error),
     )
     monkeypatch.setattr(
-        utilization_module, '_dependency_context',
+        utilization_module,
+        '_dependency_context',
         lambda _args: (_cluster(), service, {'dependency_blocker': None}),
     )
     monkeypatch.setattr(utilization_module, '_recommendation_context', lambda *_args: {})
@@ -158,9 +160,7 @@ def test_unexpected_shared_metrics_context_defect_propagates(monkeypatch: pytest
 @pytest.mark.parametrize(
     'error', [SQLAlchemyError('db down'), RuntimeError('context absent'), ValueError('bad source')]
 )
-def test_expected_workload_status_error_keeps_empty_payload(
-    monkeypatch: pytest.MonkeyPatch, error: Exception
-) -> None:
+def test_expected_workload_status_error_keeps_empty_payload(monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
     monkeypatch.setattr(
         workload_module,
         'build_analysis_utilization_context',
