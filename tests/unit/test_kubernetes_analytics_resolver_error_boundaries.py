@@ -39,9 +39,7 @@ def test_metrics_dataset_known_resolution_failure_denies_eligibility(
     monkeypatch.setattr(job_adapter, 'resolve_metrics_sources', _raises(error))
     diagnostics: list[str] = []
 
-    result = job_adapter._metrics_source_dataset_eligible(
-        _cluster(), job_adapter.CAPACITY_DATASET_KEY, diagnostics
-    )
+    result = job_adapter._metrics_source_dataset_eligible(_cluster(), job_adapter.CAPACITY_DATASET_KEY, diagnostics)
 
     assert result is False
     assert any('source resolution failed' in item for item in diagnostics)
@@ -68,9 +66,7 @@ def test_alert_dataset_known_resolution_failure_denies_eligibility(
         monkeypatch.setattr(job_adapter, 'resolve_metrics_sources', _raises(error))
     diagnostics: list[str] = []
 
-    result = job_adapter._alert_dataset_eligible(
-        _cluster(), 'analytics.alerts', {'source': source}, diagnostics
-    )
+    result = job_adapter._alert_dataset_eligible(_cluster(), 'analytics.alerts', {'source': source}, diagnostics)
 
     assert result is False
     assert any('resolution failed' in item for item in diagnostics)
@@ -108,6 +104,7 @@ def test_eligible_metrics_binding_remains_admissible(monkeypatch: pytest.MonkeyP
 def test_eligible_alert_binding_remains_admissible(monkeypatch: pytest.MonkeyPatch, source: str) -> None:
     def candidate(**_kwargs: object) -> SimpleNamespace:
         return SimpleNamespace(selected=object(), candidates=())
+
     if source == 'alertmanager':
         monkeypatch.setattr(job_adapter, 'resolve_alertmanager_sources', candidate)
     else:
