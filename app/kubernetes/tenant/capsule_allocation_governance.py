@@ -16,6 +16,8 @@ from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allo
 from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
 from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
 from app.kubernetes.tenant.capsule_allocation_governance_support import (
+    _SHARED_CAPABILITY,
+    _SHARED_SCOPE,
     _allocation_baseline,
     _canonical_hash,
     _capsule_capability_state,
@@ -23,8 +25,6 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _quota_differences,
     _quota_from_global_resource,
     _shared_authority_context,
-    _SHARED_CAPABILITY,
-    _SHARED_SCOPE,
     _source_reference,
     _tenant_evidence,
     build_capsule_shared_drift_action_state,
