@@ -242,7 +242,11 @@ def build_resource_profile_capacity_workspace(
     )
     context['capacity_resource'] = capacity_resource
     _project_capacity_allocation_overview(
-        context, capacity_rows=capacity_rows, active_view=active_view, allocation_view=allocation_view, args=args
+        context,
+        capacity_rows=capacity_rows,
+        active_view=active_view,
+        allocation_view=allocation_view,
+        args=args,
     )
     _filter_capacity_governance_rows(
         context,
@@ -259,7 +263,12 @@ def build_resource_profile_capacity_workspace(
 
 
 def _project_capacity_allocation_overview(
-    context: dict[str, Any], *, capacity_rows: list[Any], active_view: str, allocation_view: str, args: Any
+    context: dict[str, Any],
+    *,
+    capacity_rows: list[Any],
+    active_view: str,
+    allocation_view: str,
+    args: Any,
 ) -> None:
     # Read-only cluster visual projection uses the same committed #654 summaries
     # already resolved for this page. Only one cluster's Tenant contributions are
