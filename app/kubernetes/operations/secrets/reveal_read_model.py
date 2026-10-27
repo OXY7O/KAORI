@@ -65,7 +65,6 @@ def get_reveal_page_context(
     pending_search: str = '',
     pending_sort: str = 'oldest',
 ) -> dict[str, Any]:
-
     now = _now()
     effective_status = case(
         (
