@@ -887,7 +887,7 @@ def _get_storage_context() -> dict[str, Any]:
             'checked_at': status.get('checked_at'),
             'source': str(status.get('source') or 'direct'),
         }
-    except Exception:
+    except (OSError, RuntimeError, TypeError, ValueError):
         return {
             'backend': 'unknown',
             'status': 'Needs Review',
