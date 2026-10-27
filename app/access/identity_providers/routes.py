@@ -27,7 +27,7 @@ from app.access.identity_providers.forms import (
     configuration_from_form,
     populate_form,
 )
-from app.access.identity_providers.notifications import identity_provider_feedback
+from app.access.identity_providers.notifications import IdentityProviderFeedbackSource, identity_provider_feedback
 from app.access.identity_providers.provisioning import (
     IdentityProjectionError,
     assign_projection_role_choices,
@@ -114,7 +114,9 @@ def create():
                 status='error',
                 title='Connection Test Required',
                 message=verification_message,
-                provider_key=str(form.provider_key.data or ''),
+                source=IdentityProviderFeedbackSource(
+                    provider_key=str(form.provider_key.data or ''),
+                ),
                 delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             )
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -140,8 +142,10 @@ def create():
                 status='success',
                 title='Identity provider created',
                 message=f'{provider.display_name} configuration was created.',
-                provider_id=provider.id,
-                provider_key=provider.provider_key,
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
             )
             return redirect(url_for('identity_providers.index'))
     return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -185,8 +189,10 @@ def edit(provider_id: int):
                 status='error',
                 title='Provider update failed',
                 message='No provider configuration changes were saved.',
-                provider_id=provider.id,
-                provider_key=provider.provider_key,
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
             )
         else:
             identity_provider_feedback(
@@ -200,8 +206,10 @@ def edit(provider_id: int):
                     if not provider.enabled
                     else f'{provider.display_name} configuration was updated.'
                 ),
-                provider_id=provider.id,
-                provider_key=provider.provider_key,
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
             )
             return redirect(url_for('identity_providers.index'))
     return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -247,8 +255,10 @@ def test_configuration(provider_id: int | None = None):
         status=status,
         title=title,
         message=message,
-        provider_id=provider.id if provider else None,
-        provider_key=str(form.provider_key.data or ''),
+        source=IdentityProviderFeedbackSource(
+            provider_id=provider.id if provider else None,
+            provider_key=str(form.provider_key.data or ''),
+        ),
         delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
     )
     return render_template(
@@ -275,8 +285,10 @@ def validate(provider_id: int):
         status=status,
         title=title,
         message=message,
-        provider_id=provider.id,
-        provider_key=provider.provider_key,
+        source=IdentityProviderFeedbackSource(
+            provider_id=provider.id,
+            provider_key=provider.provider_key,
+        ),
     )
     return redirect(url_for('identity_providers.index'))
 
@@ -314,8 +326,10 @@ def directory_provisioning():
                     status='error',
                     title='Directory search failed',
                     message=str(exc),
-                    provider_id=selected_provider.id,
-                    provider_key=selected_provider.provider_key,
+                    source=IdentityProviderFeedbackSource(
+                        provider_id=selected_provider.id,
+                        provider_key=selected_provider.provider_key,
+                    ),
                 )
     return render_template(
         'access/identity_providers/directory_provisioning.html',
@@ -393,8 +407,10 @@ def provision_identity():
             status='error',
             title='Provisioning failed',
             message=str(exc),
-            provider_id=provider.id,
-            provider_key=provider.provider_key,
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
         )
     except SQLAlchemyError:
         rollback_identity_provider_transaction()
@@ -407,8 +423,10 @@ def provision_identity():
             status='error',
             title='Provisioning failed',
             message='The identity could not be provisioned because the database transaction failed. Please retry.',
-            provider_id=provider.id,
-            provider_key=provider.provider_key,
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
         )
     else:
         identity_provider_feedback(
@@ -417,7 +435,9 @@ def provision_identity():
             status='success',
             title='Directory user provisioned',
             message=f'{user.username} can authenticate through {provider.display_name}.',
-            provider_id=provider.id,
-            provider_key=provider.provider_key,
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
         )
     return redirect(url_for('users.index'))
