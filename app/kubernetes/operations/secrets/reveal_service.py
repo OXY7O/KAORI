@@ -39,7 +39,7 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_secret_reveal_approvers as get_secret_reveal_approvers,
 )
 from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest
-from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.feedback import OperationalActionPresentation, OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import stage_operational_activity
 
 SUPPORTED_REVEAL_TYPES = {
@@ -777,8 +777,7 @@ def reveal_secret_value(request_id: str, *, user_id: int, audit_action_url: str 
                 f'{record.key_name} was revealed once for {window_seconds} seconds. The value was not stored by KAORI.'
             ),
             action_url=audit_action_url,
-            action_label='Open Protected Secret Reveal',
-            action_icon='key',
+            action=OperationalActionPresentation(label='Open Protected Secret Reveal', icon='key'),
             metadata=safe_metadata,
             delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
         )
