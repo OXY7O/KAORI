@@ -108,12 +108,11 @@ def commit_kv2_inventory(
             mount=evidence.mount,
         ).first()
         if state is None:
-            state = SecretInventoryCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=namespace,
-                mount=evidence.mount,
-                status='not_collected',
-            )
+            state = SecretInventoryCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = namespace
+            state.mount = evidence.mount
+            state.status = 'not_collected'
             db.session.add(state)
             db.session.flush()
 
@@ -151,16 +150,17 @@ def commit_kv2_inventory(
             digests[path_fingerprint] = record.path
             representation = existing.pop(record.path, None)
             if representation is None:
-                representation = SecretProviderRepresentation(
-                    secret_identity=SecretIdentity(lifecycle_status='discovered'),
-                    integration_instance_id=integration_instance_id,
-                    provider_key='vault',
-                    provider_namespace=namespace,
-                    mount=evidence.mount,
-                    path=record.path,
-                    path_sha256=path_fingerprint,
-                    representation_role='material_authority',
-                )
+                identity = SecretIdentity()
+                identity.lifecycle_status = 'discovered'
+                representation = SecretProviderRepresentation()
+                representation.secret_identity = identity
+                representation.integration_instance_id = integration_instance_id
+                representation.provider_key = 'vault'
+                representation.provider_namespace = namespace
+                representation.mount = evidence.mount
+                representation.path = record.path
+                representation.path_sha256 = path_fingerprint
+                representation.representation_role = 'material_authority'
                 db.session.add(representation)
             if representation.current_version > record.current_version:
                 raise ValueError('KV v2 current version regressed; source identity requires review.')
@@ -175,7 +175,8 @@ def commit_kv2_inventory(
             for observed_version in record.versions:
                 version = known_versions.get(observed_version.version)
                 if version is None:
-                    version = SecretVersionObservation(version=observed_version.version)
+                    version = SecretVersionObservation()
+                    version.version = observed_version.version
                     representation.versions.append(version)
                 elif version.destroyed and not observed_version.destroyed:
                     raise ValueError('KV v2 destroyed-version evidence cannot reverse.')
@@ -222,11 +223,10 @@ def mark_kv2_inventory_failed(integration_instance_id: int, mount: str) -> None:
             mount=mount,
         ).first()
         if state is None:
-            state = SecretInventoryCollectionState(
-                integration_instance_id=integration_instance_id,
-                provider_namespace=instance.namespace or '',
-                mount=mount,
-            )
+            state = SecretInventoryCollectionState()
+            state.integration_instance_id = integration_instance_id
+            state.provider_namespace = instance.namespace or ''
+            state.mount = mount
             db.session.add(state)
         state.status = 'stale' if state.last_committed_at else 'failed'
         state.last_error = 'Provider KV v2 metadata collection failed; previous committed evidence retained.'
