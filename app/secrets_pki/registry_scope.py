@@ -21,6 +21,12 @@ class SecretRegistryAdmission:
     permitted_for_detail: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class SecretRegistryCollectionState:
+    source_ready: bool
+    generation_complete: bool
+
+
 def admit_secret_registry_scope(
     *,
     has_view_permission: bool,
@@ -28,8 +34,7 @@ def admit_secret_registry_scope(
     approved_instance_ids: frozenset[int] | None,
     requested_instance_id: int,
     observed_record_instance_ids: tuple[int, ...],
-    source_ready: bool,
-    generation_complete: bool,
+    collection_state: SecretRegistryCollectionState,
     committed_at: datetime | None,
     now: datetime,
 ) -> SecretRegistryAdmission:
@@ -55,8 +60,9 @@ def admit_secret_registry_scope(
     ):
         return denied
     if (
-        source_ready is not True
-        or generation_complete is not True
+        not isinstance(collection_state, SecretRegistryCollectionState)
+        or collection_state.source_ready is not True
+        or collection_state.generation_complete is not True
         or not isinstance(now, datetime)
         or now.tzinfo is None
         or committed_at is None
