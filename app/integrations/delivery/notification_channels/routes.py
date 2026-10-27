@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
@@ -93,13 +95,7 @@ def create() -> ResponseReturnValue:
     if errors:
         _queue_configuration_feedback(errors, provider_key=data.provider_key)
         return redirect(
-            url_for(
-                'notification_channels.index',
-                tab='channels',
-                configure=1,
-                provider=data.provider_key,
-                **_channel_return_query(),
-            )
+            _channel_return_url(configure=1, provider=data.provider_key)
         )
     channel = create_channel(data, user_id=int(current_user.id))
     _record_channel_activity(
@@ -110,7 +106,7 @@ def create() -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+    return redirect(_channel_return_url())
 
 
 @notification_channels_bp.post('/<int:channel_id>/update')
@@ -126,13 +122,7 @@ def update(channel_id: int) -> ResponseReturnValue:
     if errors:
         _queue_configuration_feedback(errors, provider_key=channel.provider_key)
         return redirect(
-            url_for(
-                'notification_channels.index',
-                tab='channels',
-                edit=channel_id,
-                configure=1,
-                **_channel_return_query(),
-            )
+            _channel_return_url(edit=channel_id, configure=1)
         )
     update_channel(channel, data, user_id=int(current_user.id))
     _record_channel_activity(
@@ -143,7 +133,7 @@ def update(channel_id: int) -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+    return redirect(_channel_return_url())
 
 
 @notification_channels_bp.post('/<int:channel_id>/test')
@@ -165,7 +155,7 @@ def test(channel_id: int) -> ResponseReturnValue:
         provider_key=channel.provider_key,
         status='success' if result.success else 'error',
     )
-    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+    return redirect(_channel_return_url())
 
 
 @notification_channels_bp.post('/<int:channel_id>/retire')
@@ -193,7 +183,7 @@ def retire(channel_id: int) -> ResponseReturnValue:
             queue_feedback=True,
             delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
-        return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+        return redirect(_channel_return_url())
     _record_channel_activity(
         channel.id,
         'retired',
@@ -203,14 +193,7 @@ def retire(channel_id: int) -> ResponseReturnValue:
         provider_key=channel.provider_key,
     )
     return redirect(
-        url_for(
-            'notification_channels.index',
-            tab='channels',
-            **{
-                **_channel_return_query(),
-                'channel_lifecycle': 'retired',
-            },
-        )
+        _channel_return_url(channel_lifecycle='retired')
     )
 
 
@@ -245,7 +228,7 @@ def delete(channel_id: int) -> ResponseReturnValue:
             queue_feedback=True,
             delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
-        return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+        return redirect(_channel_return_url())
     record_operational_activity(
         user_id=int(current_user.id),
         event_type='integration.notification_channel.deleted',
@@ -264,7 +247,7 @@ def delete(channel_id: int) -> ResponseReturnValue:
         queue_feedback=True,
         delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+    return redirect(_channel_return_url())
 
 
 def _channel_return_query() -> dict[str, str | int]:
@@ -281,6 +264,14 @@ def _channel_return_query() -> dict[str, str | int]:
         if value > 0:
             query[name] = min(value, 1000)
     return query
+
+
+def _channel_return_url(**overrides: str | int) -> str:
+    """Preserve allow-listed form state as same-origin query data."""
+    filters: dict[str, str | int] = {'tab': 'channels', **_channel_return_query()}
+    filters.update(overrides)
+    base = url_for('notification_channels.index')
+    return f'{base}?{urlencode(filters)}'
 
 
 def _queue_configuration_feedback(errors: list[str], *, provider_key: str) -> None:
