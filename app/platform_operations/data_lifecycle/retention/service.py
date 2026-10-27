@@ -717,7 +717,6 @@ def _build_archive_object_prefix(artifact: ArchiveArtifact) -> str:
     return '/'.join([root_prefix, artifact.domain, generated_at.strftime('%Y'), generated_at.strftime('%m')])
 
 
-
 def _archive_supplements_for_artifact(
     *,
     artifact: ArchiveArtifact,
