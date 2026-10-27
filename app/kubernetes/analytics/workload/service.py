@@ -11,8 +11,8 @@ from app.common.analytics.coercion import as_dict, as_list, safe_float
 from app.common.analytics.params import ALLOWED_PER_PAGE_VALUES, get_allowed_time_ranges, get_selected_time_range
 from app.common.dependencies import metrics_source_capability_blocker, metrics_source_connection_blocker
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
