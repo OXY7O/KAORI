@@ -7,10 +7,11 @@ credentials, token or raw provider response is present in task arguments.
 
 from __future__ import annotations
 
+from typing import cast
+
 from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from sqlalchemy.orm import Session
-from typing import cast
 
 from app.extensions.db import db
 from app.integrations.source_control.source_control.providers.github.repository_sync import (
