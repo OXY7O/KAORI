@@ -32,8 +32,10 @@ from app.models.secrets_pki_stored_certificates import (
     PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
-from app.secrets_pki.certificate_delivery import SourceState, assess_certificate_overlap
+from app.secrets_pki.certificate_delivery import CertificateDeliveryOverlap, SourceState, assess_certificate_overlap
 from app.secrets_pki.certificate_ingress_assurance import (
+    IngressEvidenceState,
+    IngressTLSAssurance,
     IngressTLSReference,
     assess_ingress_reference,
 )
@@ -131,7 +133,7 @@ class _VaultCertificateEvidence:
 @dataclass(frozen=True, slots=True)
 class _TLSCertificateEvidence:
     state: SourceState
-    mapping_state: str
+    mapping_state: IngressEvidenceState
     fingerprints: tuple[str, ...]
     uid_count: int
     controller_owner_count: int
@@ -254,6 +256,7 @@ def _read_tls_certificate_evidence(
         and row.ingress_mapping_status == TLS_COLLECTION_COLLECTED
         and (_utc(row.collected_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
     }
+    mapping_state: IngressEvidenceState
     if not tls_states:
         mapping_state = 'not_collected'
     elif not ingress_ready:
@@ -328,10 +331,10 @@ def _read_tls_certificate_evidence(
 
 
 def _format_overlap_evidence(
-    assessment: Any,
+    assessment: CertificateDeliveryOverlap,
     vault: _VaultCertificateEvidence,
     tls: _TLSCertificateEvidence,
-    ingress: Any,
+    ingress: IngressTLSAssurance,
 ) -> dict[str, Any]:
     """Only aggregate qualified public identity evidence; never assert delivery or serving."""
     label = {
