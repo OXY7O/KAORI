@@ -70,6 +70,41 @@ def _schema_ready() -> bool:
         return False
 
 
+def _approved_kv2_scopes(sources: Any) -> set[tuple[int, str, str]]:
+    """Read only the approved committed KV2 mount scope identities."""
+    return {
+        (int(source.integration_instance_id), source.namespace or '', mount)
+        for source in sources
+        for mount in parse_approved_kv2_mounts(','.join(source.kv2_mounts or ()))
+    }
+
+
+def _fresh_kv2_collection_rows(
+    states: Any, *, scopes: set[tuple[int, str, str]], cutoff: datetime, instant: datetime
+) -> dict[tuple[int, str, str], Any]:
+    """Retain only ready collection states from a bounded current generation."""
+    return {
+        (row[0], row[1], row[2]): row
+        for row in states
+        if (row[0], row[1], row[2]) in scopes
+        and row[3] == 'ready'
+        and isinstance(row[4], int)
+        and row[4] >= 0
+        and (_utc(row[5]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
+        and (_utc(row[6]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
+        and (_utc(row[5]) or instant) <= instant
+        and (_utc(row[6]) or instant) <= instant
+    }
+
+
+def _committed_counts_conflict(
+    records: Any, *, scopes: set[tuple[int, str, str]], ready: dict[tuple[int, str, str], Any]
+) -> bool:
+    """Reject absent, duplicate or cross-generation representation counts."""
+    counts = Counter((row[1], row[2], row[3]) for row in records)
+    return any(counts.get(scope, 0) != ready[scope][4] for scope in scopes)
+
+
 def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
     """Evaluate only complete, fresh, currently approved source generations.
 
@@ -98,11 +133,7 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
         )
         if len(sources) > _MAX_SOURCES:
             return _blocked('Lifecycle Source Limit Exceeded')
-        scopes = {
-            (int(source.integration_instance_id), source.namespace or '', mount)
-            for source in sources
-            for mount in parse_approved_kv2_mounts(','.join(source.kv2_mounts or ()))
-        }
+        scopes = _approved_kv2_scopes(sources)
         if not scopes:
             return _blocked('Approved KV v2 Source Required', 'not_configured')
         if len(scopes) > _MAX_SCOPES:
@@ -127,18 +158,7 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
         )
         if len(states) > _MAX_SCOPES:
             return _blocked('Lifecycle Collection State Limit Exceeded')
-        ready = {
-            (row[0], row[1], row[2]): row
-            for row in states
-            if (row[0], row[1], row[2]) in scopes
-            and row[3] == 'ready'
-            and isinstance(row[4], int)
-            and row[4] >= 0
-            and (_utc(row[5]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
-            and (_utc(row[6]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
-            and (_utc(row[5]) or instant) <= instant
-            and (_utc(row[6]) or instant) <= instant
-        }
+        ready = _fresh_kv2_collection_rows(states, scopes=scopes, cutoff=cutoff, instant=instant)
         if set(ready) != scopes:
             return _blocked('Lifecycle Evidence Incomplete or Stale', 'incomplete_evidence')
         records = (
@@ -162,8 +182,7 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
         )
         if len(records) > _MAX_REPRESENTATIONS:
             return _blocked('Lifecycle Representation Limit Exceeded')
-        counts = Counter((row[1], row[2], row[3]) for row in records)
-        if any(counts.get(scope, 0) != ready[scope][4] for scope in scopes):
+        if _committed_counts_conflict(records, scopes=scopes, ready=ready):
             return _blocked('Lifecycle Committed Count Conflict', 'incomplete_evidence')
         if not records:
             return {
