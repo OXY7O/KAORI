@@ -91,9 +91,7 @@ def _collection_state_incomplete(row: Any, *, instant: datetime) -> bool:
     )
 
 
-def _record_validity_window(
-    row: Any, *, instant: datetime, counts: Counter[str], expiry: Counter[str]
-) -> None:
+def _record_validity_window(row: Any, *, instant: datetime, counts: Counter[str], expiry: Counter[str]) -> None:
     """Classify a single public X.509 window without asserting trust or revocation."""
     valid_from, valid_until = _utc(row[3]), _utc(row[4])
     if valid_from is None or valid_until is None or valid_from >= valid_until:
