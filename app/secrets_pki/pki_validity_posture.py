@@ -77,6 +77,42 @@ def _schema_ready() -> bool:
     return required.issubset(set(inspect(db.engine).get_table_names()))
 
 
+def _collection_state_incomplete(row: Any, *, instant: datetime) -> bool:
+    """Reject an incomplete or stale committed collection generation."""
+    observed, committed = _utc(row[5]), _utc(row[6])
+    return (
+        row[3] != 'ready'
+        or type(row[4]) is not int
+        or not 0 <= row[4] <= _MAX_CERTS_PER_MOUNT
+        or observed is None
+        or committed is None
+        or not timedelta(0) <= instant - observed <= _FRESHNESS
+        or not timedelta(0) <= instant - committed <= _FRESHNESS
+    )
+
+
+def _record_validity_window(
+    row: Any, *, instant: datetime, counts: Counter[str], expiry: Counter[str]
+) -> None:
+    """Classify a single public X.509 window without asserting trust or revocation."""
+    valid_from, valid_until = _utc(row[3]), _utc(row[4])
+    if valid_from is None or valid_until is None or valid_from >= valid_until:
+        counts['unknown'] += 1
+    elif instant < valid_from:
+        counts['not_yet_valid'] += 1
+    elif instant >= valid_until:
+        counts['expired'] += 1
+    else:
+        counts['within_validity_window'] += 1
+        remaining = valid_until - instant
+        if remaining <= _EXPIRY_7D:
+            expiry['expires_within_7d'] += 1
+        elif remaining <= _EXPIRY_30D:
+            expiry['expires_8_to_30d'] += 1
+        else:
+            expiry['expires_after_30d'] += 1
+
+
 def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[str, Any]:
     """Require source-complete current observations before exposing any counts."""
     instant = _utc(now or datetime.now(UTC))
@@ -136,16 +172,7 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
         if set(state_by_scope) != scopes:
             return _result('incomplete', 'PKI Collection Coverage Incomplete')
         for row in state_by_scope.values():
-            observed, committed = _utc(row[5]), _utc(row[6])
-            if (
-                row[3] != 'ready'
-                or type(row[4]) is not int
-                or not 0 <= row[4] <= _MAX_CERTS_PER_MOUNT
-                or observed is None
-                or committed is None
-                or not timedelta(0) <= instant - observed <= _FRESHNESS
-                or not timedelta(0) <= instant - committed <= _FRESHNESS
-            ):
+            if _collection_state_incomplete(row, instant=instant):
                 return _result('incomplete', 'PKI Validity Evidence Incomplete or Stale')
         rows = db.session.execute(
             select(
@@ -177,22 +204,7 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
             source = state_by_scope[(row[0], row[1], row[2])]
             if _utc(row[5]) != _utc(source[5]):
                 return _result('incomplete', 'PKI Certificate Generation Mismatch')
-            valid_from, valid_until = _utc(row[3]), _utc(row[4])
-            if valid_from is None or valid_until is None or valid_from >= valid_until:
-                result['unknown'] += 1
-            elif instant < valid_from:
-                result['not_yet_valid'] += 1
-            elif instant >= valid_until:
-                result['expired'] += 1
-            else:
-                result['within_validity_window'] += 1
-                remaining = valid_until - instant
-                if remaining <= _EXPIRY_7D:
-                    expiry['expires_within_7d'] += 1
-                elif remaining <= _EXPIRY_30D:
-                    expiry['expires_8_to_30d'] += 1
-                else:
-                    expiry['expires_after_30d'] += 1
+            _record_validity_window(row, instant=instant, counts=result, expiry=expiry)
         return _result(
             'ready',
             'Qualified Stored Certificate Validity Windows',
