@@ -216,9 +216,7 @@ def _partition_tenant_contributions(
     return results
 
 
-def build_resource_profile_capacity_workspace(
-    context: dict[str, Any], *, active_view: str, args: Any
-) -> None:
+def build_resource_profile_capacity_workspace(context: dict[str, Any], *, active_view: str, args: Any) -> None:
     """Project committed Capacity/Allocation evidence into Resource Profile workspace."""
     capacity_search = str(args.get('capacity_search') or '').strip()
     allocation_view = str(args.get('allocation_view') or 'overview').strip().lower()
