@@ -120,13 +120,21 @@ def test_unexpected_dependency_defect_propagates(monkeypatch: pytest.MonkeyPatch
             )
 
 
+def _empty_sql_scalars(_statement: object) -> SimpleNamespace:
+    return SimpleNamespace(all=lambda: [])
+
+
+def _stub_empty_overview_sql(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        overview_service, 'db', SimpleNamespace(session=SimpleNamespace(scalars=_empty_sql_scalars))
+    )
+
+
 @pytest.mark.parametrize('error', [SQLAlchemyError('DB down'), RuntimeError('context missing')])
 def test_expected_overview_metrics_lookup_error_uses_first_cluster(
     monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
-    monkeypatch.setattr(
-        overview_service, 'db', SimpleNamespace(session=SimpleNamespace(scalars=lambda _stmt: SimpleNamespace(all=lambda: [])))
-    )
+    _stub_empty_overview_sql(monkeypatch)
     monkeypatch.setattr(metrics_resolver, 'resolve_metrics_sources', _raises(error))
     clusters = [{'id': '17'}, {'id': '18'}]
 
@@ -134,9 +142,7 @@ def test_expected_overview_metrics_lookup_error_uses_first_cluster(
 
 
 def test_unexpected_overview_metrics_lookup_error_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        overview_service, 'db', SimpleNamespace(session=SimpleNamespace(scalars=lambda _stmt: SimpleNamespace(all=lambda: [])))
-    )
+    _stub_empty_overview_sql(monkeypatch)
     monkeypatch.setattr(metrics_resolver, 'resolve_metrics_sources', _raises(LookupError('unexpected defect')))
 
     with pytest.raises(LookupError, match='unexpected defect'):
@@ -147,7 +153,9 @@ def test_expected_optional_presenter_import_error_is_skipped(monkeypatch: pytest
     monkeypatch.setattr(overview_service, '__import__', _raises(ImportError('optional module absent')), raising=False)
 
     with Flask(__name__).app_context():
-        assert overview_service._call_optional_snapshot(module_path='missing.optional', function_names=['snapshot']) is None
+        result = overview_service._call_optional_snapshot(module_path='missing.optional', function_names=['snapshot'])
+
+    assert result is None
 
 
 def test_unexpected_presenter_initialization_defect_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
