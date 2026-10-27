@@ -35,8 +35,10 @@ from app.integrations.source_control.source_control.providers.github.application
 )
 from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
     _runtime_context,
-    _runtime_search_pattern as _runtime_search_pattern,
     _validation_job_for,
+)
+from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
+    _runtime_search_pattern as _runtime_search_pattern,
 )
 from app.integrations.source_control.source_control.providers.github.job_admission import (
     enqueue_github_app_job,
