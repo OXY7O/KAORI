@@ -45,7 +45,6 @@ def test_expected_canonical_read_error_falls_back_to_terminal_celery_state(monke
     assert snapshot['is_complete'] is True
 
 
-
 @pytest.mark.parametrize('error', [TypeError('invalid snapshot field'), ValueError('invalid snapshot value')])
 def test_expected_canonical_snapshot_serialization_error_uses_celery_state(monkeypatch, error: Exception) -> None:
     def broken_snapshot(_job: object) -> None:
