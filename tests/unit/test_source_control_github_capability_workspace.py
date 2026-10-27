@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
     github_capability_context,
 )
@@ -42,8 +42,7 @@ def test_unvalidated_installation_does_not_fabricate_ready_or_required_gaps():
     assert not any(row['available'] for row in context['capability_rows'])
     registry = build_capability_registry_view(
         context['capability_rows'],
-        distinguish_optional_gap=True,
-        distinguish_unverified=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True),
     )
     assert len(registry['rows']) == 5
     assert registry['pagination']['total_items'] == 6
@@ -51,8 +50,7 @@ def test_unvalidated_installation_does_not_fabricate_ready_or_required_gaps():
         result = build_capability_registry_view(
             context['capability_rows'],
             status=status,
-            distinguish_optional_gap=True,
-            distinguish_unverified=True,
+            status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True),
         )
         assert len(result['rows']) == expected
 
@@ -85,8 +83,7 @@ def test_committed_capabilities_do_not_imply_repository_inventory_sync():
         requirement='optional',
         status='optional_gap',
         per_page=5,
-        distinguish_optional_gap=True,
-        distinguish_unverified=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True),
     )
     assert len(view['rows']) == 3
     assert all(not row['required'] and not row['available'] for row in view['rows'])
@@ -153,7 +150,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert "@permission_required('integrations.manage')\ndef capability_registry(" in routes
     assert 'installation = _installation_or_404(installation_id)' in routes
     assert 'build_capability_registry_view(' in routes
-    assert 'distinguish_unverified=True' in routes
+    assert 'status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True)' in routes
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
     assert 'def _validation_job_for(canonical, *, operation:' in routes
     assert 'get_active_validation_task_id(' in routes
@@ -175,8 +172,7 @@ def test_registry_filters_search_pagination_and_unknown_status():
         page=1,
         per_page=5,
         search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True,
-        distinguish_unverified=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True),
     )
     assert result['pagination']['total_items'] == 1
     assert result['rows'][0]['key'] == 'pull_requests'
@@ -184,7 +180,7 @@ def test_registry_filters_search_pagination_and_unknown_status():
         build_capability_registry_view(
             rows,
             status='ready',
-            distinguish_unverified=True,
+            status_flags=CapabilityStatusFlags(unverified=True),
         )['rows']
         == []
     )
