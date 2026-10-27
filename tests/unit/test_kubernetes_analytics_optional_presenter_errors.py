@@ -37,9 +37,7 @@ def _call_presenter() -> dict[str, object] | None:
         KeyError('missing committed evidence'),
     ],
 )
-def test_expected_keyword_presenter_failure_falls_back(
-    monkeypatch: pytest.MonkeyPatch, error: Exception
-) -> None:
+def test_expected_keyword_presenter_failure_falls_back(monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
     def broken(*_args: object, **_kwargs: object) -> None:
         raise error
 
