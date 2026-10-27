@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 from dataclasses import dataclass, field
+from typing import cast
 
 from app.extensions.db import db
 from app.integrations.provider_matrix import provider_kind
@@ -395,12 +396,15 @@ def build_successor_connection_input(
         raise GitHubProviderError('Protected GitHub App credential is unavailable.')
     if not same_app and (not private_key_pem or not webhook_secret):
         raise ValueError('A different GitHub App requires a new PEM and webhook secret.')
+    # Same-App reuse already rejects a missing protected credential above.
+    # A new App never reads this predecessor credential.
+    protected_credential = cast(GitHubAppCredential, credential)
     if same_app and (private_key_pem or webhook_secret):
         if (
             not private_key_pem
             or not webhook_secret
-            or not _same_secret(credential.private_key_pem, private_key_pem)
-            or not _same_secret(credential.webhook_secret, webhook_secret)
+            or not _same_secret(protected_credential.private_key_pem, private_key_pem)
+            or not _same_secret(protected_credential.webhook_secret, webhook_secret)
         ):
             raise GitHubProviderError(
                 'Shared GitHub App credentials must match the existing protected App; use credential rotation separately.'
@@ -412,8 +416,8 @@ def build_successor_connection_input(
         app_id=new_app_id,
         installation_id=new_installation_id,
         account_id=new_account_id,
-        private_key_pem=credential.private_key_pem if same_app else str(private_key_pem),
-        webhook_secret=credential.webhook_secret if same_app else str(webhook_secret),
+        private_key_pem=protected_credential.private_key_pem if same_app else str(private_key_pem),
+        webhook_secret=protected_credential.webhook_secret if same_app else str(webhook_secret),
         enabled=bool(canonical.enabled),
     )
     _validate_configuration(values)
