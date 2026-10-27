@@ -9,11 +9,10 @@ from typing import Any
 from flask import current_app
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
-from sqlalchemy import and_, case, func, or_, select, text
+from sqlalchemy import and_, or_, select, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
-from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.extensions.db import db
 from app.kubernetes.operations.secrets.live_service import (
     LiveSecretSnapshot,
@@ -23,13 +22,28 @@ from app.kubernetes.operations.secrets.live_service import (
     read_live_secret,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
-    REVEAL_NAMESPACE_POLICIES,
-    cluster_reveal_readiness,
+    REVEAL_NAMESPACE_POLICIES as REVEAL_NAMESPACE_POLICIES,
+)
+from app.kubernetes.operations.secrets.reveal_policy import (
     get_configured_enabled_namespace_names,
     get_enabled_namespace_names,
     get_namespace_policy,
 )
-from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest, User
+from app.kubernetes.operations.secrets.reveal_read_model import (
+    _cluster_ready,
+    _global_enabled,
+    _now,
+)
+from app.kubernetes.operations.secrets.reveal_read_model import (
+    PendingRevealPagination as PendingRevealPagination,
+)
+from app.kubernetes.operations.secrets.reveal_read_model import (
+    get_reveal_clusters as get_reveal_clusters,
+)
+from app.kubernetes.operations.secrets.reveal_read_model import (
+    get_reveal_page_context as get_reveal_page_context,
+)
+from app.models import Cluster, SecretRevealRequest, User
 from app.models.rbac import Permission, Role, RolePermission
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import stage_operational_activity
@@ -127,10 +141,6 @@ class RevealedSecretValue:
     audit_feedback: dict[str, Any] | None = None
 
 
-def _now() -> datetime:
-    return datetime.now(UTC)
-
-
 def _as_aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
@@ -146,14 +156,6 @@ def _required(value: str | None, label: str, *, max_length: int | None = None) -
     if max_length is not None and len(normalized) > max_length:
         raise ValueError(f'{label} must be {max_length} characters or fewer.')
     return normalized
-
-
-def _global_enabled() -> bool:
-    return bool(current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False))
-
-
-def _cluster_ready(cluster: Cluster) -> bool:
-    return cluster_reveal_readiness(cluster)
 
 
 def get_secret_reveal_approvers(*, exclude_user_id: int) -> list[User]:
@@ -185,17 +187,6 @@ def get_secret_reveal_approvers(*, exclude_user_id: int) -> list[User]:
 def rollback_secret_reveal_transaction() -> None:
     """Reset a failed protected-secret transaction before reading or recording follow-up evidence."""
     db.session.rollback()
-
-
-def get_reveal_clusters() -> list[Cluster]:
-    if not _global_enabled():
-        return []
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    return [
-        cluster
-        for cluster in clusters
-        if _cluster_ready(cluster) and get_configured_enabled_namespace_names(cluster.id)
-    ]
 
 
 def get_reveal_workspace(
@@ -321,147 +312,6 @@ def get_reveal_target_context(
         'selected_cluster': target.cluster,
         'selected_namespace_policy': namespace_policy,
         'target_error': None,
-    }
-
-
-@dataclass(frozen=True, slots=True)
-class PendingRevealPagination:
-    page: int = 1
-    per_page: int = 5
-
-
-def get_reveal_page_context(
-    *,
-    user_id: int,
-    can_approve: bool,
-    my_page: int = 1,
-    my_per_page: int = 5,
-    my_search: str = '',
-    my_status: str = '',
-    my_sort: str = 'newest',
-    my_request_id: str = '',
-    pending_pagination: PendingRevealPagination = PendingRevealPagination(),
-    pending_search: str = '',
-    pending_sort: str = 'oldest',
-) -> dict[str, Any]:
-
-    now = _now()
-    effective_status = case(
-        (
-            and_(
-                SecretRevealRequest.status.in_(('pending', 'approved')),
-                SecretRevealRequest.expires_at <= now,
-            ),
-            'expired',
-        ),
-        else_=SecretRevealRequest.status,
-    )
-    # Restrict to the requester first; filtering is SQL-backed and never reads Secret values.
-    search = str(my_search or '').strip()[:120]
-    allowed_statuses = {'pending', 'approved', 'revealed', 'denied', 'expired'}
-    state_filter = str(my_status or '').strip().lower()
-    if state_filter not in allowed_statuses:
-        state_filter = ''
-    ordering = 'oldest' if my_sort == 'oldest' else 'newest'
-
-    # Exact linked-request selection is strictly scoped to the current requester.
-    # Notification IDs never convey authority or permit another user's request reads.
-    focus_id = str(my_request_id or '').strip()[:80]
-    my_query = SecretRevealRequest.query.filter_by(requester_user_id=user_id)
-    if focus_id:
-        my_query = my_query.filter(SecretRevealRequest.id == focus_id)
-    if search:
-        search_term = search.lower()
-        my_query = my_query.filter(
-            or_(
-                func.lower(SecretRevealRequest.secret_name).contains(search_term, autoescape=True),
-                func.lower(SecretRevealRequest.key_name).contains(search_term, autoescape=True),
-                func.lower(SecretRevealRequest.namespace).contains(search_term, autoescape=True),
-                func.lower(SecretRevealRequest.ticket_reference).contains(search_term, autoescape=True),
-            )
-        )
-    if state_filter:
-        my_query = my_query.filter(effective_status == state_filter)
-    if ordering == 'oldest':
-        my_query = my_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
-    else:
-        my_query = my_query.order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
-    my_requests, my_window = paginate_query(my_query, page=my_page, per_page=my_per_page)
-    # Preserve the existing Reveal template keys without keeping a separate
-    # page-size policy or a second hand-written pagination algorithm.
-    my_pagination = {
-        **my_window,
-        'total': my_window['total_items'],
-        'pages': my_window['total_pages'],
-        'start': my_window['start_item'],
-        'end': my_window['end_item'],
-        'page_sizes': PER_PAGE_OPTIONS,
-    }
-
-    # The approval permission boundary precedes all searches/pagination.
-    # Only request metadata is queried; never Secret payloads.
-    pending_search_value = str(pending_search or '').strip()[:120]
-    pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'
-    pending_requests: list[SecretRevealRequest] = []
-    if can_approve:
-        pending_query = SecretRevealRequest.query.filter(
-            SecretRevealRequest.status == 'pending',
-            SecretRevealRequest.expires_at > now,
-        )
-        if pending_search_value:
-            pending_term = pending_search_value.lower()
-            pending_query = pending_query.filter(
-                or_(
-                    func.lower(SecretRevealRequest.secret_name).contains(pending_term, autoescape=True),
-                    func.lower(SecretRevealRequest.namespace).contains(pending_term, autoescape=True),
-                    func.lower(SecretRevealRequest.key_name).contains(pending_term, autoescape=True),
-                    func.lower(SecretRevealRequest.ticket_reference).contains(pending_term, autoescape=True),
-                )
-            )
-        if pending_ordering == 'newest':
-            pending_query = pending_query.order_by(
-                SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc()
-            )
-        else:
-            pending_query = pending_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
-        pending_requests, pending_window = paginate_query(
-            pending_query,
-            page=pending_pagination.page,
-            per_page=pending_pagination.per_page,
-        )
-    else:
-        pending_window = pagination_payload(
-            build_pagination_window(
-                total_items=0,
-                page=pending_pagination.page,
-                per_page=pending_pagination.per_page,
-            )
-        )
-    pending_pagination_payload = {
-        **pending_window,
-        'total': pending_window['total_items'],
-        'pages': pending_window['total_pages'],
-        'start': pending_window['start_item'],
-        'end': pending_window['end_item'],
-        'page_sizes': PER_PAGE_OPTIONS,
-    }
-    configured_reveal_namespace_count = SecretRevealNamespacePolicy.query.filter(
-        SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
-    ).count()
-
-    return {
-        'global_reveal_enabled': _global_enabled(),
-        'configured_reveal_namespace_count': configured_reveal_namespace_count,
-        'clusters': get_reveal_clusters(),
-        'my_reveal_requests': my_requests,
-        'my_reveal_pagination': my_pagination,
-        'my_reveal_filters': {'search': search, 'status': state_filter, 'sort': ordering},
-        'my_reveal_focus_id': focus_id,
-        'pending_reveal_requests': pending_requests,
-        'pending_reveal_pagination': pending_pagination_payload,
-        'pending_reveal_filters': {'search': pending_search_value, 'sort': pending_ordering},
-        'reveal_policies': REVEAL_NAMESPACE_POLICIES,
-        'reveal_window_seconds': int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)),
     }
 
 
