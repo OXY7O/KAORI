@@ -64,33 +64,29 @@ def _actor_authorized(actor_id: int) -> bool:
 
 
 def _event(case: AlertCase, *, event_type: str, actor_id: int, summary: str) -> None:
-    db.session.add(
-        AlertCaseEvent(
-            case_id=case.id,
-            event_type=event_type,
-            actor_user_id=actor_id,
-            summary=summary,
-            metadata_json={'source_type': 'provider_alert', 'domain': 'secrets_pki'},
-        )
-    )
+    event = AlertCaseEvent()
+    event.case_id = case.id
+    event.event_type = event_type
+    event.actor_user_id = actor_id
+    event.summary = summary
+    event.metadata_json = {'source_type': 'provider_alert', 'domain': 'secrets_pki'}
+    db.session.add(event)
 
 
 def _audit(case: AlertCase, *, actor_id: int, action: str) -> None:
-    db.session.add(
-        AuditEvent(
-            actor_user_id=actor_id,
-            target_type='alert_case',
-            target_id=case.public_id,
-            action=action,
-            summary='A qualified Vault Alert Source case was admitted or refreshed.',
-            metadata_json={
-                'case_id': case.public_id,
-                'source_type': 'provider_alert',
-                'domain': 'secrets_pki',
-                'asset_key': case.asset_key,
-            },
-        )
-    )
+    audit = AuditEvent()
+    audit.actor_user_id = actor_id
+    audit.target_type = 'alert_case'
+    audit.target_id = case.public_id
+    audit.action = action
+    audit.summary = 'A qualified Vault Alert Source case was admitted or refreshed.'
+    audit.metadata_json = {
+        'case_id': case.public_id,
+        'source_type': 'provider_alert',
+        'domain': 'secrets_pki',
+        'asset_key': case.asset_key,
+    }
+    db.session.add(audit)
 
 
 def _new_case(
@@ -104,36 +100,35 @@ def _new_case(
     actor_id: int,
 ) -> AlertCase:
     """Persist only approved opaque identity and safe ownership metadata."""
-    case = AlertCase(
-        case_key=case_key,
-        fingerprint=None,
-        source_type='provider_alert',
-        source_ref=case_key,
-        rule_key=None,
-        domain='secrets_pki',
-        asset_type='vault_instance',
-        asset_key=vault_id,
-        asset_name='Vault Instance',
-        alert_name='Vault Alertmanager source condition',
-        summary='A qualified Vault source observation reported a firing alert.',
-        severity=severity,
-        source_state='firing',
-        source_state_changed_at=observed,
-        workflow_state='open',
-        routing_state='suppressed',
-        routing_override_reason='policy_ineligible',
-        routing_override_note=None,
-        routing_override_at=observed,
-        routing_override_by_user_id=None,
-        first_seen_at=observed,
-        last_seen_at=observed,
-        labels_json={},
-        evidence_json={
-            'correlation_profile': _PROFILE,
-            'source_binding_id': binding_id,
-            'source_integration_id': source_id,
-        },
-    )
+    case = AlertCase()
+    case.case_key = case_key
+    case.fingerprint = None
+    case.source_type = 'provider_alert'
+    case.source_ref = case_key
+    case.rule_key = None
+    case.domain = 'secrets_pki'
+    case.asset_type = 'vault_instance'
+    case.asset_key = vault_id
+    case.asset_name = 'Vault Instance'
+    case.alert_name = 'Vault Alertmanager source condition'
+    case.summary = 'A qualified Vault source observation reported a firing alert.'
+    case.severity = severity
+    case.source_state = 'firing'
+    case.source_state_changed_at = observed
+    case.workflow_state = 'open'
+    case.routing_state = 'suppressed'
+    case.routing_override_reason = 'policy_ineligible'
+    case.routing_override_note = None
+    case.routing_override_at = observed
+    case.routing_override_by_user_id = None
+    case.first_seen_at = observed
+    case.last_seen_at = observed
+    case.labels_json = {}
+    case.evidence_json = {
+        'correlation_profile': _PROFILE,
+        'source_binding_id': binding_id,
+        'source_integration_id': source_id,
+    }
     db.session.add(case)
     db.session.flush()
     _event(
