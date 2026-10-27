@@ -49,9 +49,7 @@ def test_unexpected_owner_failure_propagates_without_deleting_lock(monkeypatch) 
 
 def test_active_canonical_job_never_reclaims_lock(monkeypatch) -> None:
     client = _LockClient()
-    monkeypatch.setattr(
-        job_service, 'get_job_by_task_id', lambda _task_id: SimpleNamespace(status='running')
-    )
+    monkeypatch.setattr(job_service, 'get_job_by_task_id', lambda _task_id: SimpleNamespace(status='running'))
 
     assert state._release_stale_validation_lock(client, 'validation-lock') is False
     assert client.eval_calls == []
