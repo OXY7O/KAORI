@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -245,9 +245,10 @@ def _qualified_alert_sample(
         or sample.get('identity_observed') is not True
     ):
         return 'needs_validation', None, None
-    counts = {key: sample.get(key) for key in _ALERT_SAMPLE_COUNTS}
-    if any(type(value) is not int or value < 0 for value in counts.values()):
+    unvalidated_counts = {key: sample.get(key) for key in _ALERT_SAMPLE_COUNTS}
+    if any(type(value) is not int or value < 0 for value in unvalidated_counts.values()):
         return 'needs_validation', None, None
+    counts = cast(dict[str, int], unvalidated_counts)
     total = counts['observed_rows']
     if (
         not 1 <= total <= 100
