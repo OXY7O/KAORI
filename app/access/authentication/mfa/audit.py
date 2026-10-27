@@ -41,29 +41,29 @@ def stage_authentication_security_event(
     """
     actor = actor_snapshot_for_user(user) if authenticated else unauthenticated_actor_snapshot()
     now = datetime.now(UTC)
-    return Notification(
-        user_id=user.id,
-        event_type='authentication',
-        category_key=event_category_key('authentication'),
-        actor_key=actor.key,
-        actor_label=actor.label,
-        actor_snapshot_json=actor.as_json(),
-        status='success' if success else 'warning',
-        title=action.replace('_', ' ').title().replace('Mfa ', 'MFA '),
-        message='Authentication security control state recorded.',
-        detail='KAORI committed a security control transition without factor or credential values.',
-        metadata_json={
-            'audit_schema': 'authentication.security.v1',
-            'access_action': action,
-            'result': 'success' if success else 'rejected',
-            'target_user_id': user.id,
-            'previous_policy_mode': previous_mode,
-            'new_policy_mode': next_mode,
-            'request_method': request.method,
-            'request_path': request.path[:200],
-            'session_reference': session.get('auth_session_ref') if authenticated else None,
-        },
-        deck_visible=False,
-        read_at=now,
-        created_at=now,
-    )
+    event = Notification()
+    event.user_id = user.id
+    event.event_type = 'authentication'
+    event.category_key = event_category_key('authentication')
+    event.actor_key = actor.key
+    event.actor_label = actor.label
+    event.actor_snapshot_json = actor.as_json()
+    event.status = 'success' if success else 'warning'
+    event.title = action.replace('_', ' ').title().replace('Mfa ', 'MFA ')
+    event.message = 'Authentication security control state recorded.'
+    event.detail = 'KAORI committed a security control transition without factor or credential values.'
+    event.metadata_json = {
+        'audit_schema': 'authentication.security.v1',
+        'access_action': action,
+        'result': 'success' if success else 'rejected',
+        'target_user_id': user.id,
+        'previous_policy_mode': previous_mode,
+        'new_policy_mode': next_mode,
+        'request_method': request.method,
+        'request_path': request.path[:200],
+        'session_reference': session.get('auth_session_ref') if authenticated else None,
+    }
+    event.deck_visible = False
+    event.read_at = now
+    event.created_at = now
+    return event
