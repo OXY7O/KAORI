@@ -166,7 +166,11 @@ def qualify_eso_reconciliation(
     """
     if not isinstance(target, ESOTargetEvidence):
         return ESOAssessment('unknown')
-    instant, target_time, identity_time = _time(now), _time(target.target_observed_at), _time(target.current_identity_observed_at)
+    instant, target_time, identity_time = (
+        _time(now),
+        _time(target.target_observed_at),
+        _time(target.current_identity_observed_at),
+    )
     if (
         instant is None
         or receipt is None
