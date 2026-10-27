@@ -349,7 +349,7 @@ def _get_clusters_for_filter() -> list[dict[str, Any]]:
         ).all()
 
         return [_normalize_cluster(cluster) for cluster in clusters]
-    except Exception:
+    except (exc.SQLAlchemyError, AttributeError, TypeError, ValueError):
         return []
 
 
