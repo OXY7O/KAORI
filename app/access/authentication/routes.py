@@ -506,20 +506,25 @@ def sso_callback(provider_key: str):
     return redirect(url_for('auth.login'))
 
 
+def _pending_mfa_session_valid(pending: dict) -> bool:
+    """Keep the original fail-closed pending-factor type, TTL and attempt guards."""
+    expires_at = pending.get('expires_at')
+    return not (
+        type(pending.get('user_id')) is not int
+        or type(expires_at) not in (int, float)
+        or expires_at <= datetime.now(UTC).timestamp()
+        or type(pending.get('attempts')) is not int
+        or pending.get('attempts', 0) >= 5
+    )
+
+
 @auth_bp.route('/mfa', methods=['GET', 'POST'])
 @limiter.limit('5 per minute', methods=['POST'])
 def mfa_challenge():
     """Restricted second-factor challenge: no Flask-Login until proof succeeds."""
     raw = session.get(MFA_PENDING_SESSION_KEY)
     pending = raw if isinstance(raw, dict) else {}
-    expires_at = pending.get('expires_at')
-    if (
-        type(pending.get('user_id')) is not int
-        or type(expires_at) not in (int, float)
-        or expires_at <= datetime.now(UTC).timestamp()
-        or type(pending.get('attempts')) is not int
-        or pending.get('attempts', 0) >= 5
-    ):
+    if not _pending_mfa_session_valid(pending):
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
 
