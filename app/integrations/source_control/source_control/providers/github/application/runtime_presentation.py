@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from flask import request
 from sqlalchemy import or_
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.pagination import paginate_query
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
@@ -84,7 +85,9 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     if job_queue:
         jobs_query = jobs_query.filter(JobExecution.queue_name == job_queue)
     if job_search:
-        job_search_checks = [JobExecution.operation.ilike(_runtime_search_pattern(job_search), escape='\\')]
+        job_search_checks: list[ColumnElement[bool]] = [
+            JobExecution.operation.ilike(_runtime_search_pattern(job_search), escape='\\')
+        ]
         numeric_job_id = job_search.removeprefix('#')
         if numeric_job_id.isascii() and numeric_job_id.isdecimal() and len(numeric_job_id) <= 18:
             job_search_checks.append(JobExecution.id == int(numeric_job_id))

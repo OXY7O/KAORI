@@ -19,14 +19,15 @@ def uat_enabled() -> bool:
 
 
 def local_super_admin(user: object) -> bool:
-    return bool(
+    if not (
         getattr(user, 'is_authenticated', False)
         and getattr(user, 'is_super_admin', False)
         and getattr(user, 'auth_source', None) == 'database'
         and getattr(user, 'is_active', False)
-        and callable(getattr(user, 'has_permission', None))
-        and user.has_permission('integrations.manage')
-    )
+    ):
+        return False
+    permission = getattr(user, 'has_permission', None)
+    return bool(callable(permission) and permission('integrations.manage'))
 
 
 def require_uat_access() -> None:
