@@ -25,6 +25,9 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _shared_authority_context,
     _source_reference,
     _tenant_evidence,
+    _SHARED_CAPABILITY,
+    _SHARED_SCOPE,
+    build_capsule_shared_drift_action_state,
 )
 from app.kubernetes.tenant.service import (
     _namespace_allocation_values,
@@ -47,8 +50,6 @@ from app.models.tenant_advanced import (
 _CAPSULE_GROUP = 'capsule.clastix.io'
 _GLOBAL_QUOTA_PLURAL = 'globalresourcequotas'
 _REQUIRED_API_VERSION = 'v1beta2'
-_SHARED_CAPABILITY = 'shared_global_quota'
-_SHARED_SCOPE = 'tenant_shared'
 
 
 class CapsuleSharedAllocationStateConflictError(RuntimeError):
@@ -554,32 +555,6 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
         'drifted_intent_ids': sorted(set(drifted_intent_ids)),
         'restored_intent_ids': sorted(set(restored_intent_ids)),
         'observation_errors': observation_errors,
-    }
-
-
-def build_capsule_shared_drift_action_state(intent: TenantAdvancedCapabilityIntent) -> dict[str, Any]:
-    evidence = intent.reconciliation_evidence_json or {}
-    drift_value = evidence.get('allocation_drift')
-    drift = dict(drift_value) if isinstance(drift_value, Mapping) else {}
-    reasons = list(drift.get('blocked_reasons') or [])
-    if not isinstance(drift_value, Mapping):
-        reasons.append('No committed Capsule shared allocation-drift evidence is available.')
-    if evidence.get('allocation_governance_scope') != _SHARED_SCOPE:
-        reasons.append('Intent is not the canonical Tenant shared allocation authority.')
-    if intent.status != TenantAdvancedCapabilityStatus.DRIFTED.value:
-        reasons.append('Shared allocation reconciliation requires committed Drifted state.')
-    if intent.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
-        reasons.append('Tenant is not Ready; reconciliation is frozen during teardown.')
-    if intent.tenant.provider_state != 'capsule':
-        reasons.append('Capsule provider is degraded or unavailable.')
-    if _capsule_capability_state(intent.tenant, _SHARED_CAPABILITY) != 'available':
-        reasons.append('Capsule shared_global_quota capability is unavailable or degraded.')
-    return {
-        'reapply_supported': not reasons,
-        'accept_supported': not reasons,
-        'blocked_reason': ' '.join(dict.fromkeys(reasons)),
-        'drift': drift,
-        'authority': 'capsule_global_resource_quota',
     }
 
 
