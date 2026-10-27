@@ -264,8 +264,12 @@ def save_bot_policy():
         ready = _bot_configuration_qualified(site_key, hostname, effective_secret)
         config_changed = _bot_configuration_changed(policy, site_key, hostname, submitted_secret)
         _validate_bot_enablement(
-            policy, mode=mode, site_key=site_key, effective_secret=effective_secret,
-            ready=ready, config_changed=config_changed,
+            policy,
+            mode=mode,
+            site_key=site_key,
+            effective_secret=effective_secret,
+            ready=ready,
+            config_changed=config_changed,
         )
         if config_changed:
             policy.bot_tested_at = None
