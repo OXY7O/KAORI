@@ -49,7 +49,6 @@ def _write_jsonl_gzip(
     return written_count
 
 
-
 def _iter_archive_record_ids(data_path: Path) -> Iterator[Any]:
     """Yield the exact identities written to the verified archive."""
     with gzip.open(data_path, mode='rt', encoding='utf-8') as archive_file:
@@ -64,7 +63,6 @@ def _iter_archive_record_ids(data_path: Path) -> Iterator[Any]:
             yield record_id
 
 
-
 def _build_archive_file_stem(
     artifact: ArchiveArtifact,
     boundary: ArchiveBoundary,
@@ -72,7 +70,6 @@ def _build_archive_file_stem(
     range_start = (boundary.range_start or boundary.cutoff_at).strftime('%Y%m%dT%H%M%SZ')
     range_end = (boundary.range_end or boundary.cutoff_at).strftime('%Y%m%dT%H%M%SZ')
     return f'{artifact.domain}-{range_start}-{range_end}-{artifact.id}'
-
 
 
 def _sha256_file(file_path: Path) -> str:
@@ -83,17 +80,14 @@ def _sha256_file(file_path: Path) -> str:
     return digest.hexdigest()
 
 
-
 def _normalize_trigger_type(value: str) -> str:
     normalized = value.strip().lower()
     return normalized if normalized in {'manual', 'scheduled', 'cli'} else 'manual'
 
 
-
 def _serialize_policy(policy: RetentionPolicy) -> dict[str, Any]:
     payload = asdict(policy)
     return payload
-
 
 
 def _isoformat(value: datetime | None) -> str | None:
