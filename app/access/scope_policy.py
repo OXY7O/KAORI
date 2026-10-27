@@ -101,14 +101,7 @@ def _eligible_vault_mount_revision_end(
         return None
     starts, ends = _timestamp(current.effective_from), _timestamp(current.effective_until)
     approved = _timestamp(current.approved_at)
-    if (
-        starts is None
-        or ends is None
-        or approved is None
-        or starts > instant
-        or instant >= ends
-        or approved > instant
-    ):
+    if starts is None or ends is None or approved is None or starts > instant or instant >= ends or approved > instant:
         return None
     return ends
 
