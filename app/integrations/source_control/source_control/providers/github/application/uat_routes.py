@@ -396,7 +396,6 @@ def _render_github_edit_connection_result(
     return response
 
 
-
 @github_uat_bp.route('/installations/<int:installation_id>/edit', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
 def edit_connection(installation_id: int) -> ResponseReturnValue:
@@ -521,6 +520,7 @@ def edit_connection(installation_id: int) -> ResponseReturnValue:
         message=message,
         rejection=rejection,
     )
+
 
 @github_uat_bp.route('/installations/<int:installation_id>/replace', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
