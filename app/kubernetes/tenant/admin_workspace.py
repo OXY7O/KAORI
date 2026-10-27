@@ -12,13 +12,13 @@ from app.kubernetes.tenant.access import (
     LATEST_ACCESS_PROFILE_VERSION,
     capsule_cluster_role_manifest,
 )
-from app.models import AuditEvent, User
 from app.kubernetes.tenant.credential import (
     build_namespace_access_package,
     credential_material_ttl_choices,
     credential_material_ttl_policy,
     credential_target_namespaces,
 )
+from app.models import AuditEvent, User
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
