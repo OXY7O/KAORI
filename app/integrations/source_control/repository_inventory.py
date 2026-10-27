@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import and_, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, scoped_session
 
 from app.models.source_control import (
     SourceReference,
@@ -54,7 +54,7 @@ class InventoryPage:
 
 
 def read_installation_inventory(
-    session: Session,
+    session: Session | scoped_session[Session],
     *,
     authorized_installation_id: int,
     page: int = 1,
