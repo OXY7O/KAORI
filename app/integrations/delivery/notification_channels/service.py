@@ -319,14 +319,14 @@ def get_notification_channels_payload(
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
-        'channel_filters.lifecycle': normalized_lifecycle,
+        'channel_lifecycle': normalized_lifecycle,
         'channel_filters': {
             'search': normalized_channel_search,
             'provider': normalized_provider,
             'state': normalized_state,
         },
         'deliveries': delivery_rows,
-        'delivery_filters.pagination': delivery_window,
+        'delivery_pagination': delivery_window,
         'delivery_filter': normalized_delivery_key,
         'delivery_filters': {
             'provider': normalized_delivery_provider,
