@@ -225,6 +225,79 @@ def _mfa_account_error_message(error: MfaVerificationError) -> str:
     }.get(str(error), 'MFA request was not accepted. Verify your session and retry.')
 
 
+def _process_account_mfa_action(
+    user: User, *, is_htmx: bool
+) -> tuple[str | None, str | None, list[str] | None, dict[str, Any] | None]:
+    """Process a fresh-session MFA mutation and preserve its feedback semantics."""
+    mfa_setup_secret: str | None = None
+    mfa_setup_qr_src: str | None = None
+    mfa_recovery_codes: list[str] | None = None
+    mfa_toast: dict[str, Any] | None = None
+    action = str(request.form.get('mfa_action') or '')
+    status = 'error'
+    title = 'MFA request not accepted'
+    message = 'Verify your sign-in session and retry.'
+    committed_audit = False
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+        if not login_fresh():
+            raise MfaVerificationError('Sign in again before changing MFA.')
+        if action in {'begin', 'regenerate'} and user.auth_source == 'database':
+            password = str(request.form.get('current_password') or '')
+            if not password or not user.check_password(password):
+                raise MfaVerificationError('Your current password was not accepted.')
+        if action == 'begin':
+            mfa_setup_secret = begin_mfa_enrollment(user)
+            # QR contains the same one-time setup secret. Never persist it
+            # or send it to a third-party QR endpoint.
+            mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
+            title = 'Authenticator setup started'
+            message = 'Scan the QR code or enter the setup key, then verify one code.'
+        elif action == 'confirm':
+            mfa_recovery_codes = confirm_mfa_enrollment(user, str(request.form.get('verification_code') or ''))
+            title = 'MFA enabled'
+            message = 'Save the recovery codes now. They will not be shown again.'
+        elif action == 'regenerate':
+            verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
+            mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
+            title = 'Recovery codes regenerated'
+            message = 'Save the new codes now. Previously unused codes are invalid.'
+        else:
+            raise MfaVerificationError('Unsupported MFA operation.')
+        status = 'success'
+        # The factor service already staged and committed the Activity
+        # Audit event. This toast must not generate another audit record.
+        committed_audit = True
+    except ValidationError:
+        title = 'MFA form expired'
+        message = 'Refresh this page and submit again.'
+    except MfaVerificationError as exc:
+        title = 'MFA request not accepted'
+        message = _mfa_account_error_message(exc)
+    except (CredentialEncryptionError, SQLAlchemyError):
+        title = 'MFA temporarily unavailable'
+        message = 'MFA configuration is temporarily unavailable.'
+        current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
+
+    if committed_audit:
+        mfa_toast = build_operational_feedback(
+            OperationalFeedbackSpec(
+                status=status,
+                title=title,
+                message=message,
+                activity_audit_saved=True,
+                notification_deck_visible=False,
+                delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+            )
+        )
+    else:
+        mfa_toast = create_transient_feedback(status=status, title=title, message=message)
+    if not is_htmx:
+        queue_operational_feedback(mfa_toast)
+
+    return mfa_setup_secret, mfa_setup_qr_src, mfa_recovery_codes, mfa_toast
+
+
 @bp.route('/account', methods=['GET', 'POST'])
 @login_required
 def account():
@@ -260,67 +333,9 @@ def account():
     mfa_recovery_codes: list[str] | None = None
     mfa_toast: dict[str, Any] | None = None
     if active_tab == 'mfa' and request.method == 'POST':
-        action = str(request.form.get('mfa_action') or '')
-        status = 'error'
-        title = 'MFA request not accepted'
-        message = 'Verify your sign-in session and retry.'
-        committed_audit = False
-        try:
-            validate_csrf(request.form.get('csrf_token'))
-            if not login_fresh():
-                raise MfaVerificationError('Sign in again before changing MFA.')
-            if action in {'begin', 'regenerate'} and user.auth_source == 'database':
-                password = str(request.form.get('current_password') or '')
-                if not password or not user.check_password(password):
-                    raise MfaVerificationError('Your current password was not accepted.')
-            if action == 'begin':
-                mfa_setup_secret = begin_mfa_enrollment(user)
-                # QR contains the same one-time setup secret. Never persist it
-                # or send it to a third-party QR endpoint.
-                mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
-                title = 'Authenticator setup started'
-                message = 'Scan the QR code or enter the setup key, then verify one code.'
-            elif action == 'confirm':
-                mfa_recovery_codes = confirm_mfa_enrollment(user, str(request.form.get('verification_code') or ''))
-                title = 'MFA enabled'
-                message = 'Save the recovery codes now. They will not be shown again.'
-            elif action == 'regenerate':
-                verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
-                mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
-                title = 'Recovery codes regenerated'
-                message = 'Save the new codes now. Previously unused codes are invalid.'
-            else:
-                raise MfaVerificationError('Unsupported MFA operation.')
-            status = 'success'
-            # The factor service already staged and committed the Activity
-            # Audit event. This toast must not generate another audit record.
-            committed_audit = True
-        except ValidationError:
-            title = 'MFA form expired'
-            message = 'Refresh this page and submit again.'
-        except MfaVerificationError as exc:
-            title = 'MFA request not accepted'
-            message = _mfa_account_error_message(exc)
-        except (CredentialEncryptionError, SQLAlchemyError):
-            title = 'MFA temporarily unavailable'
-            message = 'MFA configuration is temporarily unavailable.'
-            current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
-
-        if committed_audit:
-            mfa_toast = build_operational_feedback(
-                OperationalFeedbackSpec(
-                    status=status,
-                    title=title,
-                    message=message,
-                    activity_audit_saved=True,
-                    notification_deck_visible=False,
-                    delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
-                )
-            )
-        else:
-            mfa_toast = create_transient_feedback(status=status, title=title, message=message)
-        if not is_htmx:
-            queue_operational_feedback(mfa_toast)
+        mfa_setup_secret, mfa_setup_qr_src, mfa_recovery_codes, mfa_toast = _process_account_mfa_action(
+            user, is_htmx=is_htmx
+        )
 
     mfa_factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id).first()
     mfa_state = {
