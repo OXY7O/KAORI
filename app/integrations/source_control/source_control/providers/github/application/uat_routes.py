@@ -372,28 +372,28 @@ def _render_github_edit_connection_result(
     rejection: bool,
 ) -> ResponseReturnValue:
     """Preserve the exact HTMX proof and rejected-post response contract."""
-if inline_test:
+    if inline_test:
+        response = _response(
+            'integrations/source_control/github/partials/_connection_test_result.html',
+            verified=bool(test_proof),
+            message=message,
+        )
+        if test_proof:
+            response.headers['HX-Trigger'] = json.dumps(
+                {'github-connection-tested': {'connected': True, 'proof': test_proof}}
+            )
+        return response
+
     response = _response(
-        'integrations/source_control/github/partials/_connection_test_result.html',
-        verified=bool(test_proof),
+        'integrations/source_control/github/edit.html',
+        installation=installation,
+        canonical=canonical,
+        form=form,
         message=message,
     )
-    if test_proof:
-        response.headers['HX-Trigger'] = json.dumps(
-            {'github-connection-tested': {'connected': True, 'proof': test_proof}}
-        )
+    if rejection and request.method == 'POST' and form.errors == {}:
+        response.status_code = 409
     return response
-
-response = _response(
-    'integrations/source_control/github/edit.html',
-    installation=installation,
-    canonical=canonical,
-    form=form,
-    message=message,
-)
-if rejection and request.method == 'POST' and form.errors == {}:
-    response.status_code = 409
-return response
 
 
 
