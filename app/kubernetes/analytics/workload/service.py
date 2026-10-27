@@ -5,11 +5,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.common.analytics.coercion import as_dict, as_list, safe_float
 from app.common.analytics.params import ALLOWED_PER_PAGE_VALUES, get_allowed_time_ranges, get_selected_time_range
 from app.common.dependencies import metrics_source_capability_blocker, metrics_source_connection_blocker
 from app.integrations.consumer.contracts import ConsumerResult
 from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
@@ -212,7 +215,7 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
             context.update(get_empty_workload_payload('', time_range))
             return context
         return _materialize_workload_context(context, service, time_range)
-    except Exception as exc:
+    except (MetricsSourceError, SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         context['dependency_blocker'] = metrics_source_connection_blocker(cluster, detail=str(exc))
         context.update(get_empty_workload_payload('', time_range))
         return context
