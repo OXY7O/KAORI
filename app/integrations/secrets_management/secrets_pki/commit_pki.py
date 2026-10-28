@@ -161,6 +161,7 @@ def commit_pki_public_issuers(
         for item in evidence.issuers:
             observed.add(item.issuer_id)
             issuer = by_source.get(item.issuer_id)
+            new_issuer = issuer is None
             if issuer is None:
                 issuer = PKIIssuerIdentity()
                 issuer.integration_instance_id = integration_instance_id
@@ -169,9 +170,10 @@ def commit_pki_public_issuers(
                 issuer.provider_issuer_id = item.issuer_id
                 db.session.add(issuer)
                 by_source[item.issuer_id] = issuer
-                db.session.flush()
             issuer.observation_status = 'observed'
             issuer.last_observed_at = timestamp
+            if new_issuer:
+                db.session.flush()
             known = {c.fingerprint_sha256: c for c in issuer.certificates}
             current = item.certificate
             certificate = known.get(current.fingerprint_sha256)

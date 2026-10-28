@@ -162,7 +162,7 @@ def commit_kv2_inventory(
                 representation.path_sha256 = path_fingerprint
                 representation.representation_role = 'material_authority'
                 db.session.add(representation)
-            if representation.current_version > record.current_version:
+            if representation.current_version is not None and representation.current_version > record.current_version:
                 raise ValueError('KV v2 current version regressed; source identity requires review.')
             representation.observation_status = 'observed'
             representation.current_version = record.current_version
