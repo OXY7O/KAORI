@@ -50,14 +50,13 @@
             </div>
         </section>
         {% if cluster_posture['needs_attention'] %}
-            {{ operational_callout.render(
-                cluster_posture['status_title'],
-                cluster_posture['status_detail'],
-                'triangle-alert',
-                'warning',
-                'semantic',
-                action_href=url_for('integrations.kubernetes'),
-                action_label='Open Cluster Integrations'
+            {{ operational_callout.render(cluster_posture['status_title'],
+                        cluster_posture['status_detail'],
+                        'triangle-alert',
+                        'warning',
+                        'semantic',
+                        action_href=url_for('integrations.kubernetes') ,
+            action_label='Open Cluster Integrations'
             ) }}
         {% endif %}
         {{ evidence_boundary.render() }}
