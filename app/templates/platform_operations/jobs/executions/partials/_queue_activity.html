@@ -22,10 +22,10 @@
                         <h3 id="queue-activity-title"
                             class="text-base font-semibold text-content-primary">Queue Activity</h3>
                         {{ info_tip.render('jobs-queue-activity-guide',
-                            'Queue Activity',
-                            'Activity and attention derive from committed JobExecution records; worker readiness is a demand-loaded Celery topology snapshot and does not guarantee successful domain execution.',
-                            placement='right',
-                            variant='guide') }}
+                                                'Queue Activity',
+                                                'Activity and attention derive from committed JobExecution records; worker readiness is a demand-loaded Celery topology snapshot and does not guarantee successful domain execution.',
+                                                placement='right',
+                                                variant='guide') }}
                         {{ table_label.metadata_label((job_queue_rows|length) ~ ' Queues') }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Compare execution demand with inspected Celery worker readiness for each isolated queue.</p>

@@ -1,8 +1,8 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
-<span id="kubernetes-admin-hero-registered" hx-swap-oob="innerHTML">{{ page_hero.meta_label('server', cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters')) }}</span>
-<span id="kubernetes-admin-hero-configured" hx-swap-oob="innerHTML">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters')) }}</span>
-<span id="kubernetes-admin-hero-protected" hx-swap-oob="innerHTML">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces')) }}</span>
+<span id="kubernetes-admin-hero-registered" hx-swap-oob="innerHTML">{{ page_hero.meta_label('server', cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters') ) }}</span>
+<span id="kubernetes-admin-hero-configured" hx-swap-oob="innerHTML">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters') ) }}</span>
+<span id="kubernetes-admin-hero-protected" hx-swap-oob="innerHTML">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces') ) }}</span>
 <div id="kubernetes-admin-context-ready" hx-swap-oob="innerHTML">{{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}</div>
 <div id="kubernetes-admin-context-status" hx-swap-oob="innerHTML">{{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}</div>
 <span id="kubernetes-admin-overview-status" hx-swap-oob="innerHTML">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
@@ -10,7 +10,7 @@
 <p id="kubernetes-admin-overview-metric-3" hx-swap-oob="innerHTML">{{ ready_cluster_count }}</p>
 <p id="kubernetes-admin-overview-metric-4" hx-swap-oob="innerHTML">{{ enabled_namespace_count }}</p>
 <p id="kubernetes-admin-overview-metric-1" hx-swap-oob="innerHTML">{{ administration_control_count }}</p>
-<span id="kubernetes-admin-control-count" hx-swap-oob="innerHTML">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
+<span id="kubernetes-admin-control-count" hx-swap-oob="innerHTML">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls') , 'info') }}</span>
 <div id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML">
     {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
 </div>

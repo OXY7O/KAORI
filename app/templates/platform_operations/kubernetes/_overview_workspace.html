@@ -1,9 +1,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/section_intro.html" as section_intro %}
-<section class="min-w-0 space-y-6" aria-label="Kubernetes Administration Overview">
+<section class="min-w-0 space-y-6"
+         aria-label="Kubernetes Administration Overview">
     {# Read-only fleet posture is its own overview block, not a control footer. #}
-    <section class="space-y-4" aria-label="Kubernetes Administration Coverage Summary">
+    <section class="space-y-4"
+             aria-label="Kubernetes Administration Coverage Summary">
         {% set overview_posture %}
             <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
         {% endset %}
@@ -15,13 +17,13 @@
             header_badge=overview_posture,
             body_classes='p-0',
             aria_label='Kubernetes Administration Coverage'
-        ) %}
+            ) %}
             {% set metrics = [
-                ('blocks', 'Managed Controls', administration_control_count, 'Available administrative capabilities'),
-                ('server', 'Registered Clusters', cluster_count, 'Canonical Kubernetes inventory'),
-                ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Recorded cluster security prerequisites'),
-                ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Configured Namespace access policies')
-            ] %}
+                            ('blocks', 'Managed Controls', administration_control_count, 'Available administrative capabilities'),
+                            ('server', 'Registered Clusters', cluster_count, 'Canonical Kubernetes inventory'),
+                            ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Recorded cluster security prerequisites'),
+                            ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Configured Namespace access policies')
+                        ] %}
             <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% for icon, label, value, helper in metrics %}
                     <div class="min-w-0 bg-surface-card px-5 py-4 sm:px-6">
@@ -32,7 +34,9 @@
                             <span>{{ label }}</span>
                         </dt>
                         <dd id="kubernetes-admin-overview-metric-{{ loop.index }}"
-                            class="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-content-primary">{{ value }}</dd>
+                            class="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-content-primary">
+                            {{ value }}
+                        </dd>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                     </div>
                 {% endfor %}
@@ -45,16 +49,13 @@
             </p>
         {% endcall %}
     </section>
-
     {# Operational capabilities have a separate destination and primary action. #}
     <section class="space-y-4" aria-labelledby="kubernetes-admin-controls-heading">
-        {{ section_intro.render(
-            'Kubernetes Operations',
-            'Configure protected access controls and review their execution requirements.',
-            'kubernetes-admin-controls-heading'
-        ) }}
+        {{ section_intro.render('Kubernetes Operations',
+                'Configure protected access controls and review their execution requirements.',
+                'kubernetes-admin-controls-heading') }}
         {% set controls_badge %}
-            <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
+            <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls') , 'info') }}</span>
         {% endset %}
         {% call operational_section.render(
             'Managed Administration Controls',
@@ -64,8 +65,9 @@
             header_badge=controls_badge,
             body_classes='p-0',
             aria_label='Managed Administration Controls'
-        ) %}
-            <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
+            ) %}
+            <div id="kubernetes-admin-controls-list"
+                 class="divide-y divide-outline-subtle">
                 {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
             </div>
         {% endcall %}
