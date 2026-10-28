@@ -32,9 +32,7 @@ def test_settings_activity_uses_durable_writer_with_action_object(monkeypatch) -
     assert routes._record_settings_activity(**common, durable_with_operation=True) == {'writer': 'staged'}
     assert calls[0][0] == 'staged'
     durable = calls[0][1]
-    assert durable['action'] == OperationalActionPresentation(
-        label='Open Kubernetes Administration', icon='server-cog'
-    )
+    assert durable['action'] == OperationalActionPresentation(label='Open Kubernetes Administration', icon='server-cog')
     assert 'action_label' not in durable
     assert 'action_icon' not in durable
     assert durable['metadata']['secret_value_recorded'] is False
