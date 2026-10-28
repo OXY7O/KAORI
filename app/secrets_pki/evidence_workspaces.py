@@ -12,23 +12,17 @@ from app.secrets_pki.pki_validity_posture import build_stored_pki_validity_postu
 _WORKSPACES = {
     'certificates': {
         'title': 'Certificates',
-        'description': (
-            'Review public certificates and independent consumer evidence.'
-        ),
+        'description': 'Review public certificates and independent consumer evidence.',
         'icon': 'certificate',
     },
     'pki': {
         'title': 'PKI',
-        'description': (
-            'Inspect Vault PKI issuers and committed certificate evidence.'
-        ),
+        'description': 'Inspect Vault PKI issuers and committed certificate evidence.',
         'icon': 'shield-check',
     },
     'expiration': {
         'title': 'Expiration',
-        'description': (
-            'Check X.509 expiry windows using committed certificate evidence.'
-        ),
+        'description': 'Check X.509 expiry windows using committed certificate evidence.',
         'icon': 'calendar-clock',
     },
 }
