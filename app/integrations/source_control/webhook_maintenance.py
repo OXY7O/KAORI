@@ -6,8 +6,11 @@ Maintains the existing KAORI maintenance queue and JobExecution authority.
 
 from __future__ import annotations
 
+from typing import cast
+
 from celery import shared_task
 from flask import current_app
+from sqlalchemy.orm import Session
 
 from app.extensions.db import db
 from app.integrations.source_control.source_control.providers.github.webhook_recovery import (
@@ -31,4 +34,4 @@ def recover_signed_deliveries() -> dict[str, int | str]:
             'uncertain': 0,
             'failed': 0,
         }
-    return recover_webhook_inbox(db.session)
+    return recover_webhook_inbox(cast(Session, db.session))

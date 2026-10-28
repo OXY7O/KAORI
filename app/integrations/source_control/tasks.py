@@ -7,8 +7,11 @@ credentials, token or raw provider response is present in task arguments.
 
 from __future__ import annotations
 
+from typing import cast
+
 from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
+from sqlalchemy.orm import Session
 
 from app.extensions.db import db
 from app.integrations.source_control.source_control.providers.github.repository_sync import (
@@ -74,7 +77,7 @@ def sync_source_repositories_task(
                 installation = db.session.get(SourceInstallation, target['installation_id'])
                 if installation is None or not _eligible(installation):
                     raise ValueError('Source Control installation is no longer eligible.')
-                result = synchronize_installation(db.session, installation)
+                result = synchronize_installation(cast(Session, db.session), installation)
                 successes += 1
                 repositories += int(result.observed_count or 0)
                 revisions += int(result.committed_revisions)

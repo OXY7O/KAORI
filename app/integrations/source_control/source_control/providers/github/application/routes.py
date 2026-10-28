@@ -8,13 +8,15 @@ written until full provider admission is approved.
 from __future__ import annotations
 
 import json
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 
 from flask import Blueprint, Response, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import build_pagination_window, paginate_query, pagination_payload
@@ -486,8 +488,8 @@ def receive_signed_webhook() -> ResponseReturnValue:
         claim_verified_delivery(
             installation=candidates[0],
             payload=payload,
-            headers=request.headers,
-            session=db.session,
+            headers=cast(Mapping[str, str], request.headers),
+            session=cast(Session, db.session),
         )
         db.session.commit()
         committed = True
