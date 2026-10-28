@@ -240,6 +240,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
     app = create_app('testing')
     app.config['AUTH_LOGIN_RATE_LIMIT'] = '1000 per minute'
     auth_result = AuthResult(True, 'success', source='database', user=user)
+    # This browser-only fixture has no MFA persistence tables. Account GET still
+    # runs its real view and templates against deterministic unenrolled state.
+    mfa_factor_model = Mock()
+    mfa_factor_model.query.filter_by.return_value.first.return_value = None
 
     with (
         patch(
@@ -258,7 +262,13 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
         patch('app.access.authentication.routes._record_result', return_value=None),
         # Deterministic Account view: no live audit/history DB query.
-        patch('app.settings.routes.recent_authentication_events', return_value=[]),
+        patch.multiple(
+            'app.settings.routes',
+            recent_authentication_events=Mock(return_value=[]),
+            AuthenticationMfaFactor=mfa_factor_model,
+            mfa_enrolled=Mock(return_value=False),
+            mfa_policy_mode=Mock(return_value='disabled'),
+        ),
         patch.object(login_manager, '_user_callback', lambda _user_id: user),
         patch(
             'app.bootstrap.presentation.get_navigation_notification_context',
