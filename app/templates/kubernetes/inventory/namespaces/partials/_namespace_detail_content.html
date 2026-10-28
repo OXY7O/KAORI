@@ -11,7 +11,7 @@
         {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
         {% call detail.workspace_header(detail_description, 'folder-tree',
             context_items=[
-                {'label': namespace.cluster_name, 'icon': 'building-2'}
+            {'label': namespace.cluster_name, 'icon': 'building-2'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(namespace.namespace, compact=true) }}

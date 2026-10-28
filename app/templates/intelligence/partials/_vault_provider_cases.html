@@ -23,17 +23,22 @@
                     Exact instance grant required; mount grants do not inherit case access.
                 </p>
             </div>
-            <a href="{{ url_for('alert_intelligence.index') }}" class="{{ table_ui.action_classes() }}">
+            <a href="{{ url_for('alert_intelligence.index') }}"
+               class="{{ table_ui.action_classes() }}">
                 <i data-lucide="arrow-left" class="h-4 w-4"></i>Alert Intelligence
             </a>
         </header>
-        <form method="get" action="{{ url_for('alert_intelligence.vault_cases') }}"
+        <form method="get"
+              action="{{ url_for('alert_intelligence.vault_cases') }}"
               class="{{ table_ui.filter_bar_classes() }}">
             <label class="min-w-0 flex-1">
                 <span class="{{ table_ui.filter_label_classes() }}">Canonical Vault Instance ID</span>
-                <input name="instance_id" inputmode="numeric" pattern="[1-9][0-9]*"
+                <input name="instance_id"
+                       inputmode="numeric"
+                       pattern="[1-9][0-9]*"
                        value="{{ instance_id if instance_id else '' }}"
-                       class="{{ table_ui.filter_input_classes() }}" required>
+                       class="{{ table_ui.filter_input_classes() }}"
+                       required>
             </label>
             <button type="submit" class="{{ table_ui.action_classes() }}">Review Scope</button>
         </form>
@@ -78,9 +83,7 @@
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_label.status_label(row.source_state|title, 'warning' if row.source_state == 'unknown' else 'info', size='compact') }}
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ row.workflow_state|replace('_', ' ')|title }}
-                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.workflow_state|replace('_', ' ') |title }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <a class="{{ table_ui.action_classes() }}"
                                        href="{{ url_for('alert_intelligence.vault_case_details', public_id=row.public_id, instance_id=instance_id) }}">
@@ -89,9 +92,11 @@
                                 </td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="5" class="px-5 py-8 text-center text-content-muted">
-                                No admitted provider cases in this scope. This is not proof of source health.
-                            </td></tr>
+                            <tr>
+                                <td colspan="5" class="px-5 py-8 text-center text-content-muted">
+                                    No admitted provider cases in this scope. This is not proof of source health.
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>

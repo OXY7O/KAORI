@@ -27,9 +27,9 @@
         {% set detail_description = "Identity, runtime, network, capacity, and scheduling evidence from the committed Node snapshot." %}
         {% call detail.workspace_header(detail_description, 'server',
             context_items=[
-                {'label': node.cluster_name, 'icon': 'building-2'},
-                {'label': node.role_display, 'icon': 'server'},
-                {'label': environment_display, 'icon': 'layers-3'}
+            {'label': node.cluster_name, 'icon': 'building-2'},
+            {'label': node.role_display, 'icon': 'server'},
+            {'label': environment_display, 'icon': 'layers-3'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(node.node_name, compact=true) }}

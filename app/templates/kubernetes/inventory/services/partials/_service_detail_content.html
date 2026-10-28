@@ -13,9 +13,9 @@
         {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
         {% call detail.workspace_header(detail_description, 'network',
             context_items=[
-                {'label': service.cluster_name, 'icon': 'building-2'},
-                {'label': service.namespace, 'icon': 'folder-tree'},
-                {'label': service.type, 'icon': 'network'}
+            {'label': service.cluster_name, 'icon': 'building-2'},
+            {'label': service.namespace, 'icon': 'folder-tree'},
+            {'label': service.type, 'icon': 'network'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(service.name, compact=true) }}

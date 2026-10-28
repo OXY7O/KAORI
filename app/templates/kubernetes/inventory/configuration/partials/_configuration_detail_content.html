@@ -12,9 +12,9 @@
         {% set detail_description = "Protected key metadata, collection, mutation, and current Pod reference evidence." %}
         {% call detail.workspace_header(detail_description, 'key-round' if item.type == 'Secret' else 'file-json-2',
             context_items=[
-                {'label': item.type, 'icon': 'file-json-2'},
-                {'label': item.namespace, 'icon': 'folder-tree'},
-                {'label': item.collection_state, 'icon': 'database'}
+            {'label': item.type, 'icon': 'file-json-2'},
+            {'label': item.namespace, 'icon': 'folder-tree'},
+            {'label': item.collection_state, 'icon': 'database'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(item.name, compact=true) }}
