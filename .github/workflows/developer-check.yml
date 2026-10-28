@@ -222,7 +222,9 @@ jobs:
     needs: [route, toolchain, python-check]
     if: ${{ !cancelled() && needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 20
+    # Full affected-capability Draft selection may include thousands of browser cases.
+    # Allow a completed failure report; do not narrow tests or relax the aggregate.
+    timeout-minutes: 60
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
