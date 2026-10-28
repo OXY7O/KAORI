@@ -67,6 +67,8 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
         'Integration domain Observability',
         'Integration domain Storage',
         'Integration domain Registry',
+        'Integration domain Secrets Management',
+        'Integration domain Source Control',
     }
 
 
