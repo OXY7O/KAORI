@@ -14,6 +14,9 @@ A developer should be able to start from the product concept and predict the pac
 
 - `app/access/` — authentication, users, identity providers, RBAC, roles, permissions, Activity Audit.
 - `app/integrations/` — provider-neutral integration contracts, providers/adapters, registration and binding workspaces.
+- `app/source_control/` — provider-neutral committed repository, delivery, and governance evidence; GitHub connectivity remains under `app/integrations/source_control/`.
+- `app/secrets_pki/` — provider-neutral secrets, certificates, leases, consumers, and lifecycle evidence; Vault connectivity remains under `app/integrations/secrets_management/`.
+- `app/security_posture/` — cross-domain committed security findings, correlation, and assurance; not a duplicate scanner or shared authentication/security infrastructure under `app/security/`.
 - `app/kubernetes/` — Kubernetes managed-asset lifecycle, dashboard, inventory, analytics, governance, and live operations.
 - `app/storage/` — infrastructure storage managed assets; Object Storage inventory/analytics live here.
 - `app/artifact_registry/` — provider-neutral committed Registry inventory, security evidence, governance evidence, runtime correlation, analytics, and reporting context; provider connectivity remains under `app/integrations/registry/` as defined by `artifact-registry-domain.md`.
