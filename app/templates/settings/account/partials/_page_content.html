@@ -21,9 +21,7 @@
                 {% include "settings/account/partials/_recent_login_activity.html" %}
             </div>
         {% elif active_tab == 'mfa' %}
-            <div class="p-5 xl:p-6">
-                {% include "settings/account/partials/_mfa.html" %}
-            </div>
+            <div class="p-5 xl:p-6">{% include "settings/account/partials/_mfa.html" %}</div>
         {% else %}
             <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-start xl:p-6"
                  data-credential-workspace-layout="natural-columns">
@@ -56,7 +54,6 @@
         {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}
-
 {% if mfa_toast %}
     {% with
         status=mfa_toast.status,
