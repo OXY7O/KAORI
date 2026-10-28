@@ -588,7 +588,7 @@
         }
     }
 
-        const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {
+    const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {
         const valueFor = (source, key) => {
             if (!profile) return null
             const object = profile[source] || {}
@@ -599,7 +599,11 @@
             const source = cell.dataset.tenantCapsuleExternalSource
             const key = cell.dataset.tenantCapsuleExternalKey
             const value = valueFor(source, key)
-            cell.textContent = !profile ? '—' : value === null || value === '' ? 'Not configured' : `Not governed · ${value}`
+            cell.textContent = !profile
+                ? '—'
+                : value === null || value === ''
+                  ? 'Not configured'
+                  : `Not governed · ${value}`
         })
         const advanced = profile?.advanced_controls || {}
         const committedEvaluations = readJson('tenant-capsule-advanced-profile-preflight')
@@ -647,7 +651,8 @@
             if (!Object.hasOwn(apply.dataset, 'kaoriInitiallyDisabled')) {
                 apply.dataset.kaoriInitiallyDisabled = String(apply.disabled)
             }
-            const blocked = apply.dataset.kaoriInitiallyDisabled === 'true' || !profile || requestedUnsupported.length > 0
+            const blocked =
+                apply.dataset.kaoriInitiallyDisabled === 'true' || !profile || requestedUnsupported.length > 0
             apply.disabled = blocked
             apply.setAttribute('aria-disabled', String(blocked))
         }
