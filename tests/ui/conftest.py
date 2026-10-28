@@ -11,6 +11,7 @@ from werkzeug.serving import make_server
 
 from app import create_app
 from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult
 from app.common.pagination import build_pagination_window, pagination_payload
@@ -249,6 +250,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.access.authentication.routes.bot_policy_state',
             return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+        ),
+        patch(
+            'app.access.authentication.routes.mfa_decision',
+            return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False),
         ),
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
