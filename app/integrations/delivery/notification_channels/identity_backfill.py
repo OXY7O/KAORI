@@ -12,9 +12,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any, cast
 
 from sqlalchemy import func, tuple_
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import CursorResult
 
 from app.extensions.db import db
 from app.models.notification_channel import NotificationDelivery, NotificationDeliveryIdentity
@@ -139,9 +141,12 @@ def reconcile_delivery_identity_batch(
         ]
         try:
             statement = insert(NotificationDeliveryIdentity).values(values)
-            result = db.session.execute(
-                statement.on_conflict_do_nothing(
-                    index_elements=('channel_id', 'event_key'),
+            result = cast(
+                CursorResult[Any],
+                db.session.execute(
+                    statement.on_conflict_do_nothing(
+                        index_elements=('channel_id', 'event_key'),
+                    ),
                 ),
             )
             # Recheck every key after concurrent duplicate reservations.
