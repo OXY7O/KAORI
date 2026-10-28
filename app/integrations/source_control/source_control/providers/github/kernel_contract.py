@@ -99,16 +99,17 @@ provider_implementation = IntegrationImplementation(
 )
 
 
-def register_after_admission() -> bool:
-    """Explicit future opt-in: blocked by the canonical provider lifecycle.
+def register_after_admission(target_registry: IntegrationRegistry | None = None) -> bool:
+    """Register an admitted GitHub descriptor into its owning Integration Kernel.
 
-    The current Integration Kernel does NOT call this function. Only an
-    approved workstream may wire it to the builtin loader after provider
-    registration, security validation, webhook admission and UAT.
+    The canonical provider matrix is the availability gate. Existing explicit
+    callers use the global singleton; independent registries pass their own
+    instance without mutating the global registry.
     """
     definition = provider_kind('source_control', 'github')
     if not definition.available:
         return False
-    registry.register(integration_module)
-    registry.register_implementation(provider_implementation)
+    owner = registry if target_registry is None else target_registry
+    owner.register(integration_module)
+    owner.register_implementation(provider_implementation)
     return True
