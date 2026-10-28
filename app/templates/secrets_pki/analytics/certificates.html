@@ -21,7 +21,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="PKI analytics evidence context">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="PKI analytics evidence context">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Evidence Readiness', pki_validity.label, 'shield-check') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
@@ -33,25 +34,23 @@
                 </aside>
             </div>
         </section>
-        {{ section_intro.render(
-            'Certificate Expiration Horizon',
-            'Exclusive expiry intervals use current UTC time and the same complete, fresh, approved stored public-certificate observations as Inventory.',
-            supporting='This is a snapshot-derived operational view, not retained historical time series.'
-        ) }}
+        {{ section_intro.render('Certificate Expiration Horizon',
+                'Exclusive expiry intervals use current UTC time and the same complete, fresh, approved stored public-certificate observations as Inventory.',
+                supporting='This is a snapshot-derived operational view, not retained historical time series.') }}
         {% if pki_validity.status == 'ready' %}
             <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {{ metric_card.render('Expires Within 7 Days', pki_validity.expires_within_7d,
-                    'Currently valid certificates expiring within seven days.', 'calendar-clock', source_label='Committed PKI') }}
+                                'Currently valid certificates expiring within seven days.', 'calendar-clock', source_label='Committed PKI') }}
                 {{ metric_card.render('Expires in 8–30 Days', pki_validity.expires_8_to_30d,
-                    'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
+                                'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
                 {{ metric_card.render('Expires After 30 Days', pki_validity.expires_after_30d,
-                    'Currently valid certificates outside the thirty-day horizon.', 'shield-check', source_label='Committed PKI') }}
+                                'Currently valid certificates outside the thirty-day horizon.', 'shield-check', source_label='Committed PKI') }}
                 {{ metric_card.render('Already Expired', pki_validity.expired,
-                    'Public X.509 notAfter has passed; revocation is not assessed.', 'triangle-alert', source_label='Committed PKI') }}
+                                'Public X.509 notAfter has passed; revocation is not assessed.', 'triangle-alert', source_label='Committed PKI') }}
                 {{ metric_card.render('Not Yet Valid', pki_validity.not_yet_valid,
-                    'Public X.509 notBefore is in the future.', 'clock-3', source_label='Committed PKI') }}
+                                'Public X.509 notBefore is in the future.', 'clock-3', source_label='Committed PKI') }}
                 {{ metric_card.render('Unknown Chronology', pki_validity.unknown,
-                    'Missing or invalid validity times remain unclassified.', 'circle-help', source_label='Committed PKI') }}
+                                'Missing or invalid validity times remain unclassified.', 'circle-help', source_label='Committed PKI') }}
             </div>
         {% else %}
             {% call section_card.render('Expiration Evidence Not Qualified',

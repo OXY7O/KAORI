@@ -7,7 +7,7 @@
          x-data="{ tabs: ['overview', 'secret-reveal'], activeTab: '{{ active_tab }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); if (tab === 'secret-reveal') window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')); }, moveTab(currentTab, direction, prefix = 'kubernetes-administration') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
          x-init="if (activeTab === 'secret-reveal') $nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')))">
         <div class="mb-4 min-w-0">
-            {{ workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
+            {{ workspace_tabs.render([('overview', 'Overview', 'layout-dashboard') , ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
         </div>
         <div class="space-y-6">
             <section class="{{ page_hero.shell_classes() }}">
@@ -17,9 +17,9 @@
                             <h1 class="{{ page_hero.title_classes() }}">Kubernetes Administration</h1>
                             <p class="mt-2 {{ page_hero.description_classes() }}">Govern Kubernetes access with policy and audit evidence.</p>
                             <div class="{{ page_hero.metadata_row_classes() }}">
-                                <span id="kubernetes-admin-hero-registered">{{ page_hero.meta_label('server', cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters')) }}</span>
-                                <span id="kubernetes-admin-hero-configured">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters')) }}</span>
-                                <span id="kubernetes-admin-hero-protected">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces')) }}</span>
+                                <span id="kubernetes-admin-hero-registered">{{ page_hero.meta_label('server', cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters') ) }}</span>
+                                <span id="kubernetes-admin-hero-configured">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters') ) }}</span>
+                                <span id="kubernetes-admin-hero-protected">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces') ) }}</span>
                             </div>
                         {% endcall %}
                     </div>
@@ -27,8 +27,8 @@
                            aria-label="Kubernetes administration posture">
                         <div class="{{ page_hero.context_panel_classes() }}">
                             {{ page_hero.context_header('Protected Access',
-                                                    'Kubernetes Administration',
-                                                    'server-cog') }}
+                                                        'Kubernetes Administration',
+                                                        'server-cog') }}
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
                                 {{ page_hero.context_metric('shield-check', 'Managed Control', 'Protected Reveal', 'Policy-governed configuration') }}
                                 <div id="kubernetes-admin-context-ready">{{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}</div>
