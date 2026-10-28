@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from app.integrations.delivery.notification_channels import lifecycle, service
+from app.definitions.loader import load_definition_document
+from app.integrations.delivery.notification_channels import catalog, lifecycle, service
 from app.integrations.delivery.notification_channels.contracts import (
     DeliveryResult,
     NotificationChannelFormInput,
@@ -15,22 +17,26 @@ from app.models.notification_channel import NotificationChannel
 from app.security.credentials import EncryptedText
 
 
-def test_channel_policy_event_type_grouping_preserves_order_and_all_items() -> None:
-    labels = [
-        'Alert Intelligence · Active Alert',
-        'Alert Operations · Firing',
-        'Alert Operations · Resolved',
-        'Scheduled Reports · Report Ready',
-        'Alert Intelligence · Suppressed',
-        'Other Event',
-    ]
-    assert service._channel_event_type_groups(labels) == [
-        {'label': 'Alert Intelligence', 'events': ['Active Alert', 'Suppressed']},
-        {'label': 'Alert Operations', 'events': ['Firing', 'Resolved']},
-        {'label': 'Scheduled Reports', 'events': ['Report Ready']},
-        {'label': 'Other', 'events': ['Other Event']},
-    ]
-    assert service._channel_event_type_groups([]) == []
+def test_channel_policy_event_catalog_preserves_order_and_all_items() -> None:
+    definition = load_definition_document(
+        'platform_operations/notifications/outbound_delivery.yaml',
+        expected_kind='notification_delivery_contract',
+    )
+    events = definition['events']
+    assert isinstance(events, dict)
+    expected = [{'value': key, 'label': record['label']} for key, record in events.items()]
+
+    assert catalog.event_type_options() == expected
+    assert len(expected) == len({item['value'] for item in expected})
+    assert service.event_type_options is catalog.event_type_options
+
+    modal = (
+        Path(__file__).resolve().parents[3]
+        / 'app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html'
+    ).read_text(encoding='utf-8')
+    assert '{% for option in payload.event_type_options %}' in modal
+    assert 'name="event_types"' in modal
+    assert 'value="{{ option.value }}"' in modal
 
 
 class SessionStub:
