@@ -50,6 +50,7 @@ def test_application_root_is_bounded_and_legacy_capability_roots_are_removed() -
         'security',
         'security_posture',
         'settings',
+        'source_control',
         'static',
         'storage',
         'templates',
