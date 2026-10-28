@@ -737,15 +737,15 @@
                                             <div class="flex min-w-0 flex-wrap items-center gap-1.5">
                                                 <h4 class="text-base font-semibold text-content-primary">Independent Approval and Handoff</h4>
                                                 {{ info_tip.render('tenant-release-approval-handoff-help',
-                                                                   'Independent Approval and Handoff',
-                                                                   'Independent review, Platform Admin consent and provider transfer are separate governance decisions.',
-                                                                   [
-                                                                   'The requester and reviewer must be different authorized operators.',
-                                                                   'The plan SHA, resource scope and provider identity must be verified before consent.',
-                                                                   'External acceptance, provider read-back and Release require separate evidence.'
-                                                                   ],
-                                                                   placement='left',
-                                                                   variant='guide') }}
+                                                                                                'Independent Approval and Handoff',
+                                                                                                'Independent review, Platform Admin consent and provider transfer are separate governance decisions.',
+                                                                                                [
+                                                                                                'The requester and reviewer must be different authorized operators.',
+                                                                                                'The plan SHA, resource scope and provider identity must be verified before consent.',
+                                                                                                'External acceptance, provider read-back and Release require separate evidence.'
+                                                                                                ],
+                                                                                                placement='left',
+                                                                                                variant='guide') }}
                                             </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-secondary">Review the active plan, independent decision and outstanding provider acceptance.</p>
                                         </div>
@@ -1034,8 +1034,7 @@
                                                     </div>
                                                 </section>
                                                 {% if handoff_plan %}
-                                                    <section class="min-w-0"
-                                                             aria-label="Planned Handoff Record">
+                                                    <section class="min-w-0" aria-label="Planned Handoff Record">
                                                         <div class="flex min-w-0 items-center gap-2">
                                                             <i data-lucide="clipboard-list"
                                                                class="h-4 w-4 shrink-0 text-kaori-primary"
@@ -1341,7 +1340,8 @@
                                                                     </div>
                                                                 </div>
                                                             {% endif %}
-                                                            <details class="mt-4 border-t border-outline-subtle py-3" data-release-evidence-boundaries>
+                                                            <details class="mt-4 border-t border-outline-subtle py-3"
+                                                                     data-release-evidence-boundaries>
                                                                 <summary class="cursor-pointer text-xs font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Evidence Boundaries</summary>
                                                                 <ol class="mt-2 space-y-2 text-xs leading-5 text-content-secondary">
                                                                     <li class="flex min-w-0 items-start gap-2"><i data-lucide="circle-dot"
@@ -1664,7 +1664,8 @@
                                                               hx-swap="outerHTML show:none focus-scroll:false"
                                                               hx-indicator="#tenant-management-loading"
                                                               hx-disabled-elt="find button[type='submit']"
-                                                              class="mt-4 grid min-w-0 gap-3 border-y border-outline-subtle bg-kaori-soft/20 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" data-release-native-execution-panel>
+                                                              class="mt-4 grid min-w-0 gap-3 border-y border-outline-subtle bg-kaori-soft/20 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+                                                              data-release-native-execution-panel>
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                                             <input type="hidden" name="tenant_detail_section" value="release">
@@ -1681,11 +1682,11 @@
                                                                 <p class="text-xs font-semibold text-content-primary">Native Provider Handoff</p>
                                                                 <p class="text-xs leading-5 text-content-secondary">KAORI rechecks kubeconfig access; no successor credentials are needed.</p>
                                                                 <label class="flex min-w-0 items-start gap-2.5 text-xs leading-5 text-content-secondary">
-                                                                <input name="confirm_native_handoff_execution"
-                                                                       type="checkbox"
-                                                                       value="transfer"
-                                                                       required
-                                                                       class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                    <input name="confirm_native_handoff_execution"
+                                                                           type="checkbox"
+                                                                           value="transfer"
+                                                                           required
+                                                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
                                                                     <span>I authorize this exact handoff. CPU, memory, quotas and workloads stay unchanged; failures require recovery.</span>
                                                                 </label>
                                                             </div>
@@ -1742,8 +1743,10 @@
                                                                                     data-copied-label="UID copied"
                                                                                     class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                                                                                     title="Copy resource UID">
-                                                                                <i data-kaori-copy-icon data-lucide="copy"
-                                                                                   class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                                <i data-kaori-copy-icon
+                                                                                   data-lucide="copy"
+                                                                                   class="h-3.5 w-3.5"
+                                                                                   aria-hidden="true"></i>
                                                                                 <span data-kaori-copy-label aria-live="polite" class="sr-only">Copy UID for {{ component.kind }}/{{ component.name }}</span>
                                                                             </button>
                                                                         </div>
@@ -2209,7 +2212,9 @@
                                                                 <p class="flex min-w-0 items-start gap-2.5 rounded-lg border {{ operational_callout.semantic_surface_classes('info') }} p-3 text-xs leading-5 text-content-secondary"
                                                                    role="note"
                                                                    data-release-restart-recheck-note>
-                                                                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-info-text" aria-hidden="true"></i>
+                                                                    <i data-lucide="info"
+                                                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-info-text"
+                                                                       aria-hidden="true"></i>
                                                                     <span>0 transfers reported. Restart rechecks UID/version, ownership and dependencies; not cleared.</span>
                                                                 </p>
                                                             {% endif %}
@@ -2500,7 +2505,8 @@
                                           hx-swap="outerHTML show:none focus-scroll:false"
                                           hx-indicator="#tenant-management-loading"
                                           hx-disabled-elt="find button[type='submit']"
-                                          class="mt-4 grid min-w-0 gap-4 border-y border-outline-subtle bg-surface-elevated/35 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" data-release-native-finalize-workspace>
+                                          class="mt-4 grid min-w-0 gap-4 border-y border-outline-subtle bg-surface-elevated/35 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+                                          data-release-native-finalize-workspace>
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                         <input type="hidden" name="tenant_detail_section" value="release">
@@ -2701,15 +2707,15 @@
                                aria-hidden="true"></i>
                             Platform Admin Handback &amp; Re-adopt
                             {{ info_tip.render('tenant-native-platform-handback-guide',
-                                               'Platform Admin Handback & Re-adopt',
-                                               'Authorized Platform Admin handback verifies provider ownership and relinquishes KAORI governance metadata on exact Released resources.',
-                                               [
-                                               'Registered Kubernetes X.509 verifies identity and scoped get/patch access.',
-                                               'Names, specs, CPU, memory and quotas remain unchanged; partial results require recovery.',
-                                               'Fresh Discovery and explicit Review Adoption are separate from handback.'
-                                               ],
-                                               placement='left',
-                                               variant='guide') }}
+                                                        'Platform Admin Handback & Re-adopt',
+                                                        'Authorized Platform Admin handback verifies provider ownership and relinquishes KAORI governance metadata on exact Released resources.',
+                                                        [
+                                                        'Registered Kubernetes X.509 verifies identity and scoped get/patch access.',
+                                                        'Names, specs, CPU, memory and quotas remain unchanged; partial results require recovery.',
+                                                        'Fresh Discovery and explicit Review Adoption are separate from handback.'
+                                                        ],
+                                                        placement='left',
+                                                        variant='guide') }}
                         </span>
                         <span class="mt-1 block break-words text-sm leading-6 text-content-secondary">Authorized Platform Admin handback is required before re-adoption.</span>
                     </span>
@@ -2746,7 +2752,8 @@
                               hx-swap="outerHTML show:none focus-scroll:false"
                               hx-indicator="#tenant-management-loading"
                               hx-disabled-elt="find button[type='submit']"
-                              class="mt-3 min-w-0 space-y-3" data-native-platform-handback-form>
+                              class="mt-3 min-w-0 space-y-3"
+                              data-native-platform-handback-form>
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                             <input type="hidden" name="tenant_detail_section" value="handback">
@@ -2760,7 +2767,9 @@
                                    value="{{ released_native.plan_sha256 }}">
                             <div class="min-w-0 space-y-3 px-1 py-1">
                                 <p class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
-                                    <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="shield-check"
+                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     <span>Registered Kubernetes X.509 verifies Platform Admin identity and scoped get/patch access; no successor credentials.</span>
                                 </p>
                                 <label class="flex min-w-0 items-start gap-2.5 text-xs leading-5 text-content-secondary"
@@ -2774,9 +2783,9 @@
                                 </label>
                             </div>
                             {% call form_action_bar.render('Verify provider scope before metadata handback.',
-                                                           aria_label='Native Platform Admin Handback Actions',
-                                                           title='Platform Admin Handback',
-                                                           embedded=true) %}
+                                aria_label='Native Platform Admin Handback Actions',
+                                title='Platform Admin Handback',
+                                embedded=true) %}
                                 <button type="submit"
                                         aria-label="Verify Provider and Hand Back as Platform Admin"
                                         class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">

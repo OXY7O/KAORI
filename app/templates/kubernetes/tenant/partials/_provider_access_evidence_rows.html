@@ -12,7 +12,7 @@
     <tr class="{{ table_ui.row_classes() }} bg-surface-card">
         <td class="{{ table_ui.cell_classes() }} w-[29%]">
             {{ table_ui.title_cell('Capsule Tenant' if access_provider == 'capsule' else 'Native Tenant',
-                evidence.tenant_id, 'shield-question' if access_provider == 'capsule' else 'shield-check') }}
+                        evidence.tenant_id, 'shield-question' if access_provider == 'capsule' else 'shield-check') }}
         </td>
         <td class="{{ table_ui.cell_classes() }} w-[17%]">
             <p class="text-sm text-content-primary">{{ event.created_at|user_datetime }}</p>
@@ -41,17 +41,17 @@
         </td>
         <td class="{{ table_ui.cell_classes() }} w-[14%]">
             {{ table_label.status_label('Review Required' if evidence.status == 'review_required' else 'Observed',
-                'warning' if evidence.status == 'review_required' else 'info', size='compact') }}
+                        'warning' if evidence.status == 'review_required' else 'info', size='compact') }}
         </td>
         <td class="{{ table_ui.cell_classes(action=true) }} w-[13%]">
             {{ detail_row.toggle_button('tenant-' ~ access_provider ~ '-evidence',
-                event.id,
-                '',
-                detail_target_id,
-                detail_row_id,
-                open_label='View Details',
-                close_label='Hide Details',
-                table_action=true) }}
+                        event.id,
+                        '',
+                        detail_target_id,
+                        detail_row_id,
+                        open_label='View Details',
+                        close_label='Hide Details',
+                        table_action=true) }}
         </td>
     </tr>
     {% call detail_row.static_detail_row(detail_row_id, detail_target_id, 5) %}
