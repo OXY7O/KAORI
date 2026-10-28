@@ -12,6 +12,7 @@ from app.extensions.db import db
 from app.intelligence.alert_intelligence import vault_case_workspace as workspace
 from app.intelligence.alert_intelligence.application import apply_case_mutation
 from app.models.alert_ops import AlertCase
+from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
@@ -34,6 +35,8 @@ def store():
         Permission.__table__,
         RolePermission.__table__,
         User.__table__,
+        IdentityProvider.__table__,
+        ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
         IntegrationBinding.__table__,
         ScopeAccessPolicy.__table__,
