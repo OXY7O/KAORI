@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from flask import (
     current_app,
@@ -395,7 +395,7 @@ def reauthenticate_secret_reveal():
     return_url = url_for(
         'kubernetes_operations.reveal_secret',
         reveal_view='mine',
-        **({'my_request_id': linked_request_id} if linked_request_id else {}),
+        my_request_id=linked_request_id or None,
     )
     try:
         _validate_secret_operation_csrf()
@@ -588,7 +588,7 @@ def reveal_secret_value(request_id: str):
         revealed_value = result
         # The one-time transition and Activity Audit were committed together.
         # Never write the same success event again through best-effort feedback.
-        feedback = result.audit_feedback
+        feedback = cast(dict[str, Any], result.audit_feedback)
     except ValueError as exc:
         # A failed locking/API query can leave PostgreSQL in an aborted transaction.
         # Reset the session before reading request metadata or writing activity data.
