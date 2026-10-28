@@ -417,7 +417,7 @@ def sso_callback(provider_key: str):
         return 'Authentication protection is temporarily unavailable.', 503
     if callback_bot_state.enabled:
         checked_at = flow.get('bot_verified_at')
-        age = datetime.now(UTC).timestamp() - checked_at if type(checked_at) in (int, float) else -1
+        age = datetime.now(UTC).timestamp() - cast(float, checked_at) if type(checked_at) in (int, float) else -1
         if age < 0 or age > flow_ttl_seconds:
             return redirect(url_for('auth.login'))
 
@@ -512,7 +512,7 @@ def _pending_mfa_session_valid(pending: dict) -> bool:
     return not (
         type(pending.get('user_id')) is not int
         or type(expires_at) not in (int, float)
-        or expires_at <= datetime.now(UTC).timestamp()
+        or cast(float, expires_at) <= datetime.now(UTC).timestamp()
         or type(pending.get('attempts')) is not int
         or pending.get('attempts', 0) >= 5
     )
