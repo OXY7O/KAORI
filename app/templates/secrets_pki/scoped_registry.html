@@ -11,8 +11,7 @@
                     {% call page_hero.intro('lock-keyhole', 'Secrets & PKI', 'key-round') %}
                         <h1 class="{{ page_hero.title_classes() }}">Scoped Secret Registry</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Audited, read-only committed KV v2 metadata for one approved Vault mount.
-                            No Secret name, provider path, value or credential material is displayed.
+                            Inspect scoped Vault metadata without exposing Secret material.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', 'Exact Approved Scope') }}
