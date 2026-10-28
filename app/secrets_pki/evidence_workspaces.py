@@ -13,22 +13,21 @@ _WORKSPACES = {
     'certificates': {
         'title': 'Certificates',
         'description': (
-            'Source-qualified stored public certificate validity and independent'
-            ' consumer evidence; not CA trust or endpoint serving.'
+            'Review public certificates and independent consumer evidence.'
         ),
         'icon': 'certificate',
     },
     'pki': {
         'title': 'PKI',
         'description': (
-            'Approved public Vault PKI issuer and stored-certificate collection posture from committed evidence only.'
+            'Inspect Vault PKI issuers and committed certificate evidence.'
         ),
         'icon': 'shield-check',
     },
     'expiration': {
         'title': 'Expiration',
         'description': (
-            'Current-generation X.509 expiry windows. No inferred credential rotation, revocation or Lease lifecycle.'
+            'Check X.509 expiry windows using committed certificate evidence.'
         ),
         'icon': 'calendar-clock',
     },
