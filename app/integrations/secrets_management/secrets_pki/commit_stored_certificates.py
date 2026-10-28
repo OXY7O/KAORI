@@ -36,6 +36,11 @@ def _aware(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+def _persisted_utc(value: datetime) -> datetime:
+    """Normalize UTC values read back from SQLite, which drops timezone metadata."""
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def _hex(value: str, *, maximum: int) -> str:
     if (
         not isinstance(value, str)
@@ -116,7 +121,7 @@ def commit_stored_pki_certificates(
             db.session.add(state)
             db.session.flush()
         timestamp = _aware(evidence.observed_at)
-        if state.last_observed_at is not None and timestamp < _aware(state.last_observed_at):
+        if state.last_observed_at is not None and timestamp < _persisted_utc(state.last_observed_at):
             raise ValueError('Out-of-order stored PKI observation cannot replace newer evidence.')
         if not evidence.certificates and (state.observed_stored_certificate_count or 0) > 0:
             raise ValueError('Unexpected empty stored certificate list cannot erase committed history.')
@@ -152,8 +157,8 @@ def commit_stored_pki_certificates(
                 db.session.add(entry)
             elif (
                 entry.fingerprint_sha256 != certificate.fingerprint_sha256
-                or _aware(entry.valid_from) != _aware(certificate.valid_from)
-                or _aware(entry.valid_until) != _aware(certificate.valid_until)
+                or _persisted_utc(entry.valid_from) != _aware(certificate.valid_from)
+                or _persisted_utc(entry.valid_until) != _aware(certificate.valid_until)
             ):
                 raise ValueError('Stored certificate immutable serial/fingerprint conflict.')
             entry.observation_status = 'observed'
