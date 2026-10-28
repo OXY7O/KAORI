@@ -209,7 +209,7 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
             counts=result,
             expiry_counts=expiry,
             count=len(rows),
-            last_observed_at=cast(datetime, max(_utc(row[5]) for row in state_by_scope.values())),
+            last_observed_at=max(cast(datetime, _utc(row[5])) for row in state_by_scope.values()),
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return _result('unavailable', 'PKI Validity Evidence Unavailable')
