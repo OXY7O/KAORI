@@ -78,6 +78,14 @@ RUNTIME_ENV_ENTRYPOINTS = (
     'scripts/wait_for_db.py',
 )
 TEST_ONLY_ENV_SOURCE = 'app/config/testing.py'
+# This source-qualified secret must never enter general app/web/Beat env files.
+# The approved worker config is delivered only to its trusted worker runtime.
+WORKER_ONLY_SECRET_AUTHORITIES = {
+    'KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX': (
+        'app/intelligence/alert_signals/vault_jobs.py',
+        'app/secrets_pki/TELEMETRY_BINDING.md',
+    ),
+}
 
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
@@ -189,6 +197,26 @@ def runtime_python_sources() -> tuple[str, ...]:
     return app_sources + entrypoints
 
 
+def verify_worker_only_secrets(
+    *,
+    runtime_sources: tuple[str, ...],
+    shared_documented_keys: set[str],
+) -> set[str]:
+    """Admit only a documented worker-only env reader, never shared runtime secrets."""
+    for key, (owner, documentation) in WORKER_ONLY_SECRET_AUTHORITIES.items():
+        if key in shared_documented_keys:
+            raise AssertionError(f'Worker-only secret must not be listed in shared environment templates: {key}')
+        authority = read(documentation)
+        if key not in authority or 'Worker-only secret:' not in authority or 'trusted worker runtime' not in authority:
+            raise AssertionError(f'{key}: worker-only secret authority is missing or unqualified')
+        readers = sorted(
+            path for path in runtime_sources if key in accessed_env_keys(path)
+        )
+        if readers != [owner]:
+            raise AssertionError(f'{key}: only {owner} may read this worker-only secret; found {readers}')
+    return set(WORKER_ONLY_SECRET_AUTHORITIES)
+
+
 def compose_env_keys(*relatives: str) -> set[str]:
     keys: set[str] = set()
     for relative in relatives:
@@ -253,8 +281,15 @@ def verify() -> None:
     if non_test_overrides:
         raise AssertionError('Testing config must use TEST_* overrides only: ' + ', '.join(non_test_overrides))
 
-    runtime_keys = accessed_env_keys(*runtime_python_sources())
-    documented_runtime_inventory = development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS
+    runtime_sources = runtime_python_sources()
+    runtime_keys = accessed_env_keys(*runtime_sources)
+    worker_only_secrets = verify_worker_only_secrets(
+        runtime_sources=runtime_sources,
+        shared_documented_keys=development_keys | persistent_union | rc_keys,
+    )
+    documented_runtime_inventory = (
+        development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS | worker_only_secrets
+    )
     undocumented_runtime = sorted(runtime_keys - documented_runtime_inventory)
     if undocumented_runtime:
         raise AssertionError('Runtime reads undocumented environment keys: ' + ', '.join(undocumented_runtime))
