@@ -81,8 +81,7 @@ def test_secrets_pki_workspace_follows_canonical_sidebar_navigation():
     assert _workspace_key('secrets_pki.overview') == 'secrets_pki'
     assert _workspace_key('secrets_pki.inventory') == 'secrets_pki'
     assert _workspace_key('secrets_pki.lifecycle') == 'secrets_pki'
-    for endpoint in ('overview',):
-        assert _active_capability_key('secrets_pki', f'secrets_pki.{endpoint}') == 'overview'
+    assert _active_capability_key('secrets_pki', 'secrets_pki.overview') == 'overview'
     for endpoint in ('inventory', 'scoped_registry', 'certificates', 'pki', 'expiration'):
         assert _active_capability_key('secrets_pki', f'secrets_pki.{endpoint}') == 'inventory'
     for endpoint in ('lifecycle', 'leases', 'consumers', 'governance'):
