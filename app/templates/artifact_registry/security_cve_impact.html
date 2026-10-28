@@ -14,8 +14,7 @@
                     {% call page_hero.intro('shield-alert', 'Artifact Registry Security', 'waypoints') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ impact.cve_id }} · Runtime Impact</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Exact CVE matches in the latest usable committed Registry scans, correlated with Kubernetes runtime evidence.
-                            This is artifact and workload exposure, not a confirmed application or Team ownership assessment.
+                            Inspect committed CVEs and qualified Kubernetes runtime evidence.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-alert', impact.finding_count ~ ' Findings') }}
