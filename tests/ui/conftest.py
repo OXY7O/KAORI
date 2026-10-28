@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from threading import Thread
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from playwright.sync_api import Page
@@ -247,13 +247,12 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             return_value=readiness,
         ),
         patch('app.access.authentication.routes.enabled_sso_providers', return_value=[]),
-        patch(
-            'app.access.authentication.routes.bot_policy_state',
-            return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
-        ),
-        patch(
-            'app.access.authentication.routes.mfa_decision',
-            return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False),
+        patch.multiple(
+            'app.access.authentication.routes',
+            bot_policy_state=Mock(
+                return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+            ),
+            mfa_decision=Mock(return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False)),
         ),
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
