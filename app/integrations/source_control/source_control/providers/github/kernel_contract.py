@@ -14,6 +14,7 @@ from flask_login import current_user
 from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
+    IntegrationRegistry,
     canonical_model_loader,
     model_loader,
     registry,
