@@ -89,6 +89,13 @@ def _window(value: datetime, label: str) -> datetime:
     return value.astimezone(UTC)
 
 
+def _persisted_window(value: datetime) -> datetime:
+    """Read existing UTC validity after database timezone metadata round-trips."""
+    if not isinstance(value, datetime):
+        raise ScopedGrantRejected('Persisted grant validity is unavailable.')
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def _commit_transition(
     *,
     actor_user_id: int,
@@ -224,7 +231,7 @@ def approve_scope_grant(
             provider_namespace=policy.provider_namespace,
             mount=policy.mount,
         )
-        if _window(current.effective_until, 'End') <= datetime.now(UTC):
+        if _persisted_window(current.effective_until) <= datetime.now(UTC):
             raise ScopedGrantRejected('Grant validity has expired.')
         revision = ScopeAccessPolicyRevision()
         revision.policy_id = policy.id
