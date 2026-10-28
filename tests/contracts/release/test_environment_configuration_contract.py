@@ -33,6 +33,8 @@ def test_environment_templates_cover_current_operational_contract() -> None:
             'ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES=1',
             'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS=10',
             'NOTIFICATION_DELIVERY_MAX_ATTEMPTS=3',
+            'SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false',
+            'SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false',
         ):
             assert token in source
 
