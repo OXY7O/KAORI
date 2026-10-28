@@ -18,6 +18,9 @@ INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 NOTIFICATION_CHANNELS_HERO = TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'index.html'
+NOTIFICATION_CHANNELS_CATALOG = (
+    TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'partials' / '_channels_workspace.html'
+)
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
 REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
 REPORTS_PAGE_SUBTITLE_HEROES = {
@@ -984,11 +987,15 @@ def _verify_notification_channels_hero_metadata() -> None:
     source = _read(NOTIFICATION_CHANNELS_HERO)
     owner = str(NOTIFICATION_CHANNELS_HERO.relative_to(ROOT))
     _verify_bounded_hero_metadata(source, owner=owner)
+    catalog = _read(NOTIFICATION_CHANNELS_CATALOG)
     if (
-        '{% for provider in payload.providers %}' not in source
-        or 'notification_subsection(provider.label' not in source
+        '{% for provider in payload.providers %}' not in catalog
+        or '{{ provider.label }}' not in catalog
+        or '{{ provider.description }}' not in catalog
+        or '{{ provider.status }}' not in catalog
+        or 'Open {{ provider.label }} setup guide' not in catalog
     ):
-        raise AssertionError(f'{owner}: complete provider catalog must remain in the Delivery Providers workspace')
+        raise AssertionError(f'{owner}: complete provider catalog must remain in the Channels workspace')
 
 
 def _verify_operational_metadata_state_contract() -> None:
