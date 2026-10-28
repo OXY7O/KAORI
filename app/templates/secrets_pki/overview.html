@@ -10,7 +10,7 @@
         {% set active_scope = 'All Registered Vault Sources' if summary.provider_count else 'No Eligible Vault Source' %}
         {% set action_href = url_for('vault.index') if can_manage_integrations else url_for('secrets_pki.inventory') %}
         {% set action_label = 'Open Vault Integrations' if can_manage_integrations else 'Review Inventory Readiness' %}
-        {{ page_hero.operational_dashboard('Secrets & PKI', 'key-round', 'Secrets & PKI Overview',
+        {{ page_hero.operational_dashboard('Secrets & PKI', 'key-round', 'Overview',
                 'Review source readiness and safe committed Secret lifecycle evidence without reading credential material.',
                 [
                 ('key-round', 'KV v2 Inventory Evidence') ,
