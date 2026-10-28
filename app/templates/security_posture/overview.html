@@ -19,7 +19,7 @@
             {% set setup_action_label = "Review Security Findings" %}
             {% set setup_action_href = url_for('security_posture.findings') %}
         {% endif %}
-        {{ page_hero.operational_dashboard('Security Posture', 'shield-alert', 'Security Overview',
+        {{ page_hero.operational_dashboard('Security Posture', 'shield-alert', 'Overview',
                 'Review committed vulnerability findings and Kubernetes runtime correlation.',
                 [
                 ('database-zap', 'Registry Scan Evidence') ,
