@@ -128,19 +128,16 @@
                            aria-hidden="true"></i>
                     </summary>
                     <div class="border-t border-outline-subtle bg-surface-page p-3 sm:p-4">
-                        {% set allocation_detail_groups = [
-                            ('Compute Limits', 'cpu', 'Container resource ceilings', [('limits_cpu', 'CPU Limit'), ('limits_memory', 'Memory Limit')]),
-                            ('Storage Policy', 'hard-drive', 'Namespace quota and per-PVC limits', [('persistentvolumeclaims', 'PVCs'), ('pvc_min_storage', 'Min PVC'), ('pvc_max_storage', 'Max PVC')]),
-                            ('Object Limits', 'boxes', 'Namespace object ceilings', [('services', 'Services'), ('configmaps', 'ConfigMaps'), ('secrets', 'Secrets')]),
-                            ('Container Defaults', 'container', 'Default requests and limits', [('default_request_cpu', 'CPU Request'), ('default_cpu', 'CPU Limit'), ('default_request_memory', 'Memory Request'), ('default_memory', 'Memory Limit')])
-                        ] %}
-                        <div class="grid items-stretch gap-3 lg:grid-cols-2" data-tenant-quota-default-card-grid>
+                        {% set allocation_detail_groups = [('Compute Limits', 'cpu', 'Container resource ceilings', [('limits_cpu', 'CPU Limit'), ('limits_memory', 'Memory Limit')]), ('Storage Policy', 'hard-drive', 'Namespace quota and per-PVC limits', [('persistentvolumeclaims', 'PVCs'), ('pvc_min_storage', 'Min PVC'), ('pvc_max_storage', 'Max PVC')]), ('Object Limits', 'boxes', 'Namespace object ceilings', [('services', 'Services'), ('configmaps', 'ConfigMaps'), ('secrets', 'Secrets')]), ('Container Defaults', 'container', 'Default requests and limits', [('default_request_cpu', 'CPU Request'), ('default_cpu', 'CPU Limit'), ('default_request_memory', 'Memory Request'), ('default_memory', 'Memory Limit')])] %}
+                        <div class="grid items-stretch gap-3 lg:grid-cols-2"
+                             data-tenant-quota-default-card-grid>
                             {% for group_title, icon, description, fields in allocation_detail_groups %}
                                 <section class="flex min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-card p-3.5 sm:p-4"
                                          aria-label="{{ group_title }} quota details"
                                          data-tenant-quota-default-card>
                                     <div class="flex items-start gap-2.5">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                              aria-hidden="true">
                                             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
                                         </span>
                                         <div class="min-w-0">
@@ -154,7 +151,9 @@
                                                 <dt class="text-xs text-content-muted">{{ label }}</dt>
                                                 <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary"
                                                     data-tenant-namespace-resource-field="{{ field }}"
-                                                    data-tenant-value-display>—</dd>
+                                                    data-tenant-value-display>
+                                                    —
+                                                </dd>
                                             </div>
                                         {% endfor %}
                                     </dl>

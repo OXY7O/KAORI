@@ -101,7 +101,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant / Scope</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Identity</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Access</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Details</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -117,42 +118,42 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
-                               title="{{ access.get('tenant_name') }}">{{ access.get('tenant_name') }}</p>
+                               title="{{ access.get('tenant_name') }}">{{ access.get("tenant_name") }}</p>
                             <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
-                               title="{{ access.get('environment')|default('Not assigned', true)|title }} · {{ access.get('cluster_name') or 'Cluster unavailable' }}">
-                                {{ access.get('environment')|default('Not assigned', true)|title }} · {{ access.get('cluster_name') or 'Cluster unavailable' }}
+                               title="{{ access.get('environment') |default('Not assigned', true)|title }} · {{ access.get('cluster_name') or 'Cluster unavailable' }}">
+                                {{ access.get("environment") |default('Not assigned', true)|title }} · {{ access.get("cluster_name") or 'Cluster unavailable' }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
                                title="{{ access.get('service_account_name') }}">
-                                {{ access.get('service_account_name') or 'Unknown Identity' }}
+                                {{ access.get("service_account_name") or 'Unknown Identity' }}
                             </p>
                             <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
-                               title="{{ access.get('credential_type')|replace('_', ' ')|title }}">
-                                {{ access.get('credential_type')|replace('_', ' ')|title }}
+                               title="{{ access.get('credential_type') |replace('_', ' ')|title }}">
+                                {{ access.get("credential_type") |replace('_', ' ')|title }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {% if access.get('error') %}
                                 {{ table_label.status_label('Unavailable', 'warning') }}
                             {% else %}
-                                {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
+                                {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
                                 <p class="mt-1 min-w-0 max-w-full truncate text-xs text-content-muted"
-                                   title="{{ access.get('access_profile')|replace('_', ' ')|title }}">
-                                    {{ access.get('access_profile')|replace('_', ' ')|title }}
+                                   title="{{ access.get('access_profile') |replace('_', ' ')|title }}">
+                                    {{ access.get("access_profile") |replace('_', ' ')|title }}
                                 </p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             {{ detail_row.toggle_button('tenant-namespace-access',
-                                loop.index ~ '-' ~ namespace_access_pagination.page,
-                                '',
-                                detail_target_id,
-                                detail_row_id,
-                                open_label='View Details',
-                                close_label='Hide Details',
-                                table_action=true) }}
+                                                        loop.index ~ '-' ~ namespace_access_pagination.page,
+                                                        '',
+                                                        detail_target_id,
+                                                        detail_row_id,
+                                                        open_label='View Details',
+                                                        close_label='Hide Details',
+                                                        table_action=true) }}
                         </td>
                     </tr>
                     {% call detail_row.static_detail_row(detail_row_id, detail_target_id, 5, content_classes='w-full min-w-0') %}
@@ -180,27 +181,29 @@
                 <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
                     <div class="min-w-0 flex-1">
                         <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
-                            {{ access.get('namespace') or 'No Namespace Scope' }}
+                            {{ access.get("namespace") or 'No Namespace Scope' }}
                         </p>
                         <p class="mt-1 break-words text-xs text-content-muted">
-                            {{ access.get('tenant_name') }} · {{ access.get('environment')|default('Not assigned', true)|title }}
+                            {{ access.get("tenant_name") }} · {{ access.get("environment") |default('Not assigned', true)|title }}
                         </p>
                     </div>
                     {% if access.get('error') %}
                         {{ table_label.status_label('Unavailable', 'warning') }}
                     {% else %}
-                        {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
+                        {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
                     {% endif %}
                 </div>
                 <dl class="grid min-w-0 gap-3 text-xs sm:grid-cols-2">
                     <div class="min-w-0">
                         <dt class="text-content-muted">Cluster</dt>
-                        <dd class="mt-1 break-words font-medium text-content-primary">{{ access.get('cluster_name') or 'Unavailable' }}</dd>
+                        <dd class="mt-1 break-words font-medium text-content-primary">
+                            {{ access.get("cluster_name") or 'Unavailable' }}
+                        </dd>
                     </div>
                     <div class="min-w-0">
                         <dt class="text-content-muted">Identity</dt>
                         <dd class="mt-1 break-all font-medium text-content-primary">
-                            {{ access.get('service_account_name') or 'Unknown Identity' }}
+                            {{ access.get("service_account_name") or 'Unknown Identity' }}
                         </dd>
                     </div>
                 </dl>
@@ -212,9 +215,7 @@
                            class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
                            aria-hidden="true"></i>
                     </summary>
-                    <div class="mt-3 min-w-0">
-                        {% include 'kubernetes/tenant/partials/_namespace_access_detail.html' %}
-                    </div>
+                    <div class="mt-3 min-w-0">{% include 'kubernetes/tenant/partials/_namespace_access_detail.html' %}</div>
                 </details>
             </article>
         {% else %}
