@@ -8,6 +8,7 @@ from flask import Flask
 
 from app.access import scope_policy, scoped_grants
 from app.extensions.db import db
+from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
 from app.models.rbac import Permission, Role, RolePermission
@@ -31,6 +32,8 @@ def scope_store():
         Permission.__table__,
         RolePermission.__table__,
         User.__table__,
+        IdentityProvider.__table__,
+        ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
         VaultInstance.__table__,
         ScopeAccessPolicy.__table__,
