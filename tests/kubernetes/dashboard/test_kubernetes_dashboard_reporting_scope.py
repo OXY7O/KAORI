@@ -112,6 +112,7 @@ def test_kubernetes_reporting_excludes_foreign_domains_and_preserves_recency(mon
             cluster_id='cluster-a',
             created_at=datetime(2026, 10, 22, tzinfo=UTC),
             status='ready',
+            file_path='/retained/latest.pdf',
         ),
         SimpleNamespace(
             id=4,
@@ -120,6 +121,7 @@ def test_kubernetes_reporting_excludes_foreign_domains_and_preserves_recency(mon
             cluster_id='cluster-b',
             created_at=datetime(2026, 10, 21, tzinfo=UTC),
             status='ready',
+            file_path='/retained/other-cluster.pdf',
         ),
     ]
     templates = [
