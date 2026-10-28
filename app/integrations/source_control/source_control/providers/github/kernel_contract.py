@@ -1,7 +1,7 @@
 """KAORI Integration Kernel descriptor for GitHub App (SC-02 #2741).
 
-Descriptors are intentionally inert. Do not wire into _load_builtins or
-advertise GitHub as available before provider-specific UAT and admission.
+Builtin registration is conditional on the canonical provider matrix.
+Registration alone is not evidence of hosted provider readiness or UAT approval.
 """
 
 from __future__ import annotations
