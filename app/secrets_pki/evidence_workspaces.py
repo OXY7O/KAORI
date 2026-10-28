@@ -22,7 +22,7 @@ _WORKSPACES = {
     },
     'expiration': {
         'title': 'Expiration',
-        'description': 'Check X.509 expiry windows using committed certificate evidence.',
+        'description': 'Review committed X.509 expiry windows, not Lease renewal.',
         'icon': 'calendar-clock',
     },
 }
