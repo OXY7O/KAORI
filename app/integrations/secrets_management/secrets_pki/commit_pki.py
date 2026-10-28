@@ -45,6 +45,11 @@ def _utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+def _persisted_utc(value: datetime) -> datetime:
+    """Normalize persisted UTC after databases that strip timezone metadata."""
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def _fingerprint(value: str) -> str:
     if not isinstance(value, str) or len(value) != 64 or any(c not in '0123456789abcdef' for c in value):
         raise ValueError('PKI public certificate fingerprint is malformed.')
@@ -154,7 +159,7 @@ def commit_pki_public_issuers(
         )
         by_source = {row.provider_issuer_id: row for row in existing}
         timestamp = _utc(evidence.observed_at)
-        if state.last_observed_at is not None and timestamp < _utc(state.last_observed_at):
+        if state.last_observed_at is not None and timestamp < _persisted_utc(state.last_observed_at):
             raise ValueError('Out-of-order PKI observation cannot overwrite newer evidence.')
         observed: set[str] = set()
         certificates = 0
@@ -191,8 +196,8 @@ def commit_pki_public_issuers(
             else:
                 if (
                     certificate.serial_hex != current.serial_hex
-                    or _utc(certificate.valid_from) != _utc(current.valid_from)
-                    or _utc(certificate.valid_until) != _utc(current.valid_until)
+                    or _persisted_utc(certificate.valid_from) != _utc(current.valid_from)
+                    or _persisted_utc(certificate.valid_until) != _utc(current.valid_until)
                     or certificate.is_ca != current.is_ca
                     or certificate.self_issued != current.self_issued
                     or certificate.chain_fingerprints != ','.join(item.chain_fingerprints)
