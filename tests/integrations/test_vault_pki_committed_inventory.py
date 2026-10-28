@@ -243,7 +243,7 @@ def test_pki_readiness_uses_only_committed_state_and_honest_zero(store):
     mark_pki_public_issuers_failed(store, 'pki')
     stale = pki_public_readiness(instance=instance)
     assert stale['state'] == 'stale'
-    assert stale['observed_issuers'] == 0
+    assert stale['observed_issuers'] is None
 
     instance.pki_mounts = []
     db.session.commit()
@@ -262,6 +262,6 @@ def test_provider_reconfiguration_rejects_ready_pki_badge_until_validation(store
     db.session.commit()
     readiness = pki_public_readiness(instance=vault)
     assert readiness['state'] == 'stale'
-    assert readiness['observed_issuers'] == 1
+    assert readiness['observed_issuers'] is None
     with pytest.raises(ValueError, match='not eligible'):
         commit_pki_public_issuers(store, _snapshot(DAY + timedelta(minutes=1)))
