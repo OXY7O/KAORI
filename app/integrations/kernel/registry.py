@@ -252,7 +252,7 @@ class IntegrationRegistry:
                     register_after_admission,
                 )
 
-                register_after_admission()
+                register_after_admission(self)
             self._builtins_loaded = True
 
     def get(self, integration_type: str) -> IntegrationModule:
