@@ -234,7 +234,7 @@ def test_pki_readiness_uses_only_committed_state_and_honest_zero(store):
     assert missing['state'] == 'not_collected'
     assert missing['observed_issuers'] is None
 
-    commit_pki_public_issuers(store, _snapshot(empty=True))
+    commit_pki_public_issuers(store, _snapshot(datetime.now(UTC), empty=True))
     committed_zero = pki_public_readiness(instance=instance)
     assert committed_zero['state'] == 'committed'
     assert committed_zero['observed_issuers'] == 0
@@ -255,7 +255,7 @@ def test_pki_readiness_uses_only_committed_state_and_honest_zero(store):
 def test_provider_reconfiguration_rejects_ready_pki_badge_until_validation(store):
     from app.secrets_pki.pki_presentation import pki_public_readiness
 
-    commit_pki_public_issuers(store, _snapshot())
+    commit_pki_public_issuers(store, _snapshot(datetime.now(UTC)))
     vault = VaultInstance.query.filter_by(integration_instance_id=store).one()
     identity = db.session.get(IntegrationInstance, store)
     identity.readiness_status = 'validation_required'
