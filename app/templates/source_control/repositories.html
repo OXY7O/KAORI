@@ -8,22 +8,20 @@
     <div id="source-control-repositories-workspace"
          class="min-w-0 space-y-6"
          data-kaori-source-control-repositories>
-        {{ page_hero.operational_dashboard(
-            'Source Control', 'folder-git-2', 'Repository Inventory',
-            'Inspect authorized committed GitHub repository grants, observed default branches and exact source revisions.',
-            [
-                ('folder-git-2', 'Repository Evidence'),
-                ('shield-check', 'Installation-Scoped'),
-                ('database-zap', 'Committed Snapshots')
-            ],
-            selected.connection.name if selected else 'Select One Installation',
-            'Manage GitHub Integrations', url_for('integrations.source_control'),
-            data_authority='SC-03 Committed State',
-            state='normal' if selected and inventory.total is not none else 'blocked',
-            blocked_title='Repository Inventory Unavailable',
-            blocked_info='Select one registered installation and complete a successful repository synchronization.'
+        {{ page_hero.operational_dashboard('Source Control', 'folder-git-2', 'Repository Inventory',
+                'Inspect authorized committed GitHub repository grants, observed default branches and exact source revisions.',
+                [
+                ('folder-git-2', 'Repository Evidence') ,
+        ('shield-check', 'Installation-Scoped'),
+        ('database-zap', 'Committed Snapshots')
+        ],
+        selected.connection.name if selected else 'Select One Installation',
+        'Manage GitHub Integrations', url_for('integrations.source_control'),
+        data_authority='SC-03 Committed State',
+        state='normal' if selected and inventory.total is not none else 'blocked',
+        blocked_title='Repository Inventory Unavailable',
+        blocked_info='Select one registered installation and complete a successful repository synchronization.'
         ) }}
-
         {% call section_card.render('Installation Scope',
             'Choose the exact authorized GitHub App installation. Repository grants from different installations are never combined.',
             'git-branch') %}
@@ -37,9 +35,8 @@
                       method="get"
                       class="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <div class="min-w-0 flex-1">
-                        <label for="source-control-installation" class="{{ table_ui.filter_label_classes() }}">
-                            GitHub App Installation
-                        </label>
+                        <label for="source-control-installation"
+                               class="{{ table_ui.filter_label_classes() }}">GitHub App Installation</label>
                         <select name="installation_id"
                                 id="source-control-installation"
                                 required
@@ -63,32 +60,32 @@
                 </p>
             {% endif %}
         {% endcall %}
-
         {% if selected %}
-            <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Selected inventory evidence">
+            <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                     aria-label="Selected inventory evidence">
                 {{ metric_card.render('Committed Grants',
-                    inventory.total if inventory.total is not none else 'Unknown',
-                    'Installation-granted repositories, not global unique repositories.',
-                    'folder-git-2', source_label='SC-03 Inventory') }}
+                                inventory.total if inventory.total is not none else 'Unknown',
+                                'Installation-granted repositories, not global unique repositories.',
+                                'folder-git-2', source_label='SC-03 Inventory') }}
                 {{ metric_card.render('Selection Scope',
-                    inventory.selection_scope|replace('_', ' ')|title,
-                    'GitHub-authoritative installation grant mode at collection.',
-                    'scan-search', source_label='Collection Evidence') }}
+                                inventory.selection_scope|replace('_', ' ') |title,
+                'GitHub-authoritative installation grant mode at collection.',
+                'scan-search', source_label='Collection Evidence') }}
                 {{ metric_card.render('Collection Coverage',
-                    inventory.coverage|replace('_', ' ')|title,
-                    'Only an exhaustive committed generation proves scope coverage.',
-                    'shield-check', source_label='Collection Evidence') }}
+                                inventory.coverage|replace('_', ' ') |title,
+                'Only an exhaustive committed generation proves scope coverage.',
+                'shield-check', source_label='Collection Evidence') }}
                 {{ metric_card.render('Last Committed',
-                    inventory.collected_at|user_date if inventory.collected_at else 'Unknown',
-                    'Retained snapshot timestamp; not a live GitHub probe.',
-                    'clock-3', source_label='KAORI Evidence') }}
+                                inventory.collected_at|user_date if inventory.collected_at else 'Unknown',
+                                'Retained snapshot timestamp; not a live GitHub probe.',
+                                'clock-3', source_label='KAORI Evidence') }}
             </section>
             {% include "integrations/source_control/github/_inventory_table.html" %}
         {% else %}
-            {% set empty_state_icon = 'folder-git-2' %}
-            {% set empty_state_label = 'Scope Required' %}
-            {% set empty_state_title = 'Select a GitHub Installation' %}
-            {% set empty_state_description = 'Repository inventory is intentionally installation-scoped. No global repository inventory is exposed before resource authorization is implemented.' %}
+            {% set empty_state_icon = "folder-git-2" %}
+            {% set empty_state_label = "Scope Required" %}
+            {% set empty_state_title = "Select a GitHub Installation" %}
+            {% set empty_state_description = "Repository inventory is intentionally installation-scoped. No global repository inventory is exposed before resource authorization is implemented." %}
             {% include "components/states/_empty_state.html" %}
         {% endif %}
     </div>

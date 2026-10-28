@@ -12,8 +12,8 @@
         {% set detail_description = "Provisioning, capacity, access, binding, relationship, and lifecycle evidence." %}
         {% call detail.workspace_header(detail_description, 'database',
             context_items=[
-                {'label': item.type_label, 'icon': 'database'},
-                {'label': item.namespace, 'icon': 'folder-tree'}
+            {'label': item.type_label, 'icon': 'database'},
+            {'label': item.namespace, 'icon': 'folder-tree'}
             ] + ([{'label': 'Default', 'icon': 'badge-check'}] if item.is_default else []), compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(item.name, compact=true) }}

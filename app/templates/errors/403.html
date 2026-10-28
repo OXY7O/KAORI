@@ -34,7 +34,6 @@
                         <div class="{{ page_hero.context_actions_classes(columns=1) }}">
                             <a href="{{ url_for('welcome.index') }}"
                                class="{{ page_hero.context_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
-
                         </div>
                     </div>
                 </aside>
@@ -49,9 +48,7 @@
                           aria-hidden="true">
                         <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
                     </span>
-                    <p class="mt-5 text-xs font-semibold uppercase tracking-wide text-kaori-primary">
-                        Access Restriction
-                    </p>
+                    <p class="mt-5 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Access Restriction</p>
                     <h2 id="access-resolution-title"
                         class="mt-2 text-xl font-semibold leading-7 text-content-primary sm:text-2xl sm:leading-8">
                         {{ 'No Active Role' if role_unavailable else 'Permission Required' }}
@@ -65,7 +62,9 @@
                     </p>
                     <div class="mt-5 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2"
                          aria-label="Current KAORI role">
-                        <i data-lucide="shield-user" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="shield-user"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
                         <span class="text-xs text-content-secondary">Current role</span>
                         <span class="break-words text-sm font-semibold text-content-primary">{{ role_label }}</span>
                     </div>
@@ -78,9 +77,7 @@
                         </span>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Get Access</p>
-                            <h3 class="mt-1 text-xl font-semibold leading-7 text-content-primary">
-                                Contact your access administrator
-                            </h3>
+                            <h3 class="mt-1 text-xl font-semibold leading-7 text-content-primary">Contact your access administrator</h3>
                             <p class="mt-2 text-sm leading-6 text-content-secondary">
                                 Ask your KAORI Access Administrator or internal IT helpdesk to review your access.
                             </p>

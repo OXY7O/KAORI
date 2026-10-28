@@ -13,8 +13,8 @@
         {% set detail_description = "Committed cluster inventory coverage, snapshot state, and operational evidence." %}
         {% call detail.workspace_header(detail_description, 'server-cog',
             context_items=[
-                {'label': cluster.environment|environment_name(empty='Not Specified'), 'icon': 'building-2'},
-                {'label': cluster.kubernetes_version, 'icon': 'badge-check'}
+            {'label': cluster.environment|environment_name(empty='Not Specified'), 'icon': 'building-2'},
+            {'label': cluster.kubernetes_version, 'icon': 'badge-check'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(cluster.name, compact=true) }}

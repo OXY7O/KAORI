@@ -7,187 +7,187 @@
 {% import "components/table_registry.html" as registry %}
 {% block title %}CVE Impact · {{ impact.cve_id }}{% endblock title %}
 {% block dashboard_content %}
-<div id="artifact-registry-cve-impact" class="space-y-6">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('shield-alert', 'Artifact Registry Security', 'waypoints') %}
-                    <h1 class="{{ page_hero.title_classes() }}">{{ impact.cve_id }} · Runtime Impact</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Exact CVE matches in the latest usable committed Registry scans, correlated with Kubernetes runtime evidence.
-                        This is artifact and workload exposure, not a confirmed application or Team ownership assessment.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('shield-alert', impact.finding_count ~ ' Findings') }}
-                        {{ page_hero.meta_label('package-search', impact.affected_artifacts ~ ' Affected Artifacts') }}
-                        {{ page_hero.meta_label('waypoints', impact.binding_count ~ ' Runtime Bindings') }}
-                    </div>
-                {% endcall %}
-                <a href="{{ url_for('artifact_registry.security', q=impact.cve_id) }}"
-                   class="{{ table_ui.action_classes() }}">
-                    <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                    Back to Vulnerabilities
-                </a>
+    <div id="artifact-registry-cve-impact" class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-alert', 'Artifact Registry Security', 'waypoints') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ impact.cve_id }} · Runtime Impact</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Exact CVE matches in the latest usable committed Registry scans, correlated with Kubernetes runtime evidence.
+                            This is artifact and workload exposure, not a confirmed application or Team ownership assessment.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-alert', impact.finding_count ~ ' Findings') }}
+                            {{ page_hero.meta_label('package-search', impact.affected_artifacts ~ ' Affected Artifacts') }}
+                            {{ page_hero.meta_label('waypoints', impact.binding_count ~ ' Runtime Bindings') }}
+                        </div>
+                    {% endcall %}
+                    <a href="{{ url_for('artifact_registry.security', q=impact.cve_id) }}"
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Back to Vulnerabilities
+                    </a>
+                </div>
             </div>
-        </div>
-    </section>
-
-    {{ snapshot_context_bar.render(
-        source_label='Committed Registry × Kubernetes',
-        status=impact.correlation.status,
-        tone=impact.correlation.tone,
-        description=impact.correlation.description,
-        latest_collected=impact.correlation.latest_correlated_at|user_datetime if impact.correlation.latest_correlated_at else 'Not Materialized',
-        scope_label='Active Registry sources × committed Kubernetes runtime',
-        coverage_label=impact.source_count ~ ' Registry sources · ' ~ impact.affected_artifacts ~ ' affected digests',
-        exceptions_label='Not Qualified' if not impact.evidence_ready else 'Correlation Current',
-        coverage_tone='warning' if not impact.finding_count else 'normal',
-        exceptions_tone='warning' if not impact.evidence_ready else 'normal',
-        icon='waypoints',
-        title='Runtime Correlation Evidence',
-        coverage_supporting='Latest usable scanner findings; not global scan coverage.'
-        ) }}
-
-    {% if not impact.evidence_ready %}
-        <div role="status" class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
-            <p class="font-semibold text-content-primary">Impact completeness is not verified</p>
-            <p class="mt-1">
-                Correlation status: {{ impact.correlation.status }}.
-                Missing or changed runtime evidence must not be interpreted as no affected applications.
-                Review the canonical Runtime Usage readiness and refresh its committed correlation when eligible.
-            </p>
-        </div>
-    {% endif %}
-
-    <section id="artifact-registry-cve-findings" aria-labelledby="artifact-registry-cve-findings-heading"
-             class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
-        <div class="p-4 sm:p-5">
-            {{ section_intro.render('Affected Artifact Evidence',
-                'Scanner-observed package findings linked to immutable Registry artifact digests.',
-                'artifact-registry-cve-findings-heading') }}
-        </div>
-        <span id="artifact-registry-cve-findings-loading" class="htmx-indicator sr-only" role="status">Loading findings</span>
-        <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
-                <caption class="sr-only">Exact CVE findings from committed scans</caption>
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source / Artifact</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Package / Version</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity / Fix</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Scan Evidence</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Runtime</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }}">
-                    {% for row in impact.finding_rows %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
-                                <p class="mt-1 break-all text-xs text-content-muted" title="{{ row.digest }}">{{ row.digest }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version, 'package') }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_indicator_label(row.severity, 'critical' if row.severity == 'Critical' else 'warning') }}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.fixed_version }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <a class="{{ table_ui.action_classes() }}"
-                                   href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
-                            </td>
-                        </tr>
-                    {% else %}
+        </section>
+        {{ snapshot_context_bar.render(source_label='Committed Registry × Kubernetes',
+                status=impact.correlation.status,
+                tone=impact.correlation.tone,
+                description=impact.correlation.description,
+                latest_collected=impact.correlation.latest_correlated_at|user_datetime if impact.correlation.latest_correlated_at else 'Not Materialized',
+                scope_label='Active Registry sources × committed Kubernetes runtime',
+                coverage_label=impact.source_count ~ ' Registry sources · ' ~ impact.affected_artifacts ~ ' affected digests',
+                exceptions_label='Not Qualified' if not impact.evidence_ready else 'Correlation Current',
+                coverage_tone='warning' if not impact.finding_count else 'normal',
+                exceptions_tone='warning' if not impact.evidence_ready else 'normal',
+                icon='waypoints',
+                title='Runtime Correlation Evidence',
+                coverage_supporting='Latest usable scanner findings; not global scan coverage.') }}
+        {% if not impact.evidence_ready %}
+            <div role="status"
+                 class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
+                <p class="font-semibold text-content-primary">Impact completeness is not verified</p>
+                <p class="mt-1">
+                    Correlation status: {{ impact.correlation.status }}.
+                    Missing or changed runtime evidence must not be interpreted as no affected applications.
+                    Review the canonical Runtime Usage readiness and refresh its committed correlation when eligible.
+                </p>
+            </div>
+        {% endif %}
+        <section id="artifact-registry-cve-findings"
+                 aria-labelledby="artifact-registry-cve-findings-heading"
+                 class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
+            <div class="p-4 sm:p-5">
+                {{ section_intro.render('Affected Artifact Evidence',
+                                'Scanner-observed package findings linked to immutable Registry artifact digests.',
+                                'artifact-registry-cve-findings-heading') }}
+            </div>
+            <span id="artifact-registry-cve-findings-loading"
+                  class="htmx-indicator sr-only"
+                  role="status">Loading findings</span>
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
+                    <caption class="sr-only">Exact CVE findings from committed scans</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <td colspan="5" class="p-6 text-sm text-content-secondary">
-                                No matching CVE finding in the latest usable committed scans for active Registry sources.
-                                This does not prove the application fleet is unaffected; check scan coverage and freshness.
-                            </td>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source / Artifact</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Package / Version</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity / Fix</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Scan Evidence</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Runtime</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {{ registry.footer('artifact_registry.security_cve_impact',
-            'artifact-registry-cve-findings',
-            'artifact-registry-cve-findings-loading',
-            impact.finding_pagination,
-            {'cve_id': impact.cve_id, 'runtime_page': impact.runtime_pagination.page},
-            [5, 10, 25, 50],
-            resource_label='Findings',
-            control_name='artifact-registry-cve-findings',
-            page_param='finding_page') }}
-    </section>
-
-    <section id="artifact-registry-cve-runtime" aria-labelledby="artifact-registry-cve-runtime-heading"
-             class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
-        <div class="p-4 sm:p-5">
-            {{ section_intro.render('Kubernetes Runtime Exposure',
-                'Distinct committed workload bindings. Digest matches are stronger than mutable tag references.',
-                'artifact-registry-cve-runtime-heading') }}
-            <p class="mt-1 text-xs text-content-muted">
-                {{ impact.digest_count }} digest bindings · {{ impact.tag_count }} other/reference bindings.
-                Workload names are not canonical application or Team identities.
-            </p>
-        </div>
-        <span id="artifact-registry-cve-runtime-loading" class="htmx-indicator sr-only" role="status">Loading bindings</span>
-        <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
-                <caption class="sr-only">Kubernetes runtime bindings for affected artifact digests</caption>
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster / Namespace</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workload / Pod</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Correlation</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }}">
-                    {% for row in impact.runtime_rows %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.cluster, row.namespace, 'boxes') }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.workload, row.workload_type ~ ' · ' ~ row.pod, 'waypoints') }}
-                                <p class="mt-1 text-xs text-content-muted">Container: {{ row.container }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.match.description }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
-                            <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <a class="{{ table_ui.action_classes() }}"
-                                   href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
-                            </td>
-                        </tr>
-                    {% else %}
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for row in impact.finding_rows %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
+                                    <p class="mt-1 break-all text-xs text-content-muted"
+                                       title="{{ row.digest }}">{{ row.digest }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version, 'package') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_indicator_label(row.severity, 'critical' if row.severity == 'Critical' else 'warning') }}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.fixed_version }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    <a class="{{ table_ui.action_classes() }}"
+                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="p-6 text-sm text-content-secondary">
+                                    No matching CVE finding in the latest usable committed scans for active Registry sources.
+                                    This does not prove the application fleet is unaffected; check scan coverage and freshness.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ registry.footer('artifact_registry.security_cve_impact',
+                        'artifact-registry-cve-findings',
+                        'artifact-registry-cve-findings-loading',
+                        impact.finding_pagination,
+                        {'cve_id': impact.cve_id, 'runtime_page': impact.runtime_pagination.page},
+                        [5, 10, 25, 50],
+                        resource_label='Findings',
+                        control_name='artifact-registry-cve-findings',
+                        page_param='finding_page') }}
+        </section>
+        <section id="artifact-registry-cve-runtime"
+                 aria-labelledby="artifact-registry-cve-runtime-heading"
+                 class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
+            <div class="p-4 sm:p-5">
+                {{ section_intro.render('Kubernetes Runtime Exposure',
+                                'Distinct committed workload bindings. Digest matches are stronger than mutable tag references.',
+                                'artifact-registry-cve-runtime-heading') }}
+                <p class="mt-1 text-xs text-content-muted">
+                    {{ impact.digest_count }} digest bindings · {{ impact.tag_count }} other/reference bindings.
+                    Workload names are not canonical application or Team identities.
+                </p>
+            </div>
+            <span id="artifact-registry-cve-runtime-loading"
+                  class="htmx-indicator sr-only"
+                  role="status">Loading bindings</span>
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
+                    <caption class="sr-only">Kubernetes runtime bindings for affected artifact digests</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <td colspan="5" class="p-6 text-sm text-content-secondary">
-                                No committed Kubernetes runtime binding for these affected artifacts.
-                                {{ 'Correlation is not current; absence is unverified.' if not impact.evidence_ready else 'Other runtimes and unknown Service mappings are outside this evidence scope.' }}
-                            </td>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster / Namespace</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workload / Pod</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Correlation</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {{ registry.footer('artifact_registry.security_cve_impact',
-            'artifact-registry-cve-runtime',
-            'artifact-registry-cve-runtime-loading',
-            impact.runtime_pagination,
-            {'cve_id': impact.cve_id, 'finding_page': impact.finding_pagination.page},
-            [5, 10, 25, 50],
-            resource_label='Bindings',
-            control_name='artifact-registry-cve-runtime',
-            page_param='runtime_page') }}
-    </section>
-</div>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for row in impact.runtime_rows %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.cluster, row.namespace, 'boxes') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.workload, row.workload_type ~ ' · ' ~ row.pod, 'waypoints') }}
+                                    <p class="mt-1 text-xs text-content-muted">Container: {{ row.container }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.match.description }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    <a class="{{ table_ui.action_classes() }}"
+                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="p-6 text-sm text-content-secondary">
+                                    No committed Kubernetes runtime binding for these affected artifacts.
+                                    {{ 'Correlation is not current; absence is unverified.' if not impact.evidence_ready else 'Other runtimes and unknown Service mappings are outside this evidence scope.' }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ registry.footer('artifact_registry.security_cve_impact',
+                        'artifact-registry-cve-runtime',
+                        'artifact-registry-cve-runtime-loading',
+                        impact.runtime_pagination,
+                        {'cve_id': impact.cve_id, 'finding_page': impact.finding_pagination.page},
+                        [5, 10, 25, 50],
+                        resource_label='Bindings',
+                        control_name='artifact-registry-cve-runtime',
+                        page_param='runtime_page') }}
+        </section>
+    </div>
 {% endblock dashboard_content %}

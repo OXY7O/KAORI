@@ -110,7 +110,8 @@
                                 class="{{ action_button.classes('secondary') }}"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
                         <button type="submit"
                                 formaction="{{ url_for('identity_providers.edit', provider_id=provider.id) if provider else url_for('identity_providers.create') }}"
-                                {% if not provider %}data-registration-save {% if not registration_proof %}disabled{% endif %}{% endif %}
+                                {% if not provider %}data-registration-save {% if not registration_proof %}disabled{% endif %}
+                                {% endif %}
                                 class="{{ action_button.classes('primary') }} disabled:cursor-not-allowed disabled:opacity-50"
                                 {% if not provider and not registration_proof %}title="Complete Test Connection before saving" aria-disabled="true"{% endif %}><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
                     </div>

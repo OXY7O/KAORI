@@ -106,7 +106,8 @@
                                 {% for domain, icon, source, state, tone, boundary in domains %}
                                     <tr class="{{ table_ui.row_classes() }}"
                                         data-object-storage-evidence-domain="{{ domain|lower }}">
-                                        <th scope="row" class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
+                                        <th scope="row"
+                                            class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
                                             <span class="inline-flex items-center gap-2.5 whitespace-nowrap">
                                                 <span class="{{ analysis_surface.metric_icon_classes('compact', 'brand') }}"
                                                       aria-hidden="true">

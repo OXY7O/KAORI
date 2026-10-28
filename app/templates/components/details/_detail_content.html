@@ -43,7 +43,7 @@
         <div data-resource-detail-header-context
              class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
             {% for item in items %}
-                {{ table_label.metadata_label(item.label, item.icon|default(none), true, 'detail') }}
+                {{ table_label.metadata_label(item.label, item.icon|default(none) , true, 'detail') }}
             {% endfor %}
         </div>
     {% endif %}

@@ -14,8 +14,8 @@
         {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
         {% call detail.workspace_header(detail_description, 'boxes',
             context_items=[
-                {'label': workload.type, 'icon': 'boxes'},
-                {'label': workload.namespace, 'icon': 'folder-tree'}
+            {'label': workload.type, 'icon': 'boxes'},
+            {'label': workload.namespace, 'icon': 'folder-tree'}
             ], compact=true) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(workload.name, compact=true) }}

@@ -28,10 +28,10 @@
                         <h3 id="active-job-workspace-title"
                             class="text-base font-semibold text-content-primary">Active Work</h3>
                         {{ info_tip.render('jobs-active-work-guide',
-                            'Active Work',
-                            'Shows currently queued, running and retrying JobExecution records. Cancellation is available only for eligible active work and permitted operators.',
-                            placement='right',
-                            variant='guide') }}
+                                                'Active Work',
+                                                'Shows currently queued, running and retrying JobExecution records. Cancellation is available only for eligible active work and permitted operators.',
+                                                placement='right',
+                                                variant='guide') }}
                         {{ table_label.status_indicator_label(job_stats.active ~ ' Active', tone='info' if job_stats.active else 'normal') }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Live execution ownership, progress, retry posture, and operator actions.</p>

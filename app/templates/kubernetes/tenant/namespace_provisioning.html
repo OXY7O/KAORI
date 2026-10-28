@@ -70,9 +70,7 @@
                         hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
-                    <div data-tenant-allocation-workflow="native">
-                        {% include "kubernetes/tenant/partials/_allocation_change.html" %}
-                    </div>
+                    <div data-tenant-allocation-workflow="native">{% include "kubernetes/tenant/partials/_allocation_change.html" %}</div>
                 {% elif active_namespace_view == 'native-cutover' %}
                     <div data-tenant-native-cutover-workspace
                          data-tenant-allocation-workflow="native-cutover">
@@ -84,18 +82,18 @@
                          data-tenant-allocation-workflow="capsule"
                          data-tenant-capsule-active-view="{{ active_capsule_view }}">
                         {{ content_tabs.render_links('capsule-governance-scope',
-                            capsule_scope_tabs,
-                            active_capsule_view,
-                            'Capsule allocation authority scope',
-                            embedded=false,
-                            data_namespace='capsule-governance',
-                            hx_target='#namespace-provisioning-workspace',
-                            hx_select='#namespace-provisioning-workspace',
-                            hx_swap='outerHTML show:none focus-scroll:false',
-                            hx_push_url='true',
-                            hx_indicator='#namespace-provisioning-workspace-loading',
-                            nowrap=true,
-                            hx_sync='this:replace') }}
+                                                capsule_scope_tabs,
+                                                active_capsule_view,
+                                                'Capsule allocation authority scope',
+                                                embedded=false,
+                                                data_namespace='capsule-governance',
+                                                hx_target='#namespace-provisioning-workspace',
+                                                hx_select='#namespace-provisioning-workspace',
+                                                hx_swap='outerHTML show:none focus-scroll:false',
+                                                hx_push_url='true',
+                                                hx_indicator='#namespace-provisioning-workspace-loading',
+                                                nowrap=true,
+                                                hx_sync='this:replace') }}
                         {% if active_capsule_view == 'overview' %}
                             {% include "kubernetes/tenant/partials/_capsule_governance_overview.html" %}
                         {% elif active_capsule_view == 'tenant-quota' %}

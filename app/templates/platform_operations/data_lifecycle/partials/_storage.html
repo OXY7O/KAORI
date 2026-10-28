@@ -15,7 +15,8 @@
         {{ table_label.status_label(lifecycle.storage.status_label, storage_tone, 'database') }}
     </div>
     <div class="space-y-4 p-5 lg:p-6">
-        <section class="border-b border-outline-subtle pb-4" aria-label="Archive storage posture">
+        <section class="border-b border-outline-subtle pb-4"
+                 aria-label="Archive storage posture">
             <div class="grid gap-1 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
                 <div class="min-w-0 px-3 py-2 sm:px-4">
                     <div class="flex items-center gap-2">
@@ -110,7 +111,9 @@
                 <div class="grid gap-x-5 gap-y-3 p-4 sm:grid-cols-2">
                     <div class="min-w-0 border-b border-outline-subtle pb-3">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="timer" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                            <i data-lucide="timer"
+                               class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                               aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Dispatcher</p>
                         </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
@@ -123,27 +126,35 @@
                     </div>
                     <div class="min-w-0 border-b border-outline-subtle pb-3">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="calendar-clock" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                            <i data-lucide="calendar-clock"
+                               class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                               aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Scheduled Run</p>
                         </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Requires enabled policy and permitted scheduling.</p>
                     </div>
                     <div class="min-w-0 border-b border-outline-subtle pb-3">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                            <i data-lucide="rotate-ccw"
+                               class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                               aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
                         </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Transient failures retry once, then need manual retry.</p>
                     </div>
                     <div class="min-w-0 border-b border-outline-subtle pb-3">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="trash-2" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                            <i data-lucide="trash-2"
+                               class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                               aria-hidden="true"></i>
                             <p class="text-xs font-semibold text-content-primary">Purge Batch Limit</p>
                         </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Max {{ lifecycle.purge_batch_size }} expired artifacts per admitted run; retry on failure.</p>
                     </div>
                     <div class="flex min-w-0 items-start gap-2 sm:col-span-2">
-                        <i data-lucide="shield" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
+                        <i data-lucide="shield"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent"
+                           aria-hidden="true"></i>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-primary">Worker Isolation</p>
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Production uses the dedicated maintenance worker service.</p>
@@ -188,7 +199,7 @@
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-sm font-semibold text-content-primary">Storage Interpretation</h3>
-                        {{ table_label.status_label('Verified evidence' if storage_verified else ('Verification pending' if storage_pending else 'Needs attention'), storage_tone) }}
+                        {{ table_label.status_label('Verified evidence' if storage_verified else ('Verification pending' if storage_pending else 'Needs attention') , storage_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ lifecycle.storage.detail }}</p>
                     {% if lifecycle.storage.status == 'reachable' %}

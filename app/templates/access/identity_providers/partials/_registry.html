@@ -16,15 +16,15 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
                         {{ info_tip.render('identity-provider-registry-guide',
-                                            'Provider Registry',
-                                            'Review registered authentication sources and their KAORI governance state.',
-                                            items=[
+                                                'Provider Registry',
+                                                'Review registered authentication sources and their KAORI governance state.',
+                                                items=[
                                                 'Configuration shows whether the adapter contract is complete; it is not a successful external connection test.',
                                                 'Enabled controls authentication eligibility. Identity Links counts committed external identities linked to KAORI accounts.',
                                                 'The external provider owns identity and credentials. KAORI governs local account state, role authorization, and administrative actions.'
-                                            ],
-                                            placement='right',
-                                            variant='guide') }}
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                         {{ table_label.result_count(summary.matching) }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
@@ -117,7 +117,7 @@
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex justify-end">
                                 {{ expandable.toggle_button('identity-providers', provider.id, '', detail_target_id, detail_row_id,
-                                                           open_label='View More Details', close_label='Hide Details', compact=true, class_name='min-w-[7.5rem]') }}
+                                                                open_label='View More Details', close_label='Hide Details', compact=true, class_name='min-w-[7.5rem]') }}
                             </div>
                         </td>
                     </tr>

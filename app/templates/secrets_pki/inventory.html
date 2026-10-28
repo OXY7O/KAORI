@@ -21,7 +21,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Inventory evidence context">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Inventory evidence context">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Inventory Readiness', summary.label, 'database-zap') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
@@ -33,33 +34,32 @@
                 </aside>
             </div>
         </section>
-        {{ section_intro.render(
-            'Committed Inventory Coverage',
-            'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
-            supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.'
-        ) }}
+        {{ section_intro.render('Committed Inventory Coverage',
+                'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
+                supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.') }}
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {{ metric_card.render('Enabled Vault Sources',
-                summary.provider_count if summary.provider_count is not none else 'Unavailable',
-                'Only enabled active Vault integration identities.', 'server',
-                source_label='Vault Provider') }}
+                        summary.provider_count if summary.provider_count is not none else 'Unavailable',
+                        'Only enabled active Vault integration identities.', 'server',
+                        source_label='Vault Provider') }}
             {{ metric_card.render('Approved KV v2 Mounts',
-                summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
-                'Explicit metadata collection scopes; no implicit mount discovery.', 'layers',
-                source_label='Provider Configuration') }}
+                        summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
+                        'Explicit metadata collection scopes; no implicit mount discovery.', 'layers',
+                        source_label='Provider Configuration') }}
             {{ metric_card.render('Committed Mounts',
-                summary.committed_mount_count if summary.committed_mount_count is not none else 'Not Collected',
-                'Scopes with successful retained inventory generations.', 'database-zap',
-                source_label='Committed Inventory') }}
+                        summary.committed_mount_count if summary.committed_mount_count is not none else 'Not Collected',
+                        'Scopes with successful retained inventory generations.', 'database-zap',
+                        source_label='Committed Inventory') }}
             {{ metric_card.render('Observed Secret Metadata',
-                summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
-                'Metadata record counts, never Secret values or inferred consumer coverage.', 'key-round',
-                source_label='KV v2 Metadata') }}
+                        summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
+                        'Metadata record counts, never Secret values or inferred consumer coverage.', 'key-round',
+                        source_label='KV v2 Metadata') }}
         </div>
         {% call section_card.render('Collection Status',
             'Provider readiness, approved scope, and inventory freshness remain independently verifiable.',
             'shield-check') %}
-            <div role="status" class="flex flex-wrap items-center justify-between gap-3">
+            <div role="status"
+                 class="flex flex-wrap items-center justify-between gap-3">
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-content-primary">{{ summary.label }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
@@ -90,17 +90,43 @@
             <div role="status" class="space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="text-sm font-semibold text-content-primary">{{ kv2_version_posture.label }}</p>
-                    <p class="text-xs text-content-muted">Observed versions:
+                    <p class="text-xs text-content-muted">
+                        Observed versions:
                         <span class="font-semibold text-content-primary">{{ kv2_version_posture.observed_versions if kv2_version_posture.observed_versions is not none else 'Not Qualified' }}</span>
                     </p>
                 </div>
                 {% if kv2_version_posture.status in ('ready', 'observed_empty') %}
                     <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 xl:grid-cols-5">
-                        <div><dt class="text-content-muted">Available</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.available }}</dd></div>
-                        <div><dt class="text-content-muted">Scheduled Deletion</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.scheduled_deletion }}</dd></div>
-                        <div><dt class="text-content-muted">Soft Deleted</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.soft_deleted }}</dd></div>
-                        <div><dt class="text-content-muted">Destroyed</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.destroyed }}</dd></div>
-                        <div><dt class="text-content-muted">Unknown</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.unknown }}</dd></div>
+                        <div>
+                            <dt class="text-content-muted">Available</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ kv2_version_posture.available }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Scheduled Deletion</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ kv2_version_posture.scheduled_deletion }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Soft Deleted</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ kv2_version_posture.soft_deleted }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Destroyed</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ kv2_version_posture.destroyed }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Unknown</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ kv2_version_posture.unknown }}
+                            </dd>
+                        </div>
                     </dl>
                 {% else %}
                     <p class="text-xs text-status-warning-text">No current lifecycle counts can be qualified. Missing or stale evidence is not proof of zero versions or completed rotation.</p>
@@ -141,7 +167,8 @@
         {% call section_card.render('Lease, Consumer & Governance Workspaces',
             'Explore committed evidence and explicit gaps without inferring Lease or consumer state.',
             'shield-check') %}
-            <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Lifecycle evidence workspaces">
+            <nav class="flex flex-wrap gap-x-4 gap-y-2"
+                 aria-label="Lifecycle evidence workspaces">
                 <a href="{{ url_for('secrets_pki.leases') }}"
                    class="text-sm font-semibold text-kaori-primary hover:underline">Leases</a>
                 <a href="{{ url_for('secrets_pki.consumers') }}"
@@ -150,11 +177,9 @@
                    class="text-sm font-semibold text-kaori-primary hover:underline">Governance</a>
             </nav>
         {% endcall %}
-        {{ section_intro.render(
-            'Additional Evidence Domains',
-            'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
-            supporting='Readiness is not inferred from a working Vault connection.'
-        ) }}
+        {{ section_intro.render('Additional Evidence Domains',
+                'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
+                supporting='Readiness is not inferred from a working Vault connection.') }}
         {% call section_card.render('Stored Public Certificate Validity',
             'Fresh, committed X.509 validity windows from approved Vault PKI stored-certificate observations.',
             'calendar-clock') %}
@@ -170,19 +195,27 @@
                     <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                         <div>
                             <dt class="text-content-muted">Within Validity Window</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.within_validity_window }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_validity.within_validity_window }}
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-content-muted">Not Yet Valid</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.not_yet_valid }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_validity.not_yet_valid }}
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-content-muted">Expired</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.expired }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_validity.expired }}
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-content-muted">Unknown</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.unknown }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_validity.unknown }}
+                            </dd>
                         </div>
                     </dl>
                 {% else %}
@@ -205,7 +238,6 @@
                         </a>
                     {% endif %}
                 </div>
-
             </div>
         {% endcall %}
         <div class="grid gap-3 lg:grid-cols-2">
@@ -215,9 +247,24 @@
                 <div role="status" class="space-y-3">
                     <p class="text-sm font-semibold text-content-primary">{{ pki_readiness.label }}</p>
                     <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-                        <div><dt class="text-content-muted">Approved PKI Mounts</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.approved_mounts if pki_readiness.approved_mounts is not none else 'Unavailable' }}</dd></div>
-                        <div><dt class="text-content-muted">Committed Mounts</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.committed_mounts if pki_readiness.committed_mounts is not none else 'Not Collected' }}</dd></div>
-                        <div><dt class="text-content-muted">Observed Public Issuers</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.observed_issuers if pki_readiness.observed_issuers is not none else 'Not Collected' }}</dd></div>
+                        <div>
+                            <dt class="text-content-muted">Approved PKI Mounts</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_readiness.approved_mounts if pki_readiness.approved_mounts is not none else 'Unavailable' }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Committed Mounts</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_readiness.committed_mounts if pki_readiness.committed_mounts is not none else 'Not Collected' }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Observed Public Issuers</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ pki_readiness.observed_issuers if pki_readiness.observed_issuers is not none else 'Not Collected' }}
+                            </dd>
+                        </div>
                     </dl>
                     <p class="text-xs leading-5 text-content-muted">
                         Last committed: {{ pki_readiness.last_committed_at|user_datetime if pki_readiness.last_committed_at else 'Never' }}.
@@ -227,7 +274,8 @@
                         <p class="text-xs leading-5 text-status-warning-text">Unavailable or stale public issuer evidence is unknown, not proof of missing or revoked certificates.</p>
                     {% endif %}
                     {% if can_execute_inventory %}
-                        <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Public PKI Job</a>
+                        <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}"
+                           class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Public PKI Job</a>
                     {% endif %}
                     <div class="border-t border-outline-subtle pt-3" role="status">
                         <h3 class="text-sm font-semibold text-content-primary">Certificate Identity &amp; Ingress Reference Evidence</h3>
@@ -235,15 +283,21 @@
                         <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
                             <div>
                                 <dt class="text-content-muted">Qualified Stored Certificates</dt>
-                                <dd class="mt-1 font-semibold text-content-primary">{{ delivery_overlap.source_certificates if delivery_overlap.source_certificates is not none else 'Not Available' }}</dd>
+                                <dd class="mt-1 font-semibold text-content-primary">
+                                    {{ delivery_overlap.source_certificates if delivery_overlap.source_certificates is not none else 'Not Available' }}
+                                </dd>
                             </div>
                             <div>
                                 <dt class="text-content-muted">Matching Public Fingerprints</dt>
-                                <dd class="mt-1 font-semibold text-content-primary">{{ delivery_overlap.overlapping_certificates if delivery_overlap.overlapping_certificates is not none else 'Not Verified' }}</dd>
+                                <dd class="mt-1 font-semibold text-content-primary">
+                                    {{ delivery_overlap.overlapping_certificates if delivery_overlap.overlapping_certificates is not none else 'Not Verified' }}
+                                </dd>
                             </div>
                             <div>
                                 <dt class="text-content-muted">Observed Matching TLS Secrets</dt>
-                                <dd class="mt-1 font-semibold text-content-primary">{{ delivery_overlap.matching_kubernetes_tls_secrets if delivery_overlap.matching_kubernetes_tls_secrets is not none else 'Not Verified' }}</dd>
+                                <dd class="mt-1 font-semibold text-content-primary">
+                                    {{ delivery_overlap.matching_kubernetes_tls_secrets if delivery_overlap.matching_kubernetes_tls_secrets is not none else 'Not Verified' }}
+                                </dd>
                             </div>
                         </dl>
                         <div class="mt-3 border-t border-outline-subtle pt-3">
@@ -260,11 +314,15 @@
                             <dl class="mt-3 grid grid-cols-2 gap-3 text-xs">
                                 <div>
                                     <dt class="text-content-muted">Matching TLS Secrets Referenced by Ingress</dt>
-                                    <dd class="mt-1 font-semibold text-content-primary">{{ delivery_overlap.matching_tls_secrets_referenced_by_ingress if delivery_overlap.matching_tls_secrets_referenced_by_ingress is not none else 'Not Verified' }}</dd>
+                                    <dd class="mt-1 font-semibold text-content-primary">
+                                        {{ delivery_overlap.matching_tls_secrets_referenced_by_ingress if delivery_overlap.matching_tls_secrets_referenced_by_ingress is not none else 'Not Verified' }}
+                                    </dd>
                                 </div>
                                 <div>
                                     <dt class="text-content-muted">Matching TLS Secrets Covering Declared Hosts</dt>
-                                    <dd class="mt-1 font-semibold text-content-primary">{{ delivery_overlap.matching_tls_secrets_covering_declared_hosts if delivery_overlap.matching_tls_secrets_covering_declared_hosts is not none else 'Not Verified' }}</dd>
+                                    <dd class="mt-1 font-semibold text-content-primary">
+                                        {{ delivery_overlap.matching_tls_secrets_covering_declared_hosts if delivery_overlap.matching_tls_secrets_covering_declared_hosts is not none else 'Not Verified' }}
+                                    </dd>
                                 </div>
                             </dl>
                             <div class="mt-3 border-t border-outline-subtle pt-3">
@@ -336,7 +394,8 @@
                             Missing certificate ≠ revoked or deleted.
                         </p>
                         {% if can_execute_inventory %}
-                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}" class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Stored Certificate Job</a>
+                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}"
+                               class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Stored Certificate Job</a>
                         {% endif %}
                     </div>
                 </div>

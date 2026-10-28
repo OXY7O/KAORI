@@ -2,7 +2,6 @@
    Field groups reflect service_contracts._PROFILE_* and the Profile Library.
    The existing preflight JS binds committed/proposed values; no mutation lives here. #}
 {% import "components/view_more_content.html" as view_more_content %}
-
 {% macro native_sections(advanced_controls={}) -%}
     <div class="space-y-3" data-tenant-profile-coverage="native_kubernetes">
         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
@@ -15,41 +14,45 @@
                     ('Object Limits', '3', 'boxes'),
                     ('Container Defaults', '4', 'container'),
                     ('Advanced Controls', 'Gated', 'shield-check')
-                ] %}
+                    ] %}
                     <div class="min-w-0 px-3 py-3">
                         <div class="flex items-center gap-1.5 text-content-muted">
-                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                            <i data-lucide="{{ icon }}"
+                               class="h-3.5 w-3.5 shrink-0"
+                               aria-hidden="true"></i>
                             <span class="truncate text-xs">{{ title }}</span>
                         </div>
-                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ count }}{% if count != 'Gated' %}<span class="ml-1 text-xs font-normal text-content-muted">fields</span>{% endif %}</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ count }}
+                            {% if count != 'Gated' %}<span class="ml-1 text-xs font-normal text-content-muted">fields</span>{% endif %}
+                        </p>
                     </div>
                 {% endfor %}
             </div>
         </div>
         {% for key, label, subtitle, icon, rows in [
             ('basic', 'Basic Resources', 'Native ResourceQuota · Requests, limits, and pod slots', 'cpu', [
-                ('CPU Requests', 'quota.requests.cpu'),
-                ('CPU Limits', 'quota.limits.cpu'),
-                ('Memory Requests', 'quota.requests.memory'),
-                ('Memory Limits', 'quota.limits.memory'),
-                ('Pods', 'quota.pods')
+            ('CPU Requests', 'quota.requests.cpu'),
+            ('CPU Limits', 'quota.limits.cpu'),
+            ('Memory Requests', 'quota.requests.memory'),
+            ('Memory Limits', 'quota.limits.memory'),
+            ('Pods', 'quota.pods')
             ]),
             ('storage', 'Storage Guardrails', 'Namespace storage quota, PVC count, and per-PVC admission policy', 'hard-drive', [
-                ('PVCs', 'quota.persistentvolumeclaims'),
-                ('Total Storage', 'quota.requests.storage'),
-                ('Min PVC Size', 'storage_policy.min'),
-                ('Max PVC Size', 'storage_policy.max')
+            ('PVCs', 'quota.persistentvolumeclaims'),
+            ('Total Storage', 'quota.requests.storage'),
+            ('Min PVC Size', 'storage_policy.min'),
+            ('Max PVC Size', 'storage_policy.max')
             ]),
             ('objects', 'Object Limits', 'Native ResourceQuota · Namespace object ceilings', 'boxes', [
-                ('Services', 'quota.services'),
-                ('ConfigMaps', 'quota.configmaps'),
-                ('Secrets', 'quota.secrets')
+            ('Services', 'quota.services'),
+            ('ConfigMaps', 'quota.configmaps'),
+            ('Secrets', 'quota.secrets')
             ]),
             ('defaults', 'Container Defaults', 'Native LimitRange · Defaults for new containers', 'container', [
-                ('Default CPU Request', 'limits.default_request.cpu'),
-                ('Default CPU Limit', 'limits.default.cpu'),
-                ('Default Memory Request', 'limits.default_request.memory'),
-                ('Default Memory Limit', 'limits.default.memory')
+            ('Default CPU Request', 'limits.default_request.cpu'),
+            ('Default CPU Limit', 'limits.default.cpu'),
+            ('Default Memory Request', 'limits.default_request.memory'),
+            ('Default Memory Limit', 'limits.default.memory')
             ])
             ] %}
             {% call view_more_content.render(label, subtitle, icon=icon,
@@ -89,7 +92,8 @@
             compact_action=true, dense=true,
             extra_classes='shadow-none [&>summary]:bg-surface-card') %}
             <div class="overflow-x-auto" data-tenant-allocation-advanced-list>
-                <table class="w-full min-w-[27rem] text-left text-xs" aria-label="Native Advanced Controls preflight">
+                <table class="w-full min-w-[27rem] text-left text-xs"
+                       aria-label="Native Advanced Controls preflight">
                     <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
                         <tr>
                             <th scope="col" class="px-3 py-2.5 font-semibold">Control</th>
@@ -110,14 +114,13 @@
                     </tbody>
                 </table>
             </div>
-            <p class="py-2 text-xs text-content-muted" data-tenant-allocation-advanced-empty>No configured Advanced Controls in either contract.</p>
+            <p class="py-2 text-xs text-content-muted"
+               data-tenant-allocation-advanced-empty>No configured Advanced Controls in either contract.</p>
             <p class="mt-2 text-xs text-content-muted">Supported = preflight only; Recorded = committed evaluation, not proof of execution.</p>
         {% endcall %}
         <p class="text-xs leading-5 text-content-muted">Read-only comparison. Capacity admission, provider mutation and read-back remain separate governance gates.</p>
     </div>
 {%- endmacro %}
-
-
 {# Capsule owns only the indicated ResourceQuota/GlobalResourceQuota dimensions.
    LimitRange/per-PVC fields are *not* written by quota cutover; a selected
    profile requesting them is fail-closed before provider write. #}
@@ -125,17 +128,17 @@
     <div class="space-y-3" data-tenant-profile-coverage="{{ authority }}">
         {% for key, label, subtitle, icon, rows in [
             ('basic', 'Basic Resources', 'Capsule authoritative quota · Requests, limits and pod slots', 'cpu', [
-                ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
-                ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
-                ('Pods', 'pods')
+            ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
+            ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
+            ('Pods', 'pods')
             ]),
             ('storage', 'Storage Guardrails', 'Quota storage and claim ceilings; per-PVC policy is separate', 'hard-drive', [
-                ('PVCs', 'persistentvolumeclaims'), ('Total Storage', 'requests.storage')
+            ('PVCs', 'persistentvolumeclaims'), ('Total Storage', 'requests.storage')
             ]),
             ('objects', 'Object Limits', 'Object ceilings in the authoritative Capsule quota source', 'boxes', [
-                ('Services', 'services'), ('ConfigMaps', 'configmaps'), ('Secrets', 'secrets')
+            ('Services', 'services'), ('ConfigMaps', 'configmaps'), ('Secrets', 'secrets')
             ])
-        ] %}
+            ] %}
             {% call view_more_content.render(label, subtitle, icon=icon,
                 aria_label=authority ~ ' ' ~ label ~ ' comparison',
                 compact_action=true, extra_classes='shadow-none',
@@ -181,12 +184,12 @@
         {% endfor %}
         {% for group_key, label, subtitle, icon, rows in [
             ('limits', 'Container Defaults', 'Native LimitRange defaults · Not governed by Capsule quota mutation', 'container', [
-                ('Default CPU Request', 'limits', 'default_request.cpu'),
-                ('Default CPU Limit', 'limits', 'default.cpu'),
-                ('Default Memory Request', 'limits', 'default_request.memory'),
-                ('Default Memory Limit', 'limits', 'default.memory')
+            ('Default CPU Request', 'limits', 'default_request.cpu'),
+            ('Default CPU Limit', 'limits', 'default.cpu'),
+            ('Default Memory Request', 'limits', 'default_request.memory'),
+            ('Default Memory Limit', 'limits', 'default.memory')
             ])
-        ] %}
+            ] %}
             {% call view_more_content.render(label, subtitle, icon=icon,
                 aria_label=authority ~ ' ' ~ label ~ ' unsupported control comparison',
                 compact_action=true, extra_classes='shadow-none') %}

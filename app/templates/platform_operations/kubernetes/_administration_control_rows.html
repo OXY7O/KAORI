@@ -2,7 +2,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% for control in administration_controls %}
-    <article id="kubernetes-admin-control-{{ control.key }}" class="min-w-0 px-5 py-5 sm:px-6">
+    <article id="kubernetes-admin-control-{{ control.key }}"
+             class="min-w-0 px-5 py-5 sm:px-6">
         <div class="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
@@ -34,10 +35,14 @@
                 {% for icon, label, value in control.metrics %}
                     <div class="flex min-w-0 items-center justify-between gap-3 bg-surface-hover px-4 py-3">
                         <dt class="flex min-w-0 items-center gap-2 text-xs font-medium leading-5 text-content-secondary">
-                            <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="{{ icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
                             <span>{{ label }}</span>
                         </dt>
-                        <dd class="shrink-0 text-lg font-semibold tabular-nums text-content-primary">{{ value }}</dd>
+                        <dd class="shrink-0 text-lg font-semibold tabular-nums text-content-primary">
+                            {{ value }}
+                        </dd>
                     </div>
                 {% endfor %}
             </dl>

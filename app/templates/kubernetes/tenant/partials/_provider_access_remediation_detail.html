@@ -22,7 +22,7 @@
             </div>
         </div>
         {{ table_label.status_label('Manual Review' if review_count else 'Operator Decision' if reconcile_count else 'No Candidates',
-            'warning' if review_count or reconcile_count else 'info') }}
+                'warning' if review_count or reconcile_count else 'info') }}
     </header>
     <div class="mt-4 grid gap-3 sm:grid-cols-2">
         <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
@@ -42,14 +42,14 @@
                        class="mt-0.5 h-4 w-4 shrink-0 {{ 'text-status-warning' if item.decision == 'manual_review' else 'text-kaori-primary' }}"
                        aria-hidden="true"></i>
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">{{ item.code|replace('_', ' ')|title }}</p>
+                        <p class="text-sm font-semibold text-content-primary">{{ item.code|replace('_', ' ') |title }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                             {{ 'Human review required before any governed action.' if item.decision == 'manual_review' else 'Existing Access Grant Inspect/Reconcile requires explicit operator approval.' }}
                         </p>
                     </div>
                 </div>
                 {{ table_label.status_label('Manual Review' if item.decision == 'manual_review' else 'Operator Approval',
-                    'warning' if item.decision == 'manual_review' else 'info') }}
+                                'warning' if item.decision == 'manual_review' else 'info') }}
             </div>
         {% else %}
             <p class="px-4 py-3 text-xs text-content-muted">No remediation candidates were identified in this committed decision.</p>
@@ -67,16 +67,20 @@
             <dl class="grid gap-3 text-xs sm:grid-cols-2">
                 <div class="min-w-0">
                     <dt class="text-content-muted">Tenant ID</dt>
-                    <dd class="mt-1 break-all text-content-primary">{{ plan.tenant_id }}</dd>
+                    <dd class="mt-1 break-all text-content-primary">
+                        {{ plan.tenant_id }}
+                    </dd>
                 </div>
                 <div class="min-w-0">
                     <dt class="text-content-muted">Source Drift Evaluated</dt>
-                    <dd class="mt-1 break-all text-content-primary">{{ plan.source_drift_evaluated_at }}</dd>
+                    <dd class="mt-1 break-all text-content-primary">
+                        {{ plan.source_drift_evaluated_at }}
+                    </dd>
                 </div>
             </dl>
             {% for item in plan.get('items') or [] %}
                 <div class="min-w-0 border-t border-outline-subtle pt-3 text-xs">
-                    <p class="font-semibold text-content-primary">{{ item.code|replace('_', ' ')|title }}</p>
+                    <p class="font-semibold text-content-primary">{{ item.code|replace('_', ' ') |title }}</p>
                     <p class="mt-1 text-content-muted">Subject / Binding Reference</p>
                     <p class="mt-1 break-all text-content-secondary">{{ item.subject or 'Not provided' }}</p>
                     <p class="mt-2 text-content-muted">Decision Rationale</p>
