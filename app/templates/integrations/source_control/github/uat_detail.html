@@ -33,7 +33,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro("git-branch", "Source Control Integration", "shield-check") %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ canonical.name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage GitHub App access, validation, repository evidence, and operational history.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage GitHub App access, validation, and repository evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
                             {{ page_hero.meta_label('git-branch', 'Installation ' ~ installation.native_installation_id) }}
