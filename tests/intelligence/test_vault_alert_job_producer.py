@@ -182,7 +182,9 @@ def test_dispatch_is_manual_only_and_deduplicated_via_canonical_admission(monkey
     assert job['dispatch_options'].require_registered_worker is True
     assert job['scope_type'] == 'secrets_pki_alert_fleet'
     assert job['max_attempts'] == 1
-    assert 'key' not in repr(job).lower()
+    # A scope_key is canonical dispatch context, not Vault correlation key material.
+    for sensitive in ('KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX', 'worker_key', 'secret_id', 'client_token'):
+        assert sensitive.lower() not in repr(job).lower()
     assert 'PRIVATE' not in repr(job)
 
 
@@ -442,6 +444,8 @@ def test_manual_only_config_is_in_jobs_registry_not_celery_beat():
     content = path.read_text(encoding='utf-8')
     assert '_job_overview.html' in content
     assert '_execution_activity.html' in content
-    assert 'Automatic policy is unsupported' in content
+    assert "'Execution Policy', 'Manual Only'" in content
+    assert 'No automatic schedule or AlertCase promotion' in content
+    assert "schedule_policy.manual_header('Manual Observation Boundary'" in content
     assert 'update_policy' not in content
     assert 'policy_form.enabled' not in content
