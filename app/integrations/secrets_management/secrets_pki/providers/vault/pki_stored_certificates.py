@@ -42,7 +42,7 @@ class StoredCertificateCollection:
 
 
 def _serial(value: object) -> str:
-    if not isinstance(value, str) or not _SERIAL_RE.fullmatch(value):
+    if not isinstance(value, str) or value == 'ca' or not _SERIAL_RE.fullmatch(value):
         raise VaultProviderError('Vault stored certificate serial is malformed.')
     return value
 
