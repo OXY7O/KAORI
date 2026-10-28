@@ -81,8 +81,11 @@ def test_secrets_pki_workspace_follows_canonical_sidebar_navigation():
     assert _workspace_key('secrets_pki.overview') == 'secrets_pki'
     assert _workspace_key('secrets_pki.inventory') == 'secrets_pki'
     assert _workspace_key('secrets_pki.lifecycle') == 'secrets_pki'
-    assert _active_capability_key('secrets_pki', 'secrets_pki.lifecycle') == 'lifecycle'
-    assert _active_capability_key('secrets_pki', 'secrets_pki.inventory') == 'inventory'
+    assert _active_capability_key('secrets_pki', 'secrets_pki.overview') == 'overview'
+    for endpoint in ('inventory', 'scoped_registry', 'certificates', 'pki', 'expiration'):
+        assert _active_capability_key('secrets_pki', f'secrets_pki.{endpoint}') == 'inventory'
+    for endpoint in ('lifecycle', 'leases', 'consumers', 'governance'):
+        assert _active_capability_key('secrets_pki', f'secrets_pki.{endpoint}') == 'lifecycle'
 
 
 def test_zero_without_committed_evidence_is_not_reported_as_a_healthy_zero(monkeypatch):

@@ -299,7 +299,18 @@ def _workspace_key(endpoint: str) -> str | None:
 
 _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'source_control': {'source_control.repositories': 'repositories'},
-    'secrets_pki': {'secrets_pki.overview': 'overview', 'secrets_pki.inventory': 'inventory'},
+    'secrets_pki': {
+        'secrets_pki.overview': 'overview',
+        'secrets_pki.inventory': 'inventory',
+        'secrets_pki.scoped_registry': 'inventory',
+        'secrets_pki.certificates': 'inventory',
+        'secrets_pki.pki': 'inventory',
+        'secrets_pki.expiration': 'inventory',
+        'secrets_pki.lifecycle': 'lifecycle',
+        'secrets_pki.leases': 'lifecycle',
+        'secrets_pki.consumers': 'lifecycle',
+        'secrets_pki.governance': 'lifecycle',
+    },
     'settings': {'settings.account': 'account'},
     'integrations': {
         'integrations.observability': 'observability',
