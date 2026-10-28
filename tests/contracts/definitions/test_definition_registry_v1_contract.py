@@ -123,10 +123,11 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
         'prometheus-http-core-v1',
         'alertmanager-api-v2-contract-v1',
         'harbor-api-v2-core-v1',
+        'vault-approle-read-v1',
     } <= set(contracts)
 
     products = {item['key']: item for item in compatibility['products']}
-    assert set(products) == {'kubernetes', 'prometheus', 'alertmanager', 'thanos', 'harbor'}
+    assert set(products) == {'kubernetes', 'prometheus', 'alertmanager', 'thanos', 'harbor', 'vault'}
     assert all(item['selection_mode'] == 'automatic_detected_version' for item in products.values())
     assert all(item['version_source'] for item in products.values())
     assert all(item['contract_profile'] in contracts for item in products.values())
