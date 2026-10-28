@@ -298,6 +298,12 @@ The worker fails closed if the key is not configured or malformed.
 Rotating that key requires a separately reviewed correlation migration;
 blind rotation breaks handle continuity.
 
+The existing Environment Contract gate verifies that only
+`app/intelligence/alert_signals/vault_jobs.py` reads this worker-only key.
+Its name must remain absent from shared development, production and standalone
+RC environment templates. Inject it through approved **worker-scoped** secret
+custody, never through a shared Flask/web/Beat environment file.
+
 The bounded provider result is passed only in worker memory to the existing
 source-qualified snapshot writer: max 100 alerts, strict identity and
 occurrence validation, opaque HMAC handles, five-minute TTL. Error paths
