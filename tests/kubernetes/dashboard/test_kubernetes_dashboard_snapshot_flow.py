@@ -584,6 +584,8 @@ def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeyp
     monkeypatch.setattr(service, 'read_snapshots', fake_read_snapshots)
     monkeypatch.setattr(service, '_latest_inventory_sync', lambda *_args: None)
     monkeypatch.setattr(service, 'count_records', lambda *_args: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_reports', lambda _cluster_id: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_artifact_records', lambda _cluster_id: 0)
     monkeypatch.setattr(
         service,
         'read_dashboard_snapshot',
