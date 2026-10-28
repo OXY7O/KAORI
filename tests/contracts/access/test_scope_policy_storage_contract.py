@@ -16,7 +16,7 @@ def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
         'provider_namespace',
         'mount',
         'current_revision',
-    } <= set(table.columns)
+    } <= set(table.columns.keys())
     foreign_targets = {fk.target_fullname for col in table.columns for fk in col.foreign_keys}
     assert 'users.id' in foreign_targets
     assert 'permissions.key' in foreign_targets
