@@ -5,8 +5,7 @@
         <section class="w-full max-w-lg rounded-2xl border border-outline-default bg-surface-card px-6 py-8 shadow-xl sm:px-10 sm:py-10"
                  aria-labelledby="mfa-challenge-title"
                  data-kaori-mfa-challenge="centered-header">
-            <header class="text-center"
-                    data-kaori-mfa-challenge-header="centered">
+            <header class="text-center" data-kaori-mfa-challenge-header="centered">
                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="shield-check" class="h-7 w-7"></i>
@@ -27,15 +26,14 @@
                     <label for="{{ form.verification_code.id }}"
                            class="block text-sm font-semibold text-content-primary">Verification Code</label>
                     {{ form.verification_code(class="mt-2 h-12 w-full rounded-xl border border-outline-default bg-surface-card px-4 font-mono text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20",
-                        autocomplete="one-time-code", inputmode="text", maxlength="64", placeholder="6-digit code or recovery code", autofocus=true) }}
+                                        autocomplete="one-time-code", inputmode="text", maxlength="64", placeholder="6-digit code or recovery code", autofocus=true) }}
                     {% for message in form.verification_code.errors %}
                         <p class="mt-2 text-xs text-status-critical-text" role="alert">{{ message }}</p>
                     {% endfor %}
                 </div>
                 {{ form.submit(class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus") }}
             </form>
-            <div class="mt-6 flex items-center gap-3"
-                 aria-hidden="true">
+            <div class="mt-6 flex items-center gap-3" aria-hidden="true">
                 <span class="h-px flex-1 bg-outline-subtle"></span>
                 <span class="text-xs text-content-muted">or</span>
                 <span class="h-px flex-1 bg-outline-subtle"></span>

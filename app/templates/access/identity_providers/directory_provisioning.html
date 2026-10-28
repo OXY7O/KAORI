@@ -32,13 +32,13 @@
                                 'Available' if has_directory_providers else 'Unavailable',
                                 'normal' if has_directory_providers else 'warning',
                                 [
-                                    ('server-cog', 'Enabled Providers', directory_provider_count, 'Directory sources available'),
-                                    ('shield-check', 'Access Mode', 'Administrative', 'KAORI governs role assignment')
-                                ],
-                                'Back to Providers',
-                                url_for('identity_providers.index'),
-                                action_icon='arrow-left'
-                                ) }}
+                                ('server-cog', 'Enabled Providers', directory_provider_count, 'Directory sources available') ,
+                ('shield-check', 'Access Mode', 'Administrative', 'KAORI governs role assignment')
+                ],
+                'Back to Providers',
+                url_for('identity_providers.index'),
+                action_icon='arrow-left'
+                ) }}
             </div>
         </section>
         <div class="{{ form_context.layout_classes() }}">
@@ -54,11 +54,11 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-base font-semibold text-content-primary">Directory Identity Search</h2>
                                 {{ info_tip.render('directory-identity-search-guide',
-                                                'Directory Identity Search',
-                                                'Search only enabled directory providers.',
-                                                ['Choose an enabled provider.', 'Enter at least two characters of a username, email, or display name.'],
-                                                variant='guide',
-                                                placement='right') }}
+                                                                'Directory Identity Search',
+                                                                'Search only enabled directory providers.',
+                                                                ['Choose an enabled provider.', 'Enter at least two characters of a username, email, or display name.'],
+                                                                variant='guide',
+                                                                placement='right') }}
                                 <span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">Step 1</span>
                             </div>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Find one directory identity before assigning access.</p>
@@ -77,8 +77,8 @@
                                    class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.query.label.text }}</label>
                             <div class="flex flex-col gap-2 sm:flex-row">
                                 {{ search_form.query(class_='h-10 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled',
-                                                        placeholder='Username, email, or display name',
-                                                        disabled=not has_directory_providers) }}
+                                                                placeholder='Username, email, or display name',
+                                                                disabled=not has_directory_providers) }}
                                 <button type="submit"
                                         name="submit"
                                         value="Search"
@@ -89,15 +89,13 @@
                                 </button>
                             </div>
                             {% if search_form.query.errors %}
-                                <p class="mt-1.5 text-xs font-medium text-status-critical-text" role="alert">
-                                    {{ search_form.query.errors|join(", ") }}
-                                </p>
+                                <p class="mt-1.5 text-xs font-medium text-status-critical-text"
+                                   role="alert">{{ search_form.query.errors|join(", ") }}</p>
                             {% endif %}
                         </div>
                         {% if not has_directory_providers %}
-                            <p class="text-sm font-medium text-status-warning-text lg:col-span-2" role="status">
-                                No enabled directory provider. Configure one before searching.
-                            </p>
+                            <p class="text-sm font-medium text-status-warning-text lg:col-span-2"
+                               role="status">No enabled directory provider. Configure one before searching.</p>
                         {% endif %}
                     </form>
                     <div class="border-t border-outline-subtle" data-directory-search-results>
@@ -118,7 +116,9 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 {% if selected_provider %}
                                     <span class="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary">
-                                        <i data-lucide="server" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                                        <i data-lucide="server"
+                                           class="h-3.5 w-3.5 text-kaori-primary"
+                                           aria-hidden="true"></i>
                                         {{ selected_provider.display_name }}
                                     </span>
                                 {% endif %}
@@ -217,13 +217,9 @@
                     </div>
                 </section>
             </main>
-            <aside class="{{ form_context.rail_classes() }}" aria-label="Directory provisioning guidance">
-                {% set provisioning_flow_steps = [
-                    ('Select a Provider', 'Choose an enabled directory source.'),
-                    ('Find an Identity', 'Search by username, email, or display name.'),
-                    ('Assign Access', 'Select a KAORI role and initial account state.'),
-                    ('Provision', 'KAORI links the identity; the directory retains credentials.')
-                ] %}
+            <aside class="{{ form_context.rail_classes() }}"
+                   aria-label="Directory provisioning guidance">
+                {% set provisioning_flow_steps = [('Select a Provider', 'Choose an enabled directory source.'), ('Find an Identity', 'Search by username, email, or display name.'), ('Assign Access', 'Select a KAORI role and initial account state.'), ('Provision', 'KAORI links the identity; the directory retains credentials.')] %}
                 {{ info_flow.render('How Directory Provisioning Works',
                                 'Provision directory-backed access in four steps.',
                                 provisioning_flow_steps,
@@ -231,12 +227,7 @@
                                 note='KAORI projects access; the directory owns credentials.',
                                 note_icon='shield-check',
                                 open_by_default=true) }}
-                {% set before_searching_steps = [
-                    ('Provider', 'Enabled and validated.'),
-                    ('Secrets', 'Bind-secret variable available to KAORI.'),
-                    ('Role', 'Active KAORI role ready for assignment.'),
-                    ('Identity', 'No username or email conflict with an existing user.')
-                ] %}
+                {% set before_searching_steps = [('Provider', 'Enabled and validated.'), ('Secrets', 'Bind-secret variable available to KAORI.'), ('Role', 'Active KAORI role ready for assignment.'), ('Identity', 'No username or email conflict with an existing user.')] %}
                 {{ context_guidance.render('Before Searching',
                                 'Check prerequisites before searching.',
                                 before_searching_steps,
