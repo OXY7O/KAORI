@@ -89,7 +89,7 @@ def test_expiration_windows_are_observed_only_not_leases(stub_sources):
     result = view.build_pki_evidence_workspace(kind='expiration')
     assert [item['value'] for item in result['metrics']] == [2, 3, 2, 1]
     assert result['delivery'] is None and result['public'] is None
-    assert 'Lease' in result['description'] or 'rotation' in result['description']
+    assert 'not Lease renewal' in result['description']
 
 
 @pytest.mark.parametrize('kind', ['certificates', 'pki', 'expiration'])
