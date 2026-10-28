@@ -94,7 +94,14 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
     registry = load('integrations/registry/contract.yaml')
 
     domain_keys = {item['key'] for item in taxonomy['domains']}
-    assert domain_keys == {'orchestration', 'observability', 'storage', 'registry'}
+    assert domain_keys == {
+        'orchestration',
+        'observability',
+        'storage',
+        'registry',
+        'secrets_management',
+        'source_control',
+    }
     assert {item['asset_type'] for item in taxonomy['consumer_assets']} >= {
         'kubernetes_cluster',
         'object_storage_system',
