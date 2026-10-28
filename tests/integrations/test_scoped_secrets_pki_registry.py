@@ -247,7 +247,7 @@ def test_missing_current_version_readback_blocks_positive_page(registry_source):
     assert _read(decision).status == 'source_unavailable'
 
 
-@pytest.mark.parametrize(('page', 'per_page'), [(0, 5), (1, 8), (1, 100), (-1, 5)])
+@pytest.mark.parametrize(('page', 'per_page'), [(0, 5), (1, 8), (1, 100), (-1, 5), (True, 5), (1, False)])
 def test_unapproved_pagination_limits_are_denied(registry_source, page, per_page):
     result = _read(_decision(registry_source), page=page, per_page=per_page)
     assert result.status == 'scope_required'

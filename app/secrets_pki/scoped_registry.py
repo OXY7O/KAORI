@@ -94,6 +94,11 @@ def _denied(*, page: int, per_page: int, status: Literal['scope_required', 'sour
     return ScopedSecretPage(status, None, page, per_page, ())
 
 
+def _invalid_pagination(*, page: int, per_page: int) -> bool:
+    """Reject unsafe paging inputs before any committed Secret read."""
+    return type(page) is not int or page < 1 or type(per_page) is not int or per_page not in _PAGE_SIZES
+
+
 def _approved(decision: ScopedRegistryDecision | None, *, actor_id: int, now: datetime) -> bool:
     if decision is None:
         return False
@@ -167,7 +172,7 @@ def read_scoped_secret_registry(
     A view permission or knowing an integration ID is never enough.
     """
     instant = _time(now or datetime.now(UTC))
-    if instant is None or type(page) is not int or page < 1 or type(per_page) is not int or per_page not in _PAGE_SIZES:
+    if instant is None or _invalid_pagination(page=page, per_page=per_page):
         return _denied(page=1, per_page=5, status='scope_required')
     if not _approved(decision, actor_id=actor_id, now=instant):
         return _denied(page=page, per_page=per_page, status='scope_required')
@@ -306,7 +311,7 @@ def read_governed_scoped_secret_registry(
     from app.platform_operations.notifications.service import stage_operational_activity
 
     instant = _time(now or datetime.now(UTC))
-    if instant is None or type(page) is not int or page < 1 or type(per_page) is not int or per_page not in _PAGE_SIZES:
+    if instant is None or _invalid_pagination(page=page, per_page=per_page):
         return _denied(page=1, per_page=5, status='scope_required')
     try:
         admission = evaluate_exact_vault_scope(
