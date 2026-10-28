@@ -270,14 +270,17 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             mfa_policy_mode=Mock(return_value='disabled'),
         ),
         patch.object(login_manager, '_user_callback', lambda _user_id: user),
-        patch(
-            'app.bootstrap.presentation.get_navigation_notification_context',
-            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        patch.multiple(
+            'app.bootstrap.presentation',
+            get_navigation_notification_context=Mock(return_value=EMPTY_NAVIGATION_NOTIFICATIONS),
+            pop_operational_feedback=Mock(return_value=None),
+            build_cluster_onboarding_context=Mock(return_value=HIDDEN_CLUSTER_ONBOARDING),
         ),
-        patch('app.bootstrap.presentation.pop_operational_feedback', return_value=None),
-        patch(
-            'app.bootstrap.presentation.build_cluster_onboarding_context',
-            return_value=HIDDEN_CLUSTER_ONBOARDING,
+        # Real domain presentation, but isolated committed-state collection seams.
+        patch.multiple(
+            'app.integrations.domain_service',
+            _load_domain_instances=Mock(return_value=[]),
+            _load_related_bindings=Mock(return_value=[]),
         ),
         patch(
             'app.platform_operations.notifications.routes.get_navigation_notification_context',
