@@ -42,8 +42,15 @@ def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
 
     for label in ('Delivery Capability', 'Provider Registry', 'Delivery Evidence'):
         assert label in source
-    assert '{% for provider in payload.providers %}' in source
-    assert 'notification_subsection(provider.label' in source
+
+    channels = (
+        ROOT / 'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    ).read_text(encoding='utf-8')
+    assert '{% for provider in payload.providers %}' in channels
+    assert '{{ provider.label }}' in channels
+    assert '{{ provider.description }}' in channels
+    assert 'table_label.status_label(provider.status, provider.tone' in channels
+    assert 'Open {{ provider.label }} setup guide' in channels
 
 
 def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None:
