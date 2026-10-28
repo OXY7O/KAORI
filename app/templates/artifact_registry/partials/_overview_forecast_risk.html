@@ -81,11 +81,11 @@
                         {{ table_label.status_label(overview.forecast.risk, forecast_tone, size='detail') }}
                     </div>
                     {% set risk_conclusion = {
-                        'Critical': 'Critical quota pressure; review committed growth evidence.',
-                        'Medium': 'Developing quota pressure; review committed growth evidence.',
-                        'Low': 'Quota headroom available; growth uses committed evidence.',
-                        'Unknown': 'Quota outlook uncertain; committed evidence is incomplete.'
-                        } %}
+                        "Critical": "Critical quota pressure; review committed growth evidence.",
+                        "Medium": "Developing quota pressure; review committed growth evidence.",
+                        "Low": "Quota headroom available; growth uses committed evidence.",
+                        "Unknown": "Quota outlook uncertain; committed evidence is incomplete."
+                    } %}
                     <p class="mt-2 text-xs leading-5 text-content-secondary xl:whitespace-nowrap"
                        title="{{ overview.capacity.risk_detail }} {{ overview.forecast.detail }}">{{ risk_conclusion.get(overview.capacity.risk, risk_conclusion['Unknown']) }}</p>
                 </div>

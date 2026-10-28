@@ -3,9 +3,10 @@
 <div class="p-3 sm:p-4" data-kaori-idp-expanded-detail>
     {% call detail_ui.resource_sheet() %}
         {% call detail_ui.inventory_section('Provider & Connection', 'plug-zap',
-                                           description='Adapter identity and connection.',
-                                           compact_layout=true) %}
-            <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5" data-kaori-idp-connection-facts>
+            description='Adapter identity and connection.',
+            compact_layout=true) %}
+            <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5"
+                 data-kaori-idp-connection-facts>
                 {{ detail_ui.inventory_row('Provider', row.definition.label) }}
                 {{ detail_ui.inventory_row('Instance Key', provider.key, break_all=true) }}
                 {{ detail_ui.inventory_row('Adapter', row.definition.adapter_key|replace('_', ' ') |title) }}
@@ -15,9 +16,10 @@
             </div>
         {% endcall %}
         {% call detail_ui.inventory_section('Identity & Access', 'contact-round',
-                                           description='Identity projection and KAORI access.',
-                                           compact_layout=true) %}
-            <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5" data-kaori-idp-access-facts>
+            description='Identity projection and KAORI access.',
+            compact_layout=true) %}
+            <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5"
+                 data-kaori-idp-access-facts>
                 {{ detail_ui.inventory_row('Projection', row.projection) }}
                 {{ detail_ui.inventory_row('Linked Identities', row.identity_links) }}
                 {{ detail_ui.inventory_row('Access Model', row.access_model.label) }}
