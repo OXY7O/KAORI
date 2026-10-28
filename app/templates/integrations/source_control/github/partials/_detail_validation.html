@@ -36,14 +36,14 @@
         loading_active=validation_job and validation_job.is_active,
         loading_label='Running GitHub Full Validation',
         title_extra=info_tip.render('github-full-validation-guide',
-            'GitHub Full Validation',
-            'Full Validation verifies installation identity and read grants through an admitted JobExecution.',
-            [
-                'GitHub remains authoritative for actual permissions.',
-                'Readiness does not imply synchronized repository inventory or exact source SHA.',
-                'Synchronize repositories separately after validation.'
-            ],
-            placement='right', variant='guide')
+        'GitHub Full Validation',
+        'Full Validation verifies installation identity and read grants through an admitted JobExecution.',
+        [
+        'GitHub remains authoritative for actual permissions.',
+        'Readiness does not imply synchronized repository inventory or exact source SHA.',
+        'Synchronize repositories separately after validation.'
+        ],
+        placement='right', variant='guide')
         ) %}
         <form method="post"
               action="{{ url_for('github_source_uat.validate', installation_id=installation.id) }}"
@@ -64,7 +64,7 @@
         </form>
     {% endcall %}
     {{ validation_poller.render(validation_job and validation_job.is_active,
-            url_for('github_source_uat.validation_status', installation_id=installation.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
+        url_for('github_source_uat.validation_status', installation_id=installation.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
     '#github-validation-workspace') }}
     {{ provider_job_status.render(validation_job, 'GitHub validation running in worker', 'GitHub') }}
     <div class="space-y-4 p-4 sm:p-5">
@@ -72,7 +72,7 @@
                 'Committed App permission evidence determines installation readiness.',
                 readiness if validation_observed else 'validation_required',
                 (readiness|replace('_', ' ') |title) if validation_observed else 'Not Validated',
-                'Permission-Verified Capabilities',
+        'Permission-Verified Capabilities',
         (validated_count ~ ' / ' ~ total_count) if validation_observed else 'Not Validated',
         readiness_percent,
         capability_metadata,
@@ -100,7 +100,7 @@
                 decision_body,
                 decision_tone,
                 [(capability_summary.required_missing ~ ' required gaps') if validation_observed else 'Required gaps not assessed',
-                 (capability_summary.optional_verified ~ ' optional scopes verified') if validation_observed else 'Optional scopes not assessed']) }}
+        (capability_summary.optional_verified ~ ' optional scopes verified') if validation_observed else 'Optional scopes not assessed']) }}
         {% include "integrations/source_control/github/partials/_capability_registry.html" %}
     </div>
 </section>

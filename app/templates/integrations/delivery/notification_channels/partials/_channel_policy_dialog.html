@@ -9,7 +9,8 @@
         <header class="shrink-0 border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="list-checks" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
@@ -34,16 +35,25 @@
         </header>
         <div class="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-surface-page p-4 sm:p-6">
             {% if channel.lifecycle_state == 'retired' %}
-                <section class="rounded-xl border border-outline-default bg-surface-card p-4" aria-label="Retirement evidence">
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4"
+                         aria-label="Retirement evidence">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h3 class="text-sm font-semibold text-content-primary">Retirement Evidence</h3>
                         {{ table_label.status_label('Archived', 'unknown') }}
                     </div>
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div><dt class="text-xs text-content-muted">Retired At</dt>
-                             <dd class="text-sm text-content-primary">{{ channel.retired_at|user_datetime('Not recorded') if channel.retired_at else 'Not recorded' }}</dd></div>
-                        <div><dt class="text-xs text-content-muted">Retired By (User ID)</dt>
-                             <dd class="text-sm text-content-primary">{{ channel.retired_by_user_id or 'Unavailable' }}</dd></div>
+                        <div>
+                            <dt class="text-xs text-content-muted">Retired At</dt>
+                            <dd class="text-sm text-content-primary">
+                                {{ channel.retired_at|user_datetime("Not recorded") if channel.retired_at else 'Not recorded' }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-content-muted">Retired By (User ID)</dt>
+                            <dd class="text-sm text-content-primary">
+                                {{ channel.retired_by_user_id or 'Unavailable' }}
+                            </dd>
+                        </div>
                     </dl>
                     <p class="mt-3 break-words text-xs leading-5 text-content-secondary"><span class="font-semibold">Reason:</span> {{ channel.retirement_reason }}</p>
                     <p class="mt-2 text-xs text-content-muted">{{ channel.delivery_record_count }} committed delivery records retained.</p>
@@ -54,15 +64,21 @@
                 <dl class="grid gap-4 sm:grid-cols-3">
                     <div class="min-w-0">
                         <dt class="text-xs font-semibold text-content-muted">Minimum Severity</dt>
-                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ channel.minimum_severity_label }}</dd>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">
+                            {{ channel.minimum_severity_label }}
+                        </dd>
                     </div>
                     <div class="min-w-0">
                         <dt class="text-xs font-semibold text-content-muted">Delivery Domains</dt>
-                        <dd class="mt-1 break-words text-sm text-content-primary">{{ channel.domain_labels|join(', ') if channel.domain_labels else 'No domains selected' }}</dd>
+                        <dd class="mt-1 break-words text-sm text-content-primary">
+                            {{ channel.domain_labels|join(", ") if channel.domain_labels else 'No domains selected' }}
+                        </dd>
                     </div>
                     <div class="min-w-0">
                         <dt class="text-xs font-semibold text-content-muted">Approved Events</dt>
-                        <dd class="mt-1">{{ table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks') }}</dd>
+                        <dd class="mt-1">
+                            {{ table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks') }}
+                        </dd>
                     </div>
                 </dl>
             </section>
@@ -90,7 +106,9 @@
                                 <ul class="mt-3 grid min-w-0 gap-x-4 gap-y-2 border-t border-outline-subtle pt-3 sm:mt-0 sm:grid-cols-2 sm:border-l sm:border-t-0 sm:py-1 sm:pl-5 sm:pt-0">
                                     {% for event_label in group.events %}
                                         <li class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
-                                            <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                            <i data-lucide="check"
+                                               class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                               aria-hidden="true"></i>
                                             <span class="min-w-0 break-words">{{ event_label }}</span>
                                         </li>
                                     {% endfor %}
@@ -110,7 +128,9 @@
             </section>
         </div>
         <footer class="flex shrink-0 justify-end border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
-            <button type="button" data-kaori-dialog-close class="{{ table_ui.action_classes() }}">Close</button>
+            <button type="button"
+                    data-kaori-dialog-close
+                    class="{{ table_ui.action_classes() }}">Close</button>
         </footer>
     </section>
 </dialog>
