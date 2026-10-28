@@ -333,7 +333,7 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(sidebar).to_be_visible()
 
         section_labels = sidebar.locator('[data-kaori-sidebar-section] .sidebar-section-label').all_inner_texts()
-        assert section_labels == ['MAIN', 'INFRASTRUCTURE', 'INSIGHTS', 'PLATFORM', 'ADMINISTRATION']
+        assert section_labels == ['MAIN', 'INFRASTRUCTURE', 'ASSURANCE', 'INSIGHTS', 'PLATFORM', 'ADMINISTRATION']
 
         expect(sidebar.locator('[data-kaori-sidebar-workspace="welcome"]')).to_be_visible()
         for key in (
