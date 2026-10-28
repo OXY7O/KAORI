@@ -62,8 +62,14 @@ def test_action_aware_filter_keeps_actions_compact_and_search_fills_remainder() 
     bucket = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
     forecast = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
 
-    assert 'class="block min-w-0 flex-1" for="object-storage-bucket-search"' in bucket
-    assert 'class="flex flex-none flex-wrap items-center gap-2"' in bucket
+    assert 'class="{{ table_ui.filter_layout_classes() }} {{ table_ui.inventory_filter_bar_classes() }}"' in bucket
+    assert '<label for="object-storage-bucket-search"' in bucket
+    assert 'class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>' in bucket
+    assert "table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name'," in bucket
+    assert "id='object-storage-bucket-search')" in bucket
+    header = bucket.split('</header>', 1)[0]
+    assert 'class="flex shrink-0 items-center justify-end"' in header
+    assert 'registry_ui.clear_filters_action(' in header
     assert "keyup[event.target.name === 'bucket_q'] changed delay:450ms" in bucket
     assert "search[event.target.name === 'bucket_q']" in bucket
     assert 'clear_filters_action(' in bucket
