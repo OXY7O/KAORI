@@ -69,7 +69,9 @@
                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.pki_mounts.label.text }}</label>
                         {{ form.pki_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="pki, pki-internal") }}
                         <p class="mt-1 text-xs text-content-muted">Read-only public issuer certificates and fingerprint evidence. Maximum four PKI mounts. Empty disables PKI collection; the Vault AppRole must have explicit issuer LIST and public certificate read permissions.</p>
-                        {% for error in form.pki_mounts.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                        {% for error in form.pki_mounts.errors %}
+                            <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
                     </div>
                     <label class="flex items-start gap-3 rounded-xl border border-outline-subtle p-4 text-sm text-content-primary sm:col-span-2">
                         {{ form.pki_stored_certs_enabled(class_="mt-1 h-4 w-4 accent-kaori-primary") }}
