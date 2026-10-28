@@ -81,8 +81,8 @@
                 {{ pagination_ui.resource_name(resource_label, pagination.total_items) }}
             </span>
             <form method="GET"
-                  action="{{ url_for(endpoint, **(request.view_args or {})) }}"
-                  hx-get="{{ url_for(endpoint, **(request.view_args or {})) }}"
+                  action="{{ url_for(endpoint, **(request.view_args or {}) ) }}"
+                  hx-get="{{ url_for(endpoint, **(request.view_args or {}) ) }}"
                   hx-target="#{{ registry_id }}"
                   hx-select="#{{ registry_id }}"
                   hx-swap="outerHTML"
