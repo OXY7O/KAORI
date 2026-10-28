@@ -15,8 +15,8 @@ from flask import Blueprint, Response, abort, current_app, make_response, redire
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import build_pagination_window, paginate_query, pagination_payload
