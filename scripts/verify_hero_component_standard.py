@@ -1223,13 +1223,24 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     profile_templates = _profile_templates()
-    if len(profile_templates) != 3:
+    required_profile_consumers = {
+        TEMPLATES / 'kubernetes/dashboard/partials/_hero.html',
+        TEMPLATES / 'storage/object_storage/dashboard/partials/_hero.html',
+        TEMPLATES / 'artifact_registry/partials/_overview_hero.html',
+        TEMPLATES / 'security_posture/overview.html',
+        TEMPLATES / 'secrets_pki/overview.html',
+        TEMPLATES / 'source_control/overview.html',
+    }
+    missing_consumers = sorted(required_profile_consumers - set(profile_templates))
+    if missing_consumers:
         raise AssertionError(
-            f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
+            'Required Operational Dashboard Hero consumer missing: '
+            + ', '.join(str(path.relative_to(ROOT)) for path in missing_consumers)
         )
-    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_overview_hero.html'
-    if artifact_registry_dashboard not in profile_templates:
-        raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
+    if len(profile_templates) < 7:
+        raise AssertionError(
+            f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
+        )
 
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()
