@@ -42,7 +42,10 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
     ):
         _module(name, monkeypatch)
 
-    logger = SimpleNamespace(exception=lambda *args, **kwargs: None)
+    logger = SimpleNamespace(
+        exception=lambda *args, **kwargs: None,
+        warning=lambda *args, **kwargs: None,
+    )
     sys.modules['flask'].current_app = SimpleNamespace(config={}, logger=logger)
     sys.modules['flask_login'].current_user = SimpleNamespace(id=41)
 
