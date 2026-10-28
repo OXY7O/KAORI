@@ -41,18 +41,23 @@
                  data-tenant-native-cutover-journey>
                 <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3">
                     <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
-                        <i data-lucide="eye" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="eye"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Observed Provider Baseline
                     </div>
                     <p class="mt-1 text-xs text-content-muted">Frozen Native ResourceQuota and LimitRange evidence.</p>
                 </div>
-                <span class="flex items-center justify-center text-kaori-primary" aria-hidden="true">
+                <span class="flex items-center justify-center text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="arrow-right" class="hidden h-4 w-4 md:block"></i>
                     <i data-lucide="arrow-down" class="h-4 w-4 md:hidden"></i>
                 </span>
                 <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
                     <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
-                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="shield-check"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Proposed KAORI Managed Contract
                     </div>
                     <p class="mt-1 text-xs text-content-secondary">Only committed after admitted provider read-back.</p>
@@ -161,7 +166,8 @@
                         </section>
                     {% endfor %}
                 </div>
-                <div class="border-t border-outline-subtle px-4 py-4" aria-label="Native allocation profile coverage">
+                <div class="border-t border-outline-subtle px-4 py-4"
+                     aria-label="Native allocation profile coverage">
                     {{ coverage_comparison.native_sections(resource_profile_advanced_controls) }}
                 </div>
                 <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3">

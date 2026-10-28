@@ -12,9 +12,7 @@
                 </span>
                 <div class="min-w-0">
                     <h4 class="text-sm font-semibold text-content-primary">Committed Access Grant</h4>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                        Authorization, scope and committed provider evidence
-                    </p>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Authorization, scope and committed provider evidence</p>
                 </div>
             </div>
             {{ table_label.status_label(grant.status|title, 'normal' if grant.status == 'active' else 'critical') }}
@@ -24,7 +22,9 @@
                      aria-label="Selected Access Grant">
                 <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
                     <div class="flex items-center gap-2">
-                        <i data-lucide="layers-3" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="layers-3"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         <h5 class="text-sm font-semibold text-content-primary">Grant Context</h5>
                     </div>
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
@@ -63,7 +63,9 @@
                 <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
                          aria-label="Governed grant actions">
                     <div class="flex items-center gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
-                        <i data-lucide="settings-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="settings-2"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         <h5 class="text-sm font-semibold text-content-primary">Governed Actions</h5>
                     </div>
                     <div class="grid min-w-0 gap-px bg-outline-subtle lg:grid-cols-2">
