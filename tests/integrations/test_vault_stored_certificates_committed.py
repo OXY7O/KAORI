@@ -122,7 +122,7 @@ def test_missing_uncommitted_is_unknown_but_real_committed_zero_is_zero(store):
     missing = stored_pki_certificate_readiness(instance=instance)
     assert missing['state'] == 'not_collected'
     assert missing['observed_certificates'] is None
-    commit_stored_pki_certificates(store, _snapshot(empty=True))
+    commit_stored_pki_certificates(store, _snapshot(datetime.now(UTC), empty=True))
     observed = stored_pki_certificate_readiness(instance=instance)
     assert observed['state'] == 'committed'
     assert observed['observed_certificates'] == 0
