@@ -48,6 +48,9 @@ def test_tls_detail_shared_inventory_macro_compiles_with_jinja() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    # Standalone Jinja lacks Flask's KAORI filters; this checks syntax, not formatting.
+    environment.filters['user_datetime'] = str
+    environment.filters['environment_name'] = str
     shared = environment.get_template('components/details/_detail_content.html')
     assert 'bg-surface-card' in shared.module.expanded_workspace_header_classes()
     for path in (
