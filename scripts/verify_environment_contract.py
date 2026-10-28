@@ -207,15 +207,9 @@ def verify_worker_only_secrets(
         if key in shared_documented_keys:
             raise AssertionError(f'Worker-only secret must not be listed in shared environment templates: {key}')
         authority = read(documentation)
-        if (
-            key not in authority
-            or 'Worker-only secret:' not in authority
-            or 'trusted worker runtime' not in authority
-        ):
+        if key not in authority or 'Worker-only secret:' not in authority or 'trusted worker runtime' not in authority:
             raise AssertionError(f'{key}: worker-only secret authority is missing or unqualified')
-        readers = sorted(
-            path for path in runtime_sources if key in accessed_env_keys(path)
-        )
+        readers = sorted(path for path in runtime_sources if key in accessed_env_keys(path))
         if readers != [owner]:
             raise AssertionError(f'{key}: only {owner} may read this worker-only secret; found {readers}')
     return set(WORKER_ONLY_SECRET_AUTHORITIES)
