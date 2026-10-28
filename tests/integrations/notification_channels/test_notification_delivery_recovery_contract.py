@@ -11,6 +11,7 @@ from app.integrations.delivery.notification_channels.contracts import Notificati
 def channel() -> SimpleNamespace:
     return SimpleNamespace(
         provider_key='telegram',
+        lifecycle_state='active',
         destination='channel-A',
         provider_config={},
         credential_payload='{"bot_token":"secret"}',
@@ -107,6 +108,9 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
         def __lt__(self, _value: object) -> Column:
             return self
 
+        def is_(self, _value: object) -> Column:
+            return self
+
         def __eq__(self, _value: object) -> Column:  # type: ignore[override]
             return self
 
@@ -131,7 +135,14 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
         def first(self) -> SimpleNamespace | None:
             return item if calls.count('locked') == 1 else None
 
-    columns = SimpleNamespace(query=Query(), status=Column(), updated_at=Column(), attempt_count=Column(), id=Column())
+    columns = SimpleNamespace(
+        query=Query(),
+        status=Column(),
+        updated_at=Column(),
+        next_retry_at=Column(),
+        attempt_count=Column(),
+        id=Column(),
+    )
     monkeypatch.setattr(service, 'NotificationDelivery', columns)
     monkeypatch.setattr(service, 'or_', lambda *_: True)
     monkeypatch.setattr(service, '_replay_message', lambda *_: message())
