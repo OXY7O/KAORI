@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import abort, render_template
 from flask_login import current_user
 
-from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.observability.alert_source.providers.alertmanager.application.presentation import (
     build_instance_context,
 )
@@ -26,7 +26,7 @@ def instance_context(instance, *, binding_page: int = 1, binding_per_page: int =
     context['capability_registry'] = build_capability_registry_view(
         context.get('capability_rows', []),
         search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True,
+        status_flags=CapabilityStatusFlags(optional_gap=True),
     )
     context['validation_job'] = _active_task(instance.integration_instance_id, 'full_validation')
     context['runtime_refresh_job'] = _active_task(instance.integration_instance_id, 'runtime_refresh')
