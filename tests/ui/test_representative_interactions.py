@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests.ui.visual_audit import (
@@ -922,9 +923,28 @@ def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
 
 
 def test_integration_runtime_cross_page_navigation_keeps_outer_shell_in_viewport(
-    page: Page, kaori_authenticated_base_url: str
+    page: Page, kaori_authenticated_base_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A domain-to-runtime link must not scroll the clipped app shell itself."""
+    from app.integrations import overview_workspace
+
+    # Browser geometry fixture has no Integration tables; keep the real page
+    # and navigation, but isolate its committed SQL portfolio/runtime reads.
+    empty_counts = dict.fromkeys(
+        (
+            'total',
+            'configured',
+            'ready',
+            'readiness_review',
+            'validation_required',
+            'not_configured',
+            'attention',
+            'blocked',
+        ),
+        0,
+    )
+    monkeypatch.setattr(overview_workspace, 'overview_portfolio_counts', lambda: ({}, empty_counts))
+    monkeypatch.setattr(overview_workspace, 'runtime_fleet', lambda: None)
     page.set_viewport_size({'width': 1440, 'height': 900})
     _login(page, kaori_authenticated_base_url)
 
