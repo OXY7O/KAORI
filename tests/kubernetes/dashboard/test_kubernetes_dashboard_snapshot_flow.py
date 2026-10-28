@@ -466,10 +466,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.highest_projected_label == 'Memory'
     assert snapshot.highest_projected_percent == 92.0
     assert snapshot.has_historical_series is True
-    assert snapshot.insight == (
-        'Memory has the highest 60-day utilization projection at 92%. '
-        'Review demand against worker capacity and headroom.'
-    )
+    assert snapshot.insight == '60-day forecast peak: Memory 92%; review worker headroom.'
 
 
 def test_dashboard_kpi_display_copy_uses_title_case() -> None:
