@@ -17,20 +17,17 @@ from app.secrets_pki.presentation import build_secrets_pki_operational_summary
 _PAGE = {
     'leases': (
         'Leases & Renewal',
-        'Known Lease observations and verified renewal are not materialized. '
-        'KV v2 version metadata is shown separately and is never Lease evidence.',
+        'Review known Lease evidence without assuming completed renewal.',
         'clock-3',
     ),
     'consumers': (
         'Consumers & Dependencies',
-        'Cross-domain public TLS evidence is separate from confirmed Secret '
-        'consumer adoption or verified rotation cutover.',
+        'Inspect consumer links without assuming verified Secret delivery.',
         'waypoints',
     ),
     'governance': (
         'Secrets & PKI Governance',
-        'Independent committed source coverage, telemetry binding readiness '
-        'and evidence limits, without revealing scope-policy targets.',
+        'Review source coverage and evidence limits without exposing secrets.',
         'shield-check',
     ),
 }

@@ -46,6 +46,18 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (INTEGRATION_OVERVIEW_HERO, 'description'),
     (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
 }
+SECRETS_PKI_HERO_DESCRIPTION_SOURCES = {
+    TEMPLATES / 'secrets_pki' / 'evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'evidence_workspaces.py',
+        '_WORKSPACES',
+        {'certificates', 'pki', 'expiration'},
+    ),
+    TEMPLATES / 'secrets_pki' / 'operational_evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'operational_evidence_workspaces.py',
+        '_PAGE',
+        {'leases', 'consumers', 'governance'},
+    ),
+}
 
 DESCRIPTION_MIN_WORDS = 7
 DESCRIPTION_MAX_WORDS = 15
@@ -483,7 +495,11 @@ def _has_registered_description_resolver(path: Path, variable: str) -> bool:
         and path.name in {'blocked.html', 'pending.html'}
         and variable == 'materialization_description'
     )
-    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or materialization_description
+    return (
+        (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS
+        or (path in SECRETS_PKI_HERO_DESCRIPTION_SOURCES and variable == 'description')
+        or materialization_description
+    )
 
 
 def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
@@ -869,6 +885,41 @@ def _cluster_required_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _secrets_pki_workspace_descriptions() -> dict[str, str]:
+    """Resolve each governed Hero sentence from static Secrets & PKI read models."""
+    descriptions: dict[str, str] = {}
+    for template, (source_path, name, required) in SECRETS_PKI_HERO_DESCRIPTION_SOURCES.items():
+        owner = str(source_path.relative_to(ROOT))
+        tree = ast.parse(_read(source_path), filename=str(source_path))
+        definitions = [
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
+        ]
+        if len(definitions) != 1:
+            raise AssertionError(f'{owner}: expected one static {name} Hero definition')
+        try:
+            workspaces = ast.literal_eval(definitions[0])
+        except (ValueError, TypeError, SyntaxError) as exc:
+            raise AssertionError(f'{owner}: {name} Hero definitions must be static literals') from exc
+        if not isinstance(workspaces, dict) or set(workspaces) != required:
+            raise AssertionError(f'{owner}: {name} Hero workspace keys must be {sorted(required)}')
+        if '{{ description }}' not in _read(template):
+            raise AssertionError(f'{template.relative_to(ROOT)}: missing governed Hero description binding')
+        for workspace, record in workspaces.items():
+            if name == '_WORKSPACES' and isinstance(record, dict):
+                description = record.get('description')
+            elif name == '_PAGE' and isinstance(record, tuple) and len(record) == 3:
+                description = record[1]
+            else:
+                raise AssertionError(f'{owner}:{workspace}: invalid static Hero description record')
+            if not isinstance(description, str) or not description.strip():
+                raise AssertionError(f'{owner}:{workspace}: missing static Hero description')
+            descriptions[f'{owner}:{workspace}'] = _normalize_description_text(description)
+    return descriptions
+
+
 def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
@@ -881,6 +932,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_registry_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
+    descriptions.update(_secrets_pki_workspace_descriptions())
     failures: list[str] = []
     for owner, description in descriptions.items():
         try:
