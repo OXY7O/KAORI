@@ -2132,10 +2132,7 @@ const startTopologyWorkspace = () => {
                 const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
                 const margin = 20
                 const clipped =
-                    box.x1 < margin ||
-                    box.y1 < margin ||
-                    box.x2 > rect.width - margin ||
-                    box.y2 > rect.height - margin
+                    box.x1 < margin || box.y1 < margin || box.x2 > rect.width - margin || box.y2 > rect.height - margin
                 if (!readableFocusActive && clipped) {
                     window.requestAnimationFrame(fitGraphToCanvas)
                 }

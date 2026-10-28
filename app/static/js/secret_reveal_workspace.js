@@ -85,8 +85,8 @@
 
         // Prefer a short, focusable action over the full-height registry card.
         // If the currently filtered page has no approved row, show its header.
-        const target = panel.querySelector('[data-reveal-once-action]')
-            || panel.querySelector('#my-secret-reveal-requests')
+        const target =
+            panel.querySelector('[data-reveal-once-action]') || panel.querySelector('#my-secret-reveal-requests')
         if (!target) return
 
         event.preventDefault()
@@ -134,10 +134,12 @@
         const view = new URL(window.location.href).searchParams.get('reveal_view')
         if (view !== 'mine') return
         // Await the Alpine-selected tab and the browser's own scroll restore.
-        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-            const main = document.querySelector('[data-kaori-main-scroll]')
-            main?.scrollTo({ top: 0, behavior: 'auto' })
-        }))
+        window.requestAnimationFrame(() =>
+            window.requestAnimationFrame(() => {
+                const main = document.querySelector('[data-kaori-main-scroll]')
+                main?.scrollTo({ top: 0, behavior: 'auto' })
+            })
+        )
     }
 
     const schedulePolling = (root) => {

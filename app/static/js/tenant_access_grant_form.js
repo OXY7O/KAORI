@@ -101,8 +101,7 @@
         }
         setText(scopeContext, `${scopeLabel} · ${targetLabel}`)
 
-        let providerMessage =
-            'Select a Membership to resolve Tenant and scope.'
+        let providerMessage = 'Select a Membership to resolve Tenant and scope.'
         if (tenantId && providerKey === 'capsule') {
             providerMessage =
                 `${tenantName} uses Capsule authority. Apply checks live RBAC capability, exact ClusterRole,` +

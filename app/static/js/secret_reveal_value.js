@@ -57,9 +57,9 @@
     // A sensitive value must not remain mounted behind another workspace tab.
     window.addEventListener('secret-reveal:tab-changed', (event) => {
         if (event.detail?.tab === 'mine') return
-        document.querySelectorAll(selector).forEach((panel) =>
-            clearValue(panel, 'The one-time Secret value was cleared when leaving My Requests.')
-        )
+        document
+            .querySelectorAll(selector)
+            .forEach((panel) => clearValue(panel, 'The one-time Secret value was cleared when leaving My Requests.'))
     })
     document.addEventListener('htmx:beforeSwap', (event) => {
         event.detail?.target?.querySelectorAll?.(selector).forEach((panel) => clearValue(panel))
