@@ -992,7 +992,7 @@ def _verify_notification_channels_hero_metadata() -> None:
         '{% for provider in payload.providers %}' not in catalog
         or '{{ provider.label }}' not in catalog
         or '{{ provider.description }}' not in catalog
-        or '{{ provider.status }}' not in catalog
+        or 'table_label.status_label(provider.status, provider.tone' not in catalog
         or 'Open {{ provider.label }} setup guide' not in catalog
     ):
         raise AssertionError(f'{owner}: complete provider catalog must remain in the Channels workspace')
