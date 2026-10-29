@@ -48,7 +48,9 @@ def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns()
     ui = read(UI)
     presentation = read(PRESENTATION)
     coverage = read(COVERAGE)
-    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
     assert '_domain_coverage(name)' in presentation
     assert 'sm:grid-cols-2' in ui
     assert 'lifecycle.coverage|length == 3' in ui
