@@ -244,14 +244,17 @@ def test_notification_channel_registries_follow_kaori_rows_contract() -> None:
 
 def test_delivery_activity_exposes_persisted_retry_and_dedup_evidence() -> None:
     service = read('app/integrations/delivery/notification_channels/service.py')
+    projection = read('app/integrations/delivery/notification_channels/service_helpers.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert 'query = NotificationDelivery.query' in service
     assert 'query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())' in service
     assert 'paginate_query(query, page=page, per_page=per_page)' in service
-    assert "'attempt_count': delivery.attempt_count" in service
-    assert "'provider_message_id': delivery.provider_message_id or ''" in service
-    assert "'error_message': delivery.error_message or ''" in service
+    assert '_delivery_view,' in service
+    assert '**_delivery_view(row)' in service
+    assert "'attempt_count': delivery.attempt_count" in projection
+    assert "'provider_message_id': delivery.provider_message_id or ''" in projection
+    assert "'error_message': delivery.error_message or ''" in projection
     for label in ('Channel', 'Event', 'Scope', 'Severity', 'Status', 'Attempts', 'Recorded', 'Evidence'):
         assert f'>{label}<' in page
     assert 'No Notification Deliveries Recorded' in page
@@ -381,7 +384,7 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
 
     assert "request.args.get('delivery_event_key', '')" in routes
     assert 'query.filter(NotificationDelivery.event_key == event_key)' in service
-    assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
+    assert "normalized_delivery_key = str(delivery_filters.event_key or '').strip()[:255]" in service
     assert "'delivery_filter': normalized_delivery_key" in service
     assert "table_ui.search_field('delivery_event_key'" in page
     assert "table_registry.filter_form('notification_channels.index'," in page
