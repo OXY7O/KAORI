@@ -35,7 +35,11 @@ def test_job_configuration_copy_is_compact_and_planned_catalog_is_removed() -> N
     assert 'Centralized orchestration with domain-owned execution.' in workspace
     assert 'Job orchestration is centralized here while execution logic remains in its owning domain.' not in workspace
     assert 'Planned Job Definitions' not in workspace
-    assert 'Keep the last successful result available.' in materialization
+    assert 'Keep the last successful snapshot available.' in materialization
+    assert (
+        'The last successful snapshot remains available while the worker prepares a newer committed result.'
+        in materialization
+    )
     assert 'Serve the last successful result during refresh or source failure.' not in materialization
 
 
