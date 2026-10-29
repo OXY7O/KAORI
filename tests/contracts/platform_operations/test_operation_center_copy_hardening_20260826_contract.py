@@ -79,8 +79,7 @@ def test_data_lifecycle_evidence_copy_is_compact() -> None:
 
     coverage_catalog = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
     assert (
-        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage'
-        in presentation
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
     )
     assert "'coverage': _domain_coverage(name)" in presentation
     assert 'Case lifecycle evidence from initial detection through final closure.' in coverage_catalog
