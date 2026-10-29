@@ -286,12 +286,12 @@ permissions:
   module: secrets_pki
   action: view
   description: View Secrets & PKI metadata summaries and evidence readiness without Secret values.
-  matrix_description: Review safe committed Secrets & PKI operational metadata and source freshness. Does not allow plaintext reveal, private keys, or unrestricted sensitive Secret path access.
+  matrix_description: Review safe committed Secrets & PKI metadata and source freshness. Does not allow plaintext reveal, private keys, or unrestricted sensitive Secret path access.
 - key: secrets_pki.sync
   module: secrets_pki
   action: sync
   description: Run approved metadata-only Secrets & PKI inventory reconciliation.
-  matrix_description: Start governed, metadata-only Vault inventory jobs for approved provider scopes through canonical JobExecution; does not configure Vault or reveal Secret material.
+  matrix_description: Start governed metadata-only Vault inventory jobs for approved provider scopes via canonical JobExecution; does not configure Vault or reveal Secret material.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
