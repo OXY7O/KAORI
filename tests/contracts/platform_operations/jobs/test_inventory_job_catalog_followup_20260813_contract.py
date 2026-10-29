@@ -11,8 +11,11 @@ def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
     workspace = read('app/templates/platform_operations/jobs/configuration/_workspace.html')
 
     assert 'max-h-[620px]' not in workspace
-    assert 'overflow-y-auto' not in workspace
-    assert '<div class="space-y-3">' in workspace
+    assert 'aria-label="Registered Jobs"' in workspace
+    assert 'x-ref="jobList"' in workspace
+    assert 'h-full space-y-3 overflow-y-auto overscroll-contain p-3' in workspace
+    selected_job_workspace = workspace.split('<main class=', 1)[1]
+    assert 'overflow-y-auto' not in selected_job_workspace
 
 
 def test_kubernetes_inventory_job_is_named_explicitly() -> None:
