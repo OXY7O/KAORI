@@ -127,12 +127,23 @@ def test_capsule_drift_empty_tables_render_canonical_footer_and_htmx_targets() -
         ),
     ):
         source = (TEMPLATES / template).read_text(encoding='utf-8')
-        assert f'<section id="{registry_id}"' in source
-        assert f"'{loading_id}'" in source
-        assert f"'{registry_id}'" in source
+        assert f'{{% set registry_id = "{registry_id}" %}}' in source
+        assert f'{{% set loading_id = "{loading_id}" %}}' in source
+        assert '<section id="{{ registry_id }}"' in source
         assert '.total_items > 0 %}' not in source
 
-        rendered = environment.get_template(template).render(**{rows_key: [], pagination_key: empty_page})
+        filters_key = (
+            'capsule_tenant_quota_filters'
+            if registry_id == 'capsule-tenant-quota-drift'
+            else 'capsule_shared_drift_filters'
+        )
+        rendered = environment.get_template(template).render(
+            **{
+                rows_key: [],
+                pagination_key: empty_page,
+                filters_key: SimpleNamespace(tenant_id='', search=''),
+            }
+        )
         assert f'id="{registry_id}"' in rendered
         assert f'id="{loading_id}"' in rendered
         assert f'data-kaori-canonical-registry-footer="{registry_id}"' in rendered
