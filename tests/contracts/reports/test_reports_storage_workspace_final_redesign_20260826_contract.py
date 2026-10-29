@@ -74,7 +74,9 @@ def test_reports_requested_copy_is_compact() -> None:
 
 
 def test_reports_section_headings_use_canonical_icons() -> None:
-    overview = read('app/templates/reports/overview/partials/_reporting_estate_capability.html')
+    overview = read('app/templates/reports/overview/partials/_reporting_contracts_automation.html')
+    overview_page = read('app/templates/reports/overview/index.html')
+    assert '{% include "reports/overview/partials/_reporting_contracts_automation.html" %}' in overview_page
     schedules = read('app/templates/reports/schedules/index.html')
 
     contracts = overview.split('id="contracts-automation-title"', 1)[0][-1200:]

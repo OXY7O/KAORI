@@ -61,7 +61,12 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
         'Published formats stay family-owned; candidates remain blocked until contract and renderer are registered.'
         in estate
     )
-    assert 'Published contracts, templates, and schedules approved for governed generation.' in estate
+    contracts = read('app/templates/reports/overview/partials/_reporting_contracts_automation.html')
+    overview = read('app/templates/reports/overview/index.html')
+    assert 'Published contracts, templates, and schedules approved for governed generation.' in contracts
+    assert 'data-report-domain-boundary="true"' in estate
+    assert 'data-contract-automation-boundary="true"' in contracts
+    assert '{% include "reports/overview/partials/_reporting_contracts_automation.html" %}' in overview
     assert 'candidate domains stay non-executable' not in estate
     assert 'recurring schedules that are admitted to the governed generation workflow' not in estate
 
