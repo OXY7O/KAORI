@@ -8,7 +8,9 @@ def test_native_foreign_role_equivalence_is_review_only_and_provider_authoritati
     routes = (ROOT / 'app/kubernetes/tenant/routes_access.py').read_text()
     template = (ROOT / 'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html').read_text()
     native_template = template
-    context = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text()
+    context = (ROOT / 'app/kubernetes/tenant/admin_workspace.py').read_text()
+    facade = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text()
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     assert "'import_authorized': False" in service
     assert "'effective_rbac_verified': False" in service
     assert "'identity_verified': False" in service
