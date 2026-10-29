@@ -896,6 +896,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     routes = read('app/kubernetes/tenant/routes.py')
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
+    allocation = read('app/kubernetes/tenant/allocation_overview.py')
     governance = capacity_governance_source()
     script = read('app/static/js/tenant_resource_profile_presets.js')
 
@@ -955,11 +957,11 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Blank means Not Governed.' in parent
     assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in parent
     assert "action_button.classes('primary')" in parent
-    assert "context['capacity_budget_bars'] = {" in routes
-    assert "str(item['cluster'].id): build_tenant_allocation_bars(item)" in routes
-    assert 'paginate_sequence(' in routes
-    assert "context['capacity_pagination']" in routes
-    assert "context['capacity_filters']" in routes
+    assert "context['capacity_budget_bars'] = {" in allocation
+    assert "str(item['cluster'].id): build_tenant_allocation_bars(item)" in allocation
+    assert 'paginate_sequence(' in allocation
+    assert "context['capacity_pagination']" in allocation
+    assert "context['capacity_filters']" in allocation
     assert "active_view not in {'profiles', 'capacity', 'workflow'}" in routes
     assert 'tenant-capacity-policy-state' in page
     assert "const policies = readJson('tenant-capacity-policy-state')" in script
@@ -971,6 +973,8 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     detail = read('app/templates/kubernetes/tenant/partials/_allocation_budget_detail.html')
     overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
     routes = read('app/kubernetes/tenant/routes.py')
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
+    allocation = read('app/kubernetes/tenant/allocation_overview.py')
     table = read('app/templates/components/table.html')
 
     assert "item.snapshot_state in ['current', 'fresh']" in budget
@@ -1001,11 +1005,11 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
         'capacity_evidence',
         'capacity_resource',
     ):
-        assert f"request.args.get('{query_name}')" in routes
+        assert f"args.get('{query_name}')" in allocation
         assert query_name in budget
-    assert "context['active_allocation_view'] = allocation_view" in routes
-    assert "if allocation_view not in {'overview', 'budget'}:" in routes
-    assert "capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]" in routes
+    assert "context['active_allocation_view'] = allocation_view" in allocation
+    assert "if allocation_view not in {'overview', 'budget'}:" in allocation
+    assert "capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]" in allocation
     assert 'capacity_budget_bars' in budget
     assert 'progress_bar.stacked_bar(bar.percent,' in detail
     assert 'No Matching Clusters' in budget
@@ -1311,6 +1315,7 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     parent = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
     overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
     routes = read('app/kubernetes/tenant/routes.py')
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
     projection = read('app/kubernetes/tenant/allocation_overview.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
     capacity_scope = read('app/kubernetes/tenant/capacity_allocation_state.py')
@@ -1338,14 +1343,14 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert 'not actual workload utilization or physical reservations' in overview
     assert 'Operator-governed requests.storage ceiling; not backend physical free space.' in overview
 
-    assert 'build_tenant_allocation_bars(selected)' in routes
-    assert "build_tenant_contribution_rows(str(selected['cluster'].id))" in routes
-    assert "context['allocation_tenant_total'] = len(tenant_rows)" in routes
-    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in routes
-    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
-    assert "'allocation_page'" not in routes
-    assert "'allocation_per_page'" not in routes
-    assert "if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:" in routes
+    assert 'build_tenant_allocation_bars(selected)' in projection
+    assert "build_tenant_contribution_rows(str(selected['cluster'].id))" in projection
+    assert "context['allocation_tenant_total'] = len(tenant_rows)" in projection
+    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in projection
+    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in projection
+    assert "'allocation_page'" not in projection
+    assert "'allocation_per_page'" not in projection
+    assert "if active_view == 'capacity' and allocation_view == 'overview' and selected is not None:" in projection
     assert 'get_resource_profile_workspace_context()' in routes
     assert 'build_capacity_governance_summaries' in capacity
 
