@@ -43,7 +43,11 @@ def test_dashboard_operator_guidance_copy_is_compact_and_source_aware() -> None:
     response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     shared = read('app/templates/components/operational_alert_response.html')
 
-    assert 'Review demand against worker capacity and headroom.' in forecast
+    assert "summary = payload.get('summary')" in forecast
+    assert "summary.get('highest_projected_percent', 0)" in forecast
+    assert "horizon_days = safe_optional_int(payload.get('horizon_days')) or 90" in forecast
+    assert 'review worker headroom.' in forecast
+    assert "return 'Forecast snapshot loaded from analytics forecast service.'" in forecast
     assert 'CPU/memory consumer rows lack request or limit context.' in consumers
     assert 'Usage-only bars stay muted to avoid false risk signals.' in consumers
     for description in (
