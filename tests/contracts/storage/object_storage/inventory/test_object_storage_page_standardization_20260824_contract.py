@@ -46,9 +46,7 @@ def test_system_id_uses_read_only_inventory_row_without_clipboard_controls() -> 
     clipboard = read('app/static/js/clipboard.js')
     app_layout = read('app/templates/layouts/app.html')
 
-    assert (
-        "detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2')"
-    ) in detail
+    assert ("detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2')") in detail
     assert 'copyable=true' not in detail
     inventory_row = shared_detail.split('{% macro inventory_technical_row(', 1)[1].split(
         '{% macro inventory_status_row(', 1
