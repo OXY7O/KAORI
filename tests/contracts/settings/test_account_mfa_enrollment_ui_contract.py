@@ -195,7 +195,11 @@ def test_approved_mockup_uses_single_guide_above_balanced_step_cards() -> None:
     assert html.count('data-account-mfa-guide="single-panel"') == 1
     assert 'mt-auto border-t border-outline-subtle' in html
     assert 'sm:grid-cols-2 xl:grid-cols-4' in html
-    assert 'xl:grid-cols-12 xl:items-stretch' not in html
+    enrollment = html.split('data-account-mfa-enrollment-layout="guide-over-steps"', 1)[1].split(
+        'data-account-mfa-recovery-layout="action-context"', 1
+    )[0]
+    assert 'xl:grid-cols-12 xl:items-stretch' not in enrollment
+    assert 'xl:grid-cols-12 xl:items-stretch' in html
 
 
 def test_otp_remains_one_native_accessible_field_with_visual_digit_spacing() -> None:
@@ -258,7 +262,8 @@ def test_mfa_backend_queues_full_page_feedback_and_protects_one_time_response() 
     routes = (ROOT / 'app/settings/routes.py').read_text(encoding='utf-8')
     assert 'mfa_toast: dict[str, Any] | None = None' in routes
     assert 'build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)' in routes
-    assert 'if not is_htmx:\n            queue_operational_feedback(mfa_toast)' in routes
+    assert 'def _process_account_mfa_action(' in routes
+    assert 'if not is_htmx:\n        queue_operational_feedback(mfa_toast)' in routes
     assert "'mfa_toast': mfa_toast if is_htmx else None" in routes
     assert "response.headers['Cache-Control'] = 'no-store'" in routes
     assert "response.headers['Pragma'] = 'no-cache'" in routes
