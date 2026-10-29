@@ -189,7 +189,7 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     assert 'data-callback-key' in guidance
     assert 'request.url_root.rstrip' in guidance
     assert "'Provider & Adapter', 'Distinct Contracts'," in overview
-    assert "'Providers own identity; adapters run sign-in.'" in overview
+    assert "'Provider owns identity; adapter handles sign-in.'" in overview
     for source in (google, guidance):
         assert 'whitespace-nowrap' not in source
         assert 'truncate' not in source
@@ -278,7 +278,8 @@ def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
     assert 'form.admission_values.errors' in sso
     assert 'KAORI resolves the secret at runtime' in sso
     assert '{query} is escaped before substitution' in ldap
-    assert 'plaintext LDAP is blocked' in ldap
+    assert 'TLS Mode: choose encrypted LDAPS or StartTLS; plaintext is not available in this form.' in ldap
+    assert 'Bind Password Environment Variable: only its name; no secret value is persisted.' in ldap
     for source in (form, ldap, sso):
         assert 'whitespace-nowrap' not in source
 
