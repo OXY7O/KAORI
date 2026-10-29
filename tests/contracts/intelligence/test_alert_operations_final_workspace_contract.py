@@ -138,6 +138,7 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     history = read('app/templates/intelligence/partials/_alert_ops_history.html')
     modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
     routes = read('app/intelligence/alert_intelligence/routes.py')
+    route_utils = read('app/intelligence/alert_intelligence/route_utils.py')
 
     assert 'data-resource-detail-toggle' in history
     assert "tab='resolved'" in history
@@ -151,8 +152,10 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in modal
     for required in ('Incident Timeline', 'Notification Delivery Ledger'):
         assert required in activity
-    assert "if payload.get('tab') == 'resolved'" in routes
-    assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in routes
+    assert 'modal_case_response as _modal_case_response' in routes
+    assert "if payload.get('tab') == 'resolved'" in route_utils
+    assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in route_utils
+    assert "if payload.get('selected_case') is None:" in route_utils
 
 
 def test_case_modal_uses_persistent_summary_host_and_shared_activity_streams() -> None:
@@ -195,11 +198,13 @@ def test_routing_registry_has_canonical_filters() -> None:
 
 def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
     routes = read('app/intelligence/alert_intelligence/routes.py')
+    route_utils = read('app/intelligence/alert_intelligence/route_utils.py')
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
     silences = read('app/templates/intelligence/partials/_alert_ops_silences.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
 
-    assert "response.headers['HX-Trigger'] = 'alertCaseChanged'" in routes
+    assert 'modal_case_response as _modal_case_response' in routes
+    assert "response.headers['HX-Trigger'] = 'alertCaseChanged'" in route_utils
     assert 'hx-trigger="alertCaseChanged from:body"' in active
     assert 'hx-trigger="alertCaseChanged from:body"' in silences
     assert 'hx-trigger="alertCaseChanged from:body"' in resolved
