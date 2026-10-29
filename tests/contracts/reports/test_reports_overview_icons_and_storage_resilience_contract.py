@@ -20,8 +20,11 @@ def test_overview_two_large_blocks_keep_visible_operational_icons() -> None:
     estate = read(OVERVIEW / '_reporting_estate_capability.html')
     service = read(OVERVIEW_SERVICE)
 
-    assert 'data-lucide="{{ item.icon }}"' in posture
-    assert 'data-lucide="{{ item.icon }}"' in estate
+    evidence_tile = read(ROOT / 'app' / 'templates' / 'components' / 'operational_evidence_tile.html')
+    assert 'data-lucide="activity"' in posture
+    assert 'data-lucide="layers-3"' in estate
+    assert 'evidence_tile.snapshot(item.label, item.value, item.icon' in estate
+    assert 'data-lucide="{{ icon }}"' in evidence_tile
     assert "'icon': 'calendar-range'" in service
     assert "'icon': 'chart-no-axes-combined'" in service
     assert 'Reporting Operational Posture' in posture
