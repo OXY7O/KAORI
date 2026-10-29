@@ -123,7 +123,12 @@ def test_additional_table_workspaces_use_filtered_results_badges() -> None:
         'storage/object_storage/analytics/partials/_bucket_forecast_table.html': 'forecast_table.pagination.total_items',
     }
     for path, count in cases.items():
-        assert f'table_label.result_count({count})' in _template(path)
+        source = _template(path)
+        assert f'table_label.result_count({count})' in source or f'result_count={count}' in source
+
+    channels = _template('integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    assert 'table_block.inventory_block_header(' in channels
+    assert 'result_count=payload.channel_pagination.total_items' in channels
 
 
 def test_integration_binding_headers_are_title_adjacent() -> None:
