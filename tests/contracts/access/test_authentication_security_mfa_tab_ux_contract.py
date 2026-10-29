@@ -114,7 +114,7 @@ def test_unchanged_router_keeps_viewer_and_manager_permissions() -> None:
 
 def test_mfa_policy_impact_uses_canonical_warning_tone_and_compact_copy() -> None:
     tab = _mfa_tab()
-    assert 'border-status-warning-border bg-status-warning-soft' in tab
+    assert "{{ table_label.tone_border_classes('warning') }} bg-status-warning-soft" in tab
     assert 'text-status-warning-text' in tab
     assert 'Policy changes revoke all sessions; required modes need an enrolled Local Super Admin.' in tab
     assert 'Mandatory policies require at least one enrolled Local Database Super Admin for recovery.' not in tab
