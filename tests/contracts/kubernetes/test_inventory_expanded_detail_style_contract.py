@@ -125,7 +125,8 @@ def test_kubernetes_inventory_headers_follow_approved_three_row_shared_grammar()
     assert 'data-kaori-detail-header-layout="title-description-context"' in shared
     assert 'macro header_context_row(items)' in shared
     assert 'data-resource-detail-header-context' in shared
-    assert "table_label.metadata_label(item.label, item.icon|default(none), true, 'detail')" in shared
+    normalized_shared = shared.replace(') ,', '),')
+    assert "table_label.metadata_label(item.label, item.icon|default(none), true, 'detail')" in normalized_shared
     header = shared.split('{% macro workspace_header(', 1)[1].split('{%- endmacro %}', 1)[0]
     assert (
         header.index('{{ caller() }}')
