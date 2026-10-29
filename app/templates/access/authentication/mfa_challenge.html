@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Verify Sign In · KAORI{% endblock title %}
 {% block content %}
     <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8 sm:py-12">
@@ -17,7 +18,7 @@
                 <p class="mx-auto mt-1 max-w-sm text-xs leading-5 text-content-muted">Access continues after successful verification.</p>
             </header>
             {% if error %}
-                <p class="mt-5 rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-sm text-status-critical-text"
+                <p class="mt-5 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft p-3 text-sm text-status-critical-text"
                    role="alert">{{ error }}</p>
             {% endif %}
             <form method="post" class="mt-7 space-y-4">

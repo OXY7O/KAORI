@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Verify Sign In · KAORI{% endblock title %}
 {% block content %}
     <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8">
@@ -12,7 +13,7 @@
                 class="mt-4 text-xl font-semibold text-content-primary">Verify Your Sign In</h1>
             <p class="mt-2 text-sm leading-6 text-content-secondary">Complete the security check before continuing to your external identity provider.</p>
             {% if error %}
-                <p class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-sm text-status-critical-text"
+                <p class="mt-4 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft p-3 text-sm text-status-critical-text"
                    role="alert">{{ error }}</p>
             {% endif %}
             <form method="post" class="mt-6 space-y-4">
