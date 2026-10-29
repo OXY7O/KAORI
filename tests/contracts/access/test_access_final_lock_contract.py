@@ -17,7 +17,6 @@ def _assert_governed_modal_widths(source: str) -> None:
     assert width_policy in source
 
 
-
 def test_access_final_lock_is_release_gated_and_documented() -> None:
     lock = read('docs/design/KAORI_ACCESS_LOCK_V1.md')
     ownership = read('docs/architecture/ACCESS_OWNERSHIP.md')
