@@ -288,7 +288,7 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
             # The Vault registry owns a second title-level Guide, not an Overview duplicate.
             assert page.count('info_tip.render(') == 1, path
             assert "info_tip.render('vault-connection-registry-guide'," in page
-            assert "title_extra=header_guide" in page
+            assert 'title_extra=header_guide' in page
             assert "variant='guide'" in page
             assert 'info_tip.render(' not in page.split('integration_tabs.render("vault"', 1)[0]
         else:
