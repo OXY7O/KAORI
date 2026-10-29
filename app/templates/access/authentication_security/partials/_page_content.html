@@ -403,7 +403,7 @@
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                            <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                                            <div class="flex items-start gap-3 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4">
                                                 <i data-lucide="info"
                                                    class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
                                                    aria-hidden="true"></i>
@@ -629,7 +629,7 @@
                                                        placeholder="{{ 'Leave blank to retain encrypted secret' if bot_has_secret else 'Enter Turnstile secret' }}"
                                                        class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                             </div>
-                                            <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                                            <div class="flex items-start gap-3 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4">
                                                 <i data-lucide="shield-alert"
                                                    class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
                                                    aria-hidden="true"></i>
