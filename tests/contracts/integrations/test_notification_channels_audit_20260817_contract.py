@@ -124,7 +124,7 @@ def test_notification_overview_uses_one_card_below_shared_section_intro() -> Non
     assert '{% if payload.overview.recent %}' in snapshot
     assert 'title="{{ delivery.event_label }}"' in snapshot
     assert 'title="{{ delivery.channel_name }}"' in snapshot
-    assert "delivery.created_at|user_datetime('Unknown time')" in snapshot
+    assert 'delivery.created_at|user_datetime("Unknown time")' in snapshot
     assert 'Delivery outcome:' in snapshot
     assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in snapshot
     assert 'Showing up to 5 committed records.' in snapshot
@@ -152,7 +152,7 @@ def test_notification_lifecycle_modal_header_footer_use_shared_kaori_contract() 
     assert 'Delivery history and report links remain.' in deletion
     assert 'Delete requires <strong>zero records and zero report references</strong>.' in deletion
     assert 'Retirement is permanent' in retirement
-    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retirement
+    assert re.search(r'name="retirement_reason"\s+required\s+minlength="8"\s+maxlength="500"', retirement)
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
     assert 'channel.report_schedule_count' in retirement
 
