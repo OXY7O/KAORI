@@ -50,6 +50,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
 
 def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() -> None:
     routes = read('app/artifact_registry/routes.py')
+    scope = read('app/artifact_registry/route_scope.py')
     presentation = (
         read('app/artifact_registry/presentation_overview.py')
         + '\n'
@@ -58,10 +59,11 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
     # Explicit malformed provider selection must not silently expand to all providers.
-    assert "raw = request.args.get('provider_id')" in routes
-    assert 'def _overview_provider_id() -> int | None:' in routes
+    assert 'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id' in routes
+    assert "raw = request.args.get('provider_id')" in scope
+    assert 'def _overview_provider_id() -> int | None:' in scope
     assert 'provider_id=_overview_provider_id()' in routes
-    assert 'abort(404)' in routes
+    assert 'abort(404)' in scope
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
     assert 'normalize_dashboard_page_size' in routes
@@ -698,7 +700,7 @@ def test_artifact_registry_overview_visual_uat_copy_preserves_shared_evidence_co
     assert 'Committed daily size delta.' in forecast
     assert 'risk_conclusion.get(overview.capacity.risk' in forecast
     for risk in ('Critical', 'Medium', 'Low', 'Unknown'):
-        assert f"'{risk}':" in forecast
+        assert f'"{risk}":' in forecast
     assert 'title="{{ overview.capacity.risk_detail }} {{ overview.forecast.detail }}"' in forecast
     assert 'xl:whitespace-nowrap' in forecast
     assert 'truncate text-xs' in forecast  # pre-existing metric helper; no new conclusion truncation
