@@ -40,19 +40,29 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
         assert wording not in combined
 
 
-def test_system_id_reuses_shared_accessible_copy_interaction() -> None:
+def test_system_id_uses_read_only_inventory_row_without_clipboard_controls() -> None:
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
     shared_detail = read('app/templates/components/details/_detail_content.html')
     clipboard = read('app/static/js/clipboard.js')
     app_layout = read('app/templates/layouts/app.html')
 
     assert (
-        "detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2', copyable=true)"
+        "detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2')"
     ) in detail
+    assert 'copyable=true' not in detail
+    inventory_row = shared_detail.split('{% macro inventory_technical_row(', 1)[1].split(
+        '{% macro inventory_status_row(', 1
+    )[0]
+    assert 'technical_value.render(display_value' in inventory_row
+    assert 'copyable=false' in inventory_row
+    for token in ('data-kaori-copy-root', 'data-kaori-copy-source', 'data-kaori-copy-button'):
+        assert token not in inventory_row
+
+    # Global non-Inventory Clipboard behavior remains available and accessible.
     assert 'data-kaori-copy-button' in shared_detail
     assert 'aria-label="Copy {{ label }}"' in shared_detail
     assert 'data-kaori-copy-label aria-live="polite"' in shared_detail
-    assert 'data-kaori-copy-source' in shared_detail
+    assert 'data-kaori-copy-source' in clipboard
     assert "filename='js/clipboard.js'" in app_layout
     assert 'navigator.clipboard?.writeText' in clipboard
     assert "document.execCommand('copy')" in clipboard
