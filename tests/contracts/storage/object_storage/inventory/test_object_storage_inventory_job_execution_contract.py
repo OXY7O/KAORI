@@ -100,7 +100,11 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert "'source_label': 'Committed Snapshot'" in storage_presentation
     bucket_detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
-    assert 'Object Storage Inventory Sync snapshot' in bucket_detail
+    assert "detail.inventory_section('Snapshot Context'" in bucket_detail
+    assert "detail.inventory_row('Last Collected', bucket.observed_at|user_datetime" in bucket_detail
+    assert "detail.inventory_row('Snapshot Source', bucket.source_label)" in bucket_detail
+    assert "detail.inventory_status_row('Snapshot State', bucket.snapshot_status_label" in bucket_detail
+    assert 'Committed logical usage' in bucket_detail
     assert 'Object Storage Inventory Sync from Job Execution' in storage_presentation
     assert 'inventory.empty_state.description' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
