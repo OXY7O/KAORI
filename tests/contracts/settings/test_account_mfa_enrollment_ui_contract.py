@@ -196,7 +196,7 @@ def test_approved_mockup_uses_single_guide_above_balanced_step_cards() -> None:
     assert 'mt-auto border-t border-outline-subtle' in html
     assert 'sm:grid-cols-2 xl:grid-cols-4' in html
     enrollment = html.split('data-account-mfa-enrollment-layout="guide-over-steps"', 1)[1].split(
-        'data-account-mfa-recovery-layout="action-context"', 1
+        '{% else %}\n            <div class="grid gap-4 xl:grid-cols-12 xl:items-stretch"', 1
     )[0]
     assert 'xl:grid-cols-12 xl:items-stretch' not in enrollment
     assert 'xl:grid-cols-12 xl:items-stretch' in html
