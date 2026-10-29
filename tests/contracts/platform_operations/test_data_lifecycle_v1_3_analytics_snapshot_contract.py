@@ -49,12 +49,15 @@ def test_analytics_snapshot_policy_is_scheduled_on_existing_maintenance_boundary
 
 def test_analytics_snapshot_lifecycle_is_explained_in_data_lifecycle_ui() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert '_domain_coverage(name)' in presentation
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
 
     assert "'analytics_snapshot': 'Analytics Snapshots'" in presentation
-    assert "'label': 'Analytics Materialization'" in presentation
-    assert "'label': 'Forecast History'" in presentation
-    assert "'label': 'Dashboard Evidence'" in presentation
+    assert "'label': 'Analytics Materialization'" in coverage
+    assert "'label': 'Forecast History'" in coverage
+    assert "'label': 'Dashboard Evidence'" in coverage
     assert "selected.name == 'analytics_snapshot'" in workspace
     assert 'Serve Window Protection' in workspace
 
