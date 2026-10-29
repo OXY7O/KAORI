@@ -339,7 +339,7 @@ def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
     assert 'visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })' in script
     assert 'window.requestAnimationFrame(fitGraphToCanvas)' in script
     assert '## Compact Hierarchy and Viewport Safety' in pattern
-    assert 'Dependency View remains independent' in pattern
+    assert 'Dependency View retains its existing COSE layout geometry.' in pattern
 
 
 def test_topology_relationship_summary_reuses_existing_inspector() -> None:
