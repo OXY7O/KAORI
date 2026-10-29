@@ -37,6 +37,12 @@ def _security_sidebar(permissions: set[str], endpoint: str = 'security_posture.o
         ('/settings/account', 'settings.account'),
         ('/security/', 'security_posture.overview'),
         ('/security/findings', 'security_posture.findings'),
+        ('/artifact-registry/', 'artifact_registry.overview'),
+        ('/artifact-registry/inventory', 'artifact_registry.inventory'),
+        ('/artifact-registry/security', 'artifact_registry.security'),
+        ('/artifact-registry/runtime', 'artifact_registry.runtime_overview'),
+        ('/artifact-registry/governance', 'artifact_registry.governance'),
+        ('/artifact-registry/analytics', 'artifact_registry.analytics'),
     ):
         app.add_url_rule(route, endpoint=name, view_func=lambda: 'ok')
     with app.test_request_context('/security/'):
@@ -151,6 +157,7 @@ def _render_workspace_page(name: str, posture: dict, **options: bool | str) -> s
     for path, endpoint in routes:
         app.add_url_rule(path, endpoint=endpoint, view_func=lambda **_kwargs: '')
     app.jinja_env.filters['user_datetime'] = lambda value: value.isoformat() if value else 'Not Collected'
+    app.jinja_env.filters['environment_name'] = lambda value, empty='': value or empty
 
     template = read(f'app/templates/security_posture/{name}.html')
     template = template.replace('{% extends "layouts/app.html" %}', '', 1)
