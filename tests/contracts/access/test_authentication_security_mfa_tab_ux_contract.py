@@ -162,7 +162,10 @@ def test_enrollment_recovery_icons_stay_in_self_service_only_panel() -> None:
     tab = _mfa_tab()
     assert 'Authenticator App' in tab
     assert 'Recovery Codes' in tab
-    assert 'data-lucide="smartphone"' in tab
+    assert "table_label.metadata_label('Authenticator App', 'smartphone')" in tab
+    assert "table_label.metadata_label('Recovery Codes', 'key-round')" in tab
+    labels = (ROOT / 'app/templates/components/table_label.html').read_text(encoding='utf-8')
+    assert 'data-lucide="{{ icon }}"' in labels
     assert "url_for('settings.account', tab='mfa')" in tab
     assert 'name="verification_code"' not in tab
     assert 'name="secret_key"' not in tab
