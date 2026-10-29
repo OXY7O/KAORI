@@ -17,7 +17,8 @@ def test_registry_uses_shared_compact_accessible_view_more_action() -> None:
 
     Environment().parse(registry)
     assert "expandable.toggle_button('identity-providers'" in registry
-    assert "open_label='View More Details', close_label='Hide Details', compact=true, class_name='min-w-[7.5rem]'" in registry
+    assert "open_label='View More Details', close_label='Hide Details'" in registry
+    assert "compact=true, class_name='min-w-[7.5rem]'" in registry
     assert 'table_action=true' not in registry
     assert 'expandable.static_detail_row(detail_row_id, detail_target_id, 6)' in registry
     assert 'data-detail-toggle' in shared
@@ -88,7 +89,10 @@ def test_actions_match_activity_audit_table_buttons_and_preserve_permission_gate
     assert 'inline-flex min-h-9' not in detail
     assert 'bg-kaori-primary px-3' not in detail
     assert 'min-h-9 items-center justify-center gap-1.5' in shared
-    assert 'border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary' in shared
+    assert (
+        'border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary'
+        in shared
+    )
     assert detail.count('class="h-3.5 w-3.5"') == 3
 
 
