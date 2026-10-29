@@ -22,7 +22,7 @@ def test_overview_two_large_blocks_keep_visible_operational_icons() -> None:
 
     assert 'data-lucide="{{ item.icon }}"' in posture
     evidence_tile = read(ROOT / 'app/templates/components/operational_evidence_tile.html')
-    assert "{% import \"components/operational_evidence_tile.html\" as evidence_tile %}" in estate
+    assert '{% import "components/operational_evidence_tile.html" as evidence_tile %}' in estate
     assert "evidence_tile.snapshot(item.label, item.value, item.icon, 'Retained family')" in estate
     assert 'data-lucide="{{ icon }}"' in evidence_tile
     assert "'icon': 'calendar-range'" in service
