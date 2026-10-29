@@ -15,9 +15,13 @@ def test_operation_center_overview_copy_is_compact() -> None:
     for required in (
         'Canonical execution and worker evidence.',
         'Retention, verified archives, and safe cleanup.',
-        'Protected Kubernetes controls with readiness and authorization gates.',
+        'Readiness and protected access controls.',
     ):
         assert required in source
+
+    # The compact copy does not replace the canonical readiness authority.
+    assert 'build_kubernetes_administration_summary()' in source
+    assert "kubernetes['administration_status_label']" in source
 
     for retired in (
         'Canonical execution, retry, cancellation, queue, and worker evidence.',
@@ -73,11 +77,17 @@ def test_data_lifecycle_evidence_copy_is_compact() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     reports = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
 
-    for required in (
-        'Case lifecycle evidence from detection through closure.',
-        'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
-    ):
-        assert required in presentation
+    coverage_catalog = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage'
+        in presentation
+    )
+    assert "'coverage': _domain_coverage(name)" in presentation
+    assert 'Case lifecycle evidence from initial detection through final closure.' in coverage_catalog
+    assert (
+        'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.'
+        in presentation
+    )
 
     assert 'Ready reports use hot retention; Failed and Archived use dedicated windows.' in reports
     assert 'Artifacts archive before cleanup.' in reports
