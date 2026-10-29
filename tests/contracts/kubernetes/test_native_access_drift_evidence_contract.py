@@ -10,7 +10,9 @@ def read(path: str) -> str:
 def test_native_access_drift_reuses_committed_observation_and_canonical_workspace():
     service = read('app/kubernetes/tenant/access_drift_analysis.py')
     routes = read('app/kubernetes/tenant/routes_access.py')
-    context = read('app/kubernetes/tenant/access_service.py')
+    context = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     ui = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
     rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
 
