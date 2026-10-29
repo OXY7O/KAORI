@@ -66,7 +66,9 @@ def test_runtime_observation_lifecycle_includes_object_storage_runtime_history()
     readme = read('app/platform_operations/data_lifecycle/retention/README.md')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
     assert '_domain_coverage(name)' in presentation
     assert "'label': 'Object Storage · MinIO'" in coverage
     assert "'description': 'Recent MinIO storage observations.'" in coverage
