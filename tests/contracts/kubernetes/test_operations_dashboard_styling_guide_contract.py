@@ -332,7 +332,10 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
     reporting_service = read('app/kubernetes/dashboard/sections/reporting.py')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
-    assert 'query_all(Report, selected_cluster_id, limit=4)' in reporting_service
+    assert "Report.report_domain == 'kubernetes'" in reporting_service
+    assert 'Report.cluster_id == selected_cluster_id' in reporting_service
+    assert 'Report.created_at.desc(), Report.id.desc()' in reporting_service
+    assert '.limit(4)' in reporting_service
     assert 'reporting.latest_reports[:4]' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace
