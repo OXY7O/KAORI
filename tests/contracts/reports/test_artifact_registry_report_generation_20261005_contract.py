@@ -135,7 +135,7 @@ def test_registry_reports_are_definition_driven_system_templates_and_visible_in_
 
     assert 'for spec in REPORT_TYPE_SPECS' in template_service
     assert 'Kubernetes + Object Storage + Artifact Registry' in template_service
-    assert "domain_order = ['kubernetes', 'object_storage', 'artifact_registry', 'server', 'hci']" in overview
+    assert "domain_order = ['kubernetes', 'object_storage', 'artifact_registry', 'secrets_pki', 'server', 'hci']" in overview
     assert "REPORT_DOMAIN_ARTIFACT_REGISTRY = 'artifact_registry'" in constants
     assert "REPORT_DOMAIN_ARTIFACT_REGISTRY: 'KAORI Artifact Registry Reports'" in constants
 
