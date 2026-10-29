@@ -7,6 +7,17 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def _assert_governed_modal_widths(source: str) -> None:
+    """Retain steps, governed/membership, and default modal widths in order."""
+    width_policy = (
+        "'max-w-6xl' if presentation == 'steps' "
+        "else 'max-w-3xl' if presentation in ['governed', 'membership'] "
+        "else 'max-w-xl'"
+    )
+    assert width_policy in source
+
+
+
 def test_access_final_lock_is_release_gated_and_documented() -> None:
     lock = read('docs/design/KAORI_ACCESS_LOCK_V1.md')
     ownership = read('docs/architecture/ACCESS_OWNERSHIP.md')
@@ -87,7 +98,7 @@ def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_b
     assert 'data-destructive-modal-confirm' in shared
     assert 'data-destructive-modal-close' in shared
     assert 'data-submit-button-id="{{ confirm_button_id }}"' in shared
-    assert "if presentation == 'steps' else 'max-w-xl'" in shared
+    _assert_governed_modal_widths(shared)
     assert "if presentation == 'steps' else 'space-y-5 p-5'" in shared
     assert 'scope_value }} · Confirmation required' in shared
     assert 'access_chrome=true' in roles and 'access_chrome=true' in users
@@ -135,7 +146,7 @@ def test_uat5_access_detail_headers_follow_permission_reference_without_body_rel
     assert "table_label.metadata_label(scope_value, 'shield-check')" in confirmation
     assert "table_label.metadata_label(action_label, 'archive-x')" in confirmation
     assert "if access_chrome else 'min-w-0'" in confirmation
-    assert "if presentation == 'steps' else 'max-w-xl'" in confirmation
+    _assert_governed_modal_widths(confirmation)
     assert 'data-destructive-modal-confirm' in confirmation
     assert 'data-submit-button-id="{{ confirm_button_id }}"' in confirmation
     assert 'Canonical' not in confirmation
