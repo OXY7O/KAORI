@@ -12,6 +12,7 @@ def read(relative: str) -> str:
 def test_protected_reveal_templates_compile_with_jinja() -> None:
     """Fail fast on malformed Jinja delimiters, including hidden workspace tabs."""
     env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    env.filters['user_datetime'] = str
     for relative in (
         'kubernetes/operations/secrets/reveal.html',
         'kubernetes/operations/secrets/_reveal_request_form.html',
