@@ -10,7 +10,9 @@ def read(path: str) -> str:
 def test_native_external_access_observer_has_explicit_read_only_authority() -> None:
     service = read('app/kubernetes/tenant/external_native_access_observation.py')
     routes = read('app/kubernetes/tenant/routes_access.py')
-    context = read('app/kubernetes/tenant/access_service.py')
+    context = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     ui = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
 
     assert 'def observe_external_native_access_committed(' in service

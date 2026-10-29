@@ -10,7 +10,9 @@ def read(path: str) -> str:
 def test_remediation_reuses_existing_governed_plan_for_native_and_capsule():
     plan = read('app/kubernetes/tenant/access_remediation_plan.py')
     analysis = read('app/kubernetes/tenant/access_drift_analysis.py')
-    context = read('app/kubernetes/tenant/access_service.py')
+    context = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
     detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
