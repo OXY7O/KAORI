@@ -40,7 +40,12 @@ def test_alert_incidents_coverage_is_two_by_two_without_changing_other_domains()
     assert '{{ item.description }}' in coverage
 
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
-    incident = presentation.split("'alert_incident': (", 1)[1].split('\n        ),', 1)[0]
+    catalog = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
+    assert '_domain_coverage(name)' in presentation
+    incident = catalog.split("'alert_incident': (", 1)[1].split('\n        ),', 1)[0]
     for label in (
         'Closed Alert Cases',
         'Incident Timeline',
