@@ -56,11 +56,13 @@ def test_data_lifecycle_workspace_guidance_is_compact() -> None:
     for required in (
         'Hot storage stays domain-owned; verified archives use the shared Data Lifecycle target.',
         'Retention changes eligibility only; no job runs immediately.',
-        'Cleanup stays blocked; transient failures retry once, then require manual retry.',
+        'Cleanup blocked; transient failures retry once, then need manual retry.',
     ):
         assert required in domain
 
-    assert 'Cleanup stays blocked; transient failures retry once, then require manual retry.' in storage
+    assert "'Cleanup (if admitted)'" in storage
+    assert 'Delete eligible rows only when authorized.' in storage
+    assert "table_label.status_label('Cleanup Gated'" in storage
 
     for retired in (
         'Hot source storage remains domain-owned; verified cold archives use the shared Data Lifecycle archive target.',
