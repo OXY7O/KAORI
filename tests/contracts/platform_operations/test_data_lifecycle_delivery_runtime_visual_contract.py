@@ -11,6 +11,7 @@ from jinja2 import Environment
 ROOT = Path(__file__).resolve().parents[3]
 UI = 'app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html'
 PRESENTATION = 'app/platform_operations/data_lifecycle/retention/presentation.py'
+COVERAGE = 'app/platform_operations/data_lifecycle/retention/domain_coverage.py'
 
 
 def read(path: str) -> str:
@@ -46,6 +47,9 @@ def test_delivery_notice_is_one_accessible_inline_row_with_violet_and_warning_em
 def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns() -> None:
     ui = read(UI)
     presentation = read(PRESENTATION)
+    coverage = read(COVERAGE)
+    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert '_domain_coverage(name)' in presentation
     assert 'sm:grid-cols-2' in ui
     assert 'lifecycle.coverage|length == 3' in ui
     assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
@@ -54,7 +58,7 @@ def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns()
     assert '{% for item in lifecycle.coverage %}' in ui
     assert 'bg-surface-subtle' in ui
 
-    runtime = presentation.split("'runtime_observation': (", 1)[1].split('\n        ),', 1)[0]
+    runtime = coverage.split("'runtime_observation': (", 1)[1].split('\n        ),', 1)[0]
     for label, description in (
         ('Kubernetes', 'Recent Kubernetes runtime observations.'),
         ('Metrics Source', 'Recent Metrics Source observations.'),
