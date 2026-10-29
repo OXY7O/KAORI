@@ -11,7 +11,9 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
-    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
     assert '_domain_coverage(name)' in presentation
     shared_history = read('app/templates/integrations/partials/_runtime_history.html')
     metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_history.html')
@@ -38,7 +40,9 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     queries = read('app/platform_operations/notifications/queries.py')
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
-    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
     assert '_domain_coverage(name)' in presentation
     activity = read('app/templates/access/activity_audit/index.html')
     center = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
