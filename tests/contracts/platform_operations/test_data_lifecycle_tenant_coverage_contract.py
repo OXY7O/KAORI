@@ -14,7 +14,9 @@ def test_registered_tenant_audit_domain_has_operator_coverage_and_exclusion() ->
         encoding='utf-8'
     )
     assert "'tenant_audit_evidence': TenantAuditEvidenceArchiveDomain" in registry
-    assert 'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
     assert '_domain_coverage(name)' in presentation
     for value in (
         "'tenant_audit_evidence': 'Tenant Audit Evidence'",
