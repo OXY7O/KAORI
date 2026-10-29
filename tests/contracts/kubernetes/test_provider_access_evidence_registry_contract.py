@@ -63,7 +63,7 @@ def test_both_provider_registries_reuse_standard_filter_and_pagination() -> None
         assert 'No matching inspections found.' in read(
             'app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html'
         )
-        assert 'role="status"' in panel
+        assert 'role="status"' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
         assert 'event.created_at|user_datetime' in read(
             'app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html'
         )
