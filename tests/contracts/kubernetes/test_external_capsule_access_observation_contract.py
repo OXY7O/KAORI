@@ -10,7 +10,9 @@ def read(path: str) -> str:
 def test_external_access_inspection_reuses_tenant_workspaces_and_never_autogrants():
     observation = read('app/kubernetes/tenant/external_access_observation.py')
     route = read('app/kubernetes/tenant/routes_access.py')
-    service = read('app/kubernetes/tenant/access_service.py')
+    service = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     tabs = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
