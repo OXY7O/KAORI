@@ -1,5 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div id="vault-provider-case-workspace" class="space-y-5">
     <section class="{{ page_hero.shell_classes() }}">
@@ -106,13 +107,13 @@
                     <span class="text-xs text-content-muted">
                         Page {{ page_data.pagination.page }} of {{ page_data.pagination.total_pages }}
                     </span>
-                    <div class="flex gap-3">
+                    <div class="{{ pagination_ui.navigation_group_classes() }}">
                         {% if page_data.pagination.has_prev %}
-                            <a class="{{ table_ui.action_classes() }}"
+                            <a class="{{ pagination_ui.navigation_classes(false) }}"
                                href="{{ url_for('alert_intelligence.vault_cases', instance_id=instance_id, page=page_data.pagination.prev_page) }}">Previous</a>
                         {% endif %}
                         {% if page_data.pagination.has_next %}
-                            <a class="{{ table_ui.action_classes() }}"
+                            <a class="{{ pagination_ui.navigation_classes(false) }}"
                                href="{{ url_for('alert_intelligence.vault_cases', instance_id=instance_id, page=page_data.pagination.next_page) }}">Next</a>
                         {% endif %}
                     </div>
