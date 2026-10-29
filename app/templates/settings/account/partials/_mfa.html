@@ -73,7 +73,7 @@
             </div>
         </section>
         {% if mfa_recovery_codes %}
-            <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-5"
+            <section class="rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-5"
                      aria-label="One-time recovery codes">
                 <div class="flex items-start gap-3">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
@@ -213,7 +213,7 @@
                             </button>
                         </form>
                         {% if mfa_setup_secret %}
-                            <section class="mt-5 rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
+                            <section class="mt-5 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4"
                                      aria-labelledby="mfa-provisioning-title"
                                      data-mfa-one-time-provisioning="true">
                                 <div class="flex items-center gap-2">
