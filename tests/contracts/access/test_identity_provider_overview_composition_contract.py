@@ -44,7 +44,7 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
     assert 'table_label.status_indicator_label(summary.posture_label, summary.posture_tone)' in overview
 
     for boundary in (
-        'Provider / Adapter Boundary',
+        'Provider & Adapter',
         'Credential Ownership',
         'Identity Projection',
         'Authorization Boundary',
@@ -52,7 +52,7 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
         assert boundary in overview
 
     for concise_description in (
-        'Providers own identity; adapters run sign-in.',
+        'Provider owns identity; adapter handles sign-in.',
         'External secrets; KAORI stores references.',
         'Linked identities need KAORI authorization.',
         'KAORI roles and account state gate access.',
