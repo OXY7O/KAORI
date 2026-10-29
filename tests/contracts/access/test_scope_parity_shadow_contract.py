@@ -1,5 +1,6 @@
 """#2726 shadow parity is never permission enforcement or source discovery."""
 
+from dataclasses import asdict
 from types import SimpleNamespace
 
 import pytest
@@ -41,8 +42,11 @@ def test_read_only_comparison_classifies_access_delta(monkeypatch, legacy, scope
     )
     assert finding.variance == expected
     assert finding.requires_review is (expected not in {'parity_allowed', 'parity_denied'})
+    serialized = asdict(finding)
+    assert set(serialized) == {'baseline_allowed', 'scoped_decision', 'variance'}
     assert 'fixture-only-mount' not in repr(finding)
-    assert '33' not in repr(finding)
+    assert 'fixture-only-mount' not in repr(serialized)
+    assert '33' not in repr(serialized)
 
 
 def test_parity_shadow_does_not_grant_or_modify_permission(monkeypatch):
