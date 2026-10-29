@@ -3,6 +3,7 @@
 This is source/Jinja validation, not rendered-browser Visual QA or admission.
 """
 
+import re
 from pathlib import Path
 
 from jinja2 import Environment
@@ -66,7 +67,14 @@ def test_recovery_copy_shortened_without_changing_retry_contract() -> None:
 def test_worker_ready_copy_does_not_claim_ready_when_unavailable() -> None:
     source = read(WORKSPACE_PATH)
     assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}' in source
-    assert '{% if lifecycle.worker.queue_ready %} and ready for lifecycle jobs{% endif %}.' in source
+    worker_copy = source.split(
+        'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}', 1
+    )[1].split('</p>', 1)[0]
+    assert re.search(
+        r'\{%\s*if lifecycle\.worker\.queue_ready\s*%\}\s*'
+        r'and ready for lifecycle jobs\s*\{%\s*endif\s*%\}\s*\.',
+        worker_copy,
+    )
     assert 'Execution Worker' in source
 
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
