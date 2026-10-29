@@ -199,12 +199,17 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
         'app/templates/access/users/form.html': 2,
         'app/templates/access/users/reset_password.html': 1,
         'app/templates/access/identity_providers/partials/_provider_guidance.html': 1,
-        'app/templates/access/identity_providers/directory_provisioning.html': 1,
         'app/templates/access/roles/form.html': 1,
     }
     for path, minimum in required.items():
         source = read(path)
         assert source.count('xl:sticky xl:top-5') >= minimum, path
+
+    directory = read('app/templates/access/identity_providers/directory_provisioning.html')
+    shared_rail = read('app/templates/components/form_with_context_rail.html')
+    assert '{% import "components/form_with_context_rail.html" as form_context %}' in directory
+    assert 'form_context.rail_classes()' in directory
+    assert 'xl:sticky xl:top-5' in shared_rail
     for path in required:
         assert 'xl:top-6' not in read(path), path
 
