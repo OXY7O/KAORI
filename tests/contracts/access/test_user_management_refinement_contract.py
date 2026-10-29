@@ -209,7 +209,9 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     shared_rail = read('app/templates/components/form_with_context_rail.html')
     assert '{% import "components/form_with_context_rail.html" as form_context %}' in directory
     assert 'form_context.rail_classes()' in directory
-    assert 'xl:sticky xl:top-5' in shared_rail
+    rail_classes = shared_rail.split('{% macro rail_classes()', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert 'xl:sticky xl:top-5' in rail_classes
+    assert 'xl:top-6' not in directory
     for path in required:
         assert 'xl:top-6' not in read(path), path
 
