@@ -11,7 +11,9 @@ def read(path: str) -> str:
 def test_external_capsule_access_drift_uses_committed_evidence_not_live_reconcile():
     service = read('app/kubernetes/tenant/access_drift_analysis.py')
     route = read('app/kubernetes/tenant/routes_access.py')
-    context = read('app/kubernetes/tenant/access_service.py')
+    context = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
     template = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
     rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
 
