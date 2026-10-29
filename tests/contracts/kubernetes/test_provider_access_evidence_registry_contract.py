@@ -10,7 +10,9 @@ def read(path: str) -> str:
 
 
 def test_provider_access_evidence_queries_are_committed_and_paged() -> None:
-    service = read('app/kubernetes/tenant/access_service.py')
+    service = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_provider_access_evidence_registry_context as get_provider_access_evidence_registry_context' in facade
     routes = read('app/kubernetes/tenant/route_common.py')
     assert 'def get_provider_access_evidence_registry_context(' in service
     assert "'capsule': 'kubernetes_tenant_external_access_inventory'" in service
@@ -125,7 +127,9 @@ def test_native_authority_disclaimer_uses_full_width_detail_footer() -> None:
 
 
 def test_committed_remediation_is_provider_scoped_and_observation_matched() -> None:
-    service = read('app/kubernetes/tenant/access_service.py')
+    service = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert '_remediation_matches_access_observation as _remediation_matches_access_observation' in facade
     rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
     detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
     remediation = read('app/templates/kubernetes/tenant/partials/_provider_access_remediation_detail.html')
