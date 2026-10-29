@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/operational_section_card.html" as section_card %}
 {% block title %}Scoped Secret Registry · KAORI{% endblock title %}
 {% block dashboard_content %}
@@ -116,14 +117,14 @@
                         {{ registry.total_items }} qualified records · Page {{ registry.page }}
                         of {{ registry.total_pages }}
                     </span>
-                    <div class="flex gap-2">
+                    <div class="{{ pagination_ui.navigation_group_classes() }}">
                         {% if registry.page > 1 %}
                             <a href="{{ url_for('secrets_pki.scoped_registry', instance_id=instance_id, scope_ref=scope_ref, page=registry.page - 1) }}"
-                               class="{{ table_ui.action_classes() }}">Previous</a>
+                               class="{{ pagination_ui.navigation_classes(false) }}">Previous</a>
                         {% endif %}
                         {% if registry.total_pages and registry.page < registry.total_pages %}
                             <a href="{{ url_for('secrets_pki.scoped_registry', instance_id=instance_id, scope_ref=scope_ref, page=registry.page + 1) }}"
-                               class="{{ table_ui.action_classes() }}">Next</a>
+                               class="{{ pagination_ui.navigation_classes(false) }}">Next</a>
                         {% endif %}
                     </div>
                 </nav>
