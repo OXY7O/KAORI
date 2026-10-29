@@ -24,7 +24,15 @@ def test_unsaved_test_connection_uses_canonical_feedback_without_inline_alert() 
     assert 'identity_provider_feedback(' in test_route
     assert "'identity_provider_connection_tested'" in test_route
     assert 'OperationalDeliveryPolicy.DECK_ON_FAILURE' in test_route
-    assert "render_template('access/identity_providers/form.html'" in test_route
+    assert any(
+        isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == 'render_template'
+        and call.args
+        and isinstance(call.args[0], ast.Constant)
+        and call.args[0].value == 'access/identity_providers/form.html'
+        for call in ast.walk(ast.parse(test_route))
+    )
     assert 'test_result' not in test_route
     assert 'validate_identity_provider(candidate)' in test_route
 
