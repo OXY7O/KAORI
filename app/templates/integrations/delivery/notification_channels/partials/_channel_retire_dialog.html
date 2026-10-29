@@ -55,7 +55,7 @@
                     </ul>
                 </div>
                 {% if channel.report_schedule_count %}
-                    <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                    <div class="rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4">
                         <p class="text-sm font-semibold text-status-warning-text">Retirement blocked by {{ channel.report_schedule_count }} Report Schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Remove all referencing schedules first, then reopen this dialog.</p>
                         {% if channel.report_schedule_names %}
