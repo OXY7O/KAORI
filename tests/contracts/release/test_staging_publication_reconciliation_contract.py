@@ -168,6 +168,13 @@ def test_expanded_publication_step_reports_only_independently_executed_phases() 
     assert workflow.index('Public-edge · checking deployed KAORI web container readiness') < workflow.index(
         'Public-edge · requesting idempotent container publication'
     )
-    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY"' not in workflow
+    # Key material may be written only to an ephemeral 0600 file, not to logs.
+    key_transfer = 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"'
+    assert workflow.count(key_transfer) == 1
+    assert 'umask 077' in workflow
+    assert 'trap cleanup EXIT INT TERM HUP' in workflow
+    assert 'rm -f -- "$key_file" "$known_hosts_file" "$askpass_file"' in workflow
+    assert 'chmod 600 "$key_file" "$known_hosts_file"' in workflow
+    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY"' not in workflow.replace(key_transfer, '')
     assert 'bash "$edge_publish"' in workflow
     assert 'bash "$edge_apply"' in workflow
