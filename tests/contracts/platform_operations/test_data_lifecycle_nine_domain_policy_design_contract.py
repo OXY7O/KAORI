@@ -50,11 +50,11 @@ def test_all_registered_policies_reuse_normalized_source_owned_coverage(domain_n
 def test_execution_boundary_is_canonical_title_adjacent_guide_not_question_mark() -> None:
     index = INDEX.read_text(encoding='utf-8')
     Environment().parse(index)
-    footer = index.split('<footer class="flex flex-wrap items-center', 1)[1].split('</footer>', 1)[0]
+    footer = index.split('<footer class="flex shrink-0 items-center justify-between', 1)[1].split('</footer>', 1)[0]
     guide = footer.split("info_tip.render('data-lifecycle-execution-boundary',", 1)[1].split('}}', 1)[0]
     assert "'Execution Boundary'" in guide
     assert "variant='guide'" in guide
-    assert "placement='right'" in guide
+    assert "placement='top'" in guide
     assert footer.index('>Execution Boundary</span>') < footer.index('data-lifecycle-execution-boundary')
     assert "{% if current_user.has_permission('jobs.view') %}" in footer
     assert "url_for('jobs.executions')" in footer
