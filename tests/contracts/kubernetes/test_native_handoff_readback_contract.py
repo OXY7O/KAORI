@@ -27,8 +27,9 @@ def test_native_handoff_readback_has_no_provider_or_governance_mutation_path():
     assert 'inspect_native_external_handoff_route' in route
     assert "url_for('tenant.inspect_native_external_handoff_route'" in detail
     assert 'name="confirm_native_handoff_readback"' in detail
-    assert 'Inspect Kubernetes markers without modifying resources' in detail
-    assert 'does not verify successor consent or authorize Release' in detail
+    assert 'External handoff complete; inspect markers only. No consent, writes or Release.' in detail
+    assert 'An external reference alone does not verify successor consent.' in detail
+    assert 'External acceptance and Release remain unverified.' in detail
     for forbidden in [
         'patch_namespace(',
         'create_namespace(',
