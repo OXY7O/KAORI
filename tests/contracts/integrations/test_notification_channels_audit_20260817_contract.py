@@ -808,8 +808,7 @@ def test_channel_actions_are_in_details_without_dropdown_or_table_clipping() -> 
     )
     assert 'document.querySelector(' in side_drawer_js
     assert (
-        "'dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)'"
-        in side_drawer_js
+        "'dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)'" in side_drawer_js
     )
     assert 'this.trapFocus(event, this.dialog)' in side_drawer_js
 
