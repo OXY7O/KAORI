@@ -1026,7 +1026,9 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
 
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     assert 'data-tenant-native-cutover-workspace' in namespace_page
-    assert 'Adopted Native Governance Cutover' in namespace_page
+    assert 'Adopted Native Governance Cutover' in read(
+        'app/templates/kubernetes/tenant/partials/_allocation_cutover.html'
+    )
     assert 'data-tenant-capsule-allocation-workspace' in namespace_page
     assert 'Capsule Allocation Governance' in namespace_page
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
@@ -1512,7 +1514,8 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
         in workspace
     )
     assert 'Filtered by Membership Tenant' in workspace
-    assert 'Tenant scope still uses namespaced RBAC' in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Kubernetes RBAC remains authoritative for effective access after reconciliation.' in workspace
     assert "'select Membership first'" in scope_js
     assert 'tenant_access_grant_form.js' in page
 
@@ -1846,7 +1849,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Adopted Native Governance Cutover' in cutover_ui
     assert 'KAORI Preset · Locked' in cutover_ui
     assert 'Custom · Editable' in cutover_ui
-    assert 'Adopted Baseline · Observed' in cutover_ui
+    assert 'Observed Provider Baseline' in cutover_ui
     assert 'KAORI Managed' in cutover_ui
     assert 'Cut Over Governance' in cutover_ui
     assert 'Use current provider baseline · Custom' in cutover_ui
