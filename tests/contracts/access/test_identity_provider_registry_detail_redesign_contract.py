@@ -88,8 +88,8 @@ def test_actions_match_activity_audit_table_buttons_and_preserve_permission_gate
     assert 'Read-only provider details' in detail
     assert 'inline-flex min-h-9' not in detail
     assert 'bg-kaori-primary px-3' not in detail
-    assert 'min-h-9 items-center justify-center gap-1.5' in shared
-    assert 'border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary' in shared
+    assert 'min-h-9 items-center justify-center gap-1.5' in disclosure
+    assert 'border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary' in disclosure
     assert detail.count('class="h-3.5 w-3.5"') == 3
 
 
