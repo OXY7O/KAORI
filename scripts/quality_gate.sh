@@ -192,10 +192,7 @@ run_command_capture() {
             awk '
                 # Only fixed-format identity and numeric code-health metrics.
                 # Never echo arbitrary raw PASS content into public CI logs.
-                /^PASS — KAORI [A-Za-z ]+$/ ||
-                /^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions / ||
-                /^[[:space:]]+PASS — [0-9]+ broad exception handlers / ||
-                /^[[:space:]]+[0-9]+ checks passed/ {
+                /^PASS — KAORI [A-Za-z ]+$/ || /^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions / || /^[[:space:]]+PASS — [0-9]+ broad exception handlers / || /^[[:space:]]+[0-9]+ checks passed/ {
                     printf "  %s\n", substr($0, 1, 200)
                     shown++
                     if (shown >= 6) exit
