@@ -303,6 +303,7 @@ jobs:
           set -Eeuo pipefail
           started="$(date +%s)"
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --env KAORI_CI_LIVE_LOG=1 \
             --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
             bash scripts/quality_gate.sh --static &
           gate_pid=$!
@@ -312,7 +313,9 @@ jobs:
               sleep 60
               if kill -0 "$gate_pid" >/dev/null 2>&1; then
                 elapsed=$(( $(date +%s) - started ))
-                printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+                active="$(head -n 1 tmp/ci-artifacts/static-output/active-verifier.txt 2>/dev/null || true)"
+                printf '⏳ Static & Governance still running · current: %s · ⏱ %dm %02ds\n' \
+                  "${active:-verifier startup or transition}" $((elapsed / 60)) $((elapsed % 60))
               fi
             done
           ) &
@@ -340,7 +343,7 @@ jobs:
         id: functional_gate
         if: ${{ matrix.gate == 'functional' }}
         run: >-
-          docker compose --file .github/ci/compose.yml run --rm ci
+          docker compose --file .github/ci/compose.yml run --rm --env KAORI_CI_LIVE_LOG=1 ci
           bash scripts/quality_gate.sh --tests
 
       - name: Build & Verify Frontend
@@ -348,6 +351,7 @@ jobs:
         if: ${{ matrix.gate == 'frontend' }}
         run: >-
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --env KAORI_CI_LIVE_LOG=1
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash scripts/quality_gate.sh --frontend
 
@@ -571,7 +575,7 @@ jobs:
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
       - name: Run Fast Smoke
         run: >-
-          docker compose --file .github/ci/compose.yml run --rm ci
+          docker compose --file .github/ci/compose.yml run --rm --env KAORI_CI_LIVE_LOG=1 ci
           bash scripts/quality_gate.sh --smoke
       - name: Upload Smoke Diagnostics
         if: ${{ failure() }}
@@ -628,6 +632,7 @@ jobs:
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ CI Admission · verifying selected execution profile: %s\n' "$EXECUTION"
           if [[ "$EXECUTION" == "full" ]]; then
             [[ "$FULL_GATES" == "success" ]] || {
               printf 'selected Full Admission matrix failed or was cancelled: %s\n' "$FULL_GATES"
@@ -646,6 +651,7 @@ jobs:
               echo 'reused=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
             } >> "$GITHUB_OUTPUT"
           fi
+          printf '✅ CI Admission · selected path validated; executed/reused boundaries retained\n'
 
       - name: Write Full Test Taxonomy Summary
         id: full_test_evidence
@@ -655,6 +661,7 @@ jobs:
           CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ CI Admission · extracting actual pytest/JUnit taxonomy from uploaded gate evidence\n'
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --env HOME=/tmp \
@@ -666,6 +673,7 @@ jobs:
               --junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml \
               --junit tmp/ci-artifacts/admission-junit/functional/e2e.xml \
             >> "$GITHUB_STEP_SUMMARY"
+          printf '✅ CI Admission · JUnit taxonomy evidence assembled\n'
 
       - name: Publish Admission Evidence
         id: full-evidence
@@ -674,6 +682,8 @@ jobs:
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
         run: |
+          set -Eeuo pipefail
+          printf '⏳ CI Admission · committing exact source-tree and five-gate evidence identity\n'
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --env HOME=/tmp \
@@ -692,6 +702,7 @@ jobs:
               --frontend "${{ needs.full-admission-gates.result }}" \
               --production-runtime "${{ needs.full-admission-gates.result }}" \
               --output admission-evidence.json
+          printf '✅ CI Admission · exact source evidence document generated\n'
 
       - name: Upload Admission Evidence
         id: full-evidence-upload

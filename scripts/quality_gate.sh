@@ -99,22 +99,43 @@ run_timed_setup() {
 run_pytest_capture() {
     local label="$1"
     shift
-    local slug log_file result_line status started elapsed
+    local slug log_file result_line status started elapsed=0 test_pid heartbeat_pid pytest_display
+    status=0
 
     mkdir -p "$TEST_OUTPUT_DIR"
     slug="$(printf '%s' "$label" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$TEST_OUTPUT_DIR/${slug}.XXXXXX.log")"
     started="$(date +%s)"
-    printf '⏳ %s\n' "$label"
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        printf -v pytest_display '%q ' pytest "$@"
+        printf '⏳ %s · %s · output captured in %s\n' "$label" "$pytest_display" "$log_file"
+        pytest "$@" >"$log_file" 2>&1 &
+        test_pid=$!
+        (
+            while kill -0 "$test_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$test_pid" >/dev/null 2>&1; then
+                    elapsed=$(( $(date +%s) - started ))
+                    printf '⏳ %s still running · ⏱ %dm %02ds · final pytest counts pending\n' \
+                        "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+            done
+        ) &
+        heartbeat_pid=$!
+        wait "$test_pid" || status=$?
+        kill "$heartbeat_pid" >/dev/null 2>&1 || true
+        wait "$heartbeat_pid" >/dev/null 2>&1 || true
+    else
+        printf '⏳ %s\n' "$label"
+        pytest "$@" >"$log_file" 2>&1 || status=$?
+    fi
 
-    if pytest "$@" >"$log_file" 2>&1; then
+    if (( status == 0 )); then
         elapsed=$(( $(date +%s) - started ))
         result_line="$(pytest_result_line "$log_file" || true)"
         [[ -n "$result_line" ]] || result_line='Pytest completed successfully.'
         record_test_result 'PASS' "$label" "$result_line · ⏱ $(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60)))"
         return 0
-    else
-        status=$?
     fi
 
     elapsed=$(( $(date +%s) - started ))
@@ -144,7 +165,12 @@ run_command_capture() {
     slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
     started="$(date +%s)"
-    printf '⏳ %s — %s\n' "$group" "$label"
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
+        printf '%s — %s\n' "$group" "$label" > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+    else
+        printf '⏳ %s — %s\n' "$group" "$label"
+    fi
 
     if "$@" >"$log_file" 2>&1; then
         # Retain verified release-surface evidence for the Domain & Capability
@@ -158,6 +184,26 @@ run_command_capture() {
         printf "| %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
             "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
             "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
+        # In CI only, show a bounded subset of standardized PASS evidence in
+        # the expanded live step; never print an unbounded raw verifier log.
+        # Unmatched formats stay available in the existing diagnostic artifact.
+        if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+            printf '📊 Verified output sample (up to 6 PASS lines, each max 200 chars):\n'
+            awk '
+                # Only fixed-format identity and numeric code-health metrics.
+                # Never echo arbitrary raw PASS content into public CI logs.
+                /^PASS — KAORI [A-Za-z ]+$/ || /^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions / || /^[[:space:]]+PASS — [0-9]+ broad exception handlers / || /^[[:space:]]+[0-9]+ checks passed/ {
+                    printf "  %s\n", substr($0, 1, 200)
+                    shown++
+                    if (shown >= 6) exit
+                }
+                END {
+                    if (shown == 0) print "  No standardized PASS detail; consult raw verifier log."
+                }
+            ' "$log_file"
+            printf '📦 Full diagnostic log: %s\n' "$log_file"
+            : > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+        fi
         # Preserve the existing Engineering Quality timing and Pyright stats.
         if [[ "$group" == 'Engineering Quality' ]]; then
             local elapsed=$(( $(date +%s) - started ))
@@ -189,6 +235,9 @@ run_command_capture() {
     printf '📦 Diagnostic excerpt — bounded; full output retained at %s\n' "$log_file" >&2
     tail -n 60 "$log_file" >&2
     printf '➡️ Repair %s, collect remaining findings, then rerun %s.\n' "$label" "$group" >&2
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        : > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+    fi
     return "$status"
 }
 
