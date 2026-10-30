@@ -190,7 +190,12 @@ run_command_capture() {
         if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
             printf '📊 Verified output sample (up to 6 PASS lines, each max 200 chars):\n'
             awk '
-                /^PASS —/ || /^[[:space:]]+PASS —/ || /^[[:space:]]+[0-9]+ checks passed/ {
+                # Only fixed-format identity and numeric code-health metrics.
+                # Never echo arbitrary raw PASS content into public CI logs.
+                /^PASS — KAORI [A-Za-z ]+$/ ||
+                /^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions / ||
+                /^[[:space:]]+PASS — [0-9]+ broad exception handlers / ||
+                /^[[:space:]]+[0-9]+ checks passed/ {
                     printf "  %s\n", substr($0, 1, 200)
                     shown++
                     if (shown >= 6) exit
