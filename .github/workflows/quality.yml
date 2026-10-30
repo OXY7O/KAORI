@@ -303,6 +303,7 @@ jobs:
           set -Eeuo pipefail
           started="$(date +%s)"
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --env KAORI_CI_LIVE_LOG=1 \
             --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
             bash scripts/quality_gate.sh --static &
           gate_pid=$!
@@ -312,7 +313,9 @@ jobs:
               sleep 60
               if kill -0 "$gate_pid" >/dev/null 2>&1; then
                 elapsed=$(( $(date +%s) - started ))
-                printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+                active="$(head -n 1 tmp/ci-artifacts/static-output/active-verifier.txt 2>/dev/null || true)"
+                printf '⏳ Static & Governance still running · current: %s · ⏱ %dm %02ds\n' \
+                  "${active:-verifier startup or transition}" $((elapsed / 60)) $((elapsed % 60))
               fi
             done
           ) &
@@ -340,7 +343,7 @@ jobs:
         id: functional_gate
         if: ${{ matrix.gate == 'functional' }}
         run: >-
-          docker compose --file .github/ci/compose.yml run --rm ci
+          docker compose --file .github/ci/compose.yml run --rm --env KAORI_CI_LIVE_LOG=1 ci
           bash scripts/quality_gate.sh --tests
 
       - name: Build & Verify Frontend
@@ -348,6 +351,7 @@ jobs:
         if: ${{ matrix.gate == 'frontend' }}
         run: >-
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --env KAORI_CI_LIVE_LOG=1
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash scripts/quality_gate.sh --frontend
 
