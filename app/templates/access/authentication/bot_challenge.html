@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/auth_flow_heading.html" as auth_flow_heading %}
 {% import "components/table_label.html" as table_label %}
 {% block title %}Verify Sign In · KAORI{% endblock title %}
 {% block content %}
@@ -9,8 +10,7 @@
                  aria-hidden="true">
                 <i data-lucide="shield-check" class="h-6 w-6"></i>
             </div>
-            <h1 id="bot-challenge-title"
-                class="mt-4 text-xl font-semibold text-content-primary">Verify Your Sign In</h1>
+            {{ auth_flow_heading.title('bot-challenge-title', 'Verify Your Sign In', 'standard') }}
             <p class="mt-2 text-sm leading-6 text-content-secondary">Complete the security check before continuing to your external identity provider.</p>
             {% if error %}
                 <p class="mt-4 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft p-3 text-sm text-status-critical-text"
