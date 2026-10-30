@@ -70,6 +70,7 @@ def test_actions_match_activity_audit_table_buttons_and_preserve_permission_gate
     assert 'action_button.classes(' not in detail
     assert 'table_ui.action_classes()' in activity
     assert 'table_primitives.action_classes()' in disclosure
+    assert "macro action_classes(destructive=false, size='row')" in shared
     assert 'table_action=false' in disclosure
     assert "open_label='View More Details', close_label='Hide Details'" in read(
         'app/templates/access/identity_providers/partials/_registry.html'
