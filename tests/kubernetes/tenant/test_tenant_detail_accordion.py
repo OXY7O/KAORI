@@ -190,7 +190,9 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
     )
     assert 'aria-label="Independent Platform Admin required"' in template
     assert 'handoff_plan.requested_by == current_user.id' in template
-    assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in template
+    assert 'You prepared this plan, so this account cannot approve it—even with Super Admin.' in template
+    assert 'Another authorized Platform Admin must verify and accept.' in template
+    assert 'References and dry-runs prove neither consent nor transfer.' in template
     assert 'not native_cycle.verified_successor_acceptance' in template
     assert 'not native_cycle.provider_transfer_verified' in template
     assert 'Verify Provider &amp; Accept as Platform Admin' in template
