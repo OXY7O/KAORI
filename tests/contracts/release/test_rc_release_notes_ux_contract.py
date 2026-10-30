@@ -44,6 +44,7 @@ def test_rc_release_notes_preserve_immutable_lineage_and_uat_boundary() -> None:
     ):
         assert token in block
 
+
 def test_rc_expanded_steps_report_executed_evidence_not_only_a_summary() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
