@@ -498,8 +498,8 @@ def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_d
     assert "if grant.status == 'active'" in detail
     for route in ('reconcile_access_grant_route', 'revoke_access_grant_route'):
         endpoint = f'tenant.{route}'
-        assert detail.count(f"action=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
-        assert detail.count(f"hx-post=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+        assert detail.count(f'action="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+        assert detail.count(f'hx-post="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
     assert registry.count('name="csrf_token"') == 1
     assert detail.count('name="csrf_token"') == 2
     assert detail.count('hx-target="#tenant-admin-workspace"') == 2
