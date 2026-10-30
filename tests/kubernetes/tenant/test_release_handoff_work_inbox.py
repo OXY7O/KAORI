@@ -133,7 +133,12 @@ def test_work_inbox_is_bound_to_committed_evidence_and_existing_notification_dec
     assert "current_app.extensions.get('kaori_tenant_approval_work_inbox')" in queries
     assert 'tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)' in queries
     assert "app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox" in bootstrap
-    assert 'inbox_unread_count += tenant_approval_inbox' in queries
+    assert 'notification_inbox_unread_count = inbox_unread_count' in queries
+    assert 'inbox_unread_count += (' in queries
+    assert "tenant_approval_inbox['pending_count']" in queries
+    assert "secret_reveal_inbox['pending_count']" in queries
+    assert "secret_reveal_requester_inbox['ready_count']" in queries
+    assert 'inbox_total_count += (' in queries
     assert 'tenant_approval_inbox_items' in queries
     assert 'Tenant Release approval requests' in panel
     assert 'Resolved by another reviewer' in panel or 'approval.state' in panel
