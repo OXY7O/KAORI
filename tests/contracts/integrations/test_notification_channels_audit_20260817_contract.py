@@ -865,7 +865,215 @@ def test_notification_channel_summary_actions_preserve_governance() -> None:
     assert 'Stops future channel delivery.' in retirement
     assert 'Moves this channel to Archived (read-only).' in retirement
     assert '{{ channel.delivery_record_count }}' in retirement
-    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retirement
+    retirement_textarea = retirement.split('<textarea', 1)[1].split('>', 1)[0]
+    for attribute in ('name="retirement_reason"', 'minlength="8"', 'maxlength="500"'):
+        assert attribute in retirement_textarea
+    assert re.search(r'(?m)^\s+required\s*
+    assert 'channel.report_schedule_count' in retirement
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
+
+
+def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible() -> None:
+    inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    blockers = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html'
+    )
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+    assert "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in inventory
+    assert inventory.count('scope="col"') == 5
+    table_header = inventory.split('<thead', 1)[1].split('</thead>', 1)[0]
+    widths = [int(value) for value in re.findall(r'w-\[(\d+)%\]', table_header)]
+    assert widths == [30, 14, 23, 20, 13]
+    assert sum(widths) == 100
+    assert 'header_cell_classes(action=true)' in table_header
+    assert 'aria-label="View details for {{ channel.name }}"' in inventory
+    assert 'View More' not in inventory
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
+    assert 'Delete Locked' in drawer
+    assert 'data-kaori-native-dialog' in blockers
+    assert 'channel.delivery_record_count' in blockers
+    assert 'channel.report_schedule_count' in blockers
+    assert 'for schedule_name in channel.report_schedule_names' in blockers
+    assert 'Channel already disabled' in blockers
+    assert 'data-kaori-dialog-close' in blockers
+    assert 'credential_payload' not in blockers
+    assert "'report_schedule_names': list(usage.report_schedule_names)" in service
+    assert 'if usage.blocked:' in lifecycle
+    assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
+    assert 'data-destructive-modal-open' in drawer
+    assert inventory.index('</table>') < inventory.index('_channel_details_drawer.html')
+    assert "channel.lifecycle_state == 'retired'" in drawer
+
+
+def test_channel_drawer_locked_action_explains_disabled_lifecycle() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    dialog = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html'
+    )
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
+    assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in drawer
+    assert "action_button.classes('locked-info', full=true)" in drawer
+    assert 'title="View deletion dependencies for {{ channel.name }}"' in drawer
+    assert 'data-lucide="lock-keyhole"' in drawer
+    assert "table_label.status_label('Locked', 'warning', icon='lock-keyhole')" in dialog
+    assert 'Channel already disabled' in dialog
+    assert 'Automatic delivery is already disabled.' in dialog
+    assert 'hard delete stays locked' in dialog.lower()
+    assert 'zero records and zero report references' in dialog
+    assert 'for schedule_name in channel.report_schedule_names' in dialog
+    assert 'credential_payload' not in dialog
+    assert 'notification_channels.index' in dialog
+    assert 'hx-target="#notification-channels-workspace"' in dialog
+    assert 'data-kaori-native-dialog' in dialog
+    assert dialog.count('data-kaori-dialog-close') == 2
+    assert 'if usage.blocked:' in lifecycle
+    assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
+
+
+def test_channel_drawer_actions_preserve_csrf_htmx_and_native_confirmations() -> None:
+    inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    index = read('app/templates/integrations/delivery/notification_channels/index.html')
+    native = read('app/static/js/native_dialogs.js')
+    shared_confirm = read('app/templates/components/destructive_confirmation_modal.html')
+    confirm_js = read('app/static/js/destructive_confirmation_modal.js')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+
+    assert 'hx-get="{{ url_for(' in drawer
+    assert 'hx-push-url="false"' in drawer
+    assert 'hx-target="#notification-channels-workspace"' in drawer
+    assert 'hx-select="#notification-channels-workspace"' in drawer
+    assert "target.id === 'notification-channels-workspace'" in native
+    assert 'document.getElementById(target.id) || target' in native
+    assert 'data-kaori-dialog-auto-open' in modal
+    assert 'data-kaori-dialog-close' in modal
+    assert 'hx-post="{{ url_for(\'notification_channels.test\', channel_id=channel.id) }}"' in drawer
+    assert 'hx-post="{{ url_for(\'notification_channels.delete\', channel_id=channel.id) }}"' in inventory
+    assert "hx-post=\"{{ url_for('notification_channels.update'" in modal
+    assert 'hx-disabled-elt="button[type=\'submit\']"' in modal
+    assert 'operation_feedback=load_operational_feedback()' in index
+    assert 'components/operation_feedback_oob.html' in index
+    assert 'js/destructive_confirmation_modal.js' in index
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-destructive-modal-id="notification-channel-delete-confirmation"' in drawer
+    assert 'data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"' in drawer
+    assert 'id="notification-channel-delete-submit-{{ channel.id }}"' in inventory
+    assert 'destructive_confirmation_modal.render(' in inventory
+    assert 'data-destructive-modal-confirm' in shared_confirm
+    assert 'data-destructive-modal-close' in shared_confirm
+    assert 'data-destructive-target-name' in shared_confirm
+    assert 'submit?.click()' in confirm_js
+    assert 'event.stopPropagation()' in confirm_js
+    assert 'channel.delete_blocked' in drawer
+    assert 'window.confirm(' not in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in inventory
+    assert 'channel_return_fields()' in drawer and 'channel_return_fields()' in inventory
+    assert 'aria-haspopup="dialog"' in drawer
+    assert 'delete_channel(channel)' in routes
+    assert 'NotificationChannelDeletionBlocked' in routes
+    assert "event_type='integration.notification_channel.delete_blocked'" in routes
+    assert "event_type='integration.notification_channel.deleted'" in routes
+    assert 'result = test_channel(channel, base_url=base_url)' in routes
+    assert 'def _channel_return_query()' in routes
+    for key in ('channel_page', 'channel_per_page', 'channel_search', 'channel_provider', 'channel_state'):
+        assert f'name="{key}"' in inventory
+        assert key in routes
+
+
+def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    registry = source.split('id="notification-channel-registry"', 1)[1]
+    table_macro = read('app/templates/components/table.html')
+    header = registry.index('table_block.inventory_block_header(')
+    filters = registry.index("table_registry.filter_form('notification_channels.index'")
+    table = registry.index('<table')
+    footer = registry.index("table_registry.footer('notification_channels.index'")
+    assert header < filters < table < footer
+    assert 'loading_bar.render(loading_id, label=loading_label)' in table_macro
+    assert "loading_bar.render('notification-channel-loading'" not in registry
+    assert 'header_actions=channel_clear_action' in registry
+    assert 'table_block.inventory_filter_bar_classes()' in registry
+
+
+def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    primitive = read('app/templates/components/table_primitives.html')
+    assert source.count("table_ui.action_classes(size='header')") == 2
+    assert "action_button.classes('secondary')" not in source
+    assert 'data-lucide="book-open"' in source
+    assert 'data-lucide="settings-2"' in source
+    assert "size == 'header' else 'min-h-8 px-2.5'" in primitive
+    assert "'min-h-9 px-3'" in primitive
+    assert 'hover:bg-kaori-soft' in primitive
+    assert 'hover:bg-kaori-primary' not in primitive
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in source
+    assert 'aria-label="Configure {{ provider.label }} notification channel"' in source
+
+
+def test_review6_modal_has_context_metadata_and_single_native_provider_select() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    assert "metadata_label('Integrations', icon='plug')" in source
+    assert "metadata_label('Channel Configuration', icon='settings-2')" in source
+    assert "metadata_label('Delivery Providers', icon='network')" in source
+    assert "payload.providers|length ~ ' Setup Guides'" in source
+    assert 'Choose a Delivery Provider' not in source
+    assert 'Scheduled Reports and non-alert events ignore this threshold.' not in source
+    assert 'name="provider_key"' in source
+    assert 'x-model="provider"' in source
+    assert 'Select provider' in source
+    assert 'Delivery Policy' in source
+    assert 'payload.domain_options|length' in source
+    assert 'payload.event_type_options|length' in source
+    assert 'name="domains"' in source
+    assert 'name="event_types"' in source
+    assert 'name="enabled"' in source
+    assert 'form_channel.domains if form_channel else []' in source
+    assert 'form_channel.event_types if form_channel else []' in source
+    assert 'form_channel.enabled' in source
+    assert 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3' in source
+    assert '{% include provider_option.form_partial %}' in source
+    assert 'name="csrf_token"' in source
+
+
+def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_density() -> None:
+    import ast
+
+    source = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    module = ast.parse(source)
+    found = {}
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != 'NotificationProviderAdapter':
+            continue
+        values = {arg.arg: arg.value for arg in node.keywords}
+        key = ast.literal_eval(values['key'])
+        security = ast.literal_eval(values['security_note'])
+        validation = ast.literal_eval(values['validation_note'])
+        steps = ast.literal_eval(values['setup_steps'])
+        found[key] = (security, validation, steps)
+        assert 60 <= len(security) <= 115, key
+        assert 60 <= len(validation) <= 120, key
+
+    assert set(found) == {'discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'}
+    assert 'mentions' in found['discord'][0]
+    assert 'redirects' in found['discord'][0] and 'redirects' in found['slack'][0]
+    assert 'no bypass' in found['ntfy'][0]
+    assert 'NOTIFICATION_NTFY_ALLOWED_ORIGINS' in found['ntfy'][2][0]
+    assert 'NOTIFICATION_NTFY_CA_BUNDLE' in ' '.join(found['ntfy'][2])
+    assert 'topic' in found['telegram'][1]
+    assert 'GitHub Actions' in ' '.join(found['telegram'][2])
+    assert 'STARTTLS' in found['email'][0] and 'TLS/SMTPS' in found['email'][0]
+    assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
+    for value in found.values():
+        assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
+, retirement_textarea)
+    assert '{% if channel.report_schedule_count %}disabled{% endif %}' in retirement_textarea
     assert 'channel.report_schedule_count' in retirement
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
 
