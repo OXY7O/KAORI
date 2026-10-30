@@ -20,8 +20,8 @@ REGISTRIES = {
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
-    '_capsule_shared_allocation_drift': (1450, (19, 23, 35, 23)),
-    '_capsule_tenant_quota_drift': (1450, (19, 23, 35, 23)),
+    '_capsule_shared_allocation_drift': (840, (24, 21, 13, 27, 15)),
+    '_capsule_tenant_quota_drift': (840, (24, 21, 13, 27, 15)),
 }
 EVIDENCE_VARIANTS = (
     (19, 16, 16, 14, 20, 15),  # audit
