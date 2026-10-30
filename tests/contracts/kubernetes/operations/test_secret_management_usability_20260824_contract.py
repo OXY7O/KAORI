@@ -30,7 +30,7 @@ def test_protected_reveal_empty_cluster_copy_is_compact() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     assert "'Protected Reveal globally disabled' if not global_reveal_enabled" in page
     assert "'No eligible protected cluster' if not clusters" in page
-    assert "{% if not global_reveal_enabled %}disabled{% endif %}" in page
+    assert '{% if not global_reveal_enabled %}disabled{% endif %}' in page
     assert "'Select protected cluster'" in page
 
 
