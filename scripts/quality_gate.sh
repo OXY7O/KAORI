@@ -144,8 +144,13 @@ run_command_capture() {
         if [[ "$label" == 'Release Surface Coverage' ]]; then
             RELEASE_SURFACE_COVERAGE_LOG="$log_file"
         fi
-        # Profile the measured Static bottleneck without logging every verifier.
-        # Keep each command's full stdout/stderr in its existing diagnostic file.
+        # Every executed verifier is published as evidence; the complete raw
+        # output remains in its existing, separately uploaded diagnostic log.
+        local report_elapsed=$(( $(date +%s) - started ))
+        printf '| %s | %s | `%s` | PASS | %dm %02ds | `%s` |\n' \
+            "$group" "$label" "$*" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+            "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
+        # Preserve the existing Engineering Quality timing and Pyright stats.
         if [[ "$group" == 'Engineering Quality' ]]; then
             local elapsed=$(( $(date +%s) - started ))
             printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
@@ -155,6 +160,9 @@ run_command_capture() {
                 printf '📊 Pyright analysis stats · last 24 lines (bounded)\n'
                 tail -n 24 "$log_file"
             fi
+        else
+            local elapsed=$(( $(date +%s) - started ))
+            printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
         fi
         return 0
     else
@@ -163,6 +171,10 @@ run_command_capture() {
 
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
+    local report_elapsed=$(( $(date +%s) - started ))
+    printf '| %s | %s | `%s` | FAIL (exit %d) | %dm %02ds | `%s` |\n' \
+        "$group" "$label" "$*" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+        "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
     printf '❌ First actionable failure — %s\n' "$first_failure" >&2
     printf '⏱ %dm %02ds\n' $((($(date +%s) - started) / 60)) $((($(date +%s) - started) % 60)) >&2
@@ -243,6 +255,15 @@ render_test_taxonomy_summary() {
 }
 
 run_static() {
+    mkdir -p "$STATIC_OUTPUT_DIR"
+    {
+        printf '### Static & Governance — executed verifier inventory\n\n'
+        printf 'Each row below is an **executed** verifier, not a count of individual unit tests.\n'
+        printf 'Registered capability evidence is a separate source-ownership inventory, not a test PASS.\n\n'
+        printf '| Group | Check | Command | Outcome | Duration | Raw log in static evidence artifact |\n'
+        printf '| --- | --- | --- | --- | --- | --- |\n'
+    } > "$STATIC_OUTPUT_DIR/verification-report.md"
+
     run_static_group 'Foundation & Governance' \
         'Source Hygiene' 'bash scripts/verify_source_hygiene.sh' \
         'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py' \
@@ -345,6 +366,8 @@ run_static() {
         'UI Style' 'python scripts/verify_ui_style.py'
 
     run_contract_migration_gate
+    printf '\n**Contract & Migration Safety:** PASS — executed pytest selector `tests/contracts tests/migrations -m "contract or migration"`; JUnit evidence: `contract-migration.xml`.\n' \
+        >> "$STATIC_OUTPUT_DIR/verification-report.md"
 }
 
 run_tests() {
