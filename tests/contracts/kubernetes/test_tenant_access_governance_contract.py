@@ -460,6 +460,7 @@ def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_d
     detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
     shared = read('app/templates/components/details/_expandable_row.html')
     credentials = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    credential_detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
     Environment(autoescape=True).parse(registry)
     Environment(autoescape=True).parse(detail)
 
@@ -478,9 +479,13 @@ def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_d
     assert 'data-detail-static="true"' in shared
     assert 'aria-label="Access Grant expanded details"' in detail
 
-    # The action modal belongs to Credentials; Access Grants uses a safe expanded row.
-    assert 'data-kaori-native-dialog' in credentials
-    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in credentials
+    # Both registries use the shared accessible detail row; credential material
+    # generation retains its separate governed one-time request dialog.
+    assert "detail_row.toggle_button('tenant-credentials'" in credentials
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in credentials
+    assert '_credential_row_detail.html' in credentials
+    assert 'aria-label="Credential expanded details"' in credential_detail
+    assert 'data-dialog-target="credential-material-request-{{ credential.id }}"' in credential_detail
     assert 'data-kaori-native-dialog' not in registry
 
     viewport_end = registry.index('</table>')
