@@ -1127,7 +1127,8 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     assert 'Exact recorded reason' in release
     assert detail.count('name="tenant-governance"') == len(names)
     assert detail.count('tenant_detail_open_section ==') == len(names) + 1
-    assert detail.count('group-open:rotate-180') == len(names) + 1
+    assert 'data-tenant-native-dry-run-evidence' in release
+    assert detail.count('group-open:rotate-180') == len(names) + 2
     for id_ in names:
         assert f'<details id="{id_}"' in detail
         details = detail.split(f'<details id="{id_}"', 1)[1].split('>', 1)[0]
