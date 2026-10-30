@@ -102,7 +102,8 @@ def test_my_reveal_requests_use_approved_header_loading_filter_and_result_count(
     assert 'table_ui.cell_classes(action=true)' in source
     assert 'table_ui.header_cell_classes(action=true)' in source
     assert 'aria-label="My Reveal Requests"' in source
-    assert 'aria-label="Filter my protected reveal requests"' in source
+    assert "aria_label='Filter my protected reveal requests'" in source
+    assert '{% if aria_label %}aria-label="{{ aria_label }}"{% endif %}' in registry
     assert "page_param='my_page'" in source
     assert "per_page_param='my_per_page'" in source
     assert "table_registry.footer('kubernetes_operations.reveal_secret'" in source

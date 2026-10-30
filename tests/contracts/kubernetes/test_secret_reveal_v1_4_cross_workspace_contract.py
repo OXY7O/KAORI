@@ -68,7 +68,8 @@ def test_configuration_changes_invalidate_active_protected_reveal_requests() -> 
 def test_protected_reveal_pagination_uses_title_case_resource_label() -> None:
     request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
-    assert 'table_label.result_count(my_reveal_pagination.total_items)' in request_status
+    assert 'result_count=my_reveal_pagination.total_items' in request_status
+    assert 'table_ui.inventory_block_header(' in request_status
     assert "resource_label='Requests'" in request_status
     assert "{{ 'request' if my_reveal_pagination.total == 1 else 'requests' }}" not in request_status
     assert "rows_aria_label='Reveal requests per page'" in request_status
