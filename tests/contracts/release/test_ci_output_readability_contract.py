@@ -361,3 +361,30 @@ def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
         assert marker in workflow
     assert 'Publish Executed Gate Coverage' in workflow
     assert 'if: ${{ always() }}' in workflow
+
+
+def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_codes() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    # Live progress belongs to the existing GitHub Actions job, not a second
+    # verifier/test invocation or a misleading registered-capability count.
+    assert 'KAORI_CI_LIVE_LOG=1' in workflow
+    assert workflow.count('KAORI_CI_LIVE_LOG=1') == 3
+    assert 'active-verifier.txt' in source
+    assert 'active-verifier.txt' in workflow
+    assert 'current: %s' in workflow
+    assert 'Verified output sample (up to 6 PASS lines' in source
+    assert 'No standardized PASS detail; consult raw verifier log.' in source
+    assert 'Full diagnostic log: %s' in source
+    assert 'if [[ "${KAORI_CI_LIVE_LOG:-0}" == \'1\' ]]; then' in source
+    assert 'pytest "$@" >"$log_file" 2>&1 &' in source
+    assert 'test_pid=$!' in source
+    assert 'wait "$test_pid" || status=$?' in source
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in source
+    assert 'final pytest counts pending' in source
+    assert 'if (( status == 0 )); then' in source
+    assert 'print_pytest_failure_excerpt "$log_file"' in source
+    assert 'run_command_capture "$group" "$label" bash -lc "$command"' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'run_e2e_gate' in source
