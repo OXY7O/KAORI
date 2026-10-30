@@ -254,9 +254,16 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     script = read('app/static/js/tenant_access_grant_form.js')
 
     assert 'Apply Access Grant' in workspace
-    assert 'access-membership-tip' in workspace
-    assert 'access-profile-tip' in workspace
-    assert 'access-scope-tip' in workspace
+    # The accepted Grant Context preview replaces the former three inline tooltips.
+    for field_id, label in (
+        ('access-grant-membership', 'Membership'),
+        ('access-grant-profile', 'Access Profile'),
+        ('access-grant-scope', 'Scope'),
+    ):
+        assert f'for="{field_id}"' in workspace
+        assert f'>{label}</label>' in workspace
+    for removed_tip in ('access-membership-tip', 'access-profile-tip', 'access-scope-tip'):
+        assert removed_tip not in workspace
     assert 'data-access-profile-guidance' not in workspace
     assert 'data-access-scope-guidance' not in workspace
     assert 'Select Membership first; incompatible profiles are filtered automatically.' not in workspace
@@ -286,24 +293,39 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert 'data-access-scope-guidance' not in script
 
 
-def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_popover() -> None:
+def test_access_grant_registry_reconciliation_uses_canonical_expandable_evidence() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
-    info_tip = read('app/templates/components/info_tip.html')
-    info_tip_script = read('app/static/js/info_tips.js')
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    shared = read('app/templates/components/details/_expandable_row.html')
 
-    assert '{% import "components/info_tip.html" as info_tip %}' in registry
+    # Reconciliation remains visible in the registry even before detail expansion.
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
-    assert 'info_tip.render(' in registry
-    assert "'access-grant-reconciliation-' ~ grant.id" in registry
-    assert "grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.'" in registry
-    assert "placement='left'" in registry
-    assert 'max-w-[260px]' not in registry
-    assert 'role="tooltip"' in info_tip
-    assert 'data-kaori-info-tip-trigger' in info_tip
-    assert "event.key === 'Escape'" in info_tip_script
-    assert "document.addEventListener('click'" in info_tip_script
-    assert "document.addEventListener('focusin'" in info_tip_script
-    assert "document.addEventListener('htmx:beforeSwap'" in info_tip_script
+    assert 'aria-label="Access Grant actions"' in registry
+    assert "url_for('tenant.inspect_access_grant_route', grant_id=grant.id)" in registry
+    assert 'name="csrf_token"' in registry
+
+    # Use the existing accessible, static expandable table row, not a legacy tooltip.
+    assert '{% import "components/details/_expandable_row.html" as detail_row %}' in registry
+    assert "detail_row.toggle_button('tenant-access-grants'" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in registry
+    assert "{% include 'kubernetes/tenant/partials/_access_grant_row_detail.html' %}" in registry
+    assert 'data-detail-toggle' in shared
+    assert 'aria-controls="{{ row_id }}"' in shared
+    assert 'aria-expanded="false"' in shared
+    assert 'data-detail-static="true"' in shared
+
+    # The expanded evidence preserves the principal/tenant/profile/scope and fail-closed actions.
+    assert 'data-access-grant-expanded-evidence' in detail
+    assert 'aria-label="Access Grant expanded details"' in detail
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'Provider Reconciliation' in detail
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in detail
+    for label in ('Principal', 'Tenant', 'Profile', 'Scope'):
+        assert f'>{label}</dt>' in detail
+    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in detail
+    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in detail
+    assert "url_for('tenant.revoke_access_grant_route', grant_id=grant.id)" in detail
+    assert 'name="csrf_token"' in detail
 
 
 def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_provider_mutation() -> None:

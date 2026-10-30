@@ -114,28 +114,32 @@ def test_resource_group_guides_are_inside_owning_disclosure_title() -> None:
         assert summary.index(heading) < summary.index(identifier)
 
 
-def test_field_and_row_specific_evidence_remains_icon_only() -> None:
-    field_tips = {
-        '_tenant_access_grants_workspace.html': (
-            'access-membership-tip',
-            'access-profile-tip',
-            'access-scope-tip',
-        ),
-        '_tenant_adoption_preflight.html': ('tenant-adoption-control-tip',),
-    }
-    for template, identifiers in field_tips.items():
-        expressions = _tip_expressions(_read(template))
-        for identifier in identifiers:
-            matches = [expression for expression in expressions if f"'{identifier}'" in expression]
-            assert len(matches) == 1, (template, identifier)
-            assert "variant='guide'" not in matches[0], (template, identifier)
+def test_field_and_row_evidence_uses_approved_context_and_icon_only_tips() -> None:
+    # The adoption control retains its field-level icon tooltip, not a title guide.
+    expressions = _tip_expressions(_read('_tenant_adoption_preflight.html'))
+    matches = [expression for expression in expressions if "'tenant-adoption-control-tip'" in expression]
+    assert len(matches) == 1
+    assert "variant='guide'" not in matches[0]
 
-    reconciliation = _read('_access_grant_registry.html')
-    row_tip = next(
-        expression for expression in _tip_expressions(reconciliation) if "'access-grant-reconciliation-'" in expression
-    )
-    assert "variant='guide'" not in row_tip
-    assert 'grant.reconciliation_message' in row_tip
+    # The Access Grant form uses its live Grant Context instead of obsolete inline tips.
+    workspace = _read('_tenant_access_grants_workspace.html')
+    assert 'data-access-grant-context' in workspace
+    for control in ('membership', 'profile', 'scope'):
+        assert f'data-access-{control}' in workspace
+    for legacy_tip in ('access-membership-tip', 'access-profile-tip', 'access-scope-tip'):
+        assert legacy_tip not in workspace
+
+    # Registry status and the shared accessible detail row expose committed provider evidence.
+    registry = _read('_access_grant_registry.html')
+    detail = _read('_access_grant_row_detail.html')
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert "detail_row.toggle_button('tenant-access-grants'" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in registry
+    assert "{% include 'kubernetes/tenant/partials/_access_grant_row_detail.html' %}" in registry
+    assert 'data-access-grant-expanded-evidence' in detail
+    assert 'aria-label="Access Grant expanded details"' in detail
+    assert 'Provider Reconciliation' in detail
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in detail
 
 
 def test_hover_portal_gap_and_disclosure_click_are_safe() -> None:
