@@ -171,20 +171,42 @@ jobs:
           set -Eeuo pipefail
           started="$(date +%s)"
 
+          # This is an execution report, not the count of Python functions,
+          # contracted capabilities, or pytest cases covered by each verifier.
+          {
+            printf '### Python & Governance — executed validation\n\n'
+            printf 'Route: python=%s, contracts=%s, migrations=%s, reports=%s, wide=%s.\n\n' \
+              "$CHECK_PYTHON" "$CHECK_CONTRACTS" "$CHECK_MIGRATIONS" "$CHECK_REPORTS" "$CHECK_WIDE"
+            printf '| Check | Exact command | Outcome | Duration |\n'
+            printf '| --- | --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          executed_checks=0
+
           run_toolchain() {
             local label="$1"
             shift
-            local check_started elapsed
+            local check_started elapsed status=0 command_display
             check_started="$(date +%s)"
-            printf '⏳ %s\n' "$label"
+            printf -v command_display '%q ' "$@"
+            printf '⏳ %s · %s\n' "$label" "$command_display"
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               --env HOME=/tmp \
               --volume "$PWD:/workspace" \
               --workdir /workspace \
               "$CI_TOOLCHAIN_IMAGE" \
-              "$@"
+              "$@" || status=$?
             elapsed=$(( $(date +%s) - check_started ))
+            executed_checks=$((executed_checks + 1))
+            if (( status != 0 )); then
+              printf '| %s | `%s` | FAIL (exit %d) | %dm %02ds |\n' \
+                "$label" "$command_display" "$status" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              printf '❌ %s · exit %d · ⏱ %dm %02ds\n' \
+                "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+              return "$status"
+            fi
+            printf '| %s | `%s` | PASS | %dm %02ds |\n' \
+              "$label" "$command_display" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
             printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
           }
 
@@ -213,7 +235,10 @@ jobs:
           fi
 
           elapsed=$(( $(date +%s) - started ))
-          printf '✅ Python & Governance PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+          printf '\n**Python & Governance:** %s checks executed and passed in %dm %02ds. Unselected path-aware checks were NOT RUN.\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+          printf '✅ Python & Governance PASS · %s checks · ⏱ %dm %02ds\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60))
 
   validation-check:
     name: Frontend & Focused Validation
@@ -266,20 +291,42 @@ jobs:
           set -Eeuo pipefail
           started="$(date +%s)"
 
+          # This is an execution report, not the count of Python functions,
+          # contracted capabilities, or pytest cases covered by each verifier.
+          {
+            printf '### Frontend & Focused Validation — executed validation\n\n'
+            printf 'Route: templates=%s, frontend=%s, contracts=%s, selected pytest paths=%s.\n\n' \
+              "$CHECK_TEMPLATES" "$CHECK_FRONTEND" "$CHECK_CONTRACTS" "${TEST_PATHS:-none}"
+            printf '| Check | Exact command | Outcome | Duration |\n'
+            printf '| --- | --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          executed_checks=0
+
           run_toolchain() {
             local label="$1"
             shift
-            local check_started elapsed
+            local check_started elapsed status=0 command_display
             check_started="$(date +%s)"
-            printf '⏳ %s\n' "$label"
+            printf -v command_display '%q ' "$@"
+            printf '⏳ %s · %s\n' "$label" "$command_display"
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               --env HOME=/tmp \
               --volume "$PWD:/workspace" \
               --workdir /workspace \
               "$CI_TOOLCHAIN_IMAGE" \
-              "$@"
+              "$@" || status=$?
             elapsed=$(( $(date +%s) - check_started ))
+            executed_checks=$((executed_checks + 1))
+            if (( status != 0 )); then
+              printf '| %s | `%s` | FAIL (exit %d) | %dm %02ds |\n' \
+                "$label" "$command_display" "$status" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              printf '❌ %s · exit %d · ⏱ %dm %02ds\n' \
+                "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+              return "$status"
+            fi
+            printf '| %s | `%s` | PASS | %dm %02ds |\n' \
+              "$label" "$command_display" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
             printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
           }
 
@@ -311,14 +358,26 @@ jobs:
             # shellcheck disable=SC2086
             # Reuse the Full Admission test service: exact-run isolated PostgreSQL/Redis.
             test_started="$(date +%s)"
+            test_status=0
             docker compose --file .github/ci/compose.yml run --rm --no-deps ci \
-              bash -lc "pytest -q --tb=short $paths"
+              bash -lc "pytest -q --tb=short $paths" || test_status=$?
             test_elapsed=$(( $(date +%s) - test_started ))
+            if (( test_status != 0 )); then
+              printf '| Focused pytest | `pytest -q --tb=short %s` | FAIL (exit %d) | %dm %02ds |\n' \
+                "$paths" "$test_status" $((test_elapsed / 60)) $((test_elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              exit "$test_status"
+            fi
+            executed_checks=$((executed_checks + 1))
+            printf '| Focused pytest | `pytest -q --tb=short %s` | PASS | %dm %02ds |\n' \
+              "$paths" $((test_elapsed / 60)) $((test_elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
             printf '✅ Focused Tests · ⏱ %dm %02ds\n' $((test_elapsed / 60)) $((test_elapsed % 60))
           fi
 
           elapsed=$(( $(date +%s) - started ))
-          printf '✅ Frontend & Focused Validation PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+          printf '\n**Frontend & Focused Validation:** %s selected checks passed in %dm %02ds. Unselected checks were NOT RUN.\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+          printf '✅ Frontend & Focused Validation PASS · %s checks · ⏱ %dm %02ds\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60))
 
       - name: Stop Isolated Focused Test Runtime
         if: ${{ always() && steps.focused-runtime.outcome != 'skipped' }}
@@ -408,6 +467,17 @@ jobs:
             printf '➡️ %s · starting governed Full Admission.\n' "$VERIFIED_DRAFT_REASON"
             exit 0
           fi
+
+          {
+            printf '### Developer Check — path-aware execution boundary\n\n'
+            printf 'Selected plan: `%s`\n\n' "$ROUTE_SUMMARY"
+            printf '| Lane | Required by plan | Actual GitHub result |\n'
+            printf '| --- | --- | --- |\n'
+            printf '| Prepare Toolchain | %s | %s |\n' "$toolchain_required" "$TOOLCHAIN_RESULT"
+            printf '| Python & Governance | %s | %s |\n' "$python_required" "$PYTHON_RESULT"
+            printf '| Frontend & Focused Validation | %s | %s |\n\n' "$validation_required" "$VALIDATION_RESULT"
+            printf 'SKIPPED means not executed by the changed-path plan or verified exact-Draft reuse; it never means PASS.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
 
           assert_lane 'Prepare Toolchain' "$toolchain_required" "$TOOLCHAIN_RESULT"
 
