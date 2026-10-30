@@ -79,9 +79,10 @@ def test_operator_buttons_keep_csrf_rbac_htmx_toast_and_no_cleanup_button() -> N
     assert ui.count('name="csrf_token" value="{{ csrf_token() }}"') == 3
     assert "current_user.has_permission('platform_operations.manage_data_lifecycle')" in ui
     service = read('app/platform_operations/data_lifecycle/service.py')
-    assert "if domain_name == 'audit_event':" in read(
-        'app/platform_operations/data_lifecycle/retention/service.py',
-    )
+    retention = read('app/platform_operations/data_lifecycle/retention/service.py')
+    archive = retention.split('def run_retention_archive(', 1)[1].split('with retention_lock(', 1)[0]
+    assert "if domain.name == 'audit_event':" in archive
+    assert '_require_audit_event_manual_admission(' in archive
     assert '_check_audit_event_governance(domain_name, user_id)' in service
     assert "domain_name not in {'notification_delivery', 'audit_event'}" in service
     assert 'OperationalDeliveryPolicy.DECK_ON_FAILURE' in service
