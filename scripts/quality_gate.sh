@@ -130,7 +130,15 @@ run_command_capture() {
     local group="$1"
     local label="$2"
     shift 2
-    local slug log_file status first_failure started
+    local slug log_file status first_failure started command_display
+
+    # Display the actual canonical verifier command rather than an unquoted
+    # bash -lc wrapper. The wrapper remains the executable implementation.
+    if [[ "$#" -eq 3 && "$1" == bash && "$2" == -lc ]]; then
+        command_display="$3"
+    else
+        printf -v command_display '%q ' "$@"
+    fi
 
     mkdir -p "$STATIC_OUTPUT_DIR"
     slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
@@ -148,7 +156,7 @@ run_command_capture() {
         # output remains in its existing, separately uploaded diagnostic log.
         local report_elapsed=$(( $(date +%s) - started ))
         printf '| %s | %s | `%s` | PASS | %dm %02ds | `%s` |\n' \
-            "$group" "$label" "$*" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+            "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
             "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
         # Preserve the existing Engineering Quality timing and Pyright stats.
         if [[ "$group" == 'Engineering Quality' ]]; then
@@ -173,7 +181,7 @@ run_command_capture() {
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
     local report_elapsed=$(( $(date +%s) - started ))
     printf '| %s | %s | `%s` | FAIL (exit %d) | %dm %02ds | `%s` |\n' \
-        "$group" "$label" "$*" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+        "$group" "$label" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
         "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
     printf '❌ First actionable failure — %s\n' "$first_failure" >&2
