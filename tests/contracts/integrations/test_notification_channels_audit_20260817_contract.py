@@ -777,7 +777,9 @@ def test_channel_inventory_uses_compact_summary_and_shared_details_drawer() -> N
     assert 'Provider delivery does not prove human receipt.' in drawer
     assert 'channel.last_tested_at|user_datetime' in drawer
     assert 'channel.last_delivery_at|user_datetime' in drawer
-    assert "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service
+    helper = read('app/integrations/delivery/notification_channels/service_helpers.py')
+    assert "'event_type_groups': _channel_event_type_groups(event_type_labels)" in helper
+    assert '_channel_view(channel, usage=usage_map.get(channel.id))' in service
     assert 'credential_payload' not in drawer
     assert "channel.lifecycle_state == 'active' and can_manage" in drawer
     assert "url_for('notification_channels.test', channel_id=channel.id)" in drawer
@@ -804,8 +806,9 @@ def test_channel_actions_are_in_details_without_dropdown_or_table_clipping() -> 
         "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')"
         in drawer
     )
+    assert 'document.querySelector(' in side_drawer_js
     assert (
-        "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')"
+        "'dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)'"
         in side_drawer_js
     )
     assert 'this.trapFocus(event, this.dialog)' in side_drawer_js
@@ -917,7 +920,9 @@ def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible
     assert 'Channel already disabled' in blockers
     assert 'data-kaori-dialog-close' in blockers
     assert 'credential_payload' not in blockers
-    assert "'report_schedule_names': list(usage.report_schedule_names)" in service
+    helper = read('app/integrations/delivery/notification_channels/service_helpers.py')
+    assert "'report_schedule_names': list(usage.report_schedule_names)" in helper
+    assert '_channel_view(channel, usage=usage_map.get(channel.id))' in service
     assert 'if usage.blocked:' in lifecycle
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
     assert 'data-destructive-modal-open' in drawer
