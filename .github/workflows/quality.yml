@@ -403,7 +403,7 @@ jobs:
               printf '\nStatic script outcome: **%s**. Raw per-verifier logs: static diagnostic artifact.\n' "$STATIC" >> "$GITHUB_STEP_SUMMARY"
               ;;
             security)
-              printf 'Security script: `.github/ci/run-security-static.sh` — **%s**.\n\n' "$SECURITY" >> "$GITHUB_STEP_SUMMARY"
+              printf "Security script: \`.github/ci/run-security-static.sh\` — **%s**.\n\n" "$SECURITY" >> "$GITHUB_STEP_SUMMARY"
               printf 'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep, pip-audit (base/dev) and npm audit.\n\n' >> "$GITHUB_STEP_SUMMARY"
               if [[ "$SECURITY" == success ]]; then
                 printf 'All listed security stages completed successfully; scan reports are retained in the security artifact.\n' >> "$GITHUB_STEP_SUMMARY"
@@ -413,12 +413,12 @@ jobs:
               ;;
             functional)
               printf 'Functional release suite and dedicated E2E suite: **%s**.\n\n' "$FUNCTIONAL" >> "$GITHUB_STEP_SUMMARY"
-              printf 'Commands: `scripts/quality_gate.sh --tests` (test prerequisites, CSS setup, non-debug functional pytest, E2E pytest, JUnit taxonomy).\n' >> "$GITHUB_STEP_SUMMARY"
+              printf "Commands: \`scripts/quality_gate.sh --tests\` (test prerequisites, CSS setup, non-debug functional pytest, E2E pytest, JUnit taxonomy).\n" >> "$GITHUB_STEP_SUMMARY"
               printf 'Executed counts belong to the captured pytest/JUnit evidence; a failed script may have stopped before E2E.\n' >> "$GITHUB_STEP_SUMMARY"
               ;;
             frontend)
               printf 'Frontend pipeline: **%s**.\n\n' "$FRONTEND" >> "$GITHUB_STEP_SUMMARY"
-              printf 'Command: `scripts/quality_gate.sh --frontend` (npm install, format, frontend build, asset verification).\n' >> "$GITHUB_STEP_SUMMARY"
+              printf "Command: \`scripts/quality_gate.sh --frontend\` (npm install, format, frontend build, asset verification).\n" >> "$GITHUB_STEP_SUMMARY"
               printf 'All four checks ran only if the entire script returned success; otherwise inspect the last reached check in the job log.\n' >> "$GITHUB_STEP_SUMMARY"
               ;;
             runtime)
@@ -426,7 +426,7 @@ jobs:
               printf '| --- | --- | --- |\n'
               printf '| Production image build | %s | Docker production target |\n' "$RUNTIME_BUILD"
               printf '| Trivy high/critical image vulnerability scan | %s | Built image; required scanner |\n' "$RUNTIME_SCAN"
-              printf '| Runtime & DAST validation | %s | `.github/ci/run-runtime-validation.sh` |\n' "$RUNTIME_DAST"
+              printf "| Runtime & DAST validation | %s | \`.github/ci/run-runtime-validation.sh\` |\n" "$RUNTIME_DAST"
               printf '\nRuntime and DAST results are deployment/security checks, not an application human-UAT approval.\n'
               ;;
           esac >> "$GITHUB_STEP_SUMMARY"
