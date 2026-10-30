@@ -76,6 +76,7 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
             ),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_membership_registry.html').read_text(encoding='utf-8'),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_registry.html').read_text(encoding='utf-8'),
+            (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html').read_text(encoding='utf-8'),
         ]
     )
 
@@ -139,6 +140,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     routes = read_routes()
     registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
     grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    grant_detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     docs = read('docs/architecture/kubernetes-tenant-access-governance.md')
 
@@ -157,8 +159,11 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
 
     assert "url_for('tenant.reactivate_membership_route', membership_id=membership.id)" in registry
     assert 'Reactivate' in registry
-    assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_registry
-    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_registry
+    assert '_access_grant_row_detail.html' in grant_registry
+    assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_detail
+    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_detail
+    assert "url_for('tenant.revoke_access_grant_route', grant_id=grant.id)" in grant_detail
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in grant_detail
     assert 'Reactivation does not restore old grants.' in workspace
 
     assert 'Previous Access Grants remain revoked permanently' in docs
