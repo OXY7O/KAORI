@@ -725,14 +725,28 @@ def test_namespace_access_security_boundary_matches_peer_surface() -> None:
     assert 'bg-status-info-soft' not in workspace
 
 
-def test_operational_attention_peer_cards_preserve_bounded_alignment() -> None:
+def test_operational_attention_card_preserves_bounded_responsive_alignment() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
 
-    assert 'xl:items-stretch' in overview
-    assert overview.count("extra_classes='flex h-full flex-col'") >= 2
-    assert overview.count("body_classes='flex flex-1 flex-col p-0'") >= 2
+    # #3144 approved one section card with two accessible, independent areas.
+    assert overview.count("'Operational Attention & Activity'") == 1
+    assert overview.count("body_classes='p-0'") >= 2
+    assert 'grid min-w-0 xl:grid-cols-12' in overview
+    assert 'flex min-w-0 flex-col xl:col-span-7' in overview
+    assert 'xl:col-span-5 xl:border-l xl:border-t-0' in overview
+    assert 'aria-labelledby="tenant-attention-list-title"' in overview
+    assert 'aria-labelledby="tenant-recent-activity-title"' in overview
+
+    # Bounded committed previews never claim fleet-wide totals.
+    assert "selectattr('tone', 'equalto', 'critical')" in overview
+    assert "selectattr('tone', 'equalto', 'warning')" in overview
+    assert "' Critical shown'" in overview
+    assert "' Warnings shown'" in overview
+    assert "' Recent events shown'" in overview
     assert 'Showing {{ tenant_attention_rows|length }} prioritized condition' in overview
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in overview
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "url_for('tenant.operations', tab='activity')" in overview
 
 
 def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> None:
@@ -799,14 +813,19 @@ def test_tenant_mutations_return_to_the_relevant_administration_section() -> Non
     assert "return redirect(url_for('tenant.tenants'))" not in routes
 
 
-def test_overview_attention_and_activity_rows_share_peer_geometry() -> None:
+def test_overview_attention_and_activity_rows_keep_independent_evidence_and_empty_states() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
     workspace = read('app/kubernetes/tenant/workspace.py')
 
-    assert overview.count('min-h-[7.5rem]') >= 3
+    assert overview.count('min-h-[7rem]') == 2
     assert 'Committed governance finding' in overview
     assert 'Recent Tenant Activity' in overview
     assert 'Needs Attention' in overview
+    assert 'No active attention items' in overview
+    assert 'No recent Tenant activity' in overview
+    assert "item.status, item.tone" in overview
+    assert '{{ item.detail }}' in overview
+    assert '{{ item.time }}' in overview
     assert 'def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3)' in workspace
     assert 'def _tenant_recent_activity(*, limit: int = 3)' in workspace
     assert 'h-[calc(100%+1rem)]' not in overview
