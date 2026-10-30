@@ -278,14 +278,8 @@ def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
     assert 'form.admission_values.errors' in sso
     assert 'KAORI resolves the secret at runtime' in sso
     assert '{query} is escaped before substitution' in ldap
-    assert (
-        'TLS Mode: choose encrypted LDAPS or StartTLS; plaintext is not available in this form.'
-        in ldap
-    )
-    assert (
-        'Bind Password Environment Variable: only its name; no secret value is persisted.'
-        in ldap
-    )
+    assert 'TLS Mode: choose encrypted LDAPS or StartTLS; plaintext is not available in this form.' in ldap
+    assert 'Bind Password Environment Variable: only its name; no secret value is persisted.' in ldap
     for source in (form, ldap, sso):
         assert 'whitespace-nowrap' not in source
 
