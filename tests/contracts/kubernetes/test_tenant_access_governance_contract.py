@@ -192,7 +192,9 @@ def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> 
     assert 'Reactivate' in registry
     assert 'data-tenant-group-edit-open' in registry
     assert 'tenant-group-retire-modal' in registry
-    assert 'No external IdP group is deleted.' in registry
+    assert 'KAORI does not modify or delete the authoritative external group.' in registry
+    assert 'Retire requires revoked Memberships and reconciled grants.' in registry
+    assert 'Revoked memberships, access grants, correlation, and audit evidence remain queryable.' in registry
     assert 'data-tenant-group-edit-modal' in modal_js
     assert 'htmx:afterRequest' in modal_js
 
