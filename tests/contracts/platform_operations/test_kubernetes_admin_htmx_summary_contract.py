@@ -510,8 +510,9 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
         'filter_select_classes()',
     ):
         assert 'table_ui.' + primitive in table
-    assert 'table-fixed' not in table
-    assert 'min-w-[980px]' in table
+    assert "table_ui.table_classes('w-full table-fixed')" in table
+    assert all(f'<col class="w-[{width}%]">' in table for width in (38, 16, 20, 26))
+    assert 'min-w-[980px]' not in table
     assert 'overflow-x-auto' in table
     assert 'scope="col"' in table
     assert 'table_ui.title_cell(row.namespace,' in table
@@ -572,7 +573,7 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
     assert 'name="page"' in table
     assert 'name="per_page"' in table
     assert 'min-w-[280px]' not in table
-    assert 'min-w-[980px]' in table
+    assert 'min-w-[980px]' not in table
     assert table.count('table_ui.action_classes()') >= 3
     assert 'macro action_classes(' in shared
     assert 'header_actions=namespace_policy_header_actions' in section
