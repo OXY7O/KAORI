@@ -175,6 +175,12 @@ Hero limits:
 
 Do not place tables, charts, workflow instructions, diagnostic evidence, or paragraph-length copy in the hero. Do not change hero font size or height per page.
 
+### Pre-Session Authentication Flow Heading
+
+Authentication verification, MFA enrollment, and recovery-code handoff are pre-session security forms, not authenticated application pages with a Hero. Their single accessible H1 uses the **shared** `components/auth_flow_heading.html` macro rather than a page-local heading or `page_hero.title_classes()`. `standard` and `challenge` variants preserve the established labels, responsive geometry, and typography. Each form owns its stable H1 ID and `aria-labelledby` relationship; the macro owns only presentation.
+
+The UI style verifier recognizes that shared component as a bounded heading authority; page-local unmarked H1 tags are **still style debt** under the unchanged zero ceiling. This authority does not cover brand identity, database readiness, or authenticated page Heroes, and does not permit a new page-level exception. Review security flow behavior, keyboard/screen-reader semantics and both themes across six viewport sizes before admitting changes.
+
 ## 7. Label Standard
 
 `components/table_label.html` is the canonical compact label implementation.
