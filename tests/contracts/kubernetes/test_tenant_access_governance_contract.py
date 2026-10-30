@@ -323,6 +323,7 @@ def test_access_grant_registry_reconciliation_uses_canonical_expandable_evidence
     assert "url_for('tenant.revoke_access_grant_route', grant_id=grant.id)" in detail
     assert 'name="csrf_token"' in detail
 
+
 def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_provider_mutation() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     modal = read('app/templates/kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html')
