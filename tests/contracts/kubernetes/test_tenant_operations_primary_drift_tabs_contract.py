@@ -138,10 +138,10 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
         assert 'Reconciliation Decision' in source
         assert 'difference.kaori_value' in source
         assert 'difference.provider_value' in source
-        assert "source.get('uid')" in source
-        assert "source.get('resource_version')" in source
-        assert "drift.get('observed_at')" in source
-        assert "state.get('blocked_reason')" in source
+        assert 'source.get("uid")' in source
+        assert 'source.get("resource_version")' in source
+        assert 'drift.get("observed_at")' in source
+        assert 'state.get("blocked_reason")' in source
         assert "table_label.special_label('Control Unavailable'" in source
         assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
         assert source.count('<form method="post"') == 2
