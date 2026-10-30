@@ -1992,7 +1992,10 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Capsule Shared Allocation Drift' in drift_ui
     assert drift_ui.count('Reapply Intent') == 2
     assert drift_ui.count('Accept Provider') == 2
-    assert "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')" in drift_ui
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') "
+        "and state.get('accept_supported')"
+    ) in drift_ui
     assert drift_ui.count('<form method="post"') == 2
     assert drift_ui.count('name="csrf_token"') == 2
     assert 'source.get("uid")' in drift_ui
@@ -2102,7 +2105,10 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Capsule Tenant Quota Drift' in drift_ui
     assert drift_ui.count('Reapply Intent') == 2
     assert drift_ui.count('Accept Provider') == 2
-    assert "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')" in drift_ui
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') "
+        "and state.get('accept_supported')"
+    ) in drift_ui
     assert drift_ui.count('<form method="post"') == 2
     assert drift_ui.count('name="csrf_token"') == 2
     assert 'source.get("uid")' in drift_ui
