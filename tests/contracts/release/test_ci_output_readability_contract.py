@@ -406,3 +406,34 @@ def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_
         'Node dependency audit PASS',
     ):
         assert scanner_result in security
+
+
+def test_runtime_and_dast_expanded_steps_report_actual_live_phases() -> None:
+    runtime = (ROOT / '.github/ci/run-runtime-validation.sh').read_text(encoding='utf-8')
+    zap = (ROOT / '.github/ci/run-zap-baseline.sh').read_text(encoding='utf-8')
+    for marker in (
+        'Runtime/DAST · starting isolated PostgreSQL',
+        'Runtime/DAST · applying candidate database migration',
+        'Candidate database migration PASS',
+        'Runtime/DAST · web readiness pending',
+        'Runtime/DAST · Reports worker readiness pending',
+        'Runtime Reports worker contract PASS',
+        'Runtime/DAST · starting ZAP baseline scan',
+        'Runtime baseline DAST PASS',
+    ):
+        assert marker in runtime
+    assert 'if (( attempt % 10 == 0 )); then' in runtime
+    assert 'bash .github/ci/run-zap-baseline.sh' in runtime
+    assert 'zap-baseline.py' in zap
+    assert 'PASS — KAORI ZAP Baseline' in zap
+
+
+def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'Only fixed-format identity and numeric code-health metrics.' in source
+    assert 'Never echo arbitrary raw PASS content into public CI logs.' in source
+    assert '/^PASS — KAORI [A-Za-z ]+$/' in source
+    assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
+    assert 'printf "  %s\\n", substr($0, 1, 200)' in source
+    assert 'Full diagnostic log: %s' in source
