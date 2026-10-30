@@ -165,9 +165,11 @@ run_command_capture() {
     slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
     started="$(date +%s)"
-    printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
     if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
         printf '%s — %s\n' "$group" "$label" > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+    else
+        printf '⏳ %s — %s\n' "$group" "$label"
     fi
 
     if "$@" >"$log_file" 2>&1; then
