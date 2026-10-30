@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/auth_flow_heading.html" as auth_flow_heading %}
 {% import "components/table_label.html" as table_label %}
 {% block title %}Verify Sign In · KAORI{% endblock title %}
 {% block content %}
@@ -12,8 +13,7 @@
                     <i data-lucide="shield-check" class="h-7 w-7"></i>
                 </span>
                 <p class="mt-4 text-xs font-semibold tracking-wider text-kaori-primary">Multi-Factor Authentication</p>
-                <h1 id="mfa-challenge-title"
-                    class="mt-2 text-2xl font-bold tracking-tight text-content-primary">Verify Your Sign In</h1>
+                {{ auth_flow_heading.title('mfa-challenge-title', 'Verify Your Sign In', 'challenge') }}
                 <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-content-secondary">Use your authenticator app or a recovery code.</p>
                 <p class="mx-auto mt-1 max-w-sm text-xs leading-5 text-content-muted">Access continues after successful verification.</p>
             </header>

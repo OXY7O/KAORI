@@ -1,0 +1,6 @@
+{# Shared pre-session authentication challenge/enrollment heading.
+   Application Hero remains owned by components/page_hero.html. #}
+{% macro title(heading_id, label, variant='standard') -%}
+    <h1 id="{{ heading_id }}"
+        class="{{ 'mt-2 text-2xl font-bold tracking-tight text-content-primary' if variant == 'challenge' else 'mt-4 text-xl font-semibold text-content-primary' }}">{{ label }}</h1>
+{%- endmacro %}
