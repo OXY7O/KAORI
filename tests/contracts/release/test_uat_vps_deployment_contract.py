@@ -377,3 +377,52 @@ def test_deployment_commits_release_state_only_after_runtime_verification() -> N
     assert runtime_verified < current_image < active_release
     assert 'committed=false' in deploy
     assert '[[ "$committed" == \'true\' ]] || rm -f -- "$candidate_release_env"' in deploy
+
+
+def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases() -> None:
+    workflow = _read(WORKFLOW)
+    deploy = _read(DEPLOY)
+    backup = _read(BACKUP)
+    verify = _read(VERIFY)
+
+    for marker in (
+        'UAT release evidence · resolving current accepted staging SHA',
+        'UAT release evidence · staging Full Admission PASS',
+        'UAT release evidence · immutable image digest, RC and source pinned',
+        'UAT host · preparing ephemeral SSH credentials',
+        'UAT host · deployment source artifacts transferred',
+        'UAT host · starting governed deploy.sh',
+        'UAT host · governed deployment script completed',
+        'Public-edge reconciliation and human UAT acceptance remain separate',
+    ):
+        assert marker in workflow
+
+    assert workflow.index('UAT host · deployment source artifacts transferred') < workflow.index(
+        'UAT host · starting governed deploy.sh'
+    )
+    assert 'printf \'registry_password=%q\\n\'' in workflow
+    assert 'bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"' in workflow
+
+    for marker in (
+        'UAT host deployment · validating immutable release',
+        'UAT host deployment · recording verified immutable release state',
+        'Verified release state committed',
+        'Host deployment elapsed',
+    ):
+        assert marker in deploy
+    assert deploy.index("status '✅' 'Internal runtime PASS'") < deploy.index(
+        'UAT host deployment · recording verified immutable release state'
+    )
+
+    # The backup command substitution still receives exactly one stdout path:
+    # phase logs go to stderr, never dump private PostgreSQL role inventory.
+    assert "backup_path=\"$(bash \"$SCRIPT_DIR/backup.sh\")\"" in deploy
+    assert 'UAT backup · archive, schema and role checksum evidence PASS' in backup
+    for line in backup.splitlines():
+        if 'printf ' in line and 'UAT backup ·' in line:
+            assert '>&2' in line
+
+    assert 'UAT verification · checking exact Beat count' in verify
+    assert 'UAT verification · checking effective PostgreSQL access' in verify
+    assert 'UAT verification · probing internal web readiness' in verify
+    assert "printf '🩺 Internal web:5000 readiness PASS" in verify
