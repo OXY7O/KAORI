@@ -1866,7 +1866,8 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
     assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
-    assert 'Original Native ResourceQuota / LimitRange UID and resourceVersion must match committed legacy observation.' in cutover_ui
+    assert 'Original Native ResourceQuota / LimitRange UID and resourceVersion' in cutover_ui
+    assert 'must match committed legacy observation.' in cutover_ui
     assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
 
     assert 'Managed Contract Comparison' in allocation_change
