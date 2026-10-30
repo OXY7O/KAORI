@@ -19,15 +19,14 @@ def test_protected_policy_mutation_defers_commit_until_audit_staged() -> None:
     commit = commit.split('\ndef ', 1)[0]
     assert 'db.session.commit()' in commit
     assert 'db.session.commit()' not in routes
-    writer_selection = routes.split('def _record_settings_activity(', 1)[1].split(
-        '@bp.route', 1
-    )[0]
+    writer_selection = routes.split('def _record_settings_activity(', 1)[1]
+    writer_selection = writer_selection.split('@bp.route', 1)[0]
     assert 'if durable_with_operation:' in writer_selection
     assert 'return stage_operational_activity(' in writer_selection
     assert 'return record_operational_activity(' in writer_selection
-    assert writer_selection.index('return stage_operational_activity(') < writer_selection.index(
-        'return record_operational_activity('
-    )
+    staged = writer_selection.index('return stage_operational_activity(')
+    non_durable = writer_selection.index('return record_operational_activity(')
+    assert staged < non_durable
     assert 'def stage_operational_activity(' in service
     assert 'commit=False' in service.split('def stage_operational_activity(', 1)[1]
     assert 'if commit:' in writer
