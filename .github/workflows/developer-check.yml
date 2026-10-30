@@ -185,7 +185,7 @@ jobs:
           run_toolchain() {
             local label="$1"
             shift
-            local check_started elapsed status=0 command_display
+            local check_started elapsed status=0 command_display check_pid heartbeat_pid
             check_started="$(date +%s)"
             printf -v command_display '%q ' "$@"
             printf '⏳ %s · %s\n' "$label" "$command_display"
@@ -195,7 +195,22 @@ jobs:
               --volume "$PWD:/workspace" \
               --workdir /workspace \
               "$CI_TOOLCHAIN_IMAGE" \
-              "$@" || status=$?
+              "$@" &
+            check_pid=$!
+            (
+              while kill -0 "$check_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$check_pid" >/dev/null 2>&1; then
+                  elapsed=$(( $(date +%s) - check_started ))
+                  printf '⏳ %s still running · ⏱ %dm %02ds\n' \
+                    "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+              done
+            ) &
+            heartbeat_pid=$!
+            wait "$check_pid" || status=$?
+            kill "$heartbeat_pid" >/dev/null 2>&1 || true
+            wait "$heartbeat_pid" >/dev/null 2>&1 || true
             elapsed=$(( $(date +%s) - check_started ))
             executed_checks=$((executed_checks + 1))
             if (( status != 0 )); then
@@ -305,7 +320,7 @@ jobs:
           run_toolchain() {
             local label="$1"
             shift
-            local check_started elapsed status=0 command_display
+            local check_started elapsed status=0 command_display check_pid heartbeat_pid
             check_started="$(date +%s)"
             printf -v command_display '%q ' "$@"
             printf '⏳ %s · %s\n' "$label" "$command_display"
@@ -315,7 +330,22 @@ jobs:
               --volume "$PWD:/workspace" \
               --workdir /workspace \
               "$CI_TOOLCHAIN_IMAGE" \
-              "$@" || status=$?
+              "$@" &
+            check_pid=$!
+            (
+              while kill -0 "$check_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$check_pid" >/dev/null 2>&1; then
+                  elapsed=$(( $(date +%s) - check_started ))
+                  printf '⏳ %s still running · ⏱ %dm %02ds\n' \
+                    "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+              done
+            ) &
+            heartbeat_pid=$!
+            wait "$check_pid" || status=$?
+            kill "$heartbeat_pid" >/dev/null 2>&1 || true
+            wait "$heartbeat_pid" >/dev/null 2>&1 || true
             elapsed=$(( $(date +%s) - check_started ))
             executed_checks=$((executed_checks + 1))
             if (( status != 0 )); then
