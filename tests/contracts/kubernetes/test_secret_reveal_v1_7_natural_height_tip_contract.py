@@ -37,12 +37,15 @@ def test_protected_reveal_new_request_uses_form_with_right_context() -> None:
 def test_administration_readiness_and_boundary_cards_use_content_height() -> None:
     page = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
-    assert 'grid gap-4 p-5 sm:p-6 xl:grid-cols-12' in page
+    assert 'mt-4 grid min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:grid-cols-3' in page
     assert 'grid items-stretch gap-4' not in page
     assert 'h-full overflow-hidden rounded-2xl' not in page
     assert 'flex h-full flex-col overflow-hidden rounded-2xl' not in page
     assert 'grid flex-1 gap-3' not in page
-    assert 'grid gap-3 p-4 sm:grid-cols-2 sm:p-5' in page
+    assert page.count('flex min-w-0 flex-col gap-3') >= 3
+    assert 'Cluster Credential' in page
+    assert 'Encryption at Rest' in page
+    assert 'Metadata Audit' in page
 
 
 def test_secret_reveal_v17_keeps_neutral_dark_mode_surfaces() -> None:
@@ -134,7 +137,7 @@ def test_review8_reveal_target_horizontal_alignment_uses_shared_fields() -> None
     # height, even though only Secret displays a Live status badge.
     assert '{{ form_field.label_row("Cluster") }}' in page
     assert '{{ form_field.label_row("Namespace") }}' in workspace
-    assert '{{ form_field.label_row("Secret", "Live", "normal", "radio") }}' in workspace
+    assert "{{ form_field.label_row('Secret', 'Live', 'normal', 'radio') }}" in workspace
     assert 'flex min-h-6 items-center justify-between gap-2' in form_field
     assert 'table_label.status_label(status_text, status_tone, status_icon)' in form_field
 
