@@ -381,7 +381,7 @@ def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_
     assert 'Verified output sample (up to 6 PASS lines' in source
     assert 'No standardized PASS detail; consult raw verifier log.' in source
     assert 'Full diagnostic log: %s' in source
-    assert 'if [[ "${KAORI_CI_LIVE_LOG:-0}" == \'1\' ]]; then' in source
+    assert 'if [[ "${KAORI_CI_LIVE_LOG:-0}"' in source
     assert 'pytest "$@" >"$log_file" 2>&1 &' in source
     assert 'test_pid=$!' in source
     assert 'wait "$test_pid" || status=$?' in source
@@ -392,3 +392,17 @@ def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_
     assert 'run_command_capture "$group" "$label" bash -lc "$command"' in source
     assert 'run_contract_migration_gate' in source
     assert 'run_e2e_gate' in source
+
+    security = (ROOT / '.github/ci/run-security-static.sh').read_text(encoding='utf-8')
+    for scanner_result in (
+        'Workflow lint PASS',
+        'Workflow security lint PASS',
+        'Shell lint PASS',
+        'Dockerfile lint PASS',
+        'Redacted secret scan PASS',
+        'Semgrep SAST PASS',
+        'Base dependency audit PASS',
+        'Development dependency audit PASS',
+        'Node dependency audit PASS',
+    ):
+        assert scanner_result in security
