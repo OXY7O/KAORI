@@ -198,9 +198,9 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
     assert 'Verify Provider &amp; Accept as Platform Admin' in template
     assert 'Execute Native Handoff' in template
     assert 'Dry-run and external references are not consent.' in template
-    assert (
-        'A new authorized Platform Admin decision is required before a Released Tenant can be Re-adopted.' in template
-    )
+    assert "tenant.lifecycle_status == 'released'" in template
+    assert 'Authorized Platform Admin handback is required before re-adoption.' in template
+    assert 'Fresh Discovery and explicit Review Adoption are separate from handback.' in template
     assert 'row.native_release_readiness.approval_complete' in template
     assert "tenant_release_step_urls['approval']" in template
     assert "hx-post=\"{{ url_for('tenant.accept_native_successor_handoff_route'" in template
