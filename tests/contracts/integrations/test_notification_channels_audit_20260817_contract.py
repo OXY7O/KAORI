@@ -505,7 +505,6 @@ def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_
         (channels, 'channel_clear_action'),
         (delivery, 'delivery_clear_action'),
     ):
-        assert f'{{% set {action} = none %}}' in source
         assert f'{{% set {action} %}}' in source
         assert f'header_actions={action}' in source
         assert source.count("table_registry.clear_filters_link('notification_channels.index'") == 1
@@ -519,6 +518,19 @@ def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_
     assert channels.index('title_extra=info_tip.render(') < channels.index(
         "table_registry.filter_form('notification_channels.index'"
     )
+    assert '{% set channel_clear_action = none %}' in channels
+    channel_filter_guard = (
+        'payload.channel_filters.search or payload.channel_filters.provider '
+        'or payload.channel_filters.state'
+    )
+    assert channel_filter_guard in channels
+    assert '{% if payload.delivery_filters_active %}' in delivery
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery
+    retention_policy_route = (
+        "url_for('platform_operations.data_lifecycle.index', tab='policies', "
+        "domain='notification_delivery')"
+    )
+    assert retention_policy_route in delivery
     assert 'header_actions=channel_clear_action' in channels
     assert 'header_actions=delivery_clear_action' in delivery
     assert "table_ui.action_classes() ~ ' ml-auto'" not in delivery
