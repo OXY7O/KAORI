@@ -59,7 +59,7 @@ def test_committed_drift_and_provider_actions_remain_in_one_expansion() -> None:
     assert 'No committed drift analysis for this Tenant' in detail
     assert 'No automatic remediation was performed.' in detail
     assert 'Effective RBAC was not reverified.' in detail
-    assert "finding.code|replace('_', ' ')|title" in detail
+    assert "finding.code|replace('_', ' ') |title" in detail
     assert 'tenant.analyze_capsule_external_access_route' in detail
     assert 'tenant.analyze_native_access_drift_route' in detail
     assert 'tenant.plan_capsule_access_remediation_route' in detail
