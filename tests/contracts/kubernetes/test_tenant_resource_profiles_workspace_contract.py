@@ -1706,8 +1706,17 @@ def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() ->
         'app/templates/kubernetes/tenant/partials/_resource_profile_coverage_comparison.html'
     )
     assert 'This preview never approves or applies changes.' in template
-    assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
-    assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
+    # Recompute capability preflight for the selected current versioned profile;
+    # never reuse a recorded executor receipt as provider-execution proof.
+    assert 'def _allocation_advanced_preflight_state(' in registry
+    assert 'configured = [p for p in profile_options if p.advanced_controls_json]' in registry
+    assert "if tenant.provider_key != 'native_kubernetes':" in registry
+    assert 'evaluate_resource_profile_advanced_controls(' in registry
+    assert 'capability_statuses=tenant_statuses[tenant.id]' in registry
+    assert "'state': str(value.get('state') or 'unknown')" in registry
+    assert "'reason': str(value.get('reason') or '')" in registry
+    assert "'source_profile_id': profile.public_id" in service
+    assert "'source_profile_version': int(profile.version or 1)" in service
     assert "'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS" in registry
     assert "'namespace_allocation_advanced_preflight':" in registry
     assert 'tenant-namespace-allocation-advanced-preflight' in page
