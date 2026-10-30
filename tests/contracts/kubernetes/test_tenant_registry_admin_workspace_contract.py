@@ -823,7 +823,7 @@ def test_overview_attention_and_activity_rows_keep_independent_evidence_and_empt
     assert 'Needs Attention' in overview
     assert 'No active attention items' in overview
     assert 'No recent Tenant activity' in overview
-    assert "item.status, item.tone" in overview
+    assert 'item.status, item.tone' in overview
     assert '{{ item.detail }}' in overview
     assert '{{ item.time }}' in overview
     assert 'def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3)' in workspace
