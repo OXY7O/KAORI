@@ -709,7 +709,8 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     assert 'framed_tabs.render_navigation(' in inventory
     assert "aria_label='Channel lifecycle views'" in inventory
     assert "('retired', 'Archived', 'archive', url_for(" in inventory
-    return_fields = inventory.split('{% macro channel_return_fields() -%}', 1)[1].split('{%- endmacro %}', 1)[0]
+    return_fields = inventory.split('{% macro channel_return_fields() -%}', 1)[1]
+    return_fields = return_fields.split('{%- endmacro %}', 1)[0]
     assert 'name="channel_lifecycle"' in return_fields
     assert 'value="{{ payload.channel_lifecycle }}"' in return_fields
     assert "'channel_lifecycle': payload.channel_lifecycle" in inventory
