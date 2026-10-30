@@ -374,7 +374,7 @@ def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_
     # Live progress belongs to the existing GitHub Actions job, not a second
     # verifier/test invocation or a misleading registered-capability count.
     assert 'KAORI_CI_LIVE_LOG=1' in workflow
-    assert workflow.count('KAORI_CI_LIVE_LOG=1') == 3
+    assert workflow.count('KAORI_CI_LIVE_LOG=1') == 4
     assert 'active-verifier.txt' in source
     assert 'active-verifier.txt' in workflow
     assert 'current: %s' in workflow
@@ -392,6 +392,10 @@ def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_
     assert 'run_command_capture "$group" "$label" bash -lc "$command"' in source
     assert 'run_contract_migration_gate' in source
     assert 'run_e2e_gate' in source
+    assert 'CI Admission · JUnit taxonomy evidence assembled' in workflow
+    assert 'CI Admission · exact source evidence document generated' in workflow
+    assert 'selected path validated; executed/reused boundaries retained' in workflow
+    assert 'Run Fast Smoke' in workflow
 
     security = (ROOT / '.github/ci/run-security-static.sh').read_text(encoding='utf-8')
     for scanner_result in (
