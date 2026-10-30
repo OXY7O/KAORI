@@ -14,8 +14,9 @@ def test_secret_reveal_operational_states_use_shared_semantic_labels() -> None:
     cluster = _read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
     table = _read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
 
-    assert "status_indicator_label('Reveal Enabled'" in posture
-    assert "status_indicator_label('Ready'" in cluster
+    assert "status_indicator_label('Global Gate Enabled' if global_reveal_enabled else 'Global Gate Disabled'" in posture
+    assert "status_indicator_label('Prerequisites Configured' if selected_cluster_ready else 'Review Required'" in cluster
+    assert "status_indicator_label('Configured' if selected_cluster_readiness.credential_configured else 'Missing'" in cluster
     assert cluster.count("status_indicator_label('Verified'") == 2
     assert 'policy_icon' not in table
     assert 'table_label.status_label' in table
@@ -27,7 +28,7 @@ def test_namespace_policy_uses_title_case_and_inventory_pagination_contract() ->
 
     assert 'Search Namespace' in section
     assert 'Reveal Policy' in section
-    assert "namespace_summary.total ~ ' Total'" in section
+    assert "table_label.metadata_label(namespace_summary.total ~ ' Total Namespaces', icon='list-filter')" in section
     assert "namespace_summary.enabled ~ ' Enabled'" in section
     assert 'pagination_ui.footer_classes()' in table
     assert "pagination_ui.resource_name('Namespaces'" in table
