@@ -436,8 +436,7 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     assert 'loading_bar.render(loading_id, label=loading_label)' in read('app/templates/components/table.html')
     assert 'hx-trigger="change, input changed delay:450ms"' in shared_table
     intro = (
-        "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' "
-        "else 'Configured Channels'"
+        "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
     )
     assert intro in channels
     assert channels.index(intro) < channels.index('id="notification-channel-registry"')
@@ -520,15 +519,13 @@ def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_
     )
     assert '{% set channel_clear_action = none %}' in channels
     channel_filter_guard = (
-        'payload.channel_filters.search or payload.channel_filters.provider '
-        'or payload.channel_filters.state'
+        'payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state'
     )
     assert channel_filter_guard in channels
     assert '{% if payload.delivery_filters_active %}' in delivery
     assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery
     retention_policy_route = (
-        "url_for('platform_operations.data_lifecycle.index', tab='policies', "
-        "domain='notification_delivery')"
+        "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='notification_delivery')"
     )
     assert retention_policy_route in delivery
     assert 'header_actions=channel_clear_action' in channels
