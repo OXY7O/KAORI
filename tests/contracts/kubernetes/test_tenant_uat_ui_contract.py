@@ -239,7 +239,8 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
             )
         else:
             expected = f"return redirect(url_for('tenant.namespace_provisioning', view='{view}'))"
-        assert expected in body
+        # Preserve the exact governed redirect target across Ruff line wrapping.
+        assert ''.join(expected.split()) in ''.join(body.split())
     assert "url_for('tenant.namespace_provisioning')" in routes  # Provision default.
 
 
