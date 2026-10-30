@@ -280,7 +280,17 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'tenant.review_tenant_release_route' in forms[0]
     for form in forms[1:]:
         opening = form.split('>', 1)[0]
-        assert re.search(r'class="[^"]*\bw-full\b', opening)
+        if not re.search(r'class="[^"]*\\bw-full\\b', opening):
+            # Only these two Native execution panels own bounded responsive grids.
+            assert any(
+                route in opening
+                for route in (
+                    'tenant.execute_native_release_handoff_route',
+                    'tenant.finalize_verified_native_release_route',
+                )
+            )
+            assert 'grid min-w-0' in opening
+            assert 'lg:grid-cols-[minmax(0,1fr)_auto]' in opening
         button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
         assert button is not None
         assert {'w-full', 'sm:w-auto'}.issubset(button.group(1).split())
@@ -416,7 +426,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'border-b border-outline-subtle py-3' in approval
     assert 'rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5 lg:col-span-1' not in approval
     assert 'data-release-accepted-handoff-evidence' in approval
-    assert 'lg:grid-cols-2' in approval
+    assert 'lg:grid-cols-5' in approval
     assert 'lg:col-span-3' in approval
     assert 'lg:col-span-2' in approval
     assert 'aria-label="External handoff and provider read-back"' in approval
@@ -708,9 +718,9 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'Governed recovery review is required; automatic restart is prohibited.' in step
     assert "tenant_release_step_urls['scope']" in step
     assert "tenant_release_step_urls['approval']" in step
-    assert 'External reference recorded; not successor consent.' in step
+    assert 'External reference is not consent.' in step
     assert 'Dry-run and external references are not consent.' in step
-    assert 'Kubernetes stays authoritative' in step
+    assert 'Kubernetes is authoritative.' in step
     # Step 4 exposes distinct assessment, restart and authorization
     # recovery POSTs. None is inferred as automatically authorized.
     assert step.count('<form ') == 5
@@ -848,8 +858,9 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'name="confirm_native_handoff_readback"' in approval
     assert 'tenant.inspect_native_external_handoff_route' in approval
     assert 'Historical / Not Current' in approval
-    assert 'Last read-back:' in approval
-    assert 'Historical evidence does not verify external acceptance' in approval
+    assert 'Read-back: {{ handoff_readback.observed_count }} resources.' in approval
+    assert "table_label.status_label('Acceptance Unverified', 'warning')" in approval
+    assert 'External acceptance and Release remain unverified.' in approval
 
     assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
