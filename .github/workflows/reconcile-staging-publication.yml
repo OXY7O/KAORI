@@ -43,17 +43,20 @@ jobs:
           : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
           : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
           [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          printf '⏳ Public-edge admission · validating SSH target and credential presence\n'
           port="${KAORI_HOST_PORT:-22}"
           if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
             printf 'KAORI_HOST_PORT is invalid.\n' >&2
             exit 1
           fi
+          printf '✅ Public-edge admission · required input and target syntax PASS\n'
 
       - name: Reconcile Publication
         shell: bash
         run: |
           set -Eeuo pipefail
           umask 077
+          printf '⏳ Public-edge · preparing ephemeral SSH identity (no key contents logged)\n'
           key_file="$(mktemp)"
           known_hosts_file="$(mktemp)"
           askpass_file="$(mktemp)"
@@ -80,6 +83,7 @@ jobs:
           export SSH_ASKPASS_REQUIRE=force
           export DISPLAY=:0
           setsid -w ssh-add "$key_file" </dev/null >/dev/null
+          printf '✅ Public-edge · SSH identity loaded; connecting to governed host\n'
 
           port="${KAORI_HOST_PORT:-22}"
           target="$KAORI_HOST_USER@$KAORI_HOST"
@@ -88,6 +92,7 @@ jobs:
           ssh "${ssh_opts[@]}" "$target" 'bash -s' <<'REMOTE'
           set -Eeuo pipefail
 
+          printf '⏳ Public-edge · checking external shared-edge authority\n'
           edge_runtime=/opt/shared-edge/runtime
           edge_publish=/opt/shared-edge/runtime/publish-container.sh
           edge_apply=/opt/shared-edge/runtime/apply.sh
@@ -135,6 +140,8 @@ jobs:
           PY
           )"
 
+          printf '✅ Public-edge · canonical TLS hostname validated against application configuration\n'
+          printf '⏳ Public-edge · checking deployed KAORI web container readiness\n'
           KAORI_WEB="$(docker ps -q \
             --filter label=com.docker.compose.project=kaori-production \
             --filter label=com.docker.compose.service=web | head -n1)"
@@ -151,7 +158,9 @@ jobs:
             exit 1
           fi
 
+          printf '✅ Public-edge · active KAORI web container healthy\n'
           cd "$edge_runtime"
+          printf '⏳ Public-edge · requesting idempotent container publication\n'
           bash "$edge_publish" \
             --site-id kaori \
             --domain "$app_hostname" \
@@ -163,6 +172,10 @@ jobs:
             --websocket false \
             --client-max-body-size 25m
 
+          printf '✅ Public-edge · publication request completed\n'
+          printf '⏳ Public-edge · applying shared-edge authority\n'
           bash "$edge_apply"
+          printf '✅ Public-edge · shared-edge apply PASS\n'
           printf 'KAORI public publication reconciliation PASS · container=%s\n' "$KAORI_WEB"
+          printf 'ℹ️ Public-edge publication PASS is not independent human UAT acceptance.\n'
           REMOTE
