@@ -435,7 +435,10 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     )
     assert 'loading_bar.render(loading_id, label=loading_label)' in read('app/templates/components/table.html')
     assert 'hx-trigger="change, input changed delay:450ms"' in shared_table
-    intro = "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
+    intro = (
+        "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' "
+        "else 'Configured Channels'"
+    )
     assert intro in channels
     assert channels.index(intro) < channels.index('id="notification-channel-registry"')
     assert channels.index('id="notification-channel-registry"') < channels.index('table_block.inventory_block_header(')
