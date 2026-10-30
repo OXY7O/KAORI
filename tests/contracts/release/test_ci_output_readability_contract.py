@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 STAGING_DEPLOY_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
 CI_ADMISSION = ROOT / 'scripts/ci_admission.py'
 
@@ -292,3 +293,62 @@ def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() ->
     assert "printf 'Staging authority resolved:" in workflow
     assert 'KAORI UAT VPS Deploy' not in workflow
     assert 'Deploy Immutable Candidate to UAT VPS' not in workflow
+
+
+def test_developer_check_publishes_only_executed_checks_and_selected_route() -> None:
+    workflow = DEVELOPER_WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'Python & Governance — executed validation' in workflow
+    assert 'Frontend & Focused Validation — executed validation' in workflow
+    assert 'Developer Check — path-aware execution boundary' in workflow
+    assert 'printf -v command_display' in workflow
+    assert 'executed_checks=$((executed_checks + 1))' in workflow
+    assert "|| status=$?" in workflow
+    assert 'return "$status"' in workflow
+    assert 'test_status=$?' in workflow
+    assert 'exit "$test_status"' in workflow
+    assert 'Unselected path-aware checks were NOT RUN.' in workflow
+    assert 'Unselected checks were NOT RUN.' in workflow
+    assert 'SKIPPED means not executed' in workflow
+    assert 'GITHUB_STEP_SUMMARY' in workflow
+
+
+def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'verification-report.md' in source
+    assert 'Every executed verifier is published as evidence' in source
+    assert 'Registered capability evidence is a separate source-ownership inventory' in source
+    assert '$(basename "$log_file")' in source
+    assert 'PASS | %dm %02ds' in source
+    assert 'FAIL (exit %d)' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert 'cat "$report" >> "$GITHUB_STEP_SUMMARY"' in workflow
+    assert 'Upload Successful Static Verification Details' in workflow
+    assert 'full-admission-static-verifiers-' in workflow
+    assert 'if-no-files-found: error' in workflow
+    assert 'Upload Static Diagnostics' in workflow
+
+
+def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for step in (
+        'static_gate', 'security_gate', 'functional_gate', 'frontend_gate',
+        'runtime_build', 'runtime_scan', 'runtime_dast',
+    ):
+        assert f'id: {step}' in workflow
+        assert f'steps.{step}.outcome' in workflow
+    for marker in (
+        'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep and pip-audit',
+        'Only stages reached before the failure may have executed.',
+        'Functional release suite and dedicated E2E suite',
+        'Runtime and DAST results are deployment/security checks',
+        'Upload Successful Security Scan Evidence',
+        'full-admission-security-scans-',
+    ):
+        assert marker in workflow
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert "if: ${{ always() }}" in workflow
