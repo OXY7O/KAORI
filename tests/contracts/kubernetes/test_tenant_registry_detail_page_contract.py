@@ -309,7 +309,7 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     for route, expected_layout in (
         ('tenant.accept_native_successor_handoff_route', 'w-full mt-3 space-y-3'),
         ('tenant.execute_native_release_handoff_route', 'data-release-native-execution-panel'),
-        ('tenant.finalize_verified_native_release_route', 'max-w-4xl'),
+        ('tenant.finalize_verified_native_release_route', 'data-release-native-finalize-workspace'),
         ('tenant.finalize_verified_capsule_release_route', 'max-w-2xl'),
     ):
         form = next(item for item in forms if route in item)
