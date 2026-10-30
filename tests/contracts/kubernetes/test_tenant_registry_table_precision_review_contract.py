@@ -100,7 +100,8 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     assert "table_ui.table_classes('!table-fixed')" in registry
     assert _header_widths(registry) == (25, 20, 25, 15, 15)
     assert 'Tenant / Scope' in registry
-    assert "access.get('environment')|default('Not assigned', true)|title" in registry
+    assert 'access.get("environment")' in registry
+    assert "|default('Not assigned', true)|title" in registry
     assert 'hidden w-full min-w-0 lg:block' in registry
     assert 'lg:hidden' in registry
     assert '<td colspan="5"' in registry
@@ -123,9 +124,13 @@ def test_namespace_access_detail_has_grouped_visual_hierarchy_and_safe_provenanc
     detail = _template('_namespace_access_detail')
     assert 'data-tenant-namespace-access-detail' in detail
     assert 'Committed Namespace Access' in detail
-    assert 'aria-label="Access package summary"' in detail
-    assert 'Identity &amp; Authorization' in detail
-    assert 'aria-label="Identity and authorization"' in detail
+    assert 'aria-label="Namespace access context"' in detail
+    assert 'Access Context' in detail
+    assert 'Tenant / Environment' in detail
+    assert 'Cluster' in detail
+    assert 'Access Profile' in detail
+    assert 'Identity' in detail
+    assert 'Approved Access Methods' in detail
     assert 'Credential Lifecycle' in detail
     assert 'aria-label="Credential lifecycle"' in detail
     assert 'aria-label="Technical references"' in detail
@@ -134,9 +139,9 @@ def test_namespace_access_detail_has_grouped_visual_hierarchy_and_safe_provenanc
     assert 'No effective access is asserted by this record.' in detail
     assert 'table_label.status_label(' in detail
     assert 'table_label.metadata_label(' in detail
-    assert "access.get('credential_public_id')" in detail
-    assert "access.get('renewal_due_at')|user_datetime" in detail
-    assert "access.get('valid_until')|user_datetime" in detail
+    assert 'access.get("credential_public_id")' in detail
+    assert 'access.get("renewal_due_at") |user_datetime' in detail
+    assert 'access.get("valid_until") |user_datetime' in detail
     assert "access.get('approved_access_methods') or []" in detail
     assert 'bg-surface-elevated' in detail
     assert 'bg-surface-hover' in detail
