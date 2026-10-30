@@ -150,6 +150,9 @@ def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_req
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     assert 'must exactly match the selected live ConfigMap name' in delete_configmap
     assert 'must exactly match the selected live Secret name' in delete_secret
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in reveal_request
+    assert 'data-reveal-request-submit-form' in reveal_request
+    assert 'KAORI records request details, not Secret values.' in reveal_request
     reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     assert 'TLS/SSH private keys cannot be revealed.' in reveal_page
     assert 'Requesters cannot approve their own requests.' in reveal_page
