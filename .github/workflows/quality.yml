@@ -296,6 +296,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Run Static & Governance
+        id: static_gate
         if: ${{ matrix.gate == 'static' }}
         shell: bash
         run: |
@@ -324,6 +325,7 @@ jobs:
           exit "$gate_status"
 
       - name: Run Security Gate
+        id: security_gate
         if: ${{ matrix.gate == 'security' }}
         run: >-
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
@@ -335,12 +337,14 @@ jobs:
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
 
       - name: Run Functional Tests
+        id: functional_gate
         if: ${{ matrix.gate == 'functional' }}
         run: >-
           docker compose --file .github/ci/compose.yml run --rm ci
           bash scripts/quality_gate.sh --tests
 
       - name: Build & Verify Frontend
+        id: frontend_gate
         if: ${{ matrix.gate == 'frontend' }}
         run: >-
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
@@ -348,10 +352,12 @@ jobs:
           bash scripts/quality_gate.sh --frontend
 
       - name: Build Production Image
+        id: runtime_build
         if: ${{ matrix.gate == 'runtime' }}
         run: docker build --target production --tag "$VALIDATION_IMAGE" .
 
       - name: Scan Production Image
+        id: runtime_scan
         if: ${{ matrix.gate == 'runtime' }}
         run: >-
           docker run --rm --name "${GATE_CONTAINER}-trivy"
@@ -361,8 +367,87 @@ jobs:
           --severity HIGH,CRITICAL --scanners vuln "$VALIDATION_IMAGE"
 
       - name: Validate Runtime & DAST
+        id: runtime_dast
         if: ${{ matrix.gate == 'runtime' }}
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
+
+      # Summary uses actual step outcomes; a selected but failed script may
+      # have executed only a subset of its internal commands.
+      - name: Publish Executed Gate Coverage
+        if: ${{ always() }}
+        shell: bash
+        env:
+          GATE: ${{ matrix.gate }}
+          STATIC: ${{ steps.static_gate.outcome }}
+          SECURITY: ${{ steps.security_gate.outcome }}
+          FUNCTIONAL: ${{ steps.functional_gate.outcome }}
+          FRONTEND: ${{ steps.frontend_gate.outcome }}
+          RUNTIME_BUILD: ${{ steps.runtime_build.outcome }}
+          RUNTIME_SCAN: ${{ steps.runtime_scan.outcome }}
+          RUNTIME_DAST: ${{ steps.runtime_dast.outcome }}
+        run: |
+          set -Eeuo pipefail
+          {
+            printf '### Full Admission — %s (executed gate evidence)\n\n' "$GATE"
+            printf 'The result below comes from GitHub step outcomes on this exact run. '
+            printf 'A selected script can stop early on failure; unexecuted internal checks are not PASS.\n\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$GATE" in
+            static)
+              report=tmp/ci-artifacts/static-output/verification-report.md
+              if [[ -s "$report" ]]; then
+                cat "$report" >> "$GITHUB_STEP_SUMMARY"
+              else
+                printf '⚠️ Static verifier report unavailable; check gate logs (outcome: %s).\n' "$STATIC" >> "$GITHUB_STEP_SUMMARY"
+              fi
+              printf '\nStatic script outcome: **%s**. Raw per-verifier logs: static diagnostic artifact.\n' "$STATIC" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            security)
+              printf 'Security script: `.github/ci/run-security-static.sh` — **%s**.\n\n' "$SECURITY" >> "$GITHUB_STEP_SUMMARY"
+              printf 'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep and pip-audit (base/dev).\n\n' >> "$GITHUB_STEP_SUMMARY"
+              if [[ "$SECURITY" == success ]]; then
+                printf 'All listed security stages completed successfully; scan reports are retained in the security artifact.\n' >> "$GITHUB_STEP_SUMMARY"
+              else
+                printf 'Only stages reached before the failure may have executed. Check the named scanner in job logs; do not interpret the tool chain as fully executed.\n' >> "$GITHUB_STEP_SUMMARY"
+              fi
+              ;;
+            functional)
+              printf 'Functional release suite and dedicated E2E suite: **%s**.\n\n' "$FUNCTIONAL" >> "$GITHUB_STEP_SUMMARY"
+              printf 'Commands: `scripts/quality_gate.sh --tests` (test prerequisites, CSS setup, non-debug functional pytest, E2E pytest, JUnit taxonomy).\n' >> "$GITHUB_STEP_SUMMARY"
+              printf 'Executed counts belong to the captured pytest/JUnit evidence; a failed script may have stopped before E2E.\n' >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            frontend)
+              printf 'Frontend pipeline: **%s**.\n\n' "$FRONTEND" >> "$GITHUB_STEP_SUMMARY"
+              printf 'Command: `scripts/quality_gate.sh --frontend` (npm install, format, frontend build, asset verification).\n' >> "$GITHUB_STEP_SUMMARY"
+              printf 'All four checks ran only if the entire script returned success; otherwise inspect the last reached check in the job log.\n' >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            runtime)
+              printf '| Runtime stage | GitHub outcome | Evidence |\n'
+              printf '| --- | --- | --- |\n'
+              printf '| Production image build | %s | Docker production target |\n' "$RUNTIME_BUILD"
+              printf '| Trivy high/critical image vulnerability scan | %s | Built image; required scanner |\n' "$RUNTIME_SCAN"
+              printf '| Runtime & DAST validation | %s | `.github/ci/run-runtime-validation.sh` |\n' "$RUNTIME_DAST"
+              printf '\nRuntime and DAST results are deployment/security checks, not an application human-UAT approval.\n'
+              ;;
+          esac >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Successful Static Verification Details
+        if: ${{ success() && matrix.gate == 'static' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-static-verifiers-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/static-output
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload Successful Security Scan Evidence
+        if: ${{ success() && matrix.gate == 'security' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-security-scans-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/security
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Upload Static JUnit Evidence
         if: ${{ success() && matrix.gate == 'static' }}
