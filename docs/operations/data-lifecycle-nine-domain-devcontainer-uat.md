@@ -535,6 +535,16 @@ runtime evidence. If a scenario is intentionally denied, PASS means
 | DL-E2E-19 | `alert_incident` / `notification_delivery` | Closed-case cleanup does not delete delivery journal or dedup evidence | NOT RUN |
 | DL-E2E-20 | `tenant_audit_evidence` / `runtime_observation` | Committed normalized evidence, provider remains authoritative | NOT RUN |
 
+**Record-level Restore and cold lookup admission boundary:** DL-E2E-16 checks that
+missing hot rows do not fabricate archived-record existence; it does **not**
+qualify record-level Restore, point-in-time rehydration, or per-record cold
+retrieval. Those operations remain **NOT ADMITTED** under #1416 until the
+source owner supplies canonical record identity, verified archive checksum,
+permission/hold checks, a separately approved restore procedure, runtime
+negative-test evidence, and explicit human acceptance. All such execution
+evidence remains **NOT RUN** in this DevContainer register. Prior UI acceptance
+does not constitute server-stage restore authorization or production release.
+
 ## 5. Per-domain operator acceptance ledger
 
 | Domain | Preview | Archive + checksum | Negative safety / RBAC | UI / human acceptance |
