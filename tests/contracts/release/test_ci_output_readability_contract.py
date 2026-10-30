@@ -303,7 +303,7 @@ def test_developer_check_publishes_only_executed_checks_and_selected_route() -> 
     assert 'Developer Check — path-aware execution boundary' in workflow
     assert 'printf -v command_display' in workflow
     assert 'executed_checks=$((executed_checks + 1))' in workflow
-    assert "|| status=$?" in workflow
+    assert '|| status=$?' in workflow
     assert 'return "$status"' in workflow
     assert 'test_status=$?' in workflow
     assert 'exit "$test_status"' in workflow
@@ -321,7 +321,7 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'Every executed verifier is published as evidence' in source
     assert 'Registered capability evidence is a separate source-ownership inventory' in source
     assert 'Registered capability ownership (not executed tests)' in source
-    assert 'sed -n \'/^  EVIDENCE REGISTERED ONLY/,$p\'' in source
+    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in source
     assert 'command_display="$3"' in source
     assert '"$group" "$label" "$command_display"' in source
     assert '$(basename "$log_file")' in source
@@ -340,8 +340,13 @@ def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
     for step in (
-        'static_gate', 'security_gate', 'functional_gate', 'frontend_gate',
-        'runtime_build', 'runtime_scan', 'runtime_dast',
+        'static_gate',
+        'security_gate',
+        'functional_gate',
+        'frontend_gate',
+        'runtime_build',
+        'runtime_scan',
+        'runtime_dast',
     ):
         assert f'id: {step}' in workflow
         assert f'steps.{step}.outcome' in workflow
@@ -355,4 +360,4 @@ def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
     ):
         assert marker in workflow
     assert 'Publish Executed Gate Coverage' in workflow
-    assert "if: ${{ always() }}" in workflow
+    assert 'if: ${{ always() }}' in workflow
