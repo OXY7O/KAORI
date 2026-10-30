@@ -220,7 +220,8 @@ def test_one_time_reveal_consumption_is_commit_coupled_to_activity_evidence() ->
     assert 'audit_feedback=audit_feedback' in consume
     reveal_route = routes.split('def reveal_secret_value(request_id:', 1)[1]
     assert 'audit_action_url=url_for(' in reveal_route
-    assert 'feedback = result.audit_feedback' in reveal_route
+    assert 'from typing import Any, cast' in routes
+    assert 'feedback = cast(dict[str, Any], result.audit_feedback)' in reveal_route
     assert "_record_secret_activity(\n            event_type='kubernetes_secret_revealed'" not in reveal_route
     staged = activity.split('def stage_operational_activity(', 1)[1]
     assert 'commit=False' in staged
