@@ -582,7 +582,7 @@ def test_review5_channels_registry_uses_canonical_filter_and_safe_server_paginat
     assert 'channel_search' in template
     assert "'channel_search': payload.channel_filters.search" in template
     assert 'No Matching Channels' in template
-    assert 'table_label.result_count(payload.channel_pagination.total_items)' in template
+    assert 'result_count=payload.channel_pagination.total_items' in template
     for name in ('channel_search', 'channel_provider', 'channel_state'):
         assert f"request.args.get('{name}', '')" in routes
     assert 'func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True)' in service
@@ -707,7 +707,7 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
 
     assert 'NotificationChannel.query.filter_by(lifecycle_state=lifecycle)' in service
     assert "'channel_lifecycle': normalized_lifecycle" in service
-    assert "channel_lifecycle=request.args.get('channel_lifecycle', 'active')" in routes
+    assert "lifecycle=request.args.get('channel_lifecycle', 'active')" in routes
     assert "query['channel_lifecycle'] = 'retired'" in routes
     assert 'framed_tabs.render_navigation(' in inventory
     assert "aria_label='Channel lifecycle views'" in inventory
@@ -718,7 +718,11 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     assert "channel.lifecycle_state == 'active' and can_manage" in inventory
     assert "channel.lifecycle_state == 'active' and can_manage" in drawer
     assert 'notification_channels.retire' in retire
-    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retire
+    retirement_textarea = retire.split('<textarea', 1)[1].split('>', 1)[0]
+    for field in ('name="retirement_reason"', 'minlength="8"', 'maxlength="500"'):
+        assert field in retirement_textarea
+    assert 'required' in retirement_textarea.split()
+    assert '{% if channel.report_schedule_count %}disabled{% endif %}' in retirement_textarea
     assert 'channel.report_schedule_count' in retire
     assert 'data-kaori-native-dialog' in retire
     assert 'hx-target="#notification-channels-workspace"' in retire
