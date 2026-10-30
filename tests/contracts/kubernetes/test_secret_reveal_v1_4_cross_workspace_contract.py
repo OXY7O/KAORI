@@ -109,6 +109,10 @@ def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
 
     assert 'rounded-xl bg-kaori-primary text-white' not in request_form
     assert 'border border-outline-subtle bg-kaori-soft text-kaori-primary' in request_form
-    assert 'space-y-1 text-xs leading-5 text-content-secondary' in request_form
+    # The governed form uses the approved semantic layout, not a retired helper.
+    assert 'data-reveal-request-submit-form' in request_form
+    assert 'name="csrf_token"' in request_form
+    assert 'data-operation-submit' in request_form
+    assert 'KAORI records request details, not Secret values.' in request_form
     assert 'hover:bg-kaori-soft' not in request_status
     assert "table_label.status_label('Revealed', 'info'" in request_status
