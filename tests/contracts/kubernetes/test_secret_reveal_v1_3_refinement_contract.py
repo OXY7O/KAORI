@@ -17,7 +17,9 @@ def test_secret_reveal_readiness_exposes_cluster_credential() -> None:
     assert "'selected_cluster_readiness': selected_cluster_readiness" in service
     assert 'Cluster Credential' in template
     assert 'selected_cluster_readiness.credential_configured' in template
-    assert 'All three cluster prerequisites must be satisfied.' in template
+    assert 'Review credential availability and attest to the two security prerequisites for this cluster.' in template
+    assert 'Encryption at Rest' in template
+    assert 'Metadata Audit' in template
 
 
 def test_secret_reveal_namespace_source_is_snapshot_backed_and_tri_state() -> None:
@@ -57,21 +59,25 @@ def test_secret_reveal_policy_mutation_keeps_fresh_live_guardrail() -> None:
     assert 'verify_live_namespace(cluster, normalized_namespace)' in policy
     assert "value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available')" in table
     assert ':disabled="current === initial"' in table
-    assert "current !== initial ? 'border-kaori-primary bg-kaori-primary" in table
-    assert '>Set Policy<' in table
+    assert 'x-model="current"' in table
+    assert 'class="{{ table_ui.action_classes() }}"' in table
+    assert 'Edit Policy' in table
+    assert 'Save Policy' in table
 
 
 def test_secret_reveal_clear_surfaces_and_oob_posture_are_locked() -> None:
     workspace = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
     cluster = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
-    assert 'Protection Boundary' in workspace
-    for label in ('Step-up Authentication', 'Independent Approval', 'Namespace Policy', 'Kubernetes RBAC'):
-        assert label in workspace
+    assert 'Configured prerequisites and policies do not prove live access.' in workspace
+    assert '{% include "platform_operations/kubernetes/secret_reveal/_cluster_workspace.html" %}' in workspace
+    assert 'Activation Boundary' in cluster
+    assert 'Kubernetes Boundary' in cluster
+    assert 'Least-privilege Kubernetes RBAC remains the final authorization boundary.' in cluster
     assert 'secret-reveal-protected-cluster-count' in workspace
     assert 'secret-reveal-enabled-namespace-count' in workspace
     assert 'secret-reveal-selected-cluster-posture' in workspace
     assert 'hx-swap-oob="outerHTML"' in cluster
-    assert 'bg-surface-card shadow-sm xl:col-span-5' in cluster
+    assert 'class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle"' in cluster
     assert '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' not in cluster
     assert 'Policies activate only when cluster readiness is satisfied.' in cluster
