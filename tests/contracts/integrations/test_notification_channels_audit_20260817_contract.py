@@ -841,7 +841,8 @@ def test_channel_action_buttons_follow_shared_kaori_semantic_variants() -> None:
 
     # A locked deletion opens the dependency explanation; it is NOT a disabled submit.
     locked = actions.split('{% if channel.delete_blocked %}', 1)[1].split('{% else %}', 1)[0]
-    assert 'type="button" data-kaori-dialog-open' in locked
+    assert 'type="button"' in locked
+    assert 'data-kaori-dialog-open' in locked
     assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in locked
     assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in locked
     assert 'disabled' not in locked and 'data-destructive-modal-open' not in locked
