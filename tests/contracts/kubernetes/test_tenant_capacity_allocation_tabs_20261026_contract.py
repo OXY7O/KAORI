@@ -100,7 +100,9 @@ def test_admission_boundaries_use_compact_copy() -> None:
 def test_budget_filters_are_server_backed_and_preserved_in_pagination() -> None:
     registry = read('_allocation_budget_registry.html')
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    capacity = (ROOT / 'app/kubernetes/tenant/allocation_overview.py').read_text(encoding='utf-8')
 
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
     for field in (
         'capacity_search',
         'capacity_environment',
@@ -109,21 +111,24 @@ def test_budget_filters_are_server_backed_and_preserved_in_pagination() -> None:
         'capacity_resource',
     ):
         assert f'name="{field}"' in registry or f"'{field}': capacity_filters." in registry
-        assert f"request.args.get('{field}')" in routes
-    assert "context['capacity_filters'] = {" in routes
-    assert "context['capacity_environment_options']" in routes
-    assert "context['capacity_state_options']" in routes
-    assert "context['capacity_evidence_options']" in routes
-    assert "context['active_allocation_view'] = allocation_view" in routes
-    assert "allocation_view not in {'overview', 'budget'}" in routes
+        assert f"args.get('{field}')" in capacity
+    assert "context['capacity_filters'] = filters" in capacity
+    assert "context['capacity_environment_options']" in capacity
+    assert "context['capacity_state_options']" in capacity
+    assert "context['capacity_evidence_options']" in capacity
+    assert "context['active_allocation_view'] = allocation_view" in capacity
+    assert "allocation_view not in {'overview', 'budget'}" in capacity
+    assert "capacity_resource not in {'', 'cpu', 'memory_bytes', 'pods', 'storage_bytes'}" in capacity
     assert 'name="allocation_view" value="budget"' in registry
     assert 'name="allocation_cluster_id"' in registry
     assert 'capacity_query_params' in registry
     assert "query_params={'view': 'capacity', 'allocation_view': 'budget'" in registry
     assert "per_page_param='capacity_per_page'" in registry
-    assert 'capacity_items, capacity_pagination = paginate_sequence(' in routes
-    assert "capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]" in routes
-    assert "allocation_view == 'overview' and selected is not None" in routes
+    assert 'capacity_items, capacity_pagination = paginate_sequence(' in capacity
+    assert "capacity_rows = [item for item in capacity_rows if item['state'] == capacity_state]" in capacity
+    assert "allocation_view == 'overview' and selected is not None" in capacity
+    assert "page=args.get('capacity_page', 1, type=int) or 1" in capacity
+    assert "per_page=args.get('capacity_per_page', 5, type=int) or 5" in capacity
 
 
 def test_no_mutation_or_fabricated_headroom_in_budget_table() -> None:
