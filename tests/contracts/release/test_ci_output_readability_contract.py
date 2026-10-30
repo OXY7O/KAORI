@@ -322,6 +322,8 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'Registered capability evidence is a separate source-ownership inventory' in source
     assert 'Registered capability ownership (not executed tests)' in source
     assert 'sed -n \'/^  EVIDENCE REGISTERED ONLY/,$p\'' in source
+    assert 'command_display="$3"' in source
+    assert '"$group" "$label" "$command_display"' in source
     assert '$(basename "$log_file")' in source
     assert 'PASS | %dm %02ds' in source
     assert 'FAIL (exit %d)' in source
@@ -344,7 +346,7 @@ def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
         assert f'id: {step}' in workflow
         assert f'steps.{step}.outcome' in workflow
     for marker in (
-        'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep and pip-audit',
+        'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep, pip-audit (base/dev) and npm audit',
         'Only stages reached before the failure may have executed.',
         'Functional release suite and dedicated E2E suite',
         'Runtime and DAST results are deployment/security checks',
