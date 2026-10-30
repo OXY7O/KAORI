@@ -404,7 +404,7 @@ jobs:
               ;;
             security)
               printf 'Security script: `.github/ci/run-security-static.sh` — **%s**.\n\n' "$SECURITY" >> "$GITHUB_STEP_SUMMARY"
-              printf 'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep and pip-audit (base/dev).\n\n' >> "$GITHUB_STEP_SUMMARY"
+              printf 'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep, pip-audit (base/dev) and npm audit.\n\n' >> "$GITHUB_STEP_SUMMARY"
               if [[ "$SECURITY" == success ]]; then
                 printf 'All listed security stages completed successfully; scan reports are retained in the security artifact.\n' >> "$GITHUB_STEP_SUMMARY"
               else
