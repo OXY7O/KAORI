@@ -302,6 +302,10 @@ def test_developer_check_publishes_only_executed_checks_and_selected_route() -> 
     assert 'Frontend & Focused Validation — executed validation' in workflow
     assert 'Developer Check — path-aware execution boundary' in workflow
     assert 'printf -v command_display' in workflow
+    assert workflow.count('check_pid=$!') == 2
+    assert workflow.count('wait "$check_pid" || status=$?') == 2
+    assert workflow.count('kill "$heartbeat_pid" >/dev/null 2>&1 || true') == 2
+    assert 'still running · ⏱' in workflow
     assert 'executed_checks=$((executed_checks + 1))' in workflow
     assert '|| status=$?' in workflow
     assert 'return "$status"' in workflow
