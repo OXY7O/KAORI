@@ -37,7 +37,11 @@ def test_protected_reveal_new_request_uses_form_with_right_context() -> None:
 def test_administration_readiness_and_boundary_cards_use_content_height() -> None:
     page = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
-    assert 'mt-4 grid min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:grid-cols-3' in page
+    readiness_grid = (
+        'mt-4 grid min-w-0 overflow-hidden rounded-xl border border-outline-subtle '
+        'bg-surface-card sm:grid-cols-2 lg:grid-cols-3'
+    )
+    assert readiness_grid in page
     assert 'grid items-stretch gap-4' not in page
     assert 'h-full overflow-hidden rounded-2xl' not in page
     assert 'flex h-full flex-col overflow-hidden rounded-2xl' not in page
