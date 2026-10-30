@@ -213,7 +213,9 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
     assert '_allocation_change.html' not in cutover and '_capsule_' not in cutover
     assert capsule.count('_capsule_tenant_quota_cutover.html') == 1
     assert capsule.count('_capsule_shared_allocation_cutover.html') == 1
-    assert '_allocation_change.html' not in capsule and '_allocation_cutover.html' not in capsule
+    # Match complete native includes, not suffixes of Capsule authority templates.
+    assert '{% include "kubernetes/tenant/partials/_allocation_change.html" %}' not in capsule
+    assert '{% include "kubernetes/tenant/partials/_allocation_cutover.html" %}' not in capsule
     assert '<details' not in native and '<details' not in cutover and '<details' not in capsule
     assert 'data-tenant-native-cutover-workspace' in cutover
     assert 'data-tenant-capsule-allocation-workspace' in capsule
