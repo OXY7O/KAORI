@@ -497,6 +497,15 @@ def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_d
     assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in detail
     assert "if grant.status == 'active'" in detail
     for route in ('reconcile_access_grant_route', 'revoke_access_grant_route'):
-        assert route in detail
-    assert detail.count('name="csrf_token"') >= 2
+        endpoint = f'tenant.{route}'
+        assert detail.count(f"action=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+        assert detail.count(f"hx-post=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+    assert registry.count('name="csrf_token"') == 1
+    assert detail.count('name="csrf_token"') == 2
+    assert detail.count('hx-target="#tenant-admin-workspace"') == 2
+    assert detail.count('hx-select="#tenant-admin-workspace"') == 2
+    assert detail.count('hx-disabled-elt="find button"') == 2
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'access_grant_pagination.allowed_per_page' in registry
     assert "action_button.classes('critical')" in detail
