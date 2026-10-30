@@ -34,7 +34,9 @@ def test_alert_policy_title_uses_existing_accessible_guide_only_for_incidents() 
     assert 'the searchable case index stays in PostgreSQL' in template
 
     source = read('app/platform_operations/data_lifecycle/retention/presentation.py')
-    assert 'Case lifecycle evidence from initial detection through final closure.' in source
+    assert 'Closed alert cases, operator evidence, delivery, and postmortems.' in source
+    assert 'Only Closed cases are archive-eligible.' in source
+    assert 'case index in PostgreSQL' in source
     assert 'Cleanup blocked; transient failures retry once, then need manual retry.' in template
 
 
