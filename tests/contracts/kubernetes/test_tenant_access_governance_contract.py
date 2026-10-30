@@ -240,9 +240,13 @@ def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_com
 
 
 def test_access_profiles_render_in_least_privilege_operator_order() -> None:
-    service = read('app/kubernetes/tenant/access_service.py')
+    workspace = read('app/kubernetes/tenant/admin_workspace.py')
 
-    assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service
+    assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in workspace
+    assert 'ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]' in workspace
+    assert 'for key in profile_order' in workspace
+    assert 'if key in LATEST_ACCESS_PROFILE_VERSION' in workspace
+    assert "'access_profiles': profiles" in workspace
 
 
 def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helper_copy() -> None:
