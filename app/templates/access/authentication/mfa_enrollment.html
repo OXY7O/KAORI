@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/auth_flow_heading.html" as auth_flow_heading %}
 {% block title %}Enroll MFA · KAORI{% endblock title %}
 {% block content %}
     <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8">
@@ -6,8 +7,7 @@
                  aria-labelledby="mfa-enroll-title">
             <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                   aria-hidden="true"><i data-lucide="shield-check" class="h-6 w-6"></i></span>
-            <h1 id="mfa-enroll-title"
-                class="mt-4 text-xl font-semibold text-content-primary">Authenticator Enrollment Required</h1>
+            {{ auth_flow_heading.title('mfa-enroll-title', 'Authenticator Enrollment Required', 'standard') }}
             <p class="mt-2 text-sm leading-6 text-content-secondary">Your account must enroll a verified authenticator before KAORI can issue an authenticated application session. The session remains restricted until this process succeeds.</p>
             {% if error %}
                 <p role="alert"
