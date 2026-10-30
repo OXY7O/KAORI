@@ -366,8 +366,16 @@ run_static() {
         'UI Style' 'python scripts/verify_ui_style.py'
 
     run_contract_migration_gate
-    printf '\n**Contract & Migration Safety:** PASS — executed pytest selector `tests/contracts tests/migrations -m "contract or migration"`; JUnit evidence: `contract-migration.xml`.\n' \
-        >> "$STATIC_OUTPUT_DIR/verification-report.md"
+    {
+        printf '\n**Contract & Migration Safety:** PASS — executed pytest selector `tests/contracts tests/migrations -m "contract or migration"`; JUnit evidence: `contract-migration.xml`.\n'
+        printf '\n#### Registered capability ownership (not executed tests)\n\n'
+        printf '```text\n'
+        # The registry output has already been validated and replayed in the
+        # Domain & Capability Contracts log. This is a second presentation
+        # of existing evidence, never an additional verifier invocation.
+        sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' "$RELEASE_SURFACE_COVERAGE_LOG"
+        printf '```\n'
+    } >> "$STATIC_OUTPUT_DIR/verification-report.md"
 }
 
 run_tests() {
