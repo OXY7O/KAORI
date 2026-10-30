@@ -21,17 +21,17 @@ def _snapshot(*, expired: bool = False, payload: bool = True, expiry: bool = Tru
 
 
 @pytest.mark.parametrize(
-    ('snapshot', 'label', 'current', 'stale'),
+    ('snapshot_options', 'label', 'current', 'stale'),
     [
         (None, 'Not Materialized', False, False),
-        (_snapshot(), 'Current Snapshot', True, False),
-        (_snapshot(expired=True), 'Stale Snapshot', False, True),
-        (_snapshot(expiry=False), 'Unavailable', False, False),
-        (_snapshot(payload=False), 'Unavailable', False, False),
+        ({}, 'Current Snapshot', True, False),
+        ({'expired': True}, 'Stale Snapshot', False, True),
+        ({'expiry': False}, 'Unavailable', False, False),
+        ({'payload': False}, 'Unavailable', False, False),
     ],
 )
 def test_selected_analytics_evidence_requires_usable_ready_payload(
-    snapshot,
+    snapshot_options,
     label,
     current,
     stale,
@@ -41,6 +41,9 @@ def test_selected_analytics_evidence_requires_usable_ready_payload(
 
     # This fixture tests local expiry/state classification in isolation.
     # Source generation comparisons have dedicated, DB-backed tests.
+    # Materialize relative timestamps at execution, not module collection:
+    # the full admission suite can exceed the current snapshot's 20-minute TTL.
+    snapshot = _snapshot(**snapshot_options) if snapshot_options is not None else None
     monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     view = _analytics_snapshot_view(snapshot)
     assert view['label'] == label
