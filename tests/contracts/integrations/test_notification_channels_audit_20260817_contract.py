@@ -345,7 +345,9 @@ def test_channel_deletion_preserves_delivery_evidence_and_schedule_references() 
     blockers = read(
         'app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html'
     )
-    assert 'channel.delete_reason' in blockers
+    assert 'channel.delivery_record_count' in blockers
+    assert 'channel.report_schedule_count' in blockers
+    assert 'zero records and zero report references' in blockers
 
 
 def test_notification_channel_feedback_separates_toast_deck_and_activity_audit() -> None:
@@ -433,10 +435,9 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     )
     assert 'loading_bar.render(loading_id, label=loading_label)' in read('app/templates/components/table.html')
     assert 'hx-trigger="change, input changed delay:450ms"' in shared_table
-    assert "section_intro.render('Configured Channels'" in channels
-    assert channels.index("section_intro.render('Configured Channels'") < channels.index(
-        'id="notification-channel-registry"'
-    )
+    intro = "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
+    assert intro in channels
+    assert channels.index(intro) < channels.index('id="notification-channel-registry"')
     assert channels.index('id="notification-channel-registry"') < channels.index('table_block.inventory_block_header(')
     assert 'header_actions=channel_clear_action' in channels
     assert 'title_extra=info_tip.render(' in channels
