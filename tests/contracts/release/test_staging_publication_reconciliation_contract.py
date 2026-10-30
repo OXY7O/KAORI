@@ -168,6 +168,11 @@ def test_expanded_publication_step_reports_only_independently_executed_phases() 
     assert workflow.index('Public-edge · checking deployed KAORI web container readiness') < workflow.index(
         'Public-edge · requesting idempotent container publication'
     )
-    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY"' not in workflow
+    # A private key must be written into the restricted temporary file,
+    # not emitted to Actions stdout or discarded by the deployment adapter.
+    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"' in workflow
+    assert 'umask 077' in workflow
+    assert 'chmod 600 "$key_file" "$known_hosts_file"' in workflow
+    assert 'cat "$key_file"' not in workflow
     assert 'bash "$edge_publish"' in workflow
     assert 'bash "$edge_apply"' in workflow
