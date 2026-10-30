@@ -30,6 +30,8 @@ status() {
 image="$1"
 source_sha="$2"
 release_version="$3"
+deployment_started="$(date +%s)"
+status '⏳' 'UAT host deployment · validating immutable release and deployment prerequisites'
 
 [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] || fail 'application image must be digest-qualified'
 [[ "$image" == */* ]] || fail 'application image must include an explicit registry host'
@@ -83,6 +85,7 @@ minimum_compose='2.24.4'
 oldest="$(printf '%s\n%s\n' "$minimum_compose" "$compose_version" | sort -V | head -n1)"
 [[ "$oldest" == "$minimum_compose" ]] || fail "Docker Compose $minimum_compose or newer is required for !reset/!override; found $compose_version"
 status '✅' "Compose capability PASS · $compose_version ≥ 2.24.4"
+status '⏳' 'UAT host deployment · validating registry/image authority and environment boundaries'
 
 validate_image_pin() {
   local name="$1"
@@ -119,6 +122,7 @@ printf '%s\n' "$registry_password" | docker login "$registry_host" --username "$
 registry_password=''
 status '🐳' 'Pulling immutable KAORI candidate'
 docker pull "$image" >/dev/null
+status '✅' 'Immutable candidate image pull PASS'
 image_revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
 [[ "$image_revision" == "$source_sha" ]] || fail "image revision does not match requested source SHA (image=$image_revision source=$source_sha)"
 image_created="$(docker image inspect --format '{{.Created}}' "$image")"
@@ -227,7 +231,7 @@ if [[ "$has_existing_state" == 't' &&
   "${compose[@]}" stop "${application_services[@]}"
 fi
 if [[ "$has_existing_state" == 't' ]]; then
-  status '💾' 'Creating pre-migration PostgreSQL backup'
+  status '💾' 'Creating pre-migration PostgreSQL backup (database payload remains private)'
   backup_path="$(bash "$SCRIPT_DIR/backup.sh")"
   [[ -n "$backup_path" && -s "$backup_path" ]] || fail 'pre-migration backup was not created successfully'
   if [[ "${KAORI_BUNDLED_SCHEMA_CUTOVER:-false}" == 'true' ]]; then
@@ -294,6 +298,7 @@ KAORI_EXPECTED_IMAGE="$image" bash "$SCRIPT_DIR/verify.sh" --restart-check
 status '✅' 'Internal runtime PASS'
 
 status '✅' 'KAORI application runtime healthy · public publication is an independent operation'
+status '⏳' 'UAT host deployment · recording verified immutable release state and rollback pointers'
 
 if [[ -f "$KAORI_STATE_DIR/current-image" ]]; then
   cp -- "$KAORI_STATE_DIR/current-image" "$KAORI_STATE_DIR/previous-image"
@@ -328,6 +333,8 @@ chmod 600 "$KAORI_STATE_DIR"/*
 mv -- "$candidate_release_env" "$active_release_env"
 chmod 600 "$active_release_env"
 committed=true
+status '✅' 'Verified release state committed; previous release/backup pointers retained where available'
+deployment_elapsed=$(( $(date +%s) - deployment_started ))
 
 printf '\n✅ KAORI UAT deployment PASS\n'
 printf '📦 Release  %s\n' "$release_version"
@@ -335,3 +342,5 @@ printf '🔎 SHA      %s\n' "$source_sha"
 printf '🐳 Image    %s\n' "$image"
 printf '🩺 Runtime  PASS · internal application health\n'
 printf '💾 Backup   %s\n' "$backup_path"
+printf '⏱️ Host deployment elapsed %dm %02ds\n' $((deployment_elapsed / 60)) $((deployment_elapsed % 60))
+printf 'ℹ️ Public-edge reconciliation and human UAT acceptance are separate gates.\n'

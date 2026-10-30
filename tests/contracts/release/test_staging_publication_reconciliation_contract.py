@@ -150,3 +150,24 @@ def test_reconciliation_runs_only_after_successful_deploy_job() -> None:
         'KAORI_HOST_KNOWN_HOSTS',
     ):
         assert f'{secret_name}: ${{{{ secrets.{secret_name} }}}}' in call_job
+
+
+def test_expanded_publication_step_reports_only_independently_executed_phases() -> None:
+    workflow = _read(WORKFLOW)
+    for marker in (
+        'Public-edge admission · validating SSH target and credential presence',
+        'Public-edge · preparing ephemeral SSH identity',
+        'Public-edge · checking external shared-edge authority',
+        'Public-edge · checking deployed KAORI web container readiness',
+        'Public-edge · requesting idempotent container publication',
+        'Public-edge · applying shared-edge authority',
+        'Public-edge · shared-edge apply PASS',
+        'Public-edge publication PASS is not independent human UAT acceptance',
+    ):
+        assert marker in workflow
+    assert workflow.index('Public-edge · checking deployed KAORI web container readiness') < workflow.index(
+        'Public-edge · requesting idempotent container publication'
+    )
+    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY"' not in workflow
+    assert 'bash "$edge_publish"' in workflow
+    assert 'bash "$edge_apply"' in workflow
