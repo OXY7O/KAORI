@@ -390,66 +390,105 @@ def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -
     assert 'membership.focus({ preventScroll: true })' in script
 
 
-def test_access_grants_included_capsule_evidence_template_compiles_and_renders() -> None:
-    """#1211: a malformed include must never turn Access Grants GET/HTMX into HTTP 500."""
+def test_access_grants_included_provider_evidence_templates_compile_and_render() -> None:
+    """#1211: both read-only provider tabs must render without an HTTP 500."""
     from types import SimpleNamespace
 
     from jinja2 import Environment, FileSystemLoader
 
     templates = ROOT / 'app/templates'
     environment = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+
+    # The bare Jinja test harness registers the same filter names the app does.
+    # No provider or database access is needed to render the empty committed state.
+    def environment_name(value: object, empty: str = 'Environment not specified') -> str:
+        return str(value) if value else empty
+
+    def url_for(_endpoint: str, **_params: object) -> str:
+        return '/test/tenant/access'
+
+    def csrf_token() -> str:
+        return 'test-csrf'
+
+    environment.filters['environment_name'] = environment_name
+    environment.filters['user_datetime'] = str
+    environment.globals['url_for'] = url_for
+    environment.globals['csrf_token'] = csrf_token
+    environment.globals['request'] = SimpleNamespace(view_args={})
     for name in (
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
         'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'kubernetes/tenant/partials/_access_inventory_workspace.html',
         'kubernetes/tenant/partials/_external_capsule_access_inventory.html',
+        'kubernetes/tenant/partials/_native_namespace_rbac_inventory.html',
     ):
         environment.get_template(name)
 
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    inventory = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     assert "('access-grants', 'Access Grants'" in workspace
     assert "hx_target='#tenant-admin-workspace'" in workspace
     assert "hx_select='#tenant-admin-workspace'" in workspace
     assert '_tenant_access_grants_workspace.html' in workspace
     assert '_access_inventory_workspace.html' in grants
-    inventory = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     assert 'workspace_tabs.render_query_tabs(' in inventory
     assert "active_access_inventory_view == 'grants'" in inventory
     assert '_access_grant_registry.html' in inventory
     assert '_external_capsule_access_inventory.html' in inventory
+    assert '_native_namespace_rbac_inventory.html' in inventory
 
-    view = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    pagination = SimpleNamespace(
+        total_items=0,
+        start_item=0,
+        end_item=0,
+        page=1,
+        total_pages=1,
+        per_page=5,
+        allowed_per_page=(5, 10, 25),
+        prev_page=1,
+        next_page=1,
+        has_prev=False,
+        has_next=False,
+    )
     baseline = {
         'can_manage': False,
         'external_capsule_tenants': [],
         'recent_external_capsule_access': [],
-        'recent_capsule_access_drift': [],
-        'recent_capsule_access_remediation': [],
-        'recent_native_access_remediation': [
-            SimpleNamespace(
-                metadata_json={
-                    'provider': 'native_kubernetes',
-                    'tenant_id': 'kaori-demo',
-                    'explicit_reconcile_count': 0,
-                    'manual_review_count': 0,
-                    'items': [],
-                }
-            )
-        ],
         'external_native_tenants': [],
         'recent_external_native_access': [],
         'recent_external_access_profile_reviews': [],
-        'recent_native_access_drift': [],
+        'access_evidence_total': 0,
+        'access_evidence_review_required': 0,
+        'access_evidence_filters': SimpleNamespace(search='', status=''),
+        'access_evidence_pagination': pagination,
+        'access_evidence_rows': [],
+        'access_evidence_drift_by_tenant': {},
+        'access_evidence_remediation_by_observation': {},
     }
-    rendered = view.render(**baseline)
-    assert 'Governed Remediation Decisions' in rendered
-    assert 'Native Kubernetes · Tenant kaori-demo' in rendered
-    assert 'Preview only: no Kubernetes mutation.' in rendered
-    baseline['recent_native_access_remediation'] = [SimpleNamespace(metadata_json=None)]
-    assert 'Governed Remediation Decisions' in view.render(**baseline)
-    assert '{% set plan = event.metadata_json or {} %}' in read(
-        'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
-    )
+
+    capsule = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    rendered_capsule = capsule.render(**baseline)
+    assert 'External Capsule Access Inventory' in rendered_capsule
+    assert 'Capsule remains authoritative.' in rendered_capsule
+    assert 'No committed external-access inspection yet.' in rendered_capsule
+    assert 'data-kaori-canonical-registry-footer="tenant-capsule-evidence-registry"' in rendered_capsule
+
+    native = environment.get_template('kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    rendered_native = native.render(**baseline)
+    assert 'Native Namespace RBAC Inventory' in rendered_native
+    assert 'No committed Native RBAC observation yet.' in rendered_native
+    assert 'Inspection does not mutate membership, identity or RBAC.' in rendered_native
+    assert 'data-kaori-canonical-registry-footer="tenant-native-evidence-registry"' in rendered_native
+
+    for rendered in (rendered_capsule, rendered_native):
+        assert 'data-tenant-provider-evidence-loading' in rendered
+        assert 'data-kaori-canonical-registry-filter' in rendered
+        assert 'name="csrf_token"' not in rendered
+
+    evidence_rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    assert '{% set evidence = event.metadata_json or {} %}' in evidence_rows
+    assert '_provider_access_evidence_detail.html' in evidence_rows
 
 
 def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_detail() -> None:
