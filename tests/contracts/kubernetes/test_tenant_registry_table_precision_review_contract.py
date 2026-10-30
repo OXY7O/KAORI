@@ -20,7 +20,6 @@ REGISTRIES = {
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
-    '_capacity_governance': (980, (28, 39, 17, 16)),
     '_capsule_shared_allocation_drift': (1450, (19, 23, 35, 23)),
     '_capsule_tenant_quota_drift': (1450, (19, 23, 35, 23)),
 }
@@ -53,15 +52,43 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
         assert sum(percentages) == 100, name
         assert 'overflow-x-auto' in template, name
         assert 'table_ui.cell_classes(' in template, name
-        if name == '_capacity_governance':
-            # Capacity evidence and cluster identity intentionally wrap rather
-            # than truncate or rely on a redundant title tooltip.
-            assert 'break-words' in template, name
-            assert 'table_ui.cluster_identity(' in template, name
-            assert 'aria-label="View allocation budget for {{ item.cluster.name }}"' in template, name
-        else:
-            assert 'truncate' in template, name
-            assert 'title=' in template, name
+        assert 'truncate' in template, name
+        assert 'title=' in template, name
+
+
+def test_allocation_budget_registry_uses_owned_bounded_responsive_evidence_table() -> None:
+    # The policy form owns the Capacity subview, not a legacy embedded table.
+    policy = _template('_capacity_governance')
+    budget = _template('_allocation_budget_registry')
+    detail = _template('_allocation_budget_detail')
+
+    assert "('budget', 'Allocation Budget', 'table-2'" in policy
+    assert 'workspace_tabs.render_query_tabs(allocation_tabs,' in policy
+    assert "active_allocation_view == 'budget'" in policy
+    assert '_allocation_budget_registry.html' in policy
+    assert 'table_ui.table_classes(' not in policy
+
+    # Approved responsive five-column table, with local narrow-screen scrolling.
+    assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in budget
+    assert 'min-w-[980px]' not in budget
+    assert _header_widths(budget) == (29, 20, 20, 16, 15)
+    assert sum(_header_widths(budget)) == 100
+    assert 'overflow-x-auto xl:overflow-visible' in budget
+    assert 'table_ui.cluster_identity(item.cluster.name, item.cluster.environment)' in budget
+    assert 'table_label.status_label(item.state, state_tone)' in budget
+    assert 'table_label.status_label(' in budget
+    assert 'item.committed_namespace_count' in budget
+
+    # Committed evidence and resource headroom stay behind accessible details.
+    assert "detail_row.toggle_button('tenant-capacity-budget'" in budget
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5' in budget
+    assert '_allocation_budget_detail.html' in budget
+    assert 'capacity-budget-registry' in budget
+    assert 'registry_ui.filter_form(' in budget
+    assert "registry_ui.footer('tenant.resource_profiles'" in budget
+    assert 'aria-label="{{ bar.label }} allocation evidence"' in detail
+    assert 'bar.budget' in detail and 'bar.committed' in detail and 'bar.headroom' in detail
+    assert 'Ratio unavailable — no free headroom is asserted.' in detail
 
 
 def test_namespace_access_registry_uses_responsive_five_column_evidence_table() -> None:
