@@ -14,9 +14,12 @@ def test_secret_reveal_operational_states_use_shared_semantic_labels() -> None:
     cluster = _read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
     table = _read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
 
-    assert "status_indicator_label('Global Gate Enabled' if global_reveal_enabled else 'Global Gate Disabled'" in posture
-    assert "status_indicator_label('Prerequisites Configured' if selected_cluster_ready else 'Review Required'" in cluster
-    assert "status_indicator_label('Configured' if selected_cluster_readiness.credential_configured else 'Missing'" in cluster
+    assert "status_indicator_label('Global Gate Enabled' if global_reveal_enabled" in posture
+    assert "else 'Global Gate Disabled'" in posture
+    assert "status_indicator_label('Prerequisites Configured' if selected_cluster_ready" in cluster
+    assert "else 'Review Required'" in cluster
+    assert "status_indicator_label('Configured' if selected_cluster_readiness.credential_configured" in cluster
+    assert "else 'Missing'" in cluster
     assert cluster.count("status_indicator_label('Verified'") == 2
     assert 'policy_icon' not in table
     assert 'table_label.status_label' in table
