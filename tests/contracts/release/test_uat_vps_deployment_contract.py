@@ -400,7 +400,7 @@ def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases
     assert workflow.index('UAT host · deployment source artifacts transferred') < workflow.index(
         'UAT host · starting governed deploy.sh'
     )
-    assert 'printf \'registry_password=%q\\n\'' in workflow
+    assert "printf 'registry_password=%q\\n'" in workflow
     assert 'bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"' in workflow
 
     for marker in (
@@ -416,7 +416,7 @@ def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases
 
     # The backup command substitution still receives exactly one stdout path:
     # phase logs go to stderr, never dump private PostgreSQL role inventory.
-    assert "backup_path=\"$(bash \"$SCRIPT_DIR/backup.sh\")\"" in deploy
+    assert 'backup_path="$(bash "$SCRIPT_DIR/backup.sh")"' in deploy
     assert 'UAT backup · archive, schema and role checksum evidence PASS' in backup
     for line in backup.splitlines():
         if 'printf ' in line and 'UAT backup ·' in line:
