@@ -12,6 +12,16 @@ This document describes the current KAORI Continuous Integration, Continuous Del
 
 Executable authority remains in the repository workflows, deployment tooling, and existing verifiers. Documentation never substitutes for exact-source evidence.
 
+## Operator-facing gate evidence (issue #3941)
+
+**Developer Check is changed-path selected; Full Admission is comprehensive.** A green `Python & Governance` lane reports the actual commands selected by the canonical planner, not a count of all Python functions, test cases or release domains. GitHub Actions **Step Summary** records the command, outcome, elapsed time and the selected route; an unselected check is **NOT RUN**, never implied PASS. Frontend and focused pytest selectors are reported separately; pytest result counts come from actual executed pytest/JUnit, not static file registration.
+
+In Full Admission, **Static & Governance** publishes every actually executed Foundation, Domain and Engineering verifier as one job summary, with the original command, result, duration and its raw diagnostic-log filename. Successful static logs are uploaded as a short-retention `full-admission-static-verifiers-*` artifact; failures continue to upload the original Static Diagnostics artifact. The existing Release Surface Coverage registry supplies **REGISTERED** ownership counts for 18 release surfaces; that inventory is neither the count of pytest cases nor a substitute for their execution status. Contract & Migration Safety uses its existing JUnit `contract-migration.xml` and remains independently executable.
+
+The comprehensive gate matrix also reports the actual selected Security, Functional Tests, Frontend and Runtime/DAST step outcomes. A successful Security gate publishes its existing JSON scan evidence (no new scan, only retained artifacts); failures can stop before later scanners, so a partially executed script never claims the full tool chain PASS. Functional and E2E counts belong to collected JUnit and the admission taxonomy. Image build, vulnerability scan and runtime/DAST each retain their separate outcome. A **skipped, cancelled, reused or incomplete** gate is never silently counted as fresh PASS.
+
+**Naming policy.** Keep established physical script identities (`verify_*_final_lock.py`, `verify_pre_release_type_safety.py`, contract-test module paths and JUnit names) until all import sites, workflow consumers, baseline authorities, issue history and release-evidence contracts can be migrated together. Operator-facing summaries use meaningful capability/check labels *and expose the exact executable name* rather than performing speculative bulk renames. Preserve the existing quiet, short-PASS general release CLI; the expanded human-readable reports belong to GitHub Actions CI, where operators need evidence discovery.
+
 ## Delivery model
 
 KAORI uses an issue branch for each work item. The governed lifecycle is:
