@@ -22,6 +22,10 @@ The comprehensive gate matrix also reports the actual selected Security, Functio
 
 **Naming policy.** Keep established physical script identities (`verify_*_final_lock.py`, `verify_pre_release_type_safety.py`, contract-test module paths and JUnit names) until all import sites, workflow consumers, baseline authorities, issue history and release-evidence contracts can be migrated together. Operator-facing summaries use meaningful capability/check labels *and expose the exact executable name* rather than performing speculative bulk renames. Preserve the existing quiet, short-PASS general release CLI; the expanded human-readable reports belong to GitHub Actions CI, where operators need evidence discovery.
 
+## Release Candidate expanded-step execution evidence
+
+After successful exact staging Full Admission, the existing `Release Candidate` workflow shows live, operator-readable phase start and actual completion within each expanded job step: accepted staging SHA and quality run, production image build, Trivy HIGH/CRITICAL scan, isolated runtime/DAST validation, immutable Git tag reservation, registry push/pull and digest capture, OCI metadata verification, SPDX/SLSA attestations, and GitHub prerelease publication. The native GitHub step conclusion remains the authoritative success/failure signal, not printed preview labels. Never infer UAT host deployment or human acceptance from RC publication; keep immutable artifact and attestation evidence as the verifiable source of truth. Console status messages contain only approved release identities and phase labels, not registry secrets or OIDC tokens.
+
 ## Delivery model
 
 KAORI uses an issue branch for each work item. The governed lifecycle is:
