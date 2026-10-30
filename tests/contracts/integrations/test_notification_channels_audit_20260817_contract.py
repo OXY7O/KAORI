@@ -709,7 +709,10 @@ def test_channel_retirement_registry_filters_and_read_only_drawer() -> None:
     assert 'framed_tabs.render_navigation(' in inventory
     assert "aria_label='Channel lifecycle views'" in inventory
     assert "('retired', 'Archived', 'archive', url_for(" in inventory
-    assert 'name="channel_lifecycle" value="{{ payload.channel_lifecycle }}"' in inventory
+    return_fields = inventory.split('{% macro channel_return_fields() -%}', 1)[1]
+    return_fields = return_fields.split('{%- endmacro %}', 1)[0]
+    assert 'name="channel_lifecycle"' in return_fields
+    assert 'value="{{ payload.channel_lifecycle }}"' in return_fields
     assert "'channel_lifecycle': payload.channel_lifecycle" in inventory
     assert "payload.channel_lifecycle == 'retired'" in inventory
     assert "channel.lifecycle_state == 'active' and can_manage" in inventory
@@ -822,9 +825,13 @@ def test_channel_action_buttons_follow_shared_kaori_semantic_variants() -> None:
         1,
     )[0]
 
-    # Equal-width buttons and spacing, without an extra visual lifecycle subheading.
-    assert actions.count('class="grid gap-2.5 sm:grid-cols-2"') == 1
-    assert 'class="grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Channel lifecycle actions"' in actions
+    # Preserve routine and destructive lifecycle actions as distinct two-column rows.
+    assert actions.count('class="grid gap-2.5 sm:grid-cols-2"') == 2
+    routine, lifecycle = actions.split('border-t border-outline-subtle pt-3', 1)
+    assert 'Edit Channel' in routine and 'Test Delivery' in routine
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in routine
+    assert 'Retire Channel' in lifecycle and 'Delete Locked' in lifecycle
+    assert 'role="group"' in lifecycle and 'aria-label="Channel lifecycle actions"' in lifecycle
     assert 'border-t border-outline-subtle pt-3' in actions
     assert '>Lifecycle Actions</p>' not in actions
     assert actions.count("action_button.classes('soft', full=true)") == 2
