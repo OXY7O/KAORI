@@ -155,7 +155,7 @@ run_command_capture() {
         # Every executed verifier is published as evidence; the complete raw
         # output remains in its existing, separately uploaded diagnostic log.
         local report_elapsed=$(( $(date +%s) - started ))
-        printf '| %s | %s | `%s` | PASS | %dm %02ds | `%s` |\n' \
+        printf "| %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
             "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
             "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
         # Preserve the existing Engineering Quality timing and Pyright stats.
@@ -180,7 +180,7 @@ run_command_capture() {
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
     local report_elapsed=$(( $(date +%s) - started ))
-    printf '| %s | %s | `%s` | FAIL (exit %d) | %dm %02ds | `%s` |\n' \
+    printf "| %s | %s | \`%s\` | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
         "$group" "$label" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
         "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
@@ -375,14 +375,14 @@ run_static() {
 
     run_contract_migration_gate
     {
-        printf '\n**Contract & Migration Safety:** PASS — executed pytest selector `tests/contracts tests/migrations -m "contract or migration"`; JUnit evidence: `contract-migration.xml`.\n'
+        printf "\n**Contract & Migration Safety:** PASS — executed pytest selector \`tests/contracts tests/migrations -m \"contract or migration\"\`; JUnit evidence: \`contract-migration.xml\`.\n"
         printf '\n#### Registered capability ownership (not executed tests)\n\n'
-        printf '```text\n'
+        printf "\`\`\`text\n"
         # The registry output has already been validated and replayed in the
         # Domain & Capability Contracts log. This is a second presentation
         # of existing evidence, never an additional verifier invocation.
         sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' "$RELEASE_SURFACE_COVERAGE_LOG"
-        printf '```\n'
+        printf "\`\`\`\n"
     } >> "$STATIC_OUTPUT_DIR/verification-report.md"
 }
 
