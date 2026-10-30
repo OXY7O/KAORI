@@ -401,10 +401,19 @@ def test_access_grants_included_provider_evidence_templates_compile_and_render()
 
     # The bare Jinja test harness registers the same filter names the app does.
     # No provider or database access is needed to render the empty committed state.
-    environment.filters['environment_name'] = lambda value, empty='Environment not specified': str(value) if value else empty
+    def environment_name(value: object, empty: str = 'Environment not specified') -> str:
+        return str(value) if value else empty
+
+    def url_for(_endpoint: str, **_params: object) -> str:
+        return '/test/tenant/access'
+
+    def csrf_token() -> str:
+        return 'test-csrf'
+
+    environment.filters['environment_name'] = environment_name
     environment.filters['user_datetime'] = str
-    environment.globals['url_for'] = lambda _endpoint, **_params: '/test/tenant/access'
-    environment.globals['csrf_token'] = lambda: 'test-csrf'
+    environment.globals['url_for'] = url_for
+    environment.globals['csrf_token'] = csrf_token
     environment.globals['request'] = SimpleNamespace(view_args={})
     for name in (
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
