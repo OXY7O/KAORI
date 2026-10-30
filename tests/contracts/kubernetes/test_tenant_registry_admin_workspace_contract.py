@@ -1030,7 +1030,8 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
         'app/templates/kubernetes/tenant/partials/_allocation_cutover.html'
     )
     assert 'data-tenant-capsule-allocation-workspace' in namespace_page
-    assert 'Capsule Allocation Governance' in namespace_page
+    assert "'native-cutover', 'Native Cutover'" in namespace_page
+    assert "'capsule-governance', 'Capsule Governance'" in namespace_page
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
 
 
@@ -1865,7 +1866,9 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
     assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
-    assert 'KAORI Managed · Only after verified cutover' in cutover_ui
+    assert 'Proposed KAORI Managed Contract' in cutover_ui
+    assert 'Original Native ResourceQuota / LimitRange UID and resourceVersion' in cutover_ui
+    assert 'must match committed legacy observation.' in cutover_ui
     assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
 
     assert 'Managed Contract Comparison' in allocation_change
