@@ -167,7 +167,8 @@ def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     assert 'step_up_active' in registry
     assert 'Continue to Approved Requests' in step_up
     assert 'href="#my-secret-reveal-requests"' in step_up
-    assert 'Choose Reveal Once on an Approved request below' in step_up
+    assert 'Protected Session Verified' in step_up
+    assert 'Session verified. Select Reveal Once on an approved request below.' in step_up
 
     # Navigation and reveal output remain inside the requester workspace.
     assert "document.addEventListener('htmx:afterSwap', focusRevealResult)" in workspace_js
@@ -240,7 +241,12 @@ def test_secret_reveal_submit_restores_main_scroll_without_storing_sensitive_dat
     assert "document.addEventListener('submit', markRequestNavigation)" in script
     assert "view !== 'mine'" in script
     assert "main?.scrollTo({ top: 0, behavior: 'auto' })" in script
-    assert 'window.requestAnimationFrame(() => window.requestAnimationFrame(' in script
+    restore = script.split('const restoreSubmittedWorkspacePosition = () => {', 1)[1].split(
+        'const schedulePolling = (root) => {', 1
+    )[0]
+    assert restore.count('window.requestAnimationFrame(() =>') == 2
+    assert "if (view !== 'mine') return" in restore
+    assert "main?.scrollTo({ top: 0, behavior: 'auto' })" in restore
     assert 'request.form' not in script
     assert "return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))" in routes
     assert '_notify_secret_reveal_approvers(result.request_record)' in routes
