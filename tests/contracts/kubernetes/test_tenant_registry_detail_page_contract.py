@@ -280,7 +280,9 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'tenant.review_tenant_release_route' in forms[0]
     for form in forms[1:]:
         opening = form.split('>', 1)[0]
-        if not re.search(r'class="[^"]*\\bw-full\\b', opening):
+        form_class = re.search(r'class="([^"]+)"', opening)
+        assert form_class is not None
+        if 'w-full' not in form_class.group(1).split():
             # Only these two Native execution panels own bounded responsive grids.
             assert any(
                 route in opening
@@ -474,8 +476,8 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'External Reference Unverified' in approval
     assert '<span class="text-xs font-semibold text-content-primary">External Reference</span>' in approval
     assert '{{ successor_claim.successor_reference }}' in approval
-    assert 'not an additional approval' in approval
-    assert 'provider ownership remains unchanged' in approval
+    assert 'An external reference alone does not verify successor consent.' in approval
+    assert 'Reference only; successor consent unverified and provider ownership unchanged.' in approval
 
     # Exact platform-admin permission/identity action is preserved verbatim.
     assert 'aria-label="Platform Admin provider verification"' in approval
