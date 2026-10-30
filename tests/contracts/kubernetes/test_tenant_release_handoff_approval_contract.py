@@ -104,10 +104,8 @@ def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None
         "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
     )
     assert 'External Reference Unverified' in modal
-    assert (
-        'Independent review recorded. External owner acceptance, provider handoff and verified read-back remain outstanding.'
-        in modal
-    )
+    assert 'Independent review recorded.' in modal
+    assert 'External owner acceptance, provider handoff and verified read-back remain outstanding.' in modal
 
 
 def test_release_handoff_compact_guidance_preserves_legacy_approval_evidence() -> None:
