@@ -320,6 +320,8 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'verification-report.md' in source
     assert 'Every executed verifier is published as evidence' in source
     assert 'Registered capability evidence is a separate source-ownership inventory' in source
+    assert 'Registered capability ownership (not executed tests)' in source
+    assert 'sed -n \'/^  EVIDENCE REGISTERED ONLY/,$p\'' in source
     assert '$(basename "$log_file")' in source
     assert 'PASS | %dm %02ds' in source
     assert 'FAIL (exit %d)' in source
