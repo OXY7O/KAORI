@@ -1512,7 +1512,7 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
         in workspace
     )
     assert 'Filtered by Membership Tenant' in workspace
-    assert 'Tenant scope still uses namespaced RBAC' in workspace
+    assert 'Kubernetes RBAC remains authoritative for effective access after reconciliation.' in workspace
     assert "'select Membership first'" in scope_js
     assert 'tenant_access_grant_form.js' in page
 
