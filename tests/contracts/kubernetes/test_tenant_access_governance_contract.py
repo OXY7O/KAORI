@@ -76,7 +76,7 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
             ),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_membership_registry.html').read_text(encoding='utf-8'),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_registry.html').read_text(encoding='utf-8'),
-            (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html').read_text(encoding='utf-8'),
+            read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html'),
         ]
     )
 
