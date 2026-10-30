@@ -90,12 +90,22 @@ def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
     assert 'bg-white/70' not in administration
     assert 'bg-surface-card text-status-warning-text' in administration
 
+    # Secret Reveal inherits the approved Violet actions, header, rows and focus.
+    primitives = read('app/templates/components/table_primitives.html')
     assert 'hover:bg-kaori-soft/40' not in namespace_section
-    assert 'hover:bg-surface-hover hover:text-content-primary' in namespace_section
+    assert 'table_ui.action_classes()' in namespace_section
+    assert 'hover:bg-surface-hover hover:text-content-primary' not in namespace_section
     assert 'bg-kaori-soft/70' not in namespace_table
-    assert 'border-b border-outline-default bg-surface-hover' in namespace_table
+    assert 'table_ui.head_classes()' in namespace_table
+    assert 'table_ui.row_classes()' in namespace_table
+    assert 'table_ui.action_classes()' in namespace_table
     assert 'hover:bg-kaori-soft/40' not in namespace_table
-    assert 'hover:bg-surface-hover' in namespace_table
+    assert 'hover:bg-kaori-soft hover:text-kaori-primary-dark' in primitives
+    assert 'focus-visible:ring-outline-focus' in primitives
+    assert 'border-b border-outline-subtle bg-surface-hover' in primitives
+    assert 'transition-colors hover:bg-kaori-mist' in primitives
+    assert 'data-kaori-namespace-policy-editor' in namespace_table
+    assert 'aria-expanded="false"' in namespace_table
 
     assert 'rounded-xl bg-kaori-primary text-white' not in request_form
     assert 'border border-outline-subtle bg-kaori-soft text-kaori-primary' in request_form
