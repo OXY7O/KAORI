@@ -14,6 +14,9 @@ from app.integrations.source_control.source_control.providers.github.readiness i
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / 'app/templates/integrations/source_control/github'
 ROUTES = ROOT / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+RUNTIME_PRESENTATION = (
+    ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+)
 
 
 def _canonical(states=None, *, profile='github-app-readiness-v1', validated_at='2026-10-26T08:00:00Z'):
@@ -109,6 +112,7 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     inventory = (TEMPLATES / 'partials/_detail_inventory.html').read_text()
     registry = (TEMPLATES / 'partials/_capability_registry.html').read_text()
     routes = ROUTES.read_text()
+    runtime_presentation = RUNTIME_PRESENTATION.read_text()
     shared_readiness = (ROOT / 'app/templates/integrations/components/_capability_readiness.html').read_text()
     for token in (
         'components/connection_validation_header.html',
@@ -152,8 +156,8 @@ def test_github_validation_reuses_provider_readiness_registry_and_detail_compone
     assert 'build_capability_registry_view(' in routes
     assert 'status_flags=CapabilityStatusFlags(optional_gap=True, unverified=True)' in routes
     assert "url_for('github_source_uat.validate', installation_id=installation.id)" in validation
-    assert 'def _validation_job_for(canonical, *, operation:' in routes
-    assert 'get_active_validation_task_id(' in routes
+    assert 'def _validation_job_for(canonical, *, operation:' in runtime_presentation
+    assert 'get_active_validation_task_id(' in runtime_presentation
     assert 'def validation_status(installation_id: int, task_id: str)' in routes
     assert 'validate_snapshot_access(' in routes
     assert 'validation_poll_response(' in routes

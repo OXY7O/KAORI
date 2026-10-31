@@ -7,6 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GITHUB = ROOT / 'app/templates/integrations/source_control/github'
 ROUTES = ROOT / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+RUNTIME_PRESENTATION = (
+    ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+)
 
 
 def _read(path: Path) -> str:
@@ -52,15 +55,16 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
 
 def test_history_registries_are_scoped_server_filtered_paginated():
     routes = _read(ROUTES)
+    runtime_source = _read(RUNTIME_PRESENTATION)
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
 
-    assert "JobExecution.integration_type == 'source_control'" in routes
-    assert 'JobExecution.integration_instance_id == installation.integration_instance_id' in routes
-    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
-    assert "operation='runtime_refresh'" in routes
-    assert 'runtime_refresh_job' in routes
-    assert 'paginate_query(' in routes
+    assert "JobExecution.integration_type == 'source_control'" in runtime_source
+    assert 'JobExecution.integration_instance_id == installation.integration_instance_id' in runtime_source
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
+    assert "operation='runtime_refresh'" in runtime_source
+    assert 'runtime_refresh_job' in runtime_source
+    assert 'paginate_query(' in runtime_source
     for panel, field in ((jobs, 'job_per_page'), (deliveries, 'delivery_per_page')):
         assert 'data-kaori-server-filtered-registry' in panel
         assert 'components/table.html' in panel
@@ -156,6 +160,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
+    runtime_source = _read(RUNTIME_PRESENTATION)
     framed_tabs = _read(ROOT / 'app/templates/components/framed_workspace_tabs.html')
 
     assert 'framed_tabs.render_navigation(' in runtime
@@ -181,7 +186,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
         assert 'data-kaori-auto-submit' in page
         assert 'registry_ui.clear_filters_action(' in page
     assert routes.count('runtime_table_embedded=True') == 2
-    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
 
 
 def test_github_committed_repository_registry_is_full_width_sibling():
@@ -255,6 +260,7 @@ def test_runtime_filter_controls_and_kaori_tab_counters():
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
+    runtime_source = _read(RUNTIME_PRESENTATION)
 
     # The full table owns result counts; tab labels must remain text-only.
     tabs = runtime.split('{% set runtime_tabs = [', 1)[1].split('] %}', 1)[0]
@@ -275,16 +281,16 @@ def test_runtime_filter_controls_and_kaori_tab_counters():
         assert 'registry_ui.clear_filters_action(' in page
         assert f"runtime_view='{view}'" in page
 
-    assert "JobExecution.integration_type == 'source_control'" in routes
-    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in routes
-    assert 'JobExecution.queue_name == job_queue' in routes
-    assert 'SourceWebhookDelivery.event_type == delivery_event' in routes
-    assert 'JobExecution.operation.ilike(' in routes
-    assert 'SourceWebhookDelivery.action.ilike(' in routes
-    assert "request.args.get('job_search', '').strip()[:80]" in routes
-    assert "request.args.get('delivery_search', '').strip()[:80]" in routes
-    assert '.limit(50)' in routes
-    assert "return '%' + value.replace(" in routes
+    assert "JobExecution.integration_type == 'source_control'" in runtime_source
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
+    assert 'JobExecution.queue_name == job_queue' in runtime_source
+    assert 'SourceWebhookDelivery.event_type == delivery_event' in runtime_source
+    assert 'JobExecution.operation.ilike(' in runtime_source
+    assert 'SourceWebhookDelivery.action.ilike(' in runtime_source
+    assert "request.args.get('job_search', '').strip()[:80]" in runtime_source
+    assert "request.args.get('delivery_search', '').strip()[:80]" in runtime_source
+    assert '.limit(50)' in runtime_source
+    assert "return '%' + value.replace(" in runtime_source
     assert 'requests.get(' not in routes
 
 

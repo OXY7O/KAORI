@@ -134,12 +134,16 @@ def test_github_uat_detail_exposes_only_committed_delivery_job_links():
     routes = root.joinpath(
         'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
     ).read_text()
+    runtime_source = root.joinpath(
+        'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+    ).read_text()
     detail = root.joinpath('app/templates/integrations/source_control/github/uat_detail.html').read_text()
     deliveries = root.joinpath(
         'app/templates/integrations/source_control/github/partials/_runtime_deliveries.html'
     ).read_text()
-    assert 'filter_by(installation_id=installation.id)' in routes
-    assert 'SourceWebhookDelivery.received_at.desc()' in routes
+    assert '_runtime_context(installation)' in routes
+    assert 'filter_by(installation_id=installation.id)' in runtime_source
+    assert 'SourceWebhookDelivery.received_at.desc()' in runtime_source
     assert 'delivery.dispatched_job_execution_id' in deliveries
     assert 'delivery.processing_state' in deliveries
     assert 'delivery.payload_sha256' not in deliveries

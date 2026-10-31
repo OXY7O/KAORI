@@ -16,7 +16,7 @@ def test_worker_registered_as_canonical_task_name():
 def test_worker_is_id_only_and_does_not_log_provider_exception():
     source = Path(__file__).resolve().parents[2].joinpath('app/integrations/source_control/tasks.py').read_text()
     assert 'JobExecutionContext(' in source
-    assert 'synchronize_installation(db.session, installation)' in source
+    assert 'synchronize_installation(cast(Session, db.session), installation)' in source
     assert 'db.session.rollback()' in source
     assert 'context.checkpoint(' in source
     assert 'context.succeed(' in source
