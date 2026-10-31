@@ -95,7 +95,7 @@ class _VisibleLabelParser(HTMLParser):
             self.labels.append((line, text))
 
     def handle_data(self, data: str) -> None:
-        if self._stack:
+        if self._stack and not self._help_span_depth:
             self._stack[-1][2].append(data)
 
 
