@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.integrations.source_control import eligibility, sync_jobs, tasks as source_tasks
+from app.integrations.source_control import eligibility, sync_jobs
+from app.integrations.source_control import tasks as source_tasks
 from app.intelligence.alert_signals import tasks as alert_tasks
 from app.intelligence.alert_signals import vault_dispatch, vault_jobs
 from app.platform_operations.jobs.registry import get_job_definition
