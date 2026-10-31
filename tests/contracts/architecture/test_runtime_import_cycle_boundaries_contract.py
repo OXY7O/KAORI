@@ -20,7 +20,7 @@ def _source(relative: str) -> str:
 def test_kernel_uses_existing_lazy_builtin_loader_without_static_provider_import() -> None:
     source = _source('app/integrations/kernel/registry.py')
     assert "if provider_kind('source_control', 'github').available:" in source
-    assert "import_module(" in source
+    assert 'import_module(' in source
     assert "'app.integrations.source_control.source_control.providers.github.kernel_contract'" in source
     assert 'provider.register_after_admission(self)' in source
     assert 'from app.integrations.source_control.source_control.providers.github.kernel_contract import' not in source
