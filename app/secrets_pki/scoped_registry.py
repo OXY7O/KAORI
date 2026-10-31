@@ -79,9 +79,7 @@ class ScopedSecretPage:
 
 
 
-def resolve_scoped_registry_mount(
-    *, actor_id: int, instance_id: int, policy_ref: str
-) -> tuple[str, str] | None:
+def resolve_scoped_registry_mount(*, actor_id: int, instance_id: int, policy_ref: str) -> tuple[str, str] | None:
     """Project a single actor-owned Vault mount from committed #724 policy.
 
     This projection is not a grant. The governed registry reader independently
