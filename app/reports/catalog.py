@@ -6,8 +6,14 @@ from typing import Any
 from app.definitions.loader import DefinitionError, load_definition_document
 from app.definitions.report_coverage import (
     REPORT_COVERAGE_DOMAINS as REPORT_COVERAGE_DOMAINS,
+)
+from app.definitions.report_coverage import (
     ReportCoverageDomainSpec as ReportCoverageDomainSpec,
+)
+from app.definitions.report_coverage import (
     ReportCoverageItemSpec as ReportCoverageItemSpec,
+)
+from app.definitions.report_coverage import (
     _load_report_coverage_catalog as _load_report_coverage_catalog,
 )
 from app.definitions.validation import (
