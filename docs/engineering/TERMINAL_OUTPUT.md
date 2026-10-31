@@ -31,7 +31,7 @@ In GitHub Actions, the operator-facing record for each **executed** check must m
 
 Registration in the release-surface registry means **REGISTERED**, never an executed test PASS. A static verifier protects only its declared contract; provider functional/security behavior, deployment and human acceptance require their independently executed evidence. Do not add a per-capability PASS status unless a real executed test or verifier justifies it.
 
-Keep ordinary CLI success short and failures actionable. In CI, place a clear purpose next to the actual command and preserve the existing report columns (group, check, purpose/scope, command, outcome, duration and raw-log reference). A new verifier must have a meaningful, specific purpose; the generic fallback description is for legacy coverage only, not an acceptable new-feature specification. Never print secrets to make evidence more verbose.
+Keep ordinary CLI success short and failures actionable. A registered capability inventory should use a concise aligned table (surface, lock state, registered contract-module count, verifier count or contract-only ownership) and retain its full per-surface verifier filenames in a raw evidence artifact/report. The inventory remains `REGISTERED`, never a standalone test PASS; incomplete ownership evidence must fail closed. In CI, place a clear purpose next to the actual command and preserve the existing report columns (group, check, purpose/scope, command, outcome, duration and raw-log reference). A new verifier must have a meaningful, specific purpose; the generic fallback description is for legacy coverage only, not an acceptable new-feature specification. Never print secrets to make evidence more verbose.
 
 ## Terminology
 
