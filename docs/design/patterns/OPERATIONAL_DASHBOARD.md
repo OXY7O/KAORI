@@ -152,10 +152,15 @@ The Kubernetes Reporting snapshot builder uses `_kubernetes_report_query(selecte
 
 ## Application contract
 
-All Operational Dashboard consumers use `app/dashboards/common/operational.py` for the stable request-level contract:
+All Operational Dashboard consumers retain the stable request-level contract in
+`app/dashboards/common/operational.py`, which explicitly re-exports the single
+canonical tab definition and normalizer from `app/common/operational_tabs.py`.
+The latter is domain-neutral so a Secrets & PKI operational page never imports
+the Dashboard implementation (architecture #4150), while existing Dashboard
+consumers keep their historical public API and the locked four-tab behavior.
 
 - canonical tab order is `overview → capacity → signals → reporting`;
-- `app/dashboards/common/operational.py` owns accepted tab keys/order; `operational_dashboard_workspace.html` owns their labels/icons and must mirror the same ordered keys;
+- `app/common/operational_tabs.py` owns accepted tab keys/order and invalid-tab normalization exactly once; `app/dashboards/common/operational.py` re-exports them; `operational_dashboard_workspace.html` owns labels/icons and must mirror the same ordered keys;
 - invalid or missing tabs normalize to `overview`;
 - dashboard page-size normalization delegates to `app/common/pagination.py`, whose canonical options are `5 / 10 / 25 / 50` with default `5`;
 - page-size selectors render `pagination.allowed_per_page`; templates must not hardcode the numeric choices;

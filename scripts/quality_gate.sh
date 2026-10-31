@@ -293,8 +293,72 @@ run_static_group() {
             printf '❌ Domain capability evidence missing from Release Surface Coverage output\n' >&2
             return 1
         fi
-        printf '📋 %s — Registered capability evidence (not per-capability test PASS)\n' "$group"
-        sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' "$RELEASE_SURFACE_COVERAGE_LOG"
+        # Keep the complete per-surface registry evidence in the original
+        # Release Surface Coverage log and in verification-report.md. The
+        # interactive operator view is bounded to concise, aligned ownership
+        # columns and never reports registration as an executed test PASS.
+        printf '📋 %s — Registered capability ownership\n' "$group"
+        awk '
+            /^  REGISTERED — / {
+                entry = $0
+                sub(/^  REGISTERED — /, "", entry)
+                if (split(entry, chunks, /[\[\]]/) != 3) {
+                    invalid = 1
+                    next
+                }
+                title = chunks[1]
+                sub(/[[:space:]]+$/, "", title)
+                state = chunks[2]
+                data = chunks[3]
+                if (state != "LOCKED" && state != "BASELINE LOCKED" && state != "SYSTEM LOCKED") {
+                    invalid = 1
+                    next
+                }
+                if (data !~ /^: [0-9]+ contract test module\(s\); static verifier\(s\): /) {
+                    invalid = 1
+                    next
+                }
+                sub(/^: /, "", data)
+                split(data, module_fields, " ")
+                module_count = module_fields[1] + 0
+                owner_marker = "static verifier(s): "
+                owner_start = index(data, owner_marker)
+                if (module_count < 1 || owner_start == 0) {
+                    invalid = 1
+                    next
+                }
+                verifier_names = substr(data, owner_start + length(owner_marker))
+                if (verifier_names == "none (contract tests only)") {
+                    verifier_label = "contracts only"
+                    contract_only++
+                } else {
+                    verifier_count = split(verifier_names, verifiers, ", ")
+                    if (verifier_count < 1 || verifier_names == "") {
+                        invalid = 1
+                        next
+                    }
+                    verifier_label = verifier_count " named"
+                }
+                names[++total] = title
+                states[total] = state
+                modules[total] = module_count
+                verifiers_by_surface[total] = verifier_label
+                registered_modules += module_count
+            }
+            END {
+                if (invalid || total == 0) {
+                    print "FAIL — malformed or empty registered capability ownership" > "/dev/stderr"
+                    exit 1
+                }
+                printf "  REGISTERED: %d surfaces · %d contract-module registrations · %d contracts-only\n", total, registered_modules, contract_only
+                print "  Source ownership only — NOT executed tests or Staging Acceptance."
+                printf "  %-26s %-15s %7s  %s\n", "Capability", "Lock state", "Modules", "Static verifier"
+                for (i = 1; i <= total; i++) {
+                    printf "  %-26s %-15s %7d  %s\n", names[i], states[i], modules[i], verifiers_by_surface[i]
+                }
+            }
+        ' "$RELEASE_SURFACE_COVERAGE_LOG" || return 1
+        printf '  Full verifier mapping: %s\n' "$RELEASE_SURFACE_COVERAGE_LOG"
     fi
 
     local elapsed=$(( $(date +%s) - group_started ))

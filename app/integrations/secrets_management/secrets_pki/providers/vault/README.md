@@ -11,6 +11,28 @@ The **separate** operational Secrets & PKI Dashboard, safe KV v2 inventory,
 consumer correlation, PKI evidence, Metrics/Alert Source bindings, Analytics, and
 Intelligence are implemented under HV-02–HV-15. They are NOT implied by this foundation.
 
+## Committed PKI readiness composition
+
+Vault provider detail keeps its existing read-only public issuer and stored-
+certificate readiness summaries. The owning `app.secrets_pki` modules still
+produce these committed KAORI projections; the existing Flask composition root
+`app/bootstrap/blueprints.py` registers their callables per application under
+`kaori_vault_pki_readiness`. Provider UI consumes that registry with the same
+Vault instance and fails closed if the source readers are not registered, rather
+than importing the operational Secrets & PKI implementation (issue #4148).
+No live Vault request, readiness override, secret, or permission bypass is added.
+
+## Connection input ownership
+
+`application/types.py` owns the immutable `VaultConnectionInput` value object.
+The HTTP-owned `application/forms.py` validates and maps WTForms data to this
+input; the provider application service and time-limited registration proof
+consume the same typed input without importing the web form module. This
+preserves AppRole SecretID proof binding, encrypted credential handling, and
+readiness invalidation while enforcing the canonical route → service dependency
+direction. Vault provider authority, operational read models and schemas are
+unchanged.
+
 ## Secure setup
 
 In both DevContainer web and validation/runtime worker environment:

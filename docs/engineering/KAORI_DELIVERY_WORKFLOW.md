@@ -68,6 +68,16 @@ The two tracks are development-feedback choices, not separate delivery outcomes.
 
 Both tracks converge before Ready. A Local-First change must still have a governed Draft PR, pass the authoritative exact-head Developer Check, freeze the final candidate, pass Full Admission, integrate through `kaori/staging`, receive applicable UAT, and follow the same promotion/release rules. Local evidence accelerates development; it never substitutes for repository admission evidence.
 
+A separate linked Git worktree is supported for local Dev Container validation of
+an immutable candidate while preserving another checkout's staged/uncommitted
+changes. Source Hygiene recognizes Git checkouts with either a `.git` directory
+(normal checkout) or a `.git` metadata pointer file (linked worktree) and
+checks **tracked** source with `git ls-files`. Ignored Ruff caches and retained
+`tmp/ci-artifacts` diagnostics are allowed only as local tooling output, not
+in a tracked source tree or unpacked source archive. The latter is deliberately
+checked in archive mode with all files visible (CI hygiene issue #4156).
+
+
 Developer Check planning follows **capability impact with fail-safe widening**. A known capability may select its owning tests and explicit dependent contracts. Shared, CI, release-authority, migration, or uncertain changes widen validation rather than assuming isolation. Full Admission remains comprehensive at the frozen-candidate boundary.
 
 

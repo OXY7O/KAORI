@@ -67,6 +67,8 @@ def register_blueprints(app: Flask) -> None:
     from app.platform_operations.jobs.routes import bp as jobs_bp
     from app.platform_operations.notifications.routes import notifications_bp
     from app.reports.routes import reports_bp
+    from app.secrets_pki.pki_presentation import pki_public_readiness
+    from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
     from app.secrets_pki.routes import secrets_pki_bp
     from app.security_posture.routes import security_posture_bp
     from app.settings import bp as settings_bp
@@ -74,6 +76,13 @@ def register_blueprints(app: Flask) -> None:
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
     from app.storage.object_storage.inventory.routes import object_storage_inventory_bp
     from app.welcome.routes import welcome_bp
+
+    # Compose Secrets & PKI-owned committed PKI projections into Vault detail
+    # without making the provider web route import the operational domain.
+    app.extensions['kaori_vault_pki_readiness'] = {
+        'public_pki_readiness': pki_public_readiness,
+        'stored_cert_readiness': stored_pki_certificate_readiness,
+    }
 
     # Compose the Tenant-owned committed approval projection into the shared
     # Notification Work Inbox once per Flask app; no global mutable registry.

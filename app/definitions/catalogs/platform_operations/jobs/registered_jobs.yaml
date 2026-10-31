@@ -142,7 +142,7 @@ jobs:
   configure_permission: integrations.manage
   execute_permission: jobs.execute
   domain_execute_permission: secrets_pki.sync
-  dispatcher_path: app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations
+  dispatcher_path: app.intelligence.alert_signals.vault_dispatch:dispatch_vault_alert_observations
   context_builder_path: app.intelligence.alert_signals.vault_jobs:build_vault_alert_job_context
   configuration_template: platform_operations/jobs/configuration/definitions/vault_alert_observation.html
   default_enabled: false

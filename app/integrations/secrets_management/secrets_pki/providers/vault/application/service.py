@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.types import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (

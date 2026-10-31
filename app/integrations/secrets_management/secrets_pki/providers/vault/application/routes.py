@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import replace
+from typing import Any, cast
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -34,8 +36,6 @@ from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
-from app.secrets_pki.pki_presentation import pki_public_readiness
-from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
 from app.security.credentials import CredentialEncryptionError
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,20 @@ def _evidence(instance: VaultInstance) -> dict:
         'validation_job': build_validation_snapshot(validation_id) if validation_id else None,
         'runtime_job': build_validation_snapshot(runtime_id) if runtime_id else None,
     }
+
+
+def _committed_pki_readiness(instance: VaultInstance) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve app-composed Secrets & PKI readers; missing owners fail closed."""
+    providers = current_app.extensions.get('kaori_vault_pki_readiness')
+    if (
+        not isinstance(providers, dict)
+        or not callable(providers.get('public_pki_readiness'))
+        or not callable(providers.get('stored_cert_readiness'))
+    ):
+        raise RuntimeError('Committed Vault PKI readiness providers are not registered.')
+    public = cast(Callable[..., dict[str, Any]], providers['public_pki_readiness'])
+    stored = cast(Callable[..., dict[str, Any]], providers['stored_cert_readiness'])
+    return public(instance=instance), stored(instance=instance)
 
 
 @vault_bp.get('/')
@@ -222,14 +236,15 @@ def detail(instance_id: int) -> ResponseReturnValue:
         per_page=request.args.get('history_per_page', 5, type=int) or 5,
     )
     latest_runtime_observation = latest_vault_runtime_observation(instance.id)
+    public_pki, stored_pki = _committed_pki_readiness(instance)
     return render_template(
         'integrations/secrets_management/vault/detail.html',
         instance=instance,
         evidence=_evidence(instance),
         latest_runtime_observation=latest_runtime_observation,
         inventory_readiness=vault_inventory_readiness(instance),
-        public_pki_readiness=pki_public_readiness(instance=instance),
-        stored_cert_readiness=stored_pki_certificate_readiness(instance=instance),
+        public_pki_readiness=public_pki,
+        stored_cert_readiness=stored_pki,
         runtime_history=history,
         runtime_history_pagination=history_pagination,
         can_view_secrets_pki=current_user.has_permission('secrets_pki.view'),

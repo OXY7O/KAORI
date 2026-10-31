@@ -14,10 +14,10 @@ from celery import shared_task
 from sqlalchemy.orm import Session
 
 from app.extensions.db import db
+from app.integrations.source_control.eligibility import MAX_INSTALLATIONS, _eligible
 from app.integrations.source_control.source_control.providers.github.repository_sync import (
     synchronize_installation,
 )
-from app.integrations.source_control.sync_jobs import MAX_INSTALLATIONS, _eligible
 from app.models.source_control import SourceInstallation
 from app.platform_operations.jobs.execution import JobCancellationRequested, JobExecutionContext
 

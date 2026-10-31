@@ -13,6 +13,17 @@ The Vault provider connection remains under
 - `GET /secrets-pki/`: canonical four-tab Operational Dashboard following
   `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.7. Tabs are exactly
   Operations Overview, Capacity & Demand, Signals & Actions, Reporting.
+  Tab keys and invalid-selection normalization come from the shared
+  `app/common/operational_tabs.py` contract, also re-exported unchanged by
+  `app/dashboards/common/operational.py` (architecture issue #4150). This
+  avoids a Secrets & PKI → Dashboards reverse import without changing active
+  tabs or HTMX/server selection semantics.
+- Overview's optional Reporting catalog metadata comes from the existing
+  `reports/coverage.yaml` declaration through `app/definitions/report_coverage.py`
+  (architecture issue #4149). Reports continues to re-export the *same*
+  immutable catalog objects and independently controls report execution.
+  `reports.view` still gates access to the metadata; planned reports never
+  become executable merely by being listed.
 - `GET /secrets-pki/inventory`: safe, aggregated KV v2 metadata-only source
   coverage, first/last observed counts, and committed collection readiness.
 - Both routes require server-side `secrets_pki.view` (HV-13, #2597).
@@ -38,6 +49,20 @@ PKI issuance/certificates, lease posture, consumer correlation, Vault
 Metrics Source, Alert Source, canonical Recommendations and Reporting are
 shown as unavailable/not materialized until their dedicated workstreams are
 admitted. Neither dashboard nor Inventory starts jobs on GET.
+
+## Vault Alert Source manual JobExecution boundary — #4158
+
+The source-controlled registered Jobs catalog resolves manual, default-off
+`secrets_pki.vault_alerts.observe` dispatch from
+`app/intelligence/alert_signals/vault_dispatch.py`. Its worker execution and
+source-qualified observation remain in
+`app/intelligence/alert_signals/vault_jobs.py`, invoked by the unchanged
+`app.intelligence.alert_signals.tasks.observe_vault_alert_source` Celery task.
+This separates task production from execution without creating an automatic
+scheduler, expanding Vault/Alertmanager permission, weakening canonical
+source revalidation, or exposing raw alert payload or worker HMAC material.
+The catalog's context builder continues using the committed Jobs/readiness
+owner. Missing/invalid source evidence stays blocked or unknown, never Ready.
 
 ## Deferred work
 

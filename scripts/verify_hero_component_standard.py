@@ -1270,7 +1270,8 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     peers = _read(TEMPLATES / 'secrets_pki/operational_evidence_workspace.html')
     navigation = _read(TEMPLATES / 'secrets_pki/_lifecycle_navigation.html')
     owner = 'Secrets & PKI Lifecycle compact Hero'
-    if "lifecycle_navigation.render('lifecycle')" not in lifecycle:
+    navigation_call = re.search(r"""lifecycle_navigation\.render\(\s*(['"])lifecycle\1\s*\)""", lifecycle)
+    if navigation_call is None:
         raise AssertionError(f'{owner}: Lifecycle must render shared peer navigation above Hero')
     if 'lifecycle_navigation.render(workspace)' not in peers:
         raise AssertionError(f'{owner}: peer workspaces must render shared navigation')
@@ -1279,7 +1280,7 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     for key in ('lifecycle', 'leases', 'consumers', 'governance'):
         if f"('{key}'," not in navigation or f"url_for('secrets_pki.{key}')" not in navigation:
             raise AssertionError(f'{owner}: missing URL-owned peer: {key}')
-    if lifecycle.index("lifecycle_navigation.render('lifecycle')") > lifecycle.index('page_hero.shell_classes()'):
+    if navigation_call.start() > lifecycle.index('page_hero.shell_classes()'):
         raise AssertionError(f'{owner}: peer navigation must appear above Hero')
     if peers.index('lifecycle_navigation.render(workspace)') > peers.index('page_hero.shell_classes()'):
         raise AssertionError(f'{owner}: peer workspace navigation must appear above Hero')

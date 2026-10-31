@@ -9,6 +9,7 @@ import pytest
 from flask import Flask
 from werkzeug.exceptions import Forbidden, NotFound
 
+from app.common.workspace_authorization import local_super_admin as shared_local_super_admin
 from app.integrations.source_control import uat_access
 from app.integrations.source_control.source_control.providers.github import kernel_contract
 
@@ -56,6 +57,19 @@ def test_planned_provider_blocks_uat(monkeypatch):
 )
 def test_only_local_authorized_super_admin_can_access_uat(user):
     assert not uat_access.local_super_admin(user)
+
+
+def test_common_navigation_reuses_exact_source_control_uat_identity_guard() -> None:
+    root = Path(__file__).resolve().parents[2]
+    source = (root / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    assert 'from app.common.workspace_authorization import local_super_admin' in source
+    assert 'from app.integrations.source_control.uat_access import local_super_admin' not in source
+    assert uat_access.local_super_admin is shared_local_super_admin
+    assert shared_local_super_admin(_actor())
+    assert not shared_local_super_admin(_actor(admin=False))
+    assert not shared_local_super_admin(_actor(source='sso'))
+    assert not shared_local_super_admin(_actor(permitted=False))
+    assert not shared_local_super_admin(SimpleNamespace(is_authenticated=True, is_super_admin=True))
 
 
 def test_fails_closed_before_resource_discovery(monkeypatch):

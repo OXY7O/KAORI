@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from flask import url_for
 
+from app.common.workspace_authorization import local_super_admin
 from app.common.workspace_navigation_catalog import (
     _CAPABILITY_CONTEXT_KEYS,
     _CAPABILITY_VIEWS,
@@ -236,8 +237,6 @@ def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
 
 def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceCapabilityDefinition, ...]:
     if workspace.key == 'source_control':
-        from app.integrations.source_control.uat_access import local_super_admin
-
         if not local_super_admin(user):
             return ()
     return tuple(tab for tab in workspace.capabilities if _has_any_permission(user, tab.permissions))

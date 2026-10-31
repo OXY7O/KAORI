@@ -248,11 +248,12 @@ class IntegrationRegistry:
             # Once an explicitly admitted UAT/provider matrix is deployed,
             # register the existing SC-02 Kernel descriptor on web and workers.
             if provider_kind('source_control', 'github').available:
-                from app.integrations.source_control.source_control.providers.github.kernel_contract import (
-                    register_after_admission,
+                # The kernel owns lazy built-in loading; the provider contract
+                # imports kernel types and must not become a reciprocal import.
+                provider = import_module(
+                    'app.integrations.source_control.source_control.providers.github.kernel_contract'
                 )
-
-                register_after_admission(self)
+                provider.register_after_admission(self)
             self._builtins_loaded = True
 
     def get(self, integration_type: str) -> IntegrationModule:
