@@ -348,6 +348,39 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'Upload Static Diagnostics' in workflow
 
 
+def test_registered_capability_table_parses_evidence_and_fails_closed(tmp_path: Path) -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    prefix = "        awk '\\n            /^  REGISTERED — /"
+    suffix = "\\n        ' \\"$RELEASE_SURFACE_COVERAGE_LOG\\""
+    assert source.count(prefix) == 1
+    program = "            /^  REGISTERED — /" + source.split(prefix, 1)[1].split(suffix, 1)[0]
+
+    evidence = tmp_path / 'release-coverage.log'
+    evidence.write_text(
+        '  EVIDENCE REGISTERED ONLY — not a test execution result or Staging Acceptance\\n'
+        '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
+        'static verifier(s): verify_welcome_final_lock.py\\n'
+        '  REGISTERED — Artifact Registry [BASELINE LOCKED]: 16 contract test module(s); '
+        'static verifier(s): none (contract tests only)\\n'
+        '  REGISTERED — Runtime Health [SYSTEM LOCKED]: 1 contract test module(s); '
+        'static verifier(s): none (contract tests only)\\n',
+        encoding='utf-8',
+    )
+    result = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert 'REGISTERED: 3 surfaces · 19 contract-module registrations · 2 contracts-only' in result.stdout
+    assert 'Artifact Registry' in result.stdout
+    assert 'BASELINE LOCKED' in result.stdout
+    assert 'contracts only' in result.stdout
+    assert 'verify_welcome_final_lock.py' not in result.stdout
+    assert 'NOT executed tests or Staging Acceptance' in result.stdout
+
+    evidence.write_text('  REGISTERED — Welcome [LOCKED]: invalid contract test module(s); static verifier(s): abc.py\\n', encoding='utf-8')
+    rejected = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert rejected.returncode != 0
+    assert 'malformed or empty registered capability ownership' in rejected.stderr
+
+
 def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
