@@ -26,7 +26,11 @@
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Lifecycle evidence readiness">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {% set kv2_hero_label = 'Qualified KV v2 Evidence' if kv2_version_posture.status == 'ready' else ('Qualified Empty Inventory' if kv2_version_posture.status == 'observed_empty' else ('Incomplete KV v2 Evidence' if kv2_version_posture.status == 'incomplete_evidence' else 'KV v2 Evidence Required')) %}
+                        {% set kv2_hero_label = {
+                            'ready': 'Qualified KV v2 Evidence',
+                            'observed_empty': 'Qualified Empty Inventory',
+                            'incomplete_evidence': 'Incomplete KV v2 Evidence'
+                        }.get(kv2_version_posture.status, 'KV v2 Evidence Required') %}
                         {{ page_hero.context_header('KV v2 Evidence', kv2_hero_label, 'database-zap') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('layers', 'Version Evidence',
