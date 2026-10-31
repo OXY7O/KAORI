@@ -401,6 +401,40 @@ def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
     lifecycle_path = ROOT / 'app/templates/secrets_pki/lifecycle.html'
     navigation_path = ROOT / 'app/templates/secrets_pki/_lifecycle_navigation.html'
 
+    def legacy_single_quotes(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            assert 'lifecycle_navigation.render("lifecycle")' in source
+            return source.replace('lifecycle_navigation.render("lifecycle")', "lifecycle_navigation.render('lifecycle')")
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', legacy_single_quotes)
+    check()
+
+    def wrong_navigation_key(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace('lifecycle_navigation.render("lifecycle")', 'lifecycle_navigation.render("leases")')
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', wrong_navigation_key)
+    with pytest.raises(AssertionError, match='must render shared peer navigation'):
+        check()
+
+    def misplaced_navigation(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace('{{ lifecycle_navigation.render("lifecycle") }}', '').replace(
+                '<section class="{{ page_hero.shell_classes() }}">',
+                '<section class="{{ page_hero.shell_classes() }}">{{ lifecycle_navigation.render("lifecycle") }}',
+                1,
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', misplaced_navigation)
+    with pytest.raises(AssertionError, match='peer navigation must appear above Hero'):
+        check()
+
     def broken_copy(path: Path) -> str:
         source = read(path)
         if path == lifecycle_path:
