@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.models import Notification
+from app.models.authentication_security import AuthenticationMfaFactor
 
 
 def recent_authentication_events(user_id: int, *, limit: int = 5) -> list[Notification]:
@@ -27,3 +28,8 @@ def authentication_activity_summary(events: list[Notification]) -> dict[str, int
         else:
             summary['failed'] += 1
     return summary
+
+
+def account_mfa_factor(user_id: int) -> AuthenticationMfaFactor | None:
+    """Read the current Account MFA presentation state below the HTTP layer."""
+    return AuthenticationMfaFactor.query.filter_by(user_id=user_id).first()

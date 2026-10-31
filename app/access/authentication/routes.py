@@ -40,6 +40,7 @@ from app.access.authentication.services import (
     PROVIDER_UNAVAILABLE_MESSAGE,
     authenticate,
     credential_failure_message,
+    load_pending_mfa_user,
     record_successful_authentication,
 )
 from app.access.authentication.session import (
@@ -528,7 +529,7 @@ def mfa_challenge():
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
 
-    user = User.query.filter_by(id=pending['user_id']).first()
+    user = load_pending_mfa_user(pending['user_id'])
     if (
         user is None
         or not user.is_active
