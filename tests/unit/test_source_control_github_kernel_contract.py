@@ -38,7 +38,7 @@ def test_provider_wiring_is_explicit_and_admission_gated():
     repo_root = Path(__file__).resolve().parents[2]
     core = (repo_root / 'app/integrations/kernel/registry.py').read_text()
     assert "if provider_kind('source_control', 'github').available:" in core
-    assert 'register_after_admission()' in core
+    assert 'register_after_admission(self)' in core
 
 
 def test_failure_recorder_sanitizes_provider_exception():
