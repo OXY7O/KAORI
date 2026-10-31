@@ -321,11 +321,13 @@ run_static_group() {
                 sub(/^: /, "", data)
                 split(data, module_fields, " ")
                 module_count = module_fields[1] + 0
-                if (module_count < 1 || split(data, owners, "static verifier(s): ") != 2) {
+                owner_marker = "static verifier(s): "
+                owner_start = index(data, owner_marker)
+                if (module_count < 1 || owner_start == 0) {
                     invalid = 1
                     next
                 }
-                verifier_names = owners[2]
+                verifier_names = substr(data, owner_start + length(owner_marker))
                 if (verifier_names == "none (contract tests only)") {
                     verifier_label = "contracts only"
                     contract_only++
