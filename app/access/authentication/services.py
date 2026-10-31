@@ -91,6 +91,15 @@ def record_successful_authentication(
     return int(issued_version)
 
 
+def load_pending_mfa_user(user_id: int) -> User | None:
+    """Load an MFA challenge principal without admitting a browser session.
+
+    The route independently verifies identity source and authentication
+    generation before any second-factor operation can complete.
+    """
+    return User.query.filter_by(id=user_id).first()
+
+
 def credential_failure_message(result: AuthResult) -> str:
     """Return the public message for username/password authentication failures.
 
@@ -113,5 +122,6 @@ __all__ = [
     'USER_INACTIVE_MESSAGE',
     'authenticate',
     'credential_failure_message',
+    'load_pending_mfa_user',
     'record_successful_authentication',
 ]
