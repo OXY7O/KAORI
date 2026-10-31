@@ -147,6 +147,27 @@ run_pytest_capture() {
     return "$status"
 }
 
+# Operator-facing scope labels describe the existing authority; they do not
+# introduce a new verifier or imply that registered capabilities passed tests.
+verifier_purpose() {
+    local group="$1" label="$2"
+    case "$label" in
+        'Release Surface Coverage') printf '%s' 'Match navigation, blueprints and release-test ownership to the canonical registry (REGISTERED is not TEST PASS).' ;;
+        'Integration Provider Foundation') printf '%s' 'Validate capability/domain taxonomy, provider registration and connection/binding contracts.' ;;
+        'Integration Domain Navigation') printf '%s' 'Validate Integration domain routing, shared workspace navigation and provider-facing UI ownership.' ;;
+        'Integrations Final Lock') printf '%s' 'Protect approved Integration UI and provider contracts; includes the shared Source Control domain but is not a GitHub functional-test result.' ;;
+        'Feature Test Coverage') printf '%s' 'Check the explicitly enumerated permanent test-file baseline; does not establish universal per-feature coverage.' ;;
+        'Data Lifecycle Final Lock') printf '%s' 'Protect approved Data Lifecycle coverage, managed-domain copy and retained operational evidence.' ;;
+        'Operational Feedback Coverage') printf '%s' 'Verify durable feedback/audit writers and their existing operational evidence contracts.' ;;
+        'Architecture Boundaries') printf '%s' 'Enforce application/domain/provider ownership boundaries without broadening execution permissions.' ;;
+        'Ruff Check'|'Ruff Format'|'DjLint'|'Pyright') printf '%s' 'Check the established Python, template or type-quality contract using the canonical tool command.' ;;
+        'Code Health'|'Code Health Baseline Integrity') printf '%s' 'Verify source-health diagnostics and the approved baseline integrity.' ;;
+        'Migration Graph') printf '%s' 'Check migration graph consistency; does not execute an operational database migration.' ;;
+        'Test Taxonomy'|'Test Domain Architecture') printf '%s' 'Verify the existing test taxonomy and ownership rules; actual test PASS belongs to executed pytest/JUnit.' ;;
+        *) printf 'Verify the approved %s contract using the registered %s verifier.' "$label" "$group" ;;
+    esac
+}
+
 run_command_capture() {
     local group="$1"
     local label="$2"
@@ -167,6 +188,7 @@ run_command_capture() {
     started="$(date +%s)"
     if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
         printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
+        printf '🎯 Scope: %s\n' "$(verifier_purpose "$group" "$label")"
         printf '%s — %s\n' "$group" "$label" > "$STATIC_OUTPUT_DIR/active-verifier.txt"
     else
         printf '⏳ %s — %s\n' "$group" "$label"
@@ -181,8 +203,8 @@ run_command_capture() {
         # Every executed verifier is published as evidence; the complete raw
         # output remains in its existing, separately uploaded diagnostic log.
         local report_elapsed=$(( $(date +%s) - started ))
-        printf "| %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
-            "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+        printf "| %s | %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
+            "$group" "$label" "$(verifier_purpose "$group" "$label")" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
             "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
         # In CI only, show a bounded subset of standardized PASS evidence in
         # the expanded live step; never print an unbounded raw verifier log.
@@ -226,8 +248,8 @@ run_command_capture() {
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
     local report_elapsed=$(( $(date +%s) - started ))
-    printf "| %s | %s | \`%s\` | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
-        "$group" "$label" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+    printf "| %s | %s | %s | \`%s\` | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
+        "$group" "$label" "$(verifier_purpose "$group" "$label")" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
         "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
     printf '❌ First actionable failure — %s\n' "$first_failure" >&2
@@ -317,8 +339,8 @@ run_static() {
         printf '### Static & Governance — executed verifier inventory\n\n'
         printf 'Each row below is an **executed** verifier, not a count of individual unit tests.\n'
         printf 'Registered capability evidence is a separate source-ownership inventory, not a test PASS.\n\n'
-        printf '| Group | Check | Command | Outcome | Duration | Raw log in static evidence artifact |\n'
-        printf '| --- | --- | --- | --- | --- | --- |\n'
+        printf '| Group | Check | Purpose / scope | Command | Outcome | Duration | Raw log in static evidence artifact |\n'
+        printf '| --- | --- | --- | --- | --- | --- | --- |\n'
     } > "$STATIC_OUTPUT_DIR/verification-report.md"
 
     run_static_group 'Foundation & Governance' \

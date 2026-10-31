@@ -246,5 +246,9 @@ def test_inbox_does_not_dispatch_before_commit():
         / 'app/integrations/source_control/source_control/providers/github/webhook_inbox.py'
     ).read_text()
     assert 'apply_async' not in source
-    assert 'db.session.commit' not in source
+    claim = source.split('def claim_verified_delivery(', 1)[1].split('def stage_signed_github_webhook_delivery(', 1)[0]
+    staging = source.split('def stage_signed_github_webhook_delivery(', 1)[1]
+    assert 'db.session.commit()' not in claim
+    assert staging.index('claim_verified_delivery(') < staging.index('db.session.commit()')
+    assert 'db.session.rollback()' in staging
     assert 'Blueprint(' not in source

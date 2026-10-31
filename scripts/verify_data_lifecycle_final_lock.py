@@ -138,8 +138,11 @@ def main() -> int:
             errors.append(f'Data Lifecycle demand-loaded workspace contract missing: {required}')
     if 'x-show="activeTab' in index:
         errors.append('Data Lifecycle top-level workspaces must be server-owned and demand-loaded')
-    if 'Only approved lifecycle domains are manageable.' not in index:
-        errors.append('Data Lifecycle managed-domain helper copy drifted from the compact lock')
+    if (
+        '{{ lifecycle.domains|length }} registered domains' not in index
+        or 'aria-label="Registered lifecycle domains"' not in index
+    ):
+        errors.append('Data Lifecycle must show the registered-domain count in the compact domain picker')
 
     domain_workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     storage = read('app/templates/platform_operations/data_lifecycle/partials/_storage.html')
@@ -148,8 +151,9 @@ def main() -> int:
         "loading_bar.render('data-lifecycle-policy-loading'",
         'Retention changes eligibility only; no job runs immediately.',
         'Requires Policy enabled + Scheduled execution.',
-        'transient failures retry once, then require manual retry.',
-        'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.',
+        'transient failures retry once, then need manual retry.',
+        'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}',
+        '{% if lifecycle.worker.queue_ready %}and ready for lifecycle jobs{% endif %}',
     ):
         if required not in domain_workspace:
             errors.append(f'Retention Policies operational contract missing: {required}')
@@ -174,6 +178,16 @@ def main() -> int:
             errors.append(f'Data Lifecycle v1.2 coverage presentation missing: {required}')
 
     retention_presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    retention_coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    for required in (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage',
+        "'coverage': _domain_coverage(name)",
+        "'coverage': _domain_coverage(domain.name)",
+        'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
+        'Transient toasts are not persisted and therefore are not lifecycle-managed.',
+    ):
+        if required not in retention_presentation:
+            errors.append(f'Data Lifecycle v1.2 coverage presentation ownership missing: {required}')
     for required in (
         "'label': 'Activity Audit Table'",
         "'label': 'Notification Center'",
@@ -182,11 +196,9 @@ def main() -> int:
         "'label': 'Metrics Source'",
         "'label': 'Alertmanager'",
         "'label': 'Object Storage · MinIO'",
-        'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
-        'Transient toasts are not persisted and therefore are not lifecycle-managed.',
     ):
-        if required not in retention_presentation:
-            errors.append(f'Data Lifecycle v1.2 coverage semantics missing: {required}')
+        if required not in retention_coverage:
+            errors.append(f'Data Lifecycle v1.2 canonical coverage catalog missing: {required}')
 
     registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
     for required in (
@@ -209,14 +221,15 @@ def main() -> int:
         if required not in analytics_domain:
             errors.append(f'Analytics Snapshot safety/archive contract missing: {required}')
 
+    if "'analytics_snapshot': 'Analytics Snapshots'" not in retention_presentation:
+        errors.append('Analytics Snapshot lifecycle presentation must retain the canonical domain label')
     for required in (
-        "'analytics_snapshot': 'Analytics Snapshots'",
         "'label': 'Analytics Materialization'",
         "'label': 'Forecast History'",
         "'label': 'Dashboard Evidence'",
     ):
-        if required not in retention_presentation:
-            errors.append(f'Analytics Snapshot lifecycle presentation missing: {required}')
+        if required not in retention_coverage:
+            errors.append(f'Analytics Snapshot lifecycle canonical coverage catalog missing: {required}')
     if (
         "selected.name == 'analytics_snapshot'" not in domain_workspace
         or 'Serve Window Protection' not in domain_workspace
@@ -259,13 +272,21 @@ def main() -> int:
         'Verify Evidence',
         'Storage Interpretation',
         'Production uses the dedicated maintenance worker service.',
-        'Archive Purge Batch',
-        'Purge Failed',
+        'Purge Batch Limit',
+        'lifecycle.purge_batch_size',
+        'retry on failure.',
     ):
         if required not in storage:
             errors.append(f'Archive Storage operational evidence contract missing: {required}')
 
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
+    for required in (
+        "archive.status in ['failed', 'purge_failed']",
+        "'critical'",
+        'table_label.status_label(',
+    ):
+        if required not in history:
+            errors.append(f'Archive History critical failure evidence missing: {required}')
     for required in (
         'Archive History',
         "{{ 'Archive' if pager.total == 1 else 'Archives' }}",

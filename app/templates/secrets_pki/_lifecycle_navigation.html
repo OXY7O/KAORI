@@ -1,0 +1,10 @@
+{# Shared level-3 URL navigation for the Secrets & PKI Lifecycle workspaces. #}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% macro render(active_key) -%}
+    {{ workspace_tabs.render_navigation([
+        ('lifecycle', 'Lifecycle & Assurance', 'shield-check', none, url_for('secrets_pki.lifecycle')),
+        ('leases', 'Leases', 'clock-3', none, url_for('secrets_pki.leases')),
+        ('consumers', 'Consumers', 'waypoints', none, url_for('secrets_pki.consumers')),
+        ('governance', 'Governance', 'scale', none, url_for('secrets_pki.governance'))
+    ], active_key, prefix='secrets-pki-lifecycle', aria_label='Secrets and PKI lifecycle workspaces') }}
+{%- endmacro %}

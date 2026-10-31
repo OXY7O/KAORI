@@ -75,7 +75,7 @@
                     </div>
                     <label class="flex items-start gap-3 rounded-xl border border-outline-subtle p-4 text-sm text-content-primary sm:col-span-2">
                         {{ form.pki_stored_certs_enabled(class_="mt-1 h-4 w-4 accent-kaori-primary") }}
-                        <span><span class="font-semibold">Enable Stored PKI Certificate Collection (explicit opt-in)</span>
+                        <span><span class="font-semibold">Enable Stored PKI Certificate Collection (Explicit Opt-In)</span>
                         <span class="mt-1 block text-xs text-content-muted">Adds optional authenticated LIST /certs reads for approved PKI mounts, up to 64 stored certificates each. Excludes no_store/imported certificates and may expose sensitive infrastructure metadata. Default off; requires retest and Full Validation.</span>
                     </span>
                 </label>
@@ -85,7 +85,7 @@
                     {{ form.description(class_="min-h-20 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary") }}
                 </div>
                 <label class="flex items-center gap-2 text-sm text-content-primary sm:col-span-2">
-                    {{ form.enabled(class_="h-4 w-4 accent-kaori-primary") }} Enable this connection
+                    {{ form.enabled(class_="h-4 w-4 accent-kaori-primary") }} Enable This Connection
                 </label>
             </div>
         </section>

@@ -276,6 +276,10 @@ Copy budget is canonical and executable:
 - metric label: 1–3 words;
 - metric helper: optional and concise.
 
+For a blocked Dashboard, its Hero-right information strip is a concise next-action summary only; the shared below-Hero prerequisite blocker owns complete setup steps and permission-aware navigation. A two-line Hero instruction is a visual QA failure even when the static primary-description budget passes. Do not use `nowrap`, ellipsis, clipping or page-specific font reduction to obtain a false single-line PASS. Secrets & PKI Overview is a specific regression case: missing qualified KV v2 inventory must render `components/states/_blocked_state.html` rather than a dashed empty-state panel.
+
+For compact right-side evidence cards at the canonical **1440 × 900** workspace baseline, visible metric values and the information strip must remain **natural single lines** at their shared type scale, without `nowrap`, ellipsis or clipping. This is a *rendered geometry* requirement, not an unconditional 68-character guarantee: shorten summary labels or rebalance content using approved components; preserve complete provider/evidence diagnostics in the below-Hero detail. At smaller breakpoints, retain the existing responsive, readable wrap and visibility rules. The Secrets & PKI Lifecycle negative regression locks bounded KV v2/PKI hero summaries and an evidence caveat; authenticated Playwright verifies the actual line boxes at 1440 × 900.
+
 Reference examples are `Review health, capacity, alerts, inventory, and prioritized actions.` and `Review report execution, artifact readiness, storage, and lifecycle state.`
 
 Word count and the maximum 68 characters are executable copy-density boundaries. The rendered non-phone single-line invariant is the visual authority: fitting the character budget alone is not sufficient if the text still overflows or wraps at the canonical non-phone viewport matrix. The 8–12 word range is preferred for scanability. Descriptions remain action-oriented and start with an imperative-style action verb; semantic clarity remains mandatory. Long evidence explanations belong below the Hero.

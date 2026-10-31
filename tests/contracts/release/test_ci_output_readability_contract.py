@@ -441,3 +441,43 @@ def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None
     assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
     assert 'printf "  %s\\n", substr($0, 1, 200)' in source
     assert 'Full diagnostic log: %s' in source
+
+
+def test_static_verifier_purpose_is_explained_without_claiming_provider_test_pass() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'verifier_purpose() {' in source
+    assert 'Purpose / scope' in source
+    assert '🎯 Scope:' in source
+    assert 'Source Control domain but is not a GitHub functional-test result' in source
+    assert 'REGISTERED is not TEST PASS' in source
+    assert '"$(verifier_purpose "$group" "$label")" "$command_display"' in source
+
+
+def test_future_capability_gate_evidence_rule_remains_in_existing_authorities() -> None:
+    terminal = (ROOT / 'docs/engineering/TERMINAL_OUTPUT.md').read_text(encoding='utf-8')
+    coverage = (ROOT / 'docs/architecture/RELEASE_SURFACE_COVERAGE.md').read_text(encoding='utf-8')
+    delivery = (ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md').read_text(encoding='utf-8')
+    template = (ROOT / '.github/PULL_REQUEST_TEMPLATE.md').read_text(encoding='utf-8')
+
+    assert '## Mandatory capability and gate evidence' in terminal
+    assert all(
+        field in terminal
+        for field in (
+            '**Identity**',
+            '**Purpose / scope**',
+            '**Execution**',
+            '**Result**',
+            '**Evidence**',
+            '**Failure**',
+            '**Traceability**',
+        )
+    )
+    assert 'Registration in the release-surface registry means **REGISTERED**' in terminal
+    assert 'generic fallback description is for legacy coverage only' in terminal
+    assert '### Required admission format for new or changed capabilities' in coverage
+    assert 'Integrations → Source Control → GitHub' in coverage
+    assert '## New/Changed Capability — Mandatory Gate Evidence' in delivery
+    assert 'Reviewers must reject a new capability' in delivery
+    assert 'New/changed feature, domain, capability, provider or verifier' in template
+    assert 'REGISTERED is not TEST PASS' in template

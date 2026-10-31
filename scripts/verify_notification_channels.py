@@ -14,6 +14,7 @@ def main() -> int:
     errors: list[str] = []
     routes = read('app/integrations/delivery/notification_channels/routes.py')
     service = read('app/integrations/delivery/notification_channels/service.py')
+    service_helpers = read('app/integrations/delivery/notification_channels/service_helpers.py')
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
     catalog = read('app/integrations/delivery/notification_channels/catalog.py')
     definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
@@ -55,6 +56,7 @@ def main() -> int:
     delivery_registry = delivery_registry.partition('\ndef _report_id_for_delivery(')[0]
     delivery_template = read('app/templates/integrations/delivery/notification_channels/index.html')
     journal_order = 'query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())'
+    retirement_reason_field = channel_retire.partition('name="retirement_reason"')[2].partition('</textarea>')[0]
 
     checks = {
         'route ownership': "url_prefix='/integrations/notification-channels'" in routes,
@@ -124,7 +126,9 @@ def main() -> int:
         and 'NotificationDelivery.status == status' in service
         and 'result_count=payload.delivery_pagination.total_items' in delivery_template
         and "section_intro.render('Delivery Contract & Ownership'" in delivery_template
-        and "section_intro.render('Configured Channels'" in template,
+        and 'section_intro.render(' in channels_template
+        and "'Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
+        in channels_template,
         'notification guidance and canonical table': 'info_tip.render(' in template
         and 'Channel Inventory Guidance' in template
         and 'grid gap-4 lg:grid-cols-3' not in template
@@ -195,8 +199,10 @@ def main() -> int:
         and '_channel_actions_dialog.html' not in channels_template
         and 'channel.event_type_labels|length' in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
-        and 'def _channel_event_type_groups(' in service
-        and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service,
+        and 'def _channel_event_type_groups(' in service_helpers
+        and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service_helpers
+        and 'from app.integrations.delivery.notification_channels.service_helpers import (' in service
+        and '_channel_view,' in service,
         'policy dialog native and secret-safe': 'side_drawer.render(' in channel_details_drawer
         and 'data-side-drawer-dialog' in shared_side_drawer
         and 'channel.event_type_groups' in channel_details_drawer
@@ -212,7 +218,7 @@ def main() -> int:
         and 'Locked' in channel_details_drawer
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
-        and "'report_schedule_names': list(usage.report_schedule_names)" in service
+        and "'report_schedule_names': list(usage.report_schedule_names)" in service_helpers
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
         and 'data-destructive-modal-open' in channel_details_drawer,
         'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"'
@@ -232,7 +238,8 @@ def main() -> int:
         in read('app/templates/components/framed_workspace_tabs.html')
         and "'channel_lifecycle': payload.channel_lifecycle" in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
-        and 'name="retirement_reason" required minlength="8" maxlength="500"' in channel_retire
+        and bool(retirement_reason_field)
+        and all(token in retirement_reason_field for token in ('required', 'minlength="8"', 'maxlength="500"'))
         and 'channel.report_schedule_count' in channel_retire
         and 'notification_channels.retire' in channel_retire
         and 'NotificationChannel.query.filter_by(lifecycle_state=lifecycle)' in service
@@ -287,7 +294,8 @@ def main() -> int:
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
         and 'data-destructive-modal-open' in channel_details_drawer
-        and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')"
+        and 'document.querySelector(' in shared_side_drawer_js
+        and 'dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)'
         in shared_side_drawer_js,
         'notification delivery hot/archive ownership': 'Review hot committed attempts and retry evidence.'
         in delivery_template

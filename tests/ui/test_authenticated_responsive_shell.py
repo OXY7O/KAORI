@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page, expect
 
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
@@ -253,3 +254,120 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
     assert aligned['targetTop'] >= aligned['mainTop'] + aligned['scrollPaddingTop'] - 1
     _assert_no_document_overflow(page)
     _capture(page, 'authenticated-shell-top-boundary', viewport_name)
+
+
+def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_is_shared(
+    page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    # Rendered geometry, not CSS nowrap/ellipsis, is the final density authority.
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/lifecycle', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+
+    navigation = page.locator('#secrets-pki-lifecycle nav[data-kaori-tab-variant="integrated-workspace-server"]')
+    expect(navigation).to_be_visible()
+    expect(navigation.locator('a[aria-current="page"]')).to_have_text('Lifecycle & Assurance')
+    assert navigation.locator('a').count() == 4
+
+    hero = page.locator('#secrets-pki-lifecycle section.kaori-hero-shell')
+    expect(hero).to_be_visible()
+    targets = hero.locator(
+        '.kaori-hero-panel h2, [data-kaori-hero-context-metric] p, .kaori-hero-panel > .kaori-hero-tile p'
+    )
+    assert targets.count() == 8
+    for element in targets.all():
+        expect(element).to_be_visible()
+        measurement = element.evaluate(
+            """el => {
+                const styles = getComputedStyle(el);
+                const box = el.getBoundingClientRect();
+                return {
+                    height: box.height,
+                    lineHeight: parseFloat(styles.lineHeight),
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    whiteSpace: styles.whiteSpace,
+                    overflow: styles.overflow,
+                    textOverflow: styles.textOverflow
+                };
+            }"""
+        )
+        assert measurement['whiteSpace'] != 'nowrap', measurement
+        assert measurement['textOverflow'] != 'ellipsis', measurement
+        assert measurement['overflow'] != 'hidden', measurement
+        assert measurement['height'] <= measurement['lineHeight'] + 1.5, measurement
+        assert measurement['scrollWidth'] <= measurement['clientWidth'] + 1, measurement
+
+    _assert_no_document_overflow(page)
+    _capture(page, 'secrets-pki-lifecycle-hero', 'large-desktop')
+
+
+def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
+    page: Page,
+    kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Render the real Overview route against deterministic, unqualified
+    # committed-state evidence. The shared authenticated UI server has no
+    # PostgreSQL service and must not depend on a developer's local database.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 0, 'has_evidence': False},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_vault_binding_coverage',
+        lambda: {
+            'metrics': {'label': 'Vault Provider Not Configured'},
+            'alerts': {'label': 'Vault Provider Not Configured'},
+        },
+    )
+    monkeypatch.setattr('app.secrets_pki.routes.build_vault_alert_source_sample_summary', lambda: None)
+
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+
+    hero = page.locator('#secrets-pki-overview section.kaori-hero-shell')
+    expect(hero).to_be_visible()
+    assert hero.get_attribute('data-kaori-hero-profile') == 'operational-dashboard'
+    assert hero.get_attribute('data-kaori-hero-state') == 'blocked'
+
+    blocker = page.locator('#secrets-pki-overview section[data-kaori-blocked-state]')
+    expect(blocker).to_be_visible()
+    expect(blocker.get_by_role('heading', name='Committed KV v2 Inventory Required')).to_be_visible()
+    assert page.locator('#secrets-pki-overview [data-kaori-empty-state]').count() == 0
+    expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
+
+    # DOM geometry is the final authority; never hide wrapping with nowrap/ellipsis.
+    targets = hero.locator(
+        '.kaori-hero-panel h2, .kaori-hero-panel [data-kaori-hero-context-metric] p, '
+        '.kaori-hero-panel > .kaori-hero-tile p'
+    )
+    assert targets.count() == 8
+    for item in targets.all():
+        expect(item).to_be_visible()
+        dimensions = item.evaluate(
+            """el => {
+                const style = getComputedStyle(el);
+                const bounds = el.getBoundingClientRect();
+                return {
+                    height: bounds.height,
+                    lineHeight: parseFloat(style.lineHeight),
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    whiteSpace: style.whiteSpace,
+                    overflow: style.overflow,
+                    textOverflow: style.textOverflow
+                };
+            }"""
+        )
+        assert dimensions['height'] <= dimensions['lineHeight'] + 1.5, dimensions
+        assert dimensions['scrollWidth'] <= dimensions['clientWidth'] + 1, dimensions
+        assert dimensions['whiteSpace'] != 'nowrap', dimensions
+        assert dimensions['overflow'] != 'hidden', dimensions
+        assert dimensions['textOverflow'] != 'ellipsis', dimensions
+    _assert_no_document_overflow(page)
+    _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')

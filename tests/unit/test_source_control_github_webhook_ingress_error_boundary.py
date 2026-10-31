@@ -10,6 +10,7 @@ from flask import Flask, Response
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 
+from app.integrations.source_control.source_control.providers.github import webhook_inbox
 from app.integrations.source_control.source_control.providers.github.application import routes
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
 
@@ -41,15 +42,15 @@ def _invoke_signed_ingress(
     monkeypatch: pytest.MonkeyPatch, handler_error: Exception | None
 ) -> tuple[int | Exception, _Session]:
     session = _Session()
-    monkeypatch.setattr(routes, 'SourceInstallation', SimpleNamespace(query=_InstallationQuery()))
-    monkeypatch.setattr(routes, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(webhook_inbox, 'SourceInstallation', SimpleNamespace(query=_InstallationQuery()))
+    monkeypatch.setattr(webhook_inbox, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(routes, '_available', lambda: True)
 
     def claim(**_kwargs: object) -> None:
         if handler_error is not None:
             raise handler_error
 
-    monkeypatch.setattr(routes, 'claim_verified_delivery', claim)
+    monkeypatch.setattr(webhook_inbox, 'claim_verified_delivery', claim)
 
     app = Flask(__name__)
     app.config['SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED'] = True

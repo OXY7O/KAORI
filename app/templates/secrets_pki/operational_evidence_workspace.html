@@ -1,11 +1,13 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "secrets_pki/_lifecycle_navigation.html" as lifecycle_navigation %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/table_primitives.html" as table_ui %}
 {% block title %}{{ title }} · Secrets &amp; PKI · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="secrets-pki-{{ workspace }}" class="min-w-0 space-y-6">
+        {{ lifecycle_navigation.render(workspace) }}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -21,20 +23,6 @@
                 </div>
             </div>
         </section>
-        <nav class="flex flex-wrap gap-2"
-             aria-label="Secrets and PKI operational workspaces">
-            {% for slug, label in (
-                ('leases', 'Leases'), ('consumers', 'Consumers'), ('governance', 'Governance')
-                ) %}
-                <a href="{{ url_for('secrets_pki.' ~ slug) }}"
-                   {% if workspace == slug %}aria-current="page"{% endif %}
-                   class="inline-flex min-h-9 items-center rounded-md border px-3 py-2 text-sm font-semibold {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark' if workspace == slug else 'border-outline-default bg-surface-card text-content-secondary hover:bg-kaori-soft' }}">
-                    {{ label }}
-                </a>
-            {% endfor %}
-            <a href="{{ url_for('secrets_pki.lifecycle') }}"
-               class="{{ table_ui.action_classes(size='header') }}">Lifecycle &amp; Assurance</a>
-        </nav>
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {% for metric in metrics %}
                 {{ metric_card.render(metric.label,

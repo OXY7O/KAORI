@@ -290,6 +290,14 @@ def main() -> int:
     if 'Lifecycle Coverage' not in data_lifecycle_workspace:
         errors.append('Data Lifecycle v1.2 must expose lifecycle coverage evidence')
     retention_presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    retention_coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    if (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage'
+        not in retention_presentation
+        or "'coverage': _domain_coverage(name)" not in retention_presentation
+        or "'coverage': _domain_coverage(domain.name)" not in retention_presentation
+    ):
+        errors.append('Platform Operations Data Lifecycle must consume the canonical coverage catalog')
     for required in (
         "'label': 'Activity Audit Table'",
         "'label': 'Notification Center'",
@@ -297,7 +305,7 @@ def main() -> int:
         "'label': 'Metrics Source'",
         "'label': 'Alertmanager'",
     ):
-        if required not in retention_presentation:
+        if required not in retention_coverage:
             errors.append(f'Platform Operations Data Lifecycle coverage lock missing: {required}')
 
     analytics_domain = read('app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py')
@@ -504,11 +512,12 @@ def main() -> int:
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
     )
     if (
-        "table_ui.table_classes('min-w-[980px]')" not in namespace_table
+        "table_ui.table_classes('w-full table-fixed')" not in namespace_table
         or 'w-full overflow-x-auto' not in namespace_table
+        or 'min-w-[980px]' in namespace_table
     ):
         errors.append('Namespace Policies must preserve canonical responsive table scroll geometry')
-    for width in ('w-[34%]', 'w-[22%]', 'w-[18%]', 'w-[26%]'):
+    for width in ('w-[38%]', 'w-[16%]', 'w-[20%]', 'w-[26%]'):
         if width not in namespace_table:
             errors.append(f'Namespace Policies proportional column contract missing: {width}')
     if 'data-kaori-auto-submit' not in namespace_table:

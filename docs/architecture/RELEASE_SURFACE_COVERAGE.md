@@ -90,6 +90,19 @@ When adding or moving a menu/domain:
 
 Do not silence a new endpoint by increasing a baseline or by classifying an active surface as hidden without an explicit ownership decision.
 
+### Required admission format for new or changed capabilities
+
+The release matrix and registry are the **ownership** layer of the mandatory operator-facing evidence standard in `docs/engineering/TERMINAL_OUTPUT.md`. For any new or materially changed feature, domain, capability, provider, integration, menu, registered Blueprint or static verifier:
+
+1. Identify its capability/domain-first owner, provider and instance boundaries; use an existing parent release surface when appropriate instead of creating an artificial top-level surface or duplicate gate.
+2. Update the authoritative taxonomy/workspace, `scripts/release_surface_registry.py`, this matrix and existing navigation/Blueprint registrations **when applicable**. Declare a real owner and corresponding verifier or executable contract-test path; an integration provider remains nested under Integrations when that is its approved authority.
+3. Describe the operator-facing gate **identity, specific purpose/scope, command/test selector, executed result, duration, raw evidence and first actionable failure** in the existing CI output pattern. For a newly added standalone static verifier, supply a specific purpose in the existing `scripts/quality_gate.sh` reporting mapping; do not rely on the generic fallback or infer tests ran from its registration.
+4. Add or update the behavior-focused tests, including authorization/negative scenarios and provider/runtime/security checks where applicable. Report their actual executed pytest/JUnit, security, frontend and runtime/DAST evidence independently from registry ownership. Any not-run, skipped, reused or blocked work remains explicit.
+5. Link the governing Issue and PR, commit SHA, real CI results and applicable staging/UAT human acceptance. Do not label a static surface lock as full feature readiness or presume DevContainer review is hosted UAT.
+6. Use the existing `verify_release_surface_coverage.py`, release contracts, focused tests, Developer Check and Full Admission. Fail closed on missing ownership or evidence and extend existing tests when a new registration shape requires it; never bypass gates or invent a parallel validation/reporting framework.
+
+For example, **Integrations → Source Control → GitHub** is owned by the existing Integrations release surface: `REGISTERED` proves navigation/Blueprint/test ownership; `Integrations Final Lock` protects shared UI/contracts; GitHub webhook security, repository synchronization, scoped authorization and real provider readiness require their own executed tests and UAT evidence, not a fabricated GitHub static-PASS line.
+
 ## Storage Integration Expansion
 
 `Integrations → Storage → Object Storage` owns the MinIO provider workspace. MinIO remains registered under the Integrations release surface.

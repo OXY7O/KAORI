@@ -49,6 +49,8 @@ A blocked Operational Dashboard uses the same canonical right-side grammar in ev
 5. **Data Authority** as the second context metric;
 6. one concise information strip that states the next setup requirement.
 
+**Secrets & PKI Overview admission regression (#4130):** a Dashboard blocked on absent qualified Vault KV v2 inventory uses a short single-line Hero guidance strip, while the below-Hero setup steps and permission-aware Vault action use the existing section `_blocked_state.html`. A page-level missing prerequisite is not a section-local empty result. Preserve missing-evidence-is-not-zero and no Secret material disclosure.
+
 The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
 
 ## Canonical composition
