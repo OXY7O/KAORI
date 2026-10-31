@@ -1,0 +1,132 @@
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="github-connection-registry"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="github-connection-registry-title"
+         data-kaori-github-connection-registry>
+    {% set clear_url = url_for('github_source.index', tab='registry', page=1, per_page=pagination.per_page) %}
+    {% set clear_action = registry_ui.clear_filters_action(clear_url,
+            table_ui.action_classes(),
+            hx_get=clear_url,
+            target='#github-connection-registry',
+            indicator='#github-registry-loading',
+            select='#github-connection-registry',
+            push_url='true',
+            marker='github-connection-registry'
+        ) if registry_has_active_filters else '' %}
+    {{ provider_registry.registry_header("GitHub Connection Registry",
+        "Review registered GitHub App installations, Full Validation readiness, and committed grant scope.",
+        "database-zap",
+        "github-registry-loading",
+        title_id="github-connection-registry-title",
+        action_html=clear_action,
+        result_count=pagination.total_items) }}
+    <div class="{{ integration_ui.filter_region_classes() }}"
+         data-kaori-one-line-filters>
+        {% call registry_ui.filter_form('github_source.index',
+            'github-connection-registry',
+            'github-registry-loading',
+            pagination.per_page,
+            form_id='github-registry-filter-form',
+            aria_label='Filter GitHub connections') %}
+            <input type="hidden" name="tab" value="registry">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("github-registry-search", "q", selected_query, "Connection name or description") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("github-registry-environment", "environment", selected_environment, "Environment", environment_options, "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("github-registry-readiness", "readiness", selected_readiness, "Readiness", readiness_options, "All Readiness States") }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ provider_registry.connection_registry_table_classes() }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">GitHub Installation</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Committed Scope</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in rows %}
+                    {% set installation = installation_by_instance.get(row.id) %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-[12rem] items-start gap-3">
+                                {{ integration_ui.palette_icon("git-branch", "brand", size="sm") }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.description or "GitHub App connection" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="font-semibold text-content-primary">{{ installation.native_installation_id if installation else "Not Linked" }}</p>
+                            <p class="mt-1 text-xs text-content-muted">GitHub REST v3</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.environment|default("Unspecified", true) |replace("_", " ")|title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ "Enabled" if row.enabled else "Disabled" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness_status or "validation_required",
+                                                        display="indicator") }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Full Validation complete" if row.readiness_status == "ready" else "Full Validation required" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ installation.repository_scope|title if installation else "Not Observed" }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Installation selection · not repository inventory</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            {% if uat_workspace_enabled and installation %}
+                                <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id) }}"
+                                   class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                    Manage
+                                </a>
+                            {% else %}
+                                <span class="text-xs text-content-muted">Restricted</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "git-branch" %}
+                            {% set empty_state_label = "No Results" if registry_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No GitHub Connections Match the Filters" if registry_has_active_filters else "No GitHub App Connections Found" %}
+                            {% set empty_state_description = "Adjust the filters to find another connection." if registry_has_active_filters else "Register an installation-scoped GitHub App connection; Full Validation is required before operational use." %}
+                            {% set empty_state_action_url = url_for('github_source.new_connection') if available and not registry_has_active_filters and uat_workspace_enabled else none %}
+                            {% set empty_state_action_label = "Register Connection" if empty_state_action_url else none %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_min_height = "min-h-[190px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set registry_query = {
+            "tab": "registry",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
+        "github_source.index",
+        "#github-connection-registry",
+        "#github-registry-loading",
+        registry_query,
+        item_label="Connections",
+        swap="outerHTML") }}
+</section>

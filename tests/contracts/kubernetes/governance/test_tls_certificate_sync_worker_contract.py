@@ -170,7 +170,7 @@ def test_tls_worker_reports_granular_progress_for_single_cluster_jobs() -> None:
     assert 'progress_callback: TLSProgressCallback | None = None' in collector
     assert 'Parsed {index} of {total_secrets} TLS Secrets' in collector
     assert 'progress_callback: TLSProgressCallback | None = None' in service
-    assert 'Reconciled {index} of {total_records} TLS inventory records' in service
+    assert 'Reconciled {offset} of {total_records} TLS inventory records for {cluster.name}.' in service
     assert "message='Finalizing TLS Secret inventory synchronization.'" in tasks
     assert "'warning_cluster_count': len(warnings)" in tasks
     assert 'cluster_result.warning' in tasks

@@ -12,6 +12,7 @@ This directory is the technical documentation set for KAORI role and permission 
 | `DEFAULT_ROLE_REVIEW.md` | Review of Viewer, Operator, Editor, Admin, Auditor, and Super Admin authority. |
 | `PERMISSION_REGISTRY_REVIEW.md` | Review of active, baseline, reserved, and legacy permission contracts. |
 | `RBAC_SECURITY.md` | Least privilege, system-role immutability, privilege escalation controls, audit, and failure behavior. |
+| `SCOPED_AUTHORIZATION_V1_DECISION_RECORD.md` | Human-accepted #724 decisions and RBAC-preserving migration; **implementation and UAT not yet admitted**. |
 | `RBAC_TEST_PLAN.md` | Required unit, integration, authorization, lifecycle, and UI tests. |
 | `ROLE_ACCESS_UI.md` | KAORI Violet design and interaction contract for Roles & Access and Permission Catalog. |
 

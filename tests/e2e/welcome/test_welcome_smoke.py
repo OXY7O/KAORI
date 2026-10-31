@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from html import escape
 from types import SimpleNamespace
 
 import pytest
 from flask_login import UserMixin
 
 from app import create_app
+from app.access.rbac.defaults import DEFAULT_ROLE_PERMISSIONS
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
+from app.welcome.shortcuts import WELCOME_SHORTCUT_DEFINITIONS
 
 
 class SmokeUser(UserMixin):
@@ -112,3 +115,73 @@ def test_authenticated_user_can_render_welcome_with_global_application_shell(
     assert 'Notifications' in html
     assert 'Account Settings' in html
     assert 'x-data="kaoriNavbar"' in html
+
+
+class ViewerSmokeUser(SmokeUser):
+    """Use the current source-defined Viewer grants instead of a hard-coded card count."""
+
+    username = 'welcome-viewer-smoke'
+    display_label = 'Welcome Viewer Smoke'
+    role_name = 'viewer'
+    role_display_name = 'Viewer'
+    is_super_admin = False
+    role_record = SimpleNamespace(display_name='Viewer', is_active=True)
+
+    def get_id(self) -> str:
+        return 'welcome-viewer-smoke'
+
+    def has_permission(self, permission_key: str) -> bool:
+        return permission_key in DEFAULT_ROLE_PERMISSIONS['viewer']
+
+
+def _authenticated_viewer_client(app, monkeypatch: pytest.MonkeyPatch):
+    user = ViewerSmokeUser()
+    monkeypatch.setattr(login_manager, '_user_callback', lambda _user_id: user)
+
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['_user_id'] = user.get_id()
+        session['_fresh'] = True
+        session['auth_source'] = 'database'
+    return client
+
+
+def test_viewer_welcome_html_contains_only_permitted_workspace_cards(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    """UAT-WEL-002: raw server HTML must not disclose forbidden workspace metadata."""
+    client = _authenticated_viewer_client(app, monkeypatch)
+    response = client.get('/welcome')
+    assert response.status_code == 200
+
+    html = response.get_data(as_text=True)
+    allowed = DEFAULT_ROLE_PERMISSIONS['viewer']
+    expected_cards = [
+        definition
+        for definition in WELCOME_SHORTCUT_DEFINITIONS
+        if any(permission is None or permission in allowed for permission, _ in definition['targets'])
+    ]
+    for definition in WELCOME_SHORTCUT_DEFINITIONS:
+        accessible_name = f'aria-label="Open {escape(definition["title"], quote=True)} Workspace"'
+        assert (accessible_name in html) == (definition in expected_cards), definition['title']
+
+    count = len(expected_cards)
+    assert html.count('data-workspace-card') == count
+    assert f'data-workspace-result-count>{count} Workspaces' in html
+    for forbidden in ('Integrations', 'Platform Operations', 'Access'):
+        assert f'aria-label="Open {forbidden} Workspace"' not in html
+    assert 'aria-label="Open Settings Workspace"' in html
+
+
+def test_viewer_direct_access_overview_returns_http_403_and_safe_guidance(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    """UAT-IAM-007: route authorization is independent of Welcome card visibility."""
+    client = _authenticated_viewer_client(app, monkeypatch)
+    response = client.get('/access/')
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 403
+    assert 'Access Denied' in html
+    assert 'Permission Required' in html
+    assert 'Contact your access administrator' in html
+    assert 'Requested Access' in html
+    assert 'Blocked' in html
+    assert 'data-kaori-access-resolution-guidance' in html
+    assert 'Review identity, authorization, and administrative audit posture.' not in html

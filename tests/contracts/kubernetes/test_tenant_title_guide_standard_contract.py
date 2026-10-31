@@ -11,7 +11,7 @@ TITLE_GUIDES = {
     '_tenant_discovery.html': ('tenant-discovery-status-tip',),
     '_group_registry.html': ('tenant-group-lifecycle-tip',),
     '_membership_registry.html': ('tenant-membership-lifecycle-tip',),
-    '_tenant_form.html': ('tenant-setup-form-tip',),
+    '_tenant_form.html': ('tenant-setup-form-tip', 'capsule-initial-owner-guide-tip'),
     '_tenant_memberships_workspace.html': (
         'membership-user-tip',
         'membership-group-tip',
@@ -26,8 +26,8 @@ TITLE_GUIDES = {
         'tenant-capacity-compute-pod-tip',
         'tenant-limit-exposure-policy-tip',
         'tenant-capacity-storage-budget-tip',
-        'allocation-budget-status-tip',
     ),
+    '_allocation_budget_registry.html': ('allocation-budget-status-tip',),
     '_capacity_decisions.html': ('tenant-capacity-decision-tip',),
     '_allocation_change.html': ('namespace-allocation-change-tip',),
     '_allocation_cutover.html': ('allocation-cutover-tip',),
@@ -64,6 +64,36 @@ def test_every_approved_tenant_title_guide_uses_shared_variant() -> None:
     assert all("variant='guide'" in expression for expression in advanced)
 
 
+def test_capsule_initial_owner_uses_one_shared_section_guide() -> None:
+    source = _read('_tenant_form.html')
+    section_start = source.index('Capsule Initial Owner')
+    section_end = source.index('form_field.label_row("Description")', section_start)
+    capsule_section = source[section_start:section_end]
+
+    assert capsule_section.count("'capsule-initial-owner-guide-tip'") == 1
+    assert "variant='guide'" in capsule_section
+    assert 'Owner Kind: User' in capsule_section
+    assert 'Owner Kind: Group' in capsule_section
+    assert 'Owner Kind: ServiceAccount' in capsule_section
+    assert 'Owner Subject must match' in capsule_section
+    assert 'oidc:org:platform-team' in capsule_section
+    assert 'system:serviceaccount:platform:deployer' in capsule_section
+    assert 'capsule-owner-kind-tip' not in capsule_section
+    assert 'capsule-owner-subject-tip' not in capsule_section
+
+    # Both labels and required provider controls remain permanently visible.
+    assert 'Required for Capsule provider ownership' in capsule_section
+    assert 'form_field.label_row("Owner Kind")' in capsule_section
+    assert 'form_field.label_row("Owner Subject")' in capsule_section
+    assert 'name="capsule_owner_kind"' in capsule_section
+    assert 'name="capsule_owner_subject"' in capsule_section
+    assert capsule_section.count('data-capsule-owner-control') == 2
+    assert 'value="User"' in capsule_section
+    assert 'value="Group" selected' in capsule_section
+    assert 'value="ServiceAccount"' in capsule_section
+    assert capsule_section.count('disabled') == 2
+
+
 def test_resource_group_guides_are_inside_owning_disclosure_title() -> None:
     source = _read('_resource_profile_form.html')
     assert 'Section help' not in source
@@ -84,29 +114,32 @@ def test_resource_group_guides_are_inside_owning_disclosure_title() -> None:
         assert summary.index(heading) < summary.index(identifier)
 
 
-def test_field_and_row_specific_evidence_remains_icon_only() -> None:
-    field_tips = {
-        '_tenant_form.html': ('capsule-owner-kind-tip', 'capsule-owner-subject-tip'),
-        '_tenant_access_grants_workspace.html': (
-            'access-membership-tip',
-            'access-profile-tip',
-            'access-scope-tip',
-        ),
-        '_tenant_adoption_preflight.html': ('tenant-adoption-control-tip',),
-    }
-    for template, identifiers in field_tips.items():
-        expressions = _tip_expressions(_read(template))
-        for identifier in identifiers:
-            matches = [expression for expression in expressions if f"'{identifier}'" in expression]
-            assert len(matches) == 1, (template, identifier)
-            assert "variant='guide'" not in matches[0], (template, identifier)
+def test_field_and_row_evidence_uses_approved_context_and_icon_only_tips() -> None:
+    # The adoption control retains its field-level icon tooltip, not a title guide.
+    expressions = _tip_expressions(_read('_tenant_adoption_preflight.html'))
+    matches = [expression for expression in expressions if "'tenant-adoption-control-tip'" in expression]
+    assert len(matches) == 1
+    assert "variant='guide'" not in matches[0]
 
-    reconciliation = _read('_access_grant_registry.html')
-    row_tip = next(
-        expression for expression in _tip_expressions(reconciliation) if "'access-grant-reconciliation-'" in expression
-    )
-    assert "variant='guide'" not in row_tip
-    assert 'grant.reconciliation_message' in row_tip
+    # The Access Grant form uses its live Grant Context instead of obsolete inline tips.
+    workspace = _read('_tenant_access_grants_workspace.html')
+    assert 'data-access-grant-context' in workspace
+    for control in ('membership', 'profile', 'scope'):
+        assert f'data-access-{control}' in workspace
+    for legacy_tip in ('access-membership-tip', 'access-profile-tip', 'access-scope-tip'):
+        assert legacy_tip not in workspace
+
+    # Registry status and the shared accessible detail row expose committed provider evidence.
+    registry = _read('_access_grant_registry.html')
+    detail = _read('_access_grant_row_detail.html')
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert "detail_row.toggle_button('tenant-access-grants'" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in registry
+    assert "{% include 'kubernetes/tenant/partials/_access_grant_row_detail.html' %}" in registry
+    assert 'data-access-grant-expanded-evidence' in detail
+    assert 'aria-label="Access Grant expanded details"' in detail
+    assert 'Provider Reconciliation' in detail
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in detail
 
 
 def test_hover_portal_gap_and_disclosure_click_are_safe() -> None:

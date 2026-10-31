@@ -33,7 +33,7 @@ class IdentityProviderForm(FlaskForm):
     user_filter = StringField('User Search Filter', validators=[Optional(), Length(max=500)])
     tls_mode = SelectField(
         'TLS Mode',
-        choices=[('ldaps', 'LDAPS'), ('starttls', 'StartTLS'), ('plain', 'Plain (development only)')],
+        choices=[('ldaps', 'LDAPS'), ('starttls', 'StartTLS')],
         validate_choice=False,
     )
     username_attribute = StringField('Username Attribute', validators=[Length(max=100)])
@@ -60,7 +60,7 @@ class IdentityProviderForm(FlaskForm):
     def validate_tls_mode(self, field) -> None:
         if self.definition().adapter_key != 'ldap':
             return
-        if field.data not in {'ldaps', 'starttls', 'plain'}:
+        if field.data not in {'ldaps', 'starttls'}:
             raise ValidationError('Select a supported LDAP TLS mode.')
         server_uri = (self.server_uri.data or '').strip()
         if not server_uri:

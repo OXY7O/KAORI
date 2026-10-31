@@ -251,8 +251,10 @@ def main() -> int:
             errors.append(f'Kubernetes Administration factual posture contract missing: {required}')
     if 'Control Status: Protected Secret Reveal Available' in k8s_index or 'Available Controls' in k8s_index:
         errors.append('Kubernetes Administration must not hard-code protected administration capability as available')
-    if 'components/framed_workspace_tabs.html' not in k8s_index or 'framed_workspace_tabs.render(' not in k8s_index:
-        errors.append('Kubernetes Administration must use shared Framed Workspace Tabs')
+    if 'components/workspace_tabs.html' not in k8s_index or 'workspace_tabs.render(' not in k8s_index:
+        errors.append('Kubernetes Administration must use shared Integrated Workspace Tabs')
+    if 'components/framed_workspace_tabs.html' in k8s_index or 'framed_workspace_tabs.render(' in k8s_index:
+        errors.append('Kubernetes Administration must not add a framed parent card around peer views')
     for key in ('overview', 'secret-reveal'):
         if key not in k8s_index:
             errors.append(f'Kubernetes Administration tab missing: {key}')
@@ -262,9 +264,9 @@ def main() -> int:
         '@keydown.home.prevent',
         '@keydown.end.prevent',
     ):
-        shared = read('app/templates/components/framed_workspace_tabs.html')
+        shared = read('app/templates/components/workspace_tabs.html')
         if keyboard not in shared:
-            errors.append(f'Framed Workspace Tabs lost keyboard contract: {keyboard}')
+            errors.append(f'Integrated Workspace Tabs lost keyboard contract: {keyboard}')
 
     jobs_index = read('app/templates/platform_operations/jobs/index.html')
     if (
@@ -397,16 +399,34 @@ def main() -> int:
 
     execution_detail = read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     for required in (
-        'Execution Identity',
-        'Scope & Ownership',
-        'Lifecycle',
-        'Result & Failure Evidence',
-        'Result Summary',
+        'data-kaori-detail-variant="job-execution"',
+        'data-resource-detail-header',
+        'data-resource-detail-summary',
+        'Execution Snapshot',
+        'Execution Outcome',
+        'Execution Context',
+        'Lifecycle Timeline',
+        'Committed Result Evidence',
+        'Additional Execution Evidence',
+        'Technical References',
+        'detail.resource_sheet()',
+        'detail.inventory_fact_grid(execution.result_summary, columns=2)',
+        'view_more.render(',
+        "closed_label='View More'",
+        'progress_bar.job_progress',
+        'Recorded Error Evidence',
+        'No Result Summary Recorded',
+        'execution.public_id',
+        'execution.task_id',
     ):
         if required not in execution_detail:
             errors.append(f'Execution detail evidence contract missing: {required}')
-    if 'payload_json' in execution_detail:
-        errors.append('Execution detail must not render raw execution payloads')
+    if "execution.error_code != '-'" not in execution_detail or (
+        "execution.error_message != 'No execution error was recorded.'" not in execution_detail
+    ):
+        errors.append('Execution detail must condition recorded errors on committed evidence')
+    if any(raw in execution_detail for raw in ('payload_json', 'deduplication_key', 'parameter_fingerprint')):
+        errors.append('Execution detail must not render raw execution payloads or fingerprints')
 
     queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
     for required in (
@@ -457,7 +477,7 @@ def main() -> int:
     materialization_job = read(
         'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
     )
-    if 'Keep the last successful result available.' not in materialization_job:
+    if 'Keep the last successful snapshot available.' not in materialization_job:
         errors.append('Materialization stale-fallback helper copy must remain compact')
     for relative in (
         'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
@@ -471,15 +491,24 @@ def main() -> int:
         ):
             errors.append(f'Job Configuration clear Policy Timeline surface missing: {relative}')
     report_schedule = read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
-    if 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report_schedule:
-        errors.append('Report delivery-channel cards must use the clear KAORI card surface')
+    if (
+        'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in report_schedule
+        or 'max-h-64 divide-y divide-outline-subtle overflow-y-auto' not in report_schedule
+        or 'flex min-w-0 items-center justify-between gap-3 px-4 py-2.5' not in report_schedule
+        or 'No delivery channels configured.' not in report_schedule
+        or "table_label.status_label(channel.status, channel.tone, none, 'detail')" not in report_schedule
+    ):
+        errors.append('Report delivery channels must use approved bounded status rows')
 
     namespace_table = read(
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
     )
-    if 'min-w-[980px]' in namespace_table or '<div class="overflow-x-auto">' in namespace_table:
-        errors.append('Namespace Policies must not force desktop horizontal scrolling')
-    for width in ('w-[38%]', 'w-[16%]', 'w-[20%]', 'w-[26%]'):
+    if (
+        "table_ui.table_classes('min-w-[980px]')" not in namespace_table
+        or 'w-full overflow-x-auto' not in namespace_table
+    ):
+        errors.append('Namespace Policies must preserve canonical responsive table scroll geometry')
+    for width in ('w-[34%]', 'w-[22%]', 'w-[18%]', 'w-[26%]'):
         if width not in namespace_table:
             errors.append(f'Namespace Policies proportional column contract missing: {width}')
     if 'data-kaori-auto-submit' not in namespace_table:
@@ -534,7 +563,8 @@ def main() -> int:
     )
     for required in (
         'Live Namespace Source Unavailable',
-        'Last Refreshed',
+        'Refreshed {{ namespace_source.last_successful_at }}',
+        'Last successful {{ namespace_source.last_successful_at }}',
         'refresh_namespace=1',
         'data-lucide="refresh-cw"',
     ):
@@ -545,7 +575,9 @@ def main() -> int:
 
     for required in (
         '>Live Namespace<',
-        '>Set Policy<',
+        '>Actions<',
+        'data-kaori-namespace-policy-editor',
+        'Save Policy',
         "live_label = 'Available'",
         "else 'Unknown'",
         'x-data="{ initial:',
@@ -559,14 +591,30 @@ def main() -> int:
     for required in (
         'Cluster Credential',
         'selected_cluster_readiness.credential_configured',
-        'All three cluster prerequisites must be satisfied.',
-        'bg-surface-card shadow-sm xl:col-span-5',
+        'Read-only prerequisite',
+        'Operator attestation',
+        'section_intro.render(',
+        'operational_section.shell_classes()',
+        'secret-reveal-cluster-readiness-heading',
+        'content_tabs.render_controlled_links(',
+        'embedded=true',
+        'secret-reveal-management-panel-prerequisites',
+        'secret-reveal-management-panel-policies',
+        'secret-reveal-readiness-section',
+        'Cluster Access Configuration',
+        ':value="activeTab"',
+        'sm:grid-cols-2 lg:grid-cols-3',
+        'aria-labelledby="secret-reveal-kubernetes-boundary-heading"',
+        "action_button.classes('primary')",
         'Policies activate only when cluster readiness is satisfied.',
         'secret-reveal-selected-cluster-posture',
         'hx-swap-oob="outerHTML"',
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
+    for retired in ('xl:col-span-7', 'xl:col-span-5'):
+        if retired in cluster_workspace:
+            errors.append(f'Secret Reveal Cluster Readiness uses retired cramped layout: {retired}')
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
         errors.append('Secret Reveal Kubernetes Boundary must not return to a solid Violet surface')
     if (
@@ -575,23 +623,30 @@ def main() -> int:
     ):
         errors.append('Secret Reveal no-cluster state must use the canonical KAORI setup empty state')
 
+    # Administration presents committed configuration evidence, not a duplicate
+    # reveal-request flow. The actual policy and approval gates are verified below.
     for required in (
-        'Protection Boundary',
-        'Step-up Authentication',
-        'Independent Approval',
-        'Namespace Policy',
-        'Kubernetes RBAC',
+        'Global Reveal Gate',
+        'Protected Clusters',
+        'Enabled Namespaces',
+        'Selected Cluster Readiness',
+        'Configured prerequisites and policies do not prove live access.',
+        'Reveal execution rechecks Namespace policy, user authorization, session verification and Kubernetes RBAC.',
         'secret-reveal-protected-cluster-count',
         'secret-reveal-enabled-namespace-count',
         'secret-reveal-selected-cluster-posture',
     ):
         if required not in secret_workspace:
-            errors.append(f'Secret Reveal compact posture/boundary contract missing: {required}')
+            errors.append(f'Secret Reveal configuration/boundary evidence missing: {required}')
 
     cluster_workspace = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
-    for evidence in ('Kubernetes RBAC', 'Step-up', 'Approval'):
-        if evidence.lower() not in cluster_workspace.lower() and evidence.lower() not in secret_workspace.lower():
-            errors.append(f'Secret Reveal protected boundary evidence missing: {evidence}')
+    for required in (
+        'Kubernetes Boundary',
+        'Least-privilege Kubernetes RBAC remains the final authorization boundary.',
+        'Configured readiness does not establish live Secret access.',
+    ):
+        if required not in cluster_workspace:
+            errors.append(f'Secret Reveal Kubernetes boundary evidence missing: {required}')
 
     protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     for required in (
@@ -658,10 +713,28 @@ def main() -> int:
     request_form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
     if 'rounded-xl bg-kaori-primary text-white' in request_form:
         errors.append('Protected Reveal informational request icon must not use a solid Bright Violet surface')
-    if 'space-y-1 text-xs leading-5 text-content-secondary' not in request_form:
-        errors.append('Protected Reveal request guidance must use neutral content text')
+    if (
+        'class="text-xs leading-5 text-content-secondary">KAORI records request details, not Secret values.'
+        not in request_form
+        or 'Verify and reveal once in My Requests after approval.' not in request_form
+    ):
+        errors.append('Protected Reveal request guidance must stay neutral and payload-free')
 
     protected_reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    reveal_policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
+    for required in ("'step_up': 'Step-up authentication'", "'approval_required': 'Approval required'"):
+        if required not in reveal_policy:
+            errors.append(f'Protected Reveal policy engine boundary missing: {required}')
+    for required in (
+        "'Step-Up Required'",
+        "'Approval by Policy'",
+        "'Resolve Policy'",
+        "'Verify Identity'",
+        "'Reveal Once'",
+    ):
+        if required not in protected_reveal_page:
+            errors.append(f'Protected Reveal request flow boundary missing: {required}')
+
     protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     context_rail = read('app/templates/components/context_rail.html')
     form_context = read('app/templates/components/form_with_context_rail.html')
@@ -712,13 +785,13 @@ def main() -> int:
         if forbidden in context_rail:
             errors.append(f'Secret Reveal v1.7 shared context rail must return to natural-height geometry: {forbidden}')
     for required in (
-        'grid gap-4 p-5 sm:p-6 xl:grid-cols-12',
-        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7',
-        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5',
-        'grid gap-3 p-4 sm:grid-cols-2 sm:p-5',
+        'mt-4 grid min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:grid-cols-3',
+        'Readiness Controls',
+        'Activation Boundary',
+        'mt-4 grid min-w-0 gap-3 border-t border-outline-subtle pt-4 sm:grid-cols-2 xl:grid-cols-4',
     ):
         if required not in cluster_workspace:
-            errors.append(f'Secret Reveal v1.7 administration natural-height contract missing: {required}')
+            errors.append(f'Secret Reveal administration responsive readiness/boundary contract missing: {required}')
     for forbidden in (
         'grid items-stretch gap-4',
         'flex h-full flex-col overflow-hidden rounded-2xl',

@@ -110,6 +110,18 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('artifact_registry.view', 'artifact_registry.overview'),),
     },
     {
+        'title': 'Secrets & PKI',
+        'label': 'Secret Inventory & Readiness',
+        'description': (
+            'Review approved Vault KV v2 metadata collection coverage, committed inventory freshness, '
+            'and evidence readiness without displaying Secret values or claiming PKI delivery assurance.'
+        ),
+        'icon': 'key-round',
+        'scope': 'Secrets & PKI',
+        'group': 'visibility',
+        'targets': (('secrets_pki.view', 'secrets_pki.overview'),),
+    },
+    {
         'title': 'Kubernetes Analytics',
         'label': 'Operational Analytics',
         'description': (
@@ -146,7 +158,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Integrations',
         'label': 'Integration & Connectivity',
         'description': (
-            'Manage infrastructure, observability, and platform providers with connection readiness, '
+            'Manage infrastructure, observability, secrets management, and platform providers with connection readiness, '
             'bindings, notification channels, and runtime status.'
         ),
         'icon': 'blocks',

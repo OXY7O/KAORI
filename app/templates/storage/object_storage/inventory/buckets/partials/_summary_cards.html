@@ -2,7 +2,7 @@
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set latest_label = inventory.latest_observed_at|user_datetime if inventory.latest_observed_at else 'Not Collected' %}
 {% set metrics = [
-    ('boxes', 'Assets in Scope', inventory.total_assets, 'Buckets and containers matching the active filters.', 'brand'),
+    ('boxes', 'Assets in Scope', inventory.total_assets, 'Assets matching active filters.', 'brand'),
     ('container', 'Buckets', inventory.total_buckets, 'Bucket-native object-storage namespaces.', 'brand'),
     ('box', 'Containers', inventory.total_containers, 'Container-native object-storage namespaces.', 'brand'),
     ('clock-3', 'Latest Snapshot', latest_label, 'Latest committed inventory observation.', 'normal' if inventory.latest_observed_at else 'unknown')

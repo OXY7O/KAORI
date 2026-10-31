@@ -18,6 +18,9 @@ INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 NOTIFICATION_CHANNELS_HERO = TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'index.html'
+NOTIFICATION_CHANNELS_CATALOG = (
+    TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'partials' / '_channels_workspace.html'
+)
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
 REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
 REPORTS_PAGE_SUBTITLE_HEROES = {
@@ -42,6 +45,18 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (PROVIDER_FRONTPAGE_HERO, 'description'),
     (INTEGRATION_OVERVIEW_HERO, 'description'),
     (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
+}
+SECRETS_PKI_HERO_DESCRIPTION_SOURCES = {
+    TEMPLATES / 'secrets_pki' / 'evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'evidence_workspaces.py',
+        '_WORKSPACES',
+        {'certificates', 'pki', 'expiration'},
+    ),
+    TEMPLATES / 'secrets_pki' / 'operational_evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'operational_evidence_workspaces.py',
+        '_PAGE',
+        {'leases', 'consumers', 'governance'},
+    ),
 }
 
 DESCRIPTION_MIN_WORDS = 7
@@ -480,7 +495,11 @@ def _has_registered_description_resolver(path: Path, variable: str) -> bool:
         and path.name in {'blocked.html', 'pending.html'}
         and variable == 'materialization_description'
     )
-    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or materialization_description
+    return (
+        (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS
+        or (path in SECRETS_PKI_HERO_DESCRIPTION_SOURCES and variable == 'description')
+        or materialization_description
+    )
 
 
 def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
@@ -866,6 +885,41 @@ def _cluster_required_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _secrets_pki_workspace_descriptions() -> dict[str, str]:
+    """Resolve each governed Hero sentence from static Secrets & PKI read models."""
+    descriptions: dict[str, str] = {}
+    for template, (source_path, name, required) in SECRETS_PKI_HERO_DESCRIPTION_SOURCES.items():
+        owner = str(source_path.relative_to(ROOT))
+        tree = ast.parse(_read(source_path), filename=str(source_path))
+        definitions = [
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
+        ]
+        if len(definitions) != 1:
+            raise AssertionError(f'{owner}: expected one static {name} Hero definition')
+        try:
+            workspaces = ast.literal_eval(definitions[0])
+        except (ValueError, TypeError, SyntaxError) as exc:
+            raise AssertionError(f'{owner}: {name} Hero definitions must be static literals') from exc
+        if not isinstance(workspaces, dict) or set(workspaces) != required:
+            raise AssertionError(f'{owner}: {name} Hero workspace keys must be {sorted(required)}')
+        if '{{ description }}' not in _read(template):
+            raise AssertionError(f'{template.relative_to(ROOT)}: missing governed Hero description binding')
+        for workspace, record in workspaces.items():
+            if name == '_WORKSPACES' and isinstance(record, dict):
+                description = record.get('description')
+            elif name == '_PAGE' and isinstance(record, tuple) and len(record) == 3:
+                description = record[1]
+            else:
+                raise AssertionError(f'{owner}:{workspace}: invalid static Hero description record')
+            if not isinstance(description, str) or not description.strip():
+                raise AssertionError(f'{owner}:{workspace}: missing static Hero description')
+            descriptions[f'{owner}:{workspace}'] = _normalize_description_text(description)
+    return descriptions
+
+
 def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
@@ -878,6 +932,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_registry_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
+    descriptions.update(_secrets_pki_workspace_descriptions())
     failures: list[str] = []
     for owner, description in descriptions.items():
         try:
@@ -984,11 +1039,15 @@ def _verify_notification_channels_hero_metadata() -> None:
     source = _read(NOTIFICATION_CHANNELS_HERO)
     owner = str(NOTIFICATION_CHANNELS_HERO.relative_to(ROOT))
     _verify_bounded_hero_metadata(source, owner=owner)
+    catalog = _read(NOTIFICATION_CHANNELS_CATALOG)
     if (
-        '{% for provider in payload.providers %}' not in source
-        or 'notification_subsection(provider.label' not in source
+        '{% for provider in payload.providers %}' not in catalog
+        or '{{ provider.label }}' not in catalog
+        or '{{ provider.description }}' not in catalog
+        or 'table_label.status_label(provider.status, provider.tone' not in catalog
+        or 'Open {{ provider.label }} setup guide' not in catalog
     ):
-        raise AssertionError(f'{owner}: complete provider catalog must remain in the Delivery Providers workspace')
+        raise AssertionError(f'{owner}: complete provider catalog must remain in the Channels workspace')
 
 
 def _verify_operational_metadata_state_contract() -> None:
@@ -1223,13 +1282,24 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     profile_templates = _profile_templates()
-    if len(profile_templates) != 3:
+    required_profile_consumers = {
+        TEMPLATES / 'kubernetes/dashboard/partials/_hero.html',
+        TEMPLATES / 'storage/object_storage/dashboard/partials/_hero.html',
+        TEMPLATES / 'artifact_registry/partials/_overview_hero.html',
+        TEMPLATES / 'security_posture/overview.html',
+        TEMPLATES / 'secrets_pki/overview.html',
+        TEMPLATES / 'source_control/overview.html',
+    }
+    missing_consumers = sorted(required_profile_consumers - set(profile_templates))
+    if missing_consumers:
         raise AssertionError(
-            f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
+            'Required Operational Dashboard Hero consumer missing: '
+            + ', '.join(str(path.relative_to(ROOT)) for path in missing_consumers)
         )
-    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_overview_hero.html'
-    if artifact_registry_dashboard not in profile_templates:
-        raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
+    if len(profile_templates) < 7:
+        raise AssertionError(
+            f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
+        )
 
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()

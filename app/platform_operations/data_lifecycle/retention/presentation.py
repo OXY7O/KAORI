@@ -6,7 +6,8 @@ from time import monotonic
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import current_app
+from flask import abort, current_app
+from flask_login import current_user
 from sqlalchemy import case, func
 
 from app.artifact_storage.service import StorageProfile, build_storage_profile
@@ -23,6 +24,7 @@ from app.models.job import JobExecution
 from app.models.lifecycle import DataLifecyclePolicy
 from app.platform_operations.data_lifecycle.retention import generated_report_presentation as generated_report_ui
 from app.platform_operations.data_lifecycle.retention import storage_presentation as storage_ui
+from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage
 from app.platform_operations.data_lifecycle.retention.domains import DOMAIN_FACTORIES, get_archive_domain
 from app.platform_operations.data_lifecycle.retention.policy_service import (
     default_schedule_hour,
@@ -30,7 +32,7 @@ from app.platform_operations.data_lifecycle.retention.policy_service import (
     get_policy,
 )
 from app.platform_operations.data_lifecycle.retention.service import paginate_archives, preview_retention
-from app.platform_operations.data_lifecycle.retention.types import RetentionPolicy
+from app.platform_operations.data_lifecycle.retention.types import ArchiveHistoryFilters, RetentionPolicy
 
 _ARCHIVE_PER_PAGE_OPTIONS = (5, 10, 25, 50)
 _ARCHIVE_STATUS_OPTIONS = (
@@ -50,6 +52,15 @@ _ARCHIVE_STORAGE_OPTIONS = ('local', 's3')
 _STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
 
+def _can_govern_audit_event() -> bool:
+    """Temporary strict boundary until source-specific archive RBAC is admitted."""
+    return bool(
+        getattr(current_user, 'is_authenticated', False)
+        and getattr(current_user, 'is_super_admin', False)
+        and getattr(current_user, 'auth_source', None) == 'database'
+    )
+
+
 def build_domain_retention_context(
     domain_name: str,
     *,
@@ -59,6 +70,8 @@ def build_domain_retention_context(
     policy: RetentionPolicy | None = None,
     stored_policy: DataLifecyclePolicy | None = None,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not _can_govern_audit_event():
+        abort(403, description='AuditEvent source governance access is not admitted.')
     domain = get_archive_domain(domain_name)
     effective_policy = policy or domain.build_policy()
     stored = stored_policy if stored_policy is not None else get_policy(domain.name)
@@ -120,6 +133,53 @@ def build_activity_retention_context(**kwargs) -> dict[str, Any]:
     return build_domain_retention_context('operational_activity', **kwargs)
 
 
+def _retention_domain_cards(
+    *,
+    supported: tuple[str, ...],
+    policies: dict[str, RetentionPolicy],
+    stored_map: dict[str, DataLifecyclePolicy],
+    posture_map: dict[str, dict[str, int]],
+    selected: str,
+    selected_preview_count: Any,
+) -> list[dict[str, Any]]:
+    """Present unchanged per-domain policy cards for the retention UI."""
+    domain_cards = []
+    for name in supported:
+        policy = policies[name]
+        stored = stored_map.get(name)
+        schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
+            name,
+            policy,
+            stored,
+        )
+        posture = posture_map.get(name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
+        domain_cards.append(
+            {
+                'name': name,
+                'label': _domain_label(name),
+                'icon': _domain_icon(name),
+                'description': _domain_description(name),
+                'source_model': get_archive_domain(name).source_model,
+                'coverage': _domain_coverage(name),
+                'coverage_note': _domain_coverage_note(name),
+                'enabled': bool(stored.enabled) if stored is not None else False,
+                'hot_retention_days': policy.retention_days,
+                'archive_retention_days': policy.archive_retention_days,
+                'batch_size': policy.batch_size,
+                'operation_mode': operation_mode,
+                'schedule_enabled': schedule_enabled,
+                'schedule_hour': schedule_hour,
+                'schedule_minute': schedule_minute,
+                'eligible_count': selected_preview_count if name == selected else None,
+                'active_count': posture['active_count'],
+                'failed_count': posture['failed_count'],
+                'total_archives': posture['total_archives'],
+                'settings': dict(policy.settings or {}),
+            }
+        )
+    return domain_cards
+
+
 def build_data_lifecycle_context(
     *,
     selected_domain: str = 'operational_activity',
@@ -136,7 +196,12 @@ def build_data_lifecycle_context(
     feedback: dict[str, Any] | None = None,
     poll_once: bool = False,
 ) -> dict[str, Any]:
-    supported = tuple(sorted(DOMAIN_FACTORIES))
+    allowed_audit_event = _can_govern_audit_event()
+    supported = tuple(sorted(name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event))
+    if selected_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent source governance access is not admitted.')
+    if archive_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent archive history access is not admitted.')
     selected = selected_domain if selected_domain in supported else supported[0]
     active = active_tab if active_tab in {'policies', 'history', 'storage'} else 'policies'
     stored_map = {
@@ -167,40 +232,14 @@ def build_data_lifecycle_context(
         )
         selected_context['storage_contract'] = _build_selected_storage_contract(selected)
         selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
-        domain_cards = []
-        for name in supported:
-            policy = policies[name]
-            stored = stored_map.get(name)
-            schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
-                name,
-                policy,
-                stored,
-            )
-            posture = posture_map.get(name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
-            domain_cards.append(
-                {
-                    'name': name,
-                    'label': _domain_label(name),
-                    'icon': _domain_icon(name),
-                    'description': _domain_description(name),
-                    'source_model': get_archive_domain(name).source_model,
-                    'coverage': _domain_coverage(name),
-                    'coverage_note': _domain_coverage_note(name),
-                    'enabled': bool(stored.enabled) if stored is not None else False,
-                    'hot_retention_days': policy.retention_days,
-                    'archive_retention_days': policy.archive_retention_days,
-                    'batch_size': policy.batch_size,
-                    'operation_mode': operation_mode,
-                    'schedule_enabled': schedule_enabled,
-                    'schedule_hour': schedule_hour,
-                    'schedule_minute': schedule_minute,
-                    'eligible_count': selected_preview_count if name == selected else None,
-                    'active_count': posture['active_count'],
-                    'failed_count': posture['failed_count'],
-                    'total_archives': posture['total_archives'],
-                    'settings': dict(policy.settings or {}),
-                }
-            )
+        domain_cards = _retention_domain_cards(
+            supported=supported,
+            policies=policies,
+            stored_map=stored_map,
+            posture_map=posture_map,
+            selected=selected,
+            selected_preview_count=selected_preview_count,
+        )
         selected_context.update(context)
         selected_context['domains'] = domain_cards
         return selected_context
@@ -218,11 +257,14 @@ def build_data_lifecycle_context(
             domain_name=None if history_domain == 'all' else history_domain,
             page=archive_page,
             per_page=archive_per_page,
-            status=history_filters['status'],
-            trigger_type=history_filters['trigger_type'],
-            operation_mode=history_filters['operation_mode'],
-            storage_backend=history_filters['storage_backend'],
-            search=history_filters['search'],
+            filters=ArchiveHistoryFilters(
+                status=history_filters['status'],
+                trigger_type=history_filters['trigger_type'],
+                operation_mode=history_filters['operation_mode'],
+                storage_backend=history_filters['storage_backend'],
+                search=history_filters['search'],
+            ),
+            exclude_domains=() if allowed_audit_event else ('audit_event',),
         )
         total = int(history_pagination.total or 0)
         context.update(
@@ -283,6 +325,9 @@ def _policy_execution_settings(
     policy: RetentionPolicy,
     stored: DataLifecyclePolicy | None,
 ) -> tuple[bool, int, int, str]:
+    if domain_name in {'notification_delivery', 'audit_event'}:
+        # Manual archive-only admission; no scheduled or destructive mode yet.
+        return (False, default_schedule_hour(domain_name), default_schedule_minute(domain_name), 'archive_only')
     if stored is not None:
         return (
             bool(stored.schedule_enabled),
@@ -324,6 +369,8 @@ def _domain_label(name: str) -> str:
         'generated_report': generated_report_ui.GENERATED_REPORT_LABEL,
         'alert_incident': 'Alert Incidents',
         'tenant_audit_evidence': 'Tenant Audit Evidence',
+        'notification_delivery': 'Notification Delivery',
+        'audit_event': 'Administrative Audit Events',
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -336,6 +383,8 @@ def _domain_icon(name: str) -> str:
         'generated_report': generated_report_ui.GENERATED_REPORT_ICON,
         'alert_incident': 'siren',
         'tenant_audit_evidence': 'shield-check',
+        'notification_delivery': 'send',
+        'audit_event': 'file-clock',
     }.get(name, 'database')
 
 
@@ -343,115 +392,14 @@ def _domain_description(name: str) -> str:
     return {
         'operational_activity': 'Activity Audit and persistent user notifications.',
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
-        'runtime_observation': 'Kubernetes, Object Storage, Metrics Source, and Alertmanager runtime evidence.',
+        'runtime_observation': 'Kubernetes, Object Storage, Metrics Source and Alertmanager evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
-        'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
+        'alert_incident': 'Closed alert cases, operator evidence, delivery, and postmortems.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
+        'notification_delivery': 'Provider-neutral delivery evidence; manual Archive Only.',
+        'audit_event': 'Source-owned AuditEvent evidence; manual Archive Only.',
     }.get(name, 'KAORI operational data domain.')
-
-
-def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
-    return {
-        'operational_activity': (
-            {
-                'icon': 'scroll-text',
-                'label': 'Activity Audit Table',
-                'description': 'All persisted administrative and operational activity records.',
-            },
-            {
-                'icon': 'bell',
-                'label': 'Notification Center',
-                'description': 'Persistent user-targeted notifications share the same source table.',
-            },
-            {
-                'icon': 'shield-check',
-                'label': 'Authentication Audit',
-                'description': 'Authentication events remain lifecycle-managed with the audit stream.',
-            },
-        ),
-        'job_execution': (
-            {
-                'icon': 'workflow',
-                'label': 'Jobs & Executions',
-                'description': 'Terminal execution records, subscribers, results, and worker evidence.',
-            },
-        ),
-        'runtime_observation': (
-            {
-                'icon': 'boxes',
-                'label': 'Kubernetes',
-                'description': 'Recent Runtime Observations for Kubernetes integration targets.',
-            },
-            {
-                'icon': 'gauge',
-                'label': 'Metrics Source',
-                'description': 'Recent runtime observations for registered Metrics Sources.',
-            },
-            {
-                'icon': 'bell-ring',
-                'label': 'Alertmanager',
-                'description': 'Recent Runtime Observations for Alertmanager integration targets.',
-            },
-            {
-                'icon': 'database',
-                'label': 'Object Storage · MinIO',
-                'description': 'Recent Runtime Observations for managed MinIO Object Storage integration targets.',
-            },
-        ),
-        'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE,
-        'alert_incident': (
-            {
-                'icon': 'siren',
-                'label': 'Closed Alert Cases',
-                'description': 'Verified closed cases retain searchable identity while heavy evidence moves to governed archive storage.',
-            },
-            {
-                'icon': 'list-tree',
-                'label': 'Incident Timeline',
-                'description': 'Case lifecycle evidence from detection through closure.',
-            },
-            {
-                'icon': 'send',
-                'label': 'Notification Delivery',
-                'description': 'Firing and resolved channel-delivery evidence is preserved with the incident archive.',
-            },
-            {
-                'icon': 'file-text',
-                'label': 'Postmortem Evidence',
-                'description': 'Required or completed postmortem context and action-item evidence remain part of the case record.',
-            },
-        ),
-        'tenant_audit_evidence': (
-            {
-                'icon': 'shield-check',
-                'label': 'Tenant Audit Correlation',
-                'description': 'Committed normalized Kubernetes audit observations linked to managed Tenants.',
-            },
-            {
-                'icon': 'fingerprint',
-                'label': 'Identity & Outcome Evidence',
-                'description': 'Principal classification, resource/verb, outcome and correlation references.',
-            },
-        ),
-        'analytics_snapshot': (
-            {
-                'icon': 'chart-spline',
-                'label': 'Analytics Materialization',
-                'description': 'Capacity, utilization, storage, workload, top-consumer, and alert datasets.',
-            },
-            {
-                'icon': 'line-chart',
-                'label': 'Forecast History',
-                'description': 'Reusable forecast snapshots stored in the shared analytics snapshot table.',
-            },
-            {
-                'icon': 'layout-dashboard',
-                'label': 'Dashboard Evidence',
-                'description': 'Shared materialized alert evidence reused by Kubernetes dashboards.',
-            },
-        ),
-    }.get(name, ())
 
 
 def _domain_coverage_note(name: str) -> str | None:
@@ -463,6 +411,11 @@ def _domain_coverage_note(name: str) -> str | None:
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
+        'notification_delivery': 'Manual Archive Only; paused by default. Hot records retain deduplication, channel dependencies and lifetime counts; scheduling and cleanup blocked.',
+        'audit_event': (
+            'Manual Archive Only. Separate from Activity Register, Jobs and Tenant Audit Evidence; '
+            'retention and access restricted.'
+        ),
     }.get(name)
 
 
@@ -475,6 +428,11 @@ def _domain_exclusion_note(name: str) -> str | None:
         'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
+        'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
+        'audit_event': (
+            'Raw metadata, IP/user agent, actor reconstruction, bundle downloads, '
+            'scheduling, cleanup and individual historical lookup are not admitted.'
+        ),
     }.get(name)
 
 

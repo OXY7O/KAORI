@@ -142,3 +142,23 @@ def test_release_history_is_verified_optional_disclosure_not_name_matching():
             )
         ]
     )
+
+
+def test_namespace_allocation_lineage_uses_standard_header_guide_without_live_reads():
+    partial = source(PARTIAL)
+    component = source(ROOT / 'app/templates/components/operational_section_card.html')
+    Environment().parse(partial)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in partial
+    assert "header_badge=info_tip.render('tenant-namespace-allocation-lineage-guide'" in partial
+    assert partial.count('tenant-namespace-allocation-lineage-guide') == 1
+    assert "'Namespace Allocation Lineage'" in partial
+    assert "variant='guide'" in partial
+    assert "placement='left'" in partial
+    assert 'Historical predecessors require verified provider UID and committed lineage.' in partial
+    assert 'Allocation Change, Release, Handback and Re-adopt use separate governed actions.' in partial
+    assert '{% if header_badge %}{{ header_badge }}{% endif %}' in component
+    assert 'operational_section_card.render(' in partial
+    assert 'runtime_adapter' not in partial
+    assert 'core_api' not in partial
+    assert '<form' not in partial and 'hx-post' not in partial

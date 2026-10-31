@@ -160,3 +160,15 @@ def test_platform_operations_operating_boundaries_are_permission_scoped() -> Non
     for title in ('Execution Evidence', 'Lifecycle Governance', 'Protected Administration'):
         assert title in presentation
         assert title not in template
+
+
+def test_platform_operations_workspace_description_is_compact_and_accessible() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    assert 'class="min-w-0 truncate px-5 text-sm leading-6 text-content-secondary"' in template
+    assert 'title="{{ workspace.description }}">{{ workspace.description }}</p>' in template
+    assert "'description': 'Readiness and protected access controls.'" in presentation
+    assert "'description': 'Protected Kubernetes controls with readiness and authorization gates.'" not in presentation
+    assert 'lg:grid-cols-3' in template
+    assert 'for workspace in platform_overview.workspaces' not in presentation

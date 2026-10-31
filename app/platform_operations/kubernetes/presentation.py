@@ -68,6 +68,35 @@ def build_kubernetes_administration_summary() -> dict[str, object]:
         global_reveal_enabled=global_reveal_enabled,
         eligible_policy_count=counts['eligible_policy_count'],
     )
+    # Capability-first overview: expose only controls actually implemented for
+    # this permission-gated workspace. Additional approved domains append their
+    # own source-owned posture here, not placeholder roadmap cards in Jinja.
+    controls = (
+        {
+            'key': 'secret-reveal',
+            'label': 'Protected Secret Reveal',
+            'icon': 'scan-eye',
+            'description': 'Govern one-time Secret access through cluster prerequisites and Namespace policy.',
+            'status_label': status_label,
+            'status_tone': status_tone,
+            'status_detail': status_detail,
+            'workspace_tab': 'secret-reveal',
+            'action_label': 'Configure Secret Reveal',
+            'metrics': (
+                (
+                    'badge-check',
+                    'Cluster Prerequisites',
+                    f'{counts["ready_cluster_count"]} / {counts["cluster_count"]}',
+                ),
+                (
+                    'boxes',
+                    'Configured Policy Scope',
+                    f'{counts["eligible_policy_count"]} / {counts["enabled_namespace_count"]}',
+                ),
+            ),
+            'evidence_label': 'Configured KAORI state; runtime authorization is verified at execution.',
+        },
+    )
     return {
         'cluster_count': counts['cluster_count'],
         'ready_cluster_count': counts['ready_cluster_count'],
@@ -77,4 +106,6 @@ def build_kubernetes_administration_summary() -> dict[str, object]:
         'administration_status_label': status_label,
         'administration_status_tone': status_tone,
         'administration_status_detail': status_detail,
+        'administration_controls': controls,
+        'administration_control_count': len(controls),
     }

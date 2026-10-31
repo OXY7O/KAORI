@@ -158,3 +158,103 @@ An enabled channel is not eligible for automatic delivery until Test Delivery su
 ### Rule Catalog detail bounded read model (#1523)
 
 Definition listing remains source-controlled and read-only. Opening one exception-enabled rule evaluates only its canonical rule/domain, and Tenant Governance evaluation is skipped for unrelated Kubernetes rule families. Exception history is limited to 12 newest rows in SQL; active/expiring totals use scoped SQL aggregates and only current finding assets require active-row hydration. Owner options are read only for authorized create workflows. Partial evaluator evidence must be disclosed, not silently represented as recovered or eligible for Accepted Risk creation. This path performs no live infrastructure-provider requests.
+
+## Vault source-qualified provider AlertCase correlation (#2807)
+
+Central Alert Intelligence owns the **internal-only candidate plan** for a
+Vault `provider_alert` AlertCase sourced from committed Alertmanager
+observations. This is a read-only correlation contract, not case
+creation/resolution. See `app/intelligence/alert_intelligence/vault_provider_plan.py`
+and `app/secrets_pki/TELEMETRY_BINDING.md`.
+
+The case key is scoped opaque HMAC source/occurrence identity; no provider
+alert name/path, raw fingerprint, arbitrary labels or annotations are used
+to join. Prior cases must have exact provider/source identity, minimal
+allowlisted provenance, and `routing_state=suppressed`; ambiguous, legacy,
+sensitive or cross-domain matches block rather than merging. Case absence
+in a recent but bounded source response **never** proves recovery.
+The existing Alert Intelligence user-facing workspace remains explicitly
+recommendation-scoped; no provider-origin cases are projected to it.
+Activation requires separate #724 authorization, governed policy, source
+recovery validation and real DevContainer/human UAT.
+
+## Internal Vault provider AlertCase admission (#2813)
+
+The internal writer `app/intelligence/alert_intelligence/vault_provider_admission.py`
+reuses **canonical** `AlertCase`, `AlertCaseEvent` and `AuditEvent`,
+rather than introducing a separate case system. It is **not called by any
+route, scheduled task or worker** and requires explicit
+`KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true` opt-in at runtime,
+an active operator identity with both Intelligence decision/view and
+Secrets & PKI sync/view permissions, and a fresh exact Vault source.
+With the flag absent, it returns disabled and does not write cases.
+
+On PostgreSQL, same-source work is serialized by row locks on the binding
+and `AlertSignalSnapshot`; the candidate plan is recomputed inside the
+transaction. Only at most ten new firing cases can be inserted per call;
+previously admitted exact firing cases may be refreshed once per new source
+generation. Every case is routing-suppressed and has a generic name,
+opaque handle, canonical scope IDs and allowlisted provenance only.
+Other source states, old closed cases, failures and missing occurrences
+are never resolved, closed or reopened. Writes append sanitized case
+timeline and audit entries, with no notification delivery.
+
+**This is not provider-case feature activation.** Alert Intelligence
+workspace visibility, case mutation routes, scoped RBAC for per-source
+access, routing policy and recovery/closure semantics are still gated
+workstreams, and must be authorized and UAT-proven before this internal
+entrypoint is connected to an operator action.
+
+## HV-12 instance-scoped read-only provider AlertCase workspace (#2817)
+
+Central Alert Intelligence has a **separate read-only Vault Provider Cases**
+view that reuses the existing Violet Hero/table/blocked-state components.
+The existing recommendation-only workspace and mutation endpoints remain
+unchanged for recommendation cases. Generic AlertCase mutation operations
+explicitly refuse `secrets_pki/provider_alert` case IDs, even when guessed.
+
+The scoped Vault view requires **both** `intelligence.view` and
+`secrets_pki.view` in an active normalized KAORI role, plus an **approved
+active exact-instance `ScopeAccessPolicy` revision** for the same actor,
+Vault integration ID and `secrets_pki.view`. Neither a super-admin role
+shortcut, a mount-only grant, ownership nor a related source implies the
+instance case grant. More than one approved matching instance grant is
+ambiguous and denies. Revoked, expired, pending, foreign, unavailable or
+inactive-instance policies deny without existence disclosure.
+
+Only an explicitly supplied canonical Vault instance ID can be viewed.
+The server locks the existing scope policy/revision, reads qualifying
+case records, and commits generic Activity Audit evidence in the same
+transaction before rendering. Audit persistence failure denies case access. Audit failure denies the read. The query is capped at 100 records,
+uses existing pagination default five, and rejects any unqualified case
+rather than silently showing a partial trusted population. Case details
+re-evaluate the policy and exact asset before revealing safe, generic
+committed fields. No fleet fallback or Secret path/fingerprint/labels/
+annotations/HMAC-key/provenance material appears in the HTML.
+
+**No provider-origin AlertCase lifecycle writes, routing, notification
+activation, direct provider GET or Secret inventory read is added.**
+The opt-in admission contract #2813 remains disconnected from HTTP and
+workers. Source failure or absence is not resolved/healthy evidence.
+Human Visual QA and scoped Postgres/DevContainer UAT are still required.
+Focused tests: `tests/intelligence/test_vault_provider_case_workspace.py`.
+
+
+### HV-12 exact-instance write scope and recovery projection hardening (#2821)
+
+The opt-in internal `admit_vault_provider_cases` writer requires the existing
+#724 **exact approved instance-level** `ScopeAccessPolicy` in addition to
+all four capabilities in an active normalized role:
+`intelligence.decisions.create`, `intelligence.view`,
+`secrets_pki.sync`, `secrets_pki.view`. The approved `secrets_pki.view`
+scope constrains the specific Vault instance; it does **not** imply the
+additional global sync/decision capabilities. Roleless Super Admin and
+mount-only grants cannot bypass the resource-scope gate. The grant is checked
+while the same source binding remains transaction-locked; any denied,
+unavailable, expired or ambiguous policy fails closed before case writes.
+
+Vault provider cases created by this contract have source state `firing`.
+The read-only scoped workspace rejects rows claiming `resolved`, since
+HV-12 has no source-qualified recovery/closure transition. Missing
+observations remain unknown, never resolved. Real PostgreSQL race tests
+and operator/denied-scope UAT remain mandatory and Not Tested.

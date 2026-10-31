@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -7,7 +8,18 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bucket Governance Boundary</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Quota Pressure &amp; Usage Concentration</h2>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Quota Pressure &amp; Usage Concentration</h2>
+                        {{ info_tip.render('object-storage-capacity-quota-pressure-guide',
+                                                'Quota Pressure & Usage Concentration Guide',
+                                                'Bucket quotas are provider-governed limits; they are not physical storage headroom.',
+                                                items=[
+                                                'Quota Evidence Coverage distinguishes configured quotas, explicitly Not Configured buckets, and unknown evidence.',
+                                                'Quota Pressure begins at 85% of a known configured quota; Critical Quota begins at 95%.',
+                                                'Consumer concentration describes distribution, not an automatic capacity failure. Review the committed source and quota states before acting.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                         Separate bucket governance pressure from physical capacity and spot storage concentration.
                     </p>

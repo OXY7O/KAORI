@@ -15,7 +15,7 @@
                     {{ info_tip.render('identity-provider-ldap-connection-guide',
                                         'LDAP Connection Fields',
                                         'Use read-only directory connectivity while retaining external credential authority.',
-                                        items=['Server URI: prefer LDAPS or StartTLS in production.', 'Base DN: subtree searched for directory identities.', 'Bind DN: read-only service identity for directory searches.', 'Bind Password Environment Variable: only its name; no secret value is persisted.', 'User Filter: {query} is escaped before substitution.', 'TLS Mode: plaintext LDAP is blocked unless explicitly enabled by environment policy.'],
+                                        items=['Server URI: prefer LDAPS or StartTLS in production.', 'Base DN: subtree searched for directory identities.', 'Bind DN: read-only service identity for directory searches.', 'Bind Password Environment Variable: only its name; no secret value is persisted.', 'User Filter: {query} is escaped before substitution.', 'TLS Mode: choose encrypted LDAPS or StartTLS; plaintext is not available in this form.'],
                                         placement='right',
                                         variant='guide') }}
                 </div>

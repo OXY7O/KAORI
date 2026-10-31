@@ -18,6 +18,8 @@ def test_pod_inventory_applies_resource_page_pattern() -> None:
     assert 'inventory.ready_count' in hero
     assert 'inventory.exception_count' in hero
     assert 'posture_grid.render(posture_metrics, columns=4)' in summary
+    assert "inventory.total_image_references ~ ' image references across all container types.'" in summary
+    assert 'image references across regular, init, and ephemeral containers.' not in summary
     assert 'Running Coverage' not in summary
     assert '>Pod</th>' in table
     assert '>Scope</th>' in table

@@ -6,6 +6,7 @@ const requiredFragments = [
     '.bg-kaori-primary',
     '.bg-surface-card',
     '.border-outline-default',
+    '.line-clamp-2{-webkit-line-clamp:2;',
     '.text-content-primary',
     '--kaori-surface-shell',
     '.bg-surface-shell',

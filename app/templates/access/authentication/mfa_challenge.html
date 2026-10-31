@@ -1,0 +1,49 @@
+{% extends "layouts/auth.html" %}
+{% import "components/auth_flow_heading.html" as auth_flow_heading %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Verify Sign In · KAORI{% endblock title %}
+{% block content %}
+    <main class="flex min-h-screen items-center justify-center bg-surface-page px-4 py-8 sm:py-12">
+        <section class="w-full max-w-lg rounded-2xl border border-outline-default bg-surface-card px-6 py-8 shadow-xl sm:px-10 sm:py-10"
+                 aria-labelledby="mfa-challenge-title"
+                 data-kaori-mfa-challenge="centered-header">
+            <header class="text-center" data-kaori-mfa-challenge-header="centered">
+                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-7 w-7"></i>
+                </span>
+                <p class="mt-4 text-xs font-semibold tracking-wider text-kaori-primary">Multi-Factor Authentication</p>
+                {{ auth_flow_heading.title('mfa-challenge-title', 'Verify Your Sign In', 'challenge') }}
+                <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-content-secondary">Use your authenticator app or a recovery code.</p>
+                <p class="mx-auto mt-1 max-w-sm text-xs leading-5 text-content-muted">Access continues after successful verification.</p>
+            </header>
+            {% if error %}
+                <p class="mt-5 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft p-3 text-sm text-status-critical-text"
+                   role="alert">{{ error }}</p>
+            {% endif %}
+            <form method="post" class="mt-7 space-y-4">
+                {{ form.hidden_tag() }}
+                <div>
+                    <label for="{{ form.verification_code.id }}"
+                           class="block text-sm font-semibold text-content-primary">Verification Code</label>
+                    {{ form.verification_code(class="mt-2 h-12 w-full rounded-xl border border-outline-default bg-surface-card px-4 font-mono text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20",
+                                        autocomplete="one-time-code", inputmode="text", maxlength="64", placeholder="6-digit code or recovery code", autofocus=true) }}
+                    {% for message in form.verification_code.errors %}
+                        <p class="mt-2 text-xs text-status-critical-text" role="alert">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {{ form.submit(class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus") }}
+            </form>
+            <div class="mt-6 flex items-center gap-3" aria-hidden="true">
+                <span class="h-px flex-1 bg-outline-subtle"></span>
+                <span class="text-xs text-content-muted">or</span>
+                <span class="h-px flex-1 bg-outline-subtle"></span>
+            </div>
+            <a href="{{ url_for('auth.login') }}"
+               class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="log-in" class="h-4 w-4" aria-hidden="true"></i>
+                Start a New Sign In
+            </a>
+        </section>
+    </main>
+{% endblock content %}

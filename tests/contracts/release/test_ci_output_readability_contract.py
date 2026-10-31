@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 STAGING_DEPLOY_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
 CI_ADMISSION = ROOT / 'scripts/ci_admission.py'
 
@@ -292,3 +293,151 @@ def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() ->
     assert "printf 'Staging authority resolved:" in workflow
     assert 'KAORI UAT VPS Deploy' not in workflow
     assert 'Deploy Immutable Candidate to UAT VPS' not in workflow
+
+
+def test_developer_check_publishes_only_executed_checks_and_selected_route() -> None:
+    workflow = DEVELOPER_WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'Python & Governance — executed validation' in workflow
+    assert 'Frontend & Focused Validation — executed validation' in workflow
+    assert 'Developer Check — path-aware execution boundary' in workflow
+    assert 'printf -v command_display' in workflow
+    assert workflow.count('check_pid=$!') == 2
+    assert workflow.count('wait "$check_pid" || status=$?') == 2
+    assert workflow.count('kill "$heartbeat_pid" >/dev/null 2>&1 || true') == 2
+    assert 'still running · ⏱' in workflow
+    assert 'executed_checks=$((executed_checks + 1))' in workflow
+    assert '|| status=$?' in workflow
+    assert 'return "$status"' in workflow
+    assert 'test_status=$?' in workflow
+    assert 'exit "$test_status"' in workflow
+    assert 'Unselected path-aware checks were NOT RUN.' in workflow
+    assert 'Unselected checks were NOT RUN.' in workflow
+    assert 'SKIPPED means not executed' in workflow
+    assert 'GITHUB_STEP_SUMMARY' in workflow
+
+
+def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'verification-report.md' in source
+    assert 'Every executed verifier is published as evidence' in source
+    assert 'Registered capability evidence is a separate source-ownership inventory' in source
+    assert 'Registered capability ownership (not executed tests)' in source
+    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in source
+    assert 'command_display="$3"' in source
+    assert '"$group" "$label" "$command_display"' in source
+    assert '$(basename "$log_file")' in source
+    assert 'PASS | %dm %02ds' in source
+    assert 'FAIL (exit %d)' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert 'cat "$report" >> "$GITHUB_STEP_SUMMARY"' in workflow
+    assert 'Upload Successful Static Verification Details' in workflow
+    assert 'full-admission-static-verifiers-' in workflow
+    assert 'if-no-files-found: error' in workflow
+    assert 'Upload Static Diagnostics' in workflow
+
+
+def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for step in (
+        'static_gate',
+        'security_gate',
+        'functional_gate',
+        'frontend_gate',
+        'runtime_build',
+        'runtime_scan',
+        'runtime_dast',
+    ):
+        assert f'id: {step}' in workflow
+        assert f'steps.{step}.outcome' in workflow
+    for marker in (
+        'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep, pip-audit (base/dev) and npm audit',
+        'Only stages reached before the failure may have executed.',
+        'Functional release suite and dedicated E2E suite',
+        'Runtime and DAST results are deployment/security checks',
+        'Upload Successful Security Scan Evidence',
+        'full-admission-security-scans-',
+    ):
+        assert marker in workflow
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert 'if: ${{ always() }}' in workflow
+
+
+def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_codes() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    # Live progress belongs to the existing GitHub Actions job, not a second
+    # verifier/test invocation or a misleading registered-capability count.
+    assert 'KAORI_CI_LIVE_LOG=1' in workflow
+    assert workflow.count('KAORI_CI_LIVE_LOG=1') == 4
+    assert 'active-verifier.txt' in source
+    assert 'active-verifier.txt' in workflow
+    assert 'current: %s' in workflow
+    assert 'Verified output sample (up to 6 PASS lines' in source
+    assert 'No standardized PASS detail; consult raw verifier log.' in source
+    assert 'Full diagnostic log: %s' in source
+    assert 'if [[ "${KAORI_CI_LIVE_LOG:-0}"' in source
+    assert 'pytest "$@" >"$log_file" 2>&1 &' in source
+    assert 'test_pid=$!' in source
+    assert 'wait "$test_pid" || status=$?' in source
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in source
+    assert 'final pytest counts pending' in source
+    assert 'if (( status == 0 )); then' in source
+    assert 'print_pytest_failure_excerpt "$log_file"' in source
+    assert 'run_command_capture "$group" "$label" bash -lc "$command"' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'run_e2e_gate' in source
+    assert 'CI Admission · JUnit taxonomy evidence assembled' in workflow
+    assert 'CI Admission · exact source evidence document generated' in workflow
+    assert 'selected path validated; executed/reused boundaries retained' in workflow
+    assert 'Run Fast Smoke' in workflow
+
+    security = (ROOT / '.github/ci/run-security-static.sh').read_text(encoding='utf-8')
+    for scanner_result in (
+        'Workflow lint PASS',
+        'Workflow security lint PASS',
+        'Shell lint PASS',
+        'Dockerfile lint PASS',
+        'Redacted secret scan PASS',
+        'Semgrep SAST PASS',
+        'Base dependency audit PASS',
+        'Development dependency audit PASS',
+        'Node dependency audit PASS',
+    ):
+        assert scanner_result in security
+
+
+def test_runtime_and_dast_expanded_steps_report_actual_live_phases() -> None:
+    runtime = (ROOT / '.github/ci/run-runtime-validation.sh').read_text(encoding='utf-8')
+    zap = (ROOT / '.github/ci/run-zap-baseline.sh').read_text(encoding='utf-8')
+    for marker in (
+        'Runtime/DAST · starting isolated PostgreSQL',
+        'Runtime/DAST · applying candidate database migration',
+        'Candidate database migration PASS',
+        'Runtime/DAST · web readiness pending',
+        'Runtime/DAST · Reports worker readiness pending',
+        'Runtime Reports worker contract PASS',
+        'Runtime/DAST · starting ZAP baseline scan',
+        'Runtime baseline DAST PASS',
+    ):
+        assert marker in runtime
+    assert 'if (( attempt % 10 == 0 )); then' in runtime
+    assert 'bash .github/ci/run-zap-baseline.sh' in runtime
+    assert 'zap-baseline.py' in zap
+    assert 'PASS — KAORI ZAP Baseline' in zap
+
+
+def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'Only fixed-format identity and numeric code-health metrics.' in source
+    assert 'Never echo arbitrary raw PASS content into public CI logs.' in source
+    assert '/^PASS — KAORI [A-Za-z ]+$/' in source
+    assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
+    assert 'printf "  %s\\n", substr($0, 1, 200)' in source
+    assert 'Full diagnostic log: %s' in source

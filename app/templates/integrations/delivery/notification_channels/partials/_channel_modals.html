@@ -170,8 +170,16 @@
     <section class="flex max-h-[calc(100dvh-1.5rem)] min-h-0 flex-col overflow-hidden sm:max-h-[calc(100dvh-2rem)]">
         <form method="post"
               action="{{ url_for('notification_channels.update', channel_id=form_channel.id) if form_channel else url_for('notification_channels.create') }}"
+              hx-post="{{ url_for('notification_channels.update', channel_id=form_channel.id) if form_channel else url_for('notification_channels.create') }}"
+              hx-target="#notification-channels-workspace"
+              hx-select="#notification-channels-workspace"
+              hx-swap="outerHTML"
+              hx-push-url="false"
+              hx-indicator="#notification-channel-loading"
+              hx-disabled-elt="button[type='submit']"
               class="flex min-h-0 flex-1 flex-col">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ channel_return_fields() }}
             {% if form_channel %}
                 <input type="hidden"
                        name="provider_key"
@@ -203,6 +211,7 @@
                     </div>
                     {% if form_channel %}
                         <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+                           data-kaori-dialog-close
                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"
                            aria-label="Close Channel Configuration"><i data-lucide="x" class="h-4 w-4"></i></a>
                     {% else %}
@@ -386,6 +395,7 @@
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-3">
                     {% if form_channel %}
                         <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+                           data-kaori-dialog-close
                            class="{{ action_button.classes('secondary') }}">
                             <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             Cancel

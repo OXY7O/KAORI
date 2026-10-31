@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import gzip
-import hashlib
 import json
 import logging
 import shutil
-from collections.abc import Callable, Iterable, Iterator
-from dataclasses import asdict
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import mkdtemp
@@ -34,11 +31,24 @@ from app.models.archive import (
     ARCHIVE_STATUS_VERIFYING,
     ArchiveArtifact,
 )
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention import archive_support
+from app.platform_operations.data_lifecycle.retention.archive_support import (
+    _build_archive_file_stem,
+    _estimate_archive_size,
+    _isoformat,
+    _iter_archive_record_ids,
+    _normalize_trigger_type,
+    _serialize_policy,
+    _sha256_file,
+    _write_jsonl_gzip,
+)
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.lock import retention_lock
+from app.platform_operations.data_lifecycle.retention.policy_service import get_policy
 from app.platform_operations.data_lifecycle.retention.types import (
     ArchiveBoundary,
+    ArchiveHistoryFilters,
     ArchiveSupplement,
     PartialCleanupError,
     RetentionPolicy,
@@ -65,6 +75,34 @@ def preview_retention(domain_name: str) -> dict[str, Any]:
     }
 
 
+def _require_audit_event_manual_admission(
+    *,
+    trigger_type: str,
+    triggered_by_user_id: int | None,
+) -> None:
+    """Recheck the persisted policy and caller identity at execution time.
+
+    A queued job is not authorization: its requester may have lost privileges,
+    and direct CLI/task/service calls must not bypass source governance.
+    This interim contract allows only explicitly authorized manual archives.
+    """
+    if trigger_type != 'manual' or triggered_by_user_id is None:
+        raise PermissionError('AuditEvent archival requires an authorized manual requester.')
+
+    stored = get_policy('audit_event')
+    if stored is None or not stored.enabled or stored.operation_mode != 'archive_only' or stored.schedule_enabled:
+        raise PermissionError('AuditEvent requires a persisted, enabled, unscheduled Archive Only policy.')
+
+    requester = db.session.get(User, triggered_by_user_id, populate_existing=True)
+    if (
+        requester is None
+        or not requester.is_active
+        or not requester.is_super_admin
+        or requester.auth_source != 'database'
+    ):
+        raise PermissionError('AuditEvent requester must remain an active Local Database Super Admin.')
+
+
 def run_retention_archive(
     *,
     domain_name: str,
@@ -75,8 +113,32 @@ def run_retention_archive(
 ) -> dict[str, Any]:
     domain = get_archive_domain(domain_name)
     policy = domain.build_policy()
-    if not policy.enabled:
+    # Do not begin an archive job that would later attempt an unsafe cleanup.
+    # This opt-in capability defaults to True for existing admitted domains.
+    if cleanup and not getattr(domain, 'cleanup_supported', True):
+        raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
+    # Queue admission is not sufficient: CLI and direct task calls share the
+    # engine. Never infer authorization from an adapter's fallback defaults.
+    stored_policy = get_policy(domain.name)
+    if stored_policy is None:
+        raise RuntimeError(f'A persisted retention policy is required for {domain.name}.')
+    if not stored_policy.enabled or not policy.enabled:
         raise RuntimeError(f'Retention is disabled for {domain.name}.')
+
+    if domain.name == 'audit_event':
+        _require_audit_event_manual_admission(
+            trigger_type=trigger_type,
+            triggered_by_user_id=triggered_by_user_id,
+        )
+    if domain.name == 'notification_delivery':
+        # Durable identity, historical outcomes and archival authority are
+        # pending #2868/#2869/#2870: no unattended or destructive lifecycle.
+        if (
+            trigger_type not in {'manual', 'cli'}
+            or stored_policy.schedule_enabled
+            or stored_policy.operation_mode != 'archive_only'
+        ):
+            raise RuntimeError('Notification Delivery permits manual Archive Only, without scheduling.')
 
     with retention_lock(domain.name):
         boundary = domain.inspect_boundary(policy)
@@ -202,6 +264,8 @@ def get_archive_download_path(
     artifact = db.session.get(ArchiveArtifact, archive_id)
     if artifact is None:
         raise LookupError('Archive record was not found.')
+    if artifact.domain == 'audit_event':
+        raise PermissionError('AuditEvent archive bundle export is not admitted pending source authorization.')
     if not artifact.is_downloadable:
         raise RuntimeError('Archive is not ready for download.')
     if not artifact.storage_backend:
@@ -244,11 +308,8 @@ def paginate_archives(
     domain_name: str | None,
     page: int = 1,
     per_page: int = 5,
-    status: str = 'all',
-    trigger_type: str = 'all',
-    operation_mode: str = 'all',
-    storage_backend: str = 'all',
-    search: str = '',
+    filters: ArchiveHistoryFilters = ArchiveHistoryFilters(),
+    exclude_domains: tuple[str, ...] = (),
 ):
     normalized_page = max(int(page or 1), 1)
     normalized_per_page = int(per_page or 5)
@@ -256,19 +317,21 @@ def paginate_archives(
         normalized_per_page = 5
 
     query = ArchiveArtifact.query
+    if exclude_domains:
+        query = query.filter(ArchiveArtifact.domain.notin_(exclude_domains))
     if domain_name:
         query = query.filter(ArchiveArtifact.domain == domain_name)
 
-    if status != 'all':
-        query = query.filter(ArchiveArtifact.status == status)
-    if trigger_type != 'all':
-        query = query.filter(ArchiveArtifact.trigger_type == trigger_type)
-    if operation_mode != 'all':
-        query = query.filter(ArchiveArtifact.operation_mode == operation_mode)
-    if storage_backend != 'all':
-        query = query.filter(ArchiveArtifact.storage_backend == storage_backend)
+    if filters.status != 'all':
+        query = query.filter(ArchiveArtifact.status == filters.status)
+    if filters.trigger_type != 'all':
+        query = query.filter(ArchiveArtifact.trigger_type == filters.trigger_type)
+    if filters.operation_mode != 'all':
+        query = query.filter(ArchiveArtifact.operation_mode == filters.operation_mode)
+    if filters.storage_backend != 'all':
+        query = query.filter(ArchiveArtifact.storage_backend == filters.storage_backend)
 
-    normalized_search = str(search or '').strip()
+    normalized_search = str(filters.search or '').strip()
     if normalized_search:
         pattern = f'%{normalized_search}%'
         query = query.filter(
@@ -311,6 +374,10 @@ def purge_expired_archives(
     retention_days: int,
     dry_run: bool = False,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not dry_run:
+        raise RuntimeError('AuditEvent archive-object purge is not admitted pending retention governance.')
+    if domain_name == 'notification_delivery' and not dry_run:
+        raise RuntimeError('Notification Delivery archive purge is blocked pending durable evidence governance.')
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
     candidate_query = ArchiveArtifact.query.filter(
         ArchiveArtifact.domain == domain_name,
@@ -568,34 +635,6 @@ def _complete_archive_cleanup(
     return artifact, deleted_count
 
 
-def _write_jsonl_gzip(
-    *,
-    data_path: Path,
-    records,
-) -> int:
-    written_count = 0
-    with gzip.open(data_path, mode='wt', encoding='utf-8', newline='\n', compresslevel=6) as archive_file:
-        for record in records:
-            archive_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
-            archive_file.write('\n')
-            written_count += 1
-    return written_count
-
-
-def _iter_archive_record_ids(data_path: Path) -> Iterator[Any]:
-    """Yield the exact identities written to the verified archive."""
-    with gzip.open(data_path, mode='rt', encoding='utf-8') as archive_file:
-        for line_number, line in enumerate(archive_file, start=1):
-            if not line.strip():
-                continue
-            payload = json.loads(line)
-            source = payload.get('source') if isinstance(payload, dict) else None
-            record_id = source.get('record_id') if isinstance(source, dict) else None
-            if record_id is None:
-                raise RuntimeError(f'Archive record on line {line_number} does not contain source.record_id.')
-            yield record_id
-
-
 def _verify_stored_file(
     *,
     backend,
@@ -667,56 +706,12 @@ def _require_archive(archive_id: str) -> ArchiveArtifact:
     return artifact
 
 
-def _build_archive_file_stem(
-    artifact: ArchiveArtifact,
-    boundary: ArchiveBoundary,
-) -> str:
-    range_start = (boundary.range_start or boundary.cutoff_at).strftime('%Y%m%dT%H%M%SZ')
-    range_end = (boundary.range_end or boundary.cutoff_at).strftime('%Y%m%dT%H%M%SZ')
-    return f'{artifact.domain}-{range_start}-{range_end}-{artifact.id}'
-
-
 def _build_archive_object_prefix(artifact: ArchiveArtifact) -> str:
     generated_at = (
         artifact.created_at.astimezone(UTC) if artifact.created_at.tzinfo else artifact.created_at.replace(tzinfo=UTC)
     )
     root_prefix = str(current_app.config.get('ARCHIVE_OBJECT_PREFIX', 'archives') or 'archives').strip().strip('/')
     return '/'.join([root_prefix, artifact.domain, generated_at.strftime('%Y'), generated_at.strftime('%m')])
-
-
-def _sha256_file(file_path: Path) -> str:
-    digest = hashlib.sha256()
-    with file_path.open('rb') as file_handle:
-        for chunk in iter(lambda: file_handle.read(1024 * 1024), b''):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _normalize_trigger_type(value: str) -> str:
-    normalized = value.strip().lower()
-    return normalized if normalized in {'manual', 'scheduled', 'cli'} else 'manual'
-
-
-def _serialize_policy(policy: RetentionPolicy) -> dict[str, Any]:
-    payload = asdict(policy)
-    return payload
-
-
-def _isoformat(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=UTC)
-    return value.astimezone(UTC).isoformat()
-
-
-def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
-    estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
-    if callable(estimator):
-        estimate = cast(Callable[[ArchiveBoundary, RetentionPolicy], object], estimator)(boundary, policy)
-        if isinstance(estimate, (int, float, str)):
-            return max(int(estimate or 0), 0)
-    return archive_support.estimate_uncompressed_size(boundary.record_count)
 
 
 def _archive_supplements_for_artifact(

@@ -17,7 +17,7 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
         'title': 'Operations & Data Lifecycle Control Plane',
         'icon': 'workflow',
-        'description': ('Shared evidence for jobs, lifecycle, delivery and analytics.'),
+        'description': ('Shared evidence for jobs, delivery, and analytics.'),
     },
     {
         'title': 'Release Reliability & Identity Hardening',
@@ -48,7 +48,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
             'Node, Namespace, workload, Pod, Service, Ingress, storage, config, and topology inventory',
             'Validated ConfigMap and Secret create, update, replacement, and delete workflows',
             'Protected one-time Secret Reveal under Platform Operations → Kubernetes Administration',
-            'TLS certificate inventory, governance, bulk rotation, and worker-based automatic synchronization',
+            'TLS inventory, governance, bulk rotation, and worker sync.',
         ),
     },
     {
@@ -58,7 +58,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'features': (
             'Kubernetes dashboard: inventory, capacity, forecast, consumers, alerts, reports',
             'Resource utilization, capacity, storage, workload, forecast, top-consumer, and alert analytics',
-            'Internal content tabs that keep analytics pages compact without removing canonical navigation',
+            'Compact analytics tabs preserve canonical navigation.',
             'Forecast and growth-risk visualization with historical and projected utilization',
             'Recommendation, alert intelligence, anomaly, and operational response guidance',
         ),
@@ -130,9 +130,7 @@ def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
         'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
         'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
         'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
-        'capability_summary': (
-            'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.'
-        ),
+        'capability_summary': ('S3 reachability, bucket discovery, and optional object-storage governance.'),
         'validation_basis': (
             'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.'
         ),

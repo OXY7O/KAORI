@@ -35,6 +35,38 @@ def test_hero_component_standard_is_enforced() -> None:
     assert 'KAORI Hero component standard passed' in result.stdout
 
 
+def test_secrets_pki_hero_descriptions_use_static_qualified_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    resolver = verifier['_secrets_pki_workspace_descriptions']
+    descriptions = resolver()
+    assert set(descriptions) == {
+        'app/secrets_pki/evidence_workspaces.py:certificates',
+        'app/secrets_pki/evidence_workspaces.py:pki',
+        'app/secrets_pki/evidence_workspaces.py:expiration',
+        'app/secrets_pki/operational_evidence_workspaces.py:leases',
+        'app/secrets_pki/operational_evidence_workspaces.py:consumers',
+        'app/secrets_pki/operational_evidence_workspaces.py:governance',
+    }
+    for owner, description in descriptions.items():
+        verifier['_validate_description_budget'](description, owner=owner)
+
+    original_read = resolver.__globals__['_read']
+    source = ROOT / 'app/secrets_pki/evidence_workspaces.py'
+
+    def non_static_description(path: Path) -> str:
+        content = original_read(path)
+        if path == source:
+            return content.replace(
+                "'Review public certificates and independent consumer evidence.'",
+                'dynamic_provider_description',
+            )
+        return content
+
+    monkeypatch.setitem(resolver.__globals__, '_read', non_static_description)
+    with pytest.raises(AssertionError, match='static literals'):
+        resolver()
+
+
 def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
     source = (ROOT / 'app/templates/integrations/delivery/notification_channels/index.html').read_text(encoding='utf-8')
     verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
@@ -42,8 +74,15 @@ def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
 
     for label in ('Delivery Capability', 'Provider Registry', 'Delivery Evidence'):
         assert label in source
-    assert '{% for provider in payload.providers %}' in source
-    assert 'notification_subsection(provider.label' in source
+
+    channels = (
+        ROOT / 'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    ).read_text(encoding='utf-8')
+    assert '{% for provider in payload.providers %}' in channels
+    assert '{{ provider.label }}' in channels
+    assert '{{ provider.description }}' in channels
+    assert 'table_label.status_label(provider.status, provider.tone' in channels
+    assert 'Open {{ provider.label }} setup guide' in channels
 
 
 def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None:

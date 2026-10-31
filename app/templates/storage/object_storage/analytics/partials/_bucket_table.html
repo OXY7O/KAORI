@@ -4,35 +4,83 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
+{% import "components/info_tip.html" as info_tip %}
+{% set consumer_filters_active = page_key == 'top_consumers' and bucket_table and (bucket_table.usage_context != 'all' or bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all' or bucket_table.request_evidence != 'all') %}
 <section id="object-storage-bucket-table-panel"
          data-analytics-lazy-section="true"
          data-analytics-load-state="idle"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">
-                        {% if page_key == 'top_consumers' %}
-                            Consumer Records
-                        {% elif page_key == 'capacity' %}
-                            Bucket Capacity Records
-                        {% else %}
-                            Bucket Request Path Records
+            <div class="flex min-w-0 items-start gap-3">
+                {% if page_key in ['capacity', 'performance'] %}
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}"
+                           class="h-5 w-5"></i>
+                    </span>
+                {% endif %}
+                {% if page_key == 'top_consumers' %}
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="table-2" class="h-5 w-5"></i>
+                    </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">
+                            {% if page_key == 'top_consumers' %}
+                                Consumer Records
+                            {% elif page_key == 'capacity' %}
+                                Bucket Capacity Records
+                            {% else %}
+                                Bucket Request Path Records
+                            {% endif %}
+                        </h2>
+                        {% if page_key == 'performance' %}
+                            {{ info_tip.render('object-storage-bucket-request-path-records-guide',
+                                                        'Bucket Request Path Records Guide',
+                                                        'This table compares committed per-bucket request and error signals with a separate usage context.',
+                                                        items=[
+                                                        'Request Rate and Error Rate are metrics-only; Inventory never fills missing request or error data.',
+                                                        'Usage Context filters available Metrics Source, committed Inventory fallback, or unavailable usage observations.',
+                                                        'No Current Samples, Metric Not Scraped and Runtime Query Failed remain distinct evidence states; zero is not substituted for missing data.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
+                        {% elif page_key == 'top_consumers' %}
+                            {{ info_tip.render('object-storage-consumer-records-guide',
+                                                        'Consumer Records Guide',
+                                                        'Compare source-qualified bucket usage, quotas, request demand, and errors without treating missing samples as zero.',
+                                                        items=[
+                                                        'Usage Context differentiates Metrics Source, committed Inventory fallback, and unavailable usage.',
+                                                        'Quota State and Quota Pressure follow observed configured quotas; unknown quota evidence does not imply free capacity.',
+                                                        'Request Evidence filters committed request-rate availability only; Inventory never fills missing request or error metrics.',
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         {% endif %}
-                    </h2>
-                    {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
+                        {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted {{ 'xl:whitespace-nowrap' if page_key in ['capacity', 'performance'] else 'max-w-4xl' }}">
+                        {% if page_key == 'capacity' %}
+                            Review usage, objects, and quotas; Inventory fills only supported missing bucket metrics.
+                        {% elif page_key == 'performance' %}
+                            Review bucket requests and errors; source labels distinguish missing samples, unscraped metrics, and query failures.
+                        {% else %}
+                            Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
+                        {% endif %}
+                    </p>
                 </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    {% if page_key == 'capacity' %}
-                        Review bucket usage, system share, objects, and quota pressure. Metrics are preferred; Inventory is the explicit fallback when bucket metrics are absent.
-                    {% elif page_key == 'performance' %}
-                        Review bucket requests and errors. Request metrics never fall back to Inventory; labels distinguish missing series, unscraped metrics, and query failure.
-                    {% else %}
-                        Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
-                    {% endif %}
-                </p>
             </div>
+            {% if bucket_table and (bucket_table.search or (page_key == 'capacity' and (bucket_table.quota_state != 'all' or bucket_table.quota_pressure != 'all')) or (page_key == 'performance' and bucket_table.usage_context != 'all') or consumer_filters_active) %}
+                <div class="flex shrink-0 items-center justify-end">
+                    {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
+                    target='#object-storage-bucket-table-panel',
+                    indicator='#object-storage-bucket-table-loading-indicator',
+                    sync='#object-storage-bucket-table-panel:replace',
+                    lead=false
+                    ) }}
+                </div>
+            {% endif %}
         </div>
         {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records') ) }}
     </header>
@@ -47,8 +95,9 @@
               hx-swap="outerHTML"
               hx-sync="#object-storage-bucket-table-panel:replace"
               hx-indicator="#object-storage-bucket-table-loading-indicator"
-              hx-trigger="keyup[event.target.name === 'bucket_q'] changed delay:450ms, search[event.target.name === 'bucket_q']"
-              class="{{ table_ui.inventory_filter_bar_classes() }}">
+              hx-trigger="keyup[event.target.name === 'bucket_q'] changed delay:450ms, search[event.target.name === 'bucket_q'], change[event.target.name !== 'bucket_q']"
+              class="{{ table_ui.filter_layout_classes() }} {{ table_ui.inventory_filter_bar_classes() }}"
+              aria-label="{{ 'Bucket capacity filters' if page_key == 'capacity' else ('Consumer records filters' if page_key == 'top_consumers' else 'Bucket records filters') }}">
             <input type="hidden" name="system_id" value="{{ system.id }}">
             <input type="hidden" name="time_range" value="{{ selected_time_range }}">
             <input type="hidden" name="page_key" value="{{ page_key }}">
@@ -56,23 +105,68 @@
                 <input type="hidden" name="tab" value="{{ bucket_table.query_params.tab }}">
             {% endif %}
             <input type="hidden" name="bucket_page" value="1">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <label class="block min-w-0 flex-1" for="object-storage-bucket-search">
-                    <span class="{{ table_ui.filter_label_classes() }}">Search Bucket</span>
-                    {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
-                </label>
-                <div class="flex flex-none flex-wrap items-center gap-2">
-                    {% if bucket_table.search %}
-                        {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
-                        table_ui.action_classes() ~ ' h-10 px-4',
-                        hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
-                        target='#object-storage-bucket-table-panel',
-                        indicator='#object-storage-bucket-table-loading-indicator',
-                        sync='#object-storage-bucket-table-panel:replace'
-                        ) }}
-                    {% endif %}
-                </div>
+            <input type="hidden"
+                   name="bucket_per_page"
+                   value="{{ bucket_table.pagination.per_page }}">
+            <div>
+                <label for="object-storage-bucket-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>
+                {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
             </div>
+            {% if page_key in ['performance', 'top_consumers'] %}
+                <div>
+                    <label for="object-storage-bucket-usage-context"
+                           class="{{ table_ui.filter_label_classes() }}">Usage Context</label>
+                    <select id="object-storage-bucket-usage-context"
+                            name="bucket_usage_context"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Usage Contexts'), ('metrics', 'Metrics Source'), ('inventory', 'Committed Inventory'), ('unavailable', 'Unavailable')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.usage_context == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if page_key in ['capacity', 'top_consumers'] %}
+                <div>
+                    <label for="object-storage-bucket-quota-state"
+                           class="{{ table_ui.filter_label_classes() }}">Quota State</label>
+                    <select id="object-storage-bucket-quota-state"
+                            name="bucket_quota_state"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Quota States'), ('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unknown', 'Unknown')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.quota_state == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="object-storage-bucket-quota-pressure"
+                           class="{{ table_ui.filter_label_classes() }}">Quota Pressure</label>
+                    <select id="object-storage-bucket-quota-pressure"
+                            name="bucket_quota_pressure"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Pressure'), ('within', 'Within Quota'), ('warning', 'Pressure (85–<95%)'), ('critical', 'Critical (≥95%)')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.quota_pressure == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if page_key == 'top_consumers' %}
+                <div>
+                    <label for="object-storage-consumer-request-evidence"
+                           class="{{ table_ui.filter_label_classes() }}">Request Evidence</label>
+                    <select id="object-storage-consumer-request-evidence"
+                            name="bucket_request_evidence"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Request Evidence'), ('available', 'Available'), ('unavailable', 'Unavailable')] %}
+                            <option value="{{ value }}"
+                                    {% if bucket_table.request_evidence == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
         </form>
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[900px]') }}">

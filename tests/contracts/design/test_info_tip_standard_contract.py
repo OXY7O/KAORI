@@ -85,7 +85,8 @@ def test_guide_variant_renders_compact_label_and_reuses_existing_popover() -> No
     assert 'Review committed evidence.' in guide and 'One point' in guide
 
     assert 'data-kaori-info-tip-variant="icon"' in icon
-    assert 'data-lucide="circle-help"' in icon
+    assert 'data-lucide="info"' in icon
+    assert 'data-lucide="circle-help"' not in icon
     assert '<span>Guide</span>' not in icon
     assert 'role="tooltip"' in icon
 
@@ -99,6 +100,8 @@ def test_title_level_guides_share_existing_portal_controller() -> None:
     assert "guide_variant = variant == 'guide' and not button_text" in source
     assert 'data-kaori-info-tip-preview' in source
     assert "variant='guide'" in doc
+    assert 'information glyph, never a question-mark icon' in doc
+    assert 'data-lucide="circle-help"' not in source
     assert 'field-level' in doc
     assert 'portal.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
@@ -151,3 +154,40 @@ def test_shared_info_tip_geometry_and_readable_popover_contract() -> None:
     doc = read('docs/design/components/INFO_TIP.md')
     assert 'compact label geometry (`rounded-md`' in doc
     assert '384px for icon help and 416px for Guide help' in doc
+
+
+def test_title_extra_renders_full_guide_inside_both_shared_section_headers() -> None:
+    """Rendered shared headers, not source grep, determine the visible Guide."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    tip = env.get_template('components/info_tip.html').module.render(
+        'github-connection-contract-guide',
+        'GitHub Connection Contract',
+        'GitHub grants are authoritative.',
+        placement='right',
+        variant='guide',
+    )
+    standard_section = env.get_template('integrations/components/_workspace.html').module.section_header(
+        'file-key-2',
+        'Connection Contract',
+        'Canonical GitHub identity and access.',
+        title_extra=tip,
+    )
+    validation_header = env.get_template('components/connection_validation_header.html').module.render(
+        'GitHub Full Validation',
+        'Validate installation access.',
+        title_extra=tip,
+    )
+
+    for heading, rendered in (
+        ('Connection Contract', str(standard_section)),
+        ('GitHub Full Validation', str(validation_header)),
+    ):
+        assert rendered.index(heading) < rendered.index('data-kaori-info-tip-variant="guide"')
+        assert 'data-lucide="info"' in rendered
+        assert '<span>Guide</span>' in rendered
+        assert 'aria-label="Open guide: GitHub Connection Contract"' in rendered
+        assert 'data-lucide="circle-help"' not in rendered
+        # The Guide must stay in the title group, not a separate header action.
+        assert rendered.index('data-kaori-info-tip-variant="guide"') < rendered.index('</header>')

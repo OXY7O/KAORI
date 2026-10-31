@@ -57,7 +57,10 @@ def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> Non
     snapshot_component = read('app/templates/storage/object_storage/inventory/components/_snapshot_context.html')
     assert 'snapshot_context_bar.render' in snapshot_component
     assert 'source_label=snapshot.source_label' in snapshot_component
-    assert 'No live provider query' in buckets
+    authority = read('app/storage/object_storage/inventory/README.md')
+    assert 'No live provider calls are permitted on GET routes.' in authority
+    assert "title_extra=info_tip.render('storage-inventory-buckets-title'" in buckets
+    assert 'It does not mean a current live provider request was made.' in buckets
 
 
 def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() -> None:

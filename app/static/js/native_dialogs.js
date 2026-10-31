@@ -74,8 +74,13 @@
         openSelectedDialog()
     }
     document.addEventListener('htmx:afterSwap', (event) => {
-        const workspace = event.detail?.target || event.target
-        if (workspace instanceof HTMLElement && workspace.id === 'tenant-admin-workspace') openSelectedDialog(workspace)
+        const target = event.detail?.target || event.target
+        if (!(target instanceof HTMLElement)) return
+        if (target.id === 'tenant-admin-workspace' || target.id === 'notification-channels-workspace') {
+            // outerHTML swaps can expose the detached old target in the event.
+            // Resolve the committed replacement before opening an authorized dialog.
+            openSelectedDialog(document.getElementById(target.id) || target)
+        }
     })
 
     const closeDialog = (control) => {

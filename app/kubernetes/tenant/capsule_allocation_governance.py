@@ -16,6 +16,8 @@ from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allo
 from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
 from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
 from app.kubernetes.tenant.capsule_allocation_governance_support import (
+    _SHARED_CAPABILITY,
+    _SHARED_SCOPE,
     _allocation_baseline,
     _canonical_hash,
     _capsule_capability_state,
@@ -25,10 +27,12 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _shared_authority_context,
     _source_reference,
     _tenant_evidence,
+    build_capsule_shared_drift_action_state,
 )
 from app.kubernetes.tenant.service import (
     _namespace_allocation_values,
     _validate_resource_profile_attachment_controls,
+    _validate_resource_profile_base_controls,
     resource_profile_attachment_controls,
 )
 from app.kubernetes.tenant.validation import validate_profile_spec
@@ -46,8 +50,6 @@ from app.models.tenant_advanced import (
 _CAPSULE_GROUP = 'capsule.clastix.io'
 _GLOBAL_QUOTA_PLURAL = 'globalresourcequotas'
 _REQUIRED_API_VERSION = 'v1beta2'
-_SHARED_CAPABILITY = 'shared_global_quota'
-_SHARED_SCOPE = 'tenant_shared'
 
 
 class CapsuleSharedAllocationStateConflictError(RuntimeError):
@@ -314,6 +316,9 @@ def cutover_capsule_global_quota_allocation(
     if profile is None or not profile.enabled:
         raise ValueError('Selected Resource Profile is unavailable.')
 
+    # GRQ can write shared ResourceQuota ceilings, not Namespace LimitRange
+    # defaults or per-PVC policy. Reject incompatible profile before reads.
+    _validate_resource_profile_base_controls(profile, tenant)
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_shared_allocation_cutover_state(tenant)
     if not state['supported']:
@@ -553,32 +558,6 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
     }
 
 
-def build_capsule_shared_drift_action_state(intent: TenantAdvancedCapabilityIntent) -> dict[str, Any]:
-    evidence = intent.reconciliation_evidence_json or {}
-    drift_value = evidence.get('allocation_drift')
-    drift = dict(drift_value) if isinstance(drift_value, Mapping) else {}
-    reasons = list(drift.get('blocked_reasons') or [])
-    if not isinstance(drift_value, Mapping):
-        reasons.append('No committed Capsule shared allocation-drift evidence is available.')
-    if evidence.get('allocation_governance_scope') != _SHARED_SCOPE:
-        reasons.append('Intent is not the canonical Tenant shared allocation authority.')
-    if intent.status != TenantAdvancedCapabilityStatus.DRIFTED.value:
-        reasons.append('Shared allocation reconciliation requires committed Drifted state.')
-    if intent.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
-        reasons.append('Tenant is not Ready; reconciliation is frozen during teardown.')
-    if intent.tenant.provider_state != 'capsule':
-        reasons.append('Capsule provider is degraded or unavailable.')
-    if _capsule_capability_state(intent.tenant, _SHARED_CAPABILITY) != 'available':
-        reasons.append('Capsule shared_global_quota capability is unavailable or degraded.')
-    return {
-        'reapply_supported': not reasons,
-        'accept_supported': not reasons,
-        'blocked_reason': ' '.join(dict.fromkeys(reasons)),
-        'drift': drift,
-        'authority': 'capsule_global_resource_quota',
-    }
-
-
 def _fresh_drift_observation(intent: TenantAdvancedCapabilityIntent) -> tuple[dict[str, Any], dict[str, Any]]:
     state = build_capsule_shared_drift_action_state(intent)
     if not state['reapply_supported']:
@@ -770,6 +749,8 @@ def get_capsule_shared_allocation_context(
     *,
     drift_page: int = 1,
     drift_per_page: int = 5,
+    drift_tenant_id: str = '',
+    drift_search: str = '',
 ) -> dict[str, Any]:
     tenants = (
         Tenant.query.filter(
@@ -794,6 +775,19 @@ def get_capsule_shared_allocation_context(
         if (intent.reconciliation_evidence_json or {}).get('allocation_governance_scope') == _SHARED_SCOPE
     ]
     drifted = [intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value]
+    normalized_tenant_id = str(drift_tenant_id or '').strip()
+    normalized_search = str(drift_search or '').strip()[:160]
+    if normalized_tenant_id:
+        drifted = [intent for intent in drifted if str(intent.tenant_id) == normalized_tenant_id]
+    if normalized_search:
+        needle = normalized_search.casefold()
+        drifted = [
+            intent
+            for intent in drifted
+            if needle in str(intent.tenant.name or '').casefold()
+            or needle in str(intent.public_id or '').casefold()
+            or needle in str(intent.resource_name or '').casefold()
+        ]
     visible_drifted, drift_pagination = paginate_sequence(
         drifted,
         page=drift_page,
@@ -805,6 +799,7 @@ def get_capsule_shared_allocation_context(
         'capsule_shared_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_shared_intents': governed,
         'capsule_shared_drift_intents': visible_drifted,
+        'capsule_shared_drift_filters': {'tenant_id': normalized_tenant_id, 'search': normalized_search},
         'capsule_shared_drift_pagination': drift_pagination,
         'capsule_shared_drift_state': {
             str(intent.id): build_capsule_shared_drift_action_state(intent) for intent in visible_drifted

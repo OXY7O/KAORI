@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
+from flask import has_request_context
+from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import MultiDict
@@ -60,6 +62,7 @@ from app.intelligence.rule_presentation import (
     provider_label,
     to_int,
 )
+from app.intelligence.secrets_pki_recommendations import build_secrets_pki_recommendation_findings
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
 from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 
@@ -259,6 +262,20 @@ def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[di
     return normalized
 
 
+def _can_view_secrets_pki_intelligence() -> bool:
+    """Do not expose Fleet PKI risk to unrelated Intelligence-only readers.
+
+    An internal worker has no actor context; deny until a separately approved
+    policy-bound materialization workflow supplies explicit authority.
+    """
+    return bool(
+        has_request_context()
+        and current_user.is_authenticated
+        and current_user.has_permission('intelligence.view')
+        and current_user.has_permission('secrets_pki.view')
+    )
+
+
 def _build_recommendation_findings(
     catalog: list[dict[str, Any]],
     *,
@@ -299,6 +316,8 @@ def _build_recommendation_findings(
         collect('Object Storage', build_object_storage_recommendation_findings)
     if any(key.startswith('registry.') for key in rules):
         collect('Artifact Registry', build_registry_recommendation_findings)
+    if any(key.startswith('secrets_pki.') for key in rules) and _can_view_secrets_pki_intelligence():
+        collect('Secrets & PKI', build_secrets_pki_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 

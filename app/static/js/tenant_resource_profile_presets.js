@@ -260,45 +260,8 @@
 
         const currentProfile = form.querySelector('[data-tenant-allocation-profile="current"]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-profile="proposed"]')
-        const detailTabs = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-tab]'))
-        const detailPanels = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-panel]'))
-
-        const selectDetail = (name, focus = false) => {
-            detailTabs.forEach((button) => {
-                const selected = button.dataset.tenantAllocationDetailTab === name
-                button.setAttribute('aria-selected', String(selected))
-                button.tabIndex = selected ? 0 : -1
-                button.classList.toggle('border-kaori-primary', selected)
-                button.classList.toggle('bg-kaori-soft', selected)
-                button.classList.toggle('text-kaori-primary', selected)
-                button.classList.toggle('border-transparent', !selected)
-                button.classList.toggle('text-content-muted', !selected)
-                if (selected && focus) button.focus()
-            })
-            detailPanels.forEach((panel) => {
-                panel.hidden = panel.dataset.tenantAllocationDetailPanel !== name
-            })
-        }
-        detailTabs.forEach((button, index) => {
-            button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
-            button.addEventListener('keydown', (event) => {
-                const move = ['ArrowRight', 'ArrowDown'].includes(event.key)
-                    ? 1
-                    : ['ArrowLeft', 'ArrowUp'].includes(event.key)
-                      ? -1
-                      : 0
-                if (!move && event.key !== 'Home' && event.key !== 'End') return
-                event.preventDefault()
-                const next =
-                    event.key === 'Home'
-                        ? 0
-                        : event.key === 'End'
-                          ? detailTabs.length - 1
-                          : (index + move + detailTabs.length) % detailTabs.length
-                selectDetail(detailTabs[next].dataset.tenantAllocationDetailTab, true)
-            })
-        })
-        selectDetail('objects')
+        // Native profile categories use the canonical accessible <details> disclosure.
+        // No custom keyboard tab controller is needed.
 
         const contractValue = (contract, source, key) => {
             if (!contract) return null
@@ -317,6 +280,10 @@
                     'limits.memory',
                     'pods',
                     'requests.storage',
+                    'persistentvolumeclaims',
+                    'services',
+                    'configmaps',
+                    'secrets',
                 ]
                 return source === 'storage_policy' || (source === 'quota' && boundedQuotaKeys.includes(key))
                     ? 'Unbounded'
@@ -532,18 +499,61 @@
     // capacity approval or Native ResourceQuota ownership from this diff.
     const renderCapsuleQuotaPreview = (form, current, proposed) => {
         const dimensions = [
-            'requests.cpu',
-            'limits.cpu',
-            'requests.memory',
-            'limits.memory',
-            'pods',
-            'requests.storage',
+            ['requests.cpu', 'CPU Requests'],
+            ['limits.cpu', 'CPU Limits'],
+            ['requests.memory', 'Memory Requests'],
+            ['limits.memory', 'Memory Limits'],
+            ['pods', 'Pods'],
+            ['requests.storage', 'Total Storage'],
+            ['persistentvolumeclaims', 'PVCs'],
+            ['services', 'Services'],
+            ['configmaps', 'ConfigMaps'],
+            ['secrets', 'Secrets'],
         ]
-        const value = (quota, key) => quota?.[key] ?? null
+        // GlobalResourceQuota cutover still exposes the six headline metrics;
+        // the two Tenant CR forms disclose all ten supported quota dimensions.
+        // Both admitted Capsule quota sources can govern all ten supported
+        // ResourceQuota hard dimensions. Every one is now visible in the same
+        // provider-authoritative disclosure before a provider write.
+        const comparisonDimensions = dimensions
+        const countDimensions = new Set(['pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'])
+        const factors = {
+            '': 1,
+            m: 0.001,
+            k: 1000,
+            M: 1000000,
+            G: 1000000000,
+            T: 1000000000000,
+            Ki: 1024,
+            Mi: 1024 ** 2,
+            Gi: 1024 ** 3,
+            Ti: 1024 ** 4,
+            Pi: 1024 ** 5,
+        }
         const formatted = (quota, key) => {
-            if (!quota) return 'Unbounded'
-            const raw = value(quota, key)
-            return raw === null || raw === '' ? 'Unbounded' : String(raw)
+            const raw = quota?.[key]
+            return raw === null || raw === undefined || raw === '' ? 'Unbounded' : String(raw)
+        }
+        const numericQuantity = (key, value) => {
+            const match = /^([0-9]+(?:\.[0-9]+)?|\.[0-9]+)(m|k|M|G|T|Ki|Mi|Gi|Ti|Pi)?$/.exec(value.trim())
+            if (!match) return null
+            const suffix = match[2] || ''
+            if (countDimensions.has(key) && suffix) return null
+            const result = Number(match[1]) * factors[suffix]
+            return Number.isFinite(result) ? result : null
+        }
+        const equivalent = (key, left, right) => {
+            const a = formatted(left, key)
+            const b = formatted(right, key)
+            if (a === b) return true
+            if (a === 'Unbounded' || b === 'Unbounded') return false
+            const aNumber = numericQuantity(key, a)
+            const bNumber = numericQuantity(key, b)
+            return (
+                aNumber !== null &&
+                bNumber !== null &&
+                Math.abs(aNumber - bNumber) <= Number.EPSILON * Math.max(1, Math.abs(aNumber), Math.abs(bNumber))
+            )
         }
         form.querySelectorAll('[data-tenant-quota-metric-side]').forEach((cell) => {
             const source = cell.dataset.tenantQuotaMetricSide === 'current' ? current : proposed
@@ -551,14 +561,101 @@
             cell.textContent = present ? formatted(source, cell.dataset.tenantQuotaMetricKey) : '—'
         })
         const summary = form.querySelector('[data-tenant-quota-change-summary]')
-        if (!summary) return
+        const highlights = form.querySelector('[data-tenant-quota-change-detail]')
         if (current === null || proposed === null) {
-            summary.textContent = 'Choose contracts'
+            if (summary) summary.textContent = 'Choose contracts'
+            if (highlights) {
+                highlights.hidden = true
+                highlights.textContent = ''
+            }
             return
         }
-        const changed = dimensions.filter((key) => formatted(current, key) !== formatted(proposed, key)).length
-        summary.textContent =
-            changed === 0 ? 'No quota differences' : `${changed} of 6 quota dimensions differ · Read only`
+        const changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))
+        if (summary) {
+            summary.textContent =
+                changed.length === 0
+                    ? 'No quota differences'
+                    : `${changed.length} of ${comparisonDimensions.length} quota dimensions differ · Read only`
+        }
+        if (highlights) {
+            highlights.hidden = changed.length === 0
+            highlights.textContent = changed.length
+                ? changed
+                      .slice(0, 3)
+                      .map(([key, label]) => `${label}: ${formatted(current, key)} → ${formatted(proposed, key)}`)
+                      .join(' · ') + (changed.length > 3 ? ` · +${changed.length - 3} more` : '')
+                : ''
+        }
+    }
+
+    const renderCapsuleProfileCoverage = (form, profile, tenantId, profileId) => {
+        const valueFor = (source, key) => {
+            if (!profile) return null
+            const object = profile[source] || {}
+            if (source === 'limits') return key.split('.').reduce((value, part) => value?.[part], object) ?? null
+            return object[key] ?? null
+        }
+        form.querySelectorAll('[data-tenant-capsule-external-source]').forEach((cell) => {
+            const source = cell.dataset.tenantCapsuleExternalSource
+            const key = cell.dataset.tenantCapsuleExternalKey
+            const value = valueFor(source, key)
+            cell.textContent = !profile
+                ? '—'
+                : value === null || value === ''
+                  ? 'Not configured'
+                  : `Not governed · ${value}`
+        })
+        const advanced = profile?.advanced_controls || {}
+        const committedEvaluations = readJson('tenant-capsule-advanced-profile-preflight')
+        const evaluation = committedEvaluations?.[tenantId]?.[profileId] || {}
+        const requestedUnsupported = []
+        form.querySelectorAll('[data-tenant-capsule-advanced-preview]').forEach((cell) => {
+            const key = cell.dataset.tenantCapsuleAdvancedPreview
+            const control = advanced[key]
+            const requested = control === true || (control && typeof control === 'object' && control.enabled !== false)
+            const preflight = evaluation[key]
+            if (!profile) {
+                cell.textContent = '—'
+            } else if (!requested) {
+                cell.textContent = 'Not requested'
+            } else if (preflight?.state === 'enabled' && preflight.requested === true) {
+                cell.textContent = 'Available · Capability preflight'
+            } else {
+                const reason = preflight?.reason || 'Committed provider capability evidence unavailable.'
+                cell.textContent = `Unavailable · ${reason}`
+                requestedUnsupported.push(preflight?.label || key)
+            }
+        })
+        if (profile) {
+            // Match server resource_profile_base_control_state() exactly:
+            // any configured mapping (not only truthy leaf values) is an
+            // unsupported managed control on a Capsule quota-only path.
+            if (Object.keys(profile.storage_policy || {}).length > 0) {
+                requestedUnsupported.push('Per-PVC Policy')
+            }
+            if (Object.keys(profile.limits || {}).length > 0) {
+                requestedUnsupported.push('Container Defaults')
+            }
+        }
+        const alert = form.querySelector('[data-tenant-capsule-coverage-alert]')
+        if (alert) {
+            alert.hidden = requestedUnsupported.length === 0
+            alert.textContent = requestedUnsupported.length
+                ? `Unsupported by this Capsule quota authority: ${requestedUnsupported.join(', ')}. Disable these Managed controls in a compatible Resource Profile before applying.`
+                : ''
+        }
+        const apply = form.querySelector('[data-tenant-capsule-apply-button]')
+        if (apply) {
+            // Preserve server-rendered role/capability gates; never re-enable
+            // an action that was disabled by server authorization.
+            if (!Object.hasOwn(apply.dataset, 'kaoriInitiallyDisabled')) {
+                apply.dataset.kaoriInitiallyDisabled = String(apply.disabled)
+            }
+            const blocked =
+                apply.dataset.kaoriInitiallyDisabled === 'true' || !profile || requestedUnsupported.length > 0
+            apply.disabled = blocked
+            apply.setAttribute('aria-disabled', String(blocked))
+        }
     }
 
     const initSharedAllocationForm = (form) => {
@@ -600,6 +697,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -657,6 +755,7 @@
                 current ? current.current_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -694,6 +793,7 @@
                 state ? state.desired_quota || {} : null,
                 proposed ? proposed.quota || {} : null
             )
+            renderCapsuleProfileCoverage(form, proposed, tenantSelect?.value, profileSelect?.value)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -831,7 +931,13 @@
         }
 
         const applyNamespaceProfile = () => {
-            applyValues(fields, profiles[profileSelect?.value] || null)
+            const profile = profiles[profileSelect?.value] || null
+            applyValues(fields, profile)
+            // Values without a managed Resource Profile dimension should not
+            // render as an unexplained blank quota cell after selection.
+            form.querySelectorAll('[data-tenant-quota-default-card] [data-tenant-value-display]').forEach((cell) => {
+                if (cell.textContent.trim() === '—' && profile) cell.textContent = 'Not managed'
+            })
             renderAdvancedControls()
         }
 

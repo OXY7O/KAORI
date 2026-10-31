@@ -8,6 +8,14 @@ document.addEventListener('alpine:init', () => {
         init() {
             this.keydownHandler = (event) => {
                 if (!this.open || event.key !== 'Tab') return
+                // A nested native/destructive confirmation owns focus while active.
+                // Do not redirect its Tab presses back into the underlying drawer.
+                if (
+                    document.querySelector(
+                        'dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)'
+                    )
+                )
+                    return
                 this.trapFocus(event, this.dialog)
             }
             document.addEventListener('keydown', this.keydownHandler)

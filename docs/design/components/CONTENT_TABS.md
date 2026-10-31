@@ -110,6 +110,68 @@ The reviewed Overview vocabulary is:
 
 Internal identifiers such as `resource-snapshot`, `capacity-snapshot`, or `top-consumers` are runtime metadata and must never be rendered beside those labels.
 
+
+## Kubernetes Administration — Secret Reveal
+
+Within the existing **Overview · Secret Reveal** Integrated Workspace Tabs, the Secret Reveal
+workspace has two subordinate content views: **Cluster Prerequisites** and **Namespace
+Policies**. This is a Content Tabs controller (Tab Style 4), not a second level-3
+route navigator, Integration-style framed parent card, or a new tab family.
+
+- Follow the approved Integration domain workspace composition: one shared operational
+  shell owns a compact header, the common selected-cluster scope control,
+  embedded Content Tabs (`embedded=true`), and a padded active panel. Do not
+  render the cluster selector, tab row, and panel as three separate cards, or
+  repeat an external Cluster Readiness intro and a second inner card title.
+- `render_controlled_links()` owns tab geometry and true full-route `href`
+  fallbacks; the page-owned Alpine controller owns instant switching, roving
+  Arrow/Home/End, URL `view=prerequisites|policies`, back/forward and panel
+  visibility/ARIA. Inactive panels must be hidden from the accessibility tree.
+- Cluster switches and readiness/policy mutations preserve the selected view
+  through the existing HTMX workspace replacement. Namespace search, filter,
+  page size and navigation keep `view=policies`. Initial render must honor the
+  URL so no-JavaScript navigation shows only its requested content view.
+- Credential/attestation configuration is committed KAORI state; configured
+  prerequisites do **not** establish live Kubernetes RBAC or Secret access.
+  Only the authorized Secret Reveal execution path performs runtime checks.
+- Existing Namespace Policy table/pagination semantics, OOB posture updates,
+  CSRF and permission boundaries remain separate authorities.
+- **Namespace policy editing** uses the canonical row action to reveal a
+  separate full-width companion editor row. The action retains a compact
+  **Edit Policy** label, shared action geometry, and accessible `aria-controls`
+  and `aria-expanded` state. The editor preserves a single-row editing
+  boundary, stable default row heights, and a labeled policy selector with
+  neutral **Cancel** / **Save Policy** actions. The companion row is
+  **server-hidden by default** with the existing `hidden` utility class,
+  and shared `detail_rows.js` (`data-detail-toggle`/`data-detail-group`)
+  owns exclusive open/close, ARIA state and HTMX-safe delegated events. Do not
+  use Alpine `x-show` on table rows for this pattern. Cancel follows a safe
+  GET of the current filtered page, restoring the read-only table without
+  policy mutation. Keyboard and browser behavior still require UAT.
+- **Live Source** provenance and manual **Refresh** belong to a standalone
+  full-width utility card above Namespace Policies. Include source authority,
+  selected cluster, truthfully sourced status and last refresh (or absence
+  of one); do not repeat its status in table columns.
+- Canonical **Clear Filters** is not a permanent header action: it stays
+  hidden until the Namespace search or policy filter is active. The shared
+  `registry_ui.clear_filters_action()` remains the interaction owner.
+  Client-side filter state updates its visibility while table-only HTMX
+  updates preserve the search field; initial server rendering preserves
+  the hidden state when scripting is unavailable.
+- Namespace Policies renders its header via the approved
+  `table_ui.inventory_block_header()` macro, which owns the shared
+  `components/loading_bar.html` indicator **inside the block header below
+  its title/action row**. This reuses the Activity Audit Table pattern
+  instead of page-local `loading_bar_classes()` or always-visible tracks.
+  The indicator is hidden when idle and shows only during HTMX requests.
+- The table and companion editor use available horizontal space to explain
+  live Namespace state and configured reveal policy. The editor shows
+  namespace, current policy, proposed policy, eligibility context and compact
+  Cancel/Save actions without a second nested card.
+- This is a presentation-only refinement. Existing CSRF, readiness and
+  live-state option restrictions, HTMX mutation/update, and audit/security
+  authorities remain unchanged.
+
 ## Review Checklist
 
 - Uses `components/content_tabs.html` directly.

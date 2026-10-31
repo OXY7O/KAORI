@@ -1,45 +1,61 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% set forecast_table = bucket_forecast_table|default(none, true) %}
 {% set filters_active = forecast_table and (forecast_table.search or forecast_table.watch != 'all' or forecast_table.history_state != 'all') %}
 <section id="object-storage-bucket-forecast-table-panel"
          data-analytics-lazy-section="true"
          data-analytics-load-state="idle"
-         class="border-t border-outline-subtle bg-surface-card"
+         class="{{ analysis_surface.evidence_shell_classes() }}"
          data-kaori-object-storage-bucket-forecast-table>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base font-semibold leading-6 text-content-primary">Bucket Forecast Records</h3>
-                    {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="table-2" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">Bucket Forecast Records</h3>
+                        {{ info_tip.render('object-storage-bucket-forecast-records-guide',
+                                                'Bucket Forecast Records Guide',
+                                                'Bucket records show committed history, planning forecasts, and quota watch states; they are not active alerts.',
+                                                items=[
+                                                'Forecast Ready requires usable committed history; History Evidence exposes partial or unavailable samples.',
+                                                'Forecast Watch and quota ETA are worker planning signals, not provider alert lifecycle events.',
+                                                'Filters apply only to these records and preserve the selected system and history window.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                        {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted xl:whitespace-nowrap">
+                        Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.
+                    </p>
                 </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Review forecast-ready and evidence-gap buckets. Filters affect only these records and preserve the selected system and history window.
-                </p>
             </div>
             {% if forecast_table %}
-                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
-                     data-kaori-table-header-actions>
-                    {% if filters_active %}
-                        {{ registry_ui.clear_filters_action(url_for(forecast_table.page_endpoint,
-                                                system_id=system.id,
-                                                history_window=selected_forecast_history_window,
-                                                tab='buckets',
-                                                forecast_bucket_per_page=forecast_table.pagination.per_page) ,
-                        table_ui.action_classes() ~ ' h-9 px-3',
-                        hx_get=url_for('analytics.object_storage_bucket_forecast_table',
-                        system_id=system.id,
-                        history_window=selected_forecast_history_window,
-                        tab='buckets',
-                        forecast_bucket_per_page=forecast_table.pagination.per_page),
-                        target='#object-storage-bucket-forecast-table-panel',
-                        indicator='#object-storage-bucket-forecast-table-loading-indicator',
-                        sync='#object-storage-bucket-forecast-table-panel:replace') }}
-                    {% endif %}
+                <div class="{{ 'flex' if filters_active else 'hidden' }} shrink-0 flex-wrap items-center justify-end gap-2"
+                     data-kaori-table-header-actions
+                     data-kaori-forecast-clear-filters>
+                    {{ registry_ui.clear_filters_action(url_for(forecast_table.page_endpoint,
+                                        system_id=system.id,
+                                        history_window=selected_forecast_history_window,
+                                        tab='buckets',
+                                        forecast_bucket_per_page=forecast_table.pagination.per_page) ,
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_bucket_forecast_table',
+                    system_id=system.id,
+                    history_window=selected_forecast_history_window,
+                    tab='buckets',
+                    forecast_bucket_per_page=forecast_table.pagination.per_page),
+                    target='#object-storage-bucket-forecast-table-panel',
+                    indicator='#object-storage-bucket-forecast-table-loading-indicator',
+                    sync='#object-storage-bucket-forecast-table-panel:replace',
+                    lead=false) }}
                 </div>
             {% endif %}
         </div>

@@ -1,4 +1,5 @@
 {% import "components/action_button.html" as action_button %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
@@ -41,14 +42,7 @@
     </section>
     <section id="membership-actions"
              class="space-y-4"
-             aria-labelledby="membership-actions-heading">
-        <div>
-            <h3 id="membership-actions-heading"
-                class="text-base font-semibold text-content-primary">Membership Actions</h3>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                Add a user, define a reusable Kubernetes group, or attach an existing group to a Tenant.
-            </p>
-        </div>
+             aria-label="Membership actions">
         <div class="grid gap-5 xl:grid-cols-3 xl:items-stretch">
             <form id="add-user-membership-form"
                   method="post"
@@ -129,6 +123,7 @@
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
                   class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <input type="hidden" name="membership_view" value="groups">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
@@ -260,6 +255,30 @@
             </form>
         </div>
     </section>
-    {% include "kubernetes/tenant/partials/_membership_registry.html" %}
-    {% include "kubernetes/tenant/partials/_group_registry.html" %}
+    {% set membership_registry_tabs = [
+            ('memberships', 'Membership Registry', 'users-round', url_for('tenant.tenants', section='memberships', membership_view='memberships')),
+            ('groups', 'Tenant Group Registry', 'users', url_for('tenant.tenants', section='memberships', membership_view='groups'))
+        ] %}
+    <section id="tenant-membership-registries"
+             class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+             aria-label="Tenant membership registries"
+             hx-select="#tenant-admin-workspace">
+        {{ workspace_tabs.render_query_tabs(membership_registry_tabs,
+                active_membership_view,
+                aria_label='Tenant membership registries',
+                hx_target='#tenant-admin-workspace',
+                hx_indicator='#tenant-admin-loading',
+                hx_sync='#tenant-admin-workspace:replace') }}
+        <div class="min-w-0 p-4 sm:p-5">
+            {% if active_membership_view == 'groups' %}
+                <div id="tenant-membership-groups-panel" class="min-w-0">
+                    {% include "kubernetes/tenant/partials/_group_registry.html" %}
+                </div>
+            {% else %}
+                <div id="tenant-membership-members-panel" class="min-w-0">
+                    {% include "kubernetes/tenant/partials/_membership_registry.html" %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
 </div>

@@ -1,0 +1,116 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as edit_hero %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% block title %}{{ "Edit" if instance else "Register" }} Vault Connection · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        {% if instance %}
+            {{ edit_hero.render("key-round", "Secrets & PKI", "settings-2", "Edit Vault Connection",
+                        "Review AppRole and TLS configuration before revalidation.", "shield-check",
+                        "Vault HTTP API", "Connection", instance.name, instance.environment or "Unspecified",
+                        instance.readiness_status or "validation_required", url_for("vault.index") , "Vault configuration posture") }}
+        {% else %}
+            {{ registration_hero.render("key-round", "Secrets & PKI", "key-round", "Register Vault Connection",
+                        "Configure safe AppRole access and validate the Vault endpoint.", "shield-check",
+                        "Vault HTTP API", url_for("vault.index") , "Vault registration workflow",
+            binding_label="Approved HTTPS + AppRole", after_save_description="Run Full Validation after saving") }}
+        {% endif %}
+        <form method="post"
+              class="grid gap-5 xl:grid-cols-12 xl:items-stretch"
+              data-kaori-vault-connection-form
+              autocomplete="off">
+            {{ form.hidden_tag() }}
+            {{ form.connection_test_proof(value=proof or "", type="hidden") }}
+            <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
+                <header class="border-b border-outline-subtle p-5 sm:px-6">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                        {{ info_tip.render('vault-registration-guide', 'Vault Connection Configuration',
+                                                'AppRole credentials, scoped metadata access, and the two-stage connection test are separate from Full Validation.',
+                                                [
+                                                'SecretID is encrypted and access tokens are not persisted.',
+                                                'Test Connection verifies the form before Save.',
+                                                'KV v2 and PKI collection have separate admission and freshness.'
+                                                ], placement='right', variant='guide') }}
+                    </div>
+                    <p class="mt-1 text-sm text-content-secondary">SecretID is encrypted at rest. Vault access tokens are transient and never stored.</p>
+                </header>
+                <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                    {% if message %}
+                        <div class="sm:col-span-2" role="status">
+                            {{ operational_callout.render('Vault Connection Test', message, tone='info', variant='semantic') }}
+                        </div>
+                    {% endif %}
+                    {% for field in [form.name, form.environment, form.endpoint, form.namespace, form.auth_mount, form.role_id, form.secret_id, form.timeout] %}
+                        <div class="{{ 'sm:col-span-2' if field.name == 'endpoint' else '' }}">
+                            <label for="{{ field.id }}"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                            {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                            {% for error in field.errors %}
+                                <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.kv2_mounts.id }}"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.kv2_mounts.label.text }}</label>
+                        {{ form.kv2_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="secret, team-kv") }}
+                        <p class="mt-1 text-xs text-content-muted">Explicit KV v2 metadata-only scopes; empty disables Secret inventory collection. Max eight mounts. Require Vault metadata list/read ACL.</p>
+                        {% for error in form.kv2_mounts.errors %}
+                            <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.pki_mounts.id }}"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.pki_mounts.label.text }}</label>
+                        {{ form.pki_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="pki, pki-internal") }}
+                        <p class="mt-1 text-xs text-content-muted">Read-only public issuer certificates and fingerprint evidence. Maximum four PKI mounts. Empty disables PKI collection; the Vault AppRole must have explicit issuer LIST and public certificate read permissions.</p>
+                        {% for error in form.pki_mounts.errors %}
+                            <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    <label class="flex items-start gap-3 rounded-xl border border-outline-subtle p-4 text-sm text-content-primary sm:col-span-2">
+                        {{ form.pki_stored_certs_enabled(class_="mt-1 h-4 w-4 accent-kaori-primary") }}
+                        <span><span class="font-semibold">Enable Stored PKI Certificate Collection (explicit opt-in)</span>
+                        <span class="mt-1 block text-xs text-content-muted">Adds optional authenticated LIST /certs reads for approved PKI mounts, up to 64 stored certificates each. Excludes no_store/imported certificates and may expose sensitive infrastructure metadata. Default off; requires retest and Full Validation.</span>
+                    </span>
+                </label>
+                <div class="sm:col-span-2">
+                    <label for="{{ form.description.id }}"
+                           class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</label>
+                    {{ form.description(class_="min-h-20 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary") }}
+                </div>
+                <label class="flex items-center gap-2 text-sm text-content-primary sm:col-span-2">
+                    {{ form.enabled(class_="h-4 w-4 accent-kaori-primary") }} Enable this connection
+                </label>
+            </div>
+        </section>
+        <aside class="{{ integration_ui.section_shell_classes() }} flex h-full flex-col p-5 xl:col-span-4">
+            <h2 class="text-base font-semibold text-content-primary">Validation & Safety</h2>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">Set <code>INTEGRATION_VAULT_ALLOWED_ORIGINS</code> in the app and workers, then trust the approved internal CA.</p>
+            <ul class="mt-4 list-inside list-disc space-y-2 text-xs text-content-secondary">
+                <li>Only HTTPS endpoints on the approved origin list are accepted.</li>
+                <li>AppRole credentials require a non-root, read-oriented policy.</li>
+                <li>Test Connection confirms AppRole identity but does not establish Full Validation readiness.</li>
+                <li>The encrypted 10-minute test proof permits Save without exposing SecretID again.</li>
+                <li>Single-use SecretIDs cannot be reused for test, save, and worker validation; use an approved reusable/rotated credential for this workflow.</li>
+            </ul>
+            <div class="mt-auto flex flex-wrap gap-2 border-t border-outline-subtle pt-5">
+                <button name="action"
+                        value="test"
+                        class="{{ action_button.classes('secondary') }}"
+                        type="submit">Test Connection</button>
+                <button name="action"
+                        value="save"
+                        class="{{ action_button.classes('primary') }}"
+                        type="submit">{{ "Save Changes" if instance else "Register Connection" }}</button>
+            </div>
+            <p class="mt-4 text-xs leading-5 text-content-muted">Connection tests expire after 10 minutes and are bound to the exact fields and submitting user.</p>
+        </aside>
+    </form>
+</div>
+{% endblock dashboard_content %}

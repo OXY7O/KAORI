@@ -34,6 +34,8 @@ def _mutation_domain() -> str:
     value = str(request.form.get('domain') or '').strip().lower().replace('-', '_')
     if value not in DOMAIN_FACTORIES:
         abort(400, description='A registered Data Lifecycle domain is required.')
+    if value == 'audit_event' and not (current_user.is_super_admin and current_user.auth_source == 'database'):
+        abort(403, description='AuditEvent source governance access is not admitted.')
     return value
 
 
@@ -72,10 +74,13 @@ def index() -> ResponseReturnValue:
 @bp.get('/preview')
 @permission_required('platform_operations.view_data_lifecycle')
 def preview() -> ResponseReturnValue:
-    return render_template(
-        'platform_operations/data_lifecycle/partials/_domain_workspace.html',
-        lifecycle=_context(preview=True),
-    )
+    context = _context(preview=True)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'platform_operations/data_lifecycle/partials/_domain_workspace.html',
+            lifecycle=context,
+        )
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.post('/policy')
@@ -99,22 +104,34 @@ def run() -> ResponseReturnValue:
         mode=str(request.form.get('mode') or 'archive_only'),
         user_id=current_user.id,
     )
-    return render_template(
-        'platform_operations/data_lifecycle/partials/_domain_workspace.html',
-        lifecycle=_context(feedback=feedback),
-    )
+    context = _context(feedback=feedback)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'platform_operations/data_lifecycle/partials/_domain_workspace.html',
+            lifecycle=context,
+        )
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.post('/archives/<archive_id>/verify')
 @permission_required('platform_operations.manage_data_lifecycle')
 def verify(archive_id: str) -> ResponseReturnValue:
-    context = _context(feedback=verify_lifecycle_archive(archive_id=archive_id, user_id=current_user.id))
+    try:
+        feedback = verify_lifecycle_archive(archive_id=archive_id, user_id=current_user.id)
+    except PermissionError:
+        abort(403, description='AuditEvent source verification access is not admitted.')
+    context = _context(feedback=feedback)
     context['active_tab'] = 'history'
-    return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.get('/archives/<archive_id>/download')
 @permission_required('platform_operations.export_data_lifecycle')
 def download(archive_id: str) -> ResponseReturnValue:
-    _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    try:
+        _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    except PermissionError:
+        abort(403, description='Source-specific archive export has not been admitted.')
     return send_file(path, as_attachment=True, download_name=path.name)

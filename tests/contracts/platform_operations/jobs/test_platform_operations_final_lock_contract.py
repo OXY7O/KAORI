@@ -74,8 +74,11 @@ def test_platform_operations_uses_shared_tab_contracts() -> None:
     jobs = read('app/templates/platform_operations/jobs/index.html')
     executions = read('app/templates/platform_operations/jobs/executions/_workspace.html')
 
-    assert 'components/framed_workspace_tabs.html' in kubernetes
-    assert 'framed_workspace_tabs.render(' in kubernetes
+    assert 'components/workspace_tabs.html' in kubernetes
+    assert 'workspace_tabs.render(' in kubernetes
+    assert "prefix='kubernetes-administration'" in kubernetes
+    assert "aria_label='Kubernetes Administration Workspaces'" in kubernetes
+    assert 'components/framed_workspace_tabs.html' not in kubernetes
     assert 'components/framed_workspace_tabs.html' in jobs
     assert 'framed_workspace_tabs.render_navigation(' in jobs
     assert 'components/content_tabs.html' in executions

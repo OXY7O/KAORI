@@ -36,8 +36,13 @@ def test_service_already_rolls_back_failed_create_update_commits() -> None:
     service = (Path(__file__).resolve().parents[3] / 'app/access/identity_providers/service.py').read_text(
         encoding='utf-8'
     )
-    for method in ('create_identity_provider', 'update_identity_provider'):
+    for method, handler in (
+        ('create_identity_provider', 'except SQLAlchemyError:'),
+        ('update_identity_provider', 'except (SQLAlchemyError, ProviderIdentityRebindError):'),
+    ):
         source = service.split(f'def {method}(', 1)[1]
         source = source.split('\ndef ', 1)[0]
-        assert 'except SQLAlchemyError:' in source
-        assert 'db.session.rollback()' in source
+        assert handler in source
+        handler_block = source.split(handler, 1)[1].split('\n    return ', 1)[0]
+        assert 'db.session.rollback()' in handler_block
+        assert '\n        raise' in handler_block

@@ -75,7 +75,9 @@ def test_report_workspaces_surface_actual_worker_queue_readiness() -> None:
     assert 'payload.worker_context.show_warning' in schedule_template
     assert 'get_queue_readiness(get_reports_queue_name())' in overview
     assert 'get_queue_readiness(get_reports_queue_name())' in generate
-    assert 'inspect_celery_topology()' in notifications
+    assert 'get_cached_celery_topology()' in notifications
+    assert 'get_queue_readiness(queue_name, topology=topology)' in notifications
+    assert "job['queue_health'] = queue_health[str(job['queue_name'])]" in notifications
     assert 'job.queue_health.show_warning' in activity_item
 
 

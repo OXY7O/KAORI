@@ -1,0 +1,76 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set is_ready = instance.enabled and readiness == 'ready' %}
+{% set capabilities = instance.capabilities or [] %}
+{% set capability_metadata = ['Profile · Vault AppRole' if is_ready else 'No Committed Validation'] %}
+{% set capability_metrics = [
+    {'icon': 'list-checks', 'tone': 'normal', 'label': 'Observed Capabilities', 'value': capabilities|length if is_ready else '—', 'description': 'Committed Full Validation APIs; not an Inventory or PKI permission proof.'},
+    {'icon': 'shield-check', 'tone': 'normal' if is_ready else 'info', 'label': 'Vault Version', 'value': instance.detected_version or 'Not Observed', 'description': 'Observed during provider validation, never inferred from registration.'},
+    {'icon': 'database', 'tone': 'info', 'label': 'Optional Mount Metadata', 'value': summary.get('mount_metadata', 'Not Validated')|replace('_', ' ')|title, 'description': 'Optional API evidence; collection scope and freshness stay independent.'}
+] %}
+<section class="{{ integration_ui.section_shell_classes() }} overflow-hidden"
+         data-kaori-vault-validation-workspace>
+    {% call connection_validation_header.render('Vault Full Validation',
+        'Verify Vault AppRole identity, server compatibility and required provider APIs.',
+        icon='scan-search',
+        title_extra=info_tip.render('vault-full-validation-guide', 'Vault Full Validation',
+        'Full Validation qualifies the Vault connection only; it does not expose Secrets or commit KV v2/PKI inventory.',
+        [
+        'Use approved HTTPS origins, trusted CA and least-privilege AppRole.',
+        'Provider readiness does not prove metadata LIST/read or public issuer collection.',
+        'Runtime health is observed separately from validation readiness.'
+        ], placement='right', variant='guide')) %}
+        <form action="{{ url_for('vault.validate', instance_id=instance.id) }}"
+              method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+                    class="{{ action_button.classes('primary') }}"
+                    {% if not instance.enabled %}disabled{% endif %}>
+                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                Run Full Validation
+            </button>
+        </form>
+    {% endcall %}
+    <div class="p-4 sm:p-5">
+        {% if evidence.validation_job %}
+            <p role="status" class="mb-4 text-xs text-content-secondary">Validation task: {{ evidence.validation_job.get('status', 'pending') }} · {{ evidence.validation_job.get('task_id', '') }}</p>
+        {% endif %}
+        <div class="mb-4 text-sm text-content-secondary">
+            {{ instance.validation_message or 'No capability validation has been collected.' }}
+        </div>
+        {{ capability_readiness.render('Vault Provider Readiness',
+                'Required API access is validated independently from committed operational inventory.',
+                readiness if instance.enabled else 'disabled',
+                readiness|replace('_', ' ') |title if instance.enabled else 'Disabled',
+        'Full Validation Gate',
+        'Passed' if is_ready else 'Not Ready',
+        100 if is_ready else 0,
+        capability_metadata,
+        capability_metrics,
+        'Provider Ready' if is_ready else 'Validation Required',
+        'The provider is eligible for independent collection workflows.' if is_ready else 'Run Full Validation after correcting access and configuration.',
+        'normal' if is_ready else 'warning',
+        'Vault controls Secret values and policies. KAORI never derives KV v2/PKI qualification from connection readiness.',
+        'Review Inventory & Lifecycle for separately committed KV v2/PKI evidence.') }}
+    </div>
+    <section class="border-t border-outline-subtle bg-surface-subtle px-4 py-4 sm:px-5"
+             aria-label="Vault capability observations">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-semibold text-content-primary">Observed Provider Capabilities</h3>
+                <p class="mt-1 text-xs text-content-secondary">Only capabilities returned by committed Full Validation.</p>
+            </div>
+            {{ integration_status('ready' if is_ready else 'not_observed', 'Committed' if is_ready else 'Not Validated', display='text') }}
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            {% for cap in capabilities %}
+                <span class="rounded-md border border-outline-default bg-surface-card px-2.5 py-1.5 text-xs font-medium text-content-secondary">{{ cap|replace('_', ' ') |title }}</span>
+            {% else %}
+                <p class="text-xs text-content-muted">Capabilities Not Validated</p>
+            {% endfor %}
+        </div>
+    </section>
+</section>

@@ -17,6 +17,7 @@ Access
 ├── Overview
 ├── User Management
 ├── Identity Providers
+├── Authentication Security (policy and provider controls; security UAT pending)
 ├── Roles & Access
 ├── Permission Catalog
 └── Activity Audit
@@ -32,6 +33,7 @@ Access
 - `app/access/identity_providers/` owns Identity Provider administration and directory projection workflows.
 - `app/access/authentication/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
 - `app/access/authentication/` owns session admission and authentication orchestration.
+- `app/access/authentication_security/` owns the permission-gated authentication assurance workspace and CSRF-protected policy administration. MFA/CAPTCHA runtime control stays under Authentication; no separate identity-provider authority is created.
 - `app/access/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
 - `app/platform_operations/notifications/` remains authoritative for Notification Center persistence and the shared operational evidence store/query kernel. Activity Audit presentation and HTTP orchestration belong to `app/access/activity_audit/`.
 
@@ -84,7 +86,7 @@ Administrative Evidence remains a permission-scoped hot `AuditEvent` source. `Op
 
 ## Activity Audit detail review status
 
-Activity Audit Detail remains a **read-only, content-driven shared resource modal** over the Notification-backed Activity Register, not a consolidated audit store or new authority. The recorded status, title, immutable actor snapshot, target, category, timestamp, and sanitized metadata remain authoritative. The first content section for warning/error events emphasizes the **recorded outcome**, followed by recorded failure-context fields when present; the original message is retained as a separate impact note where distinct. The UI **does not infer a list of blockers from a freeform count** or claim unseen provider changes/root causes. Without failure-context fields, it says so and points readers to trace and permissioned committed source links; next-step copy is review guidance, not operational authorization.
+Activity Audit Detail remains a **read-only, content-driven shared resource modal** over the Notification-backed Activity Register, not a consolidated audit store or new authority. The recorded status, title, immutable actor snapshot, target, category, timestamp, and sanitized metadata remain authoritative. The first content section for warning/error events emphasizes the **recorded outcome**, followed by source-owned context where present; the original message remains a separate impact note when distinct. **Warnings use Attention Summary and neutral Review Guidance**, since a committed warning can indicate a successfully completed access restriction rather than a failed operation. **Errors retain Failure Summary, explicit missing failure-context disclosure and failure-oriented Next Review Step**. The UI never infers blockers from a freeform count, claims unseen provider mutations, or recommends retry solely from warning severity. The recorded status/event key, immutable actor and target, permissioned related evidence, and sanitized metadata remain authoritative.
 
 Execution evidence, recorded changes, related committed evidence and trace references remain visible and source-owned. The Activity Audit modal now renders the actor/target/recorded/evidence summary **inside the same fetched modal header as its title and badges**, rather than a second card in the modal body; the shared `summary_strip` keeps the existing opt-in `layout='unified'` geometry with a flat, one-surface, divider-only presentation. The separate pinned summary host remains unused for this detail. The modal header is still bounded by the existing shell, so long names must be checked at mobile, zoom and reduced height before UAT acceptance. Other shared summary variants retain their established behavior.
 
@@ -167,6 +169,8 @@ Identity Providers uses the **same approved read-only information hierarchy as A
 Below the persistent overview, a single **Identity Provider Records** workspace uses canonical server-owned `framed_workspace_tabs.render_navigation` (like Activity Register) with **Provider Registry** and **Directory Provisioning** as tabs. `?tab=providers` is the default, while `?tab=directory` shows committed directory sources, identity-link counts and local KAORI Roles authorization ownership. The previously supported `?tab=overview` falls back to the default registry without losing the always-visible posture panel. The directory tab contains a separate **Open Directory Provisioning** link, visible only to `identity_providers.provision` actors; the real signed-proof, CSRF-bound provisioning workflow continues at its existing page, not inside an ungoverned overview form. View-only users see read-only context instead of a privileged action.
 
 The HTMX boundary is intentionally split: tab navigation targets **`#identity-provider-workspace`**, returning its full tab wrapper, while canonical Provider Registry filters/Rows/pagination target **`#identity-provider-registry`** and return only registry content **with `embedded=True`**. The parent workspace alone owns the border, rounded corners and shadow, including after filtering, clearing filters, changing Rows or paginating; a standalone registry render retains its normal shared table frame. Both preserve normal GET links, browser history, canonical loading/empty/error behavior and permission-gated expandable details. No new JavaScript, provider request, secrets, RBAC policy, JIT logic, directory projection or external authority is introduced. DevContainer browser QA and explicit human acceptance remain pending; CI/CD and admission gates remain HOLD.
+
+Provider Registry and Directory Provisioning now each have a **title-adjacent Violet Guide** through the existing shared `components/info_tip.html` with `variant='guide'`. The Provider Registry guide distinguishes configured adapter contracts from a verified connection and explains authentication enablement, committed links and KAORI authorization. The Directory Provisioning guide distinguishes committed summary evidence from the separately permission-gated projection workflow and clarifies external credential ownership. The registry result badge, conditional Clear Filters, directory Read Only indicator and authorized Open Directory Provisioning action remain outside guidance; field-level help still uses the default icon variant. Both Guides are subject to DevContainer visual/keyboard/HTMX review; they do not constitute provider test evidence.
 
 ## Identity Providers canonical registry interaction
 
@@ -308,3 +312,110 @@ Real Firefox two-line appearance is a visual target rather than a source
 PASS. Local focused pytest/Jinja, responsive/light-dark/zoom/browser
 accessibility, negative RBAC and human acceptance remain pending. Official
 staging admission, deployment and release are HOLD.
+
+## Resource Scoped Grant Lifecycle (review implementation)
+
+The #724 accepted architecture uses a dedicated Access-owned storage model
+`app/models/scope_access.py` (#2723) and backend-only governed transition
+service `app/access/scoped_grants.py` (#2724). It reuses canonical RBAC
+and `stage_operational_activity` with `commit=False` so a draft, approval
+or revocation **and** its mandatory audit event persist in one transaction
+or both roll back. High-sensitivity grants require a different requestor
+and approver, a current policy revision, an active human with qualified
+Access admin permissions, active subject Role→Permission and exact approved
+IntegrationInstance/Vault mount identity.
+
+No UI/API/workers have been wired; do not call this service as a Secret access
+decision, use it as a general RBAC bypass or treat schema arrival as grant
+activation. Source-scoped decisions, IdP principals and migration cutover
+remain in #2725/#2726. Run approved DevContainer schema upgrade via
+the dedicated `db-bootstrap --upgrade-only` service, **not** by running
+`flask db upgrade` as kaori_runtime.
+
+## Exact scoped policy evaluator (HV #2725 — internal only)
+
+`app/access/scope_policy.py` checks the latest persisted policy revision
+from canonical Access state using the active KAORI `User.id` and
+normalized role `secrets_pki.view`, exact IntegrationInstance/Vault source,
+approved namespace and KV v2 mount. Draft/suspended/revoked/expired/unknown
+policy versions deny; an instance-only grant never inherits to the mount.
+The new `read_governed_scoped_secret_registry` is the **only candidate**
+for future web/service adapters. It keeps the policy row locked through
+the existing bounded committed Secret Registry read, writes mandatory
+sanitized Activity Audit in that transaction, and returns rows only after
+successful commit; failure rolls back and returns an uninformative denied page.
+
+The legacy `read_scoped_secret_registry(decision=...)` is a lower-level
+unpublished test/read-model helper and **must never be a route entrypoint**
+because the caller can construct a synthetic decision. No HTTP, HTMX,
+worker, Secret detail or grant-admin UI exposes either function now.
+Future #2726 and security UAT must establish trusted session identity,
+negative tests and request/job enforcement before publication.
+
+## Shadow RBAC/scoped policy parity (#2726)
+
+`app/access/scope_parity.py` provides an **internal**, read-only,
+non-enforcing comparison of the existing effective `User.has_permission`
+decision and the new exact Vault instance+mount source-policy admission.
+Every result is a sanitized classification; grouped summaries contain
+counts only (bounded to 200), never usernames, Secret paths, source
+identifiers, Vault credentials or role membership. An unavailable scoped
+decision is a **review finding**, not a permit and not a rollback to global
+RBAC.
+
+No current route, worker, report, API or permission has been changed to
+enforce scope. Safe existing global aggregate pages retain their existing
+RBAC contract, while new per-Secret Registry/Detail routes stay unpublished.
+A real cutover requires an approved role/principal parity matrix, explicit
+minimum grants, transactional audit tests, security/DevContainer UAT,
+Full Admission and human acceptance. Rolling back an unpublished sensitive
+route must not make it an unscoped read.
+
+## Activity Audit register source hover info (#2885, 2026-10-23)
+
+The approved title-level standard is `docs/design/components/INFO_TIP.md`
+and `docs/design/components/TABLE_AND_LABEL.md`, reaffirmed in design
+audit #2416. Before implementing header hover guidance, compare the
+current standard *and at least one merged title-level consumer*; require
+the existing `tests/contracts/design/test_info_tip_guide_rollout_contract.py`
+to include this title-level consumer. Do not infer the correct variant
+from the shared macro's default or a single local precedent.
+
+Functional **Access → Activity Audit UAT is operator-approved**; the
+follow-up enhances only the two register headers. Activity Register and
+Administrative Source Evidence each use the existing title-level
+`components/info_tip.html::render(..., variant='guide')` Violet Guide
+directly next to the owning title, before the result-count badge.
+An icon-only question-mark is reserved for genuinely field/row-level help. One tooltip describes Notification-backed hot
+activity with immutable actor snapshots and separately owned Data
+Lifecycle archive artifacts; the other describes source-permissioned hot
+`AuditEvent` records from Automatic Jobs/Tenant Inventory Sync, actor FK
+limitations, and Job Archive **bundle-level only** navigation.
+
+The two sources and their counts remain independent; no storage union,
+cross-source permission, archive record resolver, mutation, loading,
+pagination, HTMX behavior or existing modal is changed. Shared Info Tip
+owns keyboard/pointer/touch activation and viewport positioning.
+Human hover/mobile/light-dark acceptance is pending separately from the
+accepted overall Activity Audit functionality.
+
+## Administrative AuditEvent Data Lifecycle boundary (#2889/#2890)
+
+Access → Activity Audit contains two independent committed source views:
+**Activity Register** reads `notifications` and uses
+`operational_activity` retention; **Administrative Source Evidence**
+selects allowed hot `audit_events` from Automatic Jobs/Tenant Inventory
+Sync according to their source permissions. The new registered
+`audit_event` Data Lifecycle domain is a separate, **paused, manual
+archive-only** adapter for the underlying AuditEvent table (which contains
+other producers too); it does not union the displays or grant additional
+source access. It archives minimal redacted summaries and preserves all
+hot records. Hot cleanup, automated schedules, archive-object purge,
+individual-record lookup and bundle download are blocked pending
+source-specific retention/privacy/legal-hold and RBAC authority (#2891).
+Until that admission, the domain, aggregate counts, Preview and archive history
+are **Local Database Super Admin-only**, and mutations enforce the same
+boundary independent of UI; even Super Admin cannot download these bundles.
+Verified compaction remains a separate workstream (#2892). Archive History is artifact-level,
+not a verified lookup for the selected administrative event or a missing
+JobExecution. Do not infer immutable actor identity from AuditEvent FK.

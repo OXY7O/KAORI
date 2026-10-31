@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% block title %}GitHub Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set posture_status = "Healthy" if ready and registered == ready else ("Attention" if registered else "Not Configured") %}
+    {% set overview_metrics = [
+            {"label": "Registered Connections", "value": stats.total, "description": "Installation-scoped GitHub App connections", "icon": "git-branch"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready for operational use", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or lifecycle review", "icon": "triangle-alert"},
+            {"label": "Committed Repository Grants", "value": stats.grants, "description": "Observed access grants, not live inventory", "icon": "link-2"}
+        ] %}
+    <div class="kaori-integration-semantic space-y-6">
+        {{ provider_front.hero("git-branch", "code", "GitHub Integrations",
+                "Register GitHub Apps with governed Source Control evidence.",
+                stats.total, stats.ready, stats.grants, posture_status,
+                url_for("github_source.new_connection") if available else url_for("integrations.choose_integration_provider", integration_type="source_control") ,
+        association_label="Repository Grants", association_description="Committed installation repository grants") }}
+        {{ provider_front.overview("git-branch",
+                "GitHub Integration Overview",
+                "Register each GitHub App installation once; verify connection readiness and committed repository access independently.",
+                overview_metrics,
+                "GitHub REST API v3",
+                "KAORI validates installation identity, read-only permissions, and required Source Control capabilities before operational use.",
+                "Installation and Revision Correlation",
+                "KAORI correlates committed repository grants, exact commit revisions, workflows, and deployment evidence by installation.",
+                "GitHub Remains Authoritative",
+                "GitHub owns repositories, installation grants, source branches, and workflow execution; KAORI governs committed evidence.") }}
+        {% call(tab_name) integration_tabs.render("github", active_tab, stats.grants, stats.total) %}
+            {% if tab_name == "coverage" %}
+                {% include "integrations/source_control/github/partials/_integration_coverage.html" %}
+            {% else %}
+                {% include "integrations/source_control/github/partials/_connection_registry.html" %}
+            {% endif %}
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

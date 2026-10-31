@@ -10,6 +10,11 @@ def read(relative: str) -> str:
 def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
+    assert '_domain_coverage(name)' in presentation
     shared_history = read('app/templates/integrations/partials/_runtime_history.html')
     metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_history.html')
     alertmanager = read(
@@ -22,9 +27,9 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     assert 'IntegrationRuntimeObservation' in domain
     assert 'IntegrationRuntimeObservation.provider ==' not in domain
     assert 'filter_by(provider=' not in domain
-    assert "'label': 'Kubernetes'" in presentation
-    assert "'label': 'Metrics Source'" in presentation
-    assert "'label': 'Alertmanager'" in presentation
+    assert "'label': 'Kubernetes'" in coverage
+    assert "'label': 'Metrics Source'" in coverage
+    assert "'label': 'Alertmanager'" in coverage
     assert "domain='runtime_observation'" in shared_history
     for rendered in (metrics_source, alertmanager, kubernetes):
         assert 'integrations/partials/_runtime_history.html' in rendered
@@ -34,6 +39,11 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
     queries = read('app/platform_operations/notifications/queries.py')
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
+    assert '_domain_coverage(name)' in presentation
     activity = read('app/templates/access/activity_audit/index.html')
     center = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
@@ -45,9 +55,9 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     assert 'from app.models.user import User' not in domain
     assert 'deck_visible' not in domain
     assert 'Notification.deck_visible.is_(True)' in queries
-    assert "'label': 'Activity Audit Table'" in presentation
-    assert "'label': 'Notification Center'" in presentation
-    assert "'label': 'Authentication Audit'" in presentation
+    assert "'label': 'Activity Audit Table'" in coverage
+    assert "'label': 'Notification Center'" in coverage
+    assert "'label': 'Authentication Audit'" in coverage
     assert 'Activity Audit and persistent Notification Center records share the same archive-first policy' in activity
     assert 'Persistent notifications share the Activity Audit retention policy.' in center
     assert 'Transient toasts remain outside Data Lifecycle.' in center

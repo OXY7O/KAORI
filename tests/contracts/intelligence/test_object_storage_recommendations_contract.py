@@ -156,7 +156,8 @@ def test_shared_recommendation_card_and_kubernetes_copy_stay_unchanged() -> None
     kubernetes = read('app/kubernetes/dashboard/sections/recommendations.py')
     catalog = read('app/intelligence/catalog.py')
     assert '{{ action.description }}' in cards
-    assert 'line-clamp-4' in cards
+    assert 'line-clamp-2 break-words text-sm font-semibold' in cards
+    assert 'mt-2 line-clamp-2 text-xs leading-5 text-content-muted' in cards
     assert "card.get('recommended_action')" in kubernetes
     assert "card.get('dashboard_action')" not in kubernetes
     assert "require_str(raw, 'dashboard_action', path)" in catalog

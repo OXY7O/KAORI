@@ -77,7 +77,7 @@ def test_topology_and_tls_help_are_at_the_respective_table_titles() -> None:
     assert "'k8s-inventory-topology-title'" in topology
     assert 'missing or filtered evidence' in topology
     assert "title_extra=info_tip.render('k8s-inventory-tls-title'" in tls
-    assert 'not a live handshake test' in tls
+    assert 'No live handshake is performed.' in tls
 
 
 def test_shared_info_tip_supports_pointer_keyboard_touch_and_htmx() -> None:

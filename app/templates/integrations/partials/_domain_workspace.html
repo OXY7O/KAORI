@@ -45,6 +45,10 @@
     stats.bindings
     )
 ] %}
+{# Source Control repository lineage is not an asset Consumer Binding. Do not show an inapplicable tab. #}
+{% if domain.key == 'source_control' %}
+    {% set workspace_tabs = [workspace_tabs[0]] %}
+{% endif %}
 {% set domain_guidance_title = none %}
 {% set domain_guidance_text = none %}
 {% set domain_guidance_items = none %}
@@ -76,6 +80,13 @@
         "Harbor is the first qualified Registry provider under shared contracts.",
         "Future providers extend those contracts without provider-specific domain navigation."
     ] %}
+{% elif domain.key == 'source_control' %}
+    {% set domain_guidance_title = "Source Control Provider and Evidence Authority" %}
+    {% set domain_guidance_text = "GitHub remains authoritative for repositories, source revisions, pull requests, workflow runs and releases. KAORI governs committed evidence, correlation and access to registered connections." %}
+    {% set domain_guidance_items = [
+        "GitHub App connections require verified installation scope, isolated credentials and Full Validation before operational use.",
+        "Repository IDs, immutable revisions and application ownership remain distinct; consumer bindings must not be inferred from names."
+    ] %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
          id="domain-workspace"
@@ -88,7 +99,9 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
                     <div class="mt-0.5 flex items-center gap-1.5">
                         <h2 id="domain-workspace-title"
-                            class="text-base font-semibold text-content-primary">Registry and Consumer Bindings</h2>
+                            class="text-base font-semibold text-content-primary">
+                            {{ 'Source Control Connections' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}
+                        </h2>
                         {% if domain_guidance_title %}
                             {{ info_tip.render('integration-' ~ domain.key ~ '-workspace-guidance',
                                                         domain_guidance_title,
@@ -98,18 +111,29 @@
                                                         variant='guide') }}
                         {% endif %}
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {{ ('Review GitHub App installations and committed repository evidence.' if integration_types else 'Review Source Control provider requirements and readiness.') if domain.key == 'source_control' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}
+                    </p>
                 </div>
             </div>
             {% if integration_types %}
                 <div class="flex flex-wrap items-center gap-2 lg:justify-end"
                      aria-label="{{ domain.label }} integration type workspaces">
                     {% for item in integration_types %}
-                        <a href="{{ url_for(item.workspace_endpoint) }}"
-                           class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
-                            <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            Open {{ item.runtime_label }}
-                        </a>
+                        <div class="flex flex-wrap items-center gap-2"
+                             role="group"
+                             aria-label="{{ item.runtime_label }} navigation">
+                            <a href="{{ url_for(item.workspace_endpoint) }}"
+                               class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                                <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Open {{ item.runtime_label }}
+                            </a>
+                            <a href="{{ url_for('integrations.choose_integration_provider', integration_type=item.key) }}"
+                               class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                                <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Add Connection
+                            </a>
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
@@ -144,7 +168,8 @@
                                                 table_ui.action_classes() ,
                         query_params=provider_clear_query,
                         page_param='provider_page',
-                        per_page_param='provider_per_page'
+                        per_page_param='provider_per_page',
+                        lead=false
                         ) }}
                     {% endif %}
                 </div>

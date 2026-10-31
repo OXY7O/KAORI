@@ -11,11 +11,19 @@ Create a Settings Overview only when at least three independently owned Settings
 
 ## Loading and action feedback contract
 
-- General and Account tab switches use `components/workspace_tabs.html::render_query_tabs` as the shared query-backed HTMX tab authority and `components/loading_bar.html` for the workspace loading indicator.
-- Settings save/password actions use the same indicator and shared primary action-button primitive.
+- General and Account tab switches use `components/workspace_tabs.html::render_query_tabs` as the shared query-backed HTMX tab authority. **No visual loading bar is allowed** on either Settings page under the superseding #2225 UAT decision.
+- Each page retains its own existing `htmx-indicator sr-only` live `role=status` / `aria-live=polite` region for screen-reader pending feedback; `hx-indicator` must target this nonvisual region. Settings save/password actions use their existing shared primary action-button pending state, field validation and operational toast. Do not reintroduce `components/loading_bar.html` into either workspace.
 - Successful preference and credential mutations use the shared operational toast.
 - User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.
 - Automatic browser-timezone synchronization is intentionally silent because it is background preference convergence, not a user-triggered CRUD action.
+- The authenticated `POST /settings/general/browser-timezone` JSON sync is a separate
+  account-preference mutation. It requires the current session's Flask-WTF CSRF
+  token in `X-CSRFToken` (from the shared app layout and
+  `js/user_timezone_sync.js`). Missing or invalid tokens return HTTP 400
+  `invalid_csrf` **without** changing `User.timezone`. Valid automatic sync
+  remains silent and respects canonical UTC data and operational schedules.
+  This boundary is independent of the Time Zone/Regional Format forms' CSRF
+  validation.
 - User-clicked **Detect Again** reads the browser timezone locally and displays the shared Operational Toast: detected/unchanged result (8-second success) or unavailable result (persistent error). A failed re-detection retains the previous valid browser timezone; all result copy clarifies that no preference was saved. The toast reuses the canonical global stack and lifecycle, including keyboard/a11y semantics; normal page-load detection stays silent.
 - Browser re-detection does not POST, persist Activity Audit evidence, create Notification Deck items, or affect the explicit Save Time Zone action. Saved user preference changes remain auditable through the existing `user_preference` `AUDIT_ONLY` record.
 - Settings must not introduce page-local loading-bar heights or page-local toast implementations.
@@ -100,7 +108,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 - Its summary counts are scoped to up to five most recent committed authentication events, not all-time or time-window security totals. Failed Sign-Ins is neutral when zero; a nonzero sample shows critical failure evidence without claiming an incident.
 - Self-service failed-event copy is deliberately generic rather than exposing audit reason metadata or assuming bad credentials. Recorded IP is the audit-captured request address and can represent a trusted proxy/container hop; it is not proof of the user's device address or location. Safe browser/device labels may appear when already present in committed event metadata. Authorized users can drill into Activity Audit for richer evidence.
 - Authentication Activity is event-first: a compact, divider-based Event Summary (not three elevated metric cards) yields primary hierarchy to Latest Events on the shared table, with the same up-to-five-event scope and a horizontal-scroll affordance on narrow screens. Failed sign-ins receive a critical status only when observed; a zero count is plain neutral text. Successful sign-ins use Success and sign-outs use the neutral-violet Recorded label without changing persisted audit status. Authentication Evidence is a single inline footer note on the card surface.
-- Credential Management keeps the action workspace on the left and one security context panel on the right at wide breakpoints; columns remain natural-height and top-aligned.
+- Credential Management keeps the action workspace on the left and one security context panel on the right at wide breakpoints; columns remain natural-height and top-aligned. Local Database retains its governed password form, safety tips and session/audit flow. LDAP/SSO accounts reuse the same guidance hierarchy with provider-owned recovery instructions, no editable password fields, duplicate owner register, inferred recovery URL or KAORI reset action. The right panel alone summarizes owner/recovery and KAORI role/lifecycle; only KAORI-observed sign-ins (not external password resets) are represented as its audit evidence.
 - Do not restore the retired `_profile_information.html` or `_activity_information.html` side-context partials. Their canonical evidence now lives inline in the active Profile and Authentication Activity workspaces.
 
 Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. The canonical Local Database password policy is a unique passphrase of at least 12 characters (maximum 1024), with known default values rejected. A successful password change:

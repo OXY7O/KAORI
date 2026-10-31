@@ -40,7 +40,7 @@ def test_identity_provider_overview_uses_provider_adapter_boundary_and_tabs() ->
     for label in ('Configured', 'Enabled', 'Directory', 'Browser SSO'):
         assert label in overview
     for boundary in (
-        'Provider / Adapter Boundary',
+        'Provider & Adapter',
         'Credential Ownership',
         'Identity Projection',
         'Authorization Boundary',
@@ -70,6 +70,16 @@ def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table()
     shared = read('app/templates/components/table_registry.html')
     assert 'hx-target="#{{ registry_id }}"' in shared
     assert 'access/identity_providers/partials/_provider_detail.html' in registry
+    # Match the Users disclosure control; always show a descriptive label.
+    assert "open_label='View More Details', close_label='Hide Details'" in registry
+    assert "compact=true, class_name='min-w-[7.5rem]'" in registry
+    assert 'table_action=true' not in registry
+    users = read('app/templates/access/users/partials/_table.html')
+    assert 'compact=true)' in users
+    toggle = read('app/templates/components/details/_expandable_row.html')
+    assert '<span data-detail-toggle-label>{{ open_label }}</span>' in toggle
+    assert 'aria-expanded="false"' in toggle
+
     for heading in ('Provider', 'Adapter', 'Configuration', 'State', 'Identity Links', 'Action'):
         assert heading in registry
     assert 'Rows Per Page' in registry
@@ -136,12 +146,13 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
     assert sum(source.count('operational_section_card.shell_classes()') for source in sources.values()) == 8
 
     form = sources['app/templates/access/identity_providers/form.html']
-    assert 'components/operational_callout.html' in form
-    assert "operational_callout.semantic_surface_classes('normal' if test_passed else 'critical')" in form
-    assert 'border-status-normal-border' not in form
-    assert 'border-status-critical-border' not in form
-    assert 'aria-live="polite"' in form
+    # Test Connection now renders via the canonical toast stack in layouts/app.html.
+    assert 'components/operational_callout.html' not in form
+    assert 'test_result' not in form
     assert 'identity_provider_form.js' in form
+    layout = read('app/templates/layouts/app.html')
+    assert 'id="operational-toast-stack"' in layout
+    assert 'components/operational_toast.html' in layout
 
     sso = sources['app/templates/access/identity_providers/partials/_sso_configuration.html']
     assert 'components/operational_callout.html' in sso
@@ -177,8 +188,8 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     assert 'data-browser-callback' in guidance
     assert 'data-callback-key' in guidance
     assert 'request.url_root.rstrip' in guidance
-    assert "'Provider / Adapter Boundary', 'Distinct Contracts'," in overview
-    assert "'Providers own identity; adapters run sign-in.'" in overview
+    assert "'Provider & Adapter', 'Distinct Contracts'," in overview
+    assert "'Provider owns identity; adapter handles sign-in.'" in overview
     for source in (google, guidance):
         assert 'whitespace-nowrap' not in source
         assert 'truncate' not in source
@@ -267,7 +278,8 @@ def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
     assert 'form.admission_values.errors' in sso
     assert 'KAORI resolves the secret at runtime' in sso
     assert '{query} is escaped before substitution' in ldap
-    assert 'plaintext LDAP is blocked' in ldap
+    assert 'TLS Mode: choose encrypted LDAPS or StartTLS; plaintext is not available in this form.' in ldap
+    assert 'Bind Password Environment Variable: only its name; no secret value is persisted.' in ldap
     for source in (form, ldap, sso):
         assert 'whitespace-nowrap' not in source
 

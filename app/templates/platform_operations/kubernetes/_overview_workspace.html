@@ -1,59 +1,75 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
-<section class="space-y-6" aria-label="Kubernetes Administration Overview">
-    <section class="{{ operational_section.shell_classes() }}">
-        <header class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="blocks" class="h-5 w-5" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Administration Capability Catalog</h2>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Advanced Kubernetes controls are introduced as isolated workspaces with explicit permissions, validation boundaries, and audit evidence.</p>
-                </div>
+{% import "components/section_intro.html" as section_intro %}
+<section class="min-w-0 space-y-6"
+         aria-label="Kubernetes Administration Overview">
+    {# Read-only fleet posture is its own overview block, not a control footer. #}
+    <section class="space-y-4"
+             aria-label="Kubernetes Administration Coverage Summary">
+        {% set overview_posture %}
+            <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
+        {% endset %}
+        {% call operational_section.render(
+            'Administration Coverage',
+            'Review registered clusters, prerequisite configuration and protected Namespace scope.',
+            'layout-dashboard',
+            id='kubernetes-admin-summary-section',
+            header_badge=overview_posture,
+            body_classes='p-0',
+            aria_label='Kubernetes Administration Coverage'
+            ) %}
+            {% set metrics = [
+                            ('blocks', 'Managed Controls', administration_control_count, 'Available administrative capabilities'),
+                            ('server', 'Registered Clusters', cluster_count, 'Canonical Kubernetes inventory'),
+                            ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Recorded cluster security prerequisites'),
+                            ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Configured Namespace access policies')
+                        ] %}
+            <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for icon, label, value, helper in metrics %}
+                    <div class="min-w-0 bg-surface-card px-5 py-4 sm:px-6">
+                        <dt class="flex min-w-0 items-center gap-2 text-xs font-semibold leading-5 text-content-secondary">
+                            <i data-lucide="{{ icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <span>{{ label }}</span>
+                        </dt>
+                        <dd id="kubernetes-admin-overview-metric-{{ loop.index }}"
+                            class="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-content-primary">
+                            {{ value }}
+                        </dd>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </dl>
+            <p class="flex min-w-0 items-start gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-secondary sm:px-6">
+                <i data-lucide="info"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <span>Counts represent committed KAORI configuration. Live access is verified at execution.</span>
+            </p>
+        {% endcall %}
+    </section>
+    {# Operational capabilities have a separate destination and primary action. #}
+    <section class="space-y-4" aria-labelledby="kubernetes-admin-controls-heading">
+        {{ section_intro.render('Kubernetes Operations',
+                'Configure protected access controls and review their execution requirements.',
+                'kubernetes-admin-controls-heading') }}
+        {% set controls_badge %}
+            <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls') , 'info') }}</span>
+        {% endset %}
+        {% call operational_section.render(
+            'Managed Administration Controls',
+            'Manage Secret Reveal prerequisites and Namespace access policies.',
+            'blocks',
+            id='kubernetes-admin-controls-section',
+            header_badge=controls_badge,
+            body_classes='p-0',
+            aria_label='Managed Administration Controls'
+            ) %}
+            <div id="kubernetes-admin-controls-list"
+                 class="divide-y divide-outline-subtle">
+                {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
             </div>
-            {{ table_label.status_label('1 Managed Control', 'info') }}
-        </header>
-        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-            <article class="bg-surface-card p-5 sm:p-6">
-                <div class="flex items-start justify-between gap-4">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if administration_status_tone == 'normal' else 'bg-status-warning-soft text-status-warning-text' }}">
-                        <i data-lucide="scan-eye" class="h-5 w-5" aria-hidden="true"></i>
-                    </span>
-                    {{ table_label.status_label(administration_status_label, administration_status_tone) }}
-                </div>
-                <h3 class="mt-4 text-base font-semibold text-content-primary">Protected Secret Reveal</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Control one-time Secret access using namespace admission, step-up authentication, approval separation, and Kubernetes RBAC.</p>
-                <p class="mt-3 text-xs leading-5 text-content-muted">{{ administration_status_detail }}</p>
-                <button type="button"
-                        @click="setTab('secret-reveal')"
-                        class="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    Open Secret Reveal
-                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                </button>
-            </article>
-            <article class="bg-surface-card p-5 sm:p-6">
-                <div class="flex items-start justify-between gap-4">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="map" class="h-5 w-5" aria-hidden="true"></i>
-                    </span>
-                    {{ table_label.status_label('Recommended Roadmap', 'unknown') }}
-                </div>
-                <h3 class="mt-4 text-base font-semibold text-content-primary">Recommended Administration Domains</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">The next controls should focus on high-risk administrative actions rather than duplicate routine resource management.</p>
-            </article>
-        </div>
-        <div class="grid gap-4 border-t border-outline-default bg-surface-hover p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
-            {% set recommendations = [('shield-half', 'RBAC Posture Review', 'Inspect ServiceAccount, RoleBinding, and cluster-level privilege exposure before granting administrative access.'), ('traffic-cone', 'Maintenance Controls', 'Provide validated cordon, drain, disruption, and maintenance-window workflows with explicit impact review.'), ('badge-check', 'Admission & Policy', 'Surface Pod Security, admission policy, protected namespace, and exception-management boundaries.'), ('lock-keyhole', 'Protected Resource Actions', 'Require approval and validation for high-impact changes to critical namespaces and protected resources.')] %}
-            {% for icon, title, description in recommendations %}
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                    <h3 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
-                </article>
-            {% endfor %}
-        </div>
+        {% endcall %}
     </section>
 </section>

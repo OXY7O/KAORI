@@ -54,6 +54,10 @@ const startTopologyWorkspace = () => {
     const $ = (id) => document.getElementById(id)
     const canvas = $('topology-canvas')
     const canvasShell = $('topology-canvas-shell')
+    const viewportHint = $('topology-viewport-hint')
+    const viewportHintTitle = $('topology-viewport-hint-title')
+    const viewportHintCount = $('topology-viewport-hint-count')
+    const viewportHintDescription = $('topology-viewport-hint-description')
     const boundaryLayer = $('topology-namespace-boundaries')
     const clusterSelect = $('topology-cluster')
     const namespaceSelect = $('topology-namespace')
@@ -104,6 +108,8 @@ const startTopologyWorkspace = () => {
     const relationshipTypes = ['contains', 'owns', 'scheduled_on', 'selects', 'routes_to', 'uses', 'mounts', 'binds']
 
     let cy = null
+    let readableFocusActive = false
+    let graphViewportInitialized = false
     let currentPayload = config.initial_graph || { nodes: [], edges: [], summary: {}, type_counts: {} }
     let fetchController = null
     let searchTimer = null
@@ -358,7 +364,8 @@ const startTopologyWorkspace = () => {
         else if (cy)
             window.requestAnimationFrame(() => {
                 cy.resize()
-                fitGraphToCanvas()
+                if (!graphViewportInitialized) fitGraphToCanvas({ preferReadable: true })
+                else scheduleBoundaryUpdate()
             })
         if (updateUrl) updateUrl()
     }
@@ -618,7 +625,7 @@ const startTopologyWorkspace = () => {
                 animate: 'end',
                 animationDuration: 420,
                 animationEasing: 'ease-out-cubic',
-                fit: true,
+                fit: false,
                 nodeDimensionsIncludeLabels: true,
                 padding: 80,
                 idealEdgeLength: 210,
@@ -640,12 +647,12 @@ const startTopologyWorkspace = () => {
             animate: false,
             circle: false,
             directed: true,
-            fit: true,
+            fit: false,
             grid: true,
             maximal: false,
             nodeDimensionsIncludeLabels: true,
             padding: visibleCount <= 8 ? 72 : 64,
-            spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.48 : 1.88,
+            spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.13 : 1.24,
         }
     }
 
@@ -698,7 +705,39 @@ const startTopologyWorkspace = () => {
         return visibleNodes.union(visibleEdges)
     }
 
-    const fitGraphToCanvas = () => {
+    // An all-node overview cannot keep every label legible in a dense graph.
+    // Start dense scopes at a readable focal viewport; Fit explicitly restores the overview.
+    const READABLE_ZOOM = 0.82
+    const DENSE_ZOOM_THRESHOLD = 0.72
+    const DENSE_NODE_THRESHOLD = 12
+
+    const updateViewportHint = (nodeCount) => {
+        if (!viewportHint || !viewportHintTitle || !viewportHintCount || !viewportHintDescription) return
+        const compactOverview = nodeCount > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD
+        viewportHint.hidden = !readableFocusActive && !compactOverview
+        if (viewportHint.hidden) return
+        viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'
+        viewportHintCount.textContent = `${nodeCount} resources`
+        viewportHintDescription.textContent = readableFocusActive
+            ? 'Pan to explore · Fit for overview.'
+            : 'Zoom for labels · Use Resource List.'
+    }
+
+    const readableFocusNode = (visibleNodes) => {
+        const selected = selectedNodeId ? visibleNodes.filter((node) => node.id() === selectedNodeId) : null
+        if (selected?.length) return selected
+        const scopedNamespace = !namespaceSelect.disabled ? namespaceSelect.value : ''
+        if (scopedNamespace) {
+            const namespace = visibleNodes.filter(
+                (node) => node.data('type') === 'namespace' && node.data('namespace') === scopedNamespace
+            )
+            if (namespace.length) return namespace.first()
+        }
+        const cluster = visibleNodes.filter((node) => node.data('type') === 'cluster')
+        return cluster.length ? cluster.first() : visibleNodes.first()
+    }
+
+    const fitGraphToCanvas = ({ preferReadable = false } = {}) => {
         if (!cy) return
         const visible = visibleGraphElements()
         if (!visible || !visible.nodes().length) return
@@ -710,6 +749,15 @@ const startTopologyWorkspace = () => {
         const padding = Math.max(48, Math.min(88, Math.round(shortest * 0.08)))
         const bounds = visible.boundingBox({ includeLabels: true, includeOverlays: false })
         cy.fit(bounds, padding)
+        graphViewportInitialized = true
+        readableFocusActive = false
+        if (preferReadable && visible.nodes().length > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD) {
+            cy.zoom(READABLE_ZOOM)
+            cy.center(readableFocusNode(visible.nodes()))
+            readableFocusActive = true
+        }
+        updateViewportHint(visible.nodes().length)
+        scheduleBoundaryUpdate()
     }
 
     const setRuntimeStatus = (message = '') => {
@@ -1605,9 +1653,9 @@ const startTopologyWorkspace = () => {
             window.requestAnimationFrame(() => {
                 ensureCanvasDimensions()
                 cy.resize()
-                fitGraphToCanvas()
+                fitGraphToCanvas({ preferReadable: true })
                 scheduleBoundaryUpdate()
-                window.setTimeout(fitGraphToCanvas, 140)
+                window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 140)
             })
         }
         cy.one('layoutstop', finalize)
@@ -1825,6 +1873,9 @@ const startTopologyWorkspace = () => {
 
     const createGraph = (payload) => {
         currentPayload = payload
+        graphViewportInitialized = false
+        readableFocusActive = false
+        if (viewportHint) viewportHint.hidden = true
         if (cy) cy.destroy()
         if (!topologyRenderer) {
             cy = null
@@ -1891,9 +1942,9 @@ const startTopologyWorkspace = () => {
                 window.requestAnimationFrame(() => {
                     ensureCanvasDimensions()
                     cy.resize()
-                    fitGraphToCanvas()
-                    window.setTimeout(fitGraphToCanvas, 120)
-                    window.setTimeout(fitGraphToCanvas, 320)
+                    fitGraphToCanvas({ preferReadable: true })
+                    window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 120)
+                    window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 320)
                     scheduleBoundaryUpdate()
                     setRuntimeStatus()
                     showError()
@@ -2080,12 +2131,9 @@ const startTopologyWorkspace = () => {
             if (visible?.nodes().length && rect.width >= 120 && rect.height >= 120) {
                 const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
                 const margin = 20
-                if (
-                    box.x1 < margin ||
-                    box.y1 < margin ||
-                    box.x2 > rect.width - margin ||
-                    box.y2 > rect.height - margin
-                ) {
+                const clipped =
+                    box.x1 < margin || box.y1 < margin || box.x2 > rect.width - margin || box.y2 > rect.height - margin
+                if (!readableFocusActive && clipped) {
                     window.requestAnimationFrame(fitGraphToCanvas)
                 }
             }

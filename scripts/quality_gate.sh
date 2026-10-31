@@ -99,22 +99,43 @@ run_timed_setup() {
 run_pytest_capture() {
     local label="$1"
     shift
-    local slug log_file result_line status started elapsed
+    local slug log_file result_line status started elapsed=0 test_pid heartbeat_pid pytest_display
+    status=0
 
     mkdir -p "$TEST_OUTPUT_DIR"
     slug="$(printf '%s' "$label" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$TEST_OUTPUT_DIR/${slug}.XXXXXX.log")"
     started="$(date +%s)"
-    printf '⏳ %s\n' "$label"
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        printf -v pytest_display '%q ' pytest "$@"
+        printf '⏳ %s · %s · output captured in %s\n' "$label" "$pytest_display" "$log_file"
+        pytest "$@" >"$log_file" 2>&1 &
+        test_pid=$!
+        (
+            while kill -0 "$test_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$test_pid" >/dev/null 2>&1; then
+                    elapsed=$(( $(date +%s) - started ))
+                    printf '⏳ %s still running · ⏱ %dm %02ds · final pytest counts pending\n' \
+                        "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+            done
+        ) &
+        heartbeat_pid=$!
+        wait "$test_pid" || status=$?
+        kill "$heartbeat_pid" >/dev/null 2>&1 || true
+        wait "$heartbeat_pid" >/dev/null 2>&1 || true
+    else
+        printf '⏳ %s\n' "$label"
+        pytest "$@" >"$log_file" 2>&1 || status=$?
+    fi
 
-    if pytest "$@" >"$log_file" 2>&1; then
+    if (( status == 0 )); then
         elapsed=$(( $(date +%s) - started ))
         result_line="$(pytest_result_line "$log_file" || true)"
         [[ -n "$result_line" ]] || result_line='Pytest completed successfully.'
         record_test_result 'PASS' "$label" "$result_line · ⏱ $(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60)))"
         return 0
-    else
-        status=$?
     fi
 
     elapsed=$(( $(date +%s) - started ))
@@ -130,13 +151,26 @@ run_command_capture() {
     local group="$1"
     local label="$2"
     shift 2
-    local slug log_file status first_failure started
+    local slug log_file status first_failure started command_display
+
+    # Display the actual canonical verifier command rather than an unquoted
+    # bash -lc wrapper. The wrapper remains the executable implementation.
+    if [[ "$#" -eq 3 && "$1" == bash && "$2" == -lc ]]; then
+        command_display="$3"
+    else
+        printf -v command_display '%q ' "$@"
+    fi
 
     mkdir -p "$STATIC_OUTPUT_DIR"
     slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
     started="$(date +%s)"
-    printf '⏳ %s — %s\n' "$group" "$label"
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
+        printf '%s — %s\n' "$group" "$label" > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+    else
+        printf '⏳ %s — %s\n' "$group" "$label"
+    fi
 
     if "$@" >"$log_file" 2>&1; then
         # Retain verified release-surface evidence for the Domain & Capability
@@ -144,8 +178,33 @@ run_command_capture() {
         if [[ "$label" == 'Release Surface Coverage' ]]; then
             RELEASE_SURFACE_COVERAGE_LOG="$log_file"
         fi
-        # Profile the measured Static bottleneck without logging every verifier.
-        # Keep each command's full stdout/stderr in its existing diagnostic file.
+        # Every executed verifier is published as evidence; the complete raw
+        # output remains in its existing, separately uploaded diagnostic log.
+        local report_elapsed=$(( $(date +%s) - started ))
+        printf "| %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
+            "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+            "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
+        # In CI only, show a bounded subset of standardized PASS evidence in
+        # the expanded live step; never print an unbounded raw verifier log.
+        # Unmatched formats stay available in the existing diagnostic artifact.
+        if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+            printf '📊 Verified output sample (up to 6 PASS lines, each max 200 chars):\n'
+            awk '
+                # Only fixed-format identity and numeric code-health metrics.
+                # Never echo arbitrary raw PASS content into public CI logs.
+                /^PASS — KAORI [A-Za-z ]+$/ || /^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions / || /^[[:space:]]+PASS — [0-9]+ broad exception handlers / || /^[[:space:]]+[0-9]+ checks passed/ {
+                    printf "  %s\n", substr($0, 1, 200)
+                    shown++
+                    if (shown >= 6) exit
+                }
+                END {
+                    if (shown == 0) print "  No standardized PASS detail; consult raw verifier log."
+                }
+            ' "$log_file"
+            printf '📦 Full diagnostic log: %s\n' "$log_file"
+            : > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+        fi
+        # Preserve the existing Engineering Quality timing and Pyright stats.
         if [[ "$group" == 'Engineering Quality' ]]; then
             local elapsed=$(( $(date +%s) - started ))
             printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
@@ -155,6 +214,9 @@ run_command_capture() {
                 printf '📊 Pyright analysis stats · last 24 lines (bounded)\n'
                 tail -n 24 "$log_file"
             fi
+        else
+            local elapsed=$(( $(date +%s) - started ))
+            printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
         fi
         return 0
     else
@@ -163,12 +225,19 @@ run_command_capture() {
 
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
+    local report_elapsed=$(( $(date +%s) - started ))
+    printf "| %s | %s | \`%s\` | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
+        "$group" "$label" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+        "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
     printf '❌ First actionable failure — %s\n' "$first_failure" >&2
     printf '⏱ %dm %02ds\n' $((($(date +%s) - started) / 60)) $((($(date +%s) - started) % 60)) >&2
     printf '📦 Diagnostic excerpt — bounded; full output retained at %s\n' "$log_file" >&2
     tail -n 60 "$log_file" >&2
     printf '➡️ Repair %s, collect remaining findings, then rerun %s.\n' "$label" "$group" >&2
+    if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
+        : > "$STATIC_OUTPUT_DIR/active-verifier.txt"
+    fi
     return "$status"
 }
 
@@ -243,6 +312,15 @@ render_test_taxonomy_summary() {
 }
 
 run_static() {
+    mkdir -p "$STATIC_OUTPUT_DIR"
+    {
+        printf '### Static & Governance — executed verifier inventory\n\n'
+        printf 'Each row below is an **executed** verifier, not a count of individual unit tests.\n'
+        printf 'Registered capability evidence is a separate source-ownership inventory, not a test PASS.\n\n'
+        printf '| Group | Check | Command | Outcome | Duration | Raw log in static evidence artifact |\n'
+        printf '| --- | --- | --- | --- | --- | --- |\n'
+    } > "$STATIC_OUTPUT_DIR/verification-report.md"
+
     run_static_group 'Foundation & Governance' \
         'Source Hygiene' 'bash scripts/verify_source_hygiene.sh' \
         'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py' \
@@ -345,6 +423,16 @@ run_static() {
         'UI Style' 'python scripts/verify_ui_style.py'
 
     run_contract_migration_gate
+    {
+        printf "\n**Contract & Migration Safety:** PASS — executed pytest selector \`tests/contracts tests/migrations -m \"contract or migration\"\`; JUnit evidence: \`contract-migration.xml\`.\n"
+        printf '\n#### Registered capability ownership (not executed tests)\n\n'
+        printf "\`\`\`text\n"
+        # The registry output has already been validated and replayed in the
+        # Domain & Capability Contracts log. This is a second presentation
+        # of existing evidence, never an additional verifier invocation.
+        sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' "$RELEASE_SURFACE_COVERAGE_LOG"
+        printf "\`\`\`\n"
+    } >> "$STATIC_OUTPUT_DIR/verification-report.md"
 }
 
 run_tests() {

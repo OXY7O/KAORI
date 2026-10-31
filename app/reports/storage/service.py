@@ -905,7 +905,7 @@ def scan_report_storage_integrity(
             backend_name, _object_key = parse_report_storage_uri(
                 stored_path,
             )
-        except Exception:
+        except ValueError:
             backend_name = 'unknown'
 
         backend_counts[backend_name] = (

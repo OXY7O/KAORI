@@ -273,14 +273,19 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'fleet_metrics_count: int = 0' in freshness
     assert 'fleet_alerts_count: int = 0' in freshness
     assert "'Per Cluster'" not in freshness
-    assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
+    # Report artifacts are committed references, not proof of stored-file accessibility.
+    assert 'has_artifacts = reporting_snapshot.artifact_records > 0' in freshness
+    assert 'has_requests = reporting_snapshot.generated_reports > 0' in freshness
+    assert "status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated')" in freshness
+    assert 'Committed artifact references; storage accessibility is not verified here.' in freshness
     assert 'No immediate scaling required.' in capacity
     assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
     assert (
         'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
         in capacity
     )
-    assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
+    assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
+    assert 'Data Scope:</span> worker nodes only' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
@@ -290,6 +295,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert "'Committed storage evidence'" in object_reporting
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
+    assert 'Choose the report and narrowest scope for accurate results.' in reporting_workspace
+    assert 'Preserve the artifact and supporting audit evidence for traceability.' in reporting_workspace
     assert 'Committed capacity, usage, headroom, and response path.' in object_capacity
     assert "'Worker Data'" in object_service
     assert "'Worker Data Required'" not in object_service
@@ -369,11 +376,36 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
         assert 'components/operational_alert_response.html' in source
         assert 'components/operational_flow_steps.html' not in source
         assert 'alert_response_steps' in source
-        assert 'before acting on the signal' in source
-        assert 'establish an accountable owner' in source
-        assert 'remains auditable' in source
         for step in ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record'):
             assert f"'{step}'" in source
+
+    # Domain copy may be concise; retain source validation, ownership, and audit evidence.
+    for token in ('snapshot freshness', 'alert-source evidence before acting.', 'assign an owner.', 'auditability.'):
+        assert token in kubernetes_response
+    for token in (
+        'committed snapshot freshness',
+        'alert-source evidence.',
+        'blast radius',
+        'affected bucket or request path',
+        'and owner.',
+        'follow-up evidence.',
+    ):
+        assert token in object_response
+
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    assert 'expected_alert_steps = (' in verifier
+    assert "'components/operational_alert_response.html'" in verifier
+    assert "'committed snapshot'" in verifier
+    assert "'alert-source evidence'" in verifier
+    assert "'safety guardrails'" in verifier
+    assert "'follow-up evidence'" in verifier
+    assert 'step_positions != sorted(step_positions)' in verifier
+    for retired_copy in (
+        'before acting on the signal',
+        'establish an accountable owner',
+        'remains auditable',
+    ):
+        assert retired_copy not in verifier
 
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     for source in (kubernetes_reporting, object_reporting):
@@ -385,6 +417,37 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     assert 'Governed Reporting Flow' in reporting_workspace
     for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
         assert f"'{step}'" in reporting_workspace
+
+
+def test_alerts_summary_verifier_uses_domain_copy_and_shared_preview_cap() -> None:
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    shared = read('app/templates/components/operational_alert_summary.html')
+    templates = (
+        (
+            'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'app/templates/artifact_registry/partials/_overview_alerts_summary.html',
+            'Active Registry AlertCases and recent cases.',
+        ),
+    )
+
+    assert 'rows[:5]' in shared
+    assert 'row_token, description in (' in verifier
+    assert 'f"description=\'{description}\'"' in verifier
+    assert "'Intelligence findings are separate.'" in verifier
+    assert "empty_label='No Active Cases'" in verifier
+    assert "empty_title='No Active Alert Cases'" in verifier
+    assert 'row_token,' in verifier
+    for path, description in templates:
+        assert f"description='{description}'" in read(path)
+        assert f"'{description}'" in verifier
+    assert verifier.count('Active Registry AlertCases and recent cases.') == 1
 
 
 def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> None:
@@ -417,7 +480,25 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
     assert 'components/reporting_dashboard_workspace.html' in object_summary
     assert 'reporting.latest_reports[:4]' in reporting_workspace
-    assert 'query_all(Report, selected_cluster_id, limit=4)' in kubernetes_builder
+    # Keep recent Kubernetes reports domain-scoped, selection-scoped, ordered, and bounded.
+    assert "Report.report_domain == 'kubernetes'" in kubernetes_builder
+    assert 'Report.cluster_id == selected_cluster_id' in kubernetes_builder
+    assert '_kubernetes_report_query(selected_cluster_id)' in kubernetes_builder
+    assert '.order_by(Report.created_at.desc(), Report.id.desc())' in kubernetes_builder
+    assert '.limit(4)' in kubernetes_builder
+    assert 'query_all(Report' not in kubernetes_builder
+
+    verifier = read('scripts/verify_operational_dashboard_standard.py')
+    for token in (
+        'def _kubernetes_report_query(',
+        "Report.report_domain == 'kubernetes'",
+        'Report.cluster_id == selected_cluster_id',
+        '_kubernetes_report_query(selected_cluster_id)',
+        '.order_by(Report.created_at.desc(), Report.id.desc())',
+        '.limit(4)',
+    ):
+        assert token in verifier
+    assert "'query_all(Report' in reporting_builder" in verifier
     assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in object_service
 
     for source in (reporting_workspace, kubernetes_builder, object_service):
@@ -452,6 +533,21 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     assert 'rows[:5]' in alerts
     assert 'components/numbered_governance_steps.html' in response
     assert "'Recommended Actions'" in recommendations
+    # Canonical title stays intact in the DOM and tooltip, while long IDs do
+    # not create irregular dashboard card heights across five-column peers.
+    assert 'title="{{ action.title }}"' in recommendations
+    assert (
+        'class="line-clamp-2 break-words text-sm font-semibold leading-5 '
+        'text-content-primary transition-colors group-hover:text-kaori-primary"' in recommendations
+    )
+    assert '{{ action.title }}</p>' in recommendations
+    assert 'mt-2 line-clamp-2 text-xs leading-5 text-content-muted' in recommendations
+    # The source class alone is not enough: the served, checked-in CSS must
+    # contain the generated utility so the browser actually limits the title.
+    assert '.line-clamp-2{-webkit-line-clamp:2;' in read('app/static/css/output.css')
+    assert "'.line-clamp-2{-webkit-line-clamp:2;'" in read('scripts/verify_css_build.mjs')
+    assert 'detail=action.rule_key' in recommendations
+    assert '<span class="truncate">{{ action.source }}</span>' in recommendations
 
     kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     object_hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')

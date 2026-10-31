@@ -30,7 +30,7 @@ from app.platform_operations.kubernetes.secret_reveal.service import (
     get_secret_reveal_cluster,
     rollback_secret_reveal_settings_transaction,
 )
-from app.platform_operations.notifications.feedback import queue_operational_feedback
+from app.platform_operations.notifications.feedback import OperationalActionPresentation, queue_operational_feedback
 from app.platform_operations.notifications.service import record_operational_activity, stage_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
@@ -44,7 +44,10 @@ def _validate_csrf() -> None:
 
 
 def _settings_request_args(cluster_id: str) -> dict[str, Any]:
-    settings_args: dict[str, Any] = {'cluster_id': cluster_id}
+    settings_args: dict[str, Any] = {
+        'cluster_id': cluster_id,
+        'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites',
+    }
     for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
         value = (request.form.get(key) or '').strip()
         if value:
@@ -111,21 +114,33 @@ def _record_settings_activity(
     metadata: dict[str, object],
     durable_with_operation: bool = False,
 ) -> dict[str, Any]:
-    writer = stage_operational_activity if durable_with_operation else record_operational_activity
-    return writer(
+    action_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal')
+    evidence = {
+        **metadata,
+        'secret_value_recorded': False,
+        'kubeconfig_recorded': False,
+    }
+    if durable_with_operation:
+        return stage_operational_activity(
+            user_id=current_user.id,
+            event_type=event_type,
+            status=status,
+            title=title,
+            message=message,
+            action_url=action_url,
+            action=OperationalActionPresentation(label='Open Kubernetes Administration', icon='server-cog'),
+            metadata=evidence,
+        )
+    return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
         title=title,
         message=message,
-        action_url=url_for('platform_operations.kubernetes.index', tab='secret-reveal'),
+        action_url=action_url,
         action_label='Open Kubernetes Administration',
         action_icon='server-cog',
-        metadata={
-            **metadata,
-            'secret_value_recorded': False,
-            'kubeconfig_recorded': False,
-        },
+        metadata=evidence,
     )
 
 
@@ -133,7 +148,7 @@ def _record_settings_activity(
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
     redirect_args: dict[str, Any] = {'tab': 'secret-reveal'}
-    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page'):
+    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view'):
         value = (request.args.get(key) or '').strip()
         if value:
             redirect_args[key] = value
@@ -162,6 +177,7 @@ def workspace():
 
     selected_cluster = context.get('selected_cluster')
     push_args: dict[str, Any] = {
+        'view': 'policies' if request.args.get('view') == 'policies' else 'prerequisites',
         'namespace_q': context['namespace_filters']['query'],
         'namespace_policy': context['namespace_filters']['policy'],
         'page': context['namespace_pagination']['page'],

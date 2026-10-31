@@ -14,7 +14,7 @@
         {{ provider_front.hero("siren", "server-cog",
                 "Alertmanager Integrations",
                 "Register Alertmanager connections with governed consumer bindings.",
-                stats.total, stats.ready, stats.bindings, posture_status, url_for('alertmanager.new_instance') ,
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.choose_integration_provider', integration_type='alert_source') ,
         ready_total=stats.configured) }}
         {{ provider_front.overview("siren",
                 "Alertmanager Integration Overview",

@@ -550,6 +550,14 @@
                                                                 <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                                 View More
                                                             </button>
+                                                            {% if row.impact_available %}
+                                                                <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.vulnerability_id.upper() ) }}"
+                                                                   aria-label="Review Kubernetes impact for {{ row.vulnerability_id }}"
+                                                                   class="{{ table_ui.action_classes() }}">
+                                                                    <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    Impact
+                                                                </a>
+                                                            {% endif %}
                                                             {{ supply_chain_detail.vulnerability(row, vulnerability_dialog_id) }}
                                                         </td>
                                                     </tr>

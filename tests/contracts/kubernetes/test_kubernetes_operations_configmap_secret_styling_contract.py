@@ -190,7 +190,6 @@ def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
         'app/templates/kubernetes/operations/secrets/tls_rotation.html',
     )
     shared_shell_templates = (
-        'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html',
         'app/templates/kubernetes/operations/secrets/create.html',
         'app/templates/kubernetes/operations/secrets/tls_rotation.html',
     )
@@ -201,10 +200,18 @@ def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
 
     for relative in semantic_templates:
         source = read(relative)
-        assert 'components/operational_callout.html' in source
         assert 'border-status-' not in source
-        assert 'operational_callout.semantic_border_classes(' in source
         assert relative not in baseline['files']
+        if relative.endswith('_reveal_pending_approvals.html'):
+            assert 'components/table.html' in source
+            assert 'components/table_registry.html' in source
+            assert 'table_ui.block_classes()' in source
+        elif relative.endswith('tls_rotation.html'):
+            assert 'components/kubernetes_operation_ui.html' in source
+            assert 'secret_ui.surface_shell_classes' in source
+        else:
+            assert 'components/operational_callout.html' in source
+            assert 'operational_callout.semantic_border_classes(' in source
 
     for relative in shared_shell_templates:
         source = read(relative)

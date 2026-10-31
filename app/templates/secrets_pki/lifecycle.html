@@ -1,0 +1,166 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% block title %}Lifecycle &amp; Assurance · Secrets &amp; PKI · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-lifecycle" class="min-w-0 space-y-6">
+        <nav class="flex flex-wrap gap-3"
+             aria-label="Secrets and PKI lifecycle workspaces">
+            <a href="{{ url_for('secrets_pki.leases') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Leases</a>
+            <a href="{{ url_for('secrets_pki.consumers') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Consumers</a>
+            <a href="{{ url_for('secrets_pki.governance') }}"
+               class="text-sm font-semibold text-kaori-primary hover:underline">Governance</a>
+        </nav>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Secrets & PKI', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Lifecycle &amp; Assurance</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Assess committed KV v2, PKI expiry, and Kubernetes TLS evidence.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database-zap', 'Committed KAORI Evidence') }}
+                            {{ page_hero.meta_label('shield-check', 'Provider-Neutral Capability') }}
+                            {{ page_hero.meta_label('lock-keyhole', 'No Secret Values or Paths') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Lifecycle evidence readiness">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('KV v2 Evidence', kv2_version_posture.label, 'database-zap') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('layers', 'Version Evidence',
+                                                        kv2_version_posture.observed_versions if kv2_version_posture.observed_versions is not none else 'Not Qualified',
+                                                        'Current committed generation only') }}
+                            {{ page_hero.context_metric('certificate', 'PKI Expiration',
+                                                        pki_validity.label, 'Opted-in public certificates') }}
+                        </div>
+                        {{ page_hero.context_info('shield-alert',
+                                                'Missing evidence is not zero. Validity and matching fingerprints do not prove rotation, delivery, trust or endpoint TLS serving.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {{ section_intro.render('Version Lifecycle',
+                'Current-generation KV v2 metadata from complete and fresh approved collections only.',
+                supporting='Observed lifecycle states are provider evidence, not proof of an applied rotation policy or consumer adoption.') }}
+        {% if kv2_version_posture.status in ('ready', 'observed_empty') %}
+            <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {{ metric_card.render('Available', kv2_version_posture.available,
+                                'Observed versions currently available according to committed Vault metadata.',
+                                'check-circle', source_label='Committed KV v2') }}
+                {{ metric_card.render('Scheduled Deletion', kv2_version_posture.scheduled_deletion,
+                                'Deletion time is scheduled; consumer safety is not verified.',
+                                'calendar-clock', source_label='Committed KV v2') }}
+                {{ metric_card.render('Soft Deleted', kv2_version_posture.soft_deleted,
+                                'Observed metadata indicates a recoverable deletion state, not active consumption.',
+                                'archive', source_label='Committed KV v2') }}
+                {{ metric_card.render('Destroyed', kv2_version_posture.destroyed,
+                                'Observed version metadata indicates destroyed state.',
+                                'shield-x', source_label='Committed KV v2') }}
+                {{ metric_card.render('Unknown State', kv2_version_posture.unknown,
+                                'Ambiguous or incomplete version metadata remains unknown.',
+                                'circle-help', source_label='Committed KV v2') }}
+            </div>
+        {% else %}
+            {% call section_card.render('Version Lifecycle Not Qualified',
+                'Lifecycle metrics require a current, complete committed KV v2 observation generation.',
+                'shield-alert') %}
+                <p role="status" class="text-sm text-status-warning-text">
+                    {{ kv2_version_posture.label }}. Missing or stale evidence does not establish an empty or healthy lifecycle.
+                </p>
+            {% endcall %}
+        {% endif %}
+        {{ section_intro.render('Certificate Validity',
+                'Public X.509 notBefore/notAfter windows from opted-in, source-complete Vault PKI stored-certificate observations.',
+                supporting='These are current UTC validity facts, not revocation, chain-trust, issuance-completeness or endpoint-serving assurance.') }}
+        {% if pki_validity.status == 'ready' %}
+            <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {{ metric_card.render('Expires Within 7 Days', pki_validity.expires_within_7d,
+                                'Currently valid public certificates approaching expiry.', 'calendar-clock', source_label='Committed PKI') }}
+                {{ metric_card.render('Expires in 8–30 Days', pki_validity.expires_8_to_30d,
+                                'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
+                {{ metric_card.render('Expired', pki_validity.expired,
+                                'Observed public certificates past notAfter; revocation not assessed.', 'triangle-alert', source_label='Committed PKI') }}
+                {{ metric_card.render('Not Yet Valid', pki_validity.not_yet_valid,
+                                'Observed notBefore lies in the future.', 'clock-3', source_label='Committed PKI') }}
+                {{ metric_card.render('Unknown Chronology', pki_validity.unknown,
+                                'Invalid or unavailable validity chronology.', 'circle-help', source_label='Committed PKI') }}
+            </div>
+        {% else %}
+            {% call section_card.render('Public Certificate Validity Not Qualified',
+                'A complete, fresh and explicitly enabled stored public certificate collection is required.',
+                'shield-alert') %}
+                <p role="status" class="text-sm text-status-warning-text">
+                    {{ pki_validity.label }}. Expiration counts are withheld rather than assumed to be zero.
+                </p>
+            {% endcall %}
+        {% endif %}
+        {% if can_view_analytics %}
+            <a href="{{ url_for('secrets_pki.certificate_analytics') }}"
+               class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                Open Certificate Expiration Analytics
+            </a>
+        {% endif %}
+        {% call section_card.render('Kubernetes TLS Consumer Correlation',
+            'Source-qualified public-certificate fingerprint overlap and Kubernetes TLS/Ingress evidence.',
+            'waypoints') %}
+            {% if delivery_overlap.status == 'permission_required' %}
+                <p role="status" class="text-sm text-status-warning-text">
+                    Independent Kubernetes TLS Governance permission is required before any cross-domain correlation can be shown.
+                </p>
+            {% elif delivery_overlap.status in ('overlap_observed', 'no_overlap_observed') %}
+                <p role="status" class="text-sm text-content-secondary">{{ delivery_overlap.label }}</p>
+                <dl class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <dt class="text-xs font-semibold text-content-muted">Matching Public Fingerprints</dt>
+                        <dd class="mt-1 text-xl font-semibold text-content-primary">
+                            {{ delivery_overlap.overlapping_certificates if delivery_overlap.overlapping_certificates is not none else 'Not Qualified' }}
+                        </dd>
+                    </div>
+                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <dt class="text-xs font-semibold text-content-muted">Observed Matching TLS Secrets</dt>
+                        <dd class="mt-1 text-xl font-semibold text-content-primary">
+                            {{ delivery_overlap.matching_kubernetes_tls_secrets if delivery_overlap.matching_kubernetes_tls_secrets is not none else 'Not Qualified' }}
+                        </dd>
+                    </div>
+                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                        <dt class="text-xs font-semibold text-content-muted">Ingress-Referenced Matches</dt>
+                        <dd class="mt-1 text-xl font-semibold text-content-primary">
+                            {{ delivery_overlap.matching_tls_secrets_referenced_by_ingress if delivery_overlap.matching_tls_secrets_referenced_by_ingress is not none else 'Not Qualified' }}
+                        </dd>
+                    </div>
+                </dl>
+                <p class="mt-3 text-xs leading-5 text-content-muted">
+                    Kubernetes object identity: {{ delivery_overlap.object_identity_status }}.
+                    Controller references: {{ delivery_overlap.controller_owner_reference_status }}.
+                    Observed overlap is not proof of Vault-to-controller delivery, successful Secret reconciliation,
+                    rotation, trust or active endpoint TLS serving.
+                </p>
+            {% else %}
+                <p role="status" class="text-sm text-status-warning-text">
+                    {{ delivery_overlap.label }}. Correlation counts remain unavailable until both evidence sources are qualified.
+                </p>
+            {% endif %}
+        {% endcall %}
+        {% call section_card.render('Evidence Boundaries &amp; Next Review',
+            'Use provider registration for configuration and canonical Jobs for collection; this workspace never retrieves secret values.',
+            'shield-check') %}
+            <p class="text-sm leading-6 text-content-secondary">
+                Vault executes; KAORI normalizes committed evidence. No per-Secret paths, certificate identities, lease renewal
+                commands, provider mutations or resource-specific exports are available here.
+                Source-scoped Secret Registry and privileged actions require separate approved authorization and UAT.
+            </p>
+            <a href="{{ url_for('secrets_pki.inventory') }}"
+               class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                Review Inventory Evidence
+            </a>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

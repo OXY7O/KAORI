@@ -1,42 +1,72 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-<div class="w-full">
-    <table class="w-full table-fixed text-content-primary">
+{% import "components/table.html" as table_ui %}
+<div class="w-full overflow-x-auto">
+    <table class="{{ table_ui.table_classes('w-full table-fixed') }}">
         <colgroup>
             <col class="w-[38%]">
             <col class="w-[16%]">
             <col class="w-[20%]">
             <col class="w-[26%]">
         </colgroup>
-        <thead>
-            <tr class="border-b border-outline-default bg-surface-hover text-xs text-content-secondary">
-                <th class="px-5 py-3 text-left">Namespace</th>
-                <th class="px-5 py-3 text-left">Live Namespace</th>
-                <th class="px-5 py-3 text-left">Current Policy</th>
-                <th class="px-5 py-3 text-right">Set Policy</th>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Live Namespace</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Current Policy</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for row in namespace_rows %}
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
                 {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
                 {% set live_tone = 'normal' if row.live_state == 'available' else 'warning' if row.live_state == 'missing' else 'unknown' %}
-                <tr class="border-t border-outline-default text-sm transition hover:bg-surface-hover">
-                    <td class="px-5 py-3 align-middle">
-                        <div class="flex max-w-[360px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary"
-                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
-                                <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
-                            </div>
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_ui.title_cell(row.namespace, 'Namespace-scoped Secret access', 'box') }}
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex min-w-0 flex-col items-start gap-1">
+                            {{ table_label.status_label(live_label, live_tone) }}
+                            <span class="text-xs leading-5 text-content-muted">
+                                {{ 'Observed in Kubernetes' if row.live_state == 'available' else 'Not found in cluster' if row.live_state == 'missing' else 'Live presence unverified' }}
+                            </span>
                         </div>
                     </td>
-                    <td class="px-5 py-3 text-left align-middle">{{ table_label.status_label(live_label, live_tone) }}</td>
-                    <td class="px-5 py-3 text-left align-middle">
-                        {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex min-w-0 flex-col items-start gap-1">
+                            {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
+                            <span class="text-xs leading-5 text-content-muted">
+                                {{ 'Reveal access disabled' if row.policy == 'disabled' else 'Approval required' if row.policy == 'approval_required' else 'Step-up check required' if row.policy == 'step_up' else 'Configured KAORI policy' }}
+                            </span>
+                        </div>
                     </td>
-                    <td class="px-5 py-3 align-middle">
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                        <button type="button"
+                                class="{{ table_ui.action_classes() }} ml-auto"
+                                data-kaori-namespace-policy-editor
+                                data-detail-toggle
+                                data-detail-target="secret-reveal-policy-form-{{ loop.index }}"
+                                data-detail-row="secret-reveal-policy-editor-{{ loop.index }}"
+                                data-detail-group="secret-reveal-policy-{{ selected_cluster.id }}"
+                                data-detail-open-label="Edit Policy"
+                                data-detail-close-label="Close Editor"
+                                aria-controls="secret-reveal-policy-editor-{{ loop.index }}"
+                                aria-label="Edit reveal policy for {{ row.namespace }}"
+                                aria-expanded="false">
+                            <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                            <span data-detail-toggle-label>Edit Policy</span>
+                            <i data-lucide="chevron-down"
+                               data-detail-chevron
+                               class="h-3.5 w-3.5 transition-transform"
+                               aria-hidden="true"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr id="secret-reveal-policy-editor-{{ loop.index }}"
+                    class="hidden bg-surface-hover">
+                    <td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">
                         <form method="post"
                               action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
                               hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
@@ -44,9 +74,13 @@
                               hx-swap="outerHTML show:none"
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
+                              id="secret-reveal-policy-form-{{ loop.index }}"
+                              data-detail-static="true"
+                              data-open="false"
                               x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
-                              class="ml-auto flex w-full items-center justify-end gap-2">
+                              class="min-w-0">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="view" value="policies">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
                             <input type="hidden"
                                    name="namespace_q"
@@ -58,31 +92,57 @@
                             <input type="hidden"
                                    name="per_page"
                                    value="{{ namespace_pagination.per_page }}">
-                            <select name="policy"
-                                    x-model="current"
-                                    aria-label="Reveal policy for {{ row.namespace }}"
-                                    class="h-10 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">
-                                {% for value, label in reveal_policy_choices.items() %}
-                                    {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
-                                    <option value="{{ value }}"
-                                            {% if row.policy == value %}selected{% endif %}
-                                            {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit"
-                                    title="Save {{ row.namespace }} policy"
-                                    :disabled="current === initial"
-                                    :class="current !== initial ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm hover:border-kaori-primary-hover hover:bg-kaori-primary-hover' : 'border-outline-default bg-surface-card text-content-muted shadow-none'"
-                                    class="inline-flex h-10 w-20 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed">
-                                <i data-lucide="save" class="h-4 w-4"></i>
-                                Save
-                            </button>
+                            <div class="grid min-w-0 items-end gap-4 lg:grid-cols-12 lg:gap-6">
+                                <div class="min-w-0 lg:col-span-4">
+                                    <h4 class="text-sm font-semibold text-content-primary">Edit Namespace Policy</h4>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <span class="font-semibold">{{ row.namespace }}</span> · Current policy:
+                                        {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title) }}
+                                    </p>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">This change applies only to the selected Namespace.</p>
+                                </div>
+                                <div class="min-w-0 lg:col-span-5">
+                                    <label for="secret-reveal-policy-{{ loop.index }}"
+                                           class="{{ table_ui.filter_label_classes() }}">New Reveal Policy</label>
+                                    <select id="secret-reveal-policy-{{ loop.index }}"
+                                            name="policy"
+                                            x-model="current"
+                                            aria-label="Reveal policy for {{ row.namespace }}"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        {% for value, label in reveal_policy_choices.items() %}
+                                            {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
+                                            <option value="{{ value }}"
+                                                    {% if row.policy == value %}selected{% endif %}
+                                                    {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Available choices depend on cluster readiness and live Namespace state.</p>
+                                </div>
+                                <div class="flex min-w-0 items-center justify-start gap-2 lg:col-span-3 lg:justify-end">
+                                    {% set cancel_page_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page) %}
+                                    {% set cancel_workspace_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page) %}
+                                    <a href="{{ cancel_page_url }}"
+                                       hx-get="{{ cancel_workspace_url }}"
+                                       hx-target="#secret-reveal-namespace-table-content"
+                                       hx-select="#secret-reveal-namespace-table-content"
+                                       hx-swap="innerHTML"
+                                       hx-indicator="#secret-reveal-namespace-loading"
+                                       class="{{ table_ui.action_classes() }}">Cancel</a>
+                                    <button type="submit"
+                                            title="Save {{ row.namespace }} policy"
+                                            :disabled="current === initial"
+                                            class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                                        Save Policy
+                                    </button>
+                                </div>
+                            </div>
                         </form>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="4" class="p-0">
+                    <td colspan="4" class="p-0 text-left">
                         {% if namespace_summary.total %}
                             {% set empty_state_icon = "search-x" %}
                             {% set empty_state_label = "No Results" %}
@@ -125,6 +185,7 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center gap-2">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+            <input type="hidden" name="view" value="policies">
             <input type="hidden"
                    name="namespace_q"
                    value="{{ namespace_filters.query }}">
@@ -146,8 +207,8 @@
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% if namespace_pagination.has_prev %}
-            {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
-            {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ prev_url }}"
                hx-get="{{ prev_partial_url }}"
                hx-target="#secret-reveal-namespace-table-content"
@@ -159,10 +220,29 @@
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        {{ pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages) }}
+        {# Numeric links must use the same route, selection, history and scope
+           as Previous/Next. The shared macro itself owns the link markup. #}
+        {% set namespace_page_query = {
+                    'tab': 'secret-reveal',
+                    'view': 'policies',
+                    'cluster_id': selected_cluster.id,
+                    'namespace_q': namespace_filters.query,
+                    'namespace_policy': namespace_filters.policy,
+                    'per_page': namespace_pagination.per_page
+                } %}
+        <span hx-select="#secret-reveal-namespace-table-content" hx-push-url="true">
+            {{ pagination_ui.numeric_pages(namespace_pagination.page,
+                        namespace_pagination.total_pages,
+                        endpoint='platform_operations.kubernetes.secret_reveal.workspace',
+                        href_endpoint='platform_operations.kubernetes.index',
+                        query_params=namespace_page_query,
+                        hx_target='#secret-reveal-namespace-table-content',
+                        hx_indicator='#secret-reveal-namespace-loading',
+                        hx_swap='innerHTML') }}
+        </span>
         {% if namespace_pagination.has_next %}
-            {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
-            {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"
                hx-get="{{ next_partial_url }}"
                hx-target="#secret-reveal-namespace-table-content"

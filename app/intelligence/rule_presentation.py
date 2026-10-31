@@ -11,11 +11,13 @@ DOMAIN_OPTIONS = [
     {'value': 'registry', 'label': 'Artifact Registry'},
     {'value': 'server', 'label': 'Server'},
     {'value': 'hci', 'label': 'HCI'},
+    {'value': 'secrets_pki', 'label': 'Secrets & PKI'},
 ]
 PROVIDER_OPTIONS = [
     {'value': '', 'label': 'All Provider Coverage'},
     {'value': 'minio', 'label': 'MinIO'},
     {'value': 'harbor', 'label': 'Harbor'},
+    {'value': 'vault', 'label': 'HashiCorp Vault'},
 ]
 CATEGORY_OPTIONS = [
     {'value': '', 'label': 'All Categories'},
@@ -55,6 +57,7 @@ SOURCE_KIND_OPTIONS = [
     {'value': 'vm', 'label': 'VM'},
     {'value': 'datastore', 'label': 'Datastore'},
     {'value': 'hci_cluster', 'label': 'HCI Cluster'},
+    {'value': 'pki_certificate_population', 'label': 'PKI Certificate Population'},
 ]
 LOGIC_TYPE_OPTIONS = [
     {'value': '', 'label': 'All Logic Types'},
@@ -77,6 +80,7 @@ SIGNAL_SOURCE_OPTIONS = [
     {'value': 'metrics_source_metrics', 'label': 'Metrics Source Metrics'},
     {'value': 'server_inventory', 'label': 'Server Node Exporter'},
     {'value': 'hci_provider_api', 'label': 'HCI API'},
+    {'value': 'secrets_pki_committed_evidence', 'label': 'Secrets & PKI Committed Evidence'},
 ]
 
 
@@ -102,6 +106,7 @@ def domain_label(value: str) -> str:
         'registry': 'Artifact Registry',
         'server': 'Server',
         'hci': 'HCI',
+        'secrets_pki': 'Secrets & PKI',
     }.get(value, format_label(value))
 
 
@@ -125,6 +130,7 @@ def signal_label(value: str) -> str:
         'metrics_source_metrics': 'Metrics Source Metrics',
         'server_inventory': 'Server Node Exporter',
         'hci_provider_api': 'HCI API',
+        'secrets_pki_committed_evidence': 'Secrets & PKI Committed Evidence',
     }.get(value, format_label(value))
 
 
@@ -153,7 +159,7 @@ def provider_keys(rule: dict[str, Any]) -> list[str]:
 
 
 def provider_label(keys: list[str]) -> str:
-    labels = {'minio': 'MinIO', 'harbor': 'Harbor'}
+    labels = {'minio': 'MinIO', 'harbor': 'Harbor', 'vault': 'HashiCorp Vault'}
     if not keys:
         return 'Domain-owned'
     return ', '.join(labels.get(key, format_label(key)) for key in keys)

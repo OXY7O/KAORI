@@ -104,6 +104,17 @@ Overview · Systems · Buckets & Containers
 Overview · Projects · Repositories · Artifacts
 ```
 
+### Assurance / Security
+
+The Security parent exposes **Overview** and **Findings** as level-2 sidebar
+capabilities, not duplicate page-level tabs. The Overview uses the standard
+Operational Dashboard four-tab internal framework, while Findings uses canonical
+server pagination and source-domain CVE impact deep links. CVE detail still belongs
+to the authoritative Artifact Registry source; future Security detail pages may
+use approved level-3 Integrated Workspace Tabs where true peer views exist.
+Neither provider instances nor unimplemented Security capabilities are shown
+as navigation.
+
 ### Artifact Registry / Security
 
 ```text

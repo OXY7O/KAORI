@@ -47,7 +47,7 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon('database' if row.binding.asset_type == 'object_storage_system' else 'boxes', 'brand', size='sm') }}
+                                {{ integration_ui.palette_icon('key-round' if row.binding.asset_type == 'vault_instance' else ('database' if row.binding.asset_type == 'object_storage_system' else 'boxes') , 'brand', size='sm') }}
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                                        title="{{ row.scope_label }}">{{ row.scope_label }}</p>

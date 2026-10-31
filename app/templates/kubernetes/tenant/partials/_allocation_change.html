@@ -1,5 +1,5 @@
 {% import "components/action_button.html" as action_button %}
-{% import "components/technical_category_tabs.html" as technical_category_tabs %}
+{% import "kubernetes/tenant/partials/_resource_profile_coverage_comparison.html" as coverage_comparison %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
@@ -191,147 +191,20 @@
                    hidden></p>
             </div>
             <div class="border-t border-outline-subtle px-5 py-5 sm:px-6">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
+                        <div>
                             <h4 class="text-sm font-semibold text-content-primary">Technical Details</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Compare Object Limits, Container Defaults, and Advanced Controls.</p>
+                            <p class="mt-1 text-xs text-content-muted">Full Resource Profile coverage · Native authority. This preview never approves or applies changes.</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
-                        <i data-lucide="lock-keyhole" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        Read Only
-                    </span>
+                    {{ table_label.special_label('Read Only', 'unknown', 'lock-keyhole') }}
                 </div>
-                <div class="mt-4 grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-6">
-                    <div class="min-w-0">
-                        {% call technical_category_tabs.tablist() %}
-                            {% for key, label, icon, description in [
-                                ('objects', 'Object Limits', 'boxes', 'ResourceQuota counts'),
-                                ('defaults', 'Container Defaults', 'container', 'LimitRange defaults'),
-                                ('advanced', 'Advanced Controls', 'shield-check', 'Capability evidence')
-                                ] %}
-                                <button type="button"
-                                        role="tab"
-                                        id="allocation-detail-tab-{{ key }}"
-                                        aria-controls="allocation-detail-panel-{{ key }}"
-                                        aria-selected="{{ 'true' if key == 'objects' else 'false' }}"
-                                        tabindex="{{ 0 if key == 'objects' else -1 }}"
-                                        data-tenant-allocation-detail-tab="{{ key }}"
-                                        class="flex w-full items-start gap-2.5 rounded-r-lg border-l-2 px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary' if key == 'objects' else 'border-transparent text-content-muted hover:bg-surface-elevated hover:text-content-primary' }}">
-                                    <i data-lucide="{{ icon }}"
-                                       class="mt-0.5 h-4 w-4 shrink-0"
-                                       aria-hidden="true"></i>
-                                    <span class="min-w-0">
-                                        <span class="block text-xs font-semibold">{{ label }}</span>
-                                        <span class="mt-1 block text-xs font-normal opacity-80">{{ description }}</span>
-                                    </span>
-                                </button>
-                            {% endfor %}
-                        {% endcall %}
-                    </div>
-                    <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-6">
-                        {% for key, description, rows in [
-                            ('objects', 'ResourceQuota object ceilings for the Namespace.', [
-                            ('PVCs', 'quota', 'persistentvolumeclaims'),
-                            ('Services', 'quota', 'services'),
-                            ('ConfigMaps', 'quota', 'configmaps'),
-                            ('Secrets', 'quota', 'secrets')
-                            ]),
-                            ('defaults', 'LimitRange defaults for new containers, not ResourceQuota ceilings.', [
-                            ('CPU Request', 'limits', 'default_request.cpu'),
-                            ('CPU Limit', 'limits', 'default.cpu'),
-                            ('Memory Request', 'limits', 'default_request.memory'),
-                            ('Memory Limit', 'limits', 'default.memory')
-                            ])
-                            ] %}
-                            <section role="tabpanel"
-                                     id="allocation-detail-panel-{{ key }}"
-                                     aria-labelledby="allocation-detail-tab-{{ key }}"
-                                     tabindex="0"
-                                     data-tenant-allocation-detail-panel="{{ key }}"
-                                     {% if key != 'objects' %}hidden{% endif %}>
-                                <p class="mb-3 text-xs leading-5 text-content-muted">{{ description }}</p>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full min-w-[26rem] table-fixed text-left text-sm"
-                                           aria-label="{{ 'Object Limits' if key == 'objects' else 'Container Defaults' }} current and proposed comparison">
-                                        <thead class="border-y border-outline-subtle bg-surface-elevated text-content-secondary">
-                                            <tr>
-                                                <th scope="col" class="w-[40%] px-3 py-3 text-xs font-semibold">Dimension</th>
-                                                <th scope="col" class="w-[27%] px-3 py-3 text-xs font-semibold">Current · Frozen</th>
-                                                <th scope="col"
-                                                    class="w-[33%] px-3 py-3 text-xs font-semibold text-kaori-primary">Proposed · Profile</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-outline-subtle">
-                                            {% for label, source, resource in rows %}
-                                                <tr data-tenant-allocation-tech-row class="hover:bg-surface-elevated">
-                                                    <th scope="row" class="px-3 py-3.5 font-medium text-content-secondary">{{ label }}</th>
-                                                    <td class="px-3 py-3.5 text-content-muted"
-                                                        data-tenant-allocation-tech-current="{{ source }}.{{ resource }}">—</td>
-                                                    <td class="px-3 py-3.5 font-semibold text-content-primary"
-                                                        data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}">—</td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-                        {% endfor %}
-                        <section role="tabpanel"
-                                 id="allocation-detail-panel-advanced"
-                                 aria-labelledby="allocation-detail-tab-advanced"
-                                 tabindex="0"
-                                 data-tenant-allocation-detail-panel="advanced"
-                                 hidden>
-                            <p class="mb-3 text-xs leading-5 text-content-muted">Capability evaluation is not proof of provider execution or read-back.</p>
-                            <div class="overflow-x-auto" data-tenant-allocation-advanced-list>
-                                <table class="w-full min-w-[26rem] table-fixed text-left text-sm"
-                                       aria-label="Advanced Controls recorded and proposed capability evaluation">
-                                    <thead class="border-y border-outline-subtle bg-surface-elevated text-content-secondary">
-                                        <tr>
-                                            <th scope="col" class="w-[40%] px-3 py-3 text-xs font-semibold">Control</th>
-                                            <th scope="col" class="w-[27%] px-3 py-3 text-xs font-semibold">Current · Recorded</th>
-                                            <th scope="col"
-                                                class="w-[33%] px-3 py-3 text-xs font-semibold text-kaori-primary">Proposed · Preflight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-outline-subtle">
-                                        {% for control_key, contract in resource_profile_advanced_controls.items() %}
-                                            <tr data-tenant-allocation-advanced-row="{{ control_key }}"
-                                                class="hover:bg-surface-elevated"
-                                                hidden>
-                                                <th scope="row" class="px-3 py-3.5 font-medium text-content-secondary">{{ contract.label }}</th>
-                                                <td class="px-3 py-3.5 text-content-muted"
-                                                    data-tenant-allocation-advanced-current="{{ control_key }}">—</td>
-                                                <td class="px-3 py-3.5 font-semibold text-content-primary"
-                                                    data-tenant-allocation-advanced-proposed="{{ control_key }}">—</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="flex items-start gap-2 py-5 text-xs text-content-muted"
-                                 data-tenant-allocation-advanced-empty>
-                                <i data-lucide="shield-check"
-                                   class="h-4 w-4 shrink-0 text-kaori-primary"
-                                   aria-hidden="true"></i>
-                                <span>No configured Advanced Controls in either contract.</span>
-                            </div>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Supported means preflight only; Recorded is committed evaluation evidence, not verified execution.</p>
-                        </section>
-                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
-                            <i data-lucide="info"
-                               class="mt-0.5 h-3.5 w-3.5 shrink-0"
-                               aria-hidden="true"></i>
-                            <span>Requests govern capacity admission; ResourceQuota limits enforce ceilings. This preview never approves or applies changes.</span>
-                        </p>
-                    </div>
-                </div>
+                {{ coverage_comparison.native_sections(resource_profile_advanced_controls) }}
             </div>
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"

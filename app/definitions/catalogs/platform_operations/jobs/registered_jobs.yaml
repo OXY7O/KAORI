@@ -101,6 +101,116 @@ jobs:
     operational pages.
   recent_execution_summary: Latest scheduled and manual Artifact Registry reconciliation runs.
   legacy_module: artifact_registry_inventory_sync
+- key: secrets_pki.inventory.sync
+  name: Secrets & PKI Inventory Sync
+  domain: Secrets & PKI
+  description: Reconcile safe metadata from explicitly approved Vault KV v2 mounts.
+  icon: key-round
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_inventory
+  operation: sync_secrets_pki_inventory
+  scope_type: secrets_pki_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.integrations.secrets_management.secrets_pki.job_adapter:dispatch_vault_inventory_sync
+  context_builder_path: app.integrations.secrets_management.secrets_pki.job_adapter:build_vault_inventory_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_inventory_sync.html
+  default_enabled: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Only ready Vault instances with explicitly approved KV v2 mounts are eligible. Provider errors retain
+    committed history.
+  execution_summary: Collect metadata-only Secret versions through canonical inventory workers, without reading values.
+  recent_execution_summary: Latest committed Secrets & PKI metadata reconciliations.
+- key: secrets_pki.vault_alerts.observe
+  name: Vault Alert Source Observation
+  domain: Secrets & PKI
+  description: >-
+    Commit bounded, source-qualified Alertmanager observations without creating AlertCases.
+  icon: bell-ring
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_vault_alert_observation
+  operation: observe_vault_alert_source
+  scope_type: secrets_pki_alert_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations
+  context_builder_path: app.intelligence.alert_signals.vault_jobs:build_vault_alert_job_context
+  configuration_template: platform_operations/jobs/configuration/definitions/vault_alert_observation.html
+  default_enabled: false
+  schedule_supported: false
+  manual_execution_supported: true
+  default_interval_minutes: 5
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Manual-only, with exact Vault binding validation and worker-held HMAC key. No AlertCases or routing.
+  execution_summary: >-
+    Observe approved Vault Alertmanager bindings on demand; expired and failed source evidence is unknown.
+  recent_execution_summary: Latest manually authorized Vault Alert Source observations.
+- key: secrets_pki.pki.sync
+  name: Secrets & PKI Public Issuer Sync
+  domain: Secrets & PKI
+  description: Commit public issuer certificates from explicitly approved Vault PKI mounts, without key material.
+  icon: certificate
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_public_pki
+  operation: sync_secrets_pki_public_issuers
+  scope_type: secrets_pki_pki_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.integrations.secrets_management.secrets_pki.pki_job_adapter:dispatch_vault_pki_sync
+  context_builder_path: app.integrations.secrets_management.secrets_pki.pki_job_adapter:build_vault_pki_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_pki_sync.html
+  default_enabled: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Explicitly approved PKI mounts only; missing and failed observations preserve immutable public certificate
+    history.
+  execution_summary: Collect Vault public issuer fingerprints and validity without private keys or certificate PEM persistence.
+  recent_execution_summary: Latest public PKI issuer evidence reconciliations.
+- key: secrets_pki.pki.stored_certs.sync
+  name: Secrets & PKI Stored Certificates Sync
+  domain: Secrets & PKI
+  description: >-
+    Collect only stored public certificates exposed by approved Vault PKI mounts; no_store and imported
+    certificates are not enumerable.
+  icon: certificate
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_stored_certificates
+  operation: sync_secrets_pki_stored_certificates
+  scope_type: secrets_pki_pki_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.integrations.secrets_management.secrets_pki.stored_certificate_jobs:dispatch_stored_certificate_sync
+  context_builder_path: >-
+    app.integrations.secrets_management.secrets_pki.stored_certificate_jobs:build_stored_certificate_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_stored_cert_sync.html
+  default_enabled: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Authenticated LIST certs only within approved PKI mounts. Above 64 serials blocks collection; never imply full
+    issuance, revocation or delivery coverage.
+  execution_summary: Read bounded stored public certificate fingerprints/validity, without PEM or Secret/CA key storage.
+  recent_execution_summary: Latest bounded stored public certificate reconciliations.
 - key: artifact_registry.security.sync
   name: Artifact Registry Security Sync
   domain: Artifact Registry
@@ -398,3 +508,32 @@ jobs:
     freshness_minutes: 120
     stale_grace_minutes: 4320
   legacy_module: forecast_refresh
+- key: source_control.repository.sync
+  name: Source Control Repository Sync
+  domain: Source Control
+  description: Reconcile committed GitHub App installation repositories and access grants.
+  icon: git-branch
+  queue_name: inventory
+  workload_class: standard
+  job_type: source_control_repository_inventory
+  operation: sync_source_control_repositories
+  scope_type: source_control_installation_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: integrations.manage
+  dispatcher_path: app.integrations.source_control.job_adapter:dispatch_source_repositories
+  context_builder_path: app.integrations.source_control.job_adapter:build_source_repositories_context
+  configuration_template: platform_operations/jobs/configuration/definitions/source_control_repository_sync.html
+  default_enabled: false
+  manual_execution_supported: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    A fully admitted GitHub App with explicit installation grants is required. Incomplete scans retain committed
+    history; scheduling is off by default.
+  execution_summary: >-
+    Collect authorized GitHub repositories and commits only from installation-scoped metadata; preserve
+    access-loss history.
+  recent_execution_summary: Latest canonical Source Control repository reconciliation executions.

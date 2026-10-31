@@ -258,6 +258,14 @@ consumer_profiles:
   consumer_family: alerts
   selector_hint: Use a stable Registry deployment identity carried by alert rules, for example job, service,
     instance, deployment, or provider-specific Registry labels.
+- asset_type: vault_instance
+  profile_key: vault-alerts-v1
+  label: Vault Alert Source v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: The exact Vault instance alert selector was accepted. No active alert matches; payload identity remains unobserved until a representative alert arrives.
+  consumer_family: alerts
+  selector_hint: Use exactly vault_instance=<canonical KAORI IntegrationInstance ID>, matching the configured Metrics Source and Prometheus alert rule labels.
 - asset_type: server
   profile_key: infrastructure-alerts-v1
   label: Infrastructure Alerts v1

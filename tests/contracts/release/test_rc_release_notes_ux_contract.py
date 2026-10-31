@@ -43,3 +43,30 @@ def test_rc_release_notes_preserve_immutable_lineage_and_uat_boundary() -> None:
         'must not rebuild application bits',
     ):
         assert token in block
+
+
+def test_rc_expanded_steps_report_executed_evidence_not_only_a_summary() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for marker in (
+        'RC admission · resolving accepted staging SHA',
+        'RC admission · waiting for exact staging Full Admission success',
+        'RC admission · Full Admission PASS',
+        'RC publication · building exact production image',
+        'RC security · HIGH/CRITICAL image scan PASS',
+        'RC runtime · production readiness and baseline DAST PASS',
+        'RC publication · reserving immutable Git tag',
+        'RC evidence · immutable digest recorded',
+        'RC attestation · signing SPDX SBOM predicate',
+        'RC attestation · signing SLSA provenance predicate',
+        'RC verification · SPDX and SLSA source lineage PASS',
+        'RC publication · creating GitHub prerelease',
+    ):
+        assert marker in workflow
+
+    # The immutable tag, digest and attestations remain authoritative.
+    assert 'quality_run_id=%s' in workflow
+    assert '--severity HIGH,CRITICAL --scanners vuln' in workflow
+    assert 'sbom-attestation-statements.jsonl' in workflow
+    assert 'provenance-attestation-statements.jsonl' in workflow
+    assert 'if-no-files-found: error' in workflow

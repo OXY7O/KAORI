@@ -1149,6 +1149,8 @@ def verify() -> None:
         ),
         'shared reporting dashboard workspace',
     )
+    # Keep the approved six-step workflow and evidence boundary, not retired copy.
+    expected_alert_steps = ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record')
     for owner, source in (
         ('Kubernetes alert response guidance', alert_guidance),
         ('Object Storage alert response guidance', object_alert_guidance),
@@ -1156,12 +1158,21 @@ def verify() -> None:
         _require(
             source,
             (
-                'before acting on the signal',
-                'establish an accountable owner',
-                'remains auditable',
+                'components/operational_alert_response.html',
+                'alert_response_steps',
+                'alert_response.render(',
+                'committed snapshot',
+                'alert-source evidence',
+                'owner',
+                'safety guardrails',
+                'follow-up evidence',
+                *(f"'{step}'" for step in expected_alert_steps),
             ),
-            f'{owner} detailed step copy',
+            f'{owner} controlled alert workflow',
         )
+        step_positions = [source.index(f"'{step}'") for step in expected_alert_steps]
+        if step_positions != sorted(step_positions):
+            raise AssertionError(f'{owner}: controlled response steps must retain canonical order')
     _require(
         alert_summary_workspace,
         (
@@ -1188,17 +1199,33 @@ def verify() -> None:
     ):
         if retired in alert_summary_workspace:
             raise AssertionError(f'shared Alerts Summary retains domain adapter API: {retired}')
-    for owner, source, row_token in (
-        ('Kubernetes Alerts Summary', alert_summary, 'rows=dashboard.alerts_snapshot.items'),
-        ('Object Storage Alerts Summary', object_alert_summary, 'rows=dashboard.alerts.rows'),
-        ('Artifact Registry Alerts Summary', artifact_alert_summary, 'rows=overview.alerts.rows'),
+    # The shared renderer, not the domain-specific subtitle, enforces the five-case cap.
+    for owner, source, row_token, description in (
+        (
+            'Kubernetes Alerts Summary',
+            alert_summary,
+            'rows=dashboard.alerts_snapshot.items',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Object Storage Alerts Summary',
+            object_alert_summary,
+            'rows=dashboard.alerts.rows',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Artifact Registry Alerts Summary',
+            artifact_alert_summary,
+            'rows=overview.alerts.rows',
+            'Active Registry AlertCases and recent cases.',
+        ),
     ):
         _require(
             source,
             (
                 'components/operational_alert_summary.html',
                 'alert_summary.render(',
-                'up to five recent',
+                f"description='{description}'",
                 "empty_label='No Active Cases'",
                 "empty_title='No Active Alert Cases'",
                 'No active recommendation-origin AlertCases',
@@ -1248,9 +1275,18 @@ def verify() -> None:
     )
     _require(
         reporting_builder,
-        ('query_all(Report, selected_cluster_id, limit=4)',),
-        'Kubernetes Recent Report Activity builder',
+        (
+            'def _kubernetes_report_query(',
+            "Report.report_domain == 'kubernetes'",
+            'Report.cluster_id == selected_cluster_id',
+            '_kubernetes_report_query(selected_cluster_id)',
+            '.order_by(Report.created_at.desc(), Report.id.desc())',
+            '.limit(4)',
+        ),
+        'Kubernetes domain-scoped, stable, four-record Recent Report Activity builder',
     )
+    if 'query_all(Report' in reporting_builder:
+        raise AssertionError('Kubernetes Report preview must retain the domain-scoped reporting query')
     _require(
         object_reporting_summary,
         ('reporting_workspace.summary(',),

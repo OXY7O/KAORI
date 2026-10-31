@@ -28,6 +28,7 @@ VISUAL_BLUR_RADIUS = 0.75
 DETERMINISTIC_VISUAL_SURFACES: dict[str, tuple[str, str]] = {
     'welcome.index': ('Welcome', '/welcome'),
     'settings.general': ('Settings', '/settings/general'),
+    'settings.account': ('Settings', '/settings/account'),
     'notifications.center': ('Notification Center', '/notifications/?view=notifications'),
 }
 

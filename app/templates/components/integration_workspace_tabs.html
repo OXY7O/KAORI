@@ -8,6 +8,8 @@
 #}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro render(provider_key, active_tab='coverage', coverage_count=0, registry_count=0) -%}
     {% set workspace_prefix = provider_key ~ '-overview' %}
     {% set workspace_label = provider_key|title ~ ' integration views' %}
@@ -15,22 +17,42 @@
             ('coverage', 'Integration Coverage', 'route', coverage_count),
             ('registry', 'Connection Registry', 'database-zap', registry_count)
         ] %}
-    <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
-             x-on:popstate.window="syncTab()"
-             class="{{ operational_section_card.shell_classes() }}"
-             aria-label="{{ provider_key|title }} integration workspace"
-             data-kaori-integration-workspace-tabs>
-        {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
-        <div class="p-4 sm:p-5 lg:p-6">
-            <div id="{{ workspace_prefix }}-panel-coverage"
-                 x-show="activeTab === 'coverage'"
-                 role="tabpanel"
-                 aria-labelledby="{{ workspace_prefix }}-tab-coverage">{{ caller("coverage") }}</div>
-            <div id="{{ workspace_prefix }}-panel-registry"
-                 x-show="activeTab === 'registry'"
-                 x-cloak
-                 role="tabpanel"
-                 aria-labelledby="{{ workspace_prefix }}-tab-registry">{{ caller("registry") }}</div>
-        </div>
-    </section>
+    {% set workspace_guide_items = [
+        "Integration Coverage — Review domain-specific provider access, readiness, and committed evidence where observed.",
+        "Connection Registry — Find registered connections and check validation or lifecycle status before operational use.",
+        "Authority Boundary — External providers remain authoritative for native resources; KAORI governs committed evidence and correlation."
+    ] %}
+    {% set workspace_guide = info_tip.render("integration-workspace-" ~ provider_key,
+            "Integration Workspace Guide",
+            "Coverage and connection registration are separate views of each provider's operational state.",
+            items=workspace_guide_items,
+            placement="right",
+        variant="guide") %}
+    <div class="space-y-3" data-kaori-integration-workspace-section>
+        {{ integration_ui.workspace_section_intro("Provider Connections & Coverage",
+                "Monitor provider readiness, committed coverage, and registered connections.",
+                provider_key|title ~ " provider connections and coverage") }}
+        <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
+                 x-on:popstate.window="syncTab()"
+                 class="{{ operational_section_card.shell_classes() }}"
+                 aria-label="{{ provider_key|title }} integration workspace"
+                 data-kaori-integration-workspace-tabs>
+            {{ integration_ui.section_header("layout-dashboard",
+                        "Integration Workspace",
+                        "Switch between integration coverage and registered connections.",
+                        title_extra=workspace_guide) }}
+            {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="{{ workspace_prefix }}-panel-coverage"
+                     x-show="activeTab === 'coverage'"
+                     role="tabpanel"
+                     aria-labelledby="{{ workspace_prefix }}-tab-coverage">{{ caller("coverage") }}</div>
+                <div id="{{ workspace_prefix }}-panel-registry"
+                     x-show="activeTab === 'registry'"
+                     x-cloak
+                     role="tabpanel"
+                     aria-labelledby="{{ workspace_prefix }}-tab-registry">{{ caller("registry") }}</div>
+            </div>
+        </section>
+    </div>
 {%- endmacro %}

@@ -39,14 +39,22 @@ def test_registry_details_use_shared_modal_without_raw_payload() -> None:
     assert "url_for('jobs.execution_details'" in registry
     assert 'data-resource-detail-header' in detail
     assert 'data-resource-detail-summary' in detail
+    assert 'data-kaori-detail-variant="job-execution"' in detail
+    assert 'data-kaori-detail-variant' in _read('app/static/js/detail_rows.js')
+    assert 'progress_bar.job_progress' in detail
+    assert 'detail.inventory_fact_grid(execution.result_summary, columns=2)' in detail
+    assert 'execution.error_code' in detail
+    assert 'execution.error_message' in detail
+    assert 'data-resource-detail-header' in detail.split('data-resource-detail-summary', 1)[0]
     assert "@bp.get('/executions/<string:public_id>/details')" in routes
     assert 'present_job_execution_detail(job)' in routes
     for label in (
-        'Execution Identity',
-        'Scope & Ownership',
-        'Lifecycle',
-        'Result & Failure Evidence',
-        'Result Summary',
+        'Execution Snapshot',
+        'Execution Outcome',
+        'Execution Context',
+        'Lifecycle Timeline',
+        'Committed Result Evidence',
+        'Technical References',
     ):
         assert label in detail
     assert 'payload_json' not in detail
@@ -96,3 +104,87 @@ def test_v1_1_templates_parse() -> None:
         'app/templates/platform_operations/jobs/executions/partials/_queue_activity.html',
     ):
         environment.parse(_read(relative))
+
+
+def test_registry_detail_outcome_first_keeps_success_and_failure_truthful() -> None:
+    detail = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
+    presentation = _read('app/common/job_execution_presentation.py')
+    assert "execution.error_code != '-'" in detail
+    assert "execution.error_message != 'No execution error was recorded.'" in detail
+    assert 'Recorded Error Evidence' in detail
+    assert 'Committed worker state and last recorded progress.' in detail
+    assert 'No Result Summary Recorded' in detail
+    assert 'result_summary_remaining' in detail
+    assert 'Execution ID' in detail
+    assert 'Celery Task ID' in detail
+    assert 'Parent Execution' in detail
+    assert 'Result Reference' in detail
+    assert "'error_message': job.error_message or 'No execution error was recorded.'" in presentation
+    assert 'payload_json' not in detail
+
+
+def test_registry_detail_density_uses_one_sheet_and_progressive_disclosure() -> None:
+    source = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
+    view_more = _read('app/templates/components/view_more_content.html')
+
+    assert '{% call detail.resource_sheet() %}' in source
+    assert 'detail.detail_card(' not in source
+    assert '{% call view_more.render(' in source
+    assert "'Additional Execution Evidence'" in source
+    assert "closed_label='View More'" in source
+    assert "open_label='View Less'" in source
+    assert 'data-kaori-detail-variant="job-execution"' in source
+    assert 'data-resource-detail-header' in source
+    assert 'data-resource-detail-summary' in source
+    assert 'detail.inventory_fact_grid(execution.result_summary, columns=2)' in source
+    assert '<details class="group' in view_more
+    assert 'focus-visible:ring-2' in view_more
+
+
+def test_registry_detail_primary_facts_and_timeline_are_responsive() -> None:
+    source = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
+
+    assert 'data-kaori-inventory-fact-grid' in _read('app/templates/components/details/_detail_content.html')
+    assert "('Requested By', execution.requester)" in source
+    assert "('Provider', execution.provider_label)" in source
+    assert "('Queue', execution.queue_name)" in source
+    assert "('Scope', execution.scope)" in source
+    assert 'aria-label="Committed execution milestones"' in source
+    for key in ('queued_at', 'started_at', 'completed_at'):
+        assert f'execution.{key}' in source
+    for key in ('heartbeat_at', 'cancel_requested_at', 'updated_at', 'expires_at'):
+        assert f'execution.{key}' in source
+    for label in ('Technical References', 'Execution ID', 'Celery Task ID', 'Result Reference'):
+        assert label in source
+    assert 'columns=2' in source
+    assert 'sm:grid-cols-3' in source
+    assert 'progress_bar.job_progress' in source
+    assert 'payload_json' not in source
+    assert 'deduplication_key' not in source
+
+
+def test_guarded_empty_inventory_recovery_panels_share_safety_layout() -> None:
+    environment = Environment()
+    for domain, target in (
+        ('object_storage_inventory_sync.html', 'confirm_empty_system_id'),
+        ('artifact_registry_inventory_sync.html', 'confirm_empty_instance_id'),
+    ):
+        source = _read('app/templates/platform_operations/jobs/configuration/definitions/' + domain)
+        environment.parse(source)
+        assert 'Confirm an Empty' in source
+        assert 'Guarded Recovery · Manual Only' in source
+        assert 'data-lucide="shield-alert"' in source
+        assert 'bg-status-warning-soft' in source
+        assert 'components/info_tip.html' in source
+        assert 'Guarded Recovery Boundary' in source
+        assert "variant='guide'" in source
+        assert 'Two complete reads required; mismatches preserve committed records.' in source
+        assert 'name="empty_reconciliation" value="confirm"' in source
+        assert f'name="{target}"' in source
+        assert 'name="confirmation_phrase"' in source
+        assert 'placeholder="CONFIRM EMPTY"' in source
+        assert 'manual_form.hidden_tag()' in source
+        assert 'can_reconcile' in source
+        assert 'selected_job.active_job or selected_job.execution_disabled' in source
+        assert "url_for('jobs.run_now', job_key=definition.key)" in source
+        assert 'shrink-0 whitespace-nowrap' in source

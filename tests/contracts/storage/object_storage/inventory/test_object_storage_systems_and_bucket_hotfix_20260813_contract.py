@@ -53,4 +53,7 @@ def test_systems_workspace_points_manual_sync_to_job_execution():
     card = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
     assert "job_key='object_storage.inventory.sync'" in card
     assert 'Manage Inventory Jobs' in card
-    assert 'No live provider query is issued by this page.' in card
+    authority = read('app/storage/object_storage/inventory/README.md')
+    assert 'No live provider calls are permitted on GET routes.' in authority
+    assert "title_extra=info_tip.render('storage-inventory-systems-title'" in card
+    assert 'it is not a live listing of all provider objects.' in card

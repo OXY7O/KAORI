@@ -232,6 +232,8 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'integrations.observability',
             'integrations.storage',
             'integrations.registry',
+            'integrations.secrets_management',
+            'integrations.source_control',
             'notification_channels.index',
         ),
         blueprint_vars=(
@@ -242,6 +244,12 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'alertmanager_bp',
             'minio_bp',
             'harbor_bp',
+            'github_source_bp',
+            'github_uat_bp',
+            'secrets_pki_bp',
+            'security_posture_bp',
+            'source_control_bp',
+            'vault_bp',
         ),
         verifiers=(
             'scripts/verify_integration_provider_foundation.py',

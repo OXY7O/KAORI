@@ -38,6 +38,7 @@ jobs:
         run: |
           set -Eeuo pipefail
 
+          printf '⏳ UAT release evidence · resolving current accepted staging SHA\n'
           api_root="https://api.github.com/repos/${GITHUB_REPOSITORY}"
           headers=(
             --header "Authorization: Bearer ${GH_TOKEN}"
@@ -91,6 +92,8 @@ jobs:
             exit 1
           fi
 
+          printf '✅ UAT release evidence · request matches current staging source\n'
+          printf '⏳ UAT release evidence · validating intentional RC tag and GitHub prerelease\n'
           [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
             printf 'candidate_tag is not a KAORI RC tag.\n' >&2
             exit 1
@@ -120,6 +123,8 @@ jobs:
             exit 1
           }
 
+          printf '✅ UAT release evidence · RC prerelease and source identity PASS\n'
+          printf '⏳ UAT release evidence · verifying exact staging Full Admission PASS\n'
           quality_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
             "$api_root/actions/workflows/quality.yml/runs?branch=kaori%2Fstaging&event=push&per_page=100")"
           quality="$(jq -c --arg sha "$accepted_sha" \
@@ -130,6 +135,8 @@ jobs:
             exit 1
           }
 
+          printf '✅ UAT release evidence · staging Full Admission PASS\n'
+          printf '⏳ UAT release evidence · verifying successful RC publication and artifact\n'
           rc_runs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
             "$api_root/actions/workflows/publish-staging-image.yml/runs?per_page=100")"
           rc_run_id="$(jq -r --arg sha "$accepted_sha" \
@@ -183,6 +190,7 @@ jobs:
             printf 'RC artifact candidate tag does not match requested prerelease.\n' >&2
             exit 1
           }
+          printf '✅ UAT release evidence · immutable image digest, RC and source pinned\n'
 
           {
             printf 'accepted_sha=%s\n' "$accepted_sha"
@@ -190,6 +198,8 @@ jobs:
             printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
           } >> "$GITHUB_OUTPUT"
           printf 'Staging authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
+          printf '📦 Deployment identity: %s\n' "$KAORI_IMAGE_REF"
+          printf 'ℹ️ Hosted runtime verification and human acceptance remain separate.\n'
 
   deploy:
     name: Deploy Staging
@@ -241,12 +251,14 @@ jobs:
           fi
           root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
           [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
+          printf '✅ UAT deployment inputs PASS · RC identity, SSH secrets present and target syntax valid\n'
 
       - name: Deploy to Host
         shell: bash
         run: |
           set -Eeuo pipefail
           umask 077
+          printf '⏳ UAT host · preparing ephemeral SSH credentials (values never printed)\n'
           key_file="$(mktemp)"
           known_hosts_file="$(mktemp)"
           askpass_file="$(mktemp)"
@@ -273,6 +285,7 @@ jobs:
           export SSH_ASKPASS_REQUIRE=force
           export DISPLAY=:0
           setsid -w ssh-add "$key_file" </dev/null >/dev/null
+          printf '✅ UAT host · ephemeral SSH identity loaded\n'
 
           port="${KAORI_HOST_PORT:-22}"
           deploy_root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
@@ -293,9 +306,12 @@ jobs:
           mkdir -p -- "$remote_release/deploy" "$deploy_root/releases"
           REMOTE_PREPARE
           } | run_remote_script
+          printf '✅ UAT host · target release directories prepared\n'
+          printf '⏳ UAT host · transferring canonical Compose and deploy/server artifacts\n'
 
           scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
           scp "${scp_opts[@]}" -r deploy/server "$target:$remote_release/deploy/"
+          printf '✅ UAT host · deployment source artifacts transferred\n'
 
           {
             printf 'set -Eeuo pipefail\n'
@@ -306,6 +322,8 @@ jobs:
           } | run_remote_script
 
           # Registry auth remains remote and ephemeral; deploy.sh uses docker login --password-stdin.
+          printf '⏳ UAT host · starting governed deploy.sh (backup, migration, runtime and release state)\n'
+          printf '📦 Requested release %s · source %s\n' "$REQUESTED_VERSION" "$REQUESTED_SHA"
           {
             printf 'set -Eeuo pipefail\n'
             printf 'deploy_script=%q\n' "$remote_release/deploy/server/deploy.sh"
@@ -321,6 +339,8 @@ jobs:
           } | bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"
           REMOTE_DEPLOY
           } | run_remote_script
+          printf '✅ UAT host · governed deployment script completed; host-owned verification PASS\n'
+          printf 'ℹ️ Public-edge reconciliation and human UAT acceptance remain separate.\n'
 
   publication-reconciliation:
     name: Reconcile Public Publication

@@ -166,7 +166,6 @@ OPERATIONS
 
 ASSURANCE
 ├── Backup & Recovery
-├── Security Posture
 ├── Policy & Compliance
 └── Secrets & PKI
 
@@ -178,6 +177,28 @@ PLATFORM
 ```
 
 Future workspace capabilities are defined by #747 and may extend their parent without changing the global section architecture.
+
+### Implemented Assurance / Security workspace (#2610)
+
+Security is the human-readable level-1 label for the approved **Security Posture**
+domain (#721), grouped under **ASSURANCE** in the existing two-level sidebar:
+
+```text
+ASSURANCE
+└── Security                 ← level 1
+    ├── Overview             ← level 2
+    └── Findings             ← level 2
+```
+
+Only route-backed, authorized capabilities render. Security posture reads existing
+committed Registry/Kubernetes evidence via a source-qualified view. Other reserved
+views (Supply Chain, Runtime, Secrets & PKI, Network, Exceptions) are **not**
+placeholder sidebar items. Domain-specific Registry Security remains under Artifact
+Registry; current Security parent is a separate correlation consumer, not a
+navigation alias to Harbor/Registry. `security_posture.view` governs this workspace;
+`artifact_registry.view` independently gates Registry-origin drill-down/evidence.
+The canonical sidebar renderer, geometry, responsiveness and collapse behavior do
+not change.
 
 ## Permission Contract
 

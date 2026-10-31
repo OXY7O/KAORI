@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from flask import (
     current_app,
@@ -19,6 +19,8 @@ from app.extensions.limiter import limiter
 from app.kubernetes.operations.operation_flow import cluster_required
 from app.kubernetes.operations.secrets.reveal_service import (
     ActiveRevealRequestExists,
+    MyRevealFilters,
+    PendingRevealFilters,
     PendingRevealPagination,
     create_reveal_request,
     decide_reveal_request,
@@ -86,14 +88,21 @@ def _reveal_status_context() -> dict[str, Any]:
         **get_reveal_page_context(
             user_id=current_user.id,
             can_approve=can_approve,
-            my_page=request.args.get('my_page', 1, type=int) or 1,
-            my_per_page=request.args.get('my_per_page', 5, type=int) or 5,
-            my_search=request.args.get('my_search', ''),
-            my_status=request.args.get('my_status', ''),
-            my_sort=request.args.get('my_sort', 'newest'),
-            pending_pagination=PendingRevealPagination(
-                page=request.args.get('pending_page', 1, type=int) or 1,
-                per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+            my_filters=MyRevealFilters(
+                page=request.args.get('my_page', 1, type=int) or 1,
+                per_page=request.args.get('my_per_page', 5, type=int) or 5,
+                search=request.args.get('my_search', ''),
+                status=request.args.get('my_status', ''),
+                sort=request.args.get('my_sort', 'newest'),
+                request_id=request.args.get('my_request_id', ''),
+            ),
+            pending_filters=PendingRevealFilters(
+                pagination=PendingRevealPagination(
+                    page=request.args.get('pending_page', 1, type=int) or 1,
+                    per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+                ),
+                search=request.args.get('pending_search', ''),
+                sort=request.args.get('pending_sort', 'oldest'),
             ),
         ),
         'step_up_active': _secret_reveal_step_up_active(),
@@ -285,20 +294,15 @@ def request_secret_reveal():
             action_url=url_for(
                 'kubernetes_operations.reveal_secret',
                 reveal_view='mine',
-                _anchor='my-secret-reveal-requests',
             ),
             action_label='Open Protected Secret Reveal',
             metadata=result.metadata,
             queue_feedback=True,
         )
         _notify_secret_reveal_approvers(result.request_record)
-        return redirect(
-            url_for(
-                'kubernetes_operations.reveal_secret',
-                reveal_view='mine',
-                _anchor='my-secret-reveal-requests',
-            )
-        )
+        # A native fragment jump to the full-height registry can overscroll
+        # the KAORI app shell before the content-tab controller boots.
+        return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))
     except ActiveRevealRequestExists as exc:
         rollback_secret_reveal_transaction()
         existing = exc.request_record
@@ -326,7 +330,16 @@ def request_secret_reveal():
             metadata=metadata,
             queue_feedback=True,
         )
-        return redirect(action_url)
+        return redirect(
+            url_for(
+                'kubernetes_operations.reveal_secret',
+                cluster_id=existing.cluster_id,
+                namespace=existing.namespace,
+                secret_name=existing.secret_name,
+                key_name=existing.key_name,
+                reveal_view='mine',
+            )
+        )
     except ValueError as exc:
         _record_secret_activity(
             event_type='kubernetes_secret_reveal_request_failed',
@@ -375,6 +388,15 @@ def request_secret_reveal():
 )
 @cluster_required('Protected Secret Reveal')
 def reauthenticate_secret_reveal():
+    # Navigation-only hint; final request visibility still requires requester ownership.
+    linked_request_id = (request.form.get('my_request_id') or '').strip()
+    if len(linked_request_id) > 80:
+        linked_request_id = ''
+    return_url = url_for(
+        'kubernetes_operations.reveal_secret',
+        reveal_view='mine',
+        my_request_id=linked_request_id or None,
+    )
     try:
         _validate_secret_operation_csrf()
     except ValueError as exc:
@@ -383,16 +405,12 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message=str(exc),
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Retry reauthentication',
             metadata={'secret_value_recorded': False},
             queue_feedback=True,
         )
-        return redirect(
-            url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
-        )
+        return redirect(return_url)
 
     password = request.form.get('password') or ''
     if current_user.is_external:
@@ -401,9 +419,7 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication unavailable',
             message='External authentication step-up is not available yet. Use a database-managed break-glass account.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -417,9 +433,7 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message='The current account password is incorrect.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Retry reauthentication',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -434,9 +448,7 @@ def reauthenticate_secret_reveal():
             status='success',
             title='Protected reveal session verified',
             message='One-time Secret reveal actions are available for the configured short session window.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -445,9 +457,7 @@ def reauthenticate_secret_reveal():
             },
             queue_feedback=True,
         )
-    return redirect(
-        url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
-    )
+    return redirect(return_url)
 
 
 @permission_required('kubernetes_secrets.approve_reveal')
@@ -497,7 +507,7 @@ def decide_secret_reveal_request(request_id: str):
                 action_url=url_for(
                     'kubernetes_operations.reveal_secret',
                     reveal_view='mine',
-                    _anchor='my-secret-reveal-requests',
+                    my_request_id=record.id,
                 ),
                 metadata=_reveal_request_metadata(record),
             )
@@ -568,22 +578,17 @@ def reveal_secret_value(request_id: str):
         _validate_secret_operation_csrf()
         if not _secret_reveal_step_up_active():
             raise ValueError('Reauthenticate before performing a protected Secret reveal.')
-        result = execute_secret_value_reveal(request_id, user_id=current_user.id)
-        revealed_value = result
-        feedback = _record_secret_activity(
-            event_type='kubernetes_secret_revealed',
-            status='success',
-            title='Secret value revealed',
-            message=(
-                f'{result.key_name} was revealed once for '
-                f'{result.expires_in_seconds} seconds. The value was not stored by KAORI.'
-            ),
-            action_url=url_for(
+        result = execute_secret_value_reveal(
+            request_id,
+            user_id=current_user.id,
+            audit_action_url=url_for(
                 'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
             ),
-            action_label='Open Protected Secret Reveal',
-            metadata=result.metadata,
         )
+        revealed_value = result
+        # The one-time transition and Activity Audit were committed together.
+        # Never write the same success event again through best-effort feedback.
+        feedback = cast(dict[str, Any], result.audit_feedback)
     except ValueError as exc:
         # A failed locking/API query can leave PostgreSQL in an aborted transaction.
         # Reset the session before reading request metadata or writing activity data.

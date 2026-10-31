@@ -27,6 +27,8 @@ def test_storage_inventory_uses_canonical_resource_page_pattern() -> None:
     assert 'id="storage-page-workspace"' in workspace
     assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert 'Storage Lifecycle Posture' in summary
+    assert 'Lifecycle exceptions, unreported states, or missing storage evidence.' in summary
+    assert 'Lifecycle exceptions, unreported state, or missing storage collection evidence.' not in summary
     assert 'posture_grid.render(metrics, columns=3)' in summary
     assert 'hx-target="#storage-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card

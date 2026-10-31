@@ -60,6 +60,7 @@
           hx-trigger="change, keyup changed delay:400ms from:input[name='archive_search']"
           class="{{ table_ui.filter_bar_classes() }}">
         <input type="hidden" name="tab" value="history">
+        <input type="hidden" name="archive_per_page" value="{{ pager.per_page }}">
         <div class="min-w-[160px]">
             <label for="data-lifecycle-archive-domain"
                    class="{{ table_ui.filter_label_classes() }}">Domain</label>
@@ -174,7 +175,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <div class="flex flex-wrap justify-end gap-2">
-                                {% if archive.is_downloadable and current_user.has_permission('platform_operations.export_data_lifecycle') %}
+                                {% if archive.is_downloadable and archive.domain != 'audit_event' and current_user.has_permission('platform_operations.export_data_lifecycle') %}
                                     <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id) }}"
                                        class="{{ table_ui.action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Data</a>
                                     <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id, kind='manifest') }}"
@@ -212,7 +213,7 @@
                 {% else %}
                     <tr>
                         <td colspan="5" class="p-0">
-                            {% set empty_state_icon = "archive" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Archive History Found" %}{% set empty_state_description = "Run a preview or archive operation from Retention Policies." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                            {% set empty_state_icon = "archive" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Archive History Found" %}{% set empty_state_description = "Archive executions appear here. Preview does not create archives." %}{% set empty_state_min_height = "min-h-[190px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

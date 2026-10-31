@@ -9,7 +9,7 @@
     ('circle-check-big', 'Completed', inventory.completed_count, 'Pods completed successfully in the snapshot.', empty_tone or ('info' if inventory.completed_count > 0 else 'normal')),
     ('circle-help', 'Unknown State', inventory.unknown_count, 'Pods missing phase or readiness evidence.', empty_tone or ('warning' if inventory.unknown_count > 0 else 'normal')),
     ('rotate-ccw', 'Restart Activity', inventory.restart_activity, 'Pods with cumulative container restart evidence.', empty_tone or ('warning' if inventory.restart_activity > 0 else 'normal')),
-    ('images', 'Unique Images', inventory.unique_image_count, inventory.total_image_references ~ ' image references across regular, init, and ephemeral containers.', empty_tone or 'brand')
+    ('images', 'Unique Images', inventory.unique_image_count, inventory.total_image_references ~ ' image references across all container types.', empty_tone or 'brand')
 ] %}
 {% call operational_section_card.render(
     'Pod Runtime Posture',

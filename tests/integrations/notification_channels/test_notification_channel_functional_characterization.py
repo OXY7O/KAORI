@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from app.integrations.delivery.notification_channels import lifecycle, service
+from app.definitions.loader import load_definition_document
+from app.integrations.delivery.notification_channels import catalog, lifecycle, service
 from app.integrations.delivery.notification_channels.contracts import (
     DeliveryResult,
     NotificationChannelFormInput,
@@ -13,6 +15,28 @@ from app.integrations.delivery.notification_channels.contracts import (
 )
 from app.models.notification_channel import NotificationChannel
 from app.security.credentials import EncryptedText
+
+
+def test_channel_policy_event_catalog_preserves_order_and_all_items() -> None:
+    definition = load_definition_document(
+        'platform_operations/notifications/outbound_delivery.yaml',
+        expected_kind='notification_delivery_contract',
+    )
+    events = definition['events']
+    assert isinstance(events, dict)
+    expected = [{'value': key, 'label': record['label']} for key, record in events.items()]
+
+    assert catalog.event_type_options() == expected
+    assert len(expected) == len({item['value'] for item in expected})
+    assert service.event_type_options is catalog.event_type_options
+
+    modal = (
+        Path(__file__).resolve().parents[3]
+        / 'app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html'
+    ).read_text(encoding='utf-8')
+    assert '{% for option in payload.event_type_options %}' in modal
+    assert 'name="event_types"' in modal
+    assert 'value="{{ option.value }}"' in modal
 
 
 class SessionStub:
@@ -39,7 +63,7 @@ class SessionStub:
     def rollback(self) -> None:
         self.rollbacks += 1
 
-    def get(self, _model: object, _identifier: int) -> object | None:
+    def get(self, _model: object, _identifier: int, **_kwargs: object) -> object | None:
         return self.channel
 
 
@@ -49,6 +73,7 @@ class ChannelStub:
         self.name = ''
         self.provider_key = ''
         self.enabled = False
+        self.lifecycle_state = 'active'
         self.credential_payload: str | None = None
         self.destination: str | None = None
         self.provider_config: dict[str, object] = {}
@@ -154,6 +179,42 @@ def _validated_channel() -> ChannelStub:
     return channel
 
 
+def test_channel_action_return_query_preserves_bounded_registry_state() -> None:
+    from flask import Flask
+
+    from app.integrations.delivery.notification_channels.routes import _channel_return_query
+
+    application = Flask(__name__)
+    with application.test_request_context(
+        '/integrations/notification-channels/1/test',
+        method='POST',
+        data={
+            'channel_page': '3',
+            'channel_per_page': '25',
+            'channel_search': 'Telegram Operations',
+            'channel_provider': 'telegram',
+            'channel_state': 'enabled',
+        },
+    ):
+        assert _channel_return_query() == {
+            'channel_page': 3,
+            'channel_per_page': 25,
+            'channel_search': 'Telegram Operations',
+            'channel_provider': 'telegram',
+            'channel_state': 'enabled',
+        }
+
+    with application.test_request_context(
+        '/integrations/notification-channels/1/delete',
+        method='POST',
+        data={'channel_page': '-8', 'channel_per_page': '999999', 'channel_search': 'X' * 500},
+    ):
+        assert _channel_return_query() == {
+            'channel_per_page': 1000,
+            'channel_search': 'X' * 128,
+        }
+
+
 def test_notification_channel_create_commits_policy_and_uses_encrypted_model_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -229,6 +290,99 @@ def test_notification_channel_delete_guard_preserves_auditable_dependencies(
     assert exc_info.value.usage == usage
     assert 'delivery evidence record(s)' in str(exc_info.value)
     assert 'report schedule(s)' in str(exc_info.value)
+    assert session.deleted == []
+    assert session.commits == 0
+
+
+def test_retire_channel_preserves_history_and_blocks_schedules(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = _validated_channel()
+    channel.lifecycle_state = 'active'
+    session = SessionStub(channel=channel)
+    monkeypatch.setattr(lifecycle, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(
+        lifecycle,
+        'get_channel_usage',
+        lambda _id: lifecycle.NotificationChannelUsage(
+            delivery_records=26,
+            report_schedules=0,
+            report_schedule_names=(),
+        ),
+    )
+    lifecycle.retire_channel(channel, reason='Destination replaced with managed operations bot', user_id=19)  # type: ignore[arg-type]
+    assert channel.lifecycle_state == 'retired'
+    assert channel.enabled is False
+    assert channel.retirement_reason == 'Destination replaced with managed operations bot'
+    assert channel.retired_by_user_id == 19
+    assert channel.retired_at is not None
+    assert session.deleted == []
+    assert session.commits == 1
+
+    with pytest.raises(lifecycle.NotificationChannelRetirementBlocked):
+        lifecycle.retire_channel(channel, reason='Repeat retirement is forbidden', user_id=19)  # type: ignore[arg-type]
+    assert session.commits == 1
+
+    channel.lifecycle_state = 'active'
+    monkeypatch.setattr(
+        lifecycle,
+        'get_channel_usage',
+        lambda _id: lifecycle.NotificationChannelUsage(
+            delivery_records=26,
+            report_schedules=1,
+            report_schedule_names=('Weekly Ops',),
+        ),
+    )
+    with pytest.raises(lifecycle.NotificationChannelRetirementBlocked):
+        lifecycle.retire_channel(channel, reason='Destination replaced', user_id=19)  # type: ignore[arg-type]
+    assert session.commits == 1
+
+
+def test_retired_channel_is_never_eligible_or_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = _validated_channel()
+    channel.lifecycle_state = 'retired'
+    channel.enabled = True  # Fail-safe even if inconsistent legacy data exists.
+    sent = []
+    monkeypatch.setattr(service, 'get_notification_provider', lambda _key: sent.append('adapter'))
+    assert (
+        service._channel_matches_event(
+            channel,
+            domain='kubernetes',
+            event_type='alert_intelligence.active_alert',
+            severity='warning',
+        )
+        is False
+    )
+    result = service._deliver(channel, NotificationMessage(title='No send', body='Retired', severity='warning'))
+    assert result.success is False
+    assert sent == []
+    assert service.test_channel(channel).success is False
+    assert (
+        service.send_channel_preview_message(
+            channel,
+            NotificationMessage(title='No preview', body='Retired', severity='warning'),
+        ).success
+        is False
+    )
+
+
+def test_disabled_channel_still_cannot_delete_committed_delivery_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channel = _validated_channel()
+    channel.enabled = False
+    session = SessionStub()
+    usage = lifecycle.NotificationChannelUsage(
+        delivery_records=26,
+        report_schedules=0,
+        report_schedule_names=(),
+    )
+    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _channel_id: usage)
+    monkeypatch.setattr(lifecycle, 'db', SimpleNamespace(session=session))
+
+    with pytest.raises(lifecycle.NotificationChannelDeletionBlocked) as exc_info:
+        lifecycle.delete_channel(channel)  # type: ignore[arg-type]
+
+    assert exc_info.value.usage.delivery_records == 26
+    assert exc_info.value.usage.report_schedules == 0
     assert session.deleted == []
     assert session.commits == 0
 

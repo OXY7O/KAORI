@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 from kubernetes.client import V1Ingress, V1Secret
 
@@ -32,6 +33,7 @@ from app.kubernetes.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_INVALID,
 )
+from app.kubernetes.governance.tls_certificates.controller_evidence import normalize_tls_controller_owner
 from app.models import Cluster
 
 TLSProgressCallback = Callable[[int, str], None]
@@ -251,6 +253,23 @@ def _coverage_evidence(
     return state, len(declared_hosts), covered_count, uncovered
 
 
+def _qualified_secret_uid(secret: V1Secret) -> str | None:
+    """Retain only a canonical immutable Kubernetes object UID.
+
+    Absence/invalid UID downgrades provenance to unknown, while ordinary TLS
+    certificate collection remains available. Namespace/name cannot replace
+    this identity, and untrusted metadata strings are never displayed.
+    """
+    raw = getattr(getattr(secret, 'metadata', None), 'uid', None)
+    if not isinstance(raw, str) or len(raw) > 64:
+        return None
+    try:
+        parsed = str(UUID(raw))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return parsed if raw.lower() == parsed else None
+
+
 def parse_tls_secret(
     secret: V1Secret,
     usage_map: dict[tuple[str, str], dict[str, Any]],
@@ -268,6 +287,8 @@ def parse_tls_secret(
     payload: dict[str, Any] = {
         'namespace': namespace,
         'secret_name': name,
+        'secret_uid': _qualified_secret_uid(secret),
+        'controller_owner_refs': normalize_tls_controller_owner(metadata),
         'secret_type': secret.type,
         'common_name': None,
         'issuer': None,

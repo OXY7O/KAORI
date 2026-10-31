@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import runpy
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 APP_ENV = 'deploy/env/app.env.example'
@@ -30,6 +33,8 @@ def test_environment_templates_cover_current_operational_contract() -> None:
             'ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES=1',
             'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS=10',
             'NOTIFICATION_DELIVERY_MAX_ATTEMPTS=3',
+            'SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false',
+            'SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false',
         ):
             assert token in source
 
@@ -88,6 +93,42 @@ def test_split_environment_contract_verifier_passes() -> None:
 
     assert result.returncode == 0, f'{result.stdout}\n{result.stderr}'
     assert 'PASS — KAORI Environment Contract' in result.stdout
+
+
+def test_vault_alert_hmac_secret_has_worker_only_environment_authority() -> None:
+    contract = runpy.run_path(str(ROOT / 'scripts/verify_environment_contract.py'))
+    key = 'KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX'
+    worker = 'app/intelligence/alert_signals/vault_jobs.py'
+    document = 'app/secrets_pki/TELEMETRY_BINDING.md'
+    assert contract['WORKER_ONLY_SECRET_AUTHORITIES'] == {key: (worker, document)}
+    assert key in contract['accessed_env_keys'](worker)
+    assert key in read(document)
+    for template in ('.env.example', APP_ENV, SECRETS_ENV, DEPLOY_ENV, RC_ENV):
+        assert key not in contract['documented_env_keys'](template), template
+    assert contract['verify_worker_only_secrets'](
+        runtime_sources=(worker,),
+        shared_documented_keys=set(),
+    ) == {key}
+
+
+def test_vault_alert_hmac_secret_rejects_shared_or_foreign_runtime_readers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = runpy.run_path(str(ROOT / 'scripts/verify_environment_contract.py'))
+    key = 'KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX'
+    worker = 'app/intelligence/alert_signals/vault_jobs.py'
+    validator = contract['verify_worker_only_secrets']
+    with pytest.raises(AssertionError, match='shared environment templates'):
+        validator(runtime_sources=(worker,), shared_documented_keys={key})
+
+    rogue = 'app/config/default.py'
+    monkeypatch.setitem(
+        validator.__globals__,
+        'accessed_env_keys',
+        lambda path: {key} if path in {worker, rogue} else set(),
+    )
+    with pytest.raises(AssertionError, match='only .* may read this worker-only secret'):
+        validator(runtime_sources=(worker, rogue), shared_documented_keys=set())
 
 
 def test_devcontainer_tailwind_watcher_starts_only_after_frontend_bootstrap() -> None:

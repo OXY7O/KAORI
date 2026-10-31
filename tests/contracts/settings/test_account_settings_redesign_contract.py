@@ -82,7 +82,7 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert 'Provider Ready' not in profile
     assert 'identity_context.provider_name != identity_context.type_label' in profile
     assert 'RBAC permissions enforced after authentication.' in profile
-    assert 'Super Admin authority requires a Local Database identity.' in profile
+    assert 'Super Admin: Local Database only; separate from RBAC.' in profile
     assert 'Password hashes and resets' in profile
     assert "'Time zone: ' ~ current_timezone" in profile
     assert "'Locale: ' ~ current_locale" in profile
@@ -169,6 +169,28 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Audit Privacy Boundary' not in activity
 
 
+def test_recent_authentication_activity_trails_with_right_aligned_result() -> None:
+    activity = read('app/templates/settings/account/partials/_recent_login_activity.html')
+
+    headers = (
+        '<th class="{{ table_ui.header_cell_classes() }}">Event</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Source</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Context</th>',
+        '<th class="{{ table_ui.header_cell_classes(action=true) }}">Result</th>',
+    )
+    assert all(header in activity for header in headers)
+    assert list(map(activity.index, headers)) == sorted(map(activity.index, headers))
+
+    # Text-heavy context keeps normal reading direction; the trailing status badge is right aligned.
+    context_cell = '<td class="{{ table_ui.cell_classes() }} min-w-56">'
+    result_cell = '<td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">'
+    assert context_cell in activity
+    assert result_cell in activity
+    assert activity.index(context_cell) < activity.index(result_cell)
+    assert 'class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted"' in activity
+    assert '<span>{{ metadata.get("browser") or \'Browser unavailable\' }}' in activity
+
+
 def test_credential_workspace_keeps_action_left_and_security_context_right() -> None:
     credentials = read('app/templates/settings/account/partials/_change_password.html')
     context = read('app/templates/settings/account/partials/_credential_information.html')
@@ -199,6 +221,41 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert 'Credential Owner' in context
     assert 'Password Policy' in context
     assert 'Session Handling' in context
+
+
+def test_provider_credential_guidance_reuses_local_visual_grammar_without_a_write_action() -> None:
+    credentials = read('app/templates/settings/account/partials/_change_password.html')
+    context = read('app/templates/settings/account/partials/_credential_information.html')
+    external = credentials.split('data-provider-credential-guidance="true"', 1)[1]
+
+    assert 'Provider Password & Recovery' in external
+    assert 'Password changes are managed by your identity provider, not KAORI.' in external
+    assert 'data-provider-credential-boundary="true"' in external
+    assert '{{ identity_context.credential_detail }}' in external
+    assert 'data-provider-password-guidance-panel="true"' in external
+    assert 'rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-4' in external
+    assert 'data-provider-password-guidance-list="true"' in external
+    assert 'sm:grid-cols-2' in external
+    assert 'Use provider recovery' in external
+    assert 'Contact IT support' in external
+    assert 'Sign in again' in external
+    assert 'Keep it private' in external
+    assert 'data-provider-password-safety-note="true"' in external
+    assert 'Password changes and recovery are unavailable in KAORI for this account.' in external
+    assert 'Credential Owner' not in external
+    assert '<form' not in external
+    assert 'data-local-password-action="true"' not in external
+    assert 'type="submit"' not in external
+    assert 'href=' not in external
+    assert 'Provider or IT Support' in context
+    assert 'Managed by KAORI' in context
+    assert 'Request Provider Recovery' in context
+    assert 'Verify With Provider' in context
+    assert 'Sign In to KAORI' in context
+    assert 'KAORI Applies Access' in context
+    assert 'KAORI audits observed sign-ins, not external password resets.' in context
+    provider_flow = context.split('{% else %}\n                    {% set flow_steps = [', 1)[1]
+    assert "'Record Audit Event'" not in provider_flow.split('{% endif %}', 1)[0]
 
 
 def test_credential_workspace_uses_natural_top_aligned_columns() -> None:

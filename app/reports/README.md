@@ -66,7 +66,9 @@ Reports Overview is the operational landing workspace for the Reports domain. It
 
 1. Reporting Posture: the canonical KAORI hero owns page identity, infrastructure scope, artifact readiness, and two compact operational metrics.
 2. Reporting Operational Posture: Reports worker/queue readiness, active schedules, artifact storage health, current generation demand, and resolved completion quality.
-3. Report Coverage & Artifact Estate: publication coverage by infrastructure domain, retained artifact footprint/mix, output-contract boundaries, and reusable automation.
+3. Reporting landscape and governance: two independent, vertically stacked cards. **Report Coverage & Artifact Estate** owns infrastructure-domain publication coverage, retained artifact footprint/mix and output-contract boundaries; **Contracts & Automation** owns published contract families, schedules and templates. Each card has its own shared `section_intro` title and short description above the card, with the existing card title retained for concrete workspace identity.
+
+The shared `components/section_intro.html` macro owns the two outer section headings; neither page-local heading styling nor a competing reporting metric/contract source should be introduced. Planned Secrets & PKI copy stays definition-owned in `app/definitions/catalogs/reports/coverage.yaml` and must keep the distinction between planned/non-executable reports and admitted published contracts.
 
 Generic helper callouts are avoided on the Overview. Operational interpretation uses `Operational Reading`, while export guidance is expressed as an `Output Contract` boundary. Planned Server/VM and HCI coverage is definition-owned in `app/definitions/catalogs/reports/coverage.yaml`; the Overview service must not embed future report catalogs as Python literals.
 
@@ -231,3 +233,21 @@ A bounded reference integrity scan is dispatched through canonical report-storag
 - **Artifact Registry Inventory (#1612):** rows distinguish `entity_type` = project, repository, or artifact. Projects without repositories and repositories without artifacts remain visible with blank digest and artifact-only fields. Artifact counts continue to count real artifact rows only. Use the shared Inventory CSV/XLSX profile and never reuse the CSV control header `record_type` as a profile column.
 - **Object Storage Analysis (#1613):** manual/scheduled report collectors pin exactly one committed Analytics snapshot for Overview, Performance and Alerts during a generation. They must not request provider metrics or enqueue materialization refresh as a side effect of artifact rendering. Snapshot expiry/missing data fails with explicit unavailable evidence; stale-but-usable evidence is flagged as stale with its own generated-at timestamp. The primary Analytics data cut-off comes from the committed Analytics generation, not current wall time or an unrelated inventory timestamp. Inventory and independent forecast cut-offs remain separately attributable.
 - These boundaries are source requirements, not runtime UAT acceptance. Validate cross-format scope/value parity, negative states and real artifact fidelity in the controlled DevContainer before any staging promotion.
+
+
+## Planned Secrets & PKI coverage (HV-15, #2694)
+
+The definition-owned `secrets_pki` coverage domain lists six **Planned**
+report candidates in `app/definitions/catalogs/reports/coverage.yaml`.
+The Reports Overview uses the existing coverage projection; the Secrets & PKI
+Operational Dashboard Reporting tab uses the same source-controlled candidates
+only for actors with `reports.view`. This is **not** a report type in
+`reports/catalog.yaml` and cannot be generated, scheduled, exported or
+archived. Existing Reporting workers/renderers are unchanged.
+
+No Vault path/name, Secret material, private key, AppRole SecretID, provider
+token or unqualified per-source counts may appear in exports. Each future
+executable report requires committed data, resource-scoped #724 authorization
+enforced before counts and rows, report-specific collection/retention, Full
+Admission, security checks and actual DevContainer/Vault UAT. Never treat
+a planned candidate or a healthy Vault connection as a published report.

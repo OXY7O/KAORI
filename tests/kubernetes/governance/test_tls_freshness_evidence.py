@@ -3,7 +3,18 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from app.kubernetes.governance.tls_certificates.sync_state import _collection_freshness, _successful_job_evidence_times
+from sqlalchemy import select
+from sqlalchemy.dialects import postgresql
+
+from app.kubernetes.governance.tls_certificates.sync_state import (
+    _cluster_job_scope,
+    _collection_freshness,
+    _job_applies_to_cluster,
+    _successful_job_evidence_times,
+    tls_sync_evidence_is_current,
+    tls_sync_stale_after,
+)
+from app.models.job import JobExecution
 
 
 def state(secret='collected', ingress='collected', at=None):
@@ -111,3 +122,61 @@ def test_last_successful_empty_inventory_requires_target_specific_job_evidence()
             assert at is None
         assert stale is True
         assert exceptions is True
+
+
+def test_tls_rotation_evidence_window_rejects_missing_future_and_stale_timestamps():
+    now = datetime(2026, 10, 23, tzinfo=UTC)
+    window = tls_sync_stale_after(360)
+    assert window == timedelta(minutes=450)
+    assert tls_sync_evidence_is_current(now - window, stale_after=window, now=now)
+    assert tls_sync_evidence_is_current(now - timedelta(minutes=1), stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(None, stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(now + timedelta(seconds=1), stale_after=window, now=now)
+    assert not tls_sync_evidence_is_current(now - window - timedelta(seconds=1), stale_after=window, now=now)
+
+
+def test_selected_tls_job_history_filters_canonical_targets_in_sql_before_limit():
+    statement = (
+        select(JobExecution.id)
+        .where(_cluster_job_scope('cluster-a'))
+        .order_by(JobExecution.created_at.desc())
+        .limit(100)
+    )
+    compiled = statement.compile(dialect=postgresql.dialect())
+    assert 'CAST(job_executions.payload_json AS JSONB) @>' in str(compiled)
+    assert 'LIMIT' in str(compiled)
+    assert {'targets': [{'cluster_id': 'cluster-a'}]} in compiled.params.values()
+
+
+def test_fleet_scope_does_not_imply_membership_in_unlisted_cluster():
+    job = SimpleNamespace(
+        payload_json={
+            'scope': 'all_clusters',
+            'targets': [{'cluster_id': 'cluster-a'}],
+        }
+    )
+    assert _job_applies_to_cluster(job, 'cluster-a') is True
+    assert _job_applies_to_cluster(job, 'cluster-b') is False
+    assert _job_applies_to_cluster(job, None) is True
+
+
+def test_target_specific_old_job_remains_eligible_after_many_other_cluster_jobs():
+    now = datetime(2026, 10, 23, tzinfo=UTC)
+    old_target = SimpleNamespace(
+        status='succeeded',
+        completed_at=now - timedelta(days=2),
+        payload_json={'targets': [{'cluster_id': 'cluster-a'}]},
+        result_summary_json={'failures': []},
+    )
+    unrelated = [
+        SimpleNamespace(
+            status='succeeded',
+            completed_at=now,
+            payload_json={'targets': [{'cluster_id': f'cluster-other-{index}'}]},
+            result_summary_json={'failures': []},
+        )
+        for index in range(150)
+    ]
+    scoped = [job for job in unrelated + [old_target] if _job_applies_to_cluster(job, 'cluster-a')]
+    assert scoped == [old_target]
+    assert _successful_job_evidence_times(scoped, ['cluster-a']) == {'cluster-a': now - timedelta(days=2)}

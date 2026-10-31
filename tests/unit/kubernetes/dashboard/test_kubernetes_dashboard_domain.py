@@ -6,7 +6,7 @@ from app.common.pagination import paginate_sequence
 from app.kubernetes.dashboard.schema import DashboardClusterOption, ReportingSnapshot
 from app.kubernetes.dashboard.sections.freshness import build_data_freshness
 from app.kubernetes.dashboard.sections.top_consumers import build_top_consumers_snapshot
-from app.kubernetes.dashboard.utils import get_selected_cluster, normalize_selected_cluster
+from app.kubernetes.dashboard.utils import forecast_insight, get_selected_cluster, normalize_selected_cluster
 
 
 def test_dashboard_pagination_is_bounded_and_clamps_invalid_pages() -> None:
@@ -88,3 +88,33 @@ def test_kubernetes_fleet_freshness_uses_committed_coverage_not_scope_hint() -> 
     )
     assert mixed[1].status == 'Ready'
     assert mixed[2].status == 'Partial'
+
+
+def test_forecast_conclusion_is_compact_and_uses_committed_summary_values() -> None:
+    assert (
+        forecast_insight(
+            {
+                'horizon_days': 90,
+                'summary': {
+                    'highest_projected_label': 'Pods',
+                    'highest_projected_percent': 46.2,
+                },
+            }
+        )
+        == '90-day forecast peak: Pods 46%; review worker headroom.'
+    )
+
+    assert (
+        forecast_insight(
+            {
+                'horizon_days': 60,
+                'summary': {
+                    'highest_projected_label': 'Memory',
+                    'highest_projected_percent': 92.4,
+                },
+            }
+        )
+        == '60-day forecast peak: Memory 92%; review worker headroom.'
+    )
+
+    assert forecast_insight({}) == 'Forecast snapshot loaded from analytics forecast service.'

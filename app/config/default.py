@@ -1,63 +1,21 @@
-import os
 from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
-from dotenv import dotenv_values
 
+from app.config.environment import (
+    _bounded_env_int,
+    _env_bool,
+    _env_int,
+    _env_optional_str,
+    _env_str,
+    _load_environment_files,
+)
 from app.config.storage_helpers import _normalize_storage_backend, _resolve_path
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-
-
-def _load_environment_files() -> None:
-    """Load .env and optional .env.<APP_ENV> without overriding real OS env vars.
-
-    Precedence:
-    1. OS environment variables
-    2. .env.<APP_ENV> values
-    3. .env values
-    """
-    base_values = dotenv_values(BASE_DIR / '.env')
-    app_env = os.getenv('APP_ENV') or base_values.get('APP_ENV') or 'development'
-    environment_values = dotenv_values(BASE_DIR / f'.env.{app_env}')
-    merged_values = {**base_values, **environment_values}
-
-    for key, value in merged_values.items():
-        if value is not None:
-            os.environ.setdefault(key, value)
-
-
-def _env_str(name: str, default: str = '') -> str:
-    return os.getenv(name, default)
-
-
-def _env_optional_str(name: str) -> str | None:
-    value = os.getenv(name, '').strip()
-    return value or None
-
-
-def _env_int(name: str, default: int = 0) -> int:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        return int(value.strip())
-    except ValueError:
-        return default
-
-
-def _env_bool(name: str, default: bool = False) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
-
-
-def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
-    return max(minimum, min(_env_int(name, default), maximum))
 
 
 def _retention_queue_name() -> str:
@@ -93,6 +51,12 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     schedule.update(build_notification_beat_schedule())
     schedule.update(build_alert_signal_beat_schedule())
+    if _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False):
+        schedule['source-control-signed-delivery-recovery'] = {
+            'task': 'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries',
+            'schedule': crontab(minute='*/5'),
+            'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
+        }
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.platform_operations.jobs.tasks.reconcile_stale_jobs',
@@ -312,6 +276,8 @@ class Config:
     JOB_MAX_ACTIVE_PER_USER = _env_int('JOB_MAX_ACTIVE_PER_USER', 5)
     JOB_MAX_HEAVY_PER_USER = _env_int('JOB_MAX_HEAVY_PER_USER', 1)
     JOB_MAX_ACTIVE_PER_RESOURCE = _env_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
+    SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED', False)
+    SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False)
     JOB_QUEUED_STALE_SECONDS = _env_int('JOB_QUEUED_STALE_SECONDS', 1800)
     JOB_RUNNING_STALE_SECONDS = _env_int('JOB_RUNNING_STALE_SECONDS', 7200)
 
@@ -343,6 +309,9 @@ class Config:
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
             'app.artifact_registry.tasks',
+            'app.integrations.secrets_management.secrets_pki.tasks',
+            'app.integrations.source_control.tasks',
+            'app.integrations.source_control.webhook_maintenance',
             'app.artifact_registry.security.tasks',
             'app.artifact_registry.governance_tasks',
             'app.artifact_registry.correlation_tasks',
@@ -379,6 +348,12 @@ class Config:
                 'queue': 'inventory',
             },
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
+            'app.integrations.source_control.tasks.sync_source_repositories': {'queue': 'inventory'},
+            'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.intelligence.alert_signals.tasks.observe_vault_alert_source': {'queue': 'inventory'},
             'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,

@@ -9,10 +9,12 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
-        {% call detail.workspace_header(detail_description, 'folder-tree') %}
+        {% call detail.workspace_header(detail_description, 'folder-tree',
+            context_items=[
+            {'label': namespace.cluster_name, 'icon': 'building-2'}
+            ], compact=true) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(namespace.namespace) }}
-                {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
+                {{ detail.inventory_title(namespace.namespace, compact=true) }}
                 {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
             {% endcall %}
         {% endcall %}

@@ -23,7 +23,9 @@ def test_data_lifecycle_tab_order_and_copy_are_compact_and_operational() -> None
     assert "lifecycle.active_tab == 'history'" in index
     assert "lifecycle.active_tab == 'storage'" in index
     assert 'x-show="activeTab' not in index
-    assert 'Only approved lifecycle domains are manageable.' in index
+    assert 'aria-label="Registered lifecycle domains"' in index
+    assert '{% for domain in lifecycle.domains %}' in index
+    assert 'data-domain-id="{{ domain.name }}"' in index
     assert 'Canonical queue, progress, results, and worker metadata.' in presentation
 
 
@@ -45,8 +47,8 @@ def test_retention_policy_explains_schedule_failure_and_worker_semantics() -> No
 
     assert 'Retention changes eligibility only; no job runs immediately.' in policy
     assert 'Requires Policy enabled + Scheduled execution.' in policy
-    assert 'transient failures retry once, then require manual retry.' in policy
-    assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.' in policy
+    assert 'Cleanup blocked; transient failures retry once, then need manual retry.' in policy
+    assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}' in policy
     assert "crontab(minute='*/15')" in config
     assert "name='app.platform_operations.data_lifecycle.retention.tasks.run_scheduled_retention'" in tasks
     assert 'acks_late=True' in tasks
@@ -71,11 +73,13 @@ def test_archive_storage_is_operational_evidence_not_a_metric_stub() -> None:
         'Freeze Boundary',
         'Write Archive',
         'Verify Evidence',
-        'Cleanup Hot Data',
+        'Cleanup (if admitted)',
         'Storage Interpretation',
         'Production uses the dedicated maintenance worker service.',
     ):
         assert token in storage
+    assert "('4','Cleanup (if admitted)','Delete eligible rows only when authorized.')" in storage
+    assert "table_label.status_label('Cleanup Gated'" in storage
     assert 'ARCHIVE_S3_SECRET_ACCESS_KEY' not in storage
     assert 'ARCHIVE_S3_ACCESS_KEY_ID' not in storage
 

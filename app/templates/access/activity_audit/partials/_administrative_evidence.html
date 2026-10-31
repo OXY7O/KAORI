@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 <section id="activity-administrative-evidence"
@@ -14,6 +15,16 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Administrative Source Evidence</h2>
+                        {{ info_tip.render('activity-audit-administrative-source-info',
+                                                'Administrative Source Evidence',
+                                                'Separate permission-scoped hot AuditEvent records from approved administrative sources.',
+                                                items=[
+                                                'Automatic Jobs and Tenant Inventory Sync remain source-owned; this is not a combined Activity Register.',
+                                                'The actor reference is a source foreign key, not an immutable actor snapshot.',
+                                                'Open Job needs a committed hot job and permission. Archive browsing lists bundles only; it does not verify an individual job match.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                         {{ table_label.result_count(administrative_evidence.pagination.total_items) }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">

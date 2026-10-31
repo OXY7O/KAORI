@@ -110,7 +110,7 @@
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="ConfigMap deletion guidance">
                 {% set configmap_delete_flow = [('Select Object', 'Bind a live ConfigMap and its version.'), ('Review Impact', 'Review identity, keys, and workload references.'), ('Validate Deletion', 'Check exact name and RBAC without DELETE.'), ('Confirm & Delete', 'Delete the same resource once using the receipt.')] %}
-                {{ info_flow.render('ConfigMap Deletion Flow', 'Review, validate, then confirm deletion.', configmap_delete_flow, icon='trash-2', note='Final deletion is irreversible from KAORI and must target the same validated resourceVersion.', note_icon='triangle-alert', open_by_default=true) }}
+                {{ info_flow.render('ConfigMap Deletion Flow', 'Review, validate, then confirm deletion.', configmap_delete_flow, icon='trash-2', note='Irreversible and resourceVersion-bound.', note_icon='triangle-alert', open_by_default=true) }}
                 {% set configmap_delete_guardrails = [('eye', 'Live Review', 'The target is loaded directly from Kubernetes before deletion.'), ('shield-check', 'No DELETE in Validation', 'Preflight checks identity and authorization without mutation.'), ('keyboard', 'Exact Confirmation', 'The selected ConfigMap name must be entered exactly.'), ('history', 'Resource Bound', 'The signed receipt binds deletion to the reviewed resourceVersion.')] %}
                 {{ information_guide_card.render('Deletion Safety Contract', 'Mandatory controls through final confirmation.', configmap_delete_guardrails, icon='shield-alert', open_by_default=false) }}
             </aside>

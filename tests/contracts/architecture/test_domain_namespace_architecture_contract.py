@@ -58,9 +58,16 @@ def test_platform_operations_category_uses_distinct_workspace_name() -> None:
 def test_integration_binding_service_has_no_domain_compatibility_wrapper() -> None:
     binding_service = read('app/integrations/binding_service.py')
     routes = read('app/integrations/routes.py')
+    binding_web = read('app/integrations/binding_web.py')
 
     assert 'def create_cluster_source_binding(' not in binding_service
     assert 'def cluster(self)' not in binding_service
-    assert 'create_source_binding(' in routes
-    assert 'SourceBindingSpec(' in routes
-    assert "asset_type='kubernetes_cluster'" in routes
+    assert 'from app.integrations.binding_web import binding_response as _binding_response' in routes
+    assert "@permission_required('integrations.manage')\ndef bind_metrics_source()" in routes
+    assert "@permission_required('integrations.manage')\ndef bind_alertmanager_source()" in routes
+    assert "return _binding_response('metrics_source', scope_key=scope_key)" in routes
+    assert "return _binding_response('alert_source', scope_key=scope_key)" in routes
+    assert 'from app.integrations.binding_service import SourceBindingSpec, create_source_binding' in binding_web
+    assert 'created_binding = create_source_binding(' in binding_web
+    assert 'spec=SourceBindingSpec(' in binding_web
+    assert "asset_type='kubernetes_cluster'" in binding_web

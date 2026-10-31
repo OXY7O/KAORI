@@ -192,11 +192,35 @@ def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> Non
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
     template = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
 
+    Environment(autoescape=True).parse(template)
+    # Single canonical card for one operational purpose; Tenant Estate is the other card.
+    assert template.count('operational_section_card.render(') == 2
+    assert "'Operational Attention & Activity'" in template
+    assert 'tenant-attention-list-title' in template
+    assert 'tenant-recent-activity-title' in template
     assert 'Needs Attention' in template
     assert 'Recent Tenant Activity' in template
+    assert 'xl:grid-cols-12' in template
+    assert 'xl:col-span-7' in template
+    assert 'xl:col-span-5' in template
+    assert 'xl:border-l xl:border-t-0' in template
+
+    # Summary labels count only the bounded preview, not the full governance estate.
+    assert "tenant_attention_rows|selectattr('tone', 'equalto', 'critical')|list|length" in template
+    assert "tenant_attention_rows|selectattr('tone', 'equalto', 'warning')|list|length" in template
+    assert "tenant_recent_activity_rows|length ~ ' Recent events shown'" in template
+    assert 'Preview counts from the latest committed rows.' in template
     assert 'limit: int = 3' in workspace
     assert 'tenant_attention_rows' in workspace
     assert 'tenant_recent_activity_rows' in workspace
+
+    # Two separate drill-through destinations, but only one action in the outer card header.
+    assert "action_href=url_for('intelligence.recommendations')" in template
+    assert "action_label='Open Intelligence'" in template
+    assert "section_link_button.render(url_for('tenant.operations', tab='activity')" in template
+    assert "'Open Activity', icon='arrow-right')" in template
+
+    # Retain source-backed status, kind, detail, time, and empty-state behavior.
     assert "'kind': 'Tenant'" in workspace
     assert "'kind': 'Access'" in workspace
     assert "'kind': 'Credential'" in workspace
@@ -204,15 +228,13 @@ def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> Non
     assert 'Latest Tenant, access & credential changes.' in template
     assert '{{ item.kind }}' in template
     assert 'table_label.status_label(item.status, item.tone)' in template
+    assert '{{ item.time }}' in template
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in template
-    assert template.count('min-h-[7.5rem]') >= 4
-    assert 'xl:items-stretch' in template
-    assert 'h-full xl:col-span-7' in template
-    assert 'h-full xl:col-span-5' in template
     assert 'Showing 0 latest committed events.' in template
+    assert 'No active attention items' in template
+    assert 'No recent Tenant activity' in template
     assert 'Committed governance finding' in template
-    assert "extra_classes='h-full'" not in template
-    assert 'xl:items-start' not in template
+    assert 'xl:items-stretch' not in template
     assert 'Access Attention' not in template
     assert 'Governance Posture' not in template
     assert 'Recent Tenant Changes' not in template
@@ -230,6 +252,7 @@ def test_tenant_overview_uses_shared_kaori_components() -> None:
     assert 'components/operational_section_card.html' in overview
     assert 'components/resource_posture_grid.html' in overview
     assert 'components/section_intro.html' in overview
+    assert 'components/section_link_button.html' in overview
     cluster_estate = (ROOT / 'app/templates/kubernetes/tenant/partials/_cluster_estate.html').read_text(
         encoding='utf-8'
     )

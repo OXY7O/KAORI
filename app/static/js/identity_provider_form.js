@@ -19,6 +19,28 @@
     const typeMeta = page.querySelector('#provider-type-meta')
     const enabledCopy = form.querySelector('[data-enabled-copy]')
     const browserTitle = form.querySelector('[data-browser-title]')
+    const registrationProof = form.querySelector('[data-registration-proof]')
+    const registrationSave = form.querySelector('[data-registration-save]')
+    const registrationStatus = form.querySelector('[data-connection-test-state]')
+    const syncRegistrationGate = () => {
+        if (!registrationProof || !registrationSave) return
+        const verified = Boolean(registrationProof.value)
+        registrationSave.disabled = !verified
+        registrationSave.setAttribute('aria-disabled', String(!verified))
+        registrationSave.title = verified
+            ? 'Save this tested provider configuration'
+            : 'Complete Test Connection before saving'
+        if (registrationStatus)
+            registrationStatus.textContent = verified
+                ? 'Connection Verified — configuration ready to save.'
+                : 'Connection Test Required — test this configuration before saving.'
+    }
+    const invalidateRegistrationTest = (event) => {
+        if (!registrationProof) return
+        if (['csrf_token', 'connection_test_proof'].includes(event.target?.name)) return
+        registrationProof.value = ''
+        syncRegistrationGate()
+    }
 
     const selectedOption = () => providerInputs.find((input) => input.checked) || null
 
@@ -97,6 +119,10 @@
     const syncCallback = () => {
         if (callbackKey) callbackKey.textContent = keyInput?.value.trim() || '<provider-key>'
     }
+
+    form.addEventListener('input', invalidateRegistrationTest, true)
+    form.addEventListener('change', invalidateRegistrationTest, true)
+    syncRegistrationGate()
 
     providerInputs.forEach((input) => input.addEventListener('change', syncProvider))
     jitToggle?.addEventListener('change', () => syncJit(selectedOption()))

@@ -9,8 +9,6 @@ from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.common.navigation import build_navigation_breadcrumb
-from app.common.pagination import paginate_sequence
-from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant import routes_access as _routes_access
 from app.kubernetes.tenant import routes_credentials as _routes_credentials
 from app.kubernetes.tenant.admin_workspace import (
@@ -22,13 +20,7 @@ from app.kubernetes.tenant.allocation_drift import (
     build_allocation_drift_action_state,
     reapply_kaori_allocation_intent_committed,
 )
-from app.kubernetes.tenant.allocation_overview import (
-    build_tenant_allocation_bars,
-    build_tenant_contribution_rows,
-    describe_tightest_headroom,
-    filter_tenant_contribution_rows,
-    summarize_tenant_contributions,
-)
+from app.kubernetes.tenant.allocation_overview import build_resource_profile_capacity_workspace
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
@@ -121,6 +113,7 @@ from app.kubernetes.tenant.release_preflight import (
     release_verified_native_tenant_committed,
     review_tenant_release_preflight_committed,
 )
+from app.kubernetes.tenant.release_review_notifications import notify_release_handoff_review_recorded
 from app.kubernetes.tenant.release_successor_claim import (
     record_release_successor_claim_committed,
 )
@@ -424,61 +417,7 @@ def resource_profiles():
         )
     )
 
-    capacity_search = str(request.args.get('capacity_search') or '').strip()
-    capacity_rows = list(context.get('capacity_governance') or [])
-
-    # Read-only cluster visual projection uses the same committed #654 summaries
-    # already resolved for this page. Only one cluster's Tenant contributions are
-    # queried on the Capacity tab (no provider calls or speculative admission).
-    selection = str(request.args.get('allocation_cluster_id') or '').strip()
-    selected = next(
-        (row for row in capacity_rows if str(row['cluster'].id) == selection),
-        capacity_rows[0] if capacity_rows else None,
-    )
-    context['allocation_cluster_options'] = capacity_rows
-    context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
-    context['allocation_overview'] = None
-    context['allocation_tenant_rows'] = []
-    context['allocation_tenant_matches'] = 0
-    context['allocation_tenant_total'] = 0
-    context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
-    allocation_search = str(request.args.get('allocation_search') or '').strip()
-    context['allocation_search'] = allocation_search
-    if active_view == 'capacity' and selected is not None:
-        bars = build_tenant_allocation_bars(selected)
-        context['allocation_overview'] = {
-            'cluster': selected['cluster'],
-            'summary': selected,
-            'bars': bars,
-            'tightest_headroom': describe_tightest_headroom(bars, selected['state']),
-            'cutoff': present_user_datetime(selected.get('data_cutoff')),
-        }
-        tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
-        context['allocation_tenant_total'] = len(tenant_rows)
-        context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
-        tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
-        context['allocation_tenant_rows'] = tenant_rows
-        context['allocation_tenant_matches'] = len(tenant_rows)
-    if capacity_search:
-        needle = capacity_search.lower()
-        capacity_rows = [
-            item
-            for item in capacity_rows
-            if needle in str(item['cluster'].name).lower() or needle in str(item['cluster'].environment).lower()
-        ]
-    capacity_items, capacity_pagination = paginate_sequence(
-        capacity_rows,
-        page=request.args.get('capacity_page', 1, type=int) or 1,
-        per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
-    )
-    context['capacity_governance'] = capacity_items
-    # Reuse the read-only #1034 presentation percentages for each visible
-    # committed #654 Allocation Budget row; no new evidence or admission path.
-    context['capacity_budget_bars'] = {
-        str(item['cluster'].id): build_tenant_allocation_bars(item) for item in capacity_items
-    }
-    context['capacity_pagination'] = capacity_pagination
-    context['capacity_filters'] = {'search': capacity_search}
+    build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)
 
     return render_template(
         'kubernetes/tenant/resource_profiles.html',
@@ -494,8 +433,12 @@ def resource_profiles():
 @any_permission_required('tenant.view', 'tenant.manage')
 def namespace_provisioning():
     active_view = str(request.args.get('view') or 'provision')
-    if active_view not in {'provision', 'allocation', 'decisions'}:
+    if active_view not in {'provision', 'allocation', 'native-cutover', 'capsule-governance', 'decisions'}:
         active_view = 'provision'
+
+    active_capsule_view = str(request.args.get('capsule_tab') or 'overview')
+    if active_capsule_view not in {'overview', 'tenant-quota', 'shared-allocation'}:
+        active_capsule_view = 'overview'
 
     context = _tenant_workspace_context()
     context.update(get_namespace_provisioning_support_context())
@@ -526,6 +469,7 @@ def namespace_provisioning():
         tenant_page_title='Namespace Provisioning',
         tenant_page_icon='boxes',
         active_namespace_view=active_view,
+        active_capsule_view=active_capsule_view,
         **context,
     )
 
@@ -561,11 +505,15 @@ def _operations_drift_context() -> dict[str, Any]:
     context = get_capsule_shared_allocation_context(
         drift_page=request.args.get('ops_capsule_shared_page', 1, type=int) or 1,
         drift_per_page=request.args.get('ops_capsule_shared_per_page', 5, type=int) or 5,
+        drift_tenant_id=str(request.args.get('ops_capsule_shared_tenant_id') or ''),
+        drift_search=str(request.args.get('ops_capsule_shared_search') or ''),
     )
     context.update(
         get_capsule_tenant_quota_context(
             drift_page=request.args.get('ops_capsule_tenant_quota_page', 1, type=int) or 1,
             drift_per_page=request.args.get('ops_capsule_tenant_quota_per_page', 5, type=int) or 5,
+            drift_tenant_id=str(request.args.get('ops_capsule_tenant_quota_tenant_id') or ''),
+            drift_search=str(request.args.get('ops_capsule_tenant_quota_search') or ''),
         )
     )
     context.update(
@@ -1078,6 +1026,7 @@ def approve_tenant_release_handoff_route(tenant_id: str):
             detail='Provider read-back and a separately admitted transfer executor are still required.',
             metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
         )
+        notify_release_handoff_review_recorded(tenant_id=tenant_id, approval=result)
     return _tenant_section_redirect('registry')
 
 
@@ -2092,7 +2041,9 @@ def cutover_capsule_shared_allocation_route():
                 'operation': 'capsule_shared_allocation_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(
+        url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation')
+    )
 
 
 @tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')
@@ -2187,7 +2138,7 @@ def cutover_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota'))
 
 
 @tenant_bp.post('/tenant-quota/change')
@@ -2224,7 +2175,7 @@ def change_capsule_tenant_quota_route():
                 'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota'))
 
 
 @tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')
@@ -2322,7 +2273,7 @@ def cutover_namespace_allocation_route():
                 'operation': 'allocation_governance_cutover',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+    return redirect(url_for('tenant.namespace_provisioning', view='native-cutover'))
 
 
 @tenant_bp.post('/namespace-allocation')
@@ -2360,7 +2311,7 @@ def change_namespace_allocation_route():
                 'operation': 'change_namespace_allocation',
             },
         )
-    return redirect(url_for('tenant.namespace_provisioning'))
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
 
 
 @tenant_bp.post('/namespaces')

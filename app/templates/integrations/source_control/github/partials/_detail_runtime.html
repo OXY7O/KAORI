@@ -1,0 +1,140 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_runtime_decision.html" as runtime_decision %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
+{% import "components/info_tip.html" as info_tip %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set runtime_observed = last_runtime_refresh is not none and last_runtime_refresh.status == 'succeeded' and canonical.last_checked_at is not none %}
+{% set health = canonical.health_status or 'not_observed' if runtime_observed else 'not_observed' %}
+{% set gate = 'ready' if runtime_observed and health == 'healthy' else ('blocked' if runtime_observed and health == 'unhealthy' else ('degraded' if runtime_observed else 'not_observed')) %}
+{% set finding = 'GitHub runtime observation is not available.' if not runtime_observed else ('GitHub App installation health is ' ~ health|replace('_', ' ') ~ '.') %}
+{% set next_action = 'Run Runtime Refresh to collect persisted health evidence.' if not runtime_observed else ('Review installation access and refresh runtime health.' if health != 'healthy' else 'Continue controlled Runtime Refresh after installation changes.') %}
+{% set observation_rows = [
+    ('Last Refresh', last_runtime_refresh.completed_at if last_runtime_refresh and last_runtime_refresh.completed_at else 'Not observed'),
+    ('Runtime Job', '#' ~ last_runtime_refresh.id if last_runtime_refresh else 'Not observed'),
+    ('Diagnostics', 'Installation authorization check' if runtime_observed else 'Not observed')
+] %}
+<section id="github-runtime-workspace"
+         class="{{ ui.section_shell_classes() }} font-sans"
+         data-kaori-github-runtime-workspace
+         data-kaori-provider-runtime-kubernetes-pattern>
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
+        url_for('github_source_uat.runtime_refresh_status', installation_id=installation.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
+    '#github-runtime-workspace') }}
+    {% call connection_validation_header.render(
+        'Runtime Health & Diagnostics',
+        'Review committed runtime health, installation diagnostics, jobs, and signed webhook transport evidence.',
+        icon='activity',
+        loading_id='github-runtime-loading',
+        loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+        title_extra=info_tip.render('github-runtime-health-guide',
+        'GitHub Runtime Health & Diagnostics',
+        'KAORI reports committed runtime evidence for the selected GitHub App installation, independently from permission validation and repository synchronization.',
+        [
+        'Runtime Refresh checks current installation health through an admitted JobExecution.',
+        'Full Validation verifies App permissions; it does not establish runtime health.',
+        'Signed webhook deliveries are transport evidence, not synchronized repository inventory.'
+        ],
+        placement='right', variant='guide')
+        ) %}
+        <form method="post"
+              action="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
+              hx-post="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
+              hx-target="#github-runtime-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#github-runtime-loading">
+            {{ action_form.hidden_tag() }}
+            <button type="submit"
+                    class="{{ action_button.classes('primary') }}"
+                    {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}>
+                <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
+                {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+            </button>
+        </form>
+    {% endcall %}
+    {{ provider_job_status.render(runtime_refresh_job, 'GitHub runtime refresh running', 'GitHub') }}
+    {% if runtime_feedback|default('') == 'blocked' %}
+        {{ operational_callout.render('Runtime Refresh Blocked',
+                'Review installation authorization, worker admission, and connection configuration before retrying.',
+                icon='shield-alert',
+                tone='warning',
+                variant='semantic') }}
+    {% endif %}
+    <div class="space-y-4 p-4 sm:p-5" data-kaori-github-runtime-layout>
+        {{ runtime_decision.render(gate,
+                (health|replace('_', ' ') |title) if runtime_observed else 'Not Observed',
+        (health|replace('_', ' ')|title) if runtime_observed else 'Not Observed',
+        'Persisted Runtime Refresh evidence',
+        'Runtime Observed' if runtime_observed else 'Observation Required',
+        'Runtime health is independent from Full Validation readiness.',
+        canonical.readiness_status or 'validation_required',
+        (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title,
+        'Full Validation owns GitHub App permissions.',
+        observation_rows,
+        finding,
+        0 if runtime_observed and health == 'healthy' else 1,
+        next_action,
+        'Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
+        ) }}
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 data-kaori-github-runtime-evidence>
+            <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ ui.palette_icon('stethoscope', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-content-primary">Runtime Evidence</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Evidence remains installation-scoped and committed to KAORI.</p>
+                    </div>
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for label, value, helper in [
+                    ('GitHub Host', installation.host_key, 'GitHub remains authoritative'),
+                    ('Installation ID', installation.native_installation_id, 'Bound installation identity'),
+                    ('Runtime Health', health|replace('_', ' ')|title if runtime_observed else 'Not Observed', 'Runtime Refresh only'),
+                    ('Full Validation', (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Separate permission evidence')
+                    ] %}
+                    <article class="min-w-0 bg-surface-card p-4">
+                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                        <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
+                <p class="text-xs leading-5 text-content-secondary">Observation Boundary: Runtime Refresh checks current installation health; Full Validation checks grants. Job and webhook receipts do not establish synchronized repository inventory.</p>
+            </footer>
+        </section>
+    </div>
+</section>
+{% set runtime_view = 'deliveries' if request.args.get('runtime_view') == 'deliveries' else 'jobs' %}
+<section id="github-runtime-evidence-registry"
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         data-kaori-github-runtime-registry-tabs>
+    {% set runtime_tabs = [
+            ('jobs', 'Recent Jobs', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs')),
+            ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries'))
+        ] %}
+    {{ framed_tabs.render_navigation(runtime_tabs,
+        runtime_view,
+        prefix='github-runtime-history',
+        aria_label='GitHub Runtime Evidence',
+        hx_target='#github-runtime-evidence-registry',
+        hx_select='#github-runtime-evidence-registry',
+        hx_push_url='true') }}
+    <div id="github-runtime-evidence-registry-content">
+        {% set runtime_table_embedded = true %}
+        {% if runtime_view == 'deliveries' %}
+            {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
+        {% else %}
+            {% include "integrations/source_control/github/partials/_runtime_jobs.html" %}
+        {% endif %}
+    </div>
+</section>

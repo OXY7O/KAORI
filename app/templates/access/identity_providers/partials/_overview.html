@@ -48,7 +48,7 @@
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6"
          aria-label="Identity Governance"
          data-kaori-idp-governance-boundaries>
-        {% set boundaries = [('layers-3', 'Provider / Adapter Boundary', 'Distinct Contracts', 'Providers own identity; adapters run sign-in.'), ('key-round', 'Credential Ownership', 'External Secrets', 'External secrets; KAORI stores references.'), ('contact-round', 'Identity Projection', 'Governed', 'Linked identities need KAORI authorization.'), ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'KAORI roles and account state gate access.')] %}
+        {% set boundaries = [('layers-3', 'Provider & Adapter', 'Distinct Contracts', 'Provider owns identity; adapter handles sign-in.'), ('key-round', 'Credential Ownership', 'External Secrets', 'External secrets; KAORI stores references.'), ('contact-round', 'Identity Projection', 'Governed', 'Linked identities need KAORI authorization.'), ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'KAORI roles and account state gate access.')] %}
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% for icon, title, value, description in boundaries %}
                 <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5"

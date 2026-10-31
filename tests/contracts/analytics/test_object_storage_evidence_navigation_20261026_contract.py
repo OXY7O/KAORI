@@ -1,0 +1,804 @@
+"""Central Object Storage Analytics Evidence navigation and retained domain context contracts."""
+
+from pathlib import Path
+
+from jinja2 import Environment
+
+ROOT = Path(__file__).resolve().parents[3]
+PARTIALS = 'app/templates/storage/object_storage/analytics/partials'
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
+def test_only_overview_owns_data_and_evidence_tab() -> None:
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
+    assert "('evidence', 'Data & Evidence', 'list-checks')" in overview
+    assert 'data-analytics-tab-panel="evidence"' in overview
+    assert 'partials/_metrics_readiness.html' in overview
+    assert 'partials/_overview_evidence_context.html' in overview
+
+    for filename in (
+        '_capacity_workspace.html',
+        '_performance_workspace.html',
+        '_top_consumers_workspace.html',
+        '_forecast_workspace.html',
+        '_alerts_workspace.html',
+    ):
+        workspace = read(f'{PARTIALS}/{filename}')
+        assert "('evidence', 'Evidence', 'list-checks')" not in workspace
+        assert 'data-analytics-tab-panel="evidence"' not in workspace
+        assert 'panel-evidence' not in workspace
+        assert 'partials/_domain_evidence_context.html' in workspace
+
+
+def test_domain_context_preserves_source_authority_and_deep_link() -> None:
+    component = read(f'{PARTIALS}/_domain_evidence_context.html')
+    controller = read('app/static/js/analytics/controls.js')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+
+    assert "url_for('analytics.object_storage_overview'" in component
+    for query in (
+        'system_id=system.id',
+        'time_range=selected_time_range',
+        "tab='evidence'",
+    ):
+        assert query in component
+    assert 'data-object-storage-central-evidence-link' in component
+    assert 'data-object-storage-domain-evidence-context' in component
+    assert "searchParams.get('tab')" in controller
+    assert 'if (allowedTabs.includes(requestedTab)) return requestedTab' in controller
+    assert "return _render('overview')" in routes
+
+    for source in (
+        'analytics_materialization.label',
+        'analytics_materialization.tone',
+        'forecast_materialization.label',
+        'forecast_materialization.tone',
+        'alert_source.label',
+        'alert_source.tone',
+        'alert_source.resolved_label',
+        'metrics_source.provider_label',
+    ):
+        assert source in component
+    assert "default('Unknown')" in component
+    assert "context_status = analytics_materialization.label|default('Unavailable')" in component
+    assert "context_status = forecast_materialization.label|default('Unavailable')" in component
+
+
+def test_owned_reconciliation_forecast_and_alert_detail_are_not_lost() -> None:
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    forecast = read(f'{PARTIALS}/_forecast_workspace.html')
+    alerts = read(f'{PARTIALS}/_alerts_workspace.html')
+    consumers = read(f'{PARTIALS}/_top_consumers_workspace.html')
+    performance = read(f'{PARTIALS}/_performance_workspace.html')
+    for marker in (
+        'data-object-storage-capacity-reconciliation-dialog',
+        'data-kaori-native-dialog',
+        'partials/_reconciliation.html',
+    ):
+        assert marker in capacity
+    assert '<details' not in capacity
+    for marker in (
+        "('worker', 'Worker & Method', 'cpu')",
+        'partials/_forecast_worker_status.html',
+        'partials/_forecast_methodology.html',
+    ):
+        assert marker in forecast
+    for marker in (
+        'data-object-storage-alert-source-dialog',
+        'partials/_alerts_source_evidence.html',
+        "('signals', 'Anomaly Signals', 'list-tree')",
+    ):
+        assert marker in alerts
+    assert '<details' not in alerts
+    assert 'partials/_bucket_table.html' in consumers
+    assert 'partials/_performance_analysis.html' in performance
+
+
+def test_forecast_guides_compact_trend_and_detached_records_reuse_kaori_contracts() -> None:
+    outlook = read(f'{PARTIALS}/_forecast_analysis.html')
+    workspace = read(f'{PARTIALS}/_forecast_workspace.html')
+    trend = read(f'{PARTIALS}/_trend.html')
+    buckets = read(f'{PARTIALS}/_bucket_forecasts.html')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    worker = read(f'{PARTIALS}/_forecast_worker_status.html')
+
+    for source, guide in (
+        (outlook, 'object-storage-forecast-operating-boundary-guide'),
+        (trend, 'object-storage-storage-usage-forecast-'),
+        (buckets, 'object-storage-bucket-forecast-watch-guide'),
+        (worker, 'object-storage-forecast-worker-refresh-guide'),
+    ):
+        assert 'components/info_tip.html' in source
+        assert 'info_tip.render(' in source
+        assert guide in source
+        assert "variant='guide'" in source
+
+    assert 'object_storage_trend_instance = "outlook"' in outlook
+    assert 'object_storage_trend_instance = "trend"' in workspace
+    assert "object_storage_trend_instance|default('trend')" in trend
+    assert 'Operational Reading' not in outlook
+    assert 'interpretation_callout(' not in outlook
+    for field in (
+        'metrics.forecast_display.growth_per_day',
+        'metrics.forecast_display.projected_7d',
+        'metrics.forecast_display.projected_30d',
+        'metrics.forecast_display.days_to_capacity',
+    ):
+        assert field in outlook
+
+    assert "compact_forecast_workspace = page_key == 'forecast' and trend_mode == 'forecast'" in trend
+    assert (
+        'compact_overview_trend = compact_usage_overview or compact_forecast_overview or compact_forecast_workspace'
+        in trend
+    )
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in trend
+    assert 'data-object-storage-overview-trend-summary' in trend
+    assert 'data-object-storage-projection-points' in trend
+    assert 'data-object-storage-forecast-interpretation' in trend
+    assert 'data-object-storage-chart-container' in trend
+    assert 'Historical Growth / Day' in trend
+    assert 'data-object-storage-capacity-trend-facts' in trend
+    assert "compact_usage_overview = page_key == 'overview' and trend_mode == 'usage'" in trend
+
+    separate_table = (
+        '</section>\n{% if bucket_forecasts %}\n'
+        '    {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}'
+    )
+    assert separate_table in buckets
+    assert 'data-object-storage-bucket-forecast-chart-panel' in buckets
+    assert 'bucket_forecast_summary.ready_count|default(0)' in buckets
+    assert 'analysis_surface.evidence_shell_classes()' in records
+    assert 'data-kaori-object-storage-bucket-forecast-table' in records
+    assert 'table_ui.block_icon_classes()' in records
+    assert 'xl:whitespace-nowrap' in records
+    assert (
+        'Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.'
+        in records
+    )
+    assert 'object-storage-bucket-forecast-table-loading-indicator' in records
+    assert 'forecast_bucket_per_page' in records
+    assert 'registry_ui.clear_filters_action' in records
+    assert 'analytics.object_storage_bucket_forecast_table' in records
+    assert 'forecast_history_state' in records
+    assert 'forecast_watch' in records
+    assert 'data-object-storage-forecast' not in worker
+    assert 'forecast_materialization.generated_at' in worker
+
+
+def test_forecast_records_htmx_swap_does_not_destroy_unrelated_chart_canvases() -> None:
+    script = read('app/static/js/storage/object_storage/analytics.js')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    watch = read(f'{PARTIALS}/_bucket_forecasts.html')
+
+    assert "document.body.addEventListener('htmx:beforeSwap', destroyAllCharts)" not in script
+    assert "document.body.addEventListener('htmx:beforeSwap', (event) => {" in script
+    assert 'chartInsideSwap(window[chartKey], target)' in script
+    assert 'chartInsideSwap(window[bucketForecastChartKey], target)' in script
+    assert 'target === chart.canvas || target.contains?.(chart.canvas)' in script
+    assert "document.querySelector('[data-object-storage-bucket-forecast-chart-panel]')" not in script
+    assert "document.querySelector('[data-object-storage-trend-panel]')" not in script
+    assert "document.addEventListener('kaori:analytics-tab-visible'" in script
+    assert "document.body.addEventListener('htmx:afterSwap', (event) => {" in script
+
+    assert 'data-object-storage-bucket-forecast-chart-panel' in watch
+    assert 'data-object-storage-bucket-forecast-chart' in watch
+    assert 'hx-target="#object-storage-bucket-forecast-table-panel"' in records
+    assert 'hx-swap="outerHTML"' in records
+
+
+def test_forecast_records_partial_owns_its_macros_when_rendered_directly_by_htmx() -> None:
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+
+    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in records
+    assert 'analysis_surface.evidence_shell_classes()' in records
+    assert 'def object_storage_bucket_forecast_table()' in routes
+    assert "'storage/object_storage/analytics/partials/_bucket_forecast_table.html'" in routes
+    assert 'get_object_storage_bucket_forecast_table_context(request.args)' in routes
+    Environment().parse(records)
+
+
+def test_forecast_clear_filters_remains_accessible_before_and_after_htmx_response() -> None:
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+    script = read('app/static/js/storage/object_storage/analytics.js')
+    view = read('app/storage/object_storage/analytics/bucket_table.py')
+
+    header = records.split('</header>', 1)[0]
+    assert "forecast_table.watch != 'all'" in records
+    assert "forecast_table.history_state != 'all'" in records
+    assert 'forecast_table.search' in records
+    assert "class=\"{{ 'flex' if filters_active else 'hidden' }}" in header
+    assert 'data-kaori-forecast-clear-filters' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'lead=false' in header
+    assert 'forecast_bucket_per_page=forecast_table.pagination.per_page' in header
+    assert 'history_window=selected_forecast_history_window' in header
+    assert "target='#object-storage-bucket-forecast-table-panel'" in header
+    assert "indicator='#object-storage-bucket-forecast-table-loading-indicator'" in header
+
+    for field in ('forecast_q', 'forecast_watch', 'forecast_history_state'):
+        assert field in records
+        assert field in script
+    assert "action.classList.toggle('hidden', !active)" in script
+    assert "action.classList.toggle('flex', active)" in script
+    assert "document.addEventListener('change', (event) => {" in script
+    assert "document.addEventListener('input', (event) => {" in script
+    assert 'syncForecastClearFilters(target)' in script
+    assert 'query_params: dict[str, object]' in view
+    assert "'forecast_bucket_per_page': per_page" in view
+
+
+def test_capacity_summary_uses_shared_guide_and_native_reconciliation_dialog() -> None:
+    analysis = read(f'{PARTIALS}/_capacity_analysis.html')
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    context = read(f'{PARTIALS}/_domain_evidence_context.html')
+    controller = read('app/static/js/native_dialogs.js')
+    reconciliation = read(f'{PARTIALS}/_reconciliation.html')
+
+    assert 'components/info_tip.html' in analysis
+    assert 'object-storage-capacity-operating-boundary-guide' in analysis
+    assert "variant='guide'" in analysis
+    assert 'Capacity Operating Boundary' in analysis
+    assert 'metrics.capacity_posture.status' in analysis
+    assert 'metrics.capacity_usage.trend_direction_label' in analysis
+    assert 'Growth describes observed usage direction inside' not in analysis
+    assert 'if not metrics.capacity_usage.trend_evidence_available' in analysis
+    assert 'At least two valid historical samples are required' in analysis
+
+    dialog_id = 'object-storage-capacity-reconciliation-dialog'
+    assert "page_key == 'capacity'" in context
+    assert 'data-object-storage-reconciliation-modal-trigger' in context
+    assert 'data-kaori-dialog-open' in context
+    assert f'data-dialog-target="{dialog_id}"' in context
+    assert f'aria-controls="{dialog_id}"' in context
+    assert 'View Reconciliation' in context
+    capacity_actions = context.split("{% if page_key == 'capacity' %}", 1)[1].split(
+        "{% elif page_key == 'alerts' %}", 1
+    )[0]
+    assert capacity_actions.count('class="{{ evidence_action_classes }}"') == 1
+    assert 'data-object-storage-central-evidence-link' in context
+
+    assert f'<dialog id="{dialog_id}"' in capacity
+    assert 'data-kaori-native-dialog' in capacity
+    assert 'aria-labelledby="object-storage-capacity-reconciliation-title"' in capacity
+    assert 'aria-describedby="object-storage-capacity-reconciliation-description"' in capacity
+    assert capacity.count('data-kaori-dialog-close') == 2
+    assert 'role="document"' in capacity
+    assert 'max-h-[calc(100dvh-2rem)]' in capacity
+    assert 'overflow-y-auto' in capacity
+    assert 'reconciliation_embedded = true' in capacity
+    assert 'metrics.reconciliation' in reconciliation
+    assert 'item.delta_display' in reconciliation
+    assert 'item.delta_percent_display' in reconciliation
+    assert 'item.tone' in reconciliation
+    assert 'data-kaori-dialog-open' in controller
+    assert 'dialog.showModal()' in controller
+    assert 'dialog.close()' in controller
+
+
+def test_alert_overview_guide_and_lifecycle_use_existing_native_dialog_standard() -> None:
+    summary = read(f'{PARTIALS}/_alerts_summary.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+    context = read(f'{PARTIALS}/_domain_evidence_context.html')
+    evidence = read(f'{PARTIALS}/_alerts_source_evidence.html')
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    controller = read('app/static/js/native_dialogs.js')
+
+    assert 'components/info_tip.html' in summary
+    assert 'object-storage-provider-alert-anomaly-overview-guide' in summary
+    assert "variant='guide'" in summary
+    assert "placement='right'" in summary
+    assert 'Provider Alert &amp; Anomaly Overview' in summary
+    assert 'alert_posture.total' in summary
+    assert 'alert_posture.critical' in summary
+    assert 'alert_posture.warning' in summary
+    assert 'metrics.signal_posture.critical_count' in summary
+    assert 'Provider alerts and anomaly signals are separate' in summary
+
+    dialog_id = 'object-storage-alert-source-dialog'
+    assert "page_key == 'alerts'" in context
+    assert 'data-object-storage-alert-source-modal-trigger' in context
+    assert 'data-kaori-dialog-open' in context
+    assert f'data-dialog-target="{dialog_id}"' in context
+    assert f'aria-controls="{dialog_id}"' in context
+    assert 'View Alert Source' in context
+    assert 'data-object-storage-central-evidence-link' in context
+    assert context.count('class="{{ evidence_action_classes }}"') == 3
+
+    assert f'<dialog id="{dialog_id}"' in workspace
+    assert 'data-object-storage-alert-source-dialog' in workspace
+    assert 'data-kaori-native-dialog' in workspace
+    assert 'kaori-native-dialog' in workspace
+    assert 'aria-labelledby="object-storage-alert-source-title"' in workspace
+    assert 'aria-describedby="object-storage-alert-source-description"' in workspace
+    assert 'max-h-[calc(100dvh-2rem)]' in workspace
+    assert 'overflow-y-auto' in workspace
+    assert workspace.count('data-kaori-dialog-close') == 2
+    assert workspace.count('partials/_alerts_source_evidence.html') == 1
+    assert 'alert_source_embedded = true' in workspace
+    assert '<details' not in workspace
+    assert 'Alert Source &amp; Lifecycle Details' in workspace
+
+    assert 'alert_source_embedded|default(false)' in evidence
+    assert '{% if not alert_source_embedded %}' in evidence
+    for preserved in (
+        'Selected Policy',
+        'Resolved Alert Source',
+        'Alertmanager Consumer',
+        'Alertmanager Authority',
+        'Metrics Source Fallback',
+        'selected_alert_source',
+        'alert_source.resolved_label',
+        'alertmanager.profile',
+    ):
+        assert preserved in evidence
+    assert 'Metrics Source ALERTS fallback preserves upstream alert-rule state' in evidence
+
+    assert 'data-kaori-native-dialog' in capacity
+    assert 'data-kaori-dialog-open' in controller
+    assert 'dialog.showModal()' in controller
+    assert 'dialog.close()' in controller
+    for template in (summary, workspace, context, evidence):
+        Environment().parse(template)
+
+
+def test_provider_alert_records_and_source_dialog_use_compact_kaori_information_layout() -> None:
+    records = read(f'{PARTIALS}/_alert_records.html')
+    evidence = read(f'{PARTIALS}/_alerts_source_evidence.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+
+    header = records.split('</header>', 1)[0]
+    assert 'table_ui.block_icon_classes()' in header
+    assert 'data-lucide="bell-ring"' in header
+    assert 'Provider Alert Records' in header
+    assert 'table_label.result_count(alert_table.pagination.total_items)' in header
+    assert 'xl:whitespace-nowrap' in header
+    assert 'Review provider alerts; Alertmanager supplies lifecycle details' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'hx-target="#object-storage-alert-records"' in records
+
+    assert 'data-object-storage-alert-lifecycle-content' in evidence
+    assert 'data-object-storage-alert-source-resolution' in evidence
+    assert 'data-object-storage-alert-lifecycle-boundaries' in evidence
+    assert evidence.index('data-object-storage-alert-source-resolution') < evidence.index(
+        'data-object-storage-alert-lifecycle-boundaries'
+    )
+    assert '<dl class="divide-y divide-outline-subtle' in evidence
+    assert evidence.count('<dt class="text-xs font-semibold text-content-muted">') == 3
+    assert evidence.count('<dd ') == 3
+    assert 'sm:grid-cols-3' in evidence
+    assert 'Evidence Coverage' in evidence
+    assert 'lg:grid-cols-3' not in evidence
+    assert 'lg:grid-cols-2' not in evidence
+    assert 'analysis_surface.role_icon_classes(' not in evidence
+    assert 'analysis_surface.interpretation_callout(' not in evidence
+    assert 'alert_source_embedded|default(false)' in evidence
+    assert 'if not alert_source_embedded' in evidence
+    assert 'selected_alert_source' in evidence
+    assert 'alert_source.resolved_label' in evidence
+    assert 'alertmanager.profile' in evidence
+    assert "table_label.status_label(alert_source.label, alert_source.tone, size='compact')" in evidence
+    assert "table_label.status_label(alertmanager.label, alertmanager.tone, size='compact')" in evidence
+    for boundary in (
+        'Alertmanager Authority:',
+        'Lifecycle-rich alert evidence',
+        'Metrics Source Fallback:',
+        'Metrics Source ALERTS fallback preserves upstream alert-rule state',
+        'does not provide routing, receiver, silence, or inhibition lifecycle metadata',
+    ):
+        assert boundary in evidence
+    assert '<dialog id="object-storage-alert-source-dialog"' in workspace
+    assert 'max-w-2xl' in workspace
+    assert 'max-w-5xl' not in workspace
+    assert 'overflow-y-auto bg-surface-card' in workspace
+    assert workspace.count('partials/_alerts_source_evidence.html') == 1
+    assert workspace.count('data-kaori-dialog-close') == 2
+    for template in (records, evidence, workspace):
+        Environment().parse(template)
+
+
+def test_capacity_trend_and_quota_guides_reuse_shared_component_roles() -> None:
+    trend = read(f'{PARTIALS}/_trend.html')
+    pressure = read(f'{PARTIALS}/_capacity_pressure.html')
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+
+    assert 'object-storage-capacity-usage-trend-guide' in trend
+    assert "page_key == 'capacity' and trend_mode == 'usage'" in trend
+    assert 'data-object-storage-capacity-trend-facts' in trend
+    assert "analysis_surface.role_icon_classes('status', trend_summary.tone" in trend
+    assert "analysis_surface.role_icon_classes('insight', 'info', 'compact')" in trend
+    assert 'trend_summary.sample_count' in trend
+    assert 'trend_summary.delta_percent_display' in trend
+    assert 'object-storage-capacity-quota-pressure-guide' in pressure
+    assert "variant='guide'" in pressure
+    assert 'metrics.capacity_usage.quota_tone' in pressure
+    assert 'Inventory fills only supported missing bucket metrics.' in table
+    assert 'xl:whitespace-nowrap' in table
+    assert 'table_ui.filter_layout_classes()' in table
+    assert 'table_ui.filter_select_classes()' in table
+    assert 'bucket_quota_state' in table
+    assert 'bucket_quota_pressure' in table
+    assert 'clear_filters_action' in table
+    assert 'default=5' in service
+    assert "query_params['bucket_quota_state']" in service
+    assert "query_params['bucket_quota_pressure']" in service
+
+
+def test_capacity_bucket_header_uses_shared_icon_and_right_aligned_clear_filters() -> None:
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    header = table.split('</header>', 1)[0]
+    filter_form = table.split('<form id="object-storage-bucket-table-filter"', 1)[1].split('</form>', 1)[0]
+
+    assert "page_key == 'capacity'" in header
+    assert 'table_ui.block_icon_classes()' in header
+    assert "page_key in ['capacity', 'performance']" in header
+    assert "data-lucide=\"{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}\"" in header
+    assert 'Bucket Capacity Records' in header
+    assert 'table_label.result_count(' in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'items-center justify-end' in header
+    assert 'lead=false' in header
+    assert 'registry_ui.clear_filters_action(' not in filter_form
+    assert 'bucket_q' in filter_form
+    assert 'bucket_quota_state' in filter_form
+    assert 'bucket_quota_pressure' in filter_form
+    assert 'bucket_per_page' in filter_form
+
+
+def test_capacity_workspace_recommendations_and_controls_use_title_level_kaori_guides() -> None:
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+    recommendations = read(f'{PARTIALS}/_recommendations_workspace.html')
+    controls = read(f'{PARTIALS}/_controls.html')
+    shared = read('app/templates/analytics/components/_controls_readiness.html')
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
+
+    assert 'components/info_tip.html' in capacity
+    assert 'object-storage-capacity-workspace-guide' in capacity
+    assert 'Capacity &amp; Usage Workspace' in capacity
+    assert "placement='right', variant='guide'" in capacity
+    assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity
+    assert 'partials/_domain_evidence_context.html' in capacity
+
+    assert 'components/info_tip.html' in recommendations
+    assert "'object-storage-' ~ page_key ~ '-recommendations-guide'" in recommendations
+    assert "{% if page_key == 'capacity' %}" not in recommendations
+    assert '{{ recommendation_context_label }} Recommendations' in recommendations
+    assert "placement='right', variant='guide'" in recommendations
+    assert 'url_for(request.endpoint' in recommendations
+
+    assert "'object-storage-analytics-controls-readiness-' ~ page_key ~ '-guide'" in controls
+    assert "if page_key == 'capacity' else ''" not in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert 'data-analytics-controls-readiness' in shared
+    assert "title_accessory=''" in shared
+    assert '{% if title_accessory %}' in shared
+    assert '{{ title_accessory }}' in shared
+    assert '<h2 class="mt-1 {{ table_ui.block_title_classes() }}">{{ title }}</h2>' in shared
+    assert 'hx-target="#object-storage-analytics-page"' in controls
+    assert 'object-storage-capacity-workspace-guide' not in overview
+
+
+def test_performance_guides_copy_and_bucket_source_filter_follow_kaori_standard() -> None:
+    workspace = read(f'{PARTIALS}/_performance_workspace.html')
+    reliability = read(f'{PARTIALS}/_performance_analysis.html')
+    traffic = read(f'{PARTIALS}/_performance_traffic.html')
+    buckets = read(f'{PARTIALS}/_bucket_table.html')
+    recommendations = read(f'{PARTIALS}/_recommendations_workspace.html')
+    controls = read(f'{PARTIALS}/_controls.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+    overview = read(f'{PARTIALS}/_overview_workspace.html')
+
+    for source, guide_id in (
+        (workspace, 'object-storage-performance-workspace-guide'),
+        (reliability, 'object-storage-request-path-boundary-guide'),
+        (traffic, 'object-storage-throughput-request-direction-guide'),
+        (buckets, 'object-storage-bucket-request-path-records-guide'),
+    ):
+        assert guide_id in source
+        assert 'components/info_tip.html' in source
+        assert "variant='guide'" in source
+
+    assert 'Error ratio reflects reliability, not response latency or client experience.' in reliability
+    assert 'Inflight reflects work; waiting requests and offline nodes indicate pressure.' in reliability
+    assert 'metrics.error_ratio is not none' in reliability
+    assert 'Review boundary ≥ 5%' in reliability
+    assert 'Critical boundary ≥ 10%' in reliability
+    assert "metrics.performance.top_request_bucket_value ~ ' peak request rate · Coverage: '" in traffic
+    assert "metrics.performance.top_error_bucket_value ~ ' peak error ratio · Coverage: '" in traffic
+    assert 'metrics.performance.bucket_request_coverage_display' in traffic
+    assert 'metrics.performance.bucket_error_coverage_display' in traffic
+
+    assert "page_key in ['capacity', 'performance']" in buckets
+    assert "data-lucide=\"{{ 'boxes' if page_key == 'capacity' else 'database-zap' }}\"" in buckets
+    assert 'Request metrics never fall back to Inventory' not in buckets
+    assert 'Request Rate and Error Rate are metrics-only' in buckets
+    assert "page_key == 'performance'" in buckets
+    assert 'name="bucket_usage_context"' in buckets
+    assert 'table_ui.filter_select_classes()' in buckets
+    assert 'registry_ui.clear_filters_action(' in buckets
+    assert 'lead=false' in buckets
+    assert "bucket_table.usage_context != 'all'" in buckets
+    assert 'bucket_usage_context' in service
+    assert "row.get('usage_source') == 'Committed Snapshot'" in service
+    assert "'tab': workspace_tab" not in service
+    assert 'default=5' in service
+
+    assert "'object-storage-' ~ page_key ~ '-recommendations-guide'" in recommendations
+    assert 'data-object-storage-analytics-recommendations' in recommendations
+    assert "'object-storage-analytics-controls-readiness-' ~ page_key ~ '-guide'" in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert 'partials/_recommendations_workspace.html' not in overview
+
+
+def test_evidence_coverage_and_reconciliation_use_shared_tables() -> None:
+    context = read(f'{PARTIALS}/_overview_evidence_context.html')
+    reconciliation = read(f'{PARTIALS}/_reconciliation.html')
+    capacity = read(f'{PARTIALS}/_capacity_workspace.html')
+
+    assert 'data-object-storage-coverage-table' in context
+    assert 'data-object-storage-evidence-domain="{{ domain|lower }}"' in context
+    assert 'table_ui.table_classes(' in context
+    assert 'table_label.status_label(state, tone' in context
+    assert 'whitespace-nowrap' in context
+    assert 'data-object-storage-reconciliation-table' in reconciliation
+    assert 'table_ui.table_classes(' in reconciliation
+    for original in (
+        'item.operational_display',
+        'item.inventory_display',
+        'item.delta_display',
+        'item.delta_percent_display',
+        'item.status',
+        'item.tone',
+    ):
+        assert original in reconciliation
+    assert 'reconciliation_embedded = true' in context
+    assert 'reconciliation_embedded = true' in capacity
+    assert 'data-object-storage-reconciliation-context' in reconciliation
+    assert 'Observation times differ; drift is a review signal.' in reconciliation
+
+
+def test_evidence_authority_explanations_are_single_line_at_desktop_width() -> None:
+    context = read(f'{PARTIALS}/_overview_evidence_context.html')
+    assert 'Identity, quota, protection, and usage fallback.' in context
+    assert 'Committed alert lifecycle and routing evidence.' in context
+    assert 'Worker projection; no Inventory fallback.' in context
+    assert 'Alertmanager first; ALERTS fallback is rule-state only.' in context
+    assert 'truncate whitespace-nowrap' in context
+    assert 'block whitespace-nowrap' in context
+
+
+def test_changed_evidence_templates_compile_without_unknown_flask_filters() -> None:
+    jinja = Environment()
+    jinja.filters['user_datetime'] = lambda value, fallback=None: value or fallback
+    for filename in (
+        '_overview_workspace.html',
+        '_capacity_workspace.html',
+        '_performance_workspace.html',
+        '_top_consumers_workspace.html',
+        '_top_consumers_storage.html',
+        '_top_consumers_activity.html',
+        '_forecast_workspace.html',
+        '_alerts_workspace.html',
+        '_alerts_summary.html',
+        '_alerts_source_evidence.html',
+        '_domain_evidence_context.html',
+        '_overview_evidence_context.html',
+        '_reconciliation.html',
+        '_controls.html',
+        '_recommendations_workspace.html',
+        '_forecast_analysis.html',
+        '_forecast_worker_status.html',
+        '_bucket_forecasts.html',
+        '_bucket_forecast_table.html',
+        '_trend.html',
+    ):
+        jinja.from_string(read(f'{PARTIALS}/{filename}'))
+    jinja.from_string(read('app/templates/analytics/components/_controls_readiness.html'))
+
+
+def test_alert_anomaly_signal_tab_explains_every_committed_boundary() -> None:
+    records = read(f'{PARTIALS}/_alerts_signal_records.html')
+    workspace = read(f'{PARTIALS}/_alerts_workspace.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    analysis = read('app/storage/object_storage/analytics/analysis.py')
+    overview = read(f'{PARTIALS}/_alerts_summary.html')
+    recommendations = read('app/storage/object_storage/analytics/recommendations.py')
+
+    assert 'components/table_primitives.html' in records
+    assert 'components/info_tip.html' in records
+    assert 'object-storage-anomaly-signal-evaluation-guide' in records
+    assert "variant='guide'" in records
+    assert "placement='right'" in records
+    assert 'advanced Intelligence correlations' in records
+    assert 'data-object-storage-boundary-evaluations' in records
+    assert 'data-object-storage-boundary-table' in records
+    assert "table_ui.table_classes('min-w-[740px]')" in records
+    assert 'table_ui.head_classes()' in records
+    assert 'table_ui.body_classes()' in records
+    assert 'table_ui.row_classes()' in records
+    assert 'table_ui.cell_classes()' in records
+    assert 'overflow-x-auto' in records
+    assert 'scope="row"' in records
+    assert 'scope="col"' in records
+    assert 'sr-only' in records
+    assert 'metrics.boundary_evaluations' in records
+    for field in ('title', 'observed', 'threshold', 'severity', 'evaluation'):
+        assert f'boundary.{field}' in records
+    assert "table_label.status_label(boundary.severity|title, boundary.severity, size='compact')" in records
+    assert 'not a provider alert or an automated root-cause diagnosis' in records
+
+    assert 'partials/_alerts_signal_records.html' in workspace
+    assert "('signals', 'Anomaly Signals', 'list-tree')" in workspace
+    assert 'metric_boundary_evaluations' in analysis
+    assert "committed_metrics['boundary_evaluations'] = metric_boundary_evaluations(" in service
+    assert "dict(page_metrics.get('alerts') or _unavailable_alert_metrics())" in service
+    assert "if page_key == 'alerts':" in service
+    assert 'read_analytics_snapshot' in service
+    assert 'metric_risk_signals(' in service
+    assert 'metric_risk_signals' in recommendations or "metrics.get('signals')" in recommendations
+    assert 'metrics.signal_posture.critical_count + metrics.signal_posture.warning_count' in overview
+    Environment().parse(records)
+
+
+def test_performance_trend_and_forecast_records_use_canonical_kaori_guides() -> None:
+    trend = read(f'{PARTIALS}/_trend.html')
+    records = read(f'{PARTIALS}/_bucket_forecast_table.html')
+
+    for template, guide in (
+        (trend, 'object-storage-performance-request-error-trend-guide'),
+        (records, 'object-storage-bucket-forecast-records-guide'),
+    ):
+        assert 'components/info_tip.html' in template
+        assert guide in template
+        assert "variant='guide'" in template
+        assert "placement='right'" in template
+        assert template.count(guide) == 1
+        Environment().parse(template)
+
+    assert "{% if trend_mode == 'performance' %}" in trend
+    assert 'Request &amp; Error Trend' in trend
+    assert 'Request and error rates are separate committed historical signals' in trend
+    assert 'Uncollected or unavailable request-path metrics must remain Unknown' in trend
+    assert 'object-storage-overview-usage-trend-guide' in trend
+    assert 'object-storage-overview-forecast-trend-guide' in trend
+    assert 'object-storage-storage-usage-forecast-' in trend
+    assert 'data-object-storage-secondary-trend-points' in trend
+
+    header = records.split('</header>', 1)[0]
+    assert 'Bucket Forecast Records' in header
+    assert 'table_label.result_count(forecast_table.pagination.total_items)' in header
+    assert 'Forecast Ready requires usable committed history' in header
+    assert 'Forecast Watch and quota ETA are worker planning signals' in header
+    assert 'data-kaori-object-storage-bucket-forecast-table' in records
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'hx-target="#object-storage-bucket-forecast-table-panel"' in records
+    assert 'record_pagination.render(' in records
+
+
+def test_top_consumers_evidence_helpers_remain_compact_and_source_bound() -> None:
+    storage = read(f'{PARTIALS}/_top_consumers_storage.html')
+    activity = read(f'{PARTIALS}/_top_consumers_activity.html')
+
+    assert 'consumer.quota_observed_count|default(0)' in storage
+    assert 'consumer.bucket_count|default(0)' in storage
+    assert 'consumer.quota_not_configured_count|default(0)' in storage
+    assert 'observed ·' in storage
+    assert 'Not Configured' in storage
+    assert 'xl:whitespace-nowrap' in storage
+    assert 'have an observed quota state; ' not in storage
+
+    assert 'Error ratio guides triage, not root cause; check Performance first.' in activity
+    assert 'Error ratio is a triage signal, not root cause.' not in activity
+    assert 'Reliability Boundary' in activity
+    assert 'analysis_surface.interpretation_callout(' in activity
+    for template in (storage, activity):
+        Environment().parse(template)
+
+
+def test_top_consumers_titles_use_canonical_violet_kaori_guides() -> None:
+    storage = read(f'{PARTIALS}/_top_consumers_storage.html')
+    activity = read(f'{PARTIALS}/_top_consumers_activity.html')
+    table = read(f'{PARTIALS}/_bucket_table.html')
+
+    for template, title, guide in (
+        (storage, 'Storage Consumer Leaders', 'object-storage-consumer-storage-leaders-guide'),
+        (activity, 'Request Activity Leaders', 'object-storage-consumer-request-activity-leaders-guide'),
+        (table, 'Consumer Records', 'object-storage-consumer-records-guide'),
+    ):
+        assert 'components/info_tip.html' in template
+        assert title in template
+        assert guide in template
+        assert "variant='guide'" in template
+        assert "placement='right'" in template
+        Environment().parse(template)
+
+    assert "{% elif page_key == 'top_consumers' %}" in table
+    assert 'table_ui.block_icon_classes()' in table
+    assert 'Inventory never fills missing request or error metrics.' in table
+
+
+def test_consumer_records_filters_follow_shared_kaori_table_contract() -> None:
+    table = read(f'{PARTIALS}/_bucket_table.html')
+    service = read('app/storage/object_storage/analytics/bucket_table.py')
+    header = table.split('</header>', 1)[0]
+    form = table.split('<form id="object-storage-bucket-table-filter"', 1)[1].split('</form>', 1)[0]
+
+    assert "page_key == 'top_consumers'" in table
+    for field in (
+        'bucket_q',
+        'bucket_usage_context',
+        'bucket_quota_state',
+        'bucket_quota_pressure',
+        'bucket_request_evidence',
+    ):
+        assert field in form
+    assert 'table_ui.filter_layout_classes()' in form
+    assert 'table_ui.filter_select_classes()' in form
+    assert 'data-analytics-lazy-section="true"' in table
+    assert 'hx-target="#object-storage-bucket-table-panel"' in form
+    assert 'hx-swap="outerHTML"' in form
+    assert 'registry_ui.clear_filters_action(' in header
+    assert 'consumer_filters_active' in header
+    assert 'lead=false' in header
+    assert 'bucket_per_page=bucket_table.pagination.per_page' in header
+    assert 'data-kaori-record-pagination' not in form
+    assert 'record_pagination.render(' in table
+
+    assert "page_key in {'performance', 'top_consumers'}" in service
+    assert "page_key in {'capacity', 'top_consumers'}" in service
+    assert "request_evidence == 'available'" in service
+    assert "row.get('request_rate') is not None" in service
+    assert "query_params['bucket_request_evidence'] = request_evidence" in service
+    assert "'request_evidence': request_evidence" in service
+    assert 'default=5' in service
+    Environment().parse(table)
+
+
+def test_object_storage_gherkin_uat_matrix_covers_domains_and_evidence_authority() -> None:
+    standard = read('docs/design/patterns/OBJECT_STORAGE_ANALYTICS_EVIDENCE_NAVIGATION.md')
+    feature = standard.split('```gherkin', 1)[1].split('```', 1)[0]
+
+    assert 'Feature: Central Object Storage Analytics Data & Evidence' in feature
+    assert feature.count('  Scenario: ') >= 15
+    assert '  Scenario Outline: Anomaly boundary thresholds' in feature
+    for domain in (
+        'Overview',
+        'Capacity',
+        'Performance',
+        'Forecast',
+        'Top Consumers',
+        'Alerts',
+        'Anomaly Signals',
+    ):
+        assert domain in feature
+    for contract in (
+        'View Data & Evidence',
+        'View Reconciliation',
+        'View Alert Source',
+        'Metrics Source ALERTS',
+        'Clear Filters',
+        'Request Evidence',
+        'History Evidence',
+        'Not Configured',
+        'Unknown',
+        'Unavailable',
+        'Alertmanager',
+        'root-cause',
+        '1440',
+        '390',
+        'Escape',
+    ):
+        assert contract in feature
+    for signal in (
+        'Capacity Utilization',
+        'Request Error Ratio',
+        'Waiting Requests',
+        'Offline Storage Nodes',
+    ):
+        assert signal in feature
+    assert 'Human feedback:' in standard
+    assert 'must be rechecked on the eventual merge SHA' in standard

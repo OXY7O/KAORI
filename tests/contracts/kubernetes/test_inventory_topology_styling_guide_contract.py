@@ -331,7 +331,7 @@ def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
     pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
 
     assert "const visibleCount = cy ? cy.nodes(':visible').length : 0" in script
-    assert 'spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.48 : 1.88' in script
+    assert 'spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.13 : 1.24' in script
     assert 'visible.boundingBox({ includeLabels: true, includeOverlays: false })' in script
     assert 'cy.fit(bounds, padding)' in script
     assert 'cy.center(visible)' not in script
@@ -339,7 +339,7 @@ def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
     assert 'visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })' in script
     assert 'window.requestAnimationFrame(fitGraphToCanvas)' in script
     assert '## Compact Hierarchy and Viewport Safety' in pattern
-    assert 'Dependency View remains independent' in pattern
+    assert 'Dependency View retains its existing COSE layout geometry.' in pattern
 
 
 def test_topology_relationship_summary_reuses_existing_inspector() -> None:

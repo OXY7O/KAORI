@@ -61,7 +61,8 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
         'Published formats stay family-owned; candidates remain blocked until contract and renderer are registered.'
         in estate
     )
-    assert 'Published contracts, templates, and schedules approved for governed generation.' in estate
+    assert 'Publication state by infrastructure domain. Only Published contracts are selectable in Generate.' in estate
+    assert 'Published = registered contract + renderer; candidates cannot run.' in estate
     assert 'candidate domains stay non-executable' not in estate
     assert 'recurring schedules that are admitted to the governed generation workflow' not in estate
 

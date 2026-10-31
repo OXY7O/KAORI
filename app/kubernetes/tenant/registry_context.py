@@ -16,6 +16,7 @@ from app.kubernetes.tenant.capacity_governance import (
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.resource_profile_controls import (
+    _recorded_allocation_advanced_controls,
     _tenant_capability_statuses,
     evaluate_resource_profile_advanced_controls,
 )
@@ -712,37 +713,6 @@ def _namespace_profile_version(record: TenantNamespace) -> object:
     return _namespace_profile_lineage(record).get('profile_version')
 
 
-def _recorded_allocation_advanced_controls(record: TenantNamespace) -> dict[str, Any]:
-    """Return only version-matched, committed capability evaluation evidence.
-
-    This is NOT evidence that another provider domain executed the control.
-    """
-    evidence = record.provisioning_evidence_json or {}
-    recorded = evidence.get('advanced_profile_controls') if isinstance(evidence, Mapping) else None
-    if not isinstance(recorded, Mapping) or record.resource_profile is None:
-        return {'recorded': False, 'controls': {}}
-    if (
-        recorded.get('source_profile_id') != record.resource_profile.public_id
-        or recorded.get('source_profile_version') != record.resource_profile_version
-    ):
-        return {'recorded': False, 'controls': {}}
-    controls = recorded.get('controls') or {}
-    return {
-        'recorded': isinstance(controls, Mapping),
-        'controls': {
-            key: {
-                'requested': bool(value.get('requested')),
-                'state': str(value.get('state') or 'unknown'),
-                'reason': str(value.get('reason') or ''),
-            }
-            for key, value in dict(controls).items()
-            if isinstance(value, Mapping)
-        }
-        if isinstance(controls, Mapping)
-        else {},
-    }
-
-
 def _allocation_advanced_preflight_state(
     namespace_options: list[TenantNamespace],
     profile_options: list[TenantResourceProfile],
@@ -1113,6 +1083,33 @@ def get_namespace_registry_context(
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
+    # Capsule capability preview is based on committed Tenant evidence only.
+    # Never fetch the external provider merely to render an operational form.
+    capsule_tenants = [
+        tenant for tenant in base_context['namespace_registry_tenant_options'] if tenant.provider_key == 'capsule'
+    ]
+    capsule_capabilities = {str(tenant.id): _tenant_capability_statuses(tenant) for tenant in capsule_tenants}
+    capsule_advanced_preflight = {
+        str(tenant.id): {
+            str(profile.id): {
+                key: {
+                    'requested': bool(value.get('requested')),
+                    'state': str(value.get('state') or 'unknown'),
+                    'reason': str(value.get('reason') or ''),
+                    'label': str(value.get('label') or key),
+                }
+                for key, value in evaluate_resource_profile_advanced_controls(
+                    profile.advanced_controls_json,
+                    provider_key='capsule',
+                    capability_statuses=capsule_capabilities[str(tenant.id)],
+                ).items()
+                if value.get('requested')
+            }
+            for profile in profile_options
+            if profile.advanced_controls_json
+        }
+        for tenant in capsule_tenants
+    }
     return {
         **base_context,
         'namespace_options': namespace_options,
@@ -1126,6 +1123,7 @@ def get_namespace_registry_context(
             namespace_allocation_options, profile_options
         ),
         'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+        'capsule_advanced_profile_preflight': capsule_advanced_preflight,
         'namespace_allocation_profiles': {
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},

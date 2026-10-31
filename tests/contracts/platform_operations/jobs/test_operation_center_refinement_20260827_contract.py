@@ -53,7 +53,9 @@ def test_data_lifecycle_history_refreshes_without_horizontal_scroll() -> None:
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
 
     assert 'max-h-[580px]' not in index
-    assert 'overflow-y-auto' not in index
+    assert 'xl:overflow-y-auto xl:overscroll-contain' in index
+    assert 'aria-label="Registered lifecycle domains"' in index
+    assert 'overflow-y-auto' not in history
     assert 'hx-trigger="every 20s"' in history
     assert 'overflow-x-auto' not in history
     assert "table_ui.table_classes('table-fixed')" in history

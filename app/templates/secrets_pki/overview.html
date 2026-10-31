@@ -1,0 +1,237 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_signal_overview.html" as signal_overview %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% block title %}Secrets &amp; PKI Overview · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-overview" class="min-w-0 space-y-6">
+        {% set active_scope = 'All Registered Vault Sources' if summary.provider_count else 'No Eligible Vault Source' %}
+        {% set action_href = url_for('vault.index') if can_manage_integrations else url_for('secrets_pki.inventory') %}
+        {% set action_label = 'Open Vault Integrations' if can_manage_integrations else 'Review Inventory Readiness' %}
+        {{ page_hero.operational_dashboard('Secrets & PKI', 'key-round', 'Overview',
+                'Review committed Secret evidence without exposing credentials.',
+                [
+                ('key-round', 'KV v2 Inventory Evidence') ,
+        ('chart-no-axes-combined', binding_coverage.metrics.label),
+        ('bell-ring', binding_coverage.alerts.label)
+        ],
+        active_scope, action_label, action_href,
+        data_authority='Committed KAORI State',
+        state='normal' if summary.has_evidence else 'blocked',
+        blocked_title='Secrets & PKI Inventory Not Ready',
+        blocked_info='Register a Vault source, approve KV v2 metadata mounts, and run the registered inventory job.'
+        ) }}
+        {% if not summary.has_evidence %}
+            {% set empty_state_icon = "key-round" %}
+            {% set empty_state_label = "Setup Required" %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_title = "Committed Secret Inventory Required" %}
+            {% set empty_state_description = "No usable committed Vault KV v2 inventory is available. Missing evidence is not proof of zero Secrets, healthy rotation, or valid PKI." %}
+            {% set empty_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set empty_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
+            {% set empty_state_permission_granted = can_manage_integrations %}
+            {% set empty_state_show_admin_required = not can_manage_integrations %}
+            {% include "components/states/_empty_state.html" %}
+        {% else %}
+            {% set scope_context %}
+                <span class="inline-flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('secrets_pki.inventory') }}"
+                       class="text-sm font-semibold text-kaori-primary hover:underline">Inventory Evidence</a>
+                    <a href="{{ url_for('secrets_pki.lifecycle') }}"
+                       class="text-sm font-semibold text-kaori-primary hover:underline">Lifecycle &amp; Assurance</a>
+                </span>
+            {% endset %}
+            {% call dashboard_workspace.controller(active_tab, 'secrets-pki-overview') %}
+                {% call signal_overview.render(
+                    'Read-only Secret inventory signals from committed Vault metadata scopes.',
+                    '4 Indicators', active_scope, 'key-round',
+                    summary.label, summary.tone,
+                    summary.updated_label, scope_context
+                    ) %}
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {{ metric_card.render('Enabled Vault Sources',
+                                                summary.provider_count if summary.provider_count is not none else 'Unavailable',
+                                                'Active registered Vault identities only.',
+                                                'server', source_label='Vault Provider') }}
+                        {{ metric_card.render('Approved KV v2 Mounts',
+                                                summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
+                                                'Explicitly approved metadata collection scopes.',
+                                                'layers', source_label='Provider Configuration') }}
+                        {{ metric_card.render('Committed Mount Coverage',
+                                                summary.committed_mount_count ~ ' / ' ~ summary.approved_mount_count,
+                                                'Mount scopes with retained successful committed snapshots.',
+                                                'database-zap', source_label='Inventory Collection') }}
+                        {{ metric_card.render('Observed Secret Records',
+                                                summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
+                                                'Metadata records from committed in-scope mounts, not plaintext values.',
+                                                'key-round', source_label='KV v2 Metadata') }}
+                    </div>
+                {% endcall %}
+                {{ dashboard_workspace.navigation('secrets-pki-overview', 'Secrets & PKI Overview Sections') }}
+                <div class="mt-5 space-y-5">
+                    {% call dashboard_workspace.panel('overview', active_tab, 'secrets-pki-overview') %}
+                        {% call section_card.render('Inventory & Data Freshness',
+                            'Committed Vault snapshots and source coverage are independent of provider API readiness.',
+                            'database-zap', action_href=url_for('secrets_pki.inventory'),
+                            action_label='View Inventory Evidence') %}
+                            <p class="text-sm text-content-secondary">
+                                {{ summary.committed_mount_count }} of {{ summary.approved_mount_count }} approved KV v2 mounts
+                                have a retained committed inventory snapshot. Latest commit:
+                                {{ summary.last_committed_at|user_datetime if summary.last_committed_at else 'Not Collected' }}.
+                            </p>
+                            {% if summary.state != 'committed' %}
+                                <p class="mt-3 text-sm text-status-warning-text" role="status">
+                                    Inventory evidence is partial or stale. Counts refer only to observed committed scopes;
+                                    uncollected, unavailable and removed mount scopes are not healthy zeros.
+                                </p>
+                            {% endif %}
+                        {% endcall %}
+                    {% endcall %}
+                    {% call dashboard_workspace.panel('capacity', active_tab, 'secrets-pki-overview') %}
+                        {% call section_card.render('Capacity & Demand',
+                            'Historical Vault demand requires a qualified Metrics Source binding and materialized Analytics.',
+                            'gauge') %}
+                            <div role="status"
+                                 class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <p class="text-sm font-semibold text-content-primary">{{ binding_coverage.metrics.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    {% if binding_coverage.metrics.status in ('qualified', 'partial') %}
+                                        {{ binding_coverage.metrics.coverage }} active Vault identities with one recently validated Metrics Source identity binding.
+                                    {% else %}
+                                        Metrics binding evidence is not qualified for current operational coverage.
+                                    {% endif %}
+                                    This is committed binding validation, not observed Vault HA,
+                                    query history, capacity demand or an availability SLO.
+                                </p>
+                            </div>
+                            <p class="mt-3 text-sm text-content-secondary">
+                                Vault API health and KV v2 metadata do not provide reliable historical request volumes.
+                                No capacity forecasts, lease pressure or per-Service reliability are inferred here.
+                            </p>
+                            {% if can_view_analytics %}
+                                <a href="{{ url_for('secrets_pki.certificate_analytics') }}"
+                                   class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                                    Open PKI Expiration Analytics
+                                </a>
+                            {% endif %}
+                        {% endcall %}
+                    {% endcall %}
+                    {% call dashboard_workspace.panel('signals', active_tab, 'secrets-pki-overview') %}
+                        {% call section_card.render('Signals & Actions',
+                            'Central Intelligence owns qualified Recommendations and AlertCases; this dashboard does not create a second alert engine.',
+                            'bell-ring') %}
+                            <div role="status"
+                                 class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <p class="text-sm font-semibold text-content-primary">{{ binding_coverage.alerts.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    {% if binding_coverage.alerts.status in ('qualified', 'partial') %}
+                                        {{ binding_coverage.alerts.coverage }} active Vault identities with one recently validated Alert Source identity binding.
+                                    {% else %}
+                                        Alert Source identity binding evidence is not qualified.
+                                    {% endif %}
+                                    Validation does not prove a matching active alert,
+                                    AlertCase, escalation, recovery or notification delivery.
+                                </p>
+                            </div>
+                            {% if can_view_intelligence and alert_source_sample %}
+                                <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-subtle p-3"
+                                     role="status">
+                                    <p class="text-sm font-semibold text-content-primary">{{ alert_source_sample.label }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        Last validated Alertmanager sample only, not current firing,
+                                        AlertCase lifecycle, recovery or notification delivery.
+                                        {% if alert_source_sample.last_validated_at %}
+                                            Earliest included validation:
+                                            {{ alert_source_sample.last_validated_at|user_datetime }}.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% if alert_source_sample.status == 'qualified' %}
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                        {{ metric_card.render('Sampled Alerts',
+                                                                                alert_source_sample.observed_rows,
+                                                                                'Rows observed at source binding validation.',
+                                                                                'bell', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Firing in Sample',
+                                                                                alert_source_sample.firing,
+                                                                                'Active rows at the last validation, not live cases.',
+                                                                                'bell-ring', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Suppressed in Sample',
+                                                                                alert_source_sample.suppressed,
+                                                                                'Alertmanager suppressed rows at validation.',
+                                                                                'bell-off', source_label='Alert Source Validation') }}
+                                        {{ metric_card.render('Unprocessed in Sample',
+                                                                                alert_source_sample.unprocessed,
+                                                                                'Unprocessed rows at validation.',
+                                                                                'clock', source_label='Alert Source Validation') }}
+                                    </div>
+                                    <p class="mt-2 text-xs text-content-secondary">
+                                        Severity at validation: {{ alert_source_sample.critical }} critical,
+                                        {{ alert_source_sample.warning }} warning,
+                                        {{ alert_source_sample.info }} info. Counts cover only qualified bindings.
+                                    </p>
+                                {% else %}
+                                    <p class="mt-2 text-xs text-content-secondary">
+                                        Qualified alert counts are unavailable. Missing or partial evidence
+                                        is not proof of no Vault incidents.
+                                    </p>
+                                {% endif %}
+                            {% endif %}
+                            <p class="mt-3 text-sm text-content-secondary">
+                                Vault AlertCase lifecycle and notification delivery remain unqualified.
+                                Missing alert evidence does not imply that Vault or its consumers are healthy.
+                            </p>
+                            {% if can_view_intelligence %}
+                                <a href="{{ url_for('intelligence.recommendations') }}"
+                                   class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                                    Open central Recommendations
+                                </a>
+                            {% endif %}
+                        {% endcall %}
+                    {% endcall %}
+                    {% call dashboard_workspace.panel('reporting', active_tab, 'secrets-pki-overview') %}
+                        {% call section_card.render('Reporting',
+                            'Canonical Reports owns governed export and retention; this workspace contains no Secret backup/export function.',
+                            'file-text') %}
+                            {% if can_view_reports and report_coverage %}
+                                <div role="status" class="space-y-3">
+                                    <p class="text-sm font-semibold text-content-primary">
+                                        {{ report_coverage.status }} · No Secrets &amp; PKI reports published
+                                    </p>
+                                    <p class="text-sm text-content-secondary">
+                                        {{ report_coverage.description }}
+                                        Committed evidence, resource-scoped access and secure exports must pass admission before generation is enabled.
+                                    </p>
+                                    <ul class="grid gap-2 sm:grid-cols-2"
+                                        aria-label="Planned Secrets and PKI report coverage">
+                                        {% for candidate in report_coverage.items %}
+                                            <li class="rounded-md border border-outline-subtle bg-surface-subtle p-3">
+                                                <p class="text-xs font-semibold text-content-primary">{{ candidate.name }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ candidate.description }}</p>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <a href="{{ url_for('reports.overview') }}"
+                                   class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                                    Open Reports
+                                </a>
+                            {% elif not can_view_reports %}
+                                <p class="text-sm text-content-secondary">
+                                    Reporting coverage is available to users with Reports view permission.
+                                    No Secrets &amp; PKI report can be generated from this workspace.
+                                </p>
+                            {% else %}
+                                <p class="text-sm text-content-secondary">
+                                    Secrets &amp; PKI reporting coverage is not registered. No report is available.
+                                </p>
+                            {% endif %}
+                        {% endcall %}
+                    {% endcall %}
+                </div>
+            {% endcall %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

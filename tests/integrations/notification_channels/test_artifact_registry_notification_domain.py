@@ -99,6 +99,7 @@ def test_form_requires_at_least_one_approved_use_for_every_domain(
 def test_delivery_matcher_preserves_report_only_boundary_even_for_stale_policy() -> None:
     channel = SimpleNamespace(
         enabled=True,
+        lifecycle_state='active',
         configured=True,
         test_status='success',
         domains=['artifact_registry', 'registry'],

@@ -2,21 +2,26 @@ from __future__ import annotations
 
 import re
 
-import yaml
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.tenant.access import (
-    ACCESS_PROFILE_CATALOG,
-    LATEST_ACCESS_PROFILE_VERSION,
     TenantAccessScope,
-    capsule_cluster_role_manifest,
     get_access_profile,
     validate_grant_scope,
 )
 from app.kubernetes.tenant.access_provider import inspect_provider_access_grant, reconcile_provider_access_grant
+from app.kubernetes.tenant.admin_workspace import (
+    _remediation_matches_access_observation as _remediation_matches_access_observation,
+)
+from app.kubernetes.tenant.admin_workspace import (
+    get_provider_access_evidence_registry_context as get_provider_access_evidence_registry_context,
+)
+from app.kubernetes.tenant.admin_workspace import (
+    get_tenant_access_context as get_tenant_access_context,
+)
 from app.kubernetes.tenant.credential_service import revoke_credentials_for_access_grant
 from app.models import AuditEvent, User
 from app.models.tenant import (
@@ -902,141 +907,6 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
             )
             db.session.commit()
         raise
-
-
-def get_tenant_access_context() -> dict[str, object]:
-    tenant_options = (
-        Tenant.query.filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
-        .order_by(Tenant.name.asc())
-        .all()
-    )
-    user_options = (
-        User.query.filter(User.account_is_active.is_(True), User.deleted_at.is_(None))
-        .order_by(User.username.asc())
-        .all()
-    )
-    group_options = (
-        TenantGroup.query.join(Tenant, Tenant.id == TenantGroup.tenant_id)
-        .filter(
-            TenantGroup.enabled.is_(True),
-            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
-        )
-        .order_by(TenantGroup.name.asc())
-        .all()
-    )
-    membership_options = (
-        TenantMembership.query.join(Tenant, Tenant.id == TenantMembership.tenant_id)
-        .filter(
-            TenantMembership.status == TenantMembershipStatus.ACTIVE.value,
-            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
-        )
-        .order_by(TenantMembership.created_at.desc())
-        .all()
-    )
-    environment_options = (
-        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
-        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
-        .all()
-    )
-    namespace_options = (
-        TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
-        .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(
-            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
-            TenantNamespace.provisioning_status == 'ready',
-        )
-        .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
-        .all()
-    )
-    profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')
-    profiles = [
-        ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]
-        for key in profile_order
-        if key in LATEST_ACCESS_PROFILE_VERSION
-    ]
-    capsule_role_documents = [capsule_cluster_role_manifest(profile) for profile in profiles]
-    capsule_role_manifests = [
-        {
-            'label': profile.label,
-            'version': profile.version,
-            'name': document['metadata']['name'],
-            'yaml': yaml.safe_dump(document, sort_keys=False, explicit_start=True),
-        }
-        for profile, document in zip(profiles, capsule_role_documents, strict=True)
-    ]
-    recent_access_remediation = (
-        AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
-        .order_by(AuditEvent.id.desc())
-        .limit(30)
-        .all()
-    )
-    capsule_remediation = [
-        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider', 'capsule') == 'capsule'
-    ][:5]
-    native_remediation = [
-        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider') == 'native_kubernetes'
-    ][:5]
-    return {
-        'access_tenant_options': tenant_options,
-        'access_user_options': user_options,
-        'access_group_options': group_options,
-        'access_membership_options': membership_options,
-        'access_environment_options': environment_options,
-        'access_namespace_options': namespace_options,
-        'access_profiles': profiles,
-        'access_capsule_role_manifests': capsule_role_manifests,
-        'access_capsule_role_bundle_yaml': yaml.safe_dump_all(
-            capsule_role_documents, sort_keys=False, explicit_start=True
-        ),
-        'recent_tenant_groups': TenantGroup.query.order_by(TenantGroup.created_at.desc()).limit(5).all(),
-        'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
-        'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),
-        'external_capsule_tenants': [
-            tenant
-            for tenant in tenant_options
-            if tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
-        ],
-        'external_native_tenants': [
-            tenant
-            for tenant in tenant_options
-            if tenant.provider_key == 'native_kubernetes'
-            and tenant.provider_state == 'native'
-            and tenant.reconciliation_authority == 'native_kubernetes'
-        ],
-        'recent_external_access_profile_reviews': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_role_profile_review')
-            .order_by(AuditEvent.id.desc())
-            .limit(5)
-            .all()
-        ),
-        'recent_external_native_access': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
-            .order_by(AuditEvent.id.desc())
-            .limit(5)
-            .all()
-        ),
-        'recent_external_capsule_access': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_access_inventory')
-            .order_by(AuditEvent.id.desc())
-            .limit(5)
-            .all()
-        ),
-        'recent_capsule_access_drift': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_drift_evidence')
-            .order_by(AuditEvent.id.desc())
-            .limit(5)
-            .all()
-        ),
-        'recent_native_access_drift': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_access_drift_evidence')
-            .order_by(AuditEvent.id.desc())
-            .limit(5)
-            .all()
-        ),
-        'recent_capsule_access_remediation': capsule_remediation,
-        'recent_native_access_remediation': native_remediation,
-    }
 
 
 def active_membership_count(tenant_id: str) -> int:
