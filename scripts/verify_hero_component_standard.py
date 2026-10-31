@@ -1175,6 +1175,36 @@ def _verify_registry_blocked_hero_actions() -> None:
         raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
 
 
+def _verify_secrets_pki_evidence_readiness_gates() -> None:
+    """Require a real prerequisite blocker before operational evidence appears."""
+    inventory = _read(TEMPLATES / 'secrets_pki/inventory.html')
+    lifecycle = _read(TEMPLATES / 'secrets_pki/lifecycle.html')
+    for name, source, ready, blocked in (
+        ('Inventory', inventory, 'summary.has_evidence', 'not summary.has_evidence'),
+        (
+            'Lifecycle',
+            lifecycle,
+            "kv2_version_posture.status in ('ready', 'observed_empty') or pki_validity.status == 'ready'",
+            "kv2_version_posture.status not in ('ready', 'observed_empty') and pki_validity.status != 'ready'",
+        ),
+    ):
+        owner = f'Secrets & PKI {name} evidence gate'
+        if 'page_hero.blocked_context_body(' not in source:
+            raise AssertionError(f'{owner}: missing shared blocked Hero context')
+        if f'{{% if {blocked} %}}' not in source:
+            raise AssertionError(f'{owner}: missing explicit unqualified evidence blocker')
+        if '{% include "components/states/_blocked_state.html" %}' not in source:
+            raise AssertionError(f'{owner}: missing canonical prerequisite blocker')
+        if 'blocked_state_steps' not in source or 'blocked_state_action_url' not in source:
+            raise AssertionError(f'{owner}: missing setup steps and remediation destination')
+        if '{% else %}' not in source or 'section_intro.render(' not in source:
+            raise AssertionError(f'{owner}: missing guarded operational content')
+        if f'{{% if not ({ready}) %}}' not in source:
+            raise AssertionError(f'{owner}: missing matching blocked Hero readiness condition')
+        if source.index('{% include "components/states/_blocked_state.html" %}') > source.index('section_intro.render('):
+            raise AssertionError(f'{owner}: normal content must follow prerequisite blocker')
+
+
 def _verify_secrets_pki_overview_blocked_dashboard() -> None:
     """Reject noncanonical prerequisites and verbose blocked Hero summary."""
     overview = _read(TEMPLATES / 'secrets_pki/overview.html')
@@ -1400,6 +1430,7 @@ def verify() -> None:
     _verify_operational_metadata_state_contract()
     _verify_secrets_pki_lifecycle_compact_hero()
     _verify_secrets_pki_overview_blocked_dashboard()
+    _verify_secrets_pki_evidence_readiness_gates()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
