@@ -23,17 +23,38 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Inventory evidence context">
-                    <div class="{{ page_hero.context_panel_classes() }}">
+                    {% if not (summary.has_evidence) %}
+                        {{ page_hero.blocked_context_body('Inventory Readiness',
+                            'Vault Inventory Setup Required',
+                            [('server', 'Active Sources', 'Not Qualified', 'No qualified Vault inventory'),
+                             ('clock-3', 'Latest Commit', 'Not Collected', 'Committed evidence required')],
+                            'Register Vault and collect approved KV v2 evidence.',
+                            'Blocked') }}
+                    {% else %}
+                        <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Inventory Readiness', summary.label, 'database-zap') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('server', 'Active Scope', 'Registered Vault Sources', 'Provider-neutral evidence') }}
                             {{ page_hero.context_metric('clock-3', 'Latest Commit', summary.updated_label, 'Retention and collection state') }}
                         </div>
                         {{ page_hero.context_info('lock-keyhole', 'No raw Secret paths, private keys or credential values are displayed.') }}
-                    </div>
+                    <
+                    {% endif %}
                 </aside>
             </div>
         </section>
+        {% if not summary.has_evidence %}
+            {% set blocked_state_icon = "key-round" %}
+            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_title = "Committed KV v2 Inventory Required" %}
+            {% set blocked_state_description = "Register an approved Vault source and collect committed inventory evidence. Missing evidence is not zero." %}
+            {% set blocked_state_steps = ['Register Vault source', 'Approve KV v2 metadata mounts', 'Run Inventory Job'] %}
+            {% set blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set blocked_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
+            {% set blocked_state_permission_granted = can_manage_integrations %}
+            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {{ section_intro.render('Committed Inventory Coverage',
                 'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
                 supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.') }}
@@ -409,5 +430,6 @@
                 </p>
             {% endcall %}
         </div>
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
