@@ -7,7 +7,7 @@
 {% block title %}Lifecycle &amp; Assurance · Secrets &amp; PKI · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="secrets-pki-lifecycle" class="min-w-0 space-y-6">
-        {{ lifecycle_navigation.render('lifecycle') }}
+        {{ lifecycle_navigation.render("lifecycle") }}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -27,22 +27,22 @@
                        aria-label="Lifecycle evidence readiness">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {% set kv2_hero_label = {
-                            'ready': 'Qualified KV v2 Evidence',
-                            'observed_empty': 'Qualified Empty Inventory',
-                            'incomplete_evidence': 'Incomplete KV v2 Evidence'
-                        }.get(kv2_version_posture.status, 'KV v2 Evidence Required') %}
+                                                    'ready': 'Qualified KV v2 Evidence',
+                                                    'observed_empty': 'Qualified Empty Inventory',
+                                                    'incomplete_evidence': 'Incomplete KV v2 Evidence'
+                                                }.get(kv2_version_posture.status, 'KV v2 Evidence Required') %}
                         {{ page_hero.context_header('KV v2 Evidence', kv2_hero_label, 'database-zap') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('layers', 'Version Evidence',
                                                         kv2_version_posture.observed_versions if kv2_version_posture.observed_versions is not none else 'Not Qualified',
                                                         'Current committed generation only') }}
                             {% set pki_hero_label = {
-                                'ready': 'Qualified',
-                                'not_configured': 'Not Enabled',
-                                'incomplete': 'Incomplete',
-                                'blocked': 'Blocked',
-                                'unavailable': 'Unavailable'
-                            }.get(pki_validity.status, 'Not Qualified') %}
+                                                            'ready': 'Qualified',
+                                                            'not_configured': 'Not Enabled',
+                                                            'incomplete': 'Incomplete',
+                                                            'blocked': 'Blocked',
+                                                            'unavailable': 'Unavailable'
+                                                        }.get(pki_validity.status, 'Not Qualified') %}
                             {{ page_hero.context_metric('certificate', 'PKI Expiration',
                                                         pki_hero_label, 'Opted-in public certificates') }}
                         </div>
