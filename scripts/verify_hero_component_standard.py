@@ -1214,8 +1214,11 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     kv2_mapping = re.search(r'{%\\s*set kv2_hero_label\\s*=\\s*(.*?)%}', lifecycle, re.S)
     if not kv2_mapping:
         raise AssertionError(f'{owner}: missing bounded KV v2 display mapping')
-    kv2_labels = re.findall(r"'([^']+)'\\s+if\\s+kv2_version_posture\\.status|else\\s+'([^']+)'", kv2_mapping.group(1))
-    if not kv2_labels or any(len(value) > 28 for pair in kv2_labels for value in pair if value):
+    kv2_labels = [
+        value for value in re.findall(r"'([^']+)'", kv2_mapping.group(1))
+        if value not in {'ready', 'observed_empty', 'incomplete_evidence'}
+    ]
+    if len(kv2_labels) != 4 or any(len(value) > 28 for value in kv2_labels):
         raise AssertionError(f'{owner}: KV v2 Hero heading must be concise at 1440px')
 
     info = re.search(r"page_hero\\.context_info\\('shield-alert',\\s*'([^']+)'\\s*\\)", lifecycle)
