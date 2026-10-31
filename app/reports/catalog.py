@@ -5,10 +5,10 @@ from typing import Any
 
 from app.definitions.loader import DefinitionError, load_definition_document
 from app.definitions.report_coverage import (
-    REPORT_COVERAGE_DOMAINS,
-    ReportCoverageDomainSpec,
-    ReportCoverageItemSpec,
-    _load_report_coverage_catalog,
+    REPORT_COVERAGE_DOMAINS as REPORT_COVERAGE_DOMAINS,
+    ReportCoverageDomainSpec as ReportCoverageDomainSpec,
+    ReportCoverageItemSpec as ReportCoverageItemSpec,
+    _load_report_coverage_catalog as _load_report_coverage_catalog,
 )
 from app.definitions.validation import (
     require_bool,
