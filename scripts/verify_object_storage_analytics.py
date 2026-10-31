@@ -42,6 +42,9 @@ def main() -> int:
     alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
     alert_source_evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
     alerts_workspace = read('app/templates/storage/object_storage/analytics/partials/_alerts_workspace.html')
+    domain_evidence_context = read(
+        'app/templates/storage/object_storage/analytics/partials/_domain_evidence_context.html'
+    )
     boundary = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
     readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
     controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
@@ -351,36 +354,39 @@ def main() -> int:
     assert "'Request Health'" in hero_posture
     assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity_workspace
     assert 'Capacity &amp; Usage Workspace' in capacity_workspace
-    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Evidence'):
+    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Recommendations'):
         assert f"'{label}'" in capacity_workspace
     assert '_capacity_analysis.html' in capacity_workspace
     assert '_trend.html' in capacity_workspace
     assert '_capacity_pressure.html' in capacity_workspace
     assert '_bucket_table.html' in capacity_workspace
     assert '_reconciliation.html' in capacity_workspace
-    assert '_metrics_readiness.html' in capacity_workspace
-    assert '_evidence_boundary.html' in capacity_workspace
+    assert '_domain_evidence_context.html' in capacity_workspace
+    assert '_recommendations_workspace.html' in capacity_workspace
     assert 'data-analytics-tabset-id="object-storage-performance-content"' in performance_workspace
     assert 'Performance Analysis Workspace' in performance_workspace
-    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
+    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Recommendations'):
         assert f"'{label}'" in performance_workspace
     assert '_performance_analysis.html' in performance_workspace
     assert '_performance_traffic.html' in performance_workspace
     assert '_trend.html' in performance_workspace
     assert '_bucket_table.html' in performance_workspace
-    assert '_metrics_readiness.html' in performance_workspace
-    assert '_evidence_boundary.html' in performance_workspace
+    assert '_domain_evidence_context.html' in performance_workspace
+    assert '_recommendations_workspace.html' in performance_workspace
     assert 'data-analytics-preserve-tab' in controls
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'build_alert_table_view' in alert_table_service
     assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
-    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
+    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Alerts', 'Data & Evidence'):
         assert f"'{label}'" in overview_workspace
     assert 'Capacity Snapshot' in overview_capacity
     assert 'Request Path Snapshot' in overview_performance
     assert 'Forecast Snapshot' in overview_forecast
     assert 'Consumer Concentration Snapshot' in overview_consumer
     assert '_overview_consumer_snapshot.html' in overview_workspace
+    assert '_metrics_readiness.html' in overview_workspace
+    assert '_overview_evidence_context.html' in overview_workspace
+    assert 'data-analytics-tab-panel="evidence"' in overview_workspace
     assert '_bucket_table.html' not in overview_workspace
     assert 'partials/_overview_workspaces.html' not in template
     assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspaces.html').exists()
@@ -392,7 +398,7 @@ def main() -> int:
     assert 'Bucket Consumption Evidence' not in bucket_table_template
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
-    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence'):
+    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Recommendations'):
         assert f"'{label}'" in forecast_workspace
     assert '_forecast_worker_status.html' in forecast_workspace
     assert '_forecast_methodology.html' in forecast_workspace
@@ -401,7 +407,7 @@ def main() -> int:
     assert "'Forecast Outlook'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-top-consumers-content"' in top_consumers_workspace
-    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Evidence'):
+    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Recommendations'):
         assert f"'{label}'" in top_consumers_workspace
     assert '_top_consumers_storage.html' in top_consumers_workspace
     assert '_top_consumers_activity.html' in top_consumers_workspace
@@ -410,12 +416,27 @@ def main() -> int:
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations', 'Evidence'):
+    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations'):
         assert f"'{label}'" in alerts_workspace
     assert '_alerts_summary.html' in alerts_workspace
     assert '_alerts_signal_records.html' in alerts_workspace
     assert '_alert_records.html' in alerts_workspace
     assert '_alerts_source_evidence.html' in alerts_workspace
+    for workspace in (
+        capacity_workspace,
+        performance_workspace,
+        forecast_workspace,
+        top_consumers_workspace,
+        alerts_workspace,
+    ):
+        assert '_domain_evidence_context.html' in workspace
+        assert '_recommendations_workspace.html' in workspace
+        assert 'data-analytics-tab-panel="recommendations"' in workspace
+        assert 'data-analytics-tab-panel="evidence"' not in workspace
+    assert 'data-object-storage-domain-evidence-context' in domain_evidence_context
+    assert 'data-object-storage-central-evidence-link' in domain_evidence_context
+    assert "tab='evidence'" in domain_evidence_context
+    assert 'View Data &amp; Evidence' in domain_evidence_context
     assert "'Alert Posture'" in hero_posture
     assert "'Active Alert State'" in hero_posture
     assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_alerts_lifecycle.html').exists()
