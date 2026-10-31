@@ -50,6 +50,20 @@ Metrics Source, Alert Source, canonical Recommendations and Reporting are
 shown as unavailable/not materialized until their dedicated workstreams are
 admitted. Neither dashboard nor Inventory starts jobs on GET.
 
+## Vault Alert Source manual JobExecution boundary — #4158
+
+The source-controlled registered Jobs catalog resolves manual, default-off
+`secrets_pki.vault_alerts.observe` dispatch from
+`app/intelligence/alert_signals/vault_dispatch.py`. Its worker execution and
+source-qualified observation remain in
+`app/intelligence/alert_signals/vault_jobs.py`, invoked by the unchanged
+`app.intelligence.alert_signals.tasks.observe_vault_alert_source` Celery task.
+This separates task production from execution without creating an automatic
+scheduler, expanding Vault/Alertmanager permission, weakening canonical
+source revalidation, or exposing raw alert payload or worker HMAC material.
+The catalog's context builder continues using the committed Jobs/readiness
+owner. Missing/invalid source evidence stays blocked or unknown, never Ready.
+
 ## Deferred work
 
 Complete Secret/PKI/Lease/Consumer details, row-level source authorization
