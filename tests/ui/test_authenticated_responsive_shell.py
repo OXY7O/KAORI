@@ -253,3 +253,52 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
     assert aligned['targetTop'] >= aligned['mainTop'] + aligned['scrollPaddingTop'] - 1
     _assert_no_document_overflow(page)
     _capture(page, 'authenticated-shell-top-boundary', viewport_name)
+
+
+
+def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_is_shared(
+    page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    # Rendered geometry, not CSS nowrap/ellipsis, is the final density authority.
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/lifecycle', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+
+    navigation = page.locator('#secrets-pki-lifecycle nav[data-kaori-tab-variant="integrated-workspace-server"]')
+    expect(navigation).to_be_visible()
+    expect(navigation.locator('a[aria-current="page"]')).to_have_text('Lifecycle & Assurance')
+    assert navigation.locator('a').count() == 4
+
+    hero = page.locator('#secrets-pki-lifecycle section.kaori-hero-shell')
+    expect(hero).to_be_visible()
+    targets = [
+        hero.locator('[data-kaori-hero-context-metric]').nth(0).locator('p').nth(1),
+        hero.locator('[data-kaori-hero-context-metric]').nth(1).locator('p').nth(1),
+        hero.locator('.kaori-hero-panel .kaori-hero-tile').last.locator('p'),
+    ]
+    for element in targets:
+        expect(element).to_be_visible()
+        measurement = element.evaluate(
+            """el => {
+                const styles = getComputedStyle(el);
+                const box = el.getBoundingClientRect();
+                return {
+                    height: box.height,
+                    lineHeight: parseFloat(styles.lineHeight),
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    whiteSpace: styles.whiteSpace,
+                    overflow: styles.overflow,
+                    textOverflow: styles.textOverflow
+                };
+            }"""
+        )
+        assert measurement['whiteSpace'] != 'nowrap', measurement
+        assert measurement['textOverflow'] != 'ellipsis', measurement
+        assert measurement['overflow'] != 'hidden', measurement
+        assert measurement['height'] <= measurement['lineHeight'] + 1.5, measurement
+        assert measurement['scrollWidth'] <= measurement['clientWidth'] + 1, measurement
+
+    _assert_no_document_overflow(page)
