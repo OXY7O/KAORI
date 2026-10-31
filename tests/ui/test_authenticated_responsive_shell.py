@@ -325,27 +325,32 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
     expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
 
     # DOM geometry is the final authority; never hide wrapping with nowrap/ellipsis.
-    note = hero.locator('.kaori-hero-panel > .kaori-hero-tile p')
-    expect(note).to_be_visible()
-    dimensions = note.evaluate(
-        """el => {
-            const style = getComputedStyle(el);
-            const bounds = el.getBoundingClientRect();
-            return {
-                height: bounds.height,
-                lineHeight: parseFloat(style.lineHeight),
-                scrollWidth: el.scrollWidth,
-                clientWidth: el.clientWidth,
-                whiteSpace: style.whiteSpace,
-                overflow: style.overflow,
-                textOverflow: style.textOverflow
-            };
-        }"""
+    targets = hero.locator(
+        '.kaori-hero-panel h2, .kaori-hero-panel [data-kaori-hero-context-metric] p, '
+        '.kaori-hero-panel > .kaori-hero-tile p'
     )
-    assert dimensions['height'] <= dimensions['lineHeight'] + 1.5, dimensions
-    assert dimensions['scrollWidth'] <= dimensions['clientWidth'] + 1, dimensions
-    assert dimensions['whiteSpace'] != 'nowrap', dimensions
-    assert dimensions['overflow'] != 'hidden', dimensions
-    assert dimensions['textOverflow'] != 'ellipsis', dimensions
+    assert targets.count() == 8
+    for item in targets.all():
+        expect(item).to_be_visible()
+        dimensions = item.evaluate(
+            """el => {
+                const style = getComputedStyle(el);
+                const bounds = el.getBoundingClientRect();
+                return {
+                    height: bounds.height,
+                    lineHeight: parseFloat(style.lineHeight),
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    whiteSpace: style.whiteSpace,
+                    overflow: style.overflow,
+                    textOverflow: style.textOverflow
+                };
+            }"""
+        )
+        assert dimensions['height'] <= dimensions['lineHeight'] + 1.5, dimensions
+        assert dimensions['scrollWidth'] <= dimensions['clientWidth'] + 1, dimensions
+        assert dimensions['whiteSpace'] != 'nowrap', dimensions
+        assert dimensions['overflow'] != 'hidden', dimensions
+        assert dimensions['textOverflow'] != 'ellipsis', dimensions
     _assert_no_document_overflow(page)
     _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')
