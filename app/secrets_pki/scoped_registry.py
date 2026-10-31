@@ -17,8 +17,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
-from app.models.scope_access import ScopeAccessPolicy
 from app.models.integration import IntegrationInstance
+from app.models.scope_access import ScopeAccessPolicy
 from app.models.secrets_pki import (
     SecretIdentity,
     SecretInventoryCollectionState,

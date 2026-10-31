@@ -11,6 +11,7 @@ from uuid import UUID
 from flask import abort, render_template, request
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+
 from app.secrets_pki.scoped_registry import read_governed_scoped_secret_registry, resolve_scoped_registry_mount
 
 _MAX_PAGE = 40  # The committed scope itself caps at 200, with pages of five.
