@@ -318,10 +318,26 @@ def main() -> int:
     require(
         'macro inventory_copy_button(label)' in detail_primitives
         and 'data-kaori-copy-button' in detail_primitives
-        and 'data-kaori-copy-source' in detail_primitives,
-        'Shared Inventory detail primitives must provide accessible copy controls for technical identifiers.',
+        and 'aria-label="Copy {{ label }}"' in detail_primitives,
+        'Shared clipboard helper must remain available outside Kubernetes Inventory details.',
         errors,
     )
+    for macro_name in ('inventory_technical_row', 'inspector_technical_row', 'inventory_fact_grid'):
+        prefix = f'{{% macro {macro_name}('
+        macro_body = (
+            detail_primitives.split(prefix, 1)[1].split('{%- endmacro %}', 1)[0]
+            if prefix in detail_primitives
+            else ''
+        )
+        require(
+            bool(macro_body)
+            and all(
+                marker not in macro_body
+                for marker in ('data-kaori-copy-', 'inventory_copy_button(', 'data-lucide="copy"')
+            ),
+            f'{macro_name} must expose selectable facts without Inventory clipboard controls.',
+            errors,
+        )
 
     namespace_detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     require(
