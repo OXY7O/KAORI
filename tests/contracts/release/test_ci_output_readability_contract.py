@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -441,3 +442,18 @@ def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None
     assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
     assert 'printf "  %s\\n", substr($0, 1, 200)' in source
     assert 'Full diagnostic log: %s' in source
+
+
+def test_full_admission_static_purpose_covers_each_existing_verifier() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    coverage = (ROOT / 'scripts/verify_release_surface_coverage.py').read_text(encoding='utf-8')
+
+    checks = set(re.findall(r"^\\s*'([^']+)' '(?:python|bash) [^']+'", source, re.M))
+    described = set(re.findall(r"^\\s*'([^']+)'\\) printf '%s' '[^']+' ;;", source, re.M))
+    assert checks and checks == described
+    assert 'static_check_purpose "$label"' in source
+    assert 'Purpose | Outcome | Duration' in source
+    assert 'Purpose: %s' in source
+    assert 'CATALOG DEFINITIONS ONLY' in coverage
+    assert '_integration_catalog_descriptions()' in coverage
+    assert 'not executed checks or PASS results' in coverage

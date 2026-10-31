@@ -68,6 +68,23 @@ def _integration_domain_endpoints() -> set[str]:
     return set(re.findall(r'^\s*workspace_endpoint:\s*([^\s#]+)', source, re.M))
 
 
+def _integration_catalog_descriptions() -> list[tuple[str, str, str]]:
+    """Render existing Integration labels, without treating registration as PASS."""
+    catalog = INTEGRATION_TAXONOMY_CATALOG.read_text(encoding='utf-8')
+    descriptions: list[tuple[str, str, str]] = []
+    for section, following, kind in (
+        ('domains', 'capabilities', 'DOMAIN'),
+        ('capabilities', 'consumer_assets', 'CAPABILITY'),
+    ):
+        block = catalog.split(f'\n{section}:\n', 1)[1].split(f'\n{following}:\n', 1)[0]
+        for item in re.split(r'(?m)^- key: ', block)[1:]:
+            label = re.search(r'(?m)^  label: (.+)$', item)
+            description = re.search(r'(?m)^  description: (.+)$', item)
+            if label is not None and description is not None:
+                descriptions.append((kind, label.group(1), description.group(1)))
+    return descriptions
+
+
 def _intelligence_link_endpoints(source: str) -> set[str]:
     match = re.search(r'{% set intelligence_links = \[(.*?)\] %}', source, re.S)
     if not match:
@@ -263,6 +280,9 @@ def verify() -> None:
             f'{len(contract_modules_by_surface[surface.title])} contract test module(s); '
             f'static verifier(s): {verifiers}'
         )
+    print('  CATALOG DEFINITIONS ONLY — Integration labels are not executed checks or PASS results')
+    for kind, label, description in _integration_catalog_descriptions():
+        print(f'    {kind} — {label}: {description}')
 
 
 if __name__ == '__main__':

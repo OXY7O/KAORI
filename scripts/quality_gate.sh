@@ -147,11 +147,115 @@ run_pytest_capture() {
     return "$status"
 }
 
+# Readable intent for every named static verifier. Keep aligned with run_static().
+# The existing CI readability contract checks that no verifier lacks a purpose.
+static_check_purpose() {
+    case "$1" in
+        'Source Hygiene') printf '%s' 'Reject obsolete or forbidden repository artifacts.' ;;
+        'Release Surface Coverage') printf '%s' 'Prove menu and Blueprint ownership; registration is not test PASS.' ;;
+        'Release Governance') printf '%s' 'Enforce approved release governance contracts.' ;;
+        'Environment Contract') printf '%s' 'Validate canonical environment configuration.' ;;
+        'Engineering Standard') printf '%s' 'Check repository engineering guardrails.' ;;
+        'Definition Registry') printf '%s' 'Check canonical domain and capability definitions.' ;;
+        'Domain Namespace Architecture') printf '%s' 'Validate domain and namespace ownership.' ;;
+        'Application Package Architecture') printf '%s' 'Protect application package boundaries.' ;;
+        'Welcome Final Lock') printf '%s' 'Protect approved Welcome workspace contracts.' ;;
+        'Python Syntax') printf '%s' 'Check Python source syntax.' ;;
+        'Template Dependencies') printf '%s' 'Check Jinja template dependencies.' ;;
+        'Single PDF Engine') printf '%s' 'Enforce the shared PDF engine.' ;;
+        'Analytics PDF Publication') printf '%s' 'Check Analytics PDF publication contracts.' ;;
+        'Report Generation Contract') printf '%s' 'Check reporting generation interfaces.' ;;
+        'Report Runtime Imports') printf '%s' 'Check reporting imports and dependencies.' ;;
+        'Report Job Standard') printf '%s' 'Check governed report job lifecycle.' ;;
+        'Report Storage Resilience') printf '%s' 'Check report storage and failure handling.' ;;
+        'Tabular Export Standard') printf '%s' 'Enforce shared table export standards.' ;;
+        'Object Storage Analytics') printf '%s' 'Check committed object-storage analytics contracts.' ;;
+        'Inventory Final Lock') printf '%s' 'Protect Kubernetes Inventory contracts.' ;;
+        'Object Storage Inventory Final Lock') printf '%s' 'Protect Object Storage Inventory contracts.' ;;
+        'Governance Final Lock') printf '%s' 'Protect Kubernetes Governance contracts.' ;;
+        'Kubernetes Operations Final Lock') printf '%s' 'Protect Kubernetes Operations contracts.' ;;
+        'Node Inventory Standard') printf '%s' 'Check node inventory contracts.' ;;
+        'Namespace Inventory Standard') printf '%s' 'Check namespace inventory contracts.' ;;
+        'Configuration Inventory Standard') printf '%s' 'Check configuration inventory contracts.' ;;
+        'ConfigMap Management Standard') printf '%s' 'Check ConfigMap management contracts.' ;;
+        'Secret Management Standard') printf '%s' 'Protect Kubernetes Secret management boundaries.' ;;
+        'Operational Delivery Policy') printf '%s' 'Check operational delivery policy.' ;;
+        'Operational Feedback Coverage') printf '%s' 'Check user feedback and durable activity evidence.' ;;
+        'Access Ownership') printf '%s' 'Protect access ownership boundaries.' ;;
+        'Access Final Lock') printf '%s' 'Protect approved Access workspace contracts.' ;;
+        'Activity Audit Final Lock') printf '%s' 'Protect operational audit contracts.' ;;
+        'Identity Provider Architecture') printf '%s' 'Check identity provider architecture.' ;;
+        'Authentication Surface Final Lock') printf '%s' 'Protect authentication and session contracts.' ;;
+        'Settings Final Lock') printf '%s' 'Protect approved Settings contracts.' ;;
+        'Intelligence Baseline Lock') printf '%s' 'Protect Intelligence baseline and evidence semantics.' ;;
+        'Automation Control') printf '%s' 'Check automation governance and mutation boundaries.' ;;
+        'TLS Certificate Governance') printf '%s' 'Check certificate lifecycle governance.' ;;
+        'Workload Inventory Standard') printf '%s' 'Check workload inventory contracts.' ;;
+        'Pod Inventory Standard') printf '%s' 'Check Pod inventory contracts.' ;;
+        'Service Inventory Standard') printf '%s' 'Check Service inventory contracts.' ;;
+        'Ingress Inventory Standard') printf '%s' 'Check Ingress inventory contracts.' ;;
+        'Storage Inventory Standard') printf '%s' 'Check Kubernetes storage inventory contracts.' ;;
+        'Core Workspace Cleanup') printf '%s' 'Reject retired core workspace artifacts.' ;;
+        'Core Workspace Code Health') printf '%s' 'Check core workspace structural health.' ;;
+        'Dark Mode Standard') printf '%s' 'Protect light and dark mode consistency.' ;;
+        'Core Workspace UI Lock') printf '%s' 'Protect shared workspace UI contracts.' ;;
+        'Core Kubernetes Final Lock') printf '%s' 'Protect core Kubernetes workspace contracts.' ;;
+        'Platform Operations Final Lock') printf '%s' 'Protect Platform Operations policies and layout.' ;;
+        'Job Progress Final Lock') printf '%s' 'Check job progress and status presentation.' ;;
+        'Data Lifecycle Final Lock') printf '%s' 'Protect data lifecycle copy and evidence controls.' ;;
+        'Notification Center Final Lock') printf '%s' 'Protect in-app notification center contracts.' ;;
+        'Notification Activity Center') printf '%s' 'Check notification activity workspace.' ;;
+        'Notification Surface Style') printf '%s' 'Check notification style consistency.' ;;
+        'Integration Provider Foundation') printf '%s' 'Check provider-neutral taxonomy and binding registration.' ;;
+        'Integration Domain Navigation') printf '%s' 'Check Integration domain ownership and navigation.' ;;
+        'MinIO Object Storage Provider') printf '%s' 'Check MinIO storage provider contracts.' ;;
+        'Metrics Source Consumer Profiles') printf '%s' 'Check metrics binding and consumer profiles.' ;;
+        'Alertmanager Consumer Profiles') printf '%s' 'Check Alertmanager binding and consumer profiles.' ;;
+        'Integrations Final Lock') printf '%s' 'Protect Integration UI contracts; GitHub behavior is tested separately.' ;;
+        'Notification Channels') printf '%s' 'Check notification channel provider contracts.' ;;
+        'Provider Frontpage Consistency') printf '%s' 'Check provider overview and entry-point consistency.' ;;
+        'Hero Component Standard') printf '%s' 'Check shared Hero component contracts.' ;;
+        'Filter Layout Standard') printf '%s' 'Check shared filtering and table layout.' ;;
+        'Title Case Standard') printf '%s' 'Check canonical title casing.' ;;
+        'Integrations Title Case') printf '%s' 'Check Integration-specific title casing.' ;;
+        'Operational Dashboard Standard') printf '%s' 'Protect operational dashboard contracts.' ;;
+        'Operational Data Semantics') printf '%s' 'Check freshness and meaning of operational evidence.' ;;
+        'Analytics Compact Label Standard') printf '%s' 'Check readable Analytics labels.' ;;
+        'Analytics Final Lock') printf '%s' 'Protect Analytics workspace contracts.' ;;
+        'Sidebar Navigation Standard') printf '%s' 'Check sidebar grouping and navigation.' ;;
+        'Application Shell Standard') printf '%s' 'Protect shared application shell contracts.' ;;
+        'JavaScript Syntax') printf '%s' 'Check JavaScript syntax.' ;;
+        'Snapshot Context Bar Standard') printf '%s' 'Check snapshot and freshness context display.' ;;
+        'Pre-release Semantic Lint') printf '%s' 'Check pre-release source semantics.' ;;
+        'Pre-release Type Safety') printf '%s' 'Check pre-release type-safety contracts.' ;;
+        'Ruff Check') printf '%s' 'Run Python lint checks.' ;;
+        'Ruff Format') printf '%s' 'Check canonical Python formatting.' ;;
+        'DjLint') printf '%s' 'Check template and HTML formatting.' ;;
+        'Pyright') printf '%s' 'Run static Python type analysis.' ;;
+        'Architecture Boundaries') printf '%s' 'Reject forbidden cross-layer imports.' ;;
+        'Internal Import Symbols') printf '%s' 'Check internal import targets.' ;;
+        'Import Cycles') printf '%s' 'Reject forbidden import cycles.' ;;
+        'Module Reachability') printf '%s' 'Check application module reachability.' ;;
+        'Celery Topology') printf '%s' 'Check worker and task topology.' ;;
+        'Code Health') printf '%s' 'Check code-health baseline metrics.' ;;
+        'Code Health Baseline Integrity') printf '%s' 'Protect code-health baseline integrity.' ;;
+        'Migration Graph') printf '%s' 'Validate database migration lineage.' ;;
+        'Runtime Test Source Paths') printf '%s' 'Check test source-path ownership.' ;;
+        'Test Taxonomy') printf '%s' 'Enforce test suite taxonomy.' ;;
+        'Test Domain Architecture') printf '%s' 'Enforce test ownership boundaries.' ;;
+        'Feature Test Coverage') printf '%s' 'Check required test-module presence; not behavioral PASS.' ;;
+        'UI Reuse') printf '%s' 'Check canonical shared component reuse.' ;;
+        'UI Style') printf '%s' 'Check shared UI style contracts.' ;;
+        *) printf '%s' 'No purpose registered; inspect the owning verifier.' ;;
+    esac
+}
+
 run_command_capture() {
     local group="$1"
     local label="$2"
     shift 2
-    local slug log_file status first_failure started command_display
+    local slug log_file status first_failure started command_display purpose
+    purpose="$(static_check_purpose "$label")"
 
     # Display the actual canonical verifier command rather than an unquoted
     # bash -lc wrapper. The wrapper remains the executable implementation.
@@ -167,6 +271,7 @@ run_command_capture() {
     started="$(date +%s)"
     if [[ "${KAORI_CI_LIVE_LOG:-0}" == '1' ]]; then
         printf '⏳ %s — %s · %s\n' "$group" "$label" "$command_display"
+        printf '  Purpose: %s\n' "$purpose"
         printf '%s — %s\n' "$group" "$label" > "$STATIC_OUTPUT_DIR/active-verifier.txt"
     else
         printf '⏳ %s — %s\n' "$group" "$label"
@@ -181,8 +286,8 @@ run_command_capture() {
         # Every executed verifier is published as evidence; the complete raw
         # output remains in its existing, separately uploaded diagnostic log.
         local report_elapsed=$(( $(date +%s) - started ))
-        printf "| %s | %s | \`%s\` | PASS | %dm %02ds | \`%s\` |\n" \
-            "$group" "$label" "$command_display" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+        printf "| %s | %s | \`%s\` | %s | PASS | %dm %02ds | \`%s\` |\n" \
+            "$group" "$label" "$command_display" "$purpose" $((report_elapsed / 60)) $((report_elapsed % 60)) \
             "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
         # In CI only, show a bounded subset of standardized PASS evidence in
         # the expanded live step; never print an unbounded raw verifier log.
@@ -226,8 +331,8 @@ run_command_capture() {
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
     local report_elapsed=$(( $(date +%s) - started ))
-    printf "| %s | %s | \`%s\` | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
-        "$group" "$label" "$command_display" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
+    printf "| %s | %s | \`%s\` | %s | FAIL (exit %d) | %dm %02ds | \`%s\` |\n" \
+        "$group" "$label" "$command_display" "$purpose" "$status" $((report_elapsed / 60)) $((report_elapsed % 60)) \
         "$(basename "$log_file")" >> "$STATIC_OUTPUT_DIR/verification-report.md"
     printf '❌ %s\n' "$label" >&2
     printf '❌ First actionable failure — %s\n' "$first_failure" >&2
@@ -316,9 +421,10 @@ run_static() {
     {
         printf '### Static & Governance — executed verifier inventory\n\n'
         printf 'Each row below is an **executed** verifier, not a count of individual unit tests.\n'
-        printf 'Registered capability evidence is a separate source-ownership inventory, not a test PASS.\n\n'
-        printf '| Group | Check | Command | Outcome | Duration | Raw log in static evidence artifact |\n'
-        printf '| --- | --- | --- | --- | --- | --- |\n'
+        printf 'Registered capability evidence is a separate source-ownership inventory, not a test PASS.\n'
+        printf 'Purpose describes check intent, not an additional executed assertion.\n\n'
+        printf '| Group | Check | Command | Purpose | Outcome | Duration | Raw log in static evidence artifact |\n'
+        printf '| --- | --- | --- | --- | --- | --- | --- |\n'
     } > "$STATIC_OUTPUT_DIR/verification-report.md"
 
     run_static_group 'Foundation & Governance' \
