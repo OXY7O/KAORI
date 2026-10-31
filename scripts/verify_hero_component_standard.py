@@ -1182,12 +1182,12 @@ def _verify_secrets_pki_overview_blocked_dashboard() -> None:
     if 'page_hero.operational_dashboard(' not in overview:
         raise AssertionError(f'{owner}: canonical shared Dashboard Hero is required')
     hero_copy = re.search(r"blocked_info='([^']+)'", overview)
-    if not hero_copy or len(hero_copy.group(1)) > 52 or '\\n' in hero_copy.group(1):
+    if not hero_copy or len(hero_copy.group(1)) > 52 or '\n' in hero_copy.group(1):
         raise AssertionError(f'{owner}: compact Hero info exceeds one-line copy budget')
     if 'Vault' not in hero_copy.group(1) or 'KV v2' not in hero_copy.group(1):
         raise AssertionError(f'{owner}: compact Hero must retain Vault/KV v2 prerequisite')
     branch = re.search(
-        r'{%\\s*if not summary\\.has_evidence\\s*%}(?P<body>.*?){%\\s*else\\s*%}',
+        r'{%\s*if not summary\.has_evidence\s*%}(?P<body>.*?){%\s*else\s*%}',
         overview,
         re.S,
     )
