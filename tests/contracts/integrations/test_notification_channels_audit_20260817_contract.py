@@ -151,7 +151,7 @@ def test_notification_lifecycle_modal_header_footer_use_shared_kaori_contract() 
         assert 'aria-label="Notification Channel Lifecycle Actions"' in modal
     assert 'Delivery history and report links remain.' in deletion
     assert 'Delete requires <strong>zero records and zero report references</strong>.' in deletion
-    assert 'Retirement is permanent' in retirement
+    assert 'Retirement Is Permanent' in retirement
     assert re.search(r'name="retirement_reason"\s+required\s+minlength="8"\s+maxlength="500"', retirement)
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
     assert 'channel.report_schedule_count' in retirement
