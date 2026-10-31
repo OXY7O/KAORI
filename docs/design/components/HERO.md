@@ -290,6 +290,14 @@ The Hero is a stable page anchor. Filtering, pagination, polling, runtime refres
 
 A lazy right-side context partial may update only its owned context region while preserving shell dimensions. State changes must not remove a profile-defined persistent metadata row.
 
+### Secrets & PKI Inventory / Lifecycle evidence gating
+
+Inventory and Lifecycle & Assurance keep their authorized routes and contextual navigation reachable even when external provider integrations or committed collections are absent. **Blocked** means the operational sections are not available, not that the user receives HTTP 403 or that the sidebar destination is hidden.
+
+- Inventory, without qualified committed Secret inventory evidence (`summary.has_evidence` false), shows the existing shared blocked Hero-right renderer and shared below-Hero `components/states/_blocked_state.html` prerequisite. It must not present fabricated operational counters, normal collection sections, or a dashed empty-result panel.
+- Lifecycle, when neither KV v2 version evidence (`ready`/`observed_empty`) nor opted-in PKI certificate validity evidence (`ready`) qualifies, shows the same shared blocked grammar. A genuinely qualified independent source can still be reviewed without pretending that unqualified cross-domain correlation is ready. Missing evidence never becomes a healthy zero.
+- The existing Hero verifier and focused browser tests lock the two blocked states on the 1440×900 workstation baseline. Provider setup and committed evidence remain authoritative; no live Vault call is introduced by rendering.
+
 ## Empty, Blocked, and Degraded behavior
 
 Provider-prerequisite blocking follows the locked cross-domain contract in `PROVIDER_PREREQUISITE.md`.
