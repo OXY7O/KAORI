@@ -8,9 +8,13 @@ from typing import Any
 from werkzeug.datastructures import Headers
 
 from app.common.operational_tabs import (
-    DEFAULT_OPERATIONAL_DASHBOARD_TAB,
-    OPERATIONAL_DASHBOARD_TABS,
-    normalize_operational_tab,
+    DEFAULT_OPERATIONAL_DASHBOARD_TAB as DEFAULT_OPERATIONAL_DASHBOARD_TAB,
+)
+from app.common.operational_tabs import (
+    OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS,
+)
+from app.common.operational_tabs import (
+    normalize_operational_tab as normalize_operational_tab,
 )
 from app.common.pagination import DEFAULT_PER_PAGE, PER_PAGE_OPTIONS, normalize_per_page
 
