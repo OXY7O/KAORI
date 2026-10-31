@@ -118,9 +118,9 @@ def test_native_repository_identity_is_not_owner_name_or_installation(source_eng
                     last_observed_at=observed,
                 )
             )
-        row = connection.execute(select(SourceRepository).where(SourceRepository.id == repository)).scalar_one()
-        assert row.native_repository_id == '99'
-        assert row.account_id == account
+        row = connection.execute(select(SourceRepository.__table__).where(SourceRepository.id == repository)).mappings().one()
+        assert row['native_repository_id'] == '99'
+        assert row['account_id'] == account
         grants = (
             connection.execute(
                 select(SourceRepositoryGrant.installation_id).where(SourceRepositoryGrant.repository_id == repository)
@@ -181,8 +181,8 @@ def test_duplicate_current_grant_is_rejected_but_history_is_retained(source_engi
             )
             == 2
         )
-        retained = connection.execute(select(SourceRepository).where(SourceRepository.id == repository)).scalar_one()
-        assert retained.provider_presence == 'observed'  # access expiry never deletes the source object
+        retained = connection.execute(select(SourceRepository.__table__).where(SourceRepository.id == repository)).mappings().one()
+        assert retained['provider_presence'] == 'observed'  # access expiry never deletes the source object
 
 
 def test_revision_and_branch_reference_are_repository_scoped(source_engine) -> None:
