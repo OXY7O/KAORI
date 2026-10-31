@@ -186,7 +186,13 @@ def main() -> int:
     assert 'Anomaly Signals' in alerts_summary
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and anomaly signals are separate' in alerts_summary
-    assert 'Anomaly Signal Detail' in alerts_signals
+    assert 'Anomaly Signal Evaluation' in alerts_signals
+    assert 'data-object-storage-boundary-evaluations' in alerts_signals
+    assert 'data-object-storage-boundary-table' in alerts_signals
+    assert 'metrics.boundary_evaluations' in alerts_signals
+    assert 'object-storage-anomaly-signal-evaluation-guide' in alerts_signals
+    assert 'scope="col"' in alerts_signals
+    assert 'scope="row"' in alerts_signals
     assert 'Provider Alert Records' in alert_records
     assert 'registry_ui.clear_filters_action(' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
