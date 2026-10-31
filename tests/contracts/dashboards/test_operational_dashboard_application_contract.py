@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+from app.common.operational_tabs import normalize_operational_tab as shared_normalize_operational_tab
 from app.common.pagination import DEFAULT_PER_PAGE, PER_PAGE_OPTIONS
 from app.dashboards.common.operational import (
     DASHBOARD_PAGE_SIZES,
@@ -19,6 +20,17 @@ def test_operational_dashboard_tabs_are_one_ordered_contract() -> None:
     assert normalize_operational_tab(None) == 'overview'
     assert normalize_operational_tab(' CAPACITY ') == 'capacity'
     assert normalize_operational_tab('unknown') == 'overview'
+
+
+
+def test_operational_dashboard_tab_normalization_is_shared_without_reverse_dependency() -> None:
+    root = Path(__file__).resolve().parents[3]
+    source = (root / 'app/secrets_pki/routes.py').read_text(encoding='utf-8')
+    assert 'from app.common.operational_tabs import normalize_operational_tab' in source
+    assert 'from app.dashboards.common.operational import normalize_operational_tab' not in source
+    assert normalize_operational_tab is shared_normalize_operational_tab
+    assert shared_normalize_operational_tab(' SIGNALS ') == 'signals'
+    assert shared_normalize_operational_tab('invalid') == 'overview'
 
 
 def test_workspace_tab_presentation_matches_application_contract() -> None:
