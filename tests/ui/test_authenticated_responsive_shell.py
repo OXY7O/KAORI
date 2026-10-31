@@ -302,3 +302,50 @@ def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_i
 
     _assert_no_document_overflow(page)
     _capture(page, 'secrets-pki-lifecycle-hero', 'large-desktop')
+
+
+def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
+    page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+
+    hero = page.locator('#secrets-pki-overview section.kaori-hero-shell')
+    expect(hero).to_be_visible()
+    assert hero.get_attribute('data-kaori-hero-profile') == 'operational-dashboard'
+    assert hero.get_attribute('data-kaori-hero-state') == 'blocked'
+
+    blocker = page.locator('#secrets-pki-overview section[data-kaori-blocked-state]')
+    expect(blocker).to_be_visible()
+    expect(blocker.get_by_role('heading', name='Committed KV v2 Inventory Required')).to_be_visible()
+    assert page.locator('#secrets-pki-overview [data-kaori-empty-state]').count() == 0
+    expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
+
+    # DOM geometry is the final authority; never hide wrapping with nowrap/ellipsis.
+    note = hero.locator('.kaori-hero-panel > .kaori-hero-tile p')
+    expect(note).to_be_visible()
+    dimensions = note.evaluate(
+        """el => {
+            const style = getComputedStyle(el);
+            const bounds = el.getBoundingClientRect();
+            return {
+                height: bounds.height,
+                lineHeight: parseFloat(style.lineHeight),
+                scrollWidth: el.scrollWidth,
+                clientWidth: el.clientWidth,
+                whiteSpace: style.whiteSpace,
+                overflow: style.overflow,
+                textOverflow: style.textOverflow
+            };
+        }"""
+    )
+    assert dimensions['height'] <= dimensions['lineHeight'] + 1.5, dimensions
+    assert dimensions['scrollWidth'] <= dimensions['clientWidth'] + 1, dimensions
+    assert dimensions['whiteSpace'] != 'nowrap', dimensions
+    assert dimensions['overflow'] != 'hidden', dimensions
+    assert dimensions['textOverflow'] != 'ellipsis', dimensions
+    _assert_no_document_overflow(page)
+    _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')
