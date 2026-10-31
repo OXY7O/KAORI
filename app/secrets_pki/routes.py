@@ -8,7 +8,7 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.common.operational_tabs import normalize_operational_tab
-from app.reports.catalog import REPORT_COVERAGE_DOMAINS
+from app.definitions.report_coverage import REPORT_COVERAGE_DOMAINS
 from app.secrets_pki.binding_coverage import (
     build_vault_alert_source_sample_summary,
     build_vault_binding_coverage,
