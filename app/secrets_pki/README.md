@@ -13,6 +13,11 @@ The Vault provider connection remains under
 - `GET /secrets-pki/`: canonical four-tab Operational Dashboard following
   `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.7. Tabs are exactly
   Operations Overview, Capacity & Demand, Signals & Actions, Reporting.
+  Tab keys and invalid-selection normalization come from the shared
+  `app/common/operational_tabs.py` contract, also re-exported unchanged by
+  `app/dashboards/common/operational.py` (architecture issue #4150). This
+  avoids a Secrets & PKI → Dashboards reverse import without changing active
+  tabs or HTMX/server selection semantics.
 - `GET /secrets-pki/inventory`: safe, aggregated KV v2 metadata-only source
   coverage, first/last observed counts, and committed collection readiness.
 - Both routes require server-side `secrets_pki.view` (HV-13, #2597).
