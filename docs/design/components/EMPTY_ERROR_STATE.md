@@ -15,7 +15,7 @@ The detailed empty-state contract is documented in `docs/design/components/empty
 
 | Condition | Canonical state | Typical label |
 |---|---|---|
-| No source registered | Empty | `Setup Required` |
+| No source registered on registry/list | Empty | `Setup Required` |
 | Filters/search return zero rows | Empty | `No Results` |
 | Source registered but no snapshot collected | Empty | `Sync Required` |
 | Healthy operational zero state | Empty | Domain-specific healthy label, e.g. `Queue Clear` |
