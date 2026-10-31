@@ -27,4 +27,6 @@ A source-registration empty view and a blocked operational Dashboard are differe
 
 Keep the state inside its owning surface so headings, filters, and pagination context remain visible. Table pagination summaries remain visible for zero results. Titles use Title Case; descriptions use sentence case. Technical detail belongs in a drawer, toast, Activity Audit, or diagnostic surface rather than the empty-state description.
 
+**Secrets & PKI no-source invariant (#4134):** Inventory and Lifecycle & Assurance stay navigable under `secrets_pki.view`, but when the existing committed summary reports zero eligible active Vault integrations, they must show the shared Blocked Hero context and one `_blocked_state.html` section with provider setup, evidence-boundary wording and permission-aware action. Do not show the unqualified Inventory KPI row or lifecycle evidence cards as a healthy zero. Once an active provider exists, return to its normal collection-readiness path; a registered-but-not-collected source is distinct from no source, and must never fabricate observed-zero Secret or PKI evidence. The approved component is reused; no page-local blocker family or new gate script is authorized.
+
 For table-body blockers, use `blocked_state_variant='table'` so blocker geometry matches the canonical table zero-state footprint without duplicating page-local markup.

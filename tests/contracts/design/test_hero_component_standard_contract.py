@@ -498,3 +498,47 @@ def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_co
     monkeypatch.setitem(check.__globals__, '_read', wrong_blocker)
     with pytest.raises(AssertionError, match='canonical _blocked_state'):
         check()
+
+
+
+@pytest.mark.parametrize('workspace', ['inventory', 'lifecycle'])
+def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
+    workspace: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_missing_vault_source_prerequisites']
+    check()
+    original_read = check.__globals__['_read']
+    candidate = ROOT / f'app/templates/secrets_pki/{workspace}.html'
+
+    def _mutate(replacement: str):
+        def changed(path: Path) -> str:
+            source = original_read(path)
+            if path == candidate:
+                return source.replace(
+                    '{% include "components/states/_blocked_state.html" %}', replacement
+                )
+            return source
+
+        return changed
+
+    monkeypatch.setitem(
+        check.__globals__,
+        '_read',
+        _mutate('{% include "components/states/_empty_state.html" %}'),
+    )
+    with pytest.raises(AssertionError, match='shared blocked prerequisite component'):
+        check()
+
+    def false_ready_metrics(path: Path) -> str:
+        source = original_read(path)
+        if path == candidate:
+            return source.replace(
+                '{% include "components/states/_blocked_state.html" %}',
+                "{{ metric_card.render('False Zero', 0, 'Unqualified', 'server') }}",
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', false_ready_metrics)
+    with pytest.raises(AssertionError, match='shared blocked prerequisite component'):
+        check()
