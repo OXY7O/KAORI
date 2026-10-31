@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from app.extensions.db import db
 from app.integrations.provider_matrix import provider_kind
+from app.integrations.source_control.eligibility import MAX_INSTALLATIONS as MAX_INSTALLATIONS
+from app.integrations.source_control.eligibility import _eligible as _eligible
 from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
 from app.models.source_control import SourceInstallation
 from app.models.user import User
@@ -16,39 +18,8 @@ from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_
 
 JOB_KEY = 'source_control.repository.sync'
 OPERATION = 'sync_source_control_repositories'
-MAX_INSTALLATIONS = 25
-
-
 class NoEligibleSourceControlTargets(RuntimeError):
     """There are no admitted and validated GitHub App installation grants."""
-
-
-def _eligible(installation: SourceInstallation) -> bool:
-    identity = installation.integration_instance
-    app = installation.github_app_credential
-    account = installation.account
-    return bool(
-        identity is not None
-        and identity.id == installation.integration_instance_id
-        and identity.integration_type == 'source_control'
-        and identity.provider_key == 'github'
-        and identity.adapter_key == 'github_rest_v3'
-        and identity.enabled
-        and identity.lifecycle_status == 'active'
-        and identity.readiness_status == 'ready'
-        and installation.provider_key == 'github'
-        and installation.host_key == 'github.com'
-        and installation.repository_scope in {'all', 'selected'}
-        and account is not None
-        and account.provider_key == 'github'
-        and account.host_key == installation.host_key
-        and installation.account_id == account.id
-        and app is not None
-        and app.enabled
-        and app.host_key == installation.host_key
-        and app.native_app_id == installation.native_app_id
-        and installation.github_app_credential_id == app.id
-    )
 
 
 def build_source_repository_targets(
