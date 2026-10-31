@@ -11,7 +11,6 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.common.pagination import paginate_query
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
@@ -20,6 +19,9 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.application
     verified_secret,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import (
+    get_vault_connection_instance,
+    latest_vault_runtime_observation,
+    list_vault_connection_registry,
     save_connection,
     test_connection,
 )
@@ -27,8 +29,6 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.client impo
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
 from app.kubernetes.cluster.constants import ENVIRONMENTS
-from app.models.integration import IntegrationInstance
-from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -43,7 +43,7 @@ vault_bp = Blueprint('vault', __name__, url_prefix='/integrations/secrets-manage
 
 
 def _instance_or_404(instance_id: int) -> VaultInstance:
-    instance = VaultInstance.query.filter_by(id=instance_id).first()
+    instance = get_vault_connection_instance(instance_id)
     if instance is None:
         abort(404)
     return instance
@@ -73,8 +73,6 @@ def _evidence(instance: VaultInstance) -> dict:
 @vault_bp.get('/')
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
-    query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
-    registered = query.count()
     search = request.args.get('q', '').strip()[:80]
     environment = request.args.get('environment', '').strip()
     readiness_filter = request.args.get('readiness', '').strip()
@@ -83,30 +81,13 @@ def index() -> ResponseReturnValue:
         environment = ''
     if readiness_filter not in {'ready', 'validation_required', 'blocked', 'degraded'}:
         readiness_filter = ''
-    filtered = query
-    if search:
-        filtered = filtered.filter(
-            IntegrationInstance.name.icontains(search, autoescape=True)
-            | VaultInstance.endpoint.icontains(search, autoescape=True)
-        )
-    if environment:
-        filtered = filtered.filter(IntegrationInstance.environment == environment)
-    if readiness_filter:
-        filtered = filtered.filter(IntegrationInstance.readiness_status == readiness_filter)
-    instances, pagination = paginate_query(
-        filtered,
+    instances, pagination, registered, enabled, ready = list_vault_connection_registry(
+        search=search,
+        environment=environment,
+        readiness_filter=readiness_filter,
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    enabled = query.filter(
-        IntegrationInstance.enabled.is_(True),
-        IntegrationInstance.lifecycle_status == 'active',
-    ).count()
-    ready = query.filter(
-        IntegrationInstance.enabled.is_(True),
-        IntegrationInstance.lifecycle_status == 'active',
-        IntegrationInstance.readiness_status == 'ready',
-    ).count()
     tab = str(request.args.get('tab', 'coverage')).strip().lower()
     return render_template(
         'integrations/secrets_management/vault/index.html',
@@ -240,14 +221,7 @@ def detail(instance_id: int) -> ResponseReturnValue:
         page=request.args.get('history_page', 1, type=int) or 1,
         per_page=request.args.get('history_per_page', 5, type=int) or 5,
     )
-    latest_runtime_observation = (
-        IntegrationRuntimeObservation.query.filter_by(
-            integration_type='secrets_pki',
-            instance_id=str(instance.id),
-        )
-        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
-        .first()
-    )
+    latest_runtime_observation = latest_vault_runtime_observation(instance.id)
     return render_template(
         'integrations/secrets_management/vault/detail.html',
         instance=instance,

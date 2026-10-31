@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient
@@ -14,6 +17,7 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.transport i
     validate_vault_endpoint,
 )
 from app.models.integration import IntegrationInstance
+from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
 
 
@@ -112,3 +116,54 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
         db.session.rollback()
         raise
     return instance
+
+
+def get_vault_connection_instance(instance_id: int) -> VaultInstance | None:
+    """Resolve an existing provider connection; HTTP layers own 404 responses."""
+    return VaultInstance.query.filter_by(id=instance_id).first()
+
+
+def list_vault_connection_registry(
+    *,
+    search: str,
+    environment: str,
+    readiness_filter: str,
+    page: int,
+    per_page: int,
+) -> tuple[list[VaultInstance], dict[str, Any], int, int, int]:
+    """Return the committed provider registry and posture without web globals."""
+    query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
+    registered = query.count()
+    filtered = query
+    if search:
+        filtered = filtered.filter(
+            IntegrationInstance.name.icontains(search, autoescape=True)
+            | VaultInstance.endpoint.icontains(search, autoescape=True)
+        )
+    if environment:
+        filtered = filtered.filter(IntegrationInstance.environment == environment)
+    if readiness_filter:
+        filtered = filtered.filter(IntegrationInstance.readiness_status == readiness_filter)
+    instances, pagination = paginate_query(filtered, page=page, per_page=per_page)
+    enabled = query.filter(
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+    ).count()
+    ready = query.filter(
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+        IntegrationInstance.readiness_status == 'ready',
+    ).count()
+    return instances, pagination, registered, enabled, ready
+
+
+def latest_vault_runtime_observation(instance_id: int) -> IntegrationRuntimeObservation | None:
+    """Read the most recent committed runtime evidence for a Vault connection."""
+    return (
+        IntegrationRuntimeObservation.query.filter_by(
+            integration_type='secrets_pki',
+            instance_id=str(instance_id),
+        )
+        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+        .first()
+    )
