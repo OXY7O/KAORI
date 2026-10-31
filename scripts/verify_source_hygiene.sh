@@ -26,7 +26,8 @@ is_forbidden_path() {
 violations=()
 checked=0
 
-if [[ -d .git ]]; then
+# Linked Git worktrees use a .git *file*; only unpacked archives lack Git metadata.
+if [[ -d .git || -f .git ]]; then
     mapfile -t candidates < <(git -c safe.directory="$ROOT" ls-files)
     source_label='tracked source'
 else
