@@ -1195,7 +1195,7 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     if peers.index('lifecycle_navigation.render(workspace)') > peers.index('page_hero.shell_classes()'):
         raise AssertionError(f'{owner}: peer workspace navigation must appear above Hero')
     for source in (lifecycle, peers):
-        if re.search(r'<nav\\s+class="flex flex-wrap gap-', source):
+        if re.search(r'<nav\s+class="flex flex-wrap gap-', source):
             raise AssertionError(f'{owner}: page-local raw peer navigation is forbidden')
 
     if "context_header('KV v2 Evidence', kv2_hero_label" not in lifecycle:
@@ -1205,13 +1205,13 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     if '{{ pki_validity.label }}' not in lifecycle or '{{ kv2_version_posture.label }}' not in lifecycle:
         raise AssertionError(f'{owner}: preserve complete source diagnostics below Hero')
 
-    pki_mapping = re.search(r'{%\\s*set pki_hero_label\\s*=\\s*\\{(?P<mapping>.*?)\\}\\.get\\(', lifecycle, re.S)
+    pki_mapping = re.search(r'{%\s*set pki_hero_label\s*=\s*\{(?P<mapping>.*?)\}\.get\(', lifecycle, re.S)
     if not pki_mapping:
         raise AssertionError(f'{owner}: missing bounded PKI display mapping')
-    compact_labels = re.findall(r"'[a-z_]+':\\s*'([^']+)'", pki_mapping.group('mapping'))
+    compact_labels = re.findall(r"'[a-z_]+':\s*'([^']+)'", pki_mapping.group('mapping'))
     if len(compact_labels) != 5 or any(len(label) > 28 for label in compact_labels):
         raise AssertionError(f'{owner}: PKI Hero status must be concise at 1440px')
-    kv2_mapping = re.search(r'{%\\s*set kv2_hero_label\\s*=\\s*(.*?)%}', lifecycle, re.S)
+    kv2_mapping = re.search(r'{%\s*set kv2_hero_label\s*=\s*(.*?)%}', lifecycle, re.S)
     if not kv2_mapping:
         raise AssertionError(f'{owner}: missing bounded KV v2 display mapping')
     kv2_labels = [
@@ -1221,8 +1221,8 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     if len(kv2_labels) != 4 or any(len(value) > 28 for value in kv2_labels):
         raise AssertionError(f'{owner}: KV v2 Hero heading must be concise at 1440px')
 
-    info = re.search(r"page_hero\\.context_info\\('shield-alert',\\s*'([^']+)'\\s*\\)", lifecycle)
-    if not info or len(info.group(1)) > 68 or '\\n' in info.group(1):
+    info = re.search(r"page_hero\.context_info\('shield-alert',\s*'([^']+)'\s*\)", lifecycle)
+    if not info or len(info.group(1)) > 68 or '\n' in info.group(1):
         raise AssertionError(f'{owner}: evidence note must be a concise one-line candidate')
     if 'Missing evidence is not zero' not in info.group(1) or 'TLS delivery' not in info.group(1):
         raise AssertionError(f'{owner}: compact note must preserve evidence and delivery limitations')
