@@ -108,7 +108,9 @@ def test_job_catalog_is_existing_manual_only_configuration():
     assert definition.queue_name == 'inventory'
     assert definition.execute_permission == 'jobs.execute'
     assert definition.domain_execute_permission == 'secrets_pki.sync'
-    assert definition.dispatcher_path == ('app.intelligence.alert_signals.vault_dispatch:dispatch_vault_alert_observations')
+    assert definition.dispatcher_path == (
+        'app.intelligence.alert_signals.vault_dispatch:dispatch_vault_alert_observations'
+    )
 
 
 def test_eligible_target_list_is_only_exact_vault_binding(store):
