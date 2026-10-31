@@ -500,7 +500,6 @@ def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_co
         check()
 
 
-
 @pytest.mark.parametrize('workspace', ['inventory', 'lifecycle'])
 def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
     workspace: str, monkeypatch: pytest.MonkeyPatch
