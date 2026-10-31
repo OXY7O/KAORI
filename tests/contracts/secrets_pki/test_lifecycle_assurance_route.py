@@ -34,6 +34,11 @@ def client_with_evidence(monkeypatch):
 
     monkeypatch.setattr(
         secrets_pki_routes,
+        'build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 0, 'has_evidence': False},
+    )
+    monkeypatch.setattr(
+        secrets_pki_routes,
         'build_kv2_version_posture',
         lambda: {'status': 'incomplete_evidence', 'label': 'Not qualified'},
     )
