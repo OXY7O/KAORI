@@ -11,6 +11,7 @@ from flask import Flask
 
 from app.extensions.limiter import limiter
 from app.integrations.source_control.source_control.providers.github.application import routes
+from app.integrations.source_control.source_control.providers.github import webhook_inbox
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
 
 
@@ -93,16 +94,16 @@ def test_authenticated_claim_only_commits_metadata_and_returns_202(client, monke
         def all(self):
             return [SimpleNamespace(id=1)]
 
-    monkeypatch.setattr(routes, 'SourceInstallation', SimpleNamespace(query=Query()))
+    monkeypatch.setattr(webhook_inbox, 'SourceInstallation', SimpleNamespace(query=Query()))
     fake_db = SimpleNamespace(
         session=SimpleNamespace(
             commit=lambda: events.append('commit'),
             rollback=lambda: events.append('rollback'),
         )
     )
-    monkeypatch.setattr(routes, 'db', fake_db)
+    monkeypatch.setattr(webhook_inbox, 'db', fake_db)
     monkeypatch.setattr(
-        routes,
+        webhook_inbox,
         'claim_verified_delivery',
         lambda **kwargs: events.append(('verified', kwargs['payload'])) or None,
     )
@@ -132,16 +133,16 @@ def test_hmac_error_does_not_leak_verification_exception(client, monkeypatch):
         def all(self):
             return [SimpleNamespace(id=1)]
 
-    monkeypatch.setattr(routes, 'SourceInstallation', SimpleNamespace(query=Query()))
+    monkeypatch.setattr(webhook_inbox, 'SourceInstallation', SimpleNamespace(query=Query()))
     monkeypatch.setattr(
-        routes,
+        webhook_inbox,
         'db',
         SimpleNamespace(
             session=SimpleNamespace(commit=lambda: None, rollback=lambda: None),
         ),
     )
     monkeypatch.setattr(
-        routes,
+        webhook_inbox,
         'claim_verified_delivery',
         lambda **_: (_ for _ in ()).throw(GitHubWebhookError('private-key-test')),
     )
@@ -160,9 +161,18 @@ def test_route_never_dispatches_provider_job_inline():
         / 'app/integrations/source_control/source_control/providers/github/application/routes.py'
     )
     source = path.read_text()
+    inbox_path = (
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/webhook_inbox.py'
+    )
+    inbox = inbox_path.read_text()
     webhook_section = source.split('def receive_signed_webhook()')[1]
     assert "current_app.config.get('SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED', False)" in webhook_section
-    assert 'claim_verified_delivery(' in webhook_section
-    assert 'db.session.commit()' in webhook_section
+    assert 'stage_signed_github_webhook_delivery(' in webhook_section
+    assert 'claim_verified_delivery(' in inbox
+    assert 'db.session.commit()' in inbox
+    assert 'db.session.rollback()' in inbox
     assert 'enqueue_source_repository_sync(' not in webhook_section
+    assert 'enqueue_source_repository_sync(' not in inbox
     assert 'apply_async(' not in webhook_section
+    assert 'apply_async(' not in inbox
