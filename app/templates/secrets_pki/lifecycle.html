@@ -25,7 +25,15 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Lifecycle evidence readiness">
-                    <div class="{{ page_hero.context_panel_classes() }}">
+                    {% if not (kv2_version_posture.status in ('ready', 'observed_empty') or pki_validity.status == 'ready') %}
+                        {{ page_hero.blocked_context_body('Lifecycle Readiness',
+                            'Committed Evidence Required',
+                            [('layers', 'KV v2 Versions', 'Not Qualified', 'No qualified generation'),
+                             ('certificate', 'PKI Validity', 'Not Qualified', 'No qualified certificates')],
+                            'Qualify KV v2 or PKI committed evidence.',
+                            'Blocked') }}
+                    {% else %}
+                        <div class="{{ page_hero.context_panel_classes() }}">
                         {% set kv2_hero_label = {
                             'ready': 'Qualified KV v2 Evidence',
                             'observed_empty': 'Qualified Empty Inventory',
@@ -48,10 +56,22 @@
                         </div>
                         {{ page_hero.context_info('shield-alert',
                                                 'Missing evidence is not zero; TLS delivery is unverified.') }}
-                    </div>
+                    <
+                    {% endif %}
                 </aside>
             </div>
         </section>
+        {% if kv2_version_posture.status not in ('ready', 'observed_empty') and pki_validity.status != 'ready' %}
+            {% set blocked_state_icon = "shield-alert" %}
+            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_title = "Lifecycle Evidence Required" %}
+            {% set blocked_state_description = "Neither approved KV v2 nor opted-in PKI certificate evidence is qualified. No lifecycle or TLS assurance can be inferred." %}
+            {% set blocked_state_steps = ['Configure approved Vault sources', 'Run committed evidence collection', 'Review source qualification'] %}
+            {% set blocked_state_action_url = url_for('secrets_pki.inventory') %}
+            {% set blocked_state_action_label = 'Review Inventory Readiness' %}
+            {% set blocked_state_permission_granted = true %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {{ section_intro.render('Version Lifecycle',
                 'Current-generation KV v2 metadata from complete and fresh approved collections only.',
                 supporting='Observed lifecycle states are provider evidence, not proof of an applied rotation policy or consumer adoption.') }}
@@ -167,5 +187,6 @@
                 Review Inventory Evidence
             </a>
         {% endcall %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
