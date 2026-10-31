@@ -390,7 +390,6 @@ def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> N
         assert f"        '{title}'," in object_storage_pages
 
 
-
 def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
