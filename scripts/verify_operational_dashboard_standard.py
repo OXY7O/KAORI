@@ -46,6 +46,7 @@ ARTIFACT_PROVIDER_HEALTH = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_provider_health.html'
 )
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
+ARTIFACT_ROUTE_SCOPE = ROOT / 'app' / 'artifact_registry' / 'route_scope.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 ARTIFACT_PRESENTATION_COMMON = ROOT / 'app' / 'artifact_registry' / 'presentation_common.py'
 ARTIFACT_PRESENTATION_OVERVIEW = ROOT / 'app' / 'artifact_registry' / 'presentation_overview.py'
@@ -549,16 +550,24 @@ def _verify_artifact_registry_dashboard(
     )
     if reporting.index('reporting_workspace.summary(') >= reporting.index('reporting_workspace.guidance('):
         raise AssertionError('Artifact Registry reporting must present summary before governed guidance')
+    route_scope = _read(ARTIFACT_ROUTE_SCOPE)
     _require(
-        routes,
+        route_scope,
         (
-            "@permission_required('artifact_registry.view')",
             'def _overview_provider_id() -> int | None:',
             "request.args.get('provider_id')",
             'if raw is None or not raw.strip():',
             'except (TypeError, ValueError):',
             'if provider_id < 1:',
             'abort(404)',
+        ),
+        'Artifact Registry fail-closed provider scope helper',
+    )
+    _require(
+        routes,
+        (
+            "@permission_required('artifact_registry.view')",
+            'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id',
             'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",

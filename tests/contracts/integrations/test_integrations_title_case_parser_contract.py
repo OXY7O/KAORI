@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from scripts.verify_integrations_title_case import _VisibleLabelParser, _title_case_error
+from scripts.verify_integrations_title_case import _title_case_error, _VisibleLabelParser
 
 ROOT = Path(__file__).resolve().parents[3]
 
