@@ -7,7 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GITHUB = ROOT / 'app/templates/integrations/source_control/github'
 ROUTES = ROOT / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
-RUNTIME_PRESENTATION = ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+RUNTIME_PRESENTATION = (
+    ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+)
 
 
 def _read(path: Path) -> str:
