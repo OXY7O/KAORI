@@ -41,7 +41,6 @@ from app.common.timezone import (
     timezone_choice_groups,
 )
 from app.models import User
-from app.models.authentication_security import AuthenticationMfaFactor
 from app.platform_operations.notifications.feedback import (
     OperationalDeliveryPolicy,
     OperationalFeedbackSpec,
@@ -51,7 +50,7 @@ from app.platform_operations.notifications.feedback import (
 from app.platform_operations.notifications.service import create_transient_feedback
 from app.security.credentials import CredentialEncryptionError
 from app.settings.account.actions import process_password_change
-from app.settings.account.queries import authentication_activity_summary, recent_authentication_events
+from app.settings.account.queries import account_mfa_factor, authentication_activity_summary, recent_authentication_events
 from app.settings.general.actions import (
     save_regional_format_preference,
     save_timezone_preference,
@@ -337,7 +336,7 @@ def account():
             user, is_htmx=is_htmx
         )
 
-    mfa_factor = AuthenticationMfaFactor.query.filter_by(user_id=user.id).first()
+    mfa_factor = account_mfa_factor(user.id)
     mfa_state = {
         'enrolled': mfa_enrolled(user.id),
         'enrollment_pending': bool(mfa_factor is not None and not mfa_factor.enabled),
