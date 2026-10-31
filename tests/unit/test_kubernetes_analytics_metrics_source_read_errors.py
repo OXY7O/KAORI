@@ -34,7 +34,15 @@ def _cluster() -> SimpleNamespace:
 def _stub_cluster(monkeypatch: pytest.MonkeyPatch, module: Any) -> SimpleNamespace:
     cluster = _cluster()
     query = SimpleNamespace(order_by=lambda *_args: SimpleNamespace(all=lambda: [cluster]))
-    monkeypatch.setattr(module.Cluster, 'query', query)
+    # A class-level Flask-SQLAlchemy query descriptor needs an app context
+    # even when monkeypatch merely reads its previous value. Keep this
+    # deliberately isolated fault-matrix fixture independent of a live DB.
+    fake_column = SimpleNamespace(asc=lambda: None)
+    monkeypatch.setattr(
+        module,
+        'Cluster',
+        SimpleNamespace(query=query, created_at=fake_column, id=fake_column),
+    )
     monkeypatch.setattr(module, 'get_selected_cluster', lambda **_kwargs: cluster)
     monkeypatch.setattr(
         module, 'resolve_instance_for_cluster', lambda _cluster_id: SimpleNamespace(endpoint='https://metrics.test')
