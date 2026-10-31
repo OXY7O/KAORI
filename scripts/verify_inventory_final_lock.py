@@ -325,9 +325,7 @@ def main() -> int:
     for macro_name in ('inventory_technical_row', 'inspector_technical_row', 'inventory_fact_grid'):
         prefix = f'{{% macro {macro_name}('
         macro_body = (
-            detail_primitives.split(prefix, 1)[1].split('{%- endmacro %}', 1)[0]
-            if prefix in detail_primitives
-            else ''
+            detail_primitives.split(prefix, 1)[1].split('{%- endmacro %}', 1)[0] if prefix in detail_primitives else ''
         )
         require(
             bool(macro_body)
