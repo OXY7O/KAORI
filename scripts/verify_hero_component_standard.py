@@ -1175,6 +1175,59 @@ def _verify_registry_blocked_hero_actions() -> None:
         raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
 
 
+def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
+    """Guard canonical blocked Hero and section grammar when Vault is absent."""
+    for name, section, expected_title in (
+        ('inventory', 'Committed Inventory Coverage', 'Vault Inventory Source Required'),
+        ('lifecycle', 'Version Lifecycle', 'Vault Lifecycle Source Required'),
+    ):
+        source = _read(TEMPLATES / f'secrets_pki/{name}.html')
+        owner = f'Secrets & PKI {name} missing-source readiness'
+        if source.count('summary.provider_count == 0') != 2:
+            raise AssertionError(f'{owner}: both Hero and body require no-source branching')
+        hero, body = source.split('</section>', 1)
+        if 'page_hero.blocked_context_body(' not in hero:
+            raise AssertionError(f'{owner}: blocked Hero must reuse canonical renderer')
+        if 'page_hero.context_panel_classes()' not in hero.split('{% else %}', 1)[-1]:
+            raise AssertionError(f'{owner}: integrated/qualified Hero context must remain available')
+        if "'Blocked', 'warning'" not in hero:
+            raise AssertionError(f'{owner}: missing explicit blocked Hero state')
+
+        branch = re.search(
+            r'{%\s*if summary\.provider_count == 0\s*%}(?P<blocked>.*?){%\s*else\s*%}',
+            body,
+            re.S,
+        )
+        if not branch:
+            raise AssertionError(f'{owner}: missing canonical no-source body branch')
+        blocked = branch.group('blocked')
+        if '{% include "components/states/_blocked_state.html" %}' not in blocked:
+            raise AssertionError(f'{owner}: use the shared blocked prerequisite component')
+        if '_empty_state.html' in blocked or 'metric_card.render(' in blocked:
+            raise AssertionError(f'{owner}: do not expose false-zero metrics or empty panels')
+        for required in (
+            'blocked_state_steps',
+            'Register an active Vault source',
+            'blocked_state_permission_granted = can_manage_integrations',
+            'blocked_state_show_admin_required = not can_manage_integrations',
+            "blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none",
+            expected_title,
+        ):
+            if required not in blocked:
+                raise AssertionError(f'{owner}: missing prerequisite or authorization: {required}')
+        if source.index(section) < source.index('{% else %}', source.index('</section>')):
+            raise AssertionError(f'{owner}: operational evidence cannot precede the no-source blocker')
+        if not source.rstrip().endswith('{% endif %}\n    </div>\n{% endblock dashboard_content %}'):
+            raise AssertionError(f'{owner}: guard the entire operational evidence workspace')
+
+    routes = _read(ROOT / 'app/secrets_pki/routes.py')
+    lifecycle = routes.split('def lifecycle() -> ResponseReturnValue:', 1)[-1]
+    if 'summary=build_secrets_pki_operational_summary()' not in lifecycle:
+        raise AssertionError('Lifecycle must use the existing committed Vault source authority')
+    if "can_manage_integrations=current_user.has_permission('integrations.manage')" not in lifecycle:
+        raise AssertionError('Lifecycle prerequisite action must preserve permission ownership')
+
+
 def _verify_secrets_pki_overview_blocked_dashboard() -> None:
     """Reject noncanonical prerequisites and verbose blocked Hero summary."""
     overview = _read(TEMPLATES / 'secrets_pki/overview.html')
@@ -1400,6 +1453,7 @@ def verify() -> None:
     _verify_operational_metadata_state_contract()
     _verify_secrets_pki_lifecycle_compact_hero()
     _verify_secrets_pki_overview_blocked_dashboard()
+    _verify_secrets_pki_missing_vault_source_prerequisites()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:

@@ -259,7 +259,14 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
 def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_is_shared(
     page: Page,
     kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Exercise the preexisting evidence-card geometry with a registered source.
+    # The no-source blocker has its own deterministic route regression below.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 1},
+    )
     # Rendered geometry, not CSS nowrap/ellipsis, is the final density authority.
     page.set_viewport_size({'width': 1440, 'height': 900})
     _login(page, kaori_authenticated_base_url)
@@ -371,3 +378,86 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
         assert dimensions['textOverflow'] != 'ellipsis', dimensions
     _assert_no_document_overflow(page)
     _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')
+
+
+
+@pytest.mark.parametrize(
+    ('workspace', 'blocked_title', 'hidden_metric'),
+    [
+        ('inventory', 'Vault Inventory Source Required', 'Enabled Vault Sources'),
+        ('lifecycle', 'Vault Lifecycle Source Required', 'Expires Within 7 Days'),
+    ],
+)
+def test_secrets_pki_no_vault_source_1440_uses_canonical_blocker(
+    page: Page,
+    kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+    workspace: str,
+    blocked_title: str,
+    hidden_metric: str,
+) -> None:
+    # A real authenticated Flask + Chromium render, with only external
+    # committed-read-model seams replaced. No PostgreSQL or Vault is needed.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 0, 'has_evidence': False},
+    )
+    monkeypatch.setattr('app.secrets_pki.routes.pki_public_readiness', lambda: {})
+    monkeypatch.setattr('app.secrets_pki.routes.stored_pki_certificate_readiness', lambda: {})
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_kv2_version_posture',
+        lambda: {'status': 'not_configured', 'label': 'Approved KV v2 Source Required'},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_stored_pki_validity_posture',
+        lambda: {'status': 'not_configured', 'label': 'PKI Stored Certificates Not Enabled'},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_certificate_delivery_overlap',
+        lambda **_kwargs: {'status': 'source_unknown', 'label': 'Not Qualified'},
+    )
+
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    route = '/secrets-pki/inventory' if workspace == 'inventory' else '/secrets-pki/lifecycle'
+    response = page.goto(f'{kaori_authenticated_base_url}{route}', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+
+    root = page.locator(f'#secrets-pki-{workspace}')
+    hero = root.locator('section.kaori-hero-shell')
+    expect(hero).to_be_visible()
+    expect(hero.locator('.kaori-hero-status-badge')).to_contain_text('Blocked')
+    blocker = root.locator('section[data-kaori-blocked-state]')
+    expect(blocker.get_by_role('heading', name=blocked_title)).to_be_visible()
+    expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
+    assert root.get_by_text(hidden_metric, exact=True).count() == 0
+    assert root.locator('[data-kaori-empty-state]').count() == 0
+
+    labels = hero.locator(
+        '.kaori-hero-panel h2, .kaori-hero-panel [data-kaori-hero-context-metric] p, '
+        '.kaori-hero-panel > .kaori-hero-tile p'
+    )
+    assert labels.count() == 8
+    for label in labels.all():
+        metrics = label.evaluate(
+            """el => {
+                const style = getComputedStyle(el);
+                return {
+                    height: el.getBoundingClientRect().height,
+                    lineHeight: parseFloat(style.lineHeight),
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    whiteSpace: style.whiteSpace,
+                    overflow: style.overflow,
+                    textOverflow: style.textOverflow
+                };
+            }"""
+        )
+        assert metrics['height'] <= metrics['lineHeight'] + 1.5, metrics
+        assert metrics['scrollWidth'] <= metrics['clientWidth'] + 1, metrics
+        assert metrics['whiteSpace'] != 'nowrap', metrics
+        assert metrics['overflow'] != 'hidden', metrics
+        assert metrics['textOverflow'] != 'ellipsis', metrics
+
+    _assert_no_document_overflow(page)
+    _capture(page, f'secrets-pki-{workspace}-no-vault-source', 'large-desktop')
