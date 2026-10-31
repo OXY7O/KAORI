@@ -1,5 +1,7 @@
 """Secrets & PKI reporting candidates must never become executable by catalog accident."""
 
+from pathlib import Path
+
 import pytest
 
 from app.definitions.report_coverage import REPORT_COVERAGE_DOMAINS as DEFINITION_COVERAGE_DOMAINS
@@ -13,8 +15,6 @@ from app.reports.overview.service import get_report_type_coverage
 
 
 def test_secrets_pki_coverage_reuses_declarative_definitions_without_report_domain_import() -> None:
-    from pathlib import Path
-
     assert REPORT_COVERAGE_DOMAINS is DEFINITION_COVERAGE_DOMAINS
     root = Path(__file__).resolve().parents[2]
     routes = (root / 'app/secrets_pki/routes.py').read_text(encoding='utf-8')
