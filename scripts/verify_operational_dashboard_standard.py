@@ -1797,6 +1797,7 @@ def verify() -> None:
             'Artifact Registry Overview',
             'Source Control/GitHub',
             'app/dashboards/common/operational.py',
+            'app/common/operational_tabs.py',
             'app/common/pagination.py',
             'components/operational_dashboard_workspace.html',
             'components/operational_signal_overview.html',
