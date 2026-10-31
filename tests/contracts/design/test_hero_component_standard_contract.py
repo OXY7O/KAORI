@@ -424,3 +424,41 @@ def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
     monkeypatch.setitem(check.__globals__, '_read', raw_navigation)
     with pytest.raises(AssertionError, match='Integrated Workspace Tabs'):
         check()
+
+
+def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_copy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_overview_blocked_dashboard']
+    check()
+
+    original_read = check.__globals__['_read']
+    overview = ROOT / 'app/templates/secrets_pki/overview.html'
+
+    def verbose_hero(path: Path) -> str:
+        source = original_read(path)
+        if path == overview:
+            return source.replace(
+                "blocked_info='Qualify Vault and collect KV v2 inventory.'",
+                "blocked_info='Register a Vault source, approve KV v2 metadata mounts, "
+                "and run the registered inventory job.'",
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', verbose_hero)
+    with pytest.raises(AssertionError, match='one-line copy budget'):
+        check()
+
+    def wrong_blocker(path: Path) -> str:
+        source = original_read(path)
+        if path == overview:
+            return source.replace(
+                '{% include "components/states/_blocked_state.html" %}',
+                '{% include "components/states/_empty_state.html" %}',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', wrong_blocker)
+    with pytest.raises(AssertionError, match='canonical _blocked_state'):
+        check()
