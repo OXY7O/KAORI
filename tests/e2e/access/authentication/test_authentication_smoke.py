@@ -7,6 +7,7 @@ from flask import url_for
 
 from app import create_app
 from app.access.authentication import routes as auth_routes
+from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
 from app.bootstrap import presentation as bootstrap_presentation
 
 
@@ -18,6 +19,13 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(ready=True, setup_required=False, missing_tables=()),
     )
     monkeypatch.setattr(auth_routes, 'enabled_sso_providers', lambda: [])
+    # This login/static smoke fixture does not own the persisted bot-policy
+    # schema; dedicated bot-protection tests exercise the real fail-closed path.
+    monkeypatch.setattr(
+        auth_routes,
+        'bot_policy_state',
+        lambda: BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+    )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
     return create_app('testing')
 
