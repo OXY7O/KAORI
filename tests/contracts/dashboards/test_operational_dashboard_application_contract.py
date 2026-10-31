@@ -22,7 +22,6 @@ def test_operational_dashboard_tabs_are_one_ordered_contract() -> None:
     assert normalize_operational_tab('unknown') == 'overview'
 
 
-
 def test_operational_dashboard_tab_normalization_is_shared_without_reverse_dependency() -> None:
     root = Path(__file__).resolve().parents[3]
     source = (root / 'app/secrets_pki/routes.py').read_text(encoding='utf-8')
