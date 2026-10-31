@@ -27,16 +27,16 @@ from app.integrations.source_control.source_control.providers.github.application
     GitHubAppConnectionEditForm,
     GitHubInstallationSuccessorForm,
 )
-from app.integrations.source_control.source_control.providers.github.application.repository import (
-    get_github_installation,
-    list_github_uat_installations,
-    retire_github_connection,
-)
 from app.integrations.source_control.source_control.providers.github.application.registration_proof import (
     issue_github_registration_proof,
     issue_github_successor_proof,
     verify_github_registration_proof,
     verify_github_successor_proof,
+)
+from app.integrations.source_control.source_control.providers.github.application.repository import (
+    get_github_installation,
+    list_github_uat_installations,
+    retire_github_connection,
 )
 from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
     _runtime_context,
