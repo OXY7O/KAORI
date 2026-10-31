@@ -126,7 +126,8 @@ def main() -> int:
         and 'NotificationDelivery.status == status' in service
         and 'result_count=payload.delivery_pagination.total_items' in delivery_template
         and "section_intro.render('Delivery Contract & Ownership'" in delivery_template
-        and "section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
+        and 'section_intro.render(' in channels_template
+        and "'Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels'"
         in channels_template,
         'notification guidance and canonical table': 'info_tip.render(' in template
         and 'Channel Inventory Guidance' in template
