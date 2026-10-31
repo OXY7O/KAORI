@@ -209,6 +209,28 @@ A Pull Request to `main` is a governed promotion only when its source is exactly
 
 ### Temporary DevContainer review workbench (#2227)
 
+#### Stable DevContainer preflight checkout and safe synchronization
+
+For the duration of this temporary review workbench, operator-driven **DevContainer preflight checks** use the existing `/workspace/kaori` checkout and the **single review source branch** `kaori/review/staging-uat`. Do not create a new worktree per gate failure or routinely use detached-HEAD checkouts / switch branches between local test runs. This is a **local test-workspace convention only**; implementation still uses issue-linked work branches and PRs, and comprehensive admission remains exclusively governed by the existing staging delivery contract.
+
+On first setup only, attach `/workspace/kaori` to `kaori/review/staging-uat` after checking `git status --short` and preserving local staged/unstaged work. If that branch is already checked out elsewhere, stop and inspect `git worktree list` rather than overriding Git's worktree safety. A blocked checkout or failed pull is a **hard stop**, never permission to run tests at the previous HEAD. Do not use `git reset --hard`, `git clean -fd`, force-pull, force checkout or automatic stash-all to solve a local edit conflict. Preserve the exact affected edits with a reviewed path-scoped stash (or a governed commit) and verify no other tracked/untracked changes remain before the one-time branch selection.
+
+For subsequent preflight sessions, remain on the same branch and in the same folder. The safe, fail-closed refresh and validation sequence is:
+
+```bash
+cd /workspace/kaori
+git fetch origin &&
+test "$(git branch --show-current)" = "kaori/review/staging-uat" &&
+test -z "$(git status --porcelain)" &&
+git pull --ff-only origin kaori/review/staging-uat &&
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/kaori/review/staging-uat)" &&
+test -z "$(git status --porcelain)" &&
+python -m djlint app/templates --check &&
+bash scripts/quality_gate.sh --static
+```
+
+If any guard fails, stop and resolve its concrete cause before continuing; never report gate results from the stale source as validation of the new review head. Record the **exact** tested SHA, environment, executed checks, outcome and relevant diagnostics. Keep temporarily stashed edits separate until their ownership and proper issue/PR flow are reviewed. Passing local static checks does not confer Developer Check, Full Admission, deployed-server UAT or release authority.
+
 The existing `kaori/review/staging-uat` branch is an explicitly governed **temporary, non-release workbench** for combining issue-owned changes and collecting exploratory DevContainer UAT evidence. It is **not** a third official long-lived integration, release, or promotion authority: `kaori/staging` remains the only source of comprehensive admission and staging integration; `main` remains the governed production lineage. Workbench acceptance never substitutes for Ready Developer Check, all five Full Admission lanes, CI Admission, Security/DAST, staging Fast Smoke, immutable release evidence, or human acceptance of the deployed candidate.
 
 - **Separate workstream ownership:** UAT review PRs retain their own issue/branch and target `kaori/review/staging-uat` only while on hold. An approved workbench merge is not approval to promote its full tree. Independent CI, operations and performance fixes still flow through normal issue-scoped PRs to `kaori/staging`.
