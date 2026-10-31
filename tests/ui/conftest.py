@@ -242,8 +242,6 @@ def kaori_authenticated_base_url() -> Iterator[str]:
     auth_result = AuthResult(True, 'success', source='database', user=user)
     # This browser-only fixture has no MFA persistence tables. Account GET still
     # runs its real view and templates against deterministic unenrolled state.
-    mfa_factor_model = Mock()
-    mfa_factor_model.query.filter_by.return_value.first.return_value = None
 
     with (
         patch(
@@ -265,7 +263,7 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch.multiple(
             'app.settings.routes',
             recent_authentication_events=Mock(return_value=[]),
-            AuthenticationMfaFactor=mfa_factor_model,
+            account_mfa_factor=Mock(return_value=None),
             mfa_enrolled=Mock(return_value=False),
             mfa_policy_mode=Mock(return_value='disabled'),
         ),
