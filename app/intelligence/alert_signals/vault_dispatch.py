@@ -12,6 +12,7 @@ from app.intelligence.alert_signals.vault_jobs import (
     NoEligibleVaultAlertSources,
     build_vault_alert_observation_targets,
 )
+from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
