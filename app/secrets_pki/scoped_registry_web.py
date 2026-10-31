@@ -11,11 +11,7 @@ from uuid import UUID
 from flask import abort, render_template, request
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
-from sqlalchemy.exc import SQLAlchemyError
-
-from app.extensions.db import db
-from app.models.scope_access import ScopeAccessPolicy
-from app.secrets_pki.scoped_registry import read_governed_scoped_secret_registry
+from app.secrets_pki.scoped_registry import read_governed_scoped_secret_registry, resolve_scoped_registry_mount
 
 _MAX_PAGE = 40  # The committed scope itself caps at 200, with pages of five.
 
@@ -45,28 +41,8 @@ def _canonical_uuid(raw: str) -> str | None:
 
 
 def _resolve_scope(*, actor_id: int, instance_id: int, policy_ref: str) -> tuple[str, str] | None:
-    """Resolve source-controlled mount/namespace only from actor-owned policy.
-
-    The policy lookup is not a grant: the governed reader independently
-    re-evaluates the current approved revision under a lock.
-    """
-    try:
-        row = db.session.get(ScopeAccessPolicy, policy_ref)
-        if (
-            row is None
-            or row.principal_user_id != actor_id
-            or row.permission_key != 'secrets_pki.view'
-            or row.integration_instance_id != instance_id
-            or row.scope_level != 'vault_mount'
-            or not isinstance(row.provider_namespace, str)
-            or not isinstance(row.mount, str)
-            or not row.mount
-        ):
-            return None
-        return row.provider_namespace, row.mount
-    except (SQLAlchemyError, TypeError, AttributeError):
-        db.session.rollback()
-        return None
+    """Delegate exact-policy lookup without introducing a second grant path."""
+    return resolve_scoped_registry_mount(actor_id=actor_id, instance_id=instance_id, policy_ref=policy_ref)
 
 
 def scoped_registry_response() -> ResponseReturnValue:
@@ -94,7 +70,6 @@ def scoped_registry_response() -> ResponseReturnValue:
         policy_ref=scope_ref,
     )
     if internal_scope is None:
-        db.session.rollback()
         abort(404)
 
     result = read_governed_scoped_secret_registry(

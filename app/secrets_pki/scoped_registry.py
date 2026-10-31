@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
+from app.models.scope_access import ScopeAccessPolicy
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -75,6 +76,35 @@ class ScopedSecretPage:
         if self.total_items is None:
             return None
         return max(1, (self.total_items + self.per_page - 1) // self.per_page)
+
+
+
+def resolve_scoped_registry_mount(
+    *, actor_id: int, instance_id: int, policy_ref: str
+) -> tuple[str, str] | None:
+    """Project a single actor-owned Vault mount from committed #724 policy.
+
+    This projection is not a grant. The governed registry reader independently
+    rechecks authorization and the current approved revision under a lock.
+    """
+    try:
+        row = db.session.get(ScopeAccessPolicy, policy_ref)
+        if (
+            row is None
+            or row.principal_user_id != actor_id
+            or row.permission_key != 'secrets_pki.view'
+            or row.integration_instance_id != instance_id
+            or row.scope_level != 'vault_mount'
+            or not isinstance(row.provider_namespace, str)
+            or not isinstance(row.mount, str)
+            or not row.mount
+        ):
+            db.session.rollback()
+            return None
+        return row.provider_namespace, row.mount
+    except (SQLAlchemyError, TypeError, AttributeError):
+        db.session.rollback()
+        return None
 
 
 def _time(value: datetime | None) -> datetime | None:
