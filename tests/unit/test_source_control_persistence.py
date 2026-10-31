@@ -118,7 +118,8 @@ def test_native_repository_identity_is_not_owner_name_or_installation(source_eng
                     last_observed_at=observed,
                 )
             )
-        row = connection.execute(select(SourceRepository.__table__).where(SourceRepository.id == repository)).mappings().one()
+        repository_query = select(SourceRepository.__table__).where(SourceRepository.id == repository)
+        row = connection.execute(repository_query).mappings().one()
         assert row['native_repository_id'] == '99'
         assert row['account_id'] == account
         grants = (
@@ -181,7 +182,8 @@ def test_duplicate_current_grant_is_rejected_but_history_is_retained(source_engi
             )
             == 2
         )
-        retained = connection.execute(select(SourceRepository.__table__).where(SourceRepository.id == repository)).mappings().one()
+        repository_query = select(SourceRepository.__table__).where(SourceRepository.id == repository)
+        retained = connection.execute(repository_query).mappings().one()
         assert retained['provider_presence'] == 'observed'  # access expiry never deletes the source object
 
 
