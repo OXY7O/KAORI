@@ -52,6 +52,7 @@ ARTIFACT_PRESENTATION_COMMON = ROOT / 'app' / 'artifact_registry' / 'presentatio
 ARTIFACT_PRESENTATION_OVERVIEW = ROOT / 'app' / 'artifact_registry' / 'presentation_overview.py'
 OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
 DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
+COMMON_OPERATIONAL_TABS = ROOT / 'app' / 'common' / 'operational_tabs.py'
 COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
@@ -745,6 +746,7 @@ def verify() -> None:
     )
     object_routes = _read(OBJECT_ROUTES)
     dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
+    common_operational_tabs = _read(COMMON_OPERATIONAL_TABS)
     common_pagination = _read(COMMON_PAGINATION)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
@@ -1601,21 +1603,36 @@ def verify() -> None:
             )
 
     _verify_route_authorization_order(routes)
+    # Tab selection is one neutral contract; keep the Dashboard facade's
+    # historical public names while forbidding a second local tab definition.
     _require(
-        dashboard_application_contract,
+        common_operational_tabs,
         (
             'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (',
             "'overview'",
             "'capacity'",
             "'signals'",
             "'reporting'",
-            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
-            'normalize_operational_tab',
-            'normalize_dashboard_page_size',
-            'is_htmx_request',
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB = OPERATIONAL_DASHBOARD_TABS[0]',
+            'def normalize_operational_tab(',
         ),
         'shared Operational Dashboard application contract',
     )
+    _require(
+        dashboard_application_contract,
+        (
+            'from app.common.operational_tabs import (',
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB as DEFAULT_OPERATIONAL_DASHBOARD_TAB',
+            'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS',
+            'normalize_operational_tab as normalize_operational_tab',
+            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
+            'normalize_dashboard_page_size',
+            'is_htmx_request',
+        ),
+        'Dashboard application contract re-exports and pagination',
+    )
+    if 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in dashboard_application_contract:
+        raise AssertionError('Dashboard application contract must not duplicate shared tab definitions')
     _require(
         common_pagination,
         (
