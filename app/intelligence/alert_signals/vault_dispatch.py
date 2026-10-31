@@ -67,5 +67,3 @@ def dispatch_vault_alert_observations(
         job=job,
         created=created,
     )
-
-
