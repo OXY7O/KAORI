@@ -88,6 +88,8 @@ State the release target or Milestone when one exists, plus compatibility/rollou
 - [ ] Required CI evidence is green with no unexplained failure, traceback, HTTP 5xx, migration error, runtime error, or unexpected skip.
 - [ ] Security, migration/data, and operational impacts are addressed.
 - [ ] Documentation/contracts are aligned when applicable.
+- [ ] New/changed feature, domain, capability, provider or verifier follows the canonical release-owner and gate-evidence format: identity, purpose/scope, actual command, honest status, duration, raw evidence, actionable failures and traceable Issue/PR/SHA (REGISTERED is not TEST PASS).
+
 - [ ] `kaori/staging` CI and Local UAT exist before the work is marked `Done`.
 - [ ] Artifact/release evidence identifies the exact accepted SHA and digest when the VPS/release path applies.
 - [ ] Promotion to `main`, when applicable, is explicitly approved and uses a merge commit.
