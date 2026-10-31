@@ -218,6 +218,7 @@ def test_github_connection_registry_reuses_existing_integration_surface() -> Non
     shared_hero = _source('app/templates/integrations/components/_provider_frontpage.html')
     tabs = _source('app/templates/components/integration_workspace_tabs.html')
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    repository = _source('app/integrations/source_control/source_control/providers/github/application/repository.py')
 
     assert 'provider_front.hero(' in index
     assert 'provider_front.overview(' in index
@@ -235,11 +236,13 @@ def test_github_connection_registry_reuses_existing_integration_surface() -> Non
     assert 'data-kaori-github-connection-registry' in registry
     assert "if target == 'github-connection-registry':" in routes
     assert "'integrations/source_control/github/partials/_connection_registry.html'" in routes
-    assert 'paginate_query(' in routes
+    assert 'paginate_query(' in repository
+    assert '_github_committed_connection_projection(' in routes
     assert "requested_per_page = request.args.get('per_page', 5, type=int) or 5" in routes
     assert "integration_type='source_control'," in routes
     assert "provider_key='github'," in routes
-    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in repository
+    assert '_github_committed_coverage_projection(' in routes
     assert 'if available:' in routes
     assert 'require_uat_access()' in routes
     assert "return redirect(url_for('github_source.index', tab='registry'))" in routes
@@ -254,6 +257,7 @@ def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() 
         'kubernetes/partials/_integration_coverage.html'
     )
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    repository = _source('app/integrations/source_control/source_control/providers/github/application/repository.py')
 
     for shared_pattern in (
         'provider_registry.registry_header(',
@@ -282,15 +286,16 @@ def test_github_coverage_reuses_kubernetes_table_contract_and_committed_state() 
 
     assert "requested_coverage_page = request.args.get('coverage_page', 1, type=int) or 1" in routes
     assert "requested_coverage_per_page = request.args.get('coverage_per_page', 5, type=int) or 5" in routes
-    assert 'SourceRepositoryCollectionState.committed_generation > 0' in routes
+    assert 'SourceRepositoryCollectionState.committed_generation > 0' in repository
     assert "'coverage_observed': committed_collections > 0" in routes
     assert 'No Repositories in Committed Coverage' in github
     assert 'Review committed GitHub repository access and coverage.' in github
     assert 'Register and validate a GitHub App, then collect repository evidence.' in github
-    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
-    assert "SourceInstallation.provider_key == 'github'" in routes
-    assert "SourceRepository.host_key == 'github.com'" in routes
-    assert 'coverage_rows, coverage_pagination = paginate_query(' in routes
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in repository
+    assert '_github_committed_coverage_projection(' in routes
+    assert "SourceInstallation.provider_key == 'github'" in repository
+    assert "SourceRepository.host_key == 'github.com'" in repository
+    assert 'coverage_rows, coverage_pagination = paginate_query(' in repository
     assert "if target == 'github-integration-coverage':" in routes
     assert 'selected_coverage_query or selected_coverage_environment or selected_coverage_status' in routes
     assert 'selected_coverage_environment' in routes
@@ -313,6 +318,7 @@ def test_github_identity_fields_share_one_responsive_desktop_row() -> None:
 def test_github_coverage_empty_state_guides_registered_installations_to_validation_and_sync() -> None:
     coverage = _source('app/templates/integrations/source_control/github/partials/_integration_coverage.html')
     routes = _source('app/integrations/source_control/source_control/providers/github/application/routes.py')
+    repository = _source('app/integrations/source_control/source_control/providers/github/application/repository.py')
     uat = _source('app/integrations/source_control/source_control/providers/github/application/uat_routes.py')
 
     assert '{% elif registered %}' in coverage
@@ -327,8 +333,9 @@ def test_github_coverage_empty_state_guides_registered_installations_to_validati
 
     # Registration persists identity, not repository inventory. Coverage
     # requires a separately committed grant generation.
-    assert 'SourceRepositoryCollectionState.committed_generation > 0' in routes
-    assert 'SourceRepositoryGrant.valid_until.is_(None)' in routes
+    assert 'SourceRepositoryCollectionState.committed_generation > 0' in repository
+    assert 'SourceRepositoryGrant.valid_until.is_(None)' in repository
+    assert '_github_committed_coverage_projection(' in routes
     assert "'registered': total" in routes
     assert "operation='full_validation'" in uat
     assert 'enqueue_source_repository_sync(' in uat
