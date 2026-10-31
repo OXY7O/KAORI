@@ -239,8 +239,8 @@ def test_github_connection_registry_reuses_existing_integration_surface() -> Non
     assert 'paginate_query(' in repository
     assert '_github_committed_connection_projection(' in routes
     assert "requested_per_page = request.args.get('per_page', 5, type=int) or 5" in routes
-    assert "integration_type='source_control'," in routes
-    assert "provider_key='github'," in routes
+    assert "integration_type='source_control'," in repository
+    assert "provider_key='github'," in repository
     assert 'SourceRepositoryGrant.valid_until.is_(None)' in repository
     assert '_github_committed_coverage_projection(' in routes
     assert 'if available:' in routes
