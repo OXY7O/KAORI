@@ -42,7 +42,9 @@ def main() -> int:
     alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
     alert_source_evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
     alerts_workspace = read('app/templates/storage/object_storage/analytics/partials/_alerts_workspace.html')
-    domain_evidence_context = read('app/templates/storage/object_storage/analytics/partials/_domain_evidence_context.html')
+    domain_evidence_context = read(
+        'app/templates/storage/object_storage/analytics/partials/_domain_evidence_context.html'
+    )
     boundary = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
     readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
     controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
