@@ -17,16 +17,20 @@ from flask_wtf import FlaskForm
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.deletion import provider_deletion_guard
-from app.integrations.source_control.repository_inventory import read_installation_inventory
+from app.integrations.source_control.repository_inventory import read_installation_inventory_for_current_session
 from app.integrations.source_control.source_control.providers.github.application.capability_presentation import (
     github_capability_context,
 )
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionEditForm,
     GitHubInstallationSuccessorForm,
+)
+from app.integrations.source_control.source_control.providers.github.application.repository import (
+    get_github_installation,
+    list_github_uat_installations,
+    retire_github_connection,
 )
 from app.integrations.source_control.source_control.providers.github.application.registration_proof import (
     issue_github_registration_proof,
@@ -59,7 +63,7 @@ from app.integrations.source_control.sync_jobs import (
 from app.integrations.source_control.uat_access import require_uat_access
 from app.integrations.validation.state import build_validation_snapshot
 from app.integrations.validation.web import validate_snapshot_access, validation_poll_response
-from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.integration import IntegrationInstance
 from app.models.source_control import SourceInstallation
 from app.platform_operations.notifications.service import record_operational_activity
 from app.security.credentials import CredentialEncryptionError
@@ -89,7 +93,7 @@ def _detail_url(installation_id: int, **overrides: str) -> str:
 
 def _installation_or_404(installation_id: int) -> SourceInstallation:
     require_uat_access()
-    record = db.session.get(SourceInstallation, installation_id)
+    record = get_github_installation(installation_id)
     if record is None or record.provider_key != 'github' or record.host_key != 'github.com':
         abort(404)
     return record
@@ -107,8 +111,7 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     inventory_archived = request.args.get('inventory_archived', '').strip().lower()
     if inventory_archived not in {'active', 'archived', 'unknown'}:
         inventory_archived = ''
-    inventory = read_installation_inventory(
-        db.session,
+    inventory = read_installation_inventory_for_current_session(
         authorized_installation_id=installation.id,
         page=page,
         per_page=per_page,
@@ -180,19 +183,7 @@ def _render_runtime_content(
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     require_uat_access()
-    records = (
-        SourceInstallation.query.join(
-            IntegrationInstance, SourceInstallation.integration_instance_id == IntegrationInstance.id
-        )
-        .filter(
-            SourceInstallation.provider_key == 'github',
-            SourceInstallation.host_key == 'github.com',
-            IntegrationInstance.lifecycle_status == 'active',
-        )
-        .order_by(SourceInstallation.id)
-        .limit(50)
-        .all()
-    )
+    records = list_github_uat_installations()
     return _response(
         'integrations/source_control/github/uat_index.html',
         installations=records,
@@ -696,14 +687,8 @@ def delete_connection(installation_id: int) -> ResponseReturnValue:
 
     former_name = canonical.name
     try:
-        IntegrationBinding.query.filter_by(integration_instance_id=canonical.id).update(
-            {'enabled': False}, synchronize_session=False
-        )
-        canonical.enabled = False
-        canonical.lifecycle_status = 'retired'
-        db.session.commit()
+        retire_github_connection(canonical)
     except SQLAlchemyError:
-        db.session.rollback()
         abort(409)
 
     record_operational_activity(
