@@ -245,6 +245,14 @@ Code complete and automated validation are necessary but not sufficient. Applica
 
 For work entering the artifact-backed release path, completion additionally requires immutable artifact identity, VPS UAT against that exact artifact, Semantic Versioning release of the accepted digest without rebuilding, production RUN verification, and rollback evidence.
 
+## New/Changed Capability — Mandatory Gate Evidence
+
+Each added or materially changed KAORI domain, capability, provider, feature, operator-facing workspace or static verifier must comply with the **existing** `docs/engineering/TERMINAL_OUTPUT.md` evidence contract and `docs/architecture/RELEASE_SURFACE_COVERAGE.md` ownership/change-control requirements before the change can be accepted. This applies equally to Source Control/GitHub, Secrets Management/Vault, Kubernetes, Artifact Registry, Analytics, Intelligence and future integrations; never create provider-named top-level products solely to display coverage.
+
+In the governing Issue and PR, identify the domain-first release owner, scoped purpose, applicable navigation/Blueprint/taxonomy changes, the canonical command or actual test selection, security/negative testing and executed evidence paths. In CI, show the executed check's purpose, actual result, duration and diagnostics through the existing steps, Summary and artifacts. A new independent verifier needs a specific purpose label; an existing verifier can cover the new capability when that contract is genuinely sufficient. Do not introduce duplicated tests solely for presentation.
+
+**Admission boundaries:** `REGISTERED` indicates ownership only; test PASS requires executed evidence, and green static/functional checks do not substitute for Security, Runtime/DAST, deployment and explicit human acceptance when applicable. SKIP, REUSED, NOT RUN and BLOCKED must remain honest. Reviewers must reject a new capability whose ownership, purpose or required evidence cannot be identified. The approved validation gates and the Issue → Branch → PR → staging → UAT → promotion flow remain authoritative and unchanged.
+
 ## Developer Check — Work-Branch Loop
 
 `Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. Draft runs provide the cheap development loop; Ready/synchronize events rerun the same targeted authority on the exact current head before any Full Admission may start.
