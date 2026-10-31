@@ -514,9 +514,7 @@ def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
         def changed(path: Path) -> str:
             source = original_read(path)
             if path == candidate:
-                return source.replace(
-                    '{% include "components/states/_blocked_state.html" %}', replacement
-                )
+                return source.replace('{% include "components/states/_blocked_state.html" %}', replacement)
             return source
 
         return changed
