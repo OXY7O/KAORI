@@ -14,6 +14,7 @@ from flask_sqlalchemy.session import Session as FlaskSession
 from sqlalchemy import and_, func, literal, select
 from sqlalchemy.orm import Session, scoped_session
 
+from app.extensions.db import db
 from app.models.source_control import (
     SourceReference,
     SourceRepository,
@@ -202,4 +203,29 @@ def read_installation_inventory(
         page=effective_page,
         per_page=per_page,
         matching_total=matching_total,
+    )
+
+
+def read_installation_inventory_for_current_session(
+    *,
+    authorized_installation_id: int,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    visibility: str = '',
+    archived: str = '',
+) -> InventoryPage:
+    """Read an already-authorized installation through the repository-owned session.
+
+    The caller must have independently authorized the installation ID; this
+    wrapper never discovers installations or broadens the read scope.
+    """
+    return read_installation_inventory(
+        db.session,
+        authorized_installation_id=authorized_installation_id,
+        page=page,
+        per_page=per_page,
+        search=search,
+        visibility=visibility,
+        archived=archived,
     )

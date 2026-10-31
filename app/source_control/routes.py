@@ -7,8 +7,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
-from app.integrations.source_control.repository_inventory import read_installation_inventory
+from app.integrations.source_control.repository_inventory import read_installation_inventory_for_current_session
 from app.integrations.source_control.uat_access import local_super_admin
 from app.source_control.presentation import build_source_control_overview
 
@@ -77,8 +76,7 @@ def repositories() -> ResponseReturnValue:
         per_page = request.args.get('per_page', 5, type=int) or 5
         if per_page not in _PAGE_SIZES:
             per_page = 5
-        inventory = read_installation_inventory(
-            db.session,
+        inventory = read_installation_inventory_for_current_session(
             authorized_installation_id=installation_id,
             page=page,
             per_page=per_page,
