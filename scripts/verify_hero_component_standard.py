@@ -1211,14 +1211,14 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
     compact_labels = re.findall(r"'[a-z_]+':\s*'([^']+)'", pki_mapping.group('mapping'))
     if len(compact_labels) != 5 or any(len(label) > 28 for label in compact_labels):
         raise AssertionError(f'{owner}: PKI Hero status must be concise at 1440px')
-    kv2_mapping = re.search(r'{%\s*set kv2_hero_label\s*=\s*(.*?)%}', lifecycle, re.S)
+    kv2_mapping = re.search(r'{%\s*set kv2_hero_label\s*=\s*\{(?P<mapping>.*?)\}\.get\(', lifecycle, re.S)
     if not kv2_mapping:
         raise AssertionError(f'{owner}: missing bounded KV v2 display mapping')
-    kv2_labels = [
-        value for value in re.findall(r"'([^']+)'", kv2_mapping.group(1))
-        if value not in {'ready', 'observed_empty', 'incomplete_evidence'}
-    ]
-    if len(kv2_labels) != 4 or any(len(value) > 28 for value in kv2_labels):
+    kv2_labels = re.findall(r"'[a-z_]+':\s*'([^']+)'", kv2_mapping.group('mapping'))
+    kv2_default = re.search(r"\}\.get\(kv2_version_posture\.status,\s*'([^']+)'\)", lifecycle)
+    if len(kv2_labels) != 3 or not kv2_default:
+        raise AssertionError(f'{owner}: expected qualified, empty, incomplete and blocked KV v2 summaries')
+    if any(len(value) > 28 for value in (*kv2_labels, kv2_default.group(1))):
         raise AssertionError(f'{owner}: KV v2 Hero heading must be concise at 1440px')
 
     info = re.search(r"page_hero\.context_info\('shield-alert',\s*'([^']+)'\s*\)", lifecycle)
