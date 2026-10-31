@@ -156,6 +156,19 @@ It reuses existing Violet, Hero, domain cards, Flask-WTF, accessibility,
 responsive and light/dark classes; no provider-specific stylesheet.
 
 
+## SC-03 repository worker scope ownership — #4158
+
+Source Control repository admission and the canonical inventory worker use
+the **same** `app/integrations/source_control/eligibility.py` predicate and
+25-installation bound. The provider's native installation/account/App
+credential match, Ready lifecycle, enabled state and host restrictions remain
+unchanged. `sync_jobs.py` retains its compatibility imports for existing
+callers; `tasks.py` revalidates the same predicate independently of the
+dispatcher before any provider request. The task name, id-only Celery payload,
+worker registration preflight, scoped UAT administrator requirement and #724
+manual access hold remain unchanged. No second synchronization engine or
+runtime provider authority was added.
+
 ## SC-02 canonical JobExecution admission and committed refresh intents
 
 `job_admission.enqueue_github_app_job` reuses KAORI's existing
