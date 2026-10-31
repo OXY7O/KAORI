@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REVIEWED_TEMPLATE_ROOTS = (ROOT / 'app' / 'templates' / 'integrations',)
 CHECKED_TAGS = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'label', 'button'}
-TECHNICAL_WORDS = {'ntfy'}  # Official lowercase provider brand; not a generic casing exemption.
+TECHNICAL_WORDS = {'ntfy', 'v2'}  # Approved brand and technical version notation; no generic exemptions.
 MINOR_WORDS = {
     'a',
     'an',
@@ -64,8 +64,18 @@ class _VisibleLabelParser(HTMLParser):
         self._stack: list[tuple[str, int, list[str]]] = []
         self.labels: list[tuple[int, str]] = []
         self.checkbox_label_lines: set[int] = set()
+        self._help_span_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if self._help_span_depth:
+            self._help_span_depth += 1
+            return
+        if tag == 'span' and self._stack and self._stack[-1][0] == 'label':
+            classes = next((value for key, value in attrs if key == 'class'), '') or ''
+            if {'mt-1', 'block', 'text-xs', 'text-content-muted'} <= set(classes.split()):
+                # Exclude descriptive field help, not the checkbox's visible title.
+                self._help_span_depth = 1
+                return
         if tag == 'input' and ('type', 'checkbox') in attrs:
             self.checkbox_label_lines.update(line for label_tag, line, _ in self._stack if label_tag == 'label')
         if tag in CHECKED_TAGS:
@@ -74,6 +84,9 @@ class _VisibleLabelParser(HTMLParser):
             self._stack[-1][2].append(' ')
 
     def handle_endtag(self, tag: str) -> None:
+        if self._help_span_depth:
+            self._help_span_depth -= 1
+            return
         if not self._stack or self._stack[-1][0] != tag:
             return
         _, line, chunks = self._stack.pop()
