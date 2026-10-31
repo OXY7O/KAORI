@@ -33,5 +33,3 @@ def _eligible(installation: SourceInstallation) -> bool:
         and app.native_app_id == installation.native_app_id
         and installation.github_app_credential_id == app.id
     )
-
-
