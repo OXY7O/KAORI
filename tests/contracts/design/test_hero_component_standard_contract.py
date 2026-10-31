@@ -388,3 +388,40 @@ def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> N
     assert object_storage_pages.count("'Object Storage Analytics',") == 6
     for title in ('Overview', 'Capacity & Usage', 'Performance', 'Forecast', 'Top Consumers', 'Alerts & Anomalies'):
         assert f"        '{title}'," in object_storage_pages
+
+
+
+def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_lifecycle_compact_hero']
+    check()
+
+    read = check.__globals__['_read']
+    lifecycle_path = ROOT / 'app/templates/secrets_pki/lifecycle.html'
+    navigation_path = ROOT / 'app/templates/secrets_pki/_lifecycle_navigation.html'
+
+    def broken_copy(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace(
+                'Missing evidence is not zero; TLS delivery is unverified.',
+                'Missing evidence is not zero. Validity and matching fingerprints do not '
+                'prove rotation, delivery, trust or endpoint TLS serving.',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', broken_copy)
+    with pytest.raises(AssertionError, match='one-line candidate'):
+        check()
+
+    def raw_navigation(path: Path) -> str:
+        source = read(path)
+        if path == navigation_path:
+            return source.replace('workspace_tabs.render_navigation(', 'raw_navigation(')
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', raw_navigation)
+    with pytest.raises(AssertionError, match='Integrated Workspace Tabs'):
+        check()
