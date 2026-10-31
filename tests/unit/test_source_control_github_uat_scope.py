@@ -89,7 +89,7 @@ def test_uat_routes_are_isolated_and_do_not_call_github_during_get():
     source = file.read_text()
     assert "url_prefix='/integrations/source-control/github/uat'" in source
     assert 'require_uat_access()' in source
-    assert 'read_installation_inventory(' in source
+    assert 'read_installation_inventory_for_current_session(' in source
     assert 'enqueue_github_app_job(' in source
     assert 'enqueue_source_repository_sync(' in source
     assert "@permission_required('integrations.manage')" in source
@@ -908,12 +908,22 @@ def test_github_deletion_is_guarded_and_retains_source_evidence():
         / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
     ).read_text()
     delete = source.split('def delete_connection(installation_id: int)', 1)[1]
+    repository = (
+        Path(__file__).resolve().parents[2]
+        / 'app/integrations/source_control/source_control/providers/github/application/repository.py'
+    ).read_text()
+
     assert "@github_uat_bp.post('/installations/<int:installation_id>/delete')" in source
     assert "@permission_required('integrations.manage')" in source
     assert '_installation_or_404(installation_id)' in delete
     assert 'FlaskForm().validate_on_submit()' in delete
     assert "integration_type='source_control'" in delete
     assert 'guard.blocked' in delete
-    assert "canonical.lifecycle_status = 'retired'" in delete
-    assert 'canonical.enabled = False' in delete
+    assert "canonical.lifecycle_status = 'retired'" in repository
+    assert 'canonical.enabled = False' in repository
+    assert 'retire_github_connection(canonical)' in delete
+    assert 'IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)' in repository
+    assert 'db.session.commit()' in repository
+    assert 'db.session.rollback()' in repository
     assert 'db.session.delete(' not in delete
+    assert 'db.session.delete(' not in repository
