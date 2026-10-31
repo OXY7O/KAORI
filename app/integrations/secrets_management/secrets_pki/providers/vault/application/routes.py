@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from celery.exceptions import CeleryError
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
