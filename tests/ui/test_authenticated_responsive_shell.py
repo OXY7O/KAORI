@@ -302,3 +302,4 @@ def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_i
         assert measurement['scrollWidth'] <= measurement['clientWidth'] + 1, measurement
 
     _assert_no_document_overflow(page)
+    _capture(page, 'secrets-pki-lifecycle-hero', 'large-desktop')
