@@ -129,6 +129,14 @@ Security detailed views remain route-level navigation above the Hero. Vulnerabil
 Overview · Capacity & Usage · Performance · Forecast · Top Consumers · Alerts & Anomalies
 ```
 
+### Secrets & PKI / Lifecycle & Assurance
+
+```text
+Lifecycle & Assurance · Leases · Consumers · Governance
+```
+
+These four peer, URL-owned detailed views use the shared `components/workspace_tabs.html` `render_navigation()` contract through `secrets_pki/_lifecycle_navigation.html`. Their navigation sits above the Hero, with an explicit active route, keyboard-focus visibility and canonical horizontal overflow; raw page-local links or floating pills do not satisfy the level-3 contract. Provider-qualified operational evidence and the full unabridged status remain in the corresponding content sections.
+
 ## Context Is Not Navigation
 
 Cluster, namespace, tenant, environment, provider, instance, system, time range, and resource identity are context.
