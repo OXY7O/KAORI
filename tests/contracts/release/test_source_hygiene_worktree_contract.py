@@ -92,3 +92,13 @@ def test_tracked_generated_file_still_fails_hygiene(tmp_path: Path) -> None:
     assert check.returncode != 0
     assert 'generated/runtime artifacts are present in tracked source' in check.stderr
     assert '.ruff_cache/0.17.3/sample' in check.stderr
+
+
+def test_invalid_git_pointer_fails_closed_instead_of_scanning_zero_tracked_files(tmp_path: Path) -> None:
+    archive = tmp_path / 'source-with-broken-pointer'
+    _fixture_source(archive)
+    (archive / '.git').write_text('gitdir: /missing/kaori-gitdir\n', encoding='utf-8')
+
+    check = _run_hygiene(archive)
+    assert check.returncode != 0
+    assert 'Git metadata is present but no valid working tree was found' in check.stderr
