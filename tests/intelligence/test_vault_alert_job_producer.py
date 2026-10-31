@@ -7,7 +7,7 @@ import pytest
 from flask import Flask
 
 from app.extensions.db import db
-from app.intelligence.alert_signals import vault_jobs
+from app.intelligence.alert_signals import vault_dispatch, vault_jobs
 from app.intelligence.alert_signals.vault_source import read_vault_alert_observations
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alertmanager import AlertmanagerInstance
@@ -108,7 +108,7 @@ def test_job_catalog_is_existing_manual_only_configuration():
     assert definition.queue_name == 'inventory'
     assert definition.execute_permission == 'jobs.execute'
     assert definition.domain_execute_permission == 'secrets_pki.sync'
-    assert definition.dispatcher_path == ('app.intelligence.alert_signals.vault_jobs:dispatch_vault_alert_observations')
+    assert definition.dispatcher_path == ('app.intelligence.alert_signals.vault_dispatch:dispatch_vault_alert_observations')
 
 
 def test_eligible_target_list_is_only_exact_vault_binding(store):
@@ -158,19 +158,19 @@ def test_missing_alertmanager_provider_blocks_scope(store):
 
 def test_dispatch_is_manual_only_and_deduplicated_via_canonical_admission(monkeypatch):
     calls = []
-    monkeypatch.setattr(vault_jobs, 'build_vault_alert_observation_targets', lambda: [41])
+    monkeypatch.setattr(vault_dispatch, 'build_vault_alert_observation_targets', lambda: [41])
     monkeypatch.setattr(
-        vault_jobs,
+        vault_dispatch,
         'enqueue_canonical_job',
         lambda **kw: (calls.append(kw) or SimpleNamespace(id=17), True),
     )
-    blocked = vault_jobs.dispatch_vault_alert_observations(
+    blocked = vault_dispatch.dispatch_vault_alert_observations(
         requested_by_user_id=3,
         trigger_type='scheduled',
     )
     assert blocked.status == 'blocked'
     assert not calls
-    result = vault_jobs.dispatch_vault_alert_observations(
+    result = vault_dispatch.dispatch_vault_alert_observations(
         requested_by_user_id=3,
         trigger_type='manual',
     )
