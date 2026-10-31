@@ -50,7 +50,11 @@ from app.platform_operations.notifications.feedback import (
 from app.platform_operations.notifications.service import create_transient_feedback
 from app.security.credentials import CredentialEncryptionError
 from app.settings.account.actions import process_password_change
-from app.settings.account.queries import account_mfa_factor, authentication_activity_summary, recent_authentication_events
+from app.settings.account.queries import (
+    account_mfa_factor,
+    authentication_activity_summary,
+    recent_authentication_events,
+)
 from app.settings.general.actions import (
     save_regional_format_preference,
     save_timezone_preference,
