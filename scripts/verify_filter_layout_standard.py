@@ -301,7 +301,7 @@ def main() -> int:
         'class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>',
         "table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name',",
         "id='object-storage-bucket-search')",
-        'change[event.target.name !== \'bucket_q\']',
+        "change[event.target.name !== 'bucket_q']",
     ):
         require(
             token in bucket_form,
