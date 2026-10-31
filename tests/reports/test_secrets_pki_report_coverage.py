@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.definitions.report_coverage import REPORT_COVERAGE_DOMAINS as DEFINITION_COVERAGE_DOMAINS
 from app.reports.catalog import (
     REPORT_COVERAGE_DOMAINS,
     REPORT_TYPE_SPECS,
@@ -9,6 +10,16 @@ from app.reports.catalog import (
     get_report_type_spec,
 )
 from app.reports.overview.service import get_report_type_coverage
+
+
+def test_secrets_pki_coverage_reuses_declarative_definitions_without_report_domain_import() -> None:
+    from pathlib import Path
+
+    assert REPORT_COVERAGE_DOMAINS is DEFINITION_COVERAGE_DOMAINS
+    root = Path(__file__).resolve().parents[2]
+    routes = (root / 'app/secrets_pki/routes.py').read_text(encoding='utf-8')
+    assert 'from app.definitions.report_coverage import REPORT_COVERAGE_DOMAINS' in routes
+    assert 'from app.reports.catalog import REPORT_COVERAGE_DOMAINS' not in routes
 
 
 def test_secrets_pki_coverage_is_planned_with_no_published_report_types():
