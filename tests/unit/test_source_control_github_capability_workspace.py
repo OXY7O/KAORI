@@ -14,7 +14,9 @@ from app.integrations.source_control.source_control.providers.github.readiness i
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / 'app/templates/integrations/source_control/github'
 ROUTES = ROOT / 'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
-RUNTIME_PRESENTATION = ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+RUNTIME_PRESENTATION = (
+    ROOT / 'app/integrations/source_control/source_control/providers/github/application/runtime_presentation.py'
+)
 
 
 def _canonical(states=None, *, profile='github-app-readiness-v1', validated_at='2026-10-26T08:00:00Z'):
