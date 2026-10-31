@@ -1175,6 +1175,56 @@ def _verify_registry_blocked_hero_actions() -> None:
         raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
 
 
+def _verify_secrets_pki_lifecycle_compact_hero() -> None:
+    """Guard the approved 1440px compact copy and route-level navigation owner."""
+    lifecycle = _read(TEMPLATES / 'secrets_pki/lifecycle.html')
+    peers = _read(TEMPLATES / 'secrets_pki/operational_evidence_workspace.html')
+    navigation = _read(TEMPLATES / 'secrets_pki/_lifecycle_navigation.html')
+    owner = 'Secrets & PKI Lifecycle compact Hero'
+    if "lifecycle_navigation.render('lifecycle')" not in lifecycle:
+        raise AssertionError(f'{owner}: Lifecycle must render shared peer navigation above Hero')
+    if 'lifecycle_navigation.render(workspace)' not in peers:
+        raise AssertionError(f'{owner}: peer workspaces must render shared navigation')
+    if 'workspace_tabs.render_navigation(' not in navigation:
+        raise AssertionError(f'{owner}: raw links cannot replace shared Integrated Workspace Tabs')
+    for key in ('lifecycle', 'leases', 'consumers', 'governance'):
+        if f"('{key}'," not in navigation or f"url_for('secrets_pki.{key}')" not in navigation:
+            raise AssertionError(f'{owner}: missing URL-owned peer: {key}')
+    if lifecycle.index("lifecycle_navigation.render('lifecycle')") > lifecycle.index('page_hero.shell_classes()'):
+        raise AssertionError(f'{owner}: peer navigation must appear above Hero')
+    if peers.index('lifecycle_navigation.render(workspace)') > peers.index('page_hero.shell_classes()'):
+        raise AssertionError(f'{owner}: peer workspace navigation must appear above Hero')
+    for source in (lifecycle, peers):
+        if re.search(r'<nav\\s+class="flex flex-wrap gap-', source):
+            raise AssertionError(f'{owner}: page-local raw peer navigation is forbidden')
+
+    if "context_header('KV v2 Evidence', kv2_hero_label" not in lifecycle:
+        raise AssertionError(f'{owner}: KV v2 Hero must not expose unbounded source labels')
+    if "pki_hero_label, 'Opted-in public certificates'" not in lifecycle:
+        raise AssertionError(f'{owner}: PKI Hero must not expose unbounded source labels')
+    if '{{ pki_validity.label }}' not in lifecycle or '{{ kv2_version_posture.label }}' not in lifecycle:
+        raise AssertionError(f'{owner}: preserve complete source diagnostics below Hero')
+
+    pki_mapping = re.search(r'{%\\s*set pki_hero_label\\s*=\\s*\\{(?P<mapping>.*?)\\}\\.get\\(', lifecycle, re.S)
+    if not pki_mapping:
+        raise AssertionError(f'{owner}: missing bounded PKI display mapping')
+    compact_labels = re.findall(r"'[a-z_]+':\\s*'([^']+)'", pki_mapping.group('mapping'))
+    if len(compact_labels) != 5 or any(len(label) > 28 for label in compact_labels):
+        raise AssertionError(f'{owner}: PKI Hero status must be concise at 1440px')
+    kv2_mapping = re.search(r'{%\\s*set kv2_hero_label\\s*=\\s*(.*?)%}', lifecycle, re.S)
+    if not kv2_mapping:
+        raise AssertionError(f'{owner}: missing bounded KV v2 display mapping')
+    kv2_labels = re.findall(r"'([^']+)'\\s+if\\s+kv2_version_posture\\.status|else\\s+'([^']+)'", kv2_mapping.group(1))
+    if not kv2_labels or any(len(value) > 28 for pair in kv2_labels for value in pair if value):
+        raise AssertionError(f'{owner}: KV v2 Hero heading must be concise at 1440px')
+
+    info = re.search(r"page_hero\\.context_info\\('shield-alert',\\s*'([^']+)'\\s*\\)", lifecycle)
+    if not info or len(info.group(1)) > 68 or '\\n' in info.group(1):
+        raise AssertionError(f'{owner}: evidence note must be a concise one-line candidate')
+    if 'Missing evidence is not zero' not in info.group(1) or 'TLS delivery' not in info.group(1):
+        raise AssertionError(f'{owner}: compact note must preserve evidence and delivery limitations')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1309,6 +1359,7 @@ def verify() -> None:
     _verify_analytics_metadata_ownership()
     _verify_notification_channels_hero_metadata()
     _verify_operational_metadata_state_contract()
+    _verify_secrets_pki_lifecycle_compact_hero()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
