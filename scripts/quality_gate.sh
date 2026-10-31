@@ -350,7 +350,7 @@ run_static_group() {
                     print "FAIL — malformed or empty registered capability ownership" > "/dev/stderr"
                     exit 1
                 }
-                printf "  REGISTERED: %d surfaces · %d contract modules · %d contracts-only\n", total, registered_modules, contract_only
+                printf "  REGISTERED: %d surfaces · %d contract-module registrations · %d contracts-only\n", total, registered_modules, contract_only
                 print "  Source ownership only — NOT executed tests or Staging Acceptance."
                 printf "  %-26s %-15s %7s  %s\n", "Capability", "Lock state", "Modules", "Static verifier"
                 for (i = 1; i <= total; i++) {
