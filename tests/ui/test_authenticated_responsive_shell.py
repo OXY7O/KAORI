@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page, expect
 
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
@@ -273,8 +274,7 @@ def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_i
     hero = page.locator('#secrets-pki-lifecycle section.kaori-hero-shell')
     expect(hero).to_be_visible()
     targets = hero.locator(
-        '.kaori-hero-panel h2, [data-kaori-hero-context-metric] p, '
-        '.kaori-hero-panel > .kaori-hero-tile p'
+        '.kaori-hero-panel h2, [data-kaori-hero-context-metric] p, .kaori-hero-panel > .kaori-hero-tile p'
     )
     assert targets.count() == 8
     for element in targets.all():
@@ -307,7 +307,24 @@ def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_i
 def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
     page: Page,
     kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Render the real Overview route against deterministic, unqualified
+    # committed-state evidence. The shared authenticated UI server has no
+    # PostgreSQL service and must not depend on a developer's local database.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 0, 'has_evidence': False},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_vault_binding_coverage',
+        lambda: {
+            'metrics': {'label': 'Vault Provider Not Configured'},
+            'alerts': {'label': 'Vault Provider Not Configured'},
+        },
+    )
+    monkeypatch.setattr('app.secrets_pki.routes.build_vault_alert_source_sample_summary', lambda: None)
+
     page.set_viewport_size({'width': 1440, 'height': 900})
     _login(page, kaori_authenticated_base_url)
     response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/', wait_until='domcontentloaded')
