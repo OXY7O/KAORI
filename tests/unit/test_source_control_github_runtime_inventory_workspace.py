@@ -54,7 +54,6 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
 
 
 def test_history_registries_are_scoped_server_filtered_paginated():
-    routes = _read(ROUTES)
     runtime_source = _read(RUNTIME_PRESENTATION)
     jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
