@@ -272,12 +272,12 @@ def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_i
 
     hero = page.locator('#secrets-pki-lifecycle section.kaori-hero-shell')
     expect(hero).to_be_visible()
-    targets = [
-        hero.locator('[data-kaori-hero-context-metric]').nth(0).locator('p').nth(1),
-        hero.locator('[data-kaori-hero-context-metric]').nth(1).locator('p').nth(1),
-        hero.locator('.kaori-hero-panel .kaori-hero-tile').last.locator('p'),
-    ]
-    for element in targets:
+    targets = hero.locator(
+        '.kaori-hero-panel h2, [data-kaori-hero-context-metric] p, '
+        '.kaori-hero-panel > .kaori-hero-tile p'
+    )
+    assert targets.count() == 8
+    for element in targets.all():
         expect(element).to_be_visible()
         measurement = element.evaluate(
             """el => {
