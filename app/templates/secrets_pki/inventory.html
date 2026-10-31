@@ -62,29 +62,29 @@
             {% include "components/states/_blocked_state.html" %}
         {% else %}
             {{ section_intro.render('Committed Inventory Coverage',
-                    'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
-                    supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.') }}
+                        'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
+                        supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.') }}
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {{ metric_card.render('Enabled Vault Sources',
-                            summary.provider_count if summary.provider_count is not none else 'Unavailable',
-                            'Only enabled active Vault integration identities.', 'server',
-                            source_label='Vault Provider') }}
+                                summary.provider_count if summary.provider_count is not none else 'Unavailable',
+                                'Only enabled active Vault integration identities.', 'server',
+                                source_label='Vault Provider') }}
                 {{ metric_card.render('Approved KV v2 Mounts',
-                            summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
-                            'Explicit metadata collection scopes; no implicit mount discovery.', 'layers',
-                            source_label='Provider Configuration') }}
+                                summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
+                                'Explicit metadata collection scopes; no implicit mount discovery.', 'layers',
+                                source_label='Provider Configuration') }}
                 {{ metric_card.render('Committed Mounts',
-                            summary.committed_mount_count if summary.committed_mount_count is not none else 'Not Collected',
-                            'Scopes with successful retained inventory generations.', 'database-zap',
-                            source_label='Committed Inventory') }}
+                                summary.committed_mount_count if summary.committed_mount_count is not none else 'Not Collected',
+                                'Scopes with successful retained inventory generations.', 'database-zap',
+                                source_label='Committed Inventory') }}
                 {{ metric_card.render('Observed Secret Metadata',
-                            summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
-                            'Metadata record counts, never Secret values or inferred consumer coverage.', 'key-round',
-                            source_label='KV v2 Metadata') }}
+                                summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
+                                'Metadata record counts, never Secret values or inferred consumer coverage.', 'key-round',
+                                source_label='KV v2 Metadata') }}
             </div>
             {% call section_card.render('Collection Status',
-                'Provider readiness, approved scope, and inventory freshness remain independently verifiable.',
-                'shield-check') %}
+                    'Provider readiness, approved scope, and inventory freshness remain independently verifiable.',
+                    'shield-check') %}
                 <div role="status"
                      class="flex flex-wrap items-center justify-between gap-3">
                     <div class="min-w-0">
@@ -112,8 +112,8 @@
                 {% endif %}
             {% endcall %}
             {% call section_card.render('KV v2 Version Lifecycle Posture',
-                'Read-only classification of current-generation committed Vault KV v2 metadata; not rotation or consumer verification.',
-                'history') %}
+                    'Read-only classification of current-generation committed Vault KV v2 metadata; not rotation or consumer verification.',
+                    'history') %}
                 <div role="status" class="space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-sm font-semibold text-content-primary">{{ kv2_version_posture.label }}</p>
@@ -166,8 +166,8 @@
             {% endcall %}
             {% if current_user.has_permission('secrets_pki.view') %}
                 {% call section_card.render('Scoped Secret Registry',
-                    'Inspect committed metadata only under a separately approved exact Vault mount grant.',
-                    'lock-keyhole') %}
+                        'Inspect committed metadata only under a separately approved exact Vault mount grant.',
+                        'lock-keyhole') %}
                     <p class="text-sm leading-6 text-content-secondary">
                         The Registry requires a canonical Vault instance ID and an approved opaque
                         scope policy reference. No Secret names, paths or values are displayed.
@@ -180,8 +180,8 @@
                 {% endcall %}
             {% endif %}
             {% call section_card.render('Certificate & PKI Workspaces',
-                'Review evidence-qualified public certificates, issuer coverage and expiration windows.',
-                'certificate') %}
+                    'Review evidence-qualified public certificates, issuer coverage and expiration windows.',
+                    'certificate') %}
                 <nav class="flex flex-wrap gap-3" aria-label="PKI evidence navigation">
                     <a class="text-sm font-semibold text-kaori-primary hover:underline"
                        href="{{ url_for('secrets_pki.certificates') }}">Certificates</a>
@@ -192,8 +192,8 @@
                 </nav>
             {% endcall %}
             {% call section_card.render('Lease, Consumer & Governance Workspaces',
-                'Explore committed evidence and explicit gaps without inferring Lease or consumer state.',
-                'shield-check') %}
+                    'Explore committed evidence and explicit gaps without inferring Lease or consumer state.',
+                    'shield-check') %}
                 <nav class="flex flex-wrap gap-x-4 gap-y-2"
                      aria-label="Lifecycle evidence workspaces">
                     <a href="{{ url_for('secrets_pki.leases') }}"
@@ -205,11 +205,11 @@
                 </nav>
             {% endcall %}
             {{ section_intro.render('Additional Evidence Domains',
-                    'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
-                    supporting='Readiness is not inferred from a working Vault connection.') }}
+                        'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
+                        supporting='Readiness is not inferred from a working Vault connection.') }}
             {% call section_card.render('Stored Public Certificate Validity',
-                'Fresh, committed X.509 validity windows from approved Vault PKI stored-certificate observations.',
-                'calendar-clock') %}
+                    'Fresh, committed X.509 validity windows from approved Vault PKI stored-certificate observations.',
+                    'calendar-clock') %}
                 <div role="status" class="space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-sm font-semibold text-content-primary">{{ pki_validity.label }}</p>
@@ -269,8 +269,8 @@
             {% endcall %}
             <div class="grid gap-3 lg:grid-cols-2">
                 {% call section_card.render('Public PKI & Certificates',
-                    'PKI source reads and the retained issued-certificate register are separate capabilities.',
-                    'certificate') %}
+                        'PKI source reads and the retained issued-certificate register are separate capabilities.',
+                        'certificate') %}
                     <div role="status" class="space-y-3">
                         <p class="text-sm font-semibold text-content-primary">{{ pki_readiness.label }}</p>
                         <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
@@ -428,8 +428,8 @@
                     </div>
                 {% endcall %}
                 {% call section_card.render('Consumers & Rotation Assurance',
-                    'Confirmed workload adoption and dependency relationships require cross-domain evidence.',
-                    'waypoints') %}
+                        'Confirmed workload adoption and dependency relationships require cross-domain evidence.',
+                        'waypoints') %}
                     <p class="text-sm text-content-secondary">
                         No dependency or completed rotation is inferred from a Secret version counter.
                         Consumer correlation and renewal evidence remain pending.

@@ -80,55 +80,55 @@
             {% include "components/states/_blocked_state.html" %}
         {% else %}
             {{ section_intro.render('Version Lifecycle',
-                    'Current-generation KV v2 metadata from complete and fresh approved collections only.',
-                    supporting='Observed lifecycle states are provider evidence, not proof of an applied rotation policy or consumer adoption.') }}
+                        'Current-generation KV v2 metadata from complete and fresh approved collections only.',
+                        supporting='Observed lifecycle states are provider evidence, not proof of an applied rotation policy or consumer adoption.') }}
             {% if kv2_version_posture.status in ('ready', 'observed_empty') %}
                 <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {{ metric_card.render('Available', kv2_version_posture.available,
-                                    'Observed versions currently available according to committed Vault metadata.',
-                                    'check-circle', source_label='Committed KV v2') }}
+                                        'Observed versions currently available according to committed Vault metadata.',
+                                        'check-circle', source_label='Committed KV v2') }}
                     {{ metric_card.render('Scheduled Deletion', kv2_version_posture.scheduled_deletion,
-                                    'Deletion time is scheduled; consumer safety is not verified.',
-                                    'calendar-clock', source_label='Committed KV v2') }}
+                                        'Deletion time is scheduled; consumer safety is not verified.',
+                                        'calendar-clock', source_label='Committed KV v2') }}
                     {{ metric_card.render('Soft Deleted', kv2_version_posture.soft_deleted,
-                                    'Observed metadata indicates a recoverable deletion state, not active consumption.',
-                                    'archive', source_label='Committed KV v2') }}
+                                        'Observed metadata indicates a recoverable deletion state, not active consumption.',
+                                        'archive', source_label='Committed KV v2') }}
                     {{ metric_card.render('Destroyed', kv2_version_posture.destroyed,
-                                    'Observed version metadata indicates destroyed state.',
-                                    'shield-x', source_label='Committed KV v2') }}
+                                        'Observed version metadata indicates destroyed state.',
+                                        'shield-x', source_label='Committed KV v2') }}
                     {{ metric_card.render('Unknown State', kv2_version_posture.unknown,
-                                    'Ambiguous or incomplete version metadata remains unknown.',
-                                    'circle-help', source_label='Committed KV v2') }}
+                                        'Ambiguous or incomplete version metadata remains unknown.',
+                                        'circle-help', source_label='Committed KV v2') }}
                 </div>
             {% else %}
                 {% call section_card.render('Version Lifecycle Not Qualified',
-                    'Lifecycle metrics require a current, complete committed KV v2 observation generation.',
-                    'shield-alert') %}
+                        'Lifecycle metrics require a current, complete committed KV v2 observation generation.',
+                        'shield-alert') %}
                     <p role="status" class="text-sm text-status-warning-text">
                         {{ kv2_version_posture.label }}. Missing or stale evidence does not establish an empty or healthy lifecycle.
                     </p>
                 {% endcall %}
             {% endif %}
             {{ section_intro.render('Certificate Validity',
-                    'Public X.509 notBefore/notAfter windows from opted-in, source-complete Vault PKI stored-certificate observations.',
-                    supporting='These are current UTC validity facts, not revocation, chain-trust, issuance-completeness or endpoint-serving assurance.') }}
+                        'Public X.509 notBefore/notAfter windows from opted-in, source-complete Vault PKI stored-certificate observations.',
+                        supporting='These are current UTC validity facts, not revocation, chain-trust, issuance-completeness or endpoint-serving assurance.') }}
             {% if pki_validity.status == 'ready' %}
                 <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {{ metric_card.render('Expires Within 7 Days', pki_validity.expires_within_7d,
-                                    'Currently valid public certificates approaching expiry.', 'calendar-clock', source_label='Committed PKI') }}
+                                        'Currently valid public certificates approaching expiry.', 'calendar-clock', source_label='Committed PKI') }}
                     {{ metric_card.render('Expires in 8–30 Days', pki_validity.expires_8_to_30d,
-                                    'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
+                                        'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
                     {{ metric_card.render('Expired', pki_validity.expired,
-                                    'Observed public certificates past notAfter; revocation not assessed.', 'triangle-alert', source_label='Committed PKI') }}
+                                        'Observed public certificates past notAfter; revocation not assessed.', 'triangle-alert', source_label='Committed PKI') }}
                     {{ metric_card.render('Not Yet Valid', pki_validity.not_yet_valid,
-                                    'Observed notBefore lies in the future.', 'clock-3', source_label='Committed PKI') }}
+                                        'Observed notBefore lies in the future.', 'clock-3', source_label='Committed PKI') }}
                     {{ metric_card.render('Unknown Chronology', pki_validity.unknown,
-                                    'Invalid or unavailable validity chronology.', 'circle-help', source_label='Committed PKI') }}
+                                        'Invalid or unavailable validity chronology.', 'circle-help', source_label='Committed PKI') }}
                 </div>
             {% else %}
                 {% call section_card.render('Public Certificate Validity Not Qualified',
-                    'A complete, fresh and explicitly enabled stored public certificate collection is required.',
-                    'shield-alert') %}
+                        'A complete, fresh and explicitly enabled stored public certificate collection is required.',
+                        'shield-alert') %}
                     <p role="status" class="text-sm text-status-warning-text">
                         {{ pki_validity.label }}. Expiration counts are withheld rather than assumed to be zero.
                     </p>
@@ -141,8 +141,8 @@
                 </a>
             {% endif %}
             {% call section_card.render('Kubernetes TLS Consumer Correlation',
-                'Source-qualified public-certificate fingerprint overlap and Kubernetes TLS/Ingress evidence.',
-                'waypoints') %}
+                    'Source-qualified public-certificate fingerprint overlap and Kubernetes TLS/Ingress evidence.',
+                    'waypoints') %}
                 {% if delivery_overlap.status == 'permission_required' %}
                     <p role="status" class="text-sm text-status-warning-text">
                         Independent Kubernetes TLS Governance permission is required before any cross-domain correlation can be shown.
@@ -182,8 +182,8 @@
                 {% endif %}
             {% endcall %}
             {% call section_card.render('Evidence Boundaries &amp; Next Review',
-                'Use provider registration for configuration and canonical Jobs for collection; this workspace never retrieves secret values.',
-                'shield-check') %}
+                    'Use provider registration for configuration and canonical Jobs for collection; this workspace never retrieves secret values.',
+                    'shield-check') %}
                 <p class="text-sm leading-6 text-content-secondary">
                     Vault executes; KAORI normalizes committed evidence. No per-Secret paths, certificate identities, lease renewal
                     commands, provider mutations or resource-specific exports are available here.
