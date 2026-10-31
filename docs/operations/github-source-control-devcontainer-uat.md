@@ -20,6 +20,15 @@ Restart Flask, Celery workers and Beat after local flag changes. Register the Gi
 
 In the Dev Container running this UAT branch, sign in as an active local super-admin and open **Integrations → Source Control → GitHub**. The primary sidebar catalog and active-page/breadcrumb ownership reuse KAORI's existing Integrations navigation; no custom menu was added. GitHub is immediately available for registration and review without `SOURCE_CONTROL_GITHUB_UAT_ENABLED`.
 
+The Source Control navigation visibility check and the provider's `require_uat_access()`
+use the same pure local-database-super-admin predicate from
+`app/common/workspace_authorization.py` (issue #4146). This removes a reverse
+`Common → Integrations` import without relaxing the existing requirement for
+an active, authenticated local database super-admin with `integrations.manage`.
+The provider still owns availability and the fail-closed HTTP 403/404 checks;
+this shared identity decision does **not** implement the future #724
+resource-scoped authorization or prove human staging acceptance.
+
 If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
 ## 2026-10-25 — Source Control Ruff/djLint gate remediation
