@@ -371,3 +371,55 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
         assert dimensions['textOverflow'] != 'ellipsis', dimensions
     _assert_no_document_overflow(page)
     _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')
+
+
+@pytest.mark.parametrize(
+    ('route', 'workspace_id', 'heading'),
+    [
+        ('inventory', 'secrets-pki-inventory', 'Committed KV v2 Inventory Required'),
+        ('lifecycle', 'secrets-pki-lifecycle', 'Lifecycle Evidence Required'),
+    ],
+)
+def test_secrets_pki_operational_surfaces_1440_block_unqualified_evidence(
+    page: Page,
+    kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+    route: str,
+    workspace_id: str,
+    heading: str,
+) -> None:
+    # Only the read-model seams are controlled. The authorized route, actual
+    # shared components, browser layout and blocked evidence contracts execute.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 0, 'has_evidence': False},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_kv2_version_posture',
+        lambda: {'status': 'incomplete_evidence', 'label': 'Not Qualified'},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_stored_pki_validity_posture',
+        lambda: {'status': 'not_configured', 'label': 'Not Enabled'},
+    )
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_certificate_delivery_overlap',
+        lambda **_kwargs: {'status': 'source_unknown', 'label': 'Not Qualified'},
+    )
+    monkeypatch.setattr('app.secrets_pki.routes.pki_public_readiness', lambda: {})
+    monkeypatch.setattr('app.secrets_pki.routes.stored_pki_certificate_readiness', lambda: {})
+
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(f'{kaori_authenticated_base_url}/secrets-pki/{route}', wait_until='domcontentloaded')
+    assert response is not None and response.ok
+    surface = page.locator(f'#{workspace_id}')
+    expect(surface.locator('section.kaori-hero-shell')).to_be_visible()
+    expect(surface.locator('aside [data-kaori-blocked-state]')).to_be_visible()
+    blocker = surface.locator('section[data-kaori-blocked-state]')
+    expect(blocker.get_by_role('heading', name=heading)).to_be_visible()
+    assert surface.locator('[data-kaori-empty-state]').count() == 0
+    assert surface.locator('[data-kaori-hero-context-metric]').count() == 2
+    assert surface.locator('section.kaori-hero-shell').count() == 1
+    _assert_no_document_overflow(page)
+    _capture(page, f'secrets-pki-{route}-blocked', 'large-desktop')
