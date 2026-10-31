@@ -8,7 +8,7 @@ from dataclasses import asdict
 from flask import current_app
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.types import VaultConnectionInput
 from app.security.credentials import decrypt_credential, encrypt_credential
 
 _SALT = 'vault-registration-proof-v1'
