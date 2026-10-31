@@ -103,7 +103,7 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'components/pagination.html' in registry
     assert '[5, 10, 25, 50]' in registry
     assert 'hx-trigger="every 15s"' in registry
-    assert 'read_installation_inventory(' in routes
+    assert 'read_installation_inventory_for_current_session(' in routes
     assert 'authorized_installation_id=installation.id' in routes
     assert 'committed_generation == 0' in projection
     assert 'total=None' in projection
@@ -389,6 +389,7 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     detail = _read(GITHUB / 'uat_detail.html')
     inventory = _read(GITHUB / 'partials/_detail_inventory.html')
     routes = _read(ROUTES)
+    repository = _read(ROOT / 'app/integrations/source_control/source_control/providers/github/application/repository.py')
     modal = _read(ROOT / 'app/templates/integrations/components/_asset_owner_delete_modal.html')
 
     assert '"sync_queued":' not in detail
@@ -407,15 +408,17 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     assert 'def delete_connection(installation_id: int)' in routes
     assert 'provider_deletion_guard(' in routes
     assert 'if not FlaskForm().validate_on_submit():' in routes
-    assert "canonical.lifecycle_status = 'retired'" in routes
-    assert 'canonical.enabled = False' in routes
-    assert 'IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)' in routes
+    assert "canonical.lifecycle_status = 'retired'" in repository
+    assert 'canonical.enabled = False' in repository
+    assert 'IntegrationBinding.query.filter_by(integration_instance_id=canonical.id)' in repository
     assert 'db.session.delete(installation)' not in routes
     assert 'db.session.delete(canonical)' not in routes
     assert "event_type='source_control_connection_retired'" in routes
     assert "'github_source_uat.index'" in routes
-    assert "IntegrationInstance.lifecycle_status == 'active'" in routes
+    assert "IntegrationInstance.lifecycle_status == 'active'" in repository
     provider_routes = _read(
         ROOT / 'app/integrations/source_control/source_control/providers/github/application/routes.py'
     )
-    assert "lifecycle_status='active'" in provider_routes
+    assert "lifecycle_status='active'" in repository
+    assert '_github_committed_connection_projection(' in provider_routes
+    assert 'retire_github_connection(canonical)' in routes
