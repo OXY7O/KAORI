@@ -462,3 +462,39 @@ def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_co
     monkeypatch.setitem(check.__globals__, '_read', wrong_blocker)
     with pytest.raises(AssertionError, match='canonical _blocked_state'):
         check()
+
+
+def test_secrets_pki_inventory_and_lifecycle_block_without_qualified_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_evidence_readiness_gates']
+    check()
+    reader = check.__globals__['_read']
+    inventory = ROOT / 'app/templates/secrets_pki/inventory.html'
+    lifecycle = ROOT / 'app/templates/secrets_pki/lifecycle.html'
+
+    def invalid_inventory(path: Path) -> str:
+        source = reader(path)
+        if path == inventory:
+            return source.replace(
+                '{% include "components/states/_blocked_state.html" %}',
+                '{% include "components/states/_empty_state.html" %}',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', invalid_inventory)
+    with pytest.raises(AssertionError, match='canonical prerequisite blocker'):
+        check()
+
+    def invalid_lifecycle(path: Path) -> str:
+        source = reader(path)
+        if path == lifecycle:
+            return source.replace(
+                'page_hero.blocked_context_body(', 'page_hero.context_header(',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', invalid_lifecycle)
+    with pytest.raises(AssertionError, match='shared blocked Hero context'):
+        check()
