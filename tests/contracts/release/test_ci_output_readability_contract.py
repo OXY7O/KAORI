@@ -441,3 +441,14 @@ def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None
     assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
     assert 'printf "  %s\\n", substr($0, 1, 200)' in source
     assert 'Full diagnostic log: %s' in source
+
+
+def test_static_verifier_purpose_is_explained_without_claiming_provider_test_pass() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'verifier_purpose() {' in source
+    assert 'Purpose / scope' in source
+    assert '🎯 Scope:' in source
+    assert 'Source Control domain but is not a GitHub functional-test result' in source
+    assert 'REGISTERED is not TEST PASS' in source
+    assert '"$(verifier_purpose "$group" "$label")" "$command_display"' in source
