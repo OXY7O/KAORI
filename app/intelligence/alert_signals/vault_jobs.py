@@ -21,7 +21,7 @@ from app.intelligence.alert_signals.vault_source import (
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution, JobPolicy
-from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_STANDARD
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.execution import JobCancellationRequested, JobExecutionContext
 
 JOB_KEY = 'secrets_pki.vault_alerts.observe'
