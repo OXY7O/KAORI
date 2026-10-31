@@ -11,11 +11,13 @@ import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.extensions.db import db
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.webhook import (
     GitHubWebhookError,
@@ -117,3 +119,40 @@ def claim_verified_delivery(
             raise GitHubWebhookError('GitHub webhook delivery collision could not be verified.') from None
         return WebhookClaim(verified.delivery_id, installation.id, False)
     return WebhookClaim(verified.delivery_id, installation.id, True)
+
+
+def stage_signed_github_webhook_delivery(
+    *, native_installation_id: int, payload: bytes, headers: Mapping[str, str]
+) -> None:
+    """Commit only an authenticated, installation-scoped GitHub transport envelope.
+
+    The installation identifier is an untrusted hint until the existing
+    per-application HMAC verifier proves the original request bytes.
+    An invalid/failed claim always resets the scoped transaction.
+    """
+    candidates = (
+        SourceInstallation.query.filter_by(
+            host_key='github.com',
+            provider_key='github',
+            native_installation_id=str(native_installation_id),
+        )
+        .limit(2)
+        .all()
+    )
+    if len(candidates) != 1:
+        raise GitHubWebhookError('GitHub installation could not be uniquely resolved.')
+
+    committed = False
+    try:
+        claim_verified_delivery(
+            installation=candidates[0],
+            payload=payload,
+            headers=headers,
+            session=cast(Session, db.session),
+        )
+        db.session.commit()
+        committed = True
+    finally:
+        # Failed ingress may never leave an authenticated envelope uncommitted.
+        if not committed:
+            db.session.rollback()
