@@ -380,7 +380,6 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
     _capture(page, 'secrets-pki-overview-blocked', 'large-desktop')
 
 
-
 @pytest.mark.parametrize(
     ('workspace', 'blocked_title', 'hidden_metric'),
     [

@@ -500,7 +500,6 @@ def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_co
         check()
 
 
-
 @pytest.mark.parametrize('workspace', ['inventory', 'lifecycle'])
 def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
     workspace: str, monkeypatch: pytest.MonkeyPatch
@@ -515,9 +514,7 @@ def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
         def changed(path: Path) -> str:
             source = original_read(path)
             if path == candidate:
-                return source.replace(
-                    '{% include "components/states/_blocked_state.html" %}', replacement
-                )
+                return source.replace('{% include "components/states/_blocked_state.html" %}', replacement)
             return source
 
         return changed

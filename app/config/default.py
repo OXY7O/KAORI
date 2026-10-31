@@ -350,7 +350,9 @@ class Config:
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
             'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
             'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_pki': {'queue': 'inventory'},
-            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_stored_certificates': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_stored_certificates': {
+                'queue': 'inventory'
+            },
             'app.integrations.source_control.tasks.sync_source_repositories': {'queue': 'inventory'},
             'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
