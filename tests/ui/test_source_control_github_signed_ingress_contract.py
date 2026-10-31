@@ -10,8 +10,8 @@ import pytest
 from flask import Flask
 
 from app.extensions.limiter import limiter
-from app.integrations.source_control.source_control.providers.github.application import routes
 from app.integrations.source_control.source_control.providers.github import webhook_inbox
+from app.integrations.source_control.source_control.providers.github.application import routes
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
 
 
