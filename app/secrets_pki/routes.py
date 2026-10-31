@@ -166,6 +166,8 @@ def lifecycle() -> ResponseReturnValue:
     """Capability-level, cross-domain committed evidence without Secret identity reads."""
     return render_template(
         'secrets_pki/lifecycle.html',
+        summary=build_secrets_pki_operational_summary(),
+        can_manage_integrations=current_user.has_permission('integrations.manage'),
         kv2_version_posture=build_kv2_version_posture(),
         pki_validity=build_stored_pki_validity_posture(),
         delivery_overlap=build_certificate_delivery_overlap(
