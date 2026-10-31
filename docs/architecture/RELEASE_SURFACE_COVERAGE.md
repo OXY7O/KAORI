@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **74 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **76 navigation links** across the authenticated application shell and **36 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. The **Foundation & Governance → Release Surface Coverage** verifier first validates release ownership and stores the successful source-registration report. Once the existing named verifiers complete successfully, **Domain & Capability Contracts → Registered capability evidence** displays those already-validated registry rows, making Artifact Registry, Object Storage Inventory, Tenant, provider integrations, and other domains visible under the operator-facing capability group without invoking the verifier twice or increasing its check count. Each line is explicitly labeled `REGISTERED` and includes the release-surface lock state, test-module count, and owned static verifier filename(s), or `none (contract tests only)` when no standalone verifier is declared. The output is a **source-registration inventory**, not a per-capability test execution report. Its placement within Domain & Capability Contracts does not mean every surface has a standalone static verifier or that those contract modules ran as part of the static verifier group. A missing or malformed captured registry report fails closed. Only the actual named verifier, Contract & Migration Safety, Functional, Security, and Runtime & DAST jobs can establish their respective PASS/FAIL states. Counts and `REGISTERED` prove that executable test modules are registered; **they do not prove behavioral correctness or UAT PASS**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
 
@@ -23,7 +23,7 @@ Each declared release-evidence directory must contain at least one executable `t
 | Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
-| Integrations | LOCKED | Platform Operations → Integrations | `verify_integrations_final_lock.py` |
+| Integrations | LOCKED | Platform Operations → Integrations → Orchestration, Observability, Storage, Registry, Secrets Management, Source Control | `verify_integrations_final_lock.py` and Integration contracts |
 | Platform Operations | LOCKED | Platform Operations | `verify_platform_operations_final_lock.py` |
 | Access | LOCKED | Administration → Access | `verify_access_final_lock.py` |
 | Settings | LOCKED | Administration → Settings | `verify_settings_final_lock.py` |
@@ -132,3 +132,10 @@ Artifact Registry
 ```
 
 The Artifact Registry surface is **BASELINE LOCKED** while the consolidated staging candidate proceeds through staging/UAT. This preserves the existing provider-first integration taxonomy without treating Harbor as a KAORI product domain.
+
+
+## Secrets Management and Source Control Admission
+
+The existing Integrations release surface owns the two domain workspaces `integrations.secrets_management` and `integrations.source_control`. Their provider-facing blueprints remain nested under Integrations rather than separate top-level KAORI products: `vault_bp`, `secrets_pki_bp`, `security_posture_bp`, `source_control_bp`, `github_source_bp`, and `github_uat_bp`.
+
+This release-coverage ownership records registered application routes and contract evidence only. It neither grants provider credentials nor establishes UAT/production readiness; exact-head static, functional, security, runtime/DAST, immutable artifact and hosted acceptance gates remain authoritative.
