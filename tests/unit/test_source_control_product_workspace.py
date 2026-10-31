@@ -106,7 +106,7 @@ def test_repository_scope_rejects_malformed_installation_id_without_query(monkey
     )
     monkeypatch.setattr(
         routes,
-        'read_installation_inventory',
+        'read_installation_inventory_for_current_session',
         lambda *_args, **_kwargs: pytest.fail('Unqualified inventory was queried'),
     )
     if not value.strip():
@@ -134,7 +134,7 @@ def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
     )
     monkeypatch.setattr(
         routes,
-        'read_installation_inventory',
+        'read_installation_inventory_for_current_session',
         lambda *_args, **_kwargs: pytest.fail('Cross-scope inventory was queried'),
     )
     with app.test_request_context('/source-control/repositories?installation_id=12'):
