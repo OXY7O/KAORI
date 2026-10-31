@@ -43,7 +43,7 @@ def admitted(monkeypatch):
 
 
 def _delivery(identity, state):
-    return SimpleNamespace(id=identity, processing_state=state)
+    return SimpleNamespace(id=identity, processing_state=state, attempt_count=0, last_attempt_at=None)
 
 
 def test_provider_planned_must_not_query_database(monkeypatch):
