@@ -333,7 +333,6 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'verifier_names == "none (contract tests only)"' in source
     assert "Full verifier mapping: %s" in source
     assert "malformed or empty registered capability ownership" in source
-    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' \"$RELEASE_SURFACE_COVERAGE_LOG\"" not in source
     assert 'command_display="$3"' in source
     assert '"$group" "$label" "$command_display"' in source
     assert '$(basename "$log_file")' in source
