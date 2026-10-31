@@ -259,7 +259,14 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
 def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_is_shared(
     page: Page,
     kaori_authenticated_base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Exercise the preexisting evidence-card geometry with a registered source.
+    # The no-source blocker has its own deterministic route regression below.
+    monkeypatch.setattr(
+        'app.secrets_pki.routes.build_secrets_pki_operational_summary',
+        lambda: {'provider_count': 1},
+    )
     # Rendered geometry, not CSS nowrap/ellipsis, is the final density authority.
     page.set_viewport_size({'width': 1440, 'height': 900})
     _login(page, kaori_authenticated_base_url)
