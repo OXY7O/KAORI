@@ -21,19 +21,23 @@
         data_authority='Committed KAORI State',
         state='normal' if summary.has_evidence else 'blocked',
         blocked_title='Secrets & PKI Inventory Not Ready',
-        blocked_info='Register a Vault source, approve KV v2 metadata mounts, and run the registered inventory job.'
+        blocked_info='Qualify Vault and collect KV v2 inventory.'
         ) }}
         {% if not summary.has_evidence %}
-            {% set empty_state_icon = "key-round" %}
-            {% set empty_state_label = "Setup Required" %}
-            {% set empty_state_variant = "panel" %}
-            {% set empty_state_title = "Committed Secret Inventory Required" %}
-            {% set empty_state_description = "No usable committed Vault KV v2 inventory is available. Missing evidence is not proof of zero Secrets, healthy rotation, or valid PKI." %}
-            {% set empty_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
-            {% set empty_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
-            {% set empty_state_permission_granted = can_manage_integrations %}
-            {% set empty_state_show_admin_required = not can_manage_integrations %}
-            {% include "components/states/_empty_state.html" %}
+            {% set blocked_state_icon = 'key-round' %}
+            {% set blocked_state_label = 'Setup Required' %}
+            {% set blocked_state_title = 'Committed KV v2 Inventory Required' %}
+            {% set blocked_state_description = 'No qualified Vault KV v2 inventory is committed. Missing evidence does not prove zero Secrets, healthy rotation or valid PKI.' %}
+            {% set blocked_state_steps = [
+                'Register an active Vault source' if not summary.provider_count else 'Review the Vault source',
+                'Approve KV v2 metadata mounts',
+                'Run the Inventory Job'
+            ] %}
+            {% set blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set blocked_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
+            {% set blocked_state_permission_granted = can_manage_integrations %}
+            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% include "components/states/_blocked_state.html" %}
         {% else %}
             {% set scope_context %}
                 <span class="inline-flex flex-wrap items-center gap-3">
