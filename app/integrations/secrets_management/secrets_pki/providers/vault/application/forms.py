@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.types import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
     parse_approved_pki_mounts,
@@ -16,23 +15,6 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.transport i
 )
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.vault import VaultInstance
-
-
-@dataclass(frozen=True, slots=True)
-class VaultConnectionInput:
-    name: str
-    environment: str
-    description: str | None
-    endpoint: str
-    namespace: str | None
-    auth_mount: str
-    role_id: str
-    secret_id: str
-    timeout: int
-    enabled: bool
-    kv2_mounts: tuple[str, ...] = ()
-    pki_mounts: tuple[str, ...] = ()
-    pki_stored_certs_enabled: bool = False
 
 
 class VaultConnectionForm(FlaskForm):
