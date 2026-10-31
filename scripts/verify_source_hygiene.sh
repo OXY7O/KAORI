@@ -28,6 +28,12 @@ checked=0
 
 # Linked Git worktrees use a .git *file*; only unpacked archives lack Git metadata.
 if [[ -d .git || -f .git ]]; then
+    # A broken/spoofed .git pointer must not turn the tracked-source check into
+    # a vacuous PASS when git ls-files would otherwise yield no candidates.
+    if [[ "$(git -c safe.directory="$ROOT" rev-parse --is-inside-work-tree 2>/dev/null || true)" != 'true' ]]; then
+        printf 'ERROR: Git metadata is present but no valid working tree was found.\n' >&2
+        exit 1
+    fi
     mapfile -t candidates < <(git -c safe.directory="$ROOT" ls-files)
     source_label='tracked source'
 else
