@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import cast
 
 from flask import Blueprint, Response, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
