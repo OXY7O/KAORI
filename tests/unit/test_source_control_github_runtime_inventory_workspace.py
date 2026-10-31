@@ -389,7 +389,9 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     detail = _read(GITHUB / 'uat_detail.html')
     inventory = _read(GITHUB / 'partials/_detail_inventory.html')
     routes = _read(ROUTES)
-    repository = _read(ROOT / 'app/integrations/source_control/source_control/providers/github/application/repository.py')
+    repository = _read(
+        ROOT / 'app/integrations/source_control/source_control/providers/github/application/repository.py'
+    )
     modal = _read(ROOT / 'app/templates/integrations/components/_asset_owner_delete_modal.html')
 
     assert '"sync_queued":' not in detail
