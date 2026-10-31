@@ -18,6 +18,12 @@ The Vault provider connection remains under
   `app/dashboards/common/operational.py` (architecture issue #4150). This
   avoids a Secrets & PKI → Dashboards reverse import without changing active
   tabs or HTMX/server selection semantics.
+- Overview's optional Reporting catalog metadata comes from the existing
+  `reports/coverage.yaml` declaration through `app/definitions/report_coverage.py`
+  (architecture issue #4149). Reports continues to re-export the *same*
+  immutable catalog objects and independently controls report execution.
+  `reports.view` still gates access to the metadata; planned reports never
+  become executable merely by being listed.
 - `GET /secrets-pki/inventory`: safe, aggregated KV v2 metadata-only source
   coverage, first/last observed counts, and committed collection readiness.
 - Both routes require server-side `secrets_pki.view` (HV-13, #2597).
