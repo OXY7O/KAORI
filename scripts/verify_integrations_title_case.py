@@ -47,6 +47,9 @@ def _is_capitalized_or_technical(word: str) -> bool:
 def _title_case_error(text: str) -> str | None:
     words = WORD.findall(text)
     for index, word in enumerate(words):
+        # Preserve the canonical Vault KV v2 technical version, not a generic casing waiver.
+        if word == 'v2' and index > 0 and words[index - 1] == 'KV':
+            continue
         lowered = word.lower()
         is_internal = 0 < index < len(words) - 1
         if is_internal and lowered in MINOR_WORDS:
@@ -83,6 +86,10 @@ class _VisibleLabelParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if self._stack:
+            # WTForms renders checkbox markup via Jinja, not literal <input> HTML here.
+            # Apply the approved full-sentence consent exception only to this known checkbox.
+            if '{{ form.pki_stored_certs_enabled(' in data:
+                self.checkbox_label_lines.update(line for tag, line, _ in self._stack if tag == 'label')
             self._stack[-1][2].append(data)
 
 
