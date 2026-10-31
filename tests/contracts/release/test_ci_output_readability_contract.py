@@ -326,6 +326,14 @@ def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs
     assert 'Registered capability evidence is a separate source-ownership inventory' in source
     assert 'Registered capability ownership (not executed tests)' in source
     assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in source
+    assert source.count("sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'") == 1
+    assert "Registered capability ownership" in source
+    assert "Source ownership only — NOT executed tests or Staging Acceptance." in source
+    assert 'registered_modules += module_count' in source
+    assert 'verifier_names == "none (contract tests only)"' in source
+    assert "Full verifier mapping: %s" in source
+    assert "malformed or empty registered capability ownership" in source
+    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' \"$RELEASE_SURFACE_COVERAGE_LOG\"" not in source
     assert 'command_display="$3"' in source
     assert '"$group" "$label" "$command_display"' in source
     assert '$(basename "$log_file")' in source
