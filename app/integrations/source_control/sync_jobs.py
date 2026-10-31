@@ -18,6 +18,8 @@ from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_
 
 JOB_KEY = 'source_control.repository.sync'
 OPERATION = 'sync_source_control_repositories'
+
+
 class NoEligibleSourceControlTargets(RuntimeError):
     """There are no admitted and validated GitHub App installation grants."""
 
