@@ -293,18 +293,39 @@ def main() -> int:
     # retain content width. This is allowed by the standard and avoids giant
     # Apply/Clear buttons.
     bucket_filter = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
+    bucket_header = bucket_filter.partition('</header>')[0]
+    bucket_form = bucket_filter.partition('<form id="object-storage-bucket-table-filter"')[2].partition('</form>')[0]
     for token in (
-        'class="block min-w-0 flex-1" for="object-storage-bucket-search"',
-        'class="flex flex-none flex-wrap items-center gap-2"',
+        'class="{{ table_ui.filter_layout_classes() }} {{ table_ui.inventory_filter_bar_classes() }}"',
+        '<label for="object-storage-bucket-search"',
+        'class="{{ table_ui.filter_label_classes() }}">Search Bucket</label>',
+        "table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name',",
+        "id='object-storage-bucket-search')",
+        'change[event.target.name !== \'bucket_q\']',
     ):
         require(
-            token in bucket_filter,
-            f'Object Storage bucket filter missing action-aware fill token: {token}',
+            token in bucket_form,
+            f'Object Storage bucket filter must use canonical shared form geometry: {token}',
+            errors,
+        )
+    for token in (
+        'class="flex shrink-0 items-center justify-end"',
+        'registry_ui.clear_filters_action(',
+        'lead=false',
+    ):
+        require(
+            token in bucket_header,
+            f'Object Storage bucket header must own compact Clear Filters: {token}',
             errors,
         )
     require(
-        'sm:max-w-md' not in bucket_filter,
-        'Object Storage bucket search must not float at a capped desktop width.',
+        'registry_ui.clear_filters_action(' not in bucket_form,
+        'Object Storage bucket Clear Filters must remain in the header, not occupy a filter field.',
+        errors,
+    )
+    require(
+        'sm:max-w-md' not in bucket_filter and 'Apply Filter' not in bucket_form,
+        'Object Storage bucket filters must fill the row without capped fields or Apply buttons.',
         errors,
     )
 
