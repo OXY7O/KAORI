@@ -23,14 +23,18 @@ from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.application.forms import (
     GitHubAppConnectionForm,
 )
-from app.integrations.source_control.source_control.providers.github.application.repository import (
-    github_committed_connection_projection as _github_committed_connection_projection,
-    github_committed_coverage_projection as _github_committed_coverage_projection,
-    github_connection_counts,
-)
 from app.integrations.source_control.source_control.providers.github.application.registration_proof import (
     issue_github_registration_proof,
     verify_github_registration_proof,
+)
+from app.integrations.source_control.source_control.providers.github.application.repository import (
+    github_committed_connection_projection as _github_committed_connection_projection,
+)
+from app.integrations.source_control.source_control.providers.github.application.repository import (
+    github_committed_coverage_projection as _github_committed_coverage_projection,
+)
+from app.integrations.source_control.source_control.providers.github.application.repository import (
+    github_connection_counts,
 )
 from app.integrations.source_control.source_control.providers.github.registration import (
     save_tested_connection,
