@@ -255,7 +255,6 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
     _capture(page, 'authenticated-shell-top-boundary', viewport_name)
 
 
-
 def test_secrets_pki_lifecycle_1440_hero_context_is_single_line_and_navigation_is_shared(
     page: Page,
     kaori_authenticated_base_url: str,
