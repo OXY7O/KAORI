@@ -405,7 +405,9 @@ def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
         source = read(path)
         if path == lifecycle_path:
             assert 'lifecycle_navigation.render("lifecycle")' in source
-            return source.replace('lifecycle_navigation.render("lifecycle")', "lifecycle_navigation.render('lifecycle')")
+            return source.replace(
+                'lifecycle_navigation.render("lifecycle")', "lifecycle_navigation.render('lifecycle')"
+            )
         return source
 
     monkeypatch.setitem(check.__globals__, '_read', legacy_single_quotes)
