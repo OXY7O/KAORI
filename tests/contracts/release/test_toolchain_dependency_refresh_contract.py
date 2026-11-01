@@ -55,7 +55,6 @@ def test_pyright_is_reproducibly_pinned() -> None:
     assert 'pyright>=1.1.400,<2' not in dev_lock
 
 
-
 def test_development_pdf_security_dependency_is_reproducibly_pinned() -> None:
     dev_in = read('requirements/dev.in')
     dev_lock = read('requirements/dev.txt')
