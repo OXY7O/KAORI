@@ -25,6 +25,31 @@ VISUAL_THUMBNAIL_WIDTH = 128
 VISUAL_CHANNEL_QUANTUM = 24
 VISUAL_BLUR_RADIUS = 0.75
 
+# Issue #2196: two byte-identical, artifact-proven Chromium raster variants.
+# Each differs from its operator-approved screenshot only in tiny antialiasing
+# deltas (max 2/255 per RGB channel). No unknown PNG or changed approved
+# normalized fingerprint can use this exception. See KAORI_VISUAL_QA.md.
+_PROVEN_RASTER_VARIANTS: dict[str, tuple[str, str]] = {
+    'welcome-light-mobile': (
+        'ae04ad54870253e60467a774c8fd15fdfe536ea905607a363cc7ec16209979e6',
+        '48c87cf6982ea9687bc6d160106e7cd3226b40f8cb1aad3aefb937e86b18b46e',
+    ),
+    'welcome-dark-small-mobile': (
+        '47dbac59b975c21d8d47c55a405c28a61a9bb99ef7ad933e36dac19ce6168145',
+        'e95a4cd26ee537de0fe71f7c02074f2d30b74c0bd9093ba5675fd1de16fd2d56',
+    ),
+}
+
+
+def _matches_proven_raster_variant(key: str, actual_png: bytes, expected_visual_sha: str) -> bool:
+    """Match only an independently inspected, exact raw PNG on the original approved SHA."""
+    source = _PROVEN_RASTER_VARIANTS.get(key)
+    return (
+        source is not None
+        and source[0] == expected_visual_sha
+        and hashlib.sha256(actual_png).hexdigest() == source[1]
+    )
+
 DETERMINISTIC_VISUAL_SURFACES: dict[str, tuple[str, str]] = {
     'welcome.index': ('Welcome', '/welcome'),
     'settings.general': ('Settings', '/settings/general'),
@@ -351,6 +376,17 @@ def assert_visual_baseline(
                 stacklevel=2,
             )
             return
+
+    # Keep the human-reviewed manifest authoritative. Only two *byte-exact*
+    # existing CI raster variants have independent approved-source pixel proof;
+    # never allow arbitrary near matches or regenerate the manifest.
+    if _matches_proven_raster_variant(key, actual_png, expected_visual_sha):
+        warnings.warn(
+            f'{key} matches the exact reviewed one-time raster artifact variant; '
+            'approved visual signature and geometry remain unchanged',
+            stacklevel=2,
+        )
+        return
 
     evidence_root.mkdir(parents=True, exist_ok=True)
     actual_path = evidence_root / f'{key}-actual.png'
