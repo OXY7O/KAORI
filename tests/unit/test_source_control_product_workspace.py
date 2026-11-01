@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from werkzeug.exceptions import Forbidden, NotFound
 
+from app.common.workspace_authorization import local_super_admin as shared_local_super_admin
 from app.common.workspace_navigation import _visible_capabilities
 from app.common.workspace_navigation_catalog import WORKSPACES
 from app.models.integration import IntegrationInstance
@@ -168,15 +169,26 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     workspace = workspaces[0]
     assert workspace.section == 'Infrastructure'
     assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories']
-    user = SimpleNamespace(is_authenticated=True, has_permission=lambda _: True)
-    monkeypatch.setattr(uat_access, 'local_super_admin', lambda user: False)
+    assert uat_access.local_super_admin is shared_local_super_admin
+    user = SimpleNamespace(
+        is_authenticated=True,
+        is_super_admin=False,
+        auth_source='database',
+        is_active=True,
+        has_permission=lambda _: True,
+    )
     assert _visible_capabilities(workspace, user) == ()
-    monkeypatch.setattr(uat_access, 'local_super_admin', lambda user: True)
+    monkeypatch.setattr(user, 'is_super_admin', True)
     assert len(_visible_capabilities(workspace, user)) == 2
+    monkeypatch.setattr(user, 'auth_source', 'sso')
+    assert _visible_capabilities(workspace, user) == ()
+    monkeypatch.setattr(user, 'auth_source', 'database')
     # The product navigation remains available for UAT actors even if the
     # first provider has not yet completed availability/readiness.
     monkeypatch.setattr(uat_access, 'provider_kind', lambda *_: SimpleNamespace(available=False))
     assert len(_visible_capabilities(workspace, user)) == 2
+    monkeypatch.setattr(user, 'has_permission', lambda _: False)
+    assert _visible_capabilities(workspace, user) == ()
 
 
 def test_product_templates_use_existing_source_control_inventory_contract():
