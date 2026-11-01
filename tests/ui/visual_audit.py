@@ -220,6 +220,53 @@ def _matches_single_white_quantization_edge(
     return False
 
 
+def _matches_single_quantization_edge(
+    raw_thumbnail: bytes,
+    normalized_thumbnail: bytes,
+    expected_sha: str,
+) -> bool:
+    """Allow one one-level raster rounding edge only when it recreates the reviewed SHA.
+
+    Never ignore a visual difference, accept multiple channel differences, or
+    weaken the dimension check. The alternate fingerprint must match exactly.
+    """
+    if len(raw_thumbnail) != len(normalized_thumbnail):
+        return False
+
+    quantum = VISUAL_CHANNEL_QUANTUM
+    boundary = quantum // 2
+    candidate = bytearray(normalized_thumbnail)
+    for index, raw_value in enumerate(raw_thumbnail):
+        offset = raw_value % quantum
+        if offset not in (boundary - 1, boundary):
+            continue
+
+        current = min(255, ((raw_value + boundary) // quantum) * quantum)
+        if normalized_thumbnail[index] != current:
+            continue
+        adjacent = raw_value + 1 if offset == boundary - 1 else raw_value - 1
+        alternative = min(255, ((adjacent + boundary) // quantum) * quantum)
+        if alternative == current:
+            continue
+
+        candidate[index] = alternative
+        if hashlib.sha256(candidate).hexdigest() == expected_sha:
+            return True
+        candidate[index] = current
+    return False
+
+
+def _matches_single_raster_quantization_edge(image: Image.Image, expected_sha: str) -> bool:
+    rgb = image.convert('RGB').filter(ImageFilter.GaussianBlur(VISUAL_BLUR_RADIUS))
+    thumbnail_height = max(1, round(rgb.height * VISUAL_THUMBNAIL_WIDTH / rgb.width))
+    raw_thumbnail = rgb.resize(
+        (VISUAL_THUMBNAIL_WIDTH, thumbnail_height),
+        Image.Resampling.LANCZOS,
+    )
+    normalized = build_visual_thumbnail(image)
+    return _matches_single_quantization_edge(raw_thumbnail.tobytes(), normalized.tobytes(), expected_sha)
+
+
 def _matches_white_raster_rounding_noise(image: Image.Image, expected_sha: str) -> bool:
     rgb = image.convert('RGB').filter(ImageFilter.GaussianBlur(VISUAL_BLUR_RADIUS))
     thumbnail_height = max(1, round(rgb.height * VISUAL_THUMBNAIL_WIDTH / rgb.width))
@@ -294,6 +341,13 @@ def assert_visual_baseline(
             warnings.warn(
                 f'{key} has one near-white quantization-edge rendering difference; '
                 'reviewed visual baseline and geometry otherwise match',
+                stacklevel=2,
+            )
+            return
+        if _matches_single_raster_quantization_edge(image, expected_visual_sha):
+            warnings.warn(
+                f'{key} has one non-white quantization-edge rendering difference; '
+                'reviewed SHA and geometry otherwise match',
                 stacklevel=2,
             )
             return

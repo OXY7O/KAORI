@@ -89,6 +89,16 @@ The source-controlled `tests/ui/baselines/authenticated-visual.json` manifest st
 
 The signature is produced from a reduced, quantized visual thumbnail. This intentionally removes low-value raster/PNG encoding noise while preserving visible composition changes.
 
+For proven one-channel 8-bit rasterization rounding at an existing 24-unit
+thumbnail quantization boundary, the shared Visual QA assertion may reconstruct
+**only one** alternate channel bucket and accept it **only** when the
+reconstructed thumbnail hash matches the unchanged human-approved signature
+exactly. Image dimensions must match first; two changed channels, changes away
+from an exact one-level threshold, and layout/content drift remain failures.
+The exception emits an explicit test warning. This is not permission to update
+baselines, loosen viewport geometry or discard screenshots. Real Welcome mobile
+light/dark evidence and the repeatability investigation are tracked under #2196.
+
 Ordinary CI must never rewrite this manifest.
 
 The only update control is:
