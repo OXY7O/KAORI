@@ -82,6 +82,7 @@ def test_reports_overview_uses_operational_reading_and_contract_boundary_not_gen
 def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_service() -> None:
     service = read('app/reports/overview/service.py')
     catalog = read('app/reports/catalog.py')
+    definitions = read('app/definitions/report_coverage.py')
     document = yaml.safe_load(read('app/definitions/catalogs/reports/coverage.yaml'))
 
     assert document['schema_version'] == 1
@@ -94,7 +95,9 @@ def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_se
     assert 'SERVER_REPORT_TYPE_COVERAGE' not in service
     assert 'HCI_REPORT_TYPE_COVERAGE' not in service
     assert 'REPORT_COVERAGE_DOMAINS' in service
-    assert "load_definition_document('reports/coverage.yaml'" in catalog
+    assert "load_definition_document('reports/coverage.yaml'" in definitions
+    assert 'REPORT_COVERAGE_DOMAINS as REPORT_COVERAGE_DOMAINS' in catalog
+    assert "load_definition_document('reports/coverage.yaml'" not in catalog
 
 
 def test_reports_overview_surfaces_object_storage_without_overclaiming_generate_support() -> None:
