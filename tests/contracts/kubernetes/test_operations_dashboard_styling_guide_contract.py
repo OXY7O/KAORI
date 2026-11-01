@@ -16,6 +16,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
     routes = read('app/kubernetes/dashboard/routes.py')
     application_contract = read('app/dashboards/common/operational.py')
+    shared_tabs = read('app/common/operational_tabs.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
     framework = read('app/templates/components/operational_dashboard_workspace.html')
@@ -31,9 +32,10 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
     assert 'normalize_operational_tab' in routes
-    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in application_contract
+    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in shared_tabs
+    assert 'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS' in application_contract
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
-        assert tab in application_contract
+        assert tab in shared_tabs
     assert "active_tab: str = 'overview'" in schema
 
 
