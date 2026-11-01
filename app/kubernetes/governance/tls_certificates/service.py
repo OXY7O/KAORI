@@ -7,7 +7,7 @@ from math import ceil
 from typing import Any
 
 from flask import current_app
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, func, or_, tuple_
 
 from app.extensions.db import db
 from app.kubernetes.governance.tls_certificates.certificate import (
@@ -601,40 +601,56 @@ def sync_tls_certificates_for_cluster(
     if progress_callback is not None:
         progress_callback(76, f'Reconciling TLS inventory records for {cluster.name}.')
 
-    existing = {
-        (record.namespace, record.secret_name): record
-        for record in TLSCertificateInventory.query.filter(TLSCertificateInventory.cluster_id == cluster.id).all()
-    }
-    seen: set[tuple[str, str]] = set()
+    # Reconcile in bounded ORM batches. The collected_at marker is an exact
+    # successful generation identity used for scoped stale pruning; it is
+    # committed atomically with the inventory rows and collection state.
+    generation = datetime.now(UTC)
     total_records = len(records)
+    seen: set[tuple[str, str]] = set()
+    batch_size = 100
+    for start in range(0, total_records, batch_size):
+        payloads = records[start : start + batch_size]
+        keys = [(item['namespace'], item['secret_name']) for item in payloads]
+        if len(keys) != len(set(keys)) or seen.intersection(keys):
+            db.session.rollback()
+            raise ValueError('TLS collection returned duplicate Secret identities; inventory was not changed.')
+        seen.update(keys)
+        existing = {
+            (record.namespace, record.secret_name): record
+            for record in TLSCertificateInventory.query.filter(
+                TLSCertificateInventory.cluster_id == cluster.id,
+                tuple_(TLSCertificateInventory.namespace, TLSCertificateInventory.secret_name).in_(keys),
+            ).all()
+        }
+        for offset, payload in enumerate(payloads, start=start + 1):
+            key = (payload['namespace'], payload['secret_name'])
+            record = existing.get(key)
+            if record is None:
+                record = _new_tls_inventory_record(
+                    cluster_id=cluster.id,
+                    namespace=payload['namespace'],
+                    secret_name=payload['secret_name'],
+                )
+                db.session.add(record)
+            for field, value in payload.items():
+                if field != 'collected_at':
+                    setattr(record, field, value)
+            record.collected_at = generation
+            if progress_callback is not None:
+                reconcile_percent = 76 + int((offset / total_records) * 14)
+                progress_callback(
+                    reconcile_percent,
+                    f'Reconciled {offset} of {total_records} TLS inventory records for {cluster.name}.',
+                )
+        # Flush each bounded page rather than holding all dirty ORM objects.
+        db.session.flush()
 
-    for index, payload in enumerate(records, start=1):
-        key = (payload['namespace'], payload['secret_name'])
-        seen.add(key)
-        record = existing.get(key)
-        if record is None:
-            record = _new_tls_inventory_record(
-                cluster_id=cluster.id,
-                namespace=payload['namespace'],
-                secret_name=payload['secret_name'],
-            )
-            db.session.add(record)
-
-        for field, value in payload.items():
-            setattr(record, field, value)
-
-        if progress_callback is not None and total_records:
-            reconcile_percent = 76 + int((index / total_records) * 14)
-            progress_callback(
-                reconcile_percent,
-                f'Reconciled {index} of {total_records} TLS inventory records for {cluster.name}.',
-            )
-
-    stale_records = [record for key, record in existing.items() if key not in seen]
     if progress_callback is not None:
         progress_callback(93, f'Removing stale TLS inventory records for {cluster.name}.')
-    for record in stale_records:
-        db.session.delete(record)
+    db.session.query(TLSCertificateInventory).filter(
+        TLSCertificateInventory.cluster_id == cluster.id,
+        TLSCertificateInventory.collected_at != generation,
+    ).delete(synchronize_session=False)
 
     if progress_callback is not None:
         progress_callback(97, f'Committing TLS inventory snapshot for {cluster.name}.')

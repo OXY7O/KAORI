@@ -16,6 +16,9 @@ def register_blueprints(app: Flask) -> None:
     from app.integrations.observability.metrics_source.application.routes import metrics_bp
     from app.integrations.registry.providers.harbor.application.routes import harbor_bp
     from app.integrations.routes import integrations_bp
+    from app.integrations.secrets_management.secrets_pki.providers.vault.application.routes import vault_bp
+    from app.integrations.source_control.source_control.providers.github.application.routes import github_source_bp
+    from app.integrations.source_control.source_control.providers.github.application.uat_routes import github_uat_bp
     from app.integrations.storage.object_storage.providers.minio.application.routes import minio_bp
     from app.intelligence.alert_intelligence.routes import alert_intelligence_bp
     from app.intelligence.automation_control.routes import automation_control_bp
@@ -25,6 +28,10 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.governance.routes import governance_bp
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
+    from app.kubernetes.operations.secrets.approval_inbox import (
+        get_secret_reveal_approval_work_inbox,
+        get_secret_reveal_requester_work_inbox,
+    )
     from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
     from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
     from app.kubernetes.tenant.capsule_rbac_bootstrap import (
@@ -60,14 +67,31 @@ def register_blueprints(app: Flask) -> None:
     from app.platform_operations.jobs.routes import bp as jobs_bp
     from app.platform_operations.notifications.routes import notifications_bp
     from app.reports.routes import reports_bp
+    from app.secrets_pki.pki_presentation import pki_public_readiness
+    from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
+    from app.secrets_pki.routes import secrets_pki_bp
+    from app.security_posture.routes import security_posture_bp
     from app.settings import bp as settings_bp
+    from app.source_control.routes import source_control_bp
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
     from app.storage.object_storage.inventory.routes import object_storage_inventory_bp
     from app.welcome.routes import welcome_bp
 
+    # Compose Secrets & PKI-owned committed PKI projections into Vault detail
+    # without making the provider web route import the operational domain.
+    app.extensions['kaori_vault_pki_readiness'] = {
+        'public_pki_readiness': pki_public_readiness,
+        'stored_cert_readiness': stored_pki_certificate_readiness,
+    }
+
     # Compose the Tenant-owned committed approval projection into the shared
     # Notification Work Inbox once per Flask app; no global mutable registry.
     app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox
+    # Project Kubernetes-owned committed Secret Reveal approvals without
+    # importing Kubernetes services into Notifications.
+    app.extensions['kaori_secret_reveal_approval_work_inbox'] = get_secret_reveal_approval_work_inbox
+    # Independently present approved requester-owned work from committed requests.
+    app.extensions['kaori_secret_reveal_requester_work_inbox'] = get_secret_reveal_requester_work_inbox
     # Integration presentation invokes Tenant-owned cluster RBAC operations.
     # Keep this wiring application-scoped to prevent reverse domain imports.
     app.extensions['kaori_tenant_capsule_rbac_bootstrap'] = {
@@ -101,6 +125,9 @@ def register_blueprints(app: Flask) -> None:
         auth_bp,
         access_bp,
         artifact_registry_bp,
+        source_control_bp,
+        security_posture_bp,
+        secrets_pki_bp,
         welcome_bp,
         kubernetes_dashboard_bp,
         object_storage_dashboard_bp,
@@ -124,6 +151,9 @@ def register_blueprints(app: Flask) -> None:
         reports_bp,
         metrics_bp,
         harbor_bp,
+        vault_bp,
+        github_source_bp,
+        github_uat_bp,
         minio_bp,
         settings_bp,
         users_bp,

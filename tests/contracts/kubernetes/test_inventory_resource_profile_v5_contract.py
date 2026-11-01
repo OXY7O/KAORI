@@ -40,6 +40,8 @@ def test_inventory_v6_uses_one_horizontal_section_contract_for_all_resources() -
         assert 'detail.workspace_header(' in detail, resource
         assert 'detail.header_identity_row()' in detail, resource
         assert 'detail.inventory_title(' in detail, resource
+        assert 'compact=true' in detail, resource
+        assert 'context_items=' in detail, resource
 
 
 def test_inventory_v6_typography_and_section_geometry_are_consistent() -> None:

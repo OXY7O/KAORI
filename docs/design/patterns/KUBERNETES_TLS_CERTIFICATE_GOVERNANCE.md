@@ -80,7 +80,9 @@ TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS
 TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS
 ```
 
-Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still valid and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still inside the expiry window and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+
+**Policy disposition for #1326 review:** the existing approved Valid / Renewal / Critical classification is **expiry-window posture**, not a claim that the certificate is presently active, trusted or accepted by clients. `not_before` is an independently displayed committed source fact (Valid From); a future value may prevent current TLS use even while expiry-window posture reports Valid. Existing status taxonomy and SQL/Python classifiers remain unchanged. The Registry Guide and TLS Detail explain this explicitly. A future change to classify Not Yet Valid must first receive separate taxonomy/policy approval and update both SQL and Python projection atomically.
 
 Validity labels:
 
@@ -296,6 +298,62 @@ No page-local fourth Hero accessory type is permitted.
 
 The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.
 
+
+## TLS rotation target identity and freshness admission (#1306)
+
+An approved rotation must preserve the selected committed target identity:
+the Kubernetes TLS Secret UID collected with its namespace/name must match
+the live UID read before PATCH. Unknown or malformed UID evidence, or
+deletion/recreation at the same namespace/name, fails closed until TLS
+synchronization refreshes inventory. Live Secret type, resourceVersion,
+dry-run and Secret-value scrubbing remain mandatory.
+
+Ingress coverage admission requires both Secret and Ingress source status
+Collected. Both cluster collection-state collected_at and certificate-row
+collected_at must fall within the existing TLS sync job-policy interval plus
+its established freshness grace. This proves qualified recent committed
+evidence, not live Ingress reachability. Preview and server-side single/bulk
+apply use the same fail-closed policy; any blocked bulk target prevents every
+provider PATCH. No new UI state or break-glass override is introduced.
+
+## Bounded TLS inventory reconciliation (#1325)
+
+Worker-side collection is bounded and payload-scrubbed before reconciliation.
+A completed Secret scan reconciles existing TLS inventory in 100-identity ORM
+batches instead of loading all historical cluster rows into application memory.
+Each successfully collected record receives one committed scan-generation
+timestamp; stale records from **only that cluster** are pruned by a scoped SQL
+DELETE where their generation does not match. Collection-state and inventory
+changes share the same database transaction/commit, including successful
+zero-certificate scans. Duplicate Secret identities abort and roll back the
+reconciliation rather than silently replacing or pruning evidence. Fatal or
+incomplete Secret collection never enters reconciliation or prunes existing
+rows. Preserve immutable Secret UID/source provenance across updates.
+
+This reduces ORM materialization but is **not** a benchmark PASS. Verify
+bounded per-batch memory, PostgreSQL query plan/latency and transactional
+no-prune failure paths in Dev Container before official admission.
+
+## TLS sync JobExecution selection at fleet scale (#1327)
+
+For a selected cluster, PostgreSQL JSONB target containment filters
+canonical `JobExecution.payload_json.targets[].cluster_id` in SQL **before**
+limiting the job history, so 100+ unrelated cluster jobs cannot conceal
+that cluster's latest terminal outcome or its zero-certificate success.
+A job labelled `all_clusters` is not automatically proof that any one
+cluster was targeted; the recorded target list is authoritative.
+
+Active-job presentation uses one ordered, target-qualified SQL query rather
+than loading all fleet-active JobExecution ORM rows. Historical
+zero-certificate fallback queries only clusters missing both certificate-row
+and admitted collection-state evidence; one SQL-selected successful job is
+used per such cluster, with partially successful jobs rejected if the
+specific cluster appears in the failed-target evidence. Fleet summaries
+remain bounded and preserve source-specific failure exceptions.
+
+PostgreSQL JSONB predicates require DB-backed EXPLAIN, realistic history
+volume and Dev Container regression before official admission; no new job
+table/schema or provider-side lookup is introduced.
 
 ## Provenance-safe TLS collection freshness (#1327)
 

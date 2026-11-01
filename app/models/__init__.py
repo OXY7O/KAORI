@@ -13,6 +13,7 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
+from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
 from app.models.capsule_handoff_proof import CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord
@@ -46,7 +47,7 @@ from app.models.lifecycle import DataLifecyclePolicy
 from app.models.metrics_source import MetricsSource
 from app.models.minio import MinioInstance
 from app.models.notification import Notification
-from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.models.notification_channel import NotificationChannel, NotificationDelivery, NotificationDeliveryIdentity
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
@@ -73,7 +74,31 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
+from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
+from app.models.secrets_pki import (
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
+)
+from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
+from app.models.secrets_pki_stored_certificates import (
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
+)
+from app.models.source_control import (
+    GitHubAppCredential,
+    SourceAccount,
+    SourceInstallation,
+    SourceReference,
+    SourceReferenceTransition,
+    SourceRepository,
+    SourceRepositoryCollectionState,
+    SourceRepositoryGrant,
+    SourceRevision,
+    SourceWebhookDelivery,
+)
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -128,14 +153,26 @@ from app.models.tenant_policy import (
     TenantExposurePolicyStatus,
 )
 from app.models.user import User
+from app.models.vault import VaultInstance
 
 __all__ = [
+    'GitHubAppCredential',
+    'SourceAccount',
+    'SourceInstallation',
+    'SourceReference',
+    'SourceReferenceTransition',
+    'SourceRepository',
+    'SourceRepositoryGrant',
+    'SourceRevision',
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
+    'AuthenticationMfaFactor',
+    'AuthenticationSecurityPolicy',
     'AuditEvent',
     'IdentityProvider',
     'HarborInstance',
+    'VaultInstance',
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
@@ -219,6 +256,7 @@ __all__ = [
     'Notification',
     'NotificationChannel',
     'NotificationDelivery',
+    'NotificationDeliveryIdentity',
     'TLSCertificateCollectionState',
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',
@@ -250,9 +288,22 @@ __all__ = [
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'PKIStoredCertificateCollectionState',
+    'PKIStoredCertificateObservation',
+    'PKIIssuerCollectionState',
+    'PKIIssuerIdentity',
+    'PKIPublicCertificateObservation',
+    'SecretIdentity',
+    'SecretInventoryCollectionState',
+    'SecretProviderRepresentation',
+    'SecretVersionObservation',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',
     'ResolverOperationalControl',
     'ResolverProductionReadinessRecord',
+    'ScopeAccessPolicy',
+    'ScopeAccessPolicyRevision',
+    'SourceRepositoryCollectionState',
+    'SourceWebhookDelivery',
 ]

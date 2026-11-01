@@ -223,6 +223,8 @@ def test_redesigned_contributions_modal_keeps_header_summary_and_search_outside_
         encoding='utf-8'
     )
     routes = (root / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    allocation = (root / 'app/kubernetes/tenant/allocation_overview.py').read_text(encoding='utf-8')
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
     docs = (root / 'docs/architecture/kubernetes-tenant-capacity-governance.md').read_text(encoding='utf-8')
 
     analytics = page[page.index('<a href="{{ url_for(\'analytics.capacity\') }}"') :].split('</a>', 1)[0]
@@ -256,11 +258,11 @@ def test_redesigned_contributions_modal_keeps_header_summary_and_search_outside_
     assert 'table_label.status_label(row.tenant.ownership_status|title' in dialog
     assert 'role="status"' in dialog
     assert 'Tenant Registry' in dialog
-    assert 'summarize_tenant_contributions(tenant_rows)' in routes
-    assert "context['allocation_tenant_rows'] = tenant_rows" in routes
-    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
-    assert 'paginate_sequence(\n            tenant_rows' not in routes
-    assert routes.index('summarize_tenant_contributions(tenant_rows)') < routes.index(
+    assert 'summarize_tenant_contributions(tenant_rows)' in allocation
+    assert "context['allocation_tenant_rows'] = tenant_rows" in allocation
+    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in allocation
+    assert 'paginate_sequence(\n            tenant_rows' not in allocation
+    assert allocation.index('summarize_tenant_contributions(tenant_rows)') < allocation.index(
         'filter_tenant_contribution_rows(tenant_rows, allocation_search)'
     )
     assert 'committed contribution ledger' in docs
@@ -308,6 +310,8 @@ def test_allocation_modal_htmx_contract_preserves_dialog_during_scrollable_searc
         encoding='utf-8'
     )
     routes = (root / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    allocation = (root / 'app/kubernetes/tenant/allocation_overview.py').read_text(encoding='utf-8')
+    assert 'build_resource_profile_capacity_workspace(context, active_view=active_view, args=request.args)' in routes
 
     assert 'hx-trigger="change"' in page
     assert 'View Allocation</button>' not in page
@@ -326,11 +330,11 @@ def test_allocation_modal_htmx_contract_preserves_dialog_during_scrollable_searc
     assert 'allocation_per_page' not in page
     assert 'row.tenant.id|string|truncate' in page
     assert 'allocation_tenant_total' in page
-    assert 'allocation_search' in routes
-    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in routes
-    assert 'allocation_tenant_pagination' not in routes
-    assert 'allocation_per_page' not in routes
-    assert "context['capacity_pagination'] = capacity_pagination" in routes
+    assert 'allocation_search' in allocation
+    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in allocation
+    assert 'allocation_tenant_pagination' not in allocation
+    assert 'allocation_per_page' not in allocation
+    assert "context['capacity_pagination'] = capacity_pagination" in allocation
 
 
 def test_scrollable_contribution_ledger_preserves_all_fifty_rows_and_search() -> None:

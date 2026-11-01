@@ -85,6 +85,7 @@ _APPROVED_FONT_EXTRABOLD_COMPONENTS = {
 }
 _APPROVED_CUSTOM_HERO_COMPONENTS = {
     'app/templates/components/page_hero.html',
+    'app/templates/components/auth_flow_heading.html',
     'app/templates/components/navigation/sidebar.html',
     'app/templates/reports/pdf/components/analytics_publication.html',
 }

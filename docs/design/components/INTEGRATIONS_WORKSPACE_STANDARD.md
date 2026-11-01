@@ -19,6 +19,18 @@ Darker Interpretation or Recommended Action
 Pagination / Lifecycle Actions
 ```
 
+**Post-Hero content rule (#2672):** page-level workspaces should transition
+directly from the Hero to the relevant operational content, not insert an
+additional generic view heading and descriptive paragraph immediately below
+the Hero. A purpose-specific section heading and short description **above
+its associated content card/table** is permitted and preferred when it
+identifies a distinct operator task or evidence set (for example, Delivery
+Journal or Configured Channels). Reuse the shared `section_intro` macro;
+do not invent a page-local title treatment. On Integrated Workspace Tabs,
+display numeric badges only when they are materially actionable and not
+already represented by canonical table result counts; Notification Channels
+tabs intentionally have no count badges.
+
 Primary source, runtime, validation, capability, binding, and coverage evidence uses `bg-surface-card`. `bg-surface-hover` is reserved for interpretation, warning context, remediation, attention strips, and destructive-boundary guidance.
 
 ## Shared Components

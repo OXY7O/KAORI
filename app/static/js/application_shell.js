@@ -283,6 +283,24 @@ document.addEventListener('submit', (event) => {
         return
     }
 
+    // Native form submission collects controls after the submit event.
+    // Disabling a named submitter immediately removes its name/value from
+    // FormData (for example GitHub registration's action=save).
+    // Preserve exactly the chosen submit action using the browser's
+    // formdata event; keep the loading-state double-submit guard.
+    const submitName = submitButton.name
+    const submitValue = submitButton.value
+    const form = submitButton.form
+    if (form && submitName) {
+        form.addEventListener(
+            'formdata',
+            (formDataEvent) => {
+                formDataEvent.formData.set(submitName, submitValue)
+            },
+            { once: true }
+        )
+    }
+
     submitButton.disabled = true
     submitButton.classList.add('cursor-wait', 'opacity-75')
 

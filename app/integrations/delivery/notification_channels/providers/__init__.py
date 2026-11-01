@@ -312,7 +312,7 @@ _PROVIDERS = {
             'Optional ntfy access token with minimum publish rights.',
         ),
         setup_steps=(
-            'Allow approved HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS on app and worker; restrict egress.',
+            'Allow ntfy HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS (app/worker); restrict egress.',
             'For internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE consistently on the application and worker.',
             'Create a private ntfy topic and issue a publish-scoped access token when authorization is required.',
             'Enter the approved server origin, topic, optional token, and permitted KAORI event/domain policy.',
@@ -346,10 +346,7 @@ _PROVIDERS = {
         transport='Bot API',
         configuration='Bot token + destination chat ID + optional forum topic ID.',
         setup_title='Configure Telegram Bot Delivery',
-        setup_summary=(
-            'Use a dedicated Telegram bot and destination that KAORI can reach without sharing the bot token '
-            'outside the channel credential boundary.'
-        ),
+        setup_summary='Use a dedicated Telegram bot and destination; keep its token encrypted in KAORI.',
         setup_requirements=(
             'A Telegram bot created with BotFather.',
             'The bot token generated for that bot.',
@@ -393,10 +390,7 @@ _PROVIDERS = {
         transport='SMTP',
         configuration='SMTP server + sender identity + one or more recipients.',
         setup_title='Configure SMTP Email Delivery',
-        setup_summary=(
-            'Connect KAORI to an internal relay or authenticated SMTP service, then define the sender identity '
-            'and operational recipients.'
-        ),
+        setup_summary='Use an approved SMTP relay, sender identity, and operational recipients.',
         setup_requirements=(
             'An SMTP host and port reachable from the KAORI worker runtime.',
             'STARTTLS, TLS/SMTPS, or an explicitly trusted relay policy.',
@@ -439,10 +433,7 @@ _PROVIDERS = {
         transport='Teams Workflows',
         configuration='Power Automate webhook URL + human-readable Teams destination label.',
         setup_title='Configure Microsoft Teams Workflow Delivery',
-        setup_summary=(
-            'Use a Teams Workflow / Power Automate webhook. Legacy Office 365 connector URLs are intentionally '
-            'not accepted by the KAORI adapter.'
-        ),
+        setup_summary='Use a Teams Workflow webhook; legacy Office 365 connector URLs are unsupported.',
         setup_requirements=(
             'A Teams channel and a Workflow with “When a Teams webhook request is received”.',
             'The Workflow trigger configured for Anyone authentication for the current KAORI adapter.',

@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set mapping = tenant_namespace_profile_mapping %}
 <section id="tenant-namespace-profile-mapping"
          class="min-w-0 space-y-3 scroll-mt-24"
@@ -12,7 +13,17 @@
         'git-branch',
         id='tenant-profile-map-card',
         body_classes='p-4 sm:p-5',
-        aria_label='Tenant Namespace and Resource Profile correlation'
+        aria_label='Tenant Namespace and Resource Profile correlation',
+        header_badge=info_tip.render('tenant-namespace-allocation-lineage-guide',
+        'Namespace Allocation Lineage',
+        'Committed Namespace ownership, pinned Resource Profile allocation and verified Release/Re-adopt lineage.',
+        [
+        'Quota and limits are frozen KAORI snapshots, not live provider utilization.',
+        'Historical predecessors require verified provider UID and committed lineage.',
+        'Allocation Change, Release, Handback and Re-adopt use separate governed actions.'
+        ],
+        placement='left',
+        variant='guide')
         ) %}
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <p class="max-w-3xl text-xs leading-5 text-content-secondary">

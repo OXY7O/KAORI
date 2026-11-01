@@ -1,5 +1,9 @@
 ;(() => {
     const PAGE_PARAM = 'page'
+    // Store the original server-rendered link for each pagination container.
+    // HTMX invokes render on both afterSwap and afterSettle; generated links
+    // are excluded as source candidates and must not erase their own URLs.
+    const sourceLinks = new WeakMap()
 
     function pageWindow(current, total) {
         if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1)
@@ -25,10 +29,13 @@
 
     function sourceControl(container) {
         const group = container.parentElement
-        if (!group) return null
-        return group.querySelector(
-            'a[hx-get]:not([data-kaori-generated-page]), button[hx-get]:not([data-kaori-generated-page]), a[href]:not([data-kaori-generated-page])'
-        )
+        if (group) {
+            const original = group.querySelector(
+                'a[hx-get]:not([data-kaori-generated-page]), button[hx-get]:not([data-kaori-generated-page]), a[href]:not([data-kaori-generated-page])'
+            )
+            if (original) sourceLinks.set(container, original)
+        }
+        return sourceLinks.get(container) || null
     }
 
     function buildPageLink(source, page, current, pageParam) {
@@ -52,6 +59,7 @@
             for (const attr of [
                 'hx-target',
                 'hx-swap',
+                'hx-select',
                 'hx-indicator',
                 'hx-push-url',
                 'hx-include',

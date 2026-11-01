@@ -19,6 +19,7 @@ from app.integrations.delivery.notification_channels.providers.form_support impo
     DenyRedirects,
     credential_map,
 )
+from app.integrations.delivery.notification_channels.retry_after import parse_retry_after
 from app.models.notification_channel import NotificationChannel
 
 _SLACK_HOSTS = {'hooks.slack.com', 'hooks.slack-gov.com'}
@@ -84,7 +85,12 @@ def send_slack_message(
             acknowledgement = response.read(64).decode('utf-8', errors='replace').strip()
     except HTTPError as exc:
         if exc.code == 429:
-            return DeliveryResult(False, 'Slack webhook rate limited the delivery (HTTP 429).')
+            delay = parse_retry_after(exc.headers.get('Retry-After') if exc.headers else None)
+            return DeliveryResult(
+                False,
+                'Slack webhook rate limited the delivery (HTTP 429).',
+                retry_after_seconds=delay,
+            )
         return DeliveryResult(False, f'Slack webhook rejected delivery with HTTP {exc.code}.')
     except (URLError, TimeoutError, OSError, ValueError):
         return DeliveryResult(False, 'Slack webhook is unreachable or TLS verification failed.')

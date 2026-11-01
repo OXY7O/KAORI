@@ -6,6 +6,8 @@ from app.storage.object_storage.analytics.analysis import (
     derive_headroom,
     error_ratio,
     forecast_posture,
+    metric_boundary_evaluations,
+    metric_risk_signals,
     performance_posture,
     summarize_trend,
 )
@@ -147,3 +149,81 @@ def test_forecast_recommendations_keep_missing_materialization_unknown() -> None
     assert cards[0]['tone'] == 'unknown'
     assert cards[0]['is_actionable'] is False
     assert cards[0]['source_label'] == 'Forecast Worker'
+
+
+def _boundary_rows(
+    *, utilization: float | None, errors: float | None, waiting: float | None, nodes: float | None
+) -> dict[str, dict[str, str]]:
+    rows = metric_boundary_evaluations(
+        utilization=utilization, error_ratio=errors, waiting=waiting, offline_nodes=nodes
+    )
+    assert [row['key'] for row in rows] == ['capacity', 'errors', 'waiting', 'nodes']
+    return {row['key']: row for row in rows}
+
+
+def test_boundary_evaluations_show_four_normal_observations_including_zero() -> None:
+    rows = _boundary_rows(utilization=0.7, errors=0.0, waiting=0.0, nodes=0.0)
+
+    assert [row['severity'] for row in rows.values()] == ['normal'] * 4
+    assert rows['capacity']['observed'] == '0.7%'
+    assert rows['errors']['observed'] == '0.0%'
+    assert rows['waiting']['observed'] == '0'
+    assert rows['nodes']['observed'] == '0'
+    assert rows['capacity']['threshold'] == '85% warning · 95% critical'
+    assert rows['errors']['threshold'] == '5% warning · 10% critical'
+
+
+def test_boundary_evaluations_preserve_exact_warning_and_critical_edges() -> None:
+    below = _boundary_rows(utilization=84.9, errors=4.9, waiting=0.0, nodes=0.0)
+    assert below['capacity']['severity'] == 'normal'
+    assert below['errors']['severity'] == 'normal'
+
+    warning = _boundary_rows(utilization=85.0, errors=5.0, waiting=1.0, nodes=0.0)
+    assert [warning[key]['severity'] for key in ('capacity', 'errors', 'waiting', 'nodes')] == [
+        'warning',
+        'warning',
+        'warning',
+        'normal',
+    ]
+    assert warning['waiting']['threshold'] == 'Warning when > 0'
+
+    critical = _boundary_rows(utilization=95.0, errors=10.0, waiting=2.0, nodes=1.0)
+    assert [critical[key]['severity'] for key in ('capacity', 'errors', 'waiting', 'nodes')] == [
+        'critical',
+        'critical',
+        'warning',
+        'critical',
+    ]
+    assert critical['nodes']['threshold'] == 'Critical when > 0'
+
+
+def test_boundary_evaluations_keep_partial_and_total_unknown_explicit() -> None:
+    partial = _boundary_rows(utilization=30.0, errors=None, waiting=None, nodes=0.0)
+    assert [partial[key]['severity'] for key in ('capacity', 'errors', 'waiting', 'nodes')] == [
+        'normal',
+        'unknown',
+        'unknown',
+        'normal',
+    ]
+    assert partial['errors']['observed'] == 'Unavailable'
+    assert partial['waiting']['evaluation'] == 'Evidence unavailable'
+
+    missing = _boundary_rows(utilization=None, errors=None, waiting=None, nodes=None)
+    assert all(row['severity'] == 'unknown' for row in missing.values())
+    assert all(row['observed'] == 'Unavailable' for row in missing.values())
+
+
+def test_boundary_matrix_keeps_existing_triggered_signals_contract() -> None:
+    inputs = {'utilization': 96.0, 'error_ratio': 62.5, 'waiting': 0.0, 'offline_nodes': 1.0}
+    rows = metric_boundary_evaluations(**inputs)
+    triggered = metric_risk_signals(**inputs)
+    assert [row['severity'] for row in rows] == ['critical', 'critical', 'normal', 'critical']
+    assert [row['title'] for row in triggered] == [
+        'Capacity Critical',
+        'Request Error Pressure',
+        'Offline Storage Nodes',
+    ]
+    assert len(rows) == 4
+    assert len(triggered) == 3
+    no_risk = metric_risk_signals(utilization=0.7, error_ratio=0.0, waiting=0.0, offline_nodes=0.0)
+    assert [row['title'] for row in no_risk] == ['No Metric-Derived Risk']

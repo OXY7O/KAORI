@@ -27,7 +27,7 @@
     header_actions=inventory_header_actions,
     result_count=payload.pagination.total_items,
     title_extra=info_tip.render('k8s-inventory-tls-title', 'TLS Certificate Registry Guide', 'How to read certificate and Ingress evidence.', items=[
-    'Certificate Validity: Observed certificate expiry and validity posture from the committed TLS inventory; it is not a live handshake test.',
+    'Certificate Validity: Expiry-window posture from committed evidence, not proof the certificate is active yet; check Valid From separately. No live handshake is performed.',
     'TLS Host Coverage: Hostnames associated with the observed certificate and Ingress declarations. Coverage alone does not prove clients trust the certificate.',
     'Ingress Certificate Usage: Observed Kubernetes Ingress resources referring to this certificate or Secret; references are not proof of successful TLS termination.'
     ], placement='right', variant='guide')

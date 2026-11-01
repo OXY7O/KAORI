@@ -2,6 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
@@ -18,13 +19,24 @@
          hx-sync="this:replace">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 id="job-execution-registry-title"
-                        class="text-base font-semibold text-content-primary">Execution Registry</h3>
-                    {{ table_label.result_count(job_pagination.total_items) }}
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="list-checks" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 id="job-execution-registry-title"
+                            class="text-base font-semibold text-content-primary">Execution Registry</h3>
+                        {{ info_tip.render('jobs-execution-registry-guide',
+                                                'Execution Registry',
+                                                'Browse committed execution ownership, status, progress and terminal evidence. Search and filters scope the results; each detail opens the canonical JobExecution snapshot.',
+                                                placement='right',
+                                                variant='guide') }}
+                        {{ table_label.result_count(job_pagination.total_items) }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Search execution ownership, progress, timing, and terminal outcomes.</p>
                 </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Search execution ownership, progress, timing, and terminal outcomes.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if job_has_filters %}

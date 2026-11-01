@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from secrets import token_hex
 from urllib.parse import urlsplit
 
 from flask import current_app, session
@@ -70,6 +71,7 @@ def establish_authenticated_session(
     *,
     source: str,
     remember_requested: bool,
+    issued_session_version: int | None = None,
 ) -> bool:
     """Rotate the Flask session and establish an authenticated user session.
 
@@ -86,7 +88,18 @@ def establish_authenticated_session(
     if not established:
         session.clear()
         raise AuthSessionError('Flask-Login rejected the authenticated user session.')
+    if issued_session_version is not None:
+        if issued_session_version < 1:
+            session.clear()
+            raise AuthSessionError('Invalid issued authentication generation.')
+        # Pin the generation returned by this login's atomic UPDATE. The ORM
+        # may have expired and reloaded a later concurrent login's generation.
+        # Flask-Login's remember-cookie hook reads this exact _user_id.
+        session['_user_id'] = f'{user.id}:{issued_session_version}'
     session['auth_source'] = source
+    # Audit correlation only. This opaque value is never an authentication
+    # credential and cannot be used to look up or authorize a session.
+    session['auth_session_ref'] = token_hex(16)
 
     return remember
 

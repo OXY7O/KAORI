@@ -60,13 +60,16 @@ def test_secret_replace_actions_live_in_htmx_swapped_target_content() -> None:
 def test_secret_reveal_step_up_aligns_password_and_verify_action() -> None:
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
 
-    assert 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in step_up
+    assert 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]' in step_up
+    assert 'aria-label="Step-Up Access Guidance"' in step_up
     assert 'form_field.label_row(' in step_up and 'Current KAORI Password' in step_up
     assert 'class="{{ form_field.input_classes() }}"' in step_up
-    assert (
-        'form_field.help(' in step_up
-        and 'Step-up is required only before consuming an approved reveal request.' in step_up
-    )
+    assert 'data-reveal-step-up-password' in step_up
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in step_up
+    assert "url_for('kubernetes_operations.reauthenticate_secret_reveal')" in step_up
+    assert 'Verify only when an approved request is ready.' in step_up
+    assert 'Only approved requests may be consumed.' in step_up
+    assert 'External Step-Up Unavailable' in step_up
 
 
 def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_required_state_visible() -> None:
@@ -147,5 +150,11 @@ def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_req
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     assert 'must exactly match the selected live ConfigMap name' in delete_configmap
     assert 'must exactly match the selected live Secret name' in delete_secret
-    assert 'TLS private keys and SSH private keys are never revealable.' in reveal_request
-    assert 'Step-up is required only before consuming an approved reveal request.' in step_up
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in reveal_request
+    assert 'data-reveal-request-submit-form' in reveal_request
+    assert 'KAORI records request details, not Secret values.' in reveal_request
+    reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    assert 'TLS/SSH private keys cannot be revealed.' in reveal_page
+    assert 'Requesters cannot approve their own requests.' in reveal_page
+    assert 'Only approved requests may be consumed.' in step_up
+    assert 'Verify only when an approved request is ready.' in step_up

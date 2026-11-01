@@ -62,7 +62,8 @@ def build_data_freshness(
         alert_status, alert_tone, alert_value = _fleet_coverage(fleet_alerts_count, fleet_cluster_count)
         alert_description = 'All Clusters shows committed alerts by cluster. Select a cluster for source details.'
 
-    has_reports = reporting_snapshot.generated_reports > 0
+    has_artifacts = reporting_snapshot.artifact_records > 0
+    has_requests = reporting_snapshot.generated_reports > 0
 
     return [
         FreshnessItem(
@@ -95,14 +96,15 @@ def build_data_freshness(
         ),
         FreshnessItem(
             label='Report Artifacts',
-            status='Available' if has_reports else 'Not Generated',
-            tone='normal' if has_reports else 'unknown',
+            status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated'),
+            tone='info' if has_artifacts else ('warning' if has_requests else 'unknown'),
             value=(
-                f'{reporting_snapshot.generated_reports} generated reports'
-                if has_reports
-                else 'No generated report artifacts'
+                f'{reporting_snapshot.artifact_records} retained artifact record'
+                f'{"s" if reporting_snapshot.artifact_records != 1 else ""}'
+                if has_artifacts
+                else ('No ready artifact records' if has_requests else 'No report records')
             ),
             icon='file-text',
-            description=('Generated reports are retained artifacts, separate from current Kubernetes health.'),
+            description='Committed artifact references; storage accessibility is not verified here.',
         ),
     ]

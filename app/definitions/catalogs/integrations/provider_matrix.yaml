@@ -117,3 +117,36 @@ integration_types:
     adapter_key: oci_distribution_api
     lifecycle: planned
     protocol: oci_distribution_api
+
+- key: secrets_pki
+  domain_key: secrets_management
+  providers:
+  - key: vault
+    label: HashiCorp Vault
+    adapter_key: vault_http_v1
+    lifecycle: available
+    protocol: vault_http_v1
+  - key: openbao
+    label: OpenBao
+    adapter_key: vault_http_v1
+    lifecycle: planned
+    protocol: vault_http_v1
+
+- key: source_control
+  domain_key: source_control
+  providers:
+  - key: github
+    label: GitHub
+    adapter_key: github_rest_v3
+    lifecycle: available
+    protocol: github_rest_v3
+  - key: gitlab
+    label: GitLab
+    adapter_key: not_implemented
+    lifecycle: planned
+    protocol: not_defined
+  - key: bitbucket
+    label: Bitbucket
+    adapter_key: not_implemented
+    lifecycle: planned
+    protocol: not_defined

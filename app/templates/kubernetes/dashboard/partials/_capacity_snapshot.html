@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Capacity Snapshot',
-    'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.',
+    'Worker-node CPU, memory, and pod headroom.',
     'gauge',
     id='dashboard-capacity-snapshot',
     action_href=url_for('analytics.capacity'),

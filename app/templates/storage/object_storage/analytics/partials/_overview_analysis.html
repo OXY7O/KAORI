@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -6,7 +7,17 @@
                     <i data-lucide="heart-pulse" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                        {{ info_tip.render('object-storage-operational-health-summary-guide',
+                                                'Operational Health Guidance',
+                                                metrics.operational_posture.detail,
+                                                items=[
+                                                'Review order: Capacity → Performance → Top Consumers → Forecast.',
+                                                'Start with warning or critical domains; validate committed metric readiness and source provenance before remediation.'
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
                         Consolidated capacity, request-path, growth, and bucket-concentration posture for the selected Object Storage system.
                     </p>
@@ -58,18 +69,5 @@
                 {% endif %}
             </p>
         </article>
-    </div>
-    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout('Operational Reading',
-                metrics.operational_posture.detail,
-                'Start with any critical or warning domain, then validate the underlying metric readiness and source provenance before remediation.',
-                icon='scan-search',
-                role='status',
-                tone=metrics.operational_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Review Path',
-                'Capacity → Performance → Top Consumers → Forecast',
-                'Use capacity to confirm headroom, performance to validate request pressure, Top Consumers to identify ownership, and Forecast to plan the next capacity action.',
-                icon='route',
-                role='brand') }}
     </div>
 </section>

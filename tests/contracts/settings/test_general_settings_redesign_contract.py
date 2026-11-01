@@ -148,7 +148,7 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'for highlight in system_information.release_highlights' in main
     source = read('app/settings/system_information.py')
     assert 'Kubernetes, metrics, alerts and MinIO have clear ownership.' in source
-    assert 'Shared evidence for jobs, lifecycle, delivery and analytics.' in source
+    assert 'Shared evidence for jobs, delivery, and analytics.' in source
     assert 'Release tracing, identity, runtime safety and testing.' in source
     assert 'for group in system_information.feature_groups' in main
     assert 'for feature in group.features' in main
@@ -335,7 +335,7 @@ def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> 
     assert 'Secrets, credentials, database/Redis URLs, and internal endpoints.' in system
     for phrase in (
         'Kubernetes, metrics, alerts and MinIO have clear ownership.',
-        'Shared evidence for jobs, lifecycle, delivery and analytics.',
+        'Shared evidence for jobs, delivery, and analytics.',
         'Release tracing, identity, runtime safety and testing.',
     ):
         assert phrase in catalog
@@ -344,10 +344,47 @@ def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> 
     assert 'Current: v0.42.x' in definition
     assert 'Current: v0.34.x' in definition
     assert 'Community archived; qualified release evidence retained.' in catalog
+    assert 'S3 reachability, bucket discovery, and optional object-storage governance.' in catalog
+    assert 'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.' not in catalog
+    assert len('S3 reachability, bucket discovery, and optional object-storage governance.') <= 76
     assert 'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.' in catalog
     # Phone layouts must wrap naturally, never hide any evidence.
     assert 'truncate' not in timezone
     assert 'text-ellipsis' not in system
+
+
+def test_general_titles_use_canonical_shared_guide_and_compact_capability_copy() -> None:
+    # Title-level help must follow the approved Info Tip Guide, not custom tooltips.
+    headings = (
+        ('_time_locale.html', 'Time Zone', 'general-timezone-title-guide'),
+        ('_regional_format.html', 'Regional Format', 'general-regional-title-guide'),
+        ('_system_information.html', 'System Information', 'general-system-title-guide'),
+        ('_compatibility_versions.html', 'Integration Compatibility', 'general-compatibility-title-guide'),
+    )
+    for filename, title, tip_id in headings:
+        template = read(f'app/templates/settings/general/partials/{filename}')
+        assert '{% import "components/info_tip.html" as info_tip %}' in template
+        assert f'>{title}</h2>' in template
+        assert f"'{tip_id}'" in template
+        assert "variant='guide'" in template
+        assert 'flex flex-wrap items-center gap-2' in template
+        assert template.index(f'>{title}</h2>') < template.index(f"'{tip_id}'")
+        assert template.count(f"'{tip_id}'") == 1
+
+    catalog = read('app/settings/system_information.py')
+    concise_copy = (
+        'Shared evidence for jobs, delivery, and analytics.',
+        'TLS inventory, governance, bulk rotation, and worker sync.',
+        'Compact analytics tabs preserve canonical navigation.',
+    )
+    for phrase in concise_copy:
+        assert phrase in catalog
+        assert len(phrase) <= 62
+    for obsolete in (
+        'TLS certificate inventory, governance, bulk rotation, and worker-based automatic synchronization',
+        'Internal content tabs that keep analytics pages compact without removing canonical navigation',
+    ):
+        assert obsolete not in catalog
 
 
 def test_uat_compatibility_policy_columns_share_four_balanced_rows() -> None:

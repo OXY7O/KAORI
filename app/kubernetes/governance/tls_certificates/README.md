@@ -125,3 +125,96 @@ types, in a `finally` block before fetching the next page. Raw Secret objects
 are not retained in normalized results or audit/job metadata. The provider
 still transmits Secret payloads for LIST; metadata-only discovery requires a
 separate feasibility and permission review.
+
+
+## Immutable Kubernetes Secret object UID evidence (HV-05, #2589)
+
+The existing TLS Governance collector now normalizes `metadata.uid` from
+Kubernetes TLS Secret objects alongside the committed public `tls.crt`
+fingerprint. The identifier is kept **only as source-owned internal state**
+(`TLSCertificateInventory.secret_uid`) and is not exposed in the normal
+Secrets & PKI correlation UI, exports, task summaries, logs or audit.
+
+Migration `20261022_tls_object_uid` is nullable, with **no name-based
+backfill**: historical rows remain `NULL` until the next successful TLS
+collection. Missing/invalid/noncanonical UIDs remain unknown, and a
+recreated Secret with the same namespace/name is a **new** object identity.
+Ordinary certificate collection and Kubernetes TLS Governance availability
+must not become unavailable simply because a UID was omitted.
+
+This does NOT read `tls.key`, deploy a controller, attest source ownership,
+or prove Vault synchronization. The existing bounded LIST and per-page
+Secret payload scrub controls remain unchanged. The follow-up
+`secrets_pki/certificate_delivery_read_model.py` counts only
+source-qualified matching public certificates with a canonical UID;
+controller readback and endpoint serving remain separate proof layers.
+
+Requires Developer Check, reviewed Alembic PostgreSQL upgrade, new source
+collection, old/new Secret recreation test, role-negative/browser Visual
+QA and human DevContainer/staging UAT before acceptance.
+
+
+## Controller ownerReference candidate evidence (HV-05, #2589)
+
+TLS Governance now additionally extracts **only** a bounded Kubernetes
+`metadata.ownerReferences` controller UID for supported `ExternalSecret`
+(`external-secrets.io`) and `Certificate` (`cert-manager.io`) objects.
+The source-owned committed `controller_owner_refs` column contains at most
+one accepted {kind, api_group, immutable UID} record; resource names,
+annotations, provider paths and arbitrary labels are never stored by this
+contract. Unsupported ownership kinds yield no supported candidate, not a
+negative claim about controllers. Legacy/unqualified/malformed observations
+remain NULL/unknown and do not fail normal TLS inventory or imply no syncing.
+
+**Warning:** `ownerReferences` is *Kubernetes ownership metadata*. It
+does not attest a controller reconciled this Secret, used Vault as its
+SecretStore/issuer, adopted its `tls.crt` bytes, or served them at an
+endpoint. In particular, some controller creation policies do not populate
+ownerReferences. The optional evidence is distinct from controller-specific
+status and readback and must not be reported as Verified Delivery.
+
+Alembic revision `20261022_tls_controller_owner` is nullable and intentionally
+does not backfill old snapshots using names or annotations. Re-run the
+existing bounded TLS collection after migration. Preserve TLS Secret
+payload-scrubbing and `tls.crt`-only behavior; no extra Kubernetes API
+discovery or mutation is introduced. Tests:
+`tests/kubernetes/governance/test_tls_controller_owner_evidence.py`.
+
+## ESO reconciliation qualification contract (HV-05 child #2666)
+
+Source owner: app/kubernetes/governance/tls_certificates/eso_reconciliation.py.
+This is a pure source normalization and candidate qualification contract, **not**
+an installed or active ESO API adapter, Vault delivery attestation, or UI feature.
+It reads typed ExternalSecret metadata/status only: UID, namespace scope,
+generation, optional observed-generation evidence, Ready condition,
+refresh time, bounded sync-version marker and source observation time.
+Arbitrary spec/SecretStore references, Vault paths and Secret data are not read
+or retained in its normalized output; internal identities are never presented.
+
+An eligible reconciliation *candidate* requires independent current Kubernetes
+Secret UID corroboration, exact TLS Secret owner UID, and any present
+observed-generation agreement,
+fresh controller and TLS source evidence, exact cluster/namespace context and
+a validated public certificate fingerprint. ESO Ready alone has no target
+immutable Secret UID or Vault source/version receipt. Missing ESO
+`syncedResourceVersion`,
+permission denied, stale/malformed/ambiguous source, Secret UID recreation and
+unknown current UID are **unknown**, not verified zero or delivery failure.
+Even reconciled_candidate keeps vault_to_controller_proven, delivery_proven
+and endpoint_serving_verified false; no confirmed lineage edges are produced.
+
+No database migration, CRD call, new RBAC scope, worker, presentation change or
+controller mutation is included. Before active collection: explicitly review
+ESO CRD version/support, bounded Kubernetes custom-objects API and permission
+scope, persistence/effective dates, resource-level authorization, separate
+current Secret UID readback, Vault source binding and real source UAT.
+Contract tests: tests/kubernetes/governance/test_eso_reconciliation_contract.py.
+
+ESO CRD status normally provides `refreshTime`, `conditions.Ready` and
+`syncedResourceVersion` instead of `observedGeneration`. The latter is
+optional and, if supplied, must match metadata generation. A bounded
+`syncedResourceVersion` marker only
+qualifies *controller-reported status*; it cannot be compared directly to
+current Kubernetes `metadata.resourceVersion` because status writes can
+increment the resource version. The marker never proves current spec
+reconciliation, Vault provenance, TLS Secret write, or target object UID.

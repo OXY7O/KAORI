@@ -1,18 +1,44 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 {% set selected = lifecycle.domains|selectattr('name','equalto',lifecycle.selected_domain)|first %}
 {% set can_manage = current_user.has_permission('platform_operations.manage_data_lifecycle') %}
 {% set execution_blocked = (not selected.enabled) or lifecycle.active_lifecycle_jobs %}
 <section id="data-lifecycle-domain-workspace"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ table_ui.block_classes() }} !border-outline-subtle !shadow-none"
          {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 10s" hx-target="this" hx-swap="outerHTML" hx-on::before-request="if (document.hidden) event.preventDefault()"{% endif %}>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="{{ selected.icon }}" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2>
+                        {% if selected.name == 'alert_incident' %}
+                            {{ info_tip.render('data-lifecycle-alert-incident-policy-guide',
+                                                        'Alert Incidents Policy',
+                                                        'Archive-first lifecycle governance for closed Alert Operations cases.',
+                                                        items=[
+                                                        'Only Closed cases can enter the archive boundary; active and verification-pending cases remain protected.',
+                                                        'Incident timeline, delivery outcomes and postmortem evidence stay with the governed case archive.',
+                                                        'A verified manifest and archive must precede cleanup; the searchable case index stays in PostgreSQL and the delivery journal has its own lifecycle.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'audit_event' %}
+                            {{ info_tip.render('data-lifecycle-audit-event-policy-guide',
+                                                        'Administrative Audit Events Policy',
+                                                        'Manual, source-restricted archival of committed administrative audit evidence.',
+                                                        items=[
+                                                        'An active Local Database Super Admin can save the policy and request Archive Only; saving does not start an archive job.',
+                                                        'Archived bundles contain a limited redacted projection; the original audit events remain in PostgreSQL.',
+                                                        'Confirm source retention approval before archiving. Automatic scheduling, cleanup, archive downloads, individual-record lookup and object purge remain unavailable until security governance approves them.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% endif %}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
                 </div>
             </div>
@@ -40,12 +66,18 @@
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Coverage</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Records covered by this retention, archive, and cleanup policy.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {% if selected.name in ('notification_delivery', 'audit_event') %}
+                            Source-owned records covered by manual, non-destructive archival.
+                        {% else %}
+                            Records covered by this retention, archive, and cleanup policy.
+                        {% endif %}
+                    </p>
                 </div>
             </header>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 %}xl:grid-cols-3{% endif %}">
+            <div class="grid gap-3 p-4 {% if lifecycle.coverage|length > 1 %}sm:grid-cols-2{% endif %} {% if lifecycle.coverage|length == 3 %}xl:grid-cols-3{% endif %}">
                 {% for item in lifecycle.coverage %}
-                    <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
+                    <article class="h-full rounded-lg border border-outline-subtle bg-surface-subtle p-3.5">
                         <div class="flex items-start gap-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
@@ -119,7 +151,7 @@
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-content-primary">Serve Window Protection</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Pending, current, and stale-but-serveable snapshots remain in hot storage. The lifecycle boundary starts only after stale grace has ended and the configured hot-retention window has also elapsed.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Pending and still-serveable snapshots stay hot. Archiving requires both stale grace and hot retention to have elapsed.</p>
                     </div>
                 </div>
             </section>
@@ -146,6 +178,7 @@
               hx-select="#data-lifecycle-page"
               hx-swap="outerHTML"
               hx-indicator="#data-lifecycle-policy-loading"
+              hx-disabled-elt="find button[type='submit']"
               class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="domain" value="{{ selected.name }}">
@@ -181,10 +214,12 @@
                         Default Operation
                         <select class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
                                 name="operation_mode">
-                            <option value="archive_and_cleanup"
-                                    {% if selected.operation_mode == 'archive_and_cleanup' %}selected{% endif %}>Archive Then Cleanup</option>
+                            {% if selected.name not in ('notification_delivery', 'audit_event') %}
+                                <option value="archive_and_cleanup"
+                                        {% if selected.operation_mode == 'archive_and_cleanup' %}selected{% endif %}>Archive Then Cleanup</option>
+                            {% endif %}
                             <option value="archive_only"
-                                    {% if selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option>
+                                    {% if selected.name in ('notification_delivery', 'audit_event') or selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option>
                         </select>
                     </label>
                 </div>
@@ -194,7 +229,7 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="file-check-2" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Generated Report Evidence Protection</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Ready and manually Archived reports copy their PDF, XLSX, or CSV artifact into archive storage and verify SHA-256 before the source artifact or database row can be cleaned. Requested, Queued, Generating, and active regeneration jobs stay protected.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, verifying SHA-256 before source-file or row cleanup. Requested, Queued, Generating, and active regeneration remain protected.</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -265,50 +300,66 @@
                         </label>
                     </div>
                 {% endif %}
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <label class="text-xs font-semibold text-content-secondary">
-                        Schedule hour
-                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
-                               type="number"
-                               min="0"
-                               max="23"
-                               name="schedule_hour"
-                               value="{{ selected.schedule_hour }}">
-                    </label>
-                    <label class="text-xs font-semibold text-content-secondary">
-                        Schedule minute
-                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
-                               type="number"
-                               min="0"
-                               max="59"
-                               name="schedule_minute"
-                               value="{{ selected.schedule_minute }}">
-                    </label>
-                </div>
-                <p class="text-xs leading-5 text-content-muted">
-                    Schedule uses {{ lifecycle.schedule_timezone }}.
-                    {% if lifecycle.scheduler_enabled %}
-                        The dispatcher checks due policies every 15 minutes.
-                    {% else %}
-                        <span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>
-                    {% endif %}
-                </p>
-                <div class="grid gap-3 rounded-xl border border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
+                {% if selected.name not in ('notification_delivery', 'audit_event') %}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="text-xs font-semibold text-content-secondary">
+                            Schedule hour
+                            <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                   type="number"
+                                   min="0"
+                                   max="23"
+                                   name="schedule_hour"
+                                   value="{{ selected.schedule_hour }}">
+                        </label>
+                        <label class="text-xs font-semibold text-content-secondary">
+                            Schedule minute
+                            <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                   type="number"
+                                   min="0"
+                                   max="59"
+                                   name="schedule_minute"
+                                   value="{{ selected.schedule_minute }}">
+                        </label>
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">
+                        Schedule uses {{ lifecycle.schedule_timezone }}.
+                        {% if lifecycle.scheduler_enabled %}
+                            The dispatcher checks due policies every 15 minutes.
+                        {% else %}
+                            <span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>
+                        {% endif %}
+                    </p>
+                {% endif %}
+                <div class="grid gap-3 rounded-xl border border-outline-subtle bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Retention Boundary</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Retention changes eligibility only; no job runs immediately.</p>
                     </div>
                     <div>
-                        <p class="text-xs font-semibold text-content-primary">Automatic Run</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Requires Policy enabled + Scheduled execution. {{ lifecycle.next_schedule_label or 'No scheduled run.' }}</p>
+                        <p class="text-xs font-semibold text-content-primary">{{ 'Execution Mode' if selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run' }}</p>
+                        {% if selected.name in ('notification_delivery', 'audit_event') %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Manual Archive Only. Enable and save the policy before starting a job.</p>
+                        {% else %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Requires Policy enabled + Scheduled execution. {{ lifecycle.next_schedule_label or 'No scheduled run.' }}</p>
+                        {% endif %}
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup stays blocked; transient failures retry once, then require manual retry.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            {% if selected.name == 'audit_event' %}
+                                Archive retries once; manual retry if needed. Hot records remain.
+                            {% else %}
+                                Cleanup blocked; transient failures retry once, then need manual retry.
+                            {% endif %}
+                        </p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Execution Worker</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}
+                            {% if lifecycle.worker.queue_ready %}and ready for lifecycle jobs{% endif %}
+                            .
+                        </p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4">
@@ -319,22 +370,63 @@
                                    {% if selected.enabled %}checked{% endif %}>
                             Policy enabled
                         </label>
-                        <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
-                            <input type="checkbox"
-                                   name="schedule_enabled"
-                                   {% if selected.schedule_enabled %}checked{% endif %}>
-                            Scheduled execution
-                        </label>
+                        {% if selected.name not in ('notification_delivery', 'audit_event') %}
+                            <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                                <input type="checkbox"
+                                       name="schedule_enabled"
+                                       {% if selected.schedule_enabled %}checked{% endif %}>
+                                Scheduled execution
+                            </label>
+                        {% else %}
+                            <span class="text-xs leading-5 text-content-muted">Manual Archive Only · No schedule</span>
+                        {% endif %}
                     </div>
                     {% if can_manage %}
-                        <button class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                        <button type="submit"
+                                class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
                     {% else %}
                         <span class="text-xs font-medium text-content-muted">Read-only policy access</span>
                     {% endif %}
                 </div>
             </fieldset>
         </form>
-        {% if not selected.enabled %}
+        {% if selected.name == 'notification_delivery' %}
+            <p class="rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5 text-xs leading-5 text-content-secondary"
+               role="note">
+                <span class="font-semibold text-kaori-primary dark:text-kaori-accent">Archive Only</span>
+                <span class="mx-1 text-content-muted" aria-hidden="true">·</span>
+                Hot delivery records retain deduplication, retries, dependencies and lifetime counts.
+                <span class="ml-1 font-semibold text-status-warning-text">Cleanup blocked</span>
+                <span class="mx-1 text-content-muted" aria-hidden="true">·</span>
+                No per-record archive search.
+            </p>
+        {% endif %}
+        {% if selected.name == 'audit_event' %}
+            <div class="flex flex-wrap items-center gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5"
+                 role="status">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-primary">
+                    <i data-lucide="{{ 'activity' if lifecycle.active_lifecycle_jobs else ('check-circle-2' if selected.enabled else 'pause-circle') }}"
+                       class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                       aria-hidden="true"></i>
+                    {% if lifecycle.active_lifecycle_jobs %}
+                        Archive in progress
+                    {% elif selected.enabled %}
+                        Manual Archive Only enabled
+                    {% else %}
+                        Policy paused
+                    {% endif %}
+                </span>
+                <span class="min-w-0 flex-1 text-xs leading-5 text-content-secondary">
+                    {% if lifecycle.active_lifecycle_jobs %}
+                        Follow the execution in Jobs &amp; Executions. Another run is unavailable until completion.
+                    {% elif selected.enabled %}
+                        Preview the eligible records, then run Archive Only. Original audit events remain in PostgreSQL.
+                    {% else %}
+                        Preview is available. Enable and save the policy to allow manual archival.
+                    {% endif %}
+                </span>
+            </div>
+        {% elif not selected.enabled %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary">
                 <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
             </div>
@@ -356,27 +448,33 @@
                       hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-target="#data-lifecycle-domain-workspace"
                       hx-swap="outerHTML"
-                      hx-indicator="#data-lifecycle-policy-loading">
+                      hx-indicator="#data-lifecycle-policy-loading"
+                      hx-disabled-elt="find button[type='submit']">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_only">
-                    <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
+                    <button type="submit"
+                            class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
                             {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
-                <form method="post"
-                      action="{{ url_for('platform_operations.data_lifecycle.run') }}"
-                      hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
-                      hx-target="#data-lifecycle-domain-workspace"
-                      hx-swap="outerHTML"
-                      hx-indicator="#data-lifecycle-policy-loading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="domain" value="{{ selected.name }}">
-                    <input type="hidden" name="tab" value="policies">
-                    <input type="hidden" name="mode" value="archive_and_cleanup">
-                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                            {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
-                </form>
+                {% if selected.name not in ('notification_delivery', 'audit_event') %}
+                    <form method="post"
+                          action="{{ url_for('platform_operations.data_lifecycle.run') }}"
+                          hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
+                          hx-target="#data-lifecycle-domain-workspace"
+                          hx-swap="outerHTML"
+                          hx-indicator="#data-lifecycle-policy-loading"
+                          hx-disabled-elt="find button[type='submit']">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="domain" value="{{ selected.name }}">
+                        <input type="hidden" name="tab" value="policies">
+                        <input type="hidden" name="mode" value="archive_and_cleanup">
+                        <button type="submit"
+                                class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                                {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
+                    </form>
+                {% endif %}
             {% endif %}
         </div>
     </div>

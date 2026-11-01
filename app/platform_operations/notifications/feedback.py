@@ -32,6 +32,14 @@ class OperationalDeliveryPolicy(StrEnum):
         return False
 
 
+@dataclass(frozen=True, slots=True)
+class OperationalActionPresentation:
+    """Display metadata for a feedback link; it does not control activity persistence."""
+
+    label: str = 'View details'
+    icon: str = 'arrow-up-right'
+
+
 @dataclass(frozen=True)
 class OperationalFeedbackSpec:
     status: str

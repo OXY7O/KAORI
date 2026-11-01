@@ -136,13 +136,13 @@ Canonical Hero
 Compact Inventory Data Snapshot
 Inventory Asset Catalog
 Compact Cluster Inventory Table
-View Details → Side Drawer
+View Details → Full Workspace Modal · Unified Resource Sheet V10
 ```
 
 - Asset catalog cards use `components/inventory_asset_card.html` and link to Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage, and Configuration.
 - Cluster is a collection scope/provider, not an asset card.
 - Snapshot source, exact time, active scope, committed coverage, and stale/missing exceptions use `components/snapshot_context_bar.html`.
-- The cluster comparison table remains compact. Asset counts belong in the `components/side_drawer.html` detail view. The drawer uses shared section and metric primitives, ends with Operational Context, and provides one state-aware next action.
+- The cluster comparison table remains compact. Asset counts belong in the cluster's `components/resource_detail_modal.html` Full Workspace Modal / Unified Resource Sheet V10. It uses shared summary and section primitives, ends with Operational Context, and provides one state-aware next action.
 - Cluster posture is Healthy only when the target is connected and its committed snapshot is inside the freshness window.
 - Per-cluster overview counts must use grouped aggregates across the selected clusters. Do not reintroduce one count query per cluster and asset type.
 
@@ -205,7 +205,7 @@ Storage Inventory uses type-adaptive provisioning, capacity/access, and binding/
 
 Configuration Inventory uses protected key-index metadata. Values are not decoded, logged, persisted, or displayed. ConfigMap and Secret collection capability is stored on `ClusterInventory.collection_evidence` for the committed generation.
 
-Node through Configuration Inventory use `Detail Style 2 — Full Workspace Modal`, owned by `components/resource_detail_modal.html`, `components/details/_detail_content.html`, and `app/static/js/detail_rows.js`. Inventory Overview retains the shared Side Drawer, and Topology retains the Adaptive Explorer Inspector.
+Inventory Overview Cluster Details and Node through Configuration Inventory use `Detail Style 2 — Full Workspace Modal`, owned by `components/resource_detail_modal.html`, `components/details/_detail_content.html`, and `app/static/js/detail_rows.js`. Topology retains the Adaptive Explorer Inspector.
 
 ## PostgreSQL JSON relationship queries
 

@@ -137,6 +137,66 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
     assert '{{ integration_ui.section_header(' in template
 
 
+def test_all_six_integration_domains_share_an_icon_free_workspace_introduction() -> None:
+    domain = read('app/templates/integrations/domain.html')
+    partial = read('app/templates/integrations/partials/_domain_workspace.html')
+    shared = read('app/templates/integrations/components/_workspace.html')
+    provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
+    routes = read('app/integrations/routes.py')
+
+    # The outer introduction precedes the card, but is outside the HTMX
+    # partial replaced by tab/filter/pagination operations.
+    assert 'data-kaori-domain-workspace-section' in domain
+    assert 'integration_ui.workspace_section_intro(' in domain
+    assert 'domain.label ~ " Providers & Connections"' in domain
+    assert '"Review Source Control provider readiness and registered connections."' in domain
+    assert '"Review provider readiness, connections, and governed consumer bindings."' in domain
+    assert 'domain.key == "source_control"' in domain
+    assert domain.index('integration_ui.workspace_section_intro(') < domain.index(
+        '{% include "integrations/partials/_domain_workspace.html" %}'
+    )
+    assert 'id="domain-workspace"' in partial
+    assert 'hx_target="#domain-workspace"' in partial
+    assert 'hx_select="#domain-workspace"' in partial
+    assert 'workspace_section_intro(' not in partial
+
+    # Domain and provider pages share the exact already-approved icon-free
+    # semantic markup rather than independent provider-specific headers.
+    assert 'integration_ui.workspace_section_intro(' in provider_tabs
+    assert 'macro workspace_section_intro(title, description, aria_label)' in shared
+    intro_macro = shared.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in intro_macro
+    assert 'palette_icon(' not in intro_macro
+    for route in (
+        '/orchestration',
+        '/observability',
+        '/storage',
+        '/registry',
+        '/secrets-management',
+        '/source-control',
+    ):
+        assert route in routes
+
+
+def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> None:
+    workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+    domain_service = read('app/integrations/domain_service.py')
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
+
+    assert 'url_for(item.workspace_endpoint)' in workspace
+    assert 'Open {{ item.runtime_label }}' in workspace
+    assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
+    assert 'Add Connection' in workspace
+    assert 'aria-label="{{ item.runtime_label }} navigation"' in workspace
+    assert 'Review GitHub App installations and committed repository evidence.' in workspace
+    assert "'workspace_endpoint': module.workspace_endpoint" in domain_service
+    assert 'integration_ui.section_header(' in tabs
+    assert '"Integration Workspace"' in tabs
+    assert '"Switch between integration coverage and registered connections."' in tabs
+    assert 'Provider Connections & Coverage' in tabs
+    assert 'title_extra=workspace_guide' in tabs
+
+
 def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
     taxonomy = read('app/integrations/taxonomy.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')

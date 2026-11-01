@@ -1,18 +1,27 @@
-{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set overview_alerts = overview_alerts or {} %}
 {% set source = overview_alerts.source or {} %}
 {% set posture = overview_alerts.posture or {} %}
-<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-overview-alerts-snapshot>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="bell-ring" class="h-4 w-4"></i>
-                </span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bell-ring" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-content-primary">Provider Alerts &amp; Anomaly Snapshot</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Alertmanager is preferred for provider alert lifecycle evidence; Metrics Source is the narrower fallback. KAORI anomaly signals remain separate metric-derived evidence.</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Provider Alerts &amp; Anomaly Snapshot</h2>
+                        {{ info_tip.render('object-storage-provider-alerts-anomaly-snapshot-guide',
+                                                'Provider Alerts & Anomaly Guide',
+                                                'Provider alert lifecycle and KAORI metric-derived anomaly signals remain separate evidence.',
+                                                items=[
+                                                'Alertmanager is preferred for provider alert lifecycle evidence; Metrics Source ALERTS is the narrower fallback.',
+                                                'Critical and Warning counts refer to provider alerts; Anomaly Signals count KAORI metric-derived conditions.',
+                                                'Unknown or partial source availability must not be read as proof of a healthy system.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Alertmanager owns lifecycle; metrics alerts are fallback, anomalies separate.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -21,31 +30,27 @@
             </div>
         </div>
     </header>
-    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-        <article class="px-4 py-4 sm:px-5">
-            <p class="text-xs font-medium text-content-muted">Provider Alerts</p>
-            <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.provider_alert_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Active alerts committed from the selected provider source.</p>
-        </article>
-        <article class="px-4 py-4 sm:px-5">
-            <p class="text-xs font-medium text-content-muted">Critical</p>
-            <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.critical_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Critical provider-alert lifecycle evidence.</p>
-        </article>
-        <article class="px-4 py-4 sm:px-5">
-            <p class="text-xs font-medium text-content-muted">Warning</p>
-            <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.warning_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Warning provider-alert lifecycle evidence.</p>
-        </article>
-        <article class="px-4 py-4 sm:px-5">
-            <p class="text-xs font-medium text-content-muted">Anomaly Signals</p>
-            <p class="mt-1 text-xl font-semibold text-content-primary">{{ overview_alerts.anomaly_count|default(0) }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI metric-derived signals crossing an operating boundary.</p>
-        </article>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% set cards = [
+                    ('Provider Alerts', overview_alerts.provider_alert_count|default(0), 'Committed alerts from the selected provider.', 'bell-ring'),
+                    ('Critical', overview_alerts.critical_count|default(0), 'Critical provider-alert lifecycle evidence.', 'circle-alert'),
+                    ('Warning', overview_alerts.warning_count|default(0), 'Warning provider-alert lifecycle evidence.', 'triangle-alert'),
+                    ('Anomaly Signals', overview_alerts.anomaly_count|default(0), 'KAORI signals crossing monitored thresholds.', 'activity')
+                ] %}
+        {% for label, value, helper, icon in cards %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
     </div>
-    <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-content-muted">
+            <p class="text-sm leading-6 text-content-secondary">
                 {% if not overview_alerts.evidence_available %}
                     Alert and anomaly posture is Unknown because committed provider/metric evidence is unavailable.
                 {% elif overview_alerts.degraded %}
@@ -55,9 +60,9 @@
                 {% endif %}
             </p>
             <a href="{{ url_for('analytics.object_storage_alerts', system_id=system.id, time_range=selected_time_range, source=selected_alert_source) }}"
-               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
-                <i data-lucide="triangle-alert" class="h-3.5 w-3.5" aria-hidden="true"></i>
+               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover">
                 View Alerts &amp; Anomalies
+                <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
             </a>
         </div>
     </div>

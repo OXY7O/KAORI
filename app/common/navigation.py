@@ -37,6 +37,9 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'object_storage_inventory.system_details': 'System Details',
     'object_storage_inventory.buckets': 'Buckets',
     'object_storage_inventory.bucket_details': 'Bucket Details',
+    # Secrets & PKI
+    'secrets_pki.overview': 'Overview',
+    'secrets_pki.inventory': 'Inventory',
     # Artifact Registry
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
@@ -105,6 +108,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'users.index': 'Users',
     'identity_providers.index': 'Identity Providers',
     'identity_providers.directory_provisioning': 'Directory Provisioning',
+    'access.authentication_security.index': 'Authentication Security',
     'access.roles.index': 'Roles',
     'access.permissions.index': 'Permissions',
     'notifications.center': 'Notification Center',
@@ -206,6 +210,8 @@ def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
         return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')], endpoint)
     if endpoint == 'notifications.center' or endpoint.startswith('notifications.'):
         return [BreadcrumbItem('Notification Center', 'bell')]
+    if endpoint.startswith('access.authentication_security.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Authentication Security')]
     if endpoint.startswith('access.activity_audit.'):
         return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Activity Audit')]
     if endpoint.startswith('access.roles.'):
@@ -217,11 +223,34 @@ def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
     return None
 
 
+def _reports_and_operations_items(endpoint: str) -> list[BreadcrumbItem] | None:
+    """Keep independent reports/operations breadcrumb routes in one pure resolver."""
+    if endpoint.startswith('reports.'):
+        return [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
+    if endpoint.startswith('jobs.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
+        ]
+    if endpoint.startswith('platform_operations.overview.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Overview'),
+        ]
+    if endpoint.startswith('platform_operations.data_lifecycle.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Data Lifecycle'),
+        ]
+    return None
+
+
 def build_navigation_breadcrumb(
     endpoint: str | None,
     path: str = '',
     *,
     integration_owner: Mapping[str, str] | None = None,
+    integration_selector_label: str | None = None,
 ) -> list[dict[str, str | None]]:
     """Return breadcrumb items whose root matches the KAORI sidebar main menu."""
 
@@ -247,12 +276,33 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif (
+        endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}
+        and integration_selector_label
+    ):
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(integration_selector_label),
+            BreadcrumbItem('Choose Provider'),
+        ]
+    elif endpoint.startswith('security_posture.'):
+        items = [
+            BreadcrumbItem('Security', 'shield-alert'),
+            BreadcrumbItem('Findings' if endpoint == 'security_posture.findings' else 'Overview'),
+        ]
     elif endpoint.startswith('artifact_registry.runtime'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),
             BreadcrumbItem('Runtime', 'waypoints'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
+    elif endpoint.startswith('source_control.'):
+        items = [
+            BreadcrumbItem('Source Control', 'git-branch'),
+            BreadcrumbItem('Repositories' if endpoint == 'source_control.repositories' else 'Overview'),
+        ]
+    elif endpoint.startswith('secrets_pki.'):
+        items = [BreadcrumbItem('Secrets & PKI', 'key-round'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
     elif endpoint.startswith('artifact_registry.'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),
@@ -302,23 +352,8 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Intelligence', 'brain-circuit'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
-    elif endpoint.startswith('reports.'):
-        items = [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
-    elif endpoint.startswith('jobs.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
-        ]
-    elif endpoint.startswith('platform_operations.overview.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Overview'),
-        ]
-    elif endpoint.startswith('platform_operations.data_lifecycle.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Data Lifecycle'),
-        ]
+    elif (section_items := _reports_and_operations_items(endpoint)) is not None:
+        items = section_items
     elif endpoint.startswith('platform_operations.kubernetes.'):
         items = _platform_kubernetes_items(endpoint)
     elif endpoint.startswith(('integrations.', 'notification_channels.')):
@@ -328,6 +363,8 @@ def build_navigation_breadcrumb(
             'integrations.observability': 'Observability',
             'integrations.storage': 'Storage',
             'integrations.registry': 'Registry',
+            'integrations.secrets_management': 'Secrets Management',
+            'integrations.source_control': 'Source Control',
             'notification_channels.index': 'Notification Channels',
         }.get(endpoint, 'Overview')
         items = [

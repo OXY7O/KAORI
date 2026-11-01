@@ -18,6 +18,9 @@ INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 NOTIFICATION_CHANNELS_HERO = TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'index.html'
+NOTIFICATION_CHANNELS_CATALOG = (
+    TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'partials' / '_channels_workspace.html'
+)
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
 REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
 REPORTS_PAGE_SUBTITLE_HEROES = {
@@ -42,6 +45,18 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (PROVIDER_FRONTPAGE_HERO, 'description'),
     (INTEGRATION_OVERVIEW_HERO, 'description'),
     (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
+}
+SECRETS_PKI_HERO_DESCRIPTION_SOURCES = {
+    TEMPLATES / 'secrets_pki' / 'evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'evidence_workspaces.py',
+        '_WORKSPACES',
+        {'certificates', 'pki', 'expiration'},
+    ),
+    TEMPLATES / 'secrets_pki' / 'operational_evidence_workspace.html': (
+        ROOT / 'app' / 'secrets_pki' / 'operational_evidence_workspaces.py',
+        '_PAGE',
+        {'leases', 'consumers', 'governance'},
+    ),
 }
 
 DESCRIPTION_MIN_WORDS = 7
@@ -480,7 +495,11 @@ def _has_registered_description_resolver(path: Path, variable: str) -> bool:
         and path.name in {'blocked.html', 'pending.html'}
         and variable == 'materialization_description'
     )
-    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or materialization_description
+    return (
+        (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS
+        or (path in SECRETS_PKI_HERO_DESCRIPTION_SOURCES and variable == 'description')
+        or materialization_description
+    )
 
 
 def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
@@ -866,6 +885,41 @@ def _cluster_required_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _secrets_pki_workspace_descriptions() -> dict[str, str]:
+    """Resolve each governed Hero sentence from static Secrets & PKI read models."""
+    descriptions: dict[str, str] = {}
+    for template, (source_path, name, required) in SECRETS_PKI_HERO_DESCRIPTION_SOURCES.items():
+        owner = str(source_path.relative_to(ROOT))
+        tree = ast.parse(_read(source_path), filename=str(source_path))
+        definitions = [
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
+        ]
+        if len(definitions) != 1:
+            raise AssertionError(f'{owner}: expected one static {name} Hero definition')
+        try:
+            workspaces = ast.literal_eval(definitions[0])
+        except (ValueError, TypeError, SyntaxError) as exc:
+            raise AssertionError(f'{owner}: {name} Hero definitions must be static literals') from exc
+        if not isinstance(workspaces, dict) or set(workspaces) != required:
+            raise AssertionError(f'{owner}: {name} Hero workspace keys must be {sorted(required)}')
+        if '{{ description }}' not in _read(template):
+            raise AssertionError(f'{template.relative_to(ROOT)}: missing governed Hero description binding')
+        for workspace, record in workspaces.items():
+            if name == '_WORKSPACES' and isinstance(record, dict):
+                description = record.get('description')
+            elif name == '_PAGE' and isinstance(record, tuple) and len(record) == 3:
+                description = record[1]
+            else:
+                raise AssertionError(f'{owner}:{workspace}: invalid static Hero description record')
+            if not isinstance(description, str) or not description.strip():
+                raise AssertionError(f'{owner}:{workspace}: missing static Hero description')
+            descriptions[f'{owner}:{workspace}'] = _normalize_description_text(description)
+    return descriptions
+
+
 def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
@@ -878,6 +932,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_registry_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
+    descriptions.update(_secrets_pki_workspace_descriptions())
     failures: list[str] = []
     for owner, description in descriptions.items():
         try:
@@ -984,11 +1039,15 @@ def _verify_notification_channels_hero_metadata() -> None:
     source = _read(NOTIFICATION_CHANNELS_HERO)
     owner = str(NOTIFICATION_CHANNELS_HERO.relative_to(ROOT))
     _verify_bounded_hero_metadata(source, owner=owner)
+    catalog = _read(NOTIFICATION_CHANNELS_CATALOG)
     if (
-        '{% for provider in payload.providers %}' not in source
-        or 'notification_subsection(provider.label' not in source
+        '{% for provider in payload.providers %}' not in catalog
+        or '{{ provider.label }}' not in catalog
+        or '{{ provider.description }}' not in catalog
+        or 'table_label.status_label(provider.status, provider.tone' not in catalog
+        or 'Open {{ provider.label }} setup guide' not in catalog
     ):
-        raise AssertionError(f'{owner}: complete provider catalog must remain in the Delivery Providers workspace')
+        raise AssertionError(f'{owner}: complete provider catalog must remain in the Channels workspace')
 
 
 def _verify_operational_metadata_state_contract() -> None:
@@ -1116,6 +1175,149 @@ def _verify_registry_blocked_hero_actions() -> None:
         raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
 
 
+def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
+    """Guard canonical blocked Hero and section grammar when Vault is absent."""
+    for name, section, expected_title in (
+        ('inventory', 'Committed Inventory Coverage', 'Vault Inventory Source Required'),
+        ('lifecycle', 'Version Lifecycle', 'Vault Lifecycle Source Required'),
+    ):
+        source = _read(TEMPLATES / f'secrets_pki/{name}.html')
+        owner = f'Secrets & PKI {name} missing-source readiness'
+        if source.count('summary.provider_count == 0') != 2:
+            raise AssertionError(f'{owner}: both Hero and body require no-source branching')
+        hero, body = source.split('</section>', 1)
+        if 'page_hero.blocked_context_body(' not in hero:
+            raise AssertionError(f'{owner}: blocked Hero must reuse canonical renderer')
+        if 'page_hero.context_panel_classes()' not in hero.split('{% else %}', 1)[-1]:
+            raise AssertionError(f'{owner}: integrated/qualified Hero context must remain available')
+        if "'Blocked', 'warning'" not in hero:
+            raise AssertionError(f'{owner}: missing explicit blocked Hero state')
+
+        branch = re.search(
+            r'{%\s*if summary\.provider_count == 0\s*%}(?P<blocked>.*?){%\s*else\s*%}',
+            body,
+            re.S,
+        )
+        if not branch:
+            raise AssertionError(f'{owner}: missing canonical no-source body branch')
+        blocked = branch.group('blocked')
+        if '{% include "components/states/_blocked_state.html" %}' not in blocked:
+            raise AssertionError(f'{owner}: use the shared blocked prerequisite component')
+        if '_empty_state.html' in blocked or 'metric_card.render(' in blocked:
+            raise AssertionError(f'{owner}: do not expose false-zero metrics or empty panels')
+        for required in (
+            'blocked_state_steps',
+            'Register an active Vault source',
+            'blocked_state_permission_granted = can_manage_integrations',
+            'blocked_state_show_admin_required = not can_manage_integrations',
+            "blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none",
+            expected_title,
+        ):
+            if required not in blocked:
+                raise AssertionError(f'{owner}: missing prerequisite or authorization: {required}')
+        if source.index(section) < source.index('{% else %}', source.index('</section>')):
+            raise AssertionError(f'{owner}: operational evidence cannot precede the no-source blocker')
+        if not source.rstrip().endswith('{% endif %}\n    </div>\n{% endblock dashboard_content %}'):
+            raise AssertionError(f'{owner}: guard the entire operational evidence workspace')
+
+    routes = _read(ROOT / 'app/secrets_pki/routes.py')
+    lifecycle = routes.split('def lifecycle() -> ResponseReturnValue:', 1)[-1]
+    if 'summary=build_secrets_pki_operational_summary()' not in lifecycle:
+        raise AssertionError('Lifecycle must use the existing committed Vault source authority')
+    if "can_manage_integrations=current_user.has_permission('integrations.manage')" not in lifecycle:
+        raise AssertionError('Lifecycle prerequisite action must preserve permission ownership')
+
+
+def _verify_secrets_pki_overview_blocked_dashboard() -> None:
+    """Reject noncanonical prerequisites and verbose blocked Hero summary."""
+    overview = _read(TEMPLATES / 'secrets_pki/overview.html')
+    owner = 'Secrets & PKI Overview blocked Dashboard'
+    if 'page_hero.operational_dashboard(' not in overview:
+        raise AssertionError(f'{owner}: canonical shared Dashboard Hero is required')
+    hero_copy = re.search(r"blocked_info='([^']+)'", overview)
+    if not hero_copy or len(hero_copy.group(1)) > 52 or '\n' in hero_copy.group(1):
+        raise AssertionError(f'{owner}: compact Hero info exceeds one-line copy budget')
+    if 'Vault' not in hero_copy.group(1) or 'KV v2' not in hero_copy.group(1):
+        raise AssertionError(f'{owner}: compact Hero must retain Vault/KV v2 prerequisite')
+    branch = re.search(
+        r'{%\s*if not summary\.has_evidence\s*%}(?P<body>.*?){%\s*else\s*%}',
+        overview,
+        re.S,
+    )
+    if not branch:
+        raise AssertionError(f'{owner}: missing explicit blocked prerequisite branch')
+    blocked = branch.group('body')
+    if '{% include "components/states/_blocked_state.html" %}' not in blocked:
+        raise AssertionError(f'{owner}: prerequisite must use canonical _blocked_state.html')
+    if '_empty_state.html' in blocked or 'empty_state_variant' in blocked:
+        raise AssertionError(f'{owner}: missing prerequisite cannot use dashed empty-state panel')
+    for contract in (
+        'blocked_state_steps',
+        'Approve KV v2 metadata mounts',
+        'Run the Inventory Job',
+        'Missing evidence does not prove zero Secrets',
+        'blocked_state_permission_granted = can_manage_integrations',
+        'blocked_state_show_admin_required = not can_manage_integrations',
+        "blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none",
+    ):
+        if contract not in blocked:
+            raise AssertionError(f'{owner}: missing setup/evidence/permission contract: {contract}')
+
+
+def _verify_secrets_pki_lifecycle_compact_hero() -> None:
+    """Guard the approved 1440px compact copy and route-level navigation owner."""
+    lifecycle = _read(TEMPLATES / 'secrets_pki/lifecycle.html')
+    peers = _read(TEMPLATES / 'secrets_pki/operational_evidence_workspace.html')
+    navigation = _read(TEMPLATES / 'secrets_pki/_lifecycle_navigation.html')
+    owner = 'Secrets & PKI Lifecycle compact Hero'
+    navigation_call = re.search(r"""lifecycle_navigation\.render\(\s*(['"])lifecycle\1\s*\)""", lifecycle)
+    if navigation_call is None:
+        raise AssertionError(f'{owner}: Lifecycle must render shared peer navigation above Hero')
+    if 'lifecycle_navigation.render(workspace)' not in peers:
+        raise AssertionError(f'{owner}: peer workspaces must render shared navigation')
+    if 'workspace_tabs.render_navigation(' not in navigation:
+        raise AssertionError(f'{owner}: raw links cannot replace shared Integrated Workspace Tabs')
+    for key in ('lifecycle', 'leases', 'consumers', 'governance'):
+        if f"('{key}'," not in navigation or f"url_for('secrets_pki.{key}')" not in navigation:
+            raise AssertionError(f'{owner}: missing URL-owned peer: {key}')
+    if navigation_call.start() > lifecycle.index('page_hero.shell_classes()'):
+        raise AssertionError(f'{owner}: peer navigation must appear above Hero')
+    if peers.index('lifecycle_navigation.render(workspace)') > peers.index('page_hero.shell_classes()'):
+        raise AssertionError(f'{owner}: peer workspace navigation must appear above Hero')
+    for source in (lifecycle, peers):
+        if re.search(r'<nav\s+class="flex flex-wrap gap-', source):
+            raise AssertionError(f'{owner}: page-local raw peer navigation is forbidden')
+
+    if "context_header('KV v2 Evidence', kv2_hero_label" not in lifecycle:
+        raise AssertionError(f'{owner}: KV v2 Hero must not expose unbounded source labels')
+    if "pki_hero_label, 'Opted-in public certificates'" not in lifecycle:
+        raise AssertionError(f'{owner}: PKI Hero must not expose unbounded source labels')
+    if '{{ pki_validity.label }}' not in lifecycle or '{{ kv2_version_posture.label }}' not in lifecycle:
+        raise AssertionError(f'{owner}: preserve complete source diagnostics below Hero')
+
+    pki_mapping = re.search(r'{%\s*set pki_hero_label\s*=\s*\{(?P<mapping>.*?)\}\.get\(', lifecycle, re.S)
+    if not pki_mapping:
+        raise AssertionError(f'{owner}: missing bounded PKI display mapping')
+    compact_labels = re.findall(r"'[a-z_]+':\s*'([^']+)'", pki_mapping.group('mapping'))
+    if len(compact_labels) != 5 or any(len(label) > 28 for label in compact_labels):
+        raise AssertionError(f'{owner}: PKI Hero status must be concise at 1440px')
+    kv2_mapping = re.search(r'{%\s*set kv2_hero_label\s*=\s*\{(?P<mapping>.*?)\}\.get\(', lifecycle, re.S)
+    if not kv2_mapping:
+        raise AssertionError(f'{owner}: missing bounded KV v2 display mapping')
+    kv2_labels = re.findall(r"'[a-z_]+':\s*'([^']+)'", kv2_mapping.group('mapping'))
+    kv2_default = re.search(r"\}\.get\(kv2_version_posture\.status,\s*'([^']+)'\)", lifecycle)
+    if len(kv2_labels) != 3 or not kv2_default:
+        raise AssertionError(f'{owner}: expected qualified, empty, incomplete and blocked KV v2 summaries')
+    if any(len(value) > 28 for value in (*kv2_labels, kv2_default.group(1))):
+        raise AssertionError(f'{owner}: KV v2 Hero heading must be concise at 1440px')
+
+    info = re.search(r"page_hero\.context_info\('shield-alert',\s*'([^']+)'\s*\)", lifecycle)
+    if not info or len(info.group(1)) > 68 or '\n' in info.group(1):
+        raise AssertionError(f'{owner}: evidence note must be a concise one-line candidate')
+    if 'Missing evidence is not zero' not in info.group(1) or 'TLS delivery' not in info.group(1):
+        raise AssertionError(f'{owner}: compact note must preserve evidence and delivery limitations')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1223,13 +1425,24 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     profile_templates = _profile_templates()
-    if len(profile_templates) != 3:
+    required_profile_consumers = {
+        TEMPLATES / 'kubernetes/dashboard/partials/_hero.html',
+        TEMPLATES / 'storage/object_storage/dashboard/partials/_hero.html',
+        TEMPLATES / 'artifact_registry/partials/_overview_hero.html',
+        TEMPLATES / 'security_posture/overview.html',
+        TEMPLATES / 'secrets_pki/overview.html',
+        TEMPLATES / 'source_control/overview.html',
+    }
+    missing_consumers = sorted(required_profile_consumers - set(profile_templates))
+    if missing_consumers:
         raise AssertionError(
-            f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
+            'Required Operational Dashboard Hero consumer missing: '
+            + ', '.join(str(path.relative_to(ROOT)) for path in missing_consumers)
         )
-    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_overview_hero.html'
-    if artifact_registry_dashboard not in profile_templates:
-        raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
+    if len(profile_templates) < 7:
+        raise AssertionError(
+            f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
+        )
 
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()
@@ -1239,6 +1452,9 @@ def verify() -> None:
     _verify_analytics_metadata_ownership()
     _verify_notification_channels_hero_metadata()
     _verify_operational_metadata_state_contract()
+    _verify_secrets_pki_lifecycle_compact_hero()
+    _verify_secrets_pki_overview_blocked_dashboard()
+    _verify_secrets_pki_missing_vault_source_prerequisites()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:

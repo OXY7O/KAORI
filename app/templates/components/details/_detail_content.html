@@ -34,19 +34,32 @@
     <div data-resource-detail-header-identity
          class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">{{ caller() }}</div>
 {%- endmacro %}
-{% macro inventory_title(title) -%}
-    <h3 class="mr-1 min-w-0 break-words text-xl font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h3>
+{% macro inventory_title(title, compact=false) -%}
+    <h3 class="{{ 'mr-1 min-w-0 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]' if compact else 'mr-1 min-w-0 break-words text-xl font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]' }}">{{ title }}</h3>
 {%- endmacro %}
-{% macro workspace_header(description, icon='panel-top-open') -%}
+{# Optional contextual metadata; the header keeps facts separate from the primary semantic state. #}
+{% macro header_context_row(items) -%}
+    {% if items %}
+        <div data-resource-detail-header-context
+             class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+            {% for item in items %}
+                {{ table_label.metadata_label(item.label, item.icon|default(none) , true, 'detail') }}
+            {% endfor %}
+        </div>
+    {% endif %}
+{%- endmacro %}
+{% macro workspace_header(description, icon='panel-top-open', context_items=none, compact=false) -%}
     <header data-resource-detail-header
+            {% if context_items %}data-kaori-detail-header-layout="title-description-context"{% endif %}
             class="{{ expanded_workspace_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3.5">
             <span class="{{ expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
             <div class="min-w-0 flex-1">
                 {{ caller() }}
                 {% if description %}
-                    <p class="mt-1 max-w-4xl text-sm leading-5 text-content-secondary">{{ description }}</p>
+                    <p class="mt-1 max-w-4xl {{ 'text-xs leading-5 text-content-muted' if compact else 'text-sm leading-5 text-content-secondary' }}">{{ description }}</p>
                 {% endif %}
+                {{ header_context_row(context_items) }}
             </div>
         </div>
     </header>
@@ -169,14 +182,13 @@
     </div>
 {%- endmacro %}
 {% macro inventory_technical_row(label, value='-', break_all=false, nowrap=false, class_name='', copyable=false) -%}
+    {# Legacy copyable is accepted for compatibility, but Inventory facts remain read-only. #}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}"
-         {% if copyable %}data-kaori-copy-root{% endif %}>
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0" {% if copyable %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
-            {% if copyable %}{{ inventory_copy_button(label) }}{% endif %}
+            <span class="min-w-0">{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
         </span>
     </div>
 {%- endmacro %}

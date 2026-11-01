@@ -13,7 +13,11 @@ import pytest
 from PIL import Image
 from playwright.sync_api import Page
 
-from tests.ui.visual_audit import _matches_single_white_quantization_edge, assert_visual_baseline
+from tests.ui.visual_audit import (
+    _matches_single_quantization_edge,
+    _matches_single_white_quantization_edge,
+    assert_visual_baseline,
+)
 
 
 def _digest(*channels: int) -> str:
@@ -51,6 +55,45 @@ def test_unrelated_color_change_cannot_use_white_boundary_exception() -> None:
         bytes((200, 249, 252)),
         bytes((192, 240, 255)),
         _digest(216, 240, 240),
+    )
+
+
+def test_single_non_white_quantization_edge_recreates_exact_reviewed_sha() -> None:
+    # One raw channel differs by one 8-bit level precisely at the 35/36
+    # decision boundary; other color channels are unchanged.
+    assert _matches_single_quantization_edge(
+        bytes((34, 35, 36)),
+        bytes((24, 24, 48)),
+        _digest(24, 24, 24),
+    )
+    assert _matches_single_quantization_edge(
+        bytes((34, 35, 35)),
+        bytes((24, 24, 24)),
+        _digest(24, 24, 48),
+    )
+
+
+def test_quantization_guard_rejects_two_changed_channels() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((36, 36, 35)),
+        bytes((48, 48, 24)),
+        _digest(24, 24, 24),
+    )
+
+
+def test_quantization_guard_rejects_non_boundary_drift() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((33, 34, 34)),
+        bytes((24, 24, 24)),
+        _digest(48, 24, 24),
+    )
+
+
+def test_quantization_guard_rejects_invalid_normalized_thumbnail() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((34, 35, 36)),
+        bytes((24, 24, 24)),
+        _digest(24, 24, 48),
     )
 
 
@@ -144,3 +187,55 @@ def test_material_drift_still_fails_with_screenshot_evidence(tmp_path: Path, mon
             evidence_root=evidence,
         )
     assert (evidence / 'welcome-light-mobile-actual.png').is_file()
+
+
+def test_proven_raster_artifact_requires_approved_sha_and_exact_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    page = _test_page()
+    actual_png = page.screenshot.return_value
+    expected_sha = '0' * 64
+    exact_png_sha = hashlib.sha256(actual_png).hexdigest()
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {'welcome-light-mobile': (expected_sha, exact_png_sha)},
+    )
+
+    assert visual._matches_proven_raster_variant('welcome-light-mobile', actual_png, expected_sha)
+    assert not visual._matches_proven_raster_variant('welcome-light-mobile', actual_png + b'x', expected_sha)
+    assert not visual._matches_proven_raster_variant('welcome-light-mobile', actual_png, '1' * 64)
+    assert not visual._matches_proven_raster_variant('welcome-dark-mobile', actual_png, expected_sha)
+
+    with pytest.warns(UserWarning, match='exact reviewed one-time raster artifact variant'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path),
+            evidence_root=tmp_path / 'evidence',
+        )
+
+
+def test_proven_raster_artifact_cannot_bypass_geometry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tests.ui.visual_audit as visual
+
+    page = _test_page()
+    actual_png = page.screenshot.return_value
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {'welcome-light-mobile': ('0' * 64, hashlib.sha256(actual_png).hexdigest())},
+    )
+    with pytest.raises(AssertionError, match='dimensions changed'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path, height=800),
+            evidence_root=tmp_path / 'evidence',
+        )

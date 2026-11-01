@@ -80,3 +80,26 @@ def test_htmx_fragments_remain_embedded_after_refresh() -> None:
     assert "if fragment in {'active', 'registry', 'queues'}" in source
     assert "fragment_context['embedded'] = True" in source
     assert '**fragment_context' in source
+
+
+def test_execution_tabs_use_titles_without_duplicate_count_badges() -> None:
+    workspace = _read('_workspace.html')
+    assert "('active', 'Active Work', 'activity', url_for('jobs.executions', execution_tab='active'))" in workspace
+    assert "('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry'))" in workspace
+    assert "('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'))" in workspace
+    assert 'job_stats.active),' not in workspace.split('{% set execution_tabs = [', 1)[1].split('] %}', 1)[0]
+
+
+def test_execution_sections_reuse_canonical_guide_and_registry_icon() -> None:
+    for name, guide in (
+        ('_active_jobs.html', 'jobs-active-work-guide'),
+        ('_registry.html', 'jobs-execution-registry-guide'),
+        ('_queue_activity.html', 'jobs-queue-activity-guide'),
+    ):
+        source = _read('partials/' + name)
+        assert '{% import "components/info_tip.html" as info_tip %}' in source
+        assert guide in source
+        assert "variant='guide'" in source
+    registry = _read('partials/_registry.html')
+    assert 'data-lucide="list-checks" class="h-5 w-5"' in registry
+    assert 'aria-hidden="true"' in registry

@@ -1,0 +1,88 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/progress_bar.html" as progress_bar %}
+<section class="min-w-0 bg-kaori-mist/40 p-3 sm:p-4"
+         aria-label="Committed Allocation Evidence">
+    <div class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+            <div class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Committed Allocation Evidence</h4>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                        {{ item.cluster.name }} · {{ item.cluster.environment|title }} · {{ visible_bars|length }} resource{{ '' if visible_bars|length == 1 else 's' }}
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+                {{ table_label.status_label(item.state, state_tone) }}
+                {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|replace('_', ' ') |title,
+                'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
+            </div>
+        </header>
+        <div class="grid min-w-0 gap-3 bg-surface-elevated p-3 sm:grid-cols-2 sm:p-4">
+            {% for bar in visible_bars %}
+                <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-label="{{ bar.label }} allocation evidence">
+                    <header class="flex min-w-0 flex-wrap items-start justify-between gap-2 border-b border-outline-subtle px-3 py-3 sm:px-4">
+                        <div class="min-w-0">
+                            <h5 class="text-sm font-semibold text-content-primary">{{ bar.label }}</h5>
+                            <p class="mt-0.5 text-xs text-content-muted">
+                                {{ 'Logical admission ceiling' if bar.key == 'storage_bytes' else 'Governed request commitment' }}
+                            </p>
+                        </div>
+                        {% if bar.known and item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh'] %}
+                            {{ table_label.metadata_label(bar.percent ~ '% committed') }}
+                        {% else %}
+                            {{ table_label.status_label('Evidence Unavailable', 'warning') }}
+                        {% endif %}
+                    </header>
+                    <dl class="grid min-w-0 grid-cols-3 gap-px bg-outline-subtle">
+                        <div class="min-w-0 bg-surface-card px-3 py-3">
+                            <dt class="text-xs text-content-muted">Budget</dt>
+                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">
+                                {{ bar.budget }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3">
+                            <dt class="text-xs text-content-muted">Committed</dt>
+                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums text-content-primary">
+                                {{ bar.committed }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3">
+                            <dt class="text-xs text-content-muted">Headroom</dt>
+                            <dd class="mt-1 break-words text-xs font-semibold tabular-nums {{ 'text-status-critical-text' if bar.shortfall else 'text-content-primary' }}">
+                                {{ bar.headroom }}
+                            </dd>
+                        </div>
+                    </dl>
+                    <div class="border-t border-outline-subtle px-3 py-3 sm:px-4">
+                        {% if bar.shortfall %}
+                            <p class="mb-2 text-xs font-semibold text-status-critical-text">Over budget by {{ bar.shortfall }}</p>
+                        {% endif %}
+                        {% if bar.known and item.state != 'Unknown' and item.snapshot_state in ['current', 'fresh'] %}
+                            <div class="mb-1 flex justify-between gap-2 text-xs text-content-muted">
+                                <span>Committed allocation</span>
+                                <span class="font-semibold tabular-nums text-content-primary">{{ bar.percent }}%</span>
+                            </div>
+                            {{ progress_bar.stacked_bar(bar.percent,
+                                                        bar.free_percent,
+                                                        'flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
+                                                        'h-full bg-kaori-primary',
+                                                        'h-full bg-kaori-primary/20',
+                                                        label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
+                        {% else %}
+                            <p class="text-xs text-content-muted">Ratio unavailable — no free headroom is asserted.</p>
+                        {% endif %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+        <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-2.5 text-xs leading-5 text-content-muted">
+            Committed request budgets are not live utilization or physical reservations. Logical Storage is an admission ceiling, not backend free space.
+        </footer>
+    </div>
+</section>

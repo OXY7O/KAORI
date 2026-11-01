@@ -2,6 +2,7 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% include "kubernetes/tenant/partials/_sync_workspace.html" %}
@@ -32,48 +33,60 @@
                 'tenant-multicluster-heading') }}
         {% include "kubernetes/tenant/partials/_cluster_estate.html" %}
     </section>
-    <section class="space-y-4" aria-labelledby="tenant-attention-heading">
-        {{ section_intro.render('Operational Attention',
-                'Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.',
-                'tenant-attention-heading') }}
-        <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
-            <div class="h-full xl:col-span-7">
-                {% call operational_section_card.render(
-                    'Needs Attention',
-                    'Prioritized governance, access, and credential conditions requiring operator review.',
-                    'triangle-alert',
-                    action_href=url_for('intelligence.recommendations'),
-                    action_label='Open Intelligence',
-                    action_icon='arrow-right',
-                    body_classes='flex flex-1 flex-col p-0',
-                    extra_classes='flex h-full flex-col',
-                    aria_label='Tenant needs attention'
-                    ) %}
+    {% set critical_preview = tenant_attention_rows|selectattr('tone', 'equalto', 'critical')|list|length %}
+    {% set warning_preview = tenant_attention_rows|selectattr('tone', 'equalto', 'warning')|list|length %}
+    <section class="space-y-4"
+             aria-labelledby="tenant-operational-oversight-heading">
+        {{ section_intro.render('Operational Oversight',
+                'Prioritized Tenant conditions and recent committed activity requiring operational review.',
+                'tenant-operational-oversight-heading') }}
+        {% call operational_section_card.render(
+            'Operational Attention & Activity',
+            'Prioritize actionable Tenant conditions and monitor the latest committed activity.',
+            'triangle-alert',
+            action_href=url_for('intelligence.recommendations'),
+            action_label='Open Intelligence',
+            action_icon='arrow-right',
+            body_classes='p-0',
+            aria_label='Tenant operational attention and activity'
+            ) %}
+            <div class="flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-hover px-5 py-3">
+                <p class="mr-auto text-xs text-content-muted">Preview counts from the latest committed rows.</p>
+                {{ table_label.status_label(critical_preview ~ ' Critical shown', 'critical') }}
+                {{ table_label.status_label(warning_preview ~ ' Warnings shown', 'warning') }}
+                {{ table_label.status_label(tenant_recent_activity_rows|length ~ ' Recent events shown', 'maintenance') }}
+            </div>
+            <div class="grid min-w-0 xl:grid-cols-12">
+                <section class="flex min-w-0 flex-col xl:col-span-7"
+                         aria-labelledby="tenant-attention-list-title">
+                    <header class="border-b border-outline-subtle px-5 py-3">
+                        <h3 id="tenant-attention-list-title"
+                            class="text-sm font-semibold text-content-primary">Needs Attention</h3>
+                        <p class="mt-1 text-xs text-content-muted">Prioritized governance, access, and credential conditions requiring operator review.</p>
+                    </header>
                     <div class="flex-1 divide-y divide-outline-subtle">
                         {% for item in tenant_attention_rows %}
-                            <article class="flex min-h-[7.5rem] items-start gap-3 px-5 py-4">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-kaori-primary"
+                            <article class="flex min-w-0 items-start gap-3 px-5 py-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-kaori-primary"
                                       aria-hidden="true">
                                     <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-start justify-between gap-2">
-                                        <div class="min-w-0">
-                                            <p class="text-xs font-semibold text-content-muted">{{ item.kind }}</p>
-                                            <p class="mt-1 font-semibold leading-5 text-content-primary">{{ item.title }}</p>
-                                        </div>
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="text-xs font-semibold text-content-muted">{{ item.kind }}</p>
                                         {{ table_label.status_label(item.status, item.tone) }}
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
-                                    <p class="mt-1.5 inline-flex items-center gap-1.5 text-xs text-content-muted">
+                                    <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">{{ item.title }}</p>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
+                                    <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted">
                                         <i data-lucide="database" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         Committed governance finding
                                     </p>
                                 </div>
                             </article>
                         {% else %}
-                            <div class="flex min-h-[7.5rem] items-start gap-3 px-5 py-6">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
+                            <div class="flex min-h-[7rem] items-start gap-3 px-5 py-5">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
                                       aria-hidden="true">
                                     <i data-lucide="circle-check" class="h-4 w-4"></i>
                                 </span>
@@ -89,39 +102,34 @@
                     <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">
                         Showing {{ tenant_attention_rows|length }} prioritized condition{{ '' if tenant_attention_rows|length == 1 else 's' }}.
                     </footer>
-                {% endcall %}
-            </div>
-            <div class="h-full xl:col-span-5">
-                {% call operational_section_card.render(
-                    'Recent Tenant Activity',
-                    'Latest Tenant, access & credential changes.',
-                    'activity',
-                    action_href=url_for('tenant.operations', tab='activity'),
-                    action_label='Open Activity',
-                    action_icon='arrow-right',
-                    body_classes='flex flex-1 flex-col p-0',
-                    extra_classes='flex h-full flex-col',
-                    aria_label='Recent Tenant activity'
-                    ) %}
+                </section>
+                <section class="flex min-w-0 flex-col border-t border-outline-subtle xl:col-span-5 xl:border-l xl:border-t-0"
+                         aria-labelledby="tenant-recent-activity-title">
+                    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-5 py-3">
+                        <div class="min-w-0">
+                            <h3 id="tenant-recent-activity-title"
+                                class="text-sm font-semibold text-content-primary">Recent Tenant Activity</h3>
+                            <p class="mt-1 text-xs text-content-muted">Latest Tenant, access & credential changes.</p>
+                        </div>
+                        {{ section_link_button.render(url_for('tenant.operations', tab='activity') , 'Open Activity', icon='arrow-right') }}
+                    </header>
                     {% if tenant_recent_activity_rows %}
                         <ol class="flex-1 divide-y divide-outline-subtle">
                             {% for item in tenant_recent_activity_rows %}
-                                <li class="flex min-h-[7.5rem] items-start gap-3 px-5 py-4">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <li class="flex min-w-0 items-start gap-3 px-5 py-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                           aria-hidden="true">
                                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-start justify-between gap-2">
-                                            <div class="min-w-0">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.kind }}</p>
-                                                <p class="mt-0.5 truncate font-semibold leading-5 text-content-primary"
-                                                   title="{{ item.title }}">{{ item.title }}</p>
-                                            </div>
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.kind }}</p>
                                             {{ table_label.status_label(item.status, item.tone) }}
                                         </div>
+                                        <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary"
+                                           title="{{ item.title }}">{{ item.title }}</p>
                                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
-                                        <p class="mt-1.5 inline-flex items-center gap-1.5 text-xs text-content-muted">
+                                        <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted">
                                             <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                             {{ item.time }}
                                         </p>
@@ -133,8 +141,8 @@
                             Showing {{ tenant_recent_activity_rows|length }} latest committed event{{ '' if tenant_recent_activity_rows|length == 1 else 's' }}.
                         </footer>
                     {% else %}
-                        <div class="flex min-h-[7.5rem] flex-1 items-start gap-3 px-5 py-6">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"
+                        <div class="flex min-h-[7rem] flex-1 items-start gap-3 px-5 py-5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"
                                   aria-hidden="true">
                                 <i data-lucide="history" class="h-4 w-4"></i>
                             </span>
@@ -145,14 +153,12 @@
                                 </p>
                             </div>
                         </div>
-                    {% endif %}
-                    {% if not tenant_recent_activity_rows %}
                         <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">
                             Showing 0 latest committed events.
                         </footer>
                     {% endif %}
-                {% endcall %}
+                </section>
             </div>
-        </div>
+        {% endcall %}
     </section>
 {% endblock tenant_content %}

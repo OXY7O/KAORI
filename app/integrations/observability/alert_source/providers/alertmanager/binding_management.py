@@ -10,6 +10,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.binding_
     get_alert_consumer_profile,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.capabilities import BINDING_CAPABILITY_KEYS
+from app.integrations.observability.alert_source.providers.alertmanager.vault_scope import require_vault_alert_scope
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
@@ -89,6 +90,9 @@ def create_binding(
     if normalized_scope_type != 'global' and selector_json is None:
         raise ValueError('Define an alert identity selector before binding this Alertmanager source.')
 
+    if normalized_scope_type == 'vault_instance':
+        require_vault_alert_scope(asset_key=normalized_scope_key, selector_json=selector_json)
+
     binding = IntegrationBinding()
     binding.integration_instance_id = canonical.id
     binding.asset_type = normalized_scope_type
@@ -136,6 +140,8 @@ def update_binding_selector(
     )
     if selector_json is None:
         raise ValueError('Define an alert identity selector before saving this binding.')
+    if binding.asset_type == 'vault_instance':
+        require_vault_alert_scope(asset_key=binding.asset_key, selector_json=selector_json)
     binding.selector_json = selector_json
     profile = get_alert_consumer_profile(binding.asset_type)
     binding.validation_profile = profile.profile_key if profile is not None else None

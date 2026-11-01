@@ -257,8 +257,12 @@ def main() -> int:
     reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     reveal_tabs = read('app/templates/components/content_tabs.html')
     require(
-        'No eligible cluster. Review readiness or policy.' in reveal_page,
-        'Protected Reveal empty-cluster guidance must use the compact reviewed wording.',
+        'No eligible cluster. Review readiness or policy.' not in reveal_page
+        and "'No eligible protected cluster'" in reveal_page
+        and '{% if not global_reveal_enabled %}disabled{% endif %}' in reveal_page
+        and "info_title='Protected Reveal target guide'" in reveal_page
+        and '{% if selection_error %}' in reveal_page,
+        'Protected Reveal must retain safe empty/disabled state, live errors and the canonical Guide.',
         errors,
     )
     reveal_script = read('app/static/js/secret_reveal_workspace.js')
@@ -312,8 +316,13 @@ def main() -> int:
     require(
         'viewState' not in reveal_script
         and 'selectTab' not in reveal_script
-        and 'event.preventDefault' not in reveal_script,
-        'Protected Reveal polling script must not duplicate Integrated Workspace Tab navigation ownership.',
+        and 'activeTab' not in reveal_script
+        and 'const navigateToStepUp = (event) =>' in reveal_script
+        and 'const navigateToApprovedRequest = (event) =>' in reveal_script
+        and 'event.defaultPrevented' in reveal_script
+        and 'event.preventDefault()' in reveal_script
+        and "window.addEventListener('secret-reveal:tab-changed'" in reveal_script,
+        'Protected Reveal JS must delegate guarded Step-Up navigation and listen for tab changes without owning tabs.',
         errors,
     )
     require(
@@ -329,8 +338,13 @@ def main() -> int:
     ):
         require(token in reveal_routes, f'Protected Reveal route-state contract missing: {token}', errors)
     require(
-        'Reveal Session Step-Up' in reveal_step_up and 'approved request is ready to be consumed' in reveal_step_up,
-        'Protected Reveal step-up must remain in the approved-request consumption flow.',
+        'Reveal Session Step-Up' in reveal_step_up
+        and 'Verify only after approval.' in reveal_step_up
+        and 'Verify your session before consuming an approved request.' in reveal_step_up
+        and 'Required before one-time reveal.' in reveal_step_up
+        and '{% if step_up_active %}' in reveal_step_up
+        and "url_for('kubernetes_operations.reauthenticate_secret_reveal')" in reveal_step_up,
+        'Protected Reveal Step-Up must remain separate from request creation and precede approved one-time consumption.',
         errors,
     )
     require(
@@ -341,11 +355,16 @@ def main() -> int:
     )
     require(
         'components/form_field.html' in reveal_step_up
-        and 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in reveal_step_up
+        and 'components/action_button.html' in reveal_step_up
         and 'form_field.label_row(' in reveal_step_up
         and 'Current KAORI Password' in reveal_step_up
-        and 'class="{{ form_field.input_classes() }}"' in reveal_step_up,
-        'Protected Reveal step-up password and Verify Session action must share the canonical form-field baseline.',
+        and 'class="{{ form_field.input_classes() }}"' in reveal_step_up
+        and 'data-reveal-step-up-password' in reveal_step_up
+        and 'autocomplete="current-password"' in reveal_step_up
+        and 'name="csrf_token"' in reveal_step_up
+        and "action_button.classes('primary')" in reveal_step_up
+        and 'Verify Session' in reveal_step_up,
+        'Protected Reveal Step-Up must use shared password/action controls with CSRF and current-password semantics.',
         errors,
     )
     new_request_panel = reveal_page.split('data-secret-reveal-panel="new"', 1)[1].split(

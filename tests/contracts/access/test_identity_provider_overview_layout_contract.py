@@ -26,7 +26,7 @@ def test_provider_overview_compacts_metrics_and_governance_in_shared_section() -
     for field in ('configured', 'enabled', 'directory', 'sso'):
         assert f'summary.{field}' in template
     for boundary in (
-        'Provider / Adapter Boundary',
+        'Provider & Adapter',
         'Credential Ownership',
         'Identity Projection',
         'Authorization Boundary',
@@ -72,4 +72,8 @@ def test_provider_hero_and_registry_remain_separate_authority() -> None:
     assert 'access/identity_providers/partials/_registry.html' in workspace
     assert 'registry_ui.filter_form(' in registry
     assert 'registry_ui.footer(' in registry
-    assert "current_user.has_permission('identity_providers.manage')" in registry
+    detail = _read('app/templates/access/identity_providers/partials/_provider_detail.html')
+    assert "current_user.has_permission('identity_providers.manage')" in detail
+    assert "current_user.has_permission('identity_providers.provision')" in detail
+    assert 'name="csrf_token"' in detail
+    assert "url_for('identity_providers.edit', provider_id=provider.id)" not in registry

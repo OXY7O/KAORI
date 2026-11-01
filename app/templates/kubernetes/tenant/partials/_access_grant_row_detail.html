@@ -1,0 +1,125 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
+<section class="min-w-0 bg-kaori-mist/40 p-3 sm:p-4"
+         data-access-grant-expanded-evidence
+         aria-label="Access Grant expanded details">
+    <div class="min-w-0 overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Committed Access Grant</h4>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Authorization, scope and committed provider evidence</p>
+                </div>
+            </div>
+            {{ table_label.status_label(grant.status|title, 'normal' if grant.status == 'active' else 'critical') }}
+        </header>
+        <div class="min-w-0 space-y-3 bg-surface-elevated p-3 sm:p-4">
+            <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                     aria-label="Selected Access Grant">
+                <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="layers-3"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h5 class="text-sm font-semibold text-content-primary">Grant Context</h5>
+                    </div>
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                        <span class="text-xs text-content-muted">Provider Reconciliation</span>
+                        {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
+                    </div>
+                </div>
+                <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                        <dt class="text-xs text-content-muted">Principal</dt>
+                        <dd class="mt-1 break-all text-sm font-semibold text-content-primary">
+                            {{ grant.membership.subject_name }}
+                        </dd>
+                    </div>
+                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                        <dt class="text-xs text-content-muted">Tenant</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                            {{ grant.tenant.name }}
+                        </dd>
+                    </div>
+                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                        <dt class="text-xs text-content-muted">Profile</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                            {{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}
+                        </dd>
+                    </div>
+                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                        <dt class="text-xs text-content-muted">Scope</dt>
+                        <dd class="mt-1 break-all text-sm font-semibold text-content-primary">
+                            {{ grant.scope_type|title }} · {{ grant.namespace.namespace if grant.namespace else (grant.environment.environment|title if grant.environment else 'Entire Tenant') }}
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+            {% if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked') %}
+                <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-label="Governed grant actions">
+                    <div class="flex items-center gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                        <i data-lucide="settings-2"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h5 class="text-sm font-semibold text-content-primary">Governed Actions</h5>
+                    </div>
+                    <div class="grid min-w-0 gap-px bg-outline-subtle lg:grid-cols-2">
+                        <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 bg-surface-card px-3 py-3 sm:px-4">
+                            <div class="min-w-0 flex-1">
+                                <h6 class="text-sm font-semibold text-content-primary">Reconcile Provider Access</h6>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Retry provider-side reconciliation for this committed grant.
+                                </p>
+                            </div>
+                            <form method="post"
+                                  action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
+                                  hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
+                                  hx-target="#tenant-admin-workspace"
+                                  hx-select="#tenant-admin-workspace"
+                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                  hx-indicator="#tenant-admin-loading"
+                                  hx-disabled-elt="find button"
+                                  class="ml-auto shrink-0">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="access_inventory_view" value="grants">
+                                <button type="submit" class="{{ action_button.classes('secondary') }} !h-9">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                    Reconcile
+                                </button>
+                            </form>
+                        </div>
+                        {% if grant.status == 'active' %}
+                            <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 bg-surface-card px-3 py-3 sm:px-4">
+                                <div class="min-w-0 flex-1">
+                                    <h6 class="text-sm font-semibold text-status-critical-text">Revoke Access Grant</h6>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Remove this grant while keeping the Membership intact.</p>
+                                </div>
+                                <form method="post"
+                                      action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
+                                      hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
+                                      hx-target="#tenant-admin-workspace"
+                                      hx-select="#tenant-admin-workspace"
+                                      hx-swap="outerHTML show:none focus-scroll:false"
+                                      hx-indicator="#tenant-admin-loading"
+                                      hx-disabled-elt="find button"
+                                      class="ml-auto shrink-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="access_inventory_view" value="grants">
+                                    <button type="submit" class="{{ action_button.classes('critical') }} !h-9">
+                                        <i data-lucide="shield-x" class="h-4 w-4" aria-hidden="true"></i>
+                                        Revoke Access Grant
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</section>

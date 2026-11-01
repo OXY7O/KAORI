@@ -2,10 +2,12 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% set registry_id = "tenant-membership-registry" %}
 {% set loading_id = "tenant-membership-registry-loading" %}
 {% set query_params = {
     'section': 'memberships',
+    'membership_view': 'memberships',
     'membership_tenant_id': membership_filters.tenant_id,
     'membership_principal_type': membership_filters.principal_type,
     'membership_status': membership_filters.status,
@@ -20,7 +22,7 @@
                         loading_id,
                         membership_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'section': 'memberships'},
+            query_params={'section': 'memberships', 'membership_view': 'memberships'},
             page_param='membership_page',
             per_page_param='membership_per_page'
             ) }}
@@ -58,6 +60,7 @@
             per_page_param='membership_per_page'
             ) %}
             <input type="hidden" name="section" value="memberships">
+            <input type="hidden" name="membership_view" value="memberships">
             <div>
                 <label for="membership-tenant-filter"
                        class="{{ table_ui.filter_label_classes() }}">Tenant</label>
@@ -104,8 +107,8 @@
             </div>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
             <caption class="sr-only">Tenant membership registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -152,7 +155,17 @@
                                       hx-disabled-elt="find button"
                                       class="flex justify-end">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit"
+                                    <button id="tenant-membership-revoke-submit-{{ membership.id }}"
+                                            type="submit"
+                                            class="hidden"
+                                            tabindex="-1"
+                                            aria-hidden="true">Confirm Membership Revoke</button>
+                                    <button type="button"
+                                            data-destructive-modal-open
+                                            data-destructive-modal-id="tenant-membership-revoke-modal"
+                                            data-destructive-submit-button-id="tenant-membership-revoke-submit-{{ membership.id }}"
+                                            data-destructive-target="{{ membership.subject_name }}"
+                                            data-destructive-scope="{{ membership.tenant.name }}"
                                             {% if not can_manage %}disabled aria-disabled="true"{% endif %}
                                             class="{{ table_ui.action_classes(true) }}">
                                         <i data-lucide="user-x" class="h-4 w-4" aria-hidden="true"></i>
@@ -170,12 +183,29 @@
                                       hx-disabled-elt="find button"
                                       class="flex justify-end">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit"
-                                            {% if not can_manage or membership.principal_type not in ['user', 'group'] %}disabled aria-disabled="true"{% endif %}
-                                            class="{{ table_ui.action_classes() }}">
-                                        <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
-                                        Reactivate
-                                    </button>
+                                    {% if can_manage and membership.principal_type in ['user', 'group'] %}
+                                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                                            <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
+                                            Reactivate
+                                        </button>
+                                    {% else %}
+                                        {# The same visual control opens KAORI guidance, never a separate ? / i icon. #}
+                                        {% if membership.principal_type not in ['user', 'group'] %}
+                                            {% set reactivate_title = "Reactivation unavailable" %}
+                                            {% set reactivate_reason = "This principal type does not support Membership reactivation. Create a new authorized Membership and Access Grant instead." %}
+                                        {% else %}
+                                            {% set reactivate_title = "Reactivation requires permission" %}
+                                            {% set reactivate_reason = "You do not have permission to manage Tenant Memberships." %}
+                                        {% endif %}
+                                        {{ info_tip.render('membership-reactivate-' ~ membership.id,
+                                                                                reactivate_title,
+                                                                                reactivate_reason,
+                                                                                placement='left',
+                                                                                button_text='Reactivate',
+                                                                                button_classes=table_ui.action_classes() ~ ' opacity-60 !cursor-help',
+                                        variant='action',
+                                        trigger_icon='user-check') }}
+                                    {% endif %}
                                 </form>
                             {% endif %}
                         </td>
@@ -205,3 +235,21 @@
         page_param='membership_page',
         per_page_param='membership_per_page') }}
 </section>
+{{ destructive_modal.render('tenant-membership-revoke-modal',
+'Revoke Membership',
+'Selected principal',
+'',
+'tenant-membership-revoke-submit',
+action_label='Revoke Membership',
+notice='Remove this principal’s Tenant authorization and dependent grants.',
+scope_value='Tenant Membership',
+target_label='Principal',
+scope_label='Tenant',
+operation_kind='revoke',
+impact_items=[
+('user-x', 'Disable Membership', 'The principal loses authorization through this Tenant Membership.') ,
+('shield-x', 'Revoke dependent grants', 'Active Access Grants are revoked and provider cleanup is reconciled.'),
+('history', 'Preserve audit history', 'Membership and Access Grant evidence remain available for review.')
+],
+warning='Reactivating this Membership later does not restore revoked Access Grants. A new authorization is required.',
+presentation='governed') }}

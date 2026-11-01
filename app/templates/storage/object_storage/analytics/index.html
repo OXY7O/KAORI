@@ -22,8 +22,25 @@
             {% if system %}
                 {% include "storage/object_storage/analytics/partials/_controls.html" %}
             {% endif %}
+            {% if page_key in ['capacity', 'performance', 'forecast', 'top_consumers', 'alerts'] %}
+                {% set analysis_intros = {'capacity': ('Capacity & Usage Analysis', 'Review physical headroom, usage trends, bucket quotas, and committed evidence.'), 'performance': ('Performance Analysis', 'Review request reliability, traffic direction, and bucket activity from committed evidence.'), 'forecast': ('Forecast Analysis', 'Review projected usage, bucket forecasts, and worker-committed planning evidence.'), 'top_consumers': ('Top Consumers Analysis', 'Review storage concentration, request activity, and bucket ownership.'), 'alerts': ('Alerts & Anomalies Analysis', 'Review provider alert lifecycles and KAORI anomaly signals separately.')} %}
+                {% set analysis_intro = analysis_intros[page_key] %}
+                <div class="space-y-1"
+                     data-object-storage-domain-analysis-heading="{{ page_key }}">
+                    <h2 class="text-base font-semibold text-content-primary">{{ analysis_intro[0] }}</h2>
+                    <p class="text-sm leading-6 text-content-secondary">{{ analysis_intro[1] }}</p>
+                </div>
+            {% endif %}
             {% if page_key == 'overview' %}
+                <div class="space-y-1" data-object-storage-operational-posture-heading>
+                    <h2 class="text-base font-semibold text-content-primary">Operational Posture</h2>
+                    <p class="text-sm leading-6 text-content-secondary">Review capacity, request reliability, growth, and concentration from committed evidence.</p>
+                </div>
                 {% include "storage/object_storage/analytics/partials/_overview_analysis.html" %}
+                <div class="space-y-1" data-object-storage-analysis-workspaces-heading>
+                    <h2 class="text-base font-semibold text-content-primary">Analysis Workspaces</h2>
+                    <p class="text-sm leading-6 text-content-secondary">Explore capacity trends, request performance, consumers, forecasts, and source evidence.</p>
+                </div>
                 {% include "storage/object_storage/analytics/partials/_overview_workspace.html" %}
             {% elif page_key == 'capacity' %}
                 {% include "storage/object_storage/analytics/partials/_capacity_workspace.html" %}

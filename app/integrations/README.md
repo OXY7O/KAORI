@@ -29,6 +29,16 @@ Integrations
     └── Block Storage
 ```
 
+Vault now extends this product taxonomy as `Secrets Management → Secrets & PKI → HashiCorp Vault`.
+Its first provider adapter lives in
+`app/integrations/secrets_management/secrets_pki/providers/vault/` and owns only
+read-only AppRole identity/health/compatibility evidence under #2585.
+KV v2 metadata, PKI, Lease, consumer, Metrics Source, Dashboard, Analytics,
+Intelligence, and governed operations remain separately bounded HV-02–HV-15 workstreams.
+Vault tokens and plaintext Secret/PKI material are never operational committed state.
+Vault authentication relies on approved HTTPS origin/CA, an encrypted AppRole SecretID,
+and independently constrained network egress.
+
 `worker_domain` remains execution metadata and must not be reused as the UI or
 architecture taxonomy. `app/definitions/catalogs/integrations/taxonomy.yaml` is the canonical domain/capability map; `taxonomy.py` is its validated runtime adapter.
 
@@ -84,13 +94,23 @@ Integrations
 ├── Overview
 ├── Orchestration
 ├── Observability
-└── Storage
+├── Storage
+├── Registry
+├── Secrets Management
+└── Notification Channels
 ```
 
 Product-specific pages remain provider workspaces beneath those domains. Each registered
 `IntegrationModule` declares `navigation_endpoint_prefixes`, allowing deep routes such as
-`cluster.*`, `metrics.*`, and `alertmanager.*` to retain the correct domain active state
-without provider-name branching in the sidebar template.
+`cluster.*`, `metrics.*`, `alertmanager.*`, and `vault.*` to retain
+the correct domain active state without provider-name branching in the
+sidebar template. The rendered sidebar uses
+`app/common/workspace_navigation_catalog.py` and
+`app/common/workspace_navigation.py`, not the older
+`components/navigation/integrations_menu.html` partial. New taxonomy
+domains need a permission-aware workspace capability there until the
+separate #624 navigation redesign is accepted; provider products do not
+become top-level sidebar entries.
 
 ## Binding model
 
@@ -585,3 +605,28 @@ not guaranteed human reading. The long ntfy origin instruction is shortened
 without losing its required environment variable or app/worker scope.
 Actual two-line text wrapping depends on browser/viewport; real Firefox
 Visual QA and human acceptance remain pending, with no forced line clamp.
+
+## Notification Delivery — provider 429 retry deadline (#1475, review holding)
+
+Slack and Discord HTTP 429 responses now carry a **sanitized, bounded**
+`Retry-After` delay (delta seconds or HTTP-date) through the existing typed
+`DeliveryResult` without persisting raw response headers, webhook URLs,
+provider error bodies or credentials. The limit is 24 hours; malformed/past
+headers fall back to KAORI's normal global retry floor. Both limits apply via
+`max(global_retry_delay, provider_retry_after)` rather than early retry.
+
+A nullable, indexed `notification_deliveries.next_retry_at` stores the
+provider-specific due time independently from `updated_at` (actual attempt
+time) and immutable encrypted replay snapshot. Existing legacy NULL rows
+keep original global backoff. The worker's PostgreSQL `SKIP LOCKED` scan
+excludes not-yet-due rows, and direct event redispatch also enforces future
+deadlines. Claiming a new attempt resets this scheduling hint, and successful
+outcomes clear it. The stored hint does not make provider delivery exactly-once.
+
+**UAT and operational boundary:** the schema migration must be applied in
+an authorized DevContainer database before loading the updated model.
+`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` remains authoritative; no
+automatic worker activation is permitted in this source-only review. Run
+PostgreSQL concurrency/crash, 429 burst, old NULL-row, disabled/retired
+channel, credential rotation, and mock-provider negative tests before
+requesting human acceptance. Never use production endpoints for these tests.

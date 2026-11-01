@@ -116,12 +116,11 @@ Super Admin lifecycle constraints are enforced by User Management:
 
 `User.has_permission(permission_key)` resolves in this order:
 
-1. Super Admin: allow.
-2. Active normalized role record: check `role.permissions`.
-3. Legacy role slug fallback: check `DEFAULT_ROLE_PERMISSIONS`.
-4. Otherwise: deny.
+1. Local-database Super Admin (`is_super_admin`): allow the existing **global RBAC permission** check.
+2. Assigned active normalized role: check its persisted permission keys.
+3. Missing or inactive role, unknown key or absent permission: deny.
 
-The legacy fallback exists for migration compatibility. New authorization design must use `role_id` and `role_record` as the normalized source.
+The current `User.has_permission()` implementation has **no legacy role-slug fallback**. It does not evaluate resource scopes. Future resource-scoped authorization must preserve this as the permission prerequisite without treating the local Super Admin's global override as an automatic resource-scope grant. The latter exception requires #724/#641 design acceptance.
 
 ## 6. Permission dependencies
 
@@ -168,6 +167,6 @@ Current RBAC is global to the KAORI application. A role permission such as `clus
 - time-bound access;
 - approval-required role activation.
 
-Future scoped KAORI application authorization should add a policy layer instead of encoding scope into permission key names.
+Scoped authorization direction is accepted at #724: add a resource policy **after** the global RBAC prerequisite, not inside permission key names. The D1–D5 architecture principles were accepted under #724 on 2026-10-23 and are recorded in [SCOPED_AUTHORIZATION_V1_DECISION_RECORD.md](SCOPED_AUTHORIZATION_V1_DECISION_RECORD.md). Detailed implementation contracts, migration and UAT are pending; no resource-scope evaluator is active.
 
 Kubernetes Tenant Management access grants from #114 are a separate downstream authorization domain: they translate Tenant membership + scope + a versioned Tenant Access Profile into provider RBAC. They do not extend `User.has_permission()`, do not replace KAORI application RBAC, and must not be represented as additional global application roles.

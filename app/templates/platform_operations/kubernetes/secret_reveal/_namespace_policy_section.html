@@ -2,69 +2,76 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table.html" as table_ui %}
-<section id="secret-reveal-namespace-section"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="border-b border-outline-default px-6 py-5">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Namespace Policies</h2>
-                    <p class="mt-1 text-sm text-content-muted">Allow protected access only where there is a clear operational requirement.</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(selected_cluster.name, icon='server') }}
-                {{ table_label.metadata_label(namespace_summary.total ~ ' Total') }}
-                {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
-                {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
-                {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
+<div id="secret-reveal-live-source"
+     class="mb-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+     aria-label="Kubernetes Namespace Source Status">
+    <div class="flex min-w-0 flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="radio-tower" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-content-primary">Live Namespace Source</h3>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes reports Namespace presence; KAORI governs reveal policies.</p>
+                <p class="mt-1 text-xs text-content-muted">Selected cluster: {{ selected_cluster.name }}</p>
             </div>
         </div>
-        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
-                <span class="inline-flex items-center gap-2">
-                    <i data-lucide="radio-tower" class="h-4 w-4 text-kaori-primary"></i>
-                    <span class="font-semibold text-content-secondary">Live Source</span>
-                    {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
-                </span>
+        <div class="flex min-w-0 flex-wrap items-center gap-3 lg:justify-end">
+            {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
+            <span class="text-xs leading-5 text-content-muted">
                 {% if namespace_source.available %}
-                    <span>Last Refreshed <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
+                    Refreshed {{ namespace_source.last_successful_at }}
                 {% elif namespace_source.has_successful_snapshot %}
-                    <span>Last Successful <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
+                    Last successful {{ namespace_source.last_successful_at }}
                 {% else %}
-                    <span>No successful live refresh yet.</span>
+                    No successful refresh yet
                 {% endif %}
-            </div>
-            {% if namespace_filters.query or namespace_filters.policy != 'all' %}
-                {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                {{ registry_ui.clear_filters_action(namespace_clear_href,
-                                table_ui.action_classes() ,
-                hx_get=namespace_clear_url,
-                target='#secret-reveal-namespace-section',
-                indicator='#secret-reveal-namespace-loading',
-                select='#secret-reveal-namespace-section',
-                push_url='true',
-                swap='outerHTML',
-                marker='secret-reveal-namespaces'
-                ) }}
-            {% endif %}
-            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
-               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
+            </span>
+            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
+               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
                hx-target="#secret-reveal-cluster-workspace"
                hx-swap="outerHTML show:none"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-strong hover:bg-surface-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/10">
-                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                Refresh
+               class="{{ table_ui.action_classes() }} shrink-0">
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                Refresh Source
             </a>
         </div>
-        <div id="secret-reveal-namespace-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
     </div>
+</div>
+<section id="secret-reveal-namespace-section"
+         class="{{ table_ui.block_classes() }} shadow-none"
+         x-data='{ "query": {{ (namespace_filters.query or '') | tojson }}, "policy": {{ (namespace_filters.policy or 'all') | tojson }} }'>
+    {% set namespace_policy_title_extra %}
+        {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
+        {{ table_label.metadata_label(namespace_summary.total ~ ' Total Namespaces', icon='list-filter') }}
+        {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
+        {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
+    {% endset %}
+    {% set namespace_policy_header_actions %}
+        {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+        {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+        <span :hidden="!query.trim() && policy === 'all'"
+              {% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}>
+            {{ registry_ui.clear_filters_action(namespace_clear_href,
+                        table_ui.action_classes() ,
+            hx_get=namespace_clear_url,
+            target='#secret-reveal-namespace-section',
+            indicator='#secret-reveal-namespace-loading',
+            select='#secret-reveal-namespace-section',
+            push_url='true',
+            swap='outerHTML',
+            marker='secret-reveal-namespaces'
+            ) }}
+        </span>
+    {% endset %}
+    {{ table_ui.inventory_block_header('boxes',
+        'Namespace Policies',
+        'Review existing access policies; edit a namespace only when a change is required.',
+        'secret-reveal-namespace-loading',
+        'Loading Namespace Policies',
+        none,
+        header_actions=namespace_policy_header_actions,
+        title_extra=namespace_policy_title_extra) }}
     {% if not namespace_source.available %}
         <div class="border-b border-outline-default px-6 py-4">
             <div class="rounded-xl border {{ operational_callout.semantic_surface_classes('warning') }} p-4">
@@ -89,11 +96,12 @@
           hx-indicator="#secret-reveal-namespace-loading"
           class="{{ table_ui.filter_bar_classes() }}">
         <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+        <input type="hidden" name="view" value="policies">
         <input type="hidden" name="page" value="1">
         <input type="hidden"
                name="per_page"
                value="{{ namespace_pagination.per_page }}">
-        <div class="min-w-[220px] flex-1">
+        <div class="min-w-0 flex-1 basis-full sm:basis-56">
             <label for="secret-reveal-namespace-search"
                    class="{{ table_ui.filter_label_classes() }}">Search Namespace</label>
             <div class="relative">
@@ -104,15 +112,17 @@
                        id="secret-reveal-namespace-search"
                        name="namespace_q"
                        value="{{ namespace_filters.query }}"
+                       x-model="query"
                        placeholder="Search namespaces..."
                        class="{{ table_ui.filter_input_classes() }} pl-10">
             </div>
         </div>
-        <div class="min-w-[220px] flex-1">
+        <div class="min-w-0 flex-1 basis-full sm:basis-56">
             <label for="secret-reveal-namespace-policy-filter"
                    class="{{ table_ui.filter_label_classes() }}">Reveal Policy</label>
             <select id="secret-reveal-namespace-policy-filter"
                     name="namespace_policy"
+                    x-model="policy"
                     class="{{ table_ui.filter_select_classes() }}">
                 {% for value, label in namespace_filter_options.items() %}
                     <option value="{{ value }}"

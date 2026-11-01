@@ -68,6 +68,16 @@ The two tracks are development-feedback choices, not separate delivery outcomes.
 
 Both tracks converge before Ready. A Local-First change must still have a governed Draft PR, pass the authoritative exact-head Developer Check, freeze the final candidate, pass Full Admission, integrate through `kaori/staging`, receive applicable UAT, and follow the same promotion/release rules. Local evidence accelerates development; it never substitutes for repository admission evidence.
 
+A separate linked Git worktree is supported for local Dev Container validation of
+an immutable candidate while preserving another checkout's staged/uncommitted
+changes. Source Hygiene recognizes Git checkouts with either a `.git` directory
+(normal checkout) or a `.git` metadata pointer file (linked worktree) and
+checks **tracked** source with `git ls-files`. Ignored Ruff caches and retained
+`tmp/ci-artifacts` diagnostics are allowed only as local tooling output, not
+in a tracked source tree or unpacked source archive. The latter is deliberately
+checked in archive mode with all files visible (CI hygiene issue #4156).
+
+
 Developer Check planning follows **capability impact with fail-safe widening**. A known capability may select its owning tests and explicit dependent contracts. Shared, CI, release-authority, migration, or uncertain changes widen validation rather than assuming isolation. Full Admission remains comprehensive at the frozen-candidate boundary.
 
 
@@ -199,12 +209,38 @@ A Pull Request to `main` is a governed promotion only when its source is exactly
 
 ### Temporary DevContainer review workbench (#2227)
 
+#### Stable DevContainer preflight checkout and safe synchronization
+
+For the duration of this temporary review workbench, operator-driven **DevContainer preflight checks** use the existing `/workspace/kaori` checkout and the **single review source branch** `kaori/review/staging-uat`. Do not create a new worktree per gate failure or routinely use detached-HEAD checkouts / switch branches between local test runs. This is a **local test-workspace convention only**; implementation still uses issue-linked work branches and PRs, and comprehensive admission remains exclusively governed by the existing staging delivery contract.
+
+On first setup only, attach `/workspace/kaori` to `kaori/review/staging-uat` after checking `git status --short` and preserving local staged/unstaged work. If that branch is already checked out elsewhere, stop and inspect `git worktree list` rather than overriding Git's worktree safety. A blocked checkout or failed pull is a **hard stop**, never permission to run tests at the previous HEAD. Do not use `git reset --hard`, `git clean -fd`, force-pull, force checkout or automatic stash-all to solve a local edit conflict. Preserve the exact affected edits with a reviewed path-scoped stash (or a governed commit) and verify no other tracked/untracked changes remain before the one-time branch selection.
+
+For subsequent preflight sessions, remain on the same branch and in the same folder. The safe, fail-closed refresh and validation sequence is:
+
+```bash
+cd /workspace/kaori
+git fetch origin &&
+test "$(git branch --show-current)" = "kaori/review/staging-uat" &&
+test -z "$(git status --porcelain)" &&
+git pull --ff-only origin kaori/review/staging-uat &&
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/kaori/review/staging-uat)" &&
+test -z "$(git status --porcelain)" &&
+python -m djlint app/templates --check &&
+bash scripts/quality_gate.sh --static
+```
+
+If any guard fails, stop and resolve its concrete cause before continuing; never report gate results from the stale source as validation of the new review head. Record the **exact** tested SHA, environment, executed checks, outcome and relevant diagnostics. Keep temporarily stashed edits separate until their ownership and proper issue/PR flow are reviewed. Passing local static checks does not confer Developer Check, Full Admission, deployed-server UAT or release authority.
+
 The existing `kaori/review/staging-uat` branch is an explicitly governed **temporary, non-release workbench** for combining issue-owned changes and collecting exploratory DevContainer UAT evidence. It is **not** a third official long-lived integration, release, or promotion authority: `kaori/staging` remains the only source of comprehensive admission and staging integration; `main` remains the governed production lineage. Workbench acceptance never substitutes for Ready Developer Check, all five Full Admission lanes, CI Admission, Security/DAST, staging Fast Smoke, immutable release evidence, or human acceptance of the deployed candidate.
 
 - **Separate workstream ownership:** UAT review PRs retain their own issue/branch and target `kaori/review/staging-uat` only while on hold. An approved workbench merge is not approval to promote its full tree. Independent CI, operations and performance fixes still flow through normal issue-scoped PRs to `kaori/staging`.
 - **One-way synchronization:** after an accepted staging change, inspect both refs, commit ancestry and open review-target PRs before syncing **staging → review**. If review has no unique commits, use fast-forward with `force=false` and a verified expected head; if diverged, use an explicit reviewed merge commit into review instead. Never reset/force-push/rebase a shared review branch, alter pending PR heads, or reverse-sync unaccepted review commits to staging.
 - **Later promotion:** reconcile only the specifically reviewed and human-accepted issue scope on a branch from *current* `kaori/staging`, then use ordinary Draft → Ready → Full Admission → staging integration. Never use the temporary review branch as a staging-to-main promotion shortcut.
 - **Evidence boundary:** for each exploratory DevContainer session record exact checkout SHA, environment, configured provider/instance identity, scenario, runner/tester, actual positive/negative results and screenshots/traces where captured, and explicit human decision. When an external Kubernetes provider, RBAC, migration, hosted ingress, TLS, deployment, recovery or real infrastructure evidence is unavailable, mark that scenario **NOT RUN** or **BLOCKED**, not PASS. The DevContainer is not a stand-in for the production-like UAT host.
+
+**Dated accepted-source admission (#1710, initial 2026-10-26; reconfirmed 2026-11-01).** The maintainer initially accepted the committed DevContainer snapshot `kaori/review/staging-uat@1a9a708f044e06d584f1882e83877812dcfbac88` on 2026-10-26. On 2026-11-01, the maintainer explicitly confirmed that the **latest reviewed/approved source is the committed review workbench**, while directing its admission through existing gates rather than replacing them. [Workbench reconciliation #4161](https://github.com/OXY7O/KAORI/pull/4161) merged the issue-owned corrections and reviewed workbench history; subsequent issue-scoped review PRs #4162, #4163, #4164, #4165, #4167 and #4169 integrated Ruff, DjLint, DevContainer preflight and test-contract corrections into `kaori/review/staging-uat@79ee563edd6ac304da183c417edd11d3dcc32c75`. This later **exact SHA**, not the moving branch name, is the additional accepted source boundary for this one admission. The independent issue #1710 work branch `kaori/task-1710-reviewed-staging-admission-20261026` was advanced **non-forced** from its ancestor `2064c2e7d2c316b466d19e5bbe90b96faa2bd094` to `79ee563edd6ac304da183c417edd11d3dcc32c75` (177 ahead, zero behind across the two non-forced sync checkpoints), retaining prior corrective history and its separate PR #3399 to `kaori/staging`.
+
+The 15 PR heads still open against the review workbench at the 2026-11-01 checkpoint remain **excluded/unmerged**; only commits already integrated into the explicitly accepted SHA are admitted. This operator-approved **dated source-reconciliation exception** does not authorize routine review-to-staging synchronization, future workbench commits, bypass of issue-owned remediation, or any replacement of the standard two-branch lifecycle. Each new corrective commit invalidates previous exact-head CI evidence and must undergo Draft Developer Check, recorded Pre-Ready decision, frozen Ready Developer Check and Full Admission, staging verification, immutable RC/digest, governed hosted UAT and independent human server acceptance. Never treat source inspection, DevContainer UAT or a merged workbench PR as those proofs.
 
 This exception remains under #2227 until an explicit documented review retires it; it does not replace the canonical two-branch delivery workflow. Current review branch and pending PR inventory must be rechecked at execution time instead of relying on historical head SHAs or PR counts.
 
@@ -242,6 +278,14 @@ Code complete and automated validation are necessary but not sufficient. Applica
 - Issue/PR evidence recorded.
 
 For work entering the artifact-backed release path, completion additionally requires immutable artifact identity, VPS UAT against that exact artifact, Semantic Versioning release of the accepted digest without rebuilding, production RUN verification, and rollback evidence.
+
+## New/Changed Capability — Mandatory Gate Evidence
+
+Each added or materially changed KAORI domain, capability, provider, feature, operator-facing workspace or static verifier must comply with the **existing** `docs/engineering/TERMINAL_OUTPUT.md` evidence contract and `docs/architecture/RELEASE_SURFACE_COVERAGE.md` ownership/change-control requirements before the change can be accepted. This applies equally to Source Control/GitHub, Secrets Management/Vault, Kubernetes, Artifact Registry, Analytics, Intelligence and future integrations; never create provider-named top-level products solely to display coverage.
+
+In the governing Issue and PR, identify the domain-first release owner, scoped purpose, applicable navigation/Blueprint/taxonomy changes, the canonical command or actual test selection, security/negative testing and executed evidence paths. In CI, show the executed check's purpose, actual result, duration and diagnostics through the existing steps, Summary and artifacts. A new independent verifier needs a specific purpose label; an existing verifier can cover the new capability when that contract is genuinely sufficient. Do not introduce duplicated tests solely for presentation.
+
+**Admission boundaries:** `REGISTERED` indicates ownership only; test PASS requires executed evidence, and green static/functional checks do not substitute for Security, Runtime/DAST, deployment and explicit human acceptance when applicable. SKIP, REUSED, NOT RUN and BLOCKED must remain honest. Reviewers must reject a new capability whose ownership, purpose or required evidence cannot be identified. The approved validation gates and the Issue → Branch → PR → staging → UAT → promotion flow remain authoritative and unchanged.
 
 ## Developer Check — Work-Branch Loop
 

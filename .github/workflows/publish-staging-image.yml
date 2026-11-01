@@ -42,6 +42,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC admission · resolving accepted staging SHA\n'
           api="https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/kaori/staging"
           response="$(curl --fail-with-body --silent --show-error \
             --header "Authorization: Bearer ${GH_TOKEN}" \
@@ -86,6 +87,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC admission · waiting for exact staging Full Admission success\n'
           deadline=$(( $(date +%s) + 6900 ))
           api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/quality.yml/runs?branch=kaori%2Fstaging&event=push&per_page=100"
 
@@ -126,6 +128,7 @@ jobs:
               printf 'quality_run_id=%s\n' "$quality_run_id"
               printf 'conclusion=%s\n' "$conclusion"
             } >> "$GITHUB_OUTPUT"
+            printf '✅ RC admission · Full Admission PASS · run=%s · source=%s\n' "$quality_run_id" "$ACCEPTED_SHA"
             exit 0
           done
 
@@ -328,6 +331,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC publication · building exact production image for %s\n' "$ACCEPTED_SHA"
           docker build \
             --platform linux/amd64 \
             --target production \
@@ -341,16 +345,26 @@ jobs:
             --build-arg OCI_LICENSES="LicenseRef-KAORI-Internal-Use" \
             --tag "$CANDIDATE_IMAGE" \
             .
+          printf '✅ RC publication · production image build PASS\n'
 
       - name: Scan RC Image
-        run: >-
-          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
-          --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE"
-          trivy image --cache-dir /root/.cache/trivy --exit-code 1 --ignore-unfixed
-          --severity HIGH,CRITICAL --scanners vuln "$CANDIDATE_IMAGE"
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '⏳ RC security · scanning image for HIGH/CRITICAL vulnerabilities\n'
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE" \
+            trivy image --cache-dir /root/.cache/trivy --exit-code 1 --ignore-unfixed \
+              --severity HIGH,CRITICAL --scanners vuln "$CANDIDATE_IMAGE"
+          printf '✅ RC security · HIGH/CRITICAL image scan PASS\n'
 
       - name: Validate Runtime & DAST
-        run: bash .github/ci/run-runtime-validation.sh "$CANDIDATE_IMAGE"
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '⏳ RC runtime · executing production readiness and baseline DAST\n'
+          bash .github/ci/run-runtime-validation.sh "$CANDIDATE_IMAGE"
+          printf '✅ RC runtime · production readiness and baseline DAST PASS\n'
 
       - name: Reserve RC Git Tag
         shell: bash
@@ -358,6 +372,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC publication · reserving immutable Git tag for %s\n' "$ACCEPTED_SHA"
           repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
           payload="$(cat <<EOF_JSON
           {"ref": "refs/tags/${CANDIDATE_TAG}", "sha": "${ACCEPTED_SHA}"}
@@ -444,13 +459,16 @@ jobs:
             printf 'KAORI_IMAGE_DIGEST=%s\n' "$digest"
             printf 'KAORI_IMAGE_REF=%s\n' "$image_ref"
           } >> "$GITHUB_ENV"
+          printf '✅ RC evidence · immutable digest recorded · %s\n' "$digest"
           cat staging-image.env
 
       - name: Verify RC Metadata
         shell: bash
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC evidence · checking OCI labels against source and version\n'
           bash .github/ci/release-lib.sh verify-labels "$KAORI_IMAGE_REF" "$CANDIDATE_TAG" "$ACCEPTED_SHA"
+          printf '✅ RC evidence · OCI label/source/version consistency PASS\n'
 
       - name: Generate RC Evidence
         shell: bash
@@ -529,6 +547,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC attestation · signing SPDX SBOM predicate (OIDC identity)\n'
           docker run --rm \
             --user 0:0 \
             --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
@@ -541,6 +560,8 @@ jobs:
               --predicate /workspace/kaori-sbom.spdx.json \
               --type spdxjson \
               "$KAORI_IMAGE_REF"
+          printf '✅ RC attestation · SPDX SBOM attestation submitted\n'
+          printf '⏳ RC attestation · signing SLSA provenance predicate (OIDC identity)\n'
 
           docker run --rm \
             --user 0:0 \
@@ -554,11 +575,13 @@ jobs:
               --predicate /workspace/kaori-provenance.json \
               --type slsaprovenance1 \
               "$KAORI_IMAGE_REF"
+          printf '✅ RC attestation · provenance attestation submitted\n'
 
       - name: Verify RC Attestations
         shell: bash
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC verification · checking SBOM and provenance attestations\n'
           identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/publish-staging-image.yml@${GITHUB_REF}"
 
           docker run --rm \
@@ -626,6 +649,7 @@ jobs:
                 )
               )
             ' provenance-attestation-statements.jsonl >/dev/null
+          printf '✅ RC verification · SPDX and SLSA source lineage PASS\n'
 
       - name: Upload RC Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -707,6 +731,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          printf '⏳ RC publication · creating GitHub prerelease and release-note evidence\n'
           RELEASES_PATH="/releases"
           repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
           release_name="KAORI ${CANDIDATE_TAG}"

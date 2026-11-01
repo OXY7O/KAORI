@@ -174,7 +174,8 @@ def test_navigation_context_is_preserved_without_becoming_navigation_identity() 
     assert "'object_storage_analytics': ('system_id', 'time_range')" in model
     assert "'kubernetes_operations': ('cluster_id', 'namespace')" in model
     assert '_preserved_context' in model
-    assert 'build_sidebar_navigation(request.endpoint, current_user, request.args)' in presentation
+    assert "'sidebar_navigation': build_sidebar_navigation(" in presentation
+    assert 'active_capability_override=' in presentation
     assert 'build_capability_navigation(request.endpoint, current_user, request.args)' in presentation
 
 

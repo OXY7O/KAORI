@@ -46,14 +46,19 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     workspace = page + channels_workspace + channel_modals
     for label in (
-        'Delivery Providers',
         'Channel Registry',
         'Configured Channels',
         'Provider Setup Guide',
         'Delivery Contract',
-        'Delivery Ownership',
+        'Delivery Governance',
+        'Channel Readiness',
+        'Delivery Outcomes',
+        'Recent Delivery',
     ):
         assert label in workspace
+    assert 'Delivery Providers' not in page
+    assert '{% for provider in payload.providers %}' in channels_workspace
+    assert 'Open {{ provider.label }} setup guide' in channels_workspace
     providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in providers

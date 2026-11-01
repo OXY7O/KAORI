@@ -434,7 +434,7 @@ def _get_storage_generation_context() -> dict[str, Any]:
             'checked_at': backend_status.get('checked_at'),
             'source': str(backend_status.get('source') or 'direct'),
         }
-    except Exception:
+    except (OSError, RuntimeError, TypeError, ValueError):
         return {
             'backend': 'unknown',
             'label': 'Storage backend',

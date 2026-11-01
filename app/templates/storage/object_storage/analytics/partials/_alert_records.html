@@ -10,14 +10,19 @@
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
-                    {% if alert_table %}{{ table_label.result_count(alert_table.pagination.total_items) }}{% endif %}
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="bell-ring" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
+                        {% if alert_table %}{{ table_label.result_count(alert_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted xl:whitespace-nowrap">
+                        Review provider alerts; Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.
+                    </p>
                 </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Automatic uses Alertmanager lifecycle data (receivers, silences, inhibition); Metrics Source ALERTS provides narrower rule-state evidence.
-                </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if alert_filters_active %}

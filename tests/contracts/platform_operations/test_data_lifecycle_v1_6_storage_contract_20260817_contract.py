@@ -59,14 +59,20 @@ def test_lifecycle_migration_chain_restores_schedule_evidence_revision() -> None
 
 def test_runtime_observation_lifecycle_includes_object_storage_runtime_history() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    coverage = read('app/platform_operations/data_lifecycle/retention/domain_coverage.py')
     runtime_domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
     minio_adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
     validation_tasks = read('app/integrations/validation/tasks.py')
     readme = read('app/platform_operations/data_lifecycle/retention/README.md')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert "'label': 'Object Storage · MinIO'" in presentation
-    assert 'MinIO Object Storage integration targets' in presentation
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domain_coverage import _domain_coverage' in presentation
+    )
+    assert '_domain_coverage(name)' in presentation
+    assert "'label': 'Object Storage · MinIO'" in coverage
+    assert "'description': 'Recent MinIO storage observations.'" in coverage
+    assert 'all persist into this provider-neutral model' in readme
     assert "source_model = 'integration_runtime_observations'" in runtime_domain
     assert 'IntegrationRuntimeObservation.provider ==' not in runtime_domain
     assert '.filter_by(provider=' not in runtime_domain

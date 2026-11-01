@@ -1253,7 +1253,7 @@ def _format_file_size(
 def _get_active_storage_backend_name() -> str:
     try:
         return get_configured_storage_backend_name()
-    except Exception:
+    except RuntimeError:
         return 'local'
 
 

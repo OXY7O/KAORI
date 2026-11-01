@@ -16,6 +16,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
     routes = read('app/kubernetes/dashboard/routes.py')
     application_contract = read('app/dashboards/common/operational.py')
+    shared_tabs = read('app/common/operational_tabs.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
     framework = read('app/templates/components/operational_dashboard_workspace.html')
@@ -31,9 +32,10 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
     assert 'normalize_operational_tab' in routes
-    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in application_contract
+    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in shared_tabs
+    assert 'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS' in application_contract
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
-        assert tab in application_contract
+        assert tab in shared_tabs
     assert "active_tab: str = 'overview'" in schema
 
 
@@ -332,7 +334,10 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
     reporting_service = read('app/kubernetes/dashboard/sections/reporting.py')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
-    assert 'query_all(Report, selected_cluster_id, limit=4)' in reporting_service
+    assert "Report.report_domain == 'kubernetes'" in reporting_service
+    assert 'Report.cluster_id == selected_cluster_id' in reporting_service
+    assert 'Report.created_at.desc(), Report.id.desc()' in reporting_service
+    assert '.limit(4)' in reporting_service
     assert 'reporting.latest_reports[:4]' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace

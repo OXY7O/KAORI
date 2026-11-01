@@ -3,13 +3,15 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from threading import Thread
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from playwright.sync_api import Page
 from werkzeug.serving import make_server
 
 from app import create_app
+from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult
 from app.common.pagination import build_pagination_window, pagination_payload
@@ -238,6 +240,8 @@ def kaori_authenticated_base_url() -> Iterator[str]:
     app = create_app('testing')
     app.config['AUTH_LOGIN_RATE_LIMIT'] = '1000 per minute'
     auth_result = AuthResult(True, 'success', source='database', user=user)
+    # This browser-only fixture has no MFA persistence tables. Account GET still
+    # runs its real view and templates against deterministic unenrolled state.
 
     with (
         patch(
@@ -245,18 +249,36 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             return_value=readiness,
         ),
         patch('app.access.authentication.routes.enabled_sso_providers', return_value=[]),
+        patch.multiple(
+            'app.access.authentication.routes',
+            bot_policy_state=Mock(
+                return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+            ),
+            mfa_decision=Mock(return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False)),
+        ),
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
         patch('app.access.authentication.routes._record_result', return_value=None),
-        patch.object(login_manager, '_user_callback', lambda _user_id: user),
-        patch(
-            'app.bootstrap.presentation.get_navigation_notification_context',
-            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        # Deterministic Account view: no live audit/history DB query.
+        patch.multiple(
+            'app.settings.routes',
+            recent_authentication_events=Mock(return_value=[]),
+            account_mfa_factor=Mock(return_value=None),
+            mfa_enrolled=Mock(return_value=False),
+            mfa_policy_mode=Mock(return_value='disabled'),
         ),
-        patch('app.bootstrap.presentation.pop_operational_feedback', return_value=None),
-        patch(
-            'app.bootstrap.presentation.build_cluster_onboarding_context',
-            return_value=HIDDEN_CLUSTER_ONBOARDING,
+        patch.object(login_manager, '_user_callback', lambda _user_id: user),
+        patch.multiple(
+            'app.bootstrap.presentation',
+            get_navigation_notification_context=Mock(return_value=EMPTY_NAVIGATION_NOTIFICATIONS),
+            pop_operational_feedback=Mock(return_value=None),
+            build_cluster_onboarding_context=Mock(return_value=HIDDEN_CLUSTER_ONBOARDING),
+        ),
+        # Real domain presentation, but isolated committed-state collection seams.
+        patch.multiple(
+            'app.integrations.domain_service',
+            _load_domain_instances=Mock(return_value=[]),
+            _load_related_bindings=Mock(return_value=[]),
         ),
         patch(
             'app.platform_operations.notifications.routes.get_navigation_notification_context',

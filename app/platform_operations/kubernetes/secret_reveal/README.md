@@ -22,6 +22,7 @@ The kubeconfig prerequisite is read-only in Secret Reveal and is managed from cl
 
 - `app/kubernetes/operations/secrets/reveal_policy.py`: canonical policy, readiness, and live namespace snapshot rules.
 - `app/platform_operations/kubernetes/secret_reveal/service.py`: workspace context, summaries, filtering, and pagination.
+- `app/platform_operations/kubernetes/presentation.py`: committed administration posture and implemented capability projections for the Overview.
 - `app/platform_operations/kubernetes/secret_reveal/routes.py`: RBAC, CSRF, Activity Audit, operational toast, and save actions.
 - `app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html`: protection posture and compact authorization boundary.
 - `app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html`: cluster readiness and Kubernetes boundary.
@@ -77,10 +78,10 @@ The list is server-side filtered and paginated.
 The table contract is:
 
 ```text
-Namespace | Live Namespace | Current Policy | Set Policy
+Namespace | Live Namespace | Current Policy | Actions
 ```
 
-`Live Namespace` uses `Available`, `Missing`, or `Unknown`. `Set Policy` remains explicit-save. The Save button is neutral/disabled until the row selection changes, then becomes the Violet primary action. When cluster readiness is blocked or live presence is not `Available`, enabled policy options are disabled; an existing enabled policy can always be changed to `Disabled` so access can be revoked.
+`Live Namespace` uses `Available`, `Missing`, or `Unknown`. `Edit Policy` opens one scoped editor; `Save Policy` is explicitly disabled until its selection changes and never auto-submits. When cluster readiness is blocked or live presence is not `Available`, enabled policy options are disabled; an existing enabled policy can always be changed to `Disabled` so access can be revoked.
 
 ## Consolidated administration tab
 
@@ -101,20 +102,20 @@ Each HTMX save response must:
 - preserve cluster, namespace search, policy filter, page, and page-size arguments;
 - update the browser URL through `HX-Push-Url`;
 - trigger `kaori:notifications-changed` so shared operational feedback is rendered;
-- update Protection Posture counts/readiness through HTMX out-of-band fragments;
+- update Secret Reveal Configuration counts/readiness and the parent Overview capability posture through HTMX out-of-band fragments;
 - keep Secret Reveal active.
 
-Operational toasts remain correct here because Save Readiness and Set Policy are immediate configuration mutations. Background execution progress must not be introduced into this workspace.
+Operational toasts remain correct here because Save Readiness and Save Policy are immediate configuration mutations. Background execution progress must not be introduced into this workspace.
 
 ## Visual contract
 
-- Protection Posture uses compact metric cards.
-- Protection Boundary is a compact flow: Step-up Authentication → Independent Approval → Namespace Policy → Kubernetes RBAC.
+- Secret Reveal Configuration uses compact, configured-state posture metrics; global enablement is read-only and runtime proof remains separate.
+- A concise execution verification note preserves the policy, step-up, approval and Kubernetes RBAC boundaries without a decorative duplicate flow ribbon.
 - Readiness Controls visibly include the read-only Cluster Credential prerequisite plus Encryption at Rest and Metadata Audit attestations.
 - Activation Boundary uses a clear `bg-surface-card` surface.
 - Kubernetes Boundary uses a clear KAORI card surface; it must not return to a solid Violet panel.
 - Namespace Policies exposes live-source state, last successful refresh, and an explicit Refresh action.
-- Table headers use Title Case and the fixed proportional column contract `38% / 16% / 20% / 26%`.
+- Table headers use Title Case and the reviewed responsive column contract `34% / 22% / 18% / 26%` with shared table primitives and horizontal overflow on narrow viewports.
 - Shared semantic labels, pagination, dark-mode tokens, and KAORI Violet action hierarchy remain mandatory.
 
 
@@ -163,3 +164,36 @@ High-risk readiness and namespace policy saves stage their source-linked
 Activity Audit evidence inside the same database transaction; failure of the
 evidence write rolls back the policy mutation. Routine toast/notification
 transport may still use the standard best-effort path elsewhere.
+
+## Scalable Kubernetes Administration Overview — review workstream #2605
+
+The **Overview** presents committed KAORI configuration and a list of **implemented,
+permission-owned administrative controls**; it is not a roadmap or a provider
+feature catalog. `build_kubernetes_administration_summary()` returns
+`administration_controls` and a computed `administration_control_count`, with
+one current control: **Protected Secret Reveal**. Each control has a stable key,
+workspace-tab target, status/tone, source-owned description, concise metrics,
+read-only evidence disclaimer and a contextual configuration action.
+
+Future administration capabilities must add their own authorized, source-owned
+projection and workspace route under a separate approved issue. They must not
+be displayed as live controls from speculative roadmap cards or assigned
+Secret Reveal's authorization permission implicitly.
+
+The overview intentionally distinguishes **registered clusters**, **configured
+prerequisites**, **enabled namespace policies**, and **eligible configuration
+scope**. The eligible scope is not live Namespace presence or current Kubernetes
+RBAC evidence; the real Reveal path remains the authoritative live verifier.
+Normal Overview GET continues to read committed database configuration without
+loading kubeconfig plaintext or querying the provider.
+
+`_administration_control_rows.html` is the single domain partial used in the
+initial Overview and in `_summary_oob.html` after an HTMX save. Existing
+`kubernetes-admin-*` Hero, status and metrics OOB targets are preserved; the
+capability list/count are refreshed alongside them to avoid stale control
+status without a page reload. A full-page fallback and the original
+URL-backed workspace tab/HTMX namespace controls remain authoritative.
+
+This is a **review/UAT candidate** under #2605, not a release lock promotion.
+Human browser evidence across the six standard viewports, both themes,
+keyboard and actual safe configuration state transitions is still required.

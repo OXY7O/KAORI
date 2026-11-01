@@ -13,16 +13,15 @@ REGISTRIES = {
     # workspace contracts assert no forced minimum or horizontal overflow.
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
-    '_group_registry': (1250, (18, 15, 17, 12, 12, 26)),
-    '_membership_registry': (1100, (23, 20, 14, 13, 15, 15)),
-    '_namespace_access_registry': (1400, (16, 17, 13, 17, 12, 12, 13)),
+    # Settings-style Memberships tables fit desktop with narrow-only table-local scrolling.
+    '_group_registry': (840, (18, 15, 17, 12, 12, 26)),
+    '_membership_registry': (800, (23, 20, 14, 13, 15, 15)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
-    '_capacity_governance': (980, (28, 39, 17, 16)),
-    '_capsule_shared_allocation_drift': (1450, (19, 23, 35, 23)),
-    '_capsule_tenant_quota_drift': (1450, (19, 23, 35, 23)),
+    '_capsule_shared_allocation_drift': (840, (24, 21, 13, 27, 15)),
+    '_capsule_tenant_quota_drift': (840, (24, 21, 13, 27, 15)),
 }
 EVIDENCE_VARIANTS = (
     (19, 16, 16, 14, 20, 15),  # audit
@@ -44,20 +43,112 @@ def _header_widths(html: str) -> tuple[int, ...]:
 def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
     for name, (minimum_width, percentages) in REGISTRIES.items():
         template = _template(name)
-        assert f'min-w-[{minimum_width}px] !table-fixed' in template, name
+        if name in {'_membership_registry', '_group_registry'}:
+            assert f'min-w-[{minimum_width}px] table-fixed xl:min-w-0' in template, name
+            assert 'w-full min-w-0 max-w-full overflow-x-auto' in template, name
+        else:
+            assert f'min-w-[{minimum_width}px] !table-fixed' in template, name
         assert _header_widths(template) == percentages, name
         assert sum(percentages) == 100, name
         assert 'overflow-x-auto' in template, name
         assert 'table_ui.cell_classes(' in template, name
-        if name == '_capacity_governance':
-            # Capacity evidence and cluster identity intentionally wrap rather
-            # than truncate or rely on a redundant title tooltip.
-            assert 'break-words' in template, name
-            assert 'table_ui.cluster_identity(' in template, name
-            assert 'aria-label="View allocation budget for {{ item.cluster.name }}"' in template, name
-        else:
-            assert 'truncate' in template, name
-            assert 'title=' in template, name
+        assert 'truncate' in template, name
+        assert 'title=' in template, name
+
+
+def test_allocation_budget_registry_uses_owned_bounded_responsive_evidence_table() -> None:
+    # The policy form owns the Capacity subview, not a legacy embedded table.
+    policy = _template('_capacity_governance')
+    budget = _template('_allocation_budget_registry')
+    detail = _template('_allocation_budget_detail')
+
+    assert "('budget', 'Allocation Budget', 'table-2'" in policy
+    assert 'workspace_tabs.render_query_tabs(allocation_tabs,' in policy
+    assert "active_allocation_view == 'budget'" in policy
+    assert '_allocation_budget_registry.html' in policy
+    assert 'table_ui.table_classes(' not in policy
+
+    # Approved responsive five-column table, with local narrow-screen scrolling.
+    assert "table_ui.table_classes('min-w-[760px] table-fixed xl:min-w-0')" in budget
+    assert 'min-w-[980px]' not in budget
+    assert _header_widths(budget) == (29, 20, 20, 16, 15)
+    assert sum(_header_widths(budget)) == 100
+    assert 'overflow-x-auto xl:overflow-visible' in budget
+    assert 'table_ui.cluster_identity(item.cluster.name, item.cluster.environment)' in budget
+    assert 'table_label.status_label(item.state, state_tone)' in budget
+    assert 'table_label.status_label(' in budget
+    assert 'item.committed_namespace_count' in budget
+
+    # Committed evidence and resource headroom stay behind accessible details.
+    assert "detail_row.toggle_button('tenant-capacity-budget'" in budget
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5' in budget
+    assert '_allocation_budget_detail.html' in budget
+    assert 'capacity-budget-registry' in budget
+    assert 'registry_ui.filter_form(' in budget
+    assert "registry_ui.footer('tenant.resource_profiles'" in budget
+    assert 'aria-label="{{ bar.label }} allocation evidence"' in detail
+    assert 'bar.budget' in detail and 'bar.committed' in detail and 'bar.headroom' in detail
+    assert 'Ratio unavailable — no free headroom is asserted.' in detail
+
+
+def test_namespace_access_registry_uses_responsive_five_column_evidence_table() -> None:
+    registry = _template('_namespace_access_registry')
+    detail = _template('_namespace_access_detail')
+    assert 'min-w-[1400px]' not in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'min-w-[1400px] !table-fixed' not in registry
+    assert "table_ui.table_classes('!table-fixed')" in registry
+    assert _header_widths(registry) == (25, 20, 25, 15, 15)
+    assert 'Tenant / Scope' in registry
+    assert 'access.get("environment")' in registry
+    assert "|default('Not assigned', true)|title" in registry
+    assert 'hidden w-full min-w-0 lg:block' in registry
+    assert 'lg:hidden' in registry
+    assert '<td colspan="5"' in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 5' in registry
+    assert "detail_row.toggle_button('tenant-namespace-access'" in registry
+    assert '_namespace_access_detail.html' in registry
+    assert 'data-tenant-namespace-access-mobile-detail' in registry
+    assert 'data-tenant-namespace-access-detail' in detail
+    assert 'Approved Access Methods' in detail
+    assert 'Valid Until' in detail
+    assert 'Credential Reference' in detail
+    assert 'No token, kubeconfig, private key, certificate, or Secret material' in detail
+    assert 'credential.token' not in detail
+    assert 'credential.kubeconfig' not in detail
+    assert 'get(&quot;' not in registry
+
+
+def test_namespace_access_detail_has_grouped_visual_hierarchy_and_safe_provenance() -> None:
+    registry = _template('_namespace_access_registry')
+    detail = _template('_namespace_access_detail')
+    assert 'data-tenant-namespace-access-detail' in detail
+    assert 'Committed Namespace Access' in detail
+    assert 'aria-label="Namespace access context"' in detail
+    assert 'Access Context' in detail
+    assert 'Tenant / Environment' in detail
+    assert 'Cluster' in detail
+    assert 'Access Profile' in detail
+    assert 'Identity' in detail
+    assert 'Approved Access Methods' in detail
+    assert 'Credential Lifecycle' in detail
+    assert 'aria-label="Credential lifecycle"' in detail
+    assert 'aria-label="Technical references"' in detail
+    assert 'Security' not in registry.split('<thead', 1)[1].split('</thead>', 1)[0]
+    assert 'No token, kubeconfig, private key, certificate, or Secret material' in detail
+    assert 'No effective access is asserted by this record.' in detail
+    assert 'table_label.status_label(' in detail
+    assert 'table_label.metadata_label(' in detail
+    assert 'access.get("credential_public_id")' in detail
+    assert 'access.get("renewal_due_at") |user_datetime' in detail
+    assert 'access.get("valid_until") |user_datetime' in detail
+    assert "access.get('approved_access_methods') or []" in detail
+    assert 'bg-surface-elevated' in detail
+    assert 'bg-surface-hover' in detail
+    assert 'min-w-[1400px]' not in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'credential.token' not in detail
+    assert 'credential.kubeconfig' not in detail
 
 
 def test_access_grant_registry_uses_the_approved_responsive_fixed_table() -> None:

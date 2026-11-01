@@ -4,9 +4,9 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **74 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **76 navigation links** across the authenticated application shell and **36 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
-Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. The **Foundation & Governance → Release Surface Coverage** verifier first validates release ownership and stores the successful source-registration report. Once the existing named verifiers complete successfully, **Domain & Capability Contracts → Registered capability evidence** displays those already-validated registry rows, making Artifact Registry, Object Storage Inventory, Tenant, provider integrations, and other domains visible under the operator-facing capability group without invoking the verifier twice or increasing its check count. Each line is explicitly labeled `REGISTERED` and includes the release-surface lock state, test-module count, and owned static verifier filename(s), or `none (contract tests only)` when no standalone verifier is declared. The output is a **source-registration inventory**, not a per-capability test execution report. Its placement within Domain & Capability Contracts does not mean every surface has a standalone static verifier or that those contract modules ran as part of the static verifier group. A missing or malformed captured registry report fails closed. Only the actual named verifier, Contract & Migration Safety, Functional, Security, and Runtime & DAST jobs can establish their respective PASS/FAIL states. Counts and `REGISTERED` prove that executable test modules are registered; **they do not prove behavioral correctness or UAT PASS**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
+Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. The **Foundation & Governance → Release Surface Coverage** verifier first validates release ownership and stores the successful source-registration report. Once the existing named verifiers complete successfully, **Domain & Capability Contracts → Registered capability ownership** displays the already-validated registry as a compact, aligned operator table: one row per release surface with lock state, registered contract-module count, and static verifier **count** (or `contracts only`). A total line distinguishes registered surfaces, the sum of per-surface contract-module **registrations** (not necessarily globally unique modules), and contract-only surfaces. This keeps Artifact Registry, Object Storage Inventory, Tenant, provider integrations, and other domains visible without invoking the verifier twice or increasing its check count. The complete source-validated rows, including every exact static-verifier filename or `none (contract tests only)`, remain in the original Release Surface Coverage raw log and (after completed static execution) in `verification-report.md`. A malformed or missing captured registry report still fails closed; the compact terminal format never replaces source validation. The output is a **source-registration inventory**, not a per-capability test execution report. Its placement within Domain & Capability Contracts does not mean every surface has a standalone static verifier or that those contract modules ran as part of the static verifier group. A missing or malformed captured registry report fails closed. Only the actual named verifier, Contract & Migration Safety, Functional, Security, and Runtime & DAST jobs can establish their respective PASS/FAIL states. Counts and `REGISTERED` prove that executable test modules are registered; **they do not prove behavioral correctness or UAT PASS**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
 
 ## Navigation and Surface Matrix
 
@@ -23,7 +23,7 @@ Each declared release-evidence directory must contain at least one executable `t
 | Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
-| Integrations | LOCKED | Platform Operations → Integrations | `verify_integrations_final_lock.py` |
+| Integrations | LOCKED | Platform Operations → Integrations → Orchestration, Observability, Storage, Registry, Secrets Management, Source Control | `verify_integrations_final_lock.py` and Integration contracts |
 | Platform Operations | LOCKED | Platform Operations | `verify_platform_operations_final_lock.py` |
 | Access | LOCKED | Administration → Access | `verify_access_final_lock.py` |
 | Settings | LOCKED | Administration → Settings | `verify_settings_final_lock.py` |
@@ -90,6 +90,19 @@ When adding or moving a menu/domain:
 
 Do not silence a new endpoint by increasing a baseline or by classifying an active surface as hidden without an explicit ownership decision.
 
+### Required admission format for new or changed capabilities
+
+The release matrix and registry are the **ownership** layer of the mandatory operator-facing evidence standard in `docs/engineering/TERMINAL_OUTPUT.md`. For any new or materially changed feature, domain, capability, provider, integration, menu, registered Blueprint or static verifier:
+
+1. Identify its capability/domain-first owner, provider and instance boundaries; use an existing parent release surface when appropriate instead of creating an artificial top-level surface or duplicate gate.
+2. Update the authoritative taxonomy/workspace, `scripts/release_surface_registry.py`, this matrix and existing navigation/Blueprint registrations **when applicable**. Declare a real owner and corresponding verifier or executable contract-test path; an integration provider remains nested under Integrations when that is its approved authority.
+3. Describe the operator-facing gate **identity, specific purpose/scope, command/test selector, executed result, duration, raw evidence and first actionable failure** in the existing CI output pattern. For a newly added standalone static verifier, supply a specific purpose in the existing `scripts/quality_gate.sh` reporting mapping; do not rely on the generic fallback or infer tests ran from its registration.
+4. Add or update the behavior-focused tests, including authorization/negative scenarios and provider/runtime/security checks where applicable. Report their actual executed pytest/JUnit, security, frontend and runtime/DAST evidence independently from registry ownership. Any not-run, skipped, reused or blocked work remains explicit.
+5. Link the governing Issue and PR, commit SHA, real CI results and applicable staging/UAT human acceptance. Do not label a static surface lock as full feature readiness or presume DevContainer review is hosted UAT.
+6. Use the existing `verify_release_surface_coverage.py`, release contracts, focused tests, Developer Check and Full Admission. Fail closed on missing ownership or evidence and extend existing tests when a new registration shape requires it; never bypass gates or invent a parallel validation/reporting framework.
+
+For example, **Integrations → Source Control → GitHub** is owned by the existing Integrations release surface: `REGISTERED` proves navigation/Blueprint/test ownership; `Integrations Final Lock` protects shared UI/contracts; GitHub webhook security, repository synchronization, scoped authorization and real provider readiness require their own executed tests and UAT evidence, not a fabricated GitHub static-PASS line.
+
 ## Storage Integration Expansion
 
 `Integrations → Storage → Object Storage` owns the MinIO provider workspace. MinIO remains registered under the Integrations release surface.
@@ -132,3 +145,10 @@ Artifact Registry
 ```
 
 The Artifact Registry surface is **BASELINE LOCKED** while the consolidated staging candidate proceeds through staging/UAT. This preserves the existing provider-first integration taxonomy without treating Harbor as a KAORI product domain.
+
+
+## Secrets Management and Source Control Admission
+
+The existing Integrations release surface owns the two domain workspaces `integrations.secrets_management` and `integrations.source_control`. Their provider-facing blueprints remain nested under Integrations rather than separate top-level KAORI products: `vault_bp`, `secrets_pki_bp`, `security_posture_bp`, `source_control_bp`, `github_source_bp`, and `github_uat_bp`.
+
+This release-coverage ownership records registered application routes and contract evidence only. It neither grants provider credentials nor establishes UAT/production readiness; exact-head static, functional, security, runtime/DAST, immutable artifact and hosted acceptance gates remain authoritative.

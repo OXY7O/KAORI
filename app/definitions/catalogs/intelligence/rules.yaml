@@ -1590,3 +1590,32 @@ rules:
   - Recommendations
   - Artifact Registry Analytics
 
+
+- rule_key: secrets_pki.pki.stored_certificate_expiry_pressure
+  title: Stored Public PKI Certificate Expiry Pressure
+  domain: secrets_pki
+  provider_keys:
+  - vault
+  source_kind: pki_certificate_population
+  category: governance
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: governance_check
+  signal_source: secrets_pki_committed_evidence
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: false
+  summary: Highlights expired or soon-expiring public certificates in a fully qualified opted-in Vault stored-certificate population.
+  condition_summary: Only a complete, current-generation committed PKI stored-certificate aggregate with expiry pressure qualifies.
+  recommended_action: Review authorized PKI sources, affected owners, renewal readiness, consumer cutover and separately verified endpoint status.
+  impact: Supports early certificate expiry review without claiming a proven endpoint outage, CA trust failure or revoked certificate.
+  evidence_boundary: A single capability-level aggregate only; not per-instance, per-Secret or per-certificate correlation. No paths, serials, fingerprints or identities disclosed; Vault remains authoritative.
+  supported_sources:
+  - KAORI committed opted-in Vault stored public PKI certificate evidence
+  visible_in:
+  - Recommendations
+  - Catalog

@@ -6,6 +6,7 @@ import logging
 from flask import abort, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.http import is_htmx_request
 from app.integrations.observability.metrics_source.application.forms import MetricsSourceForm
@@ -137,7 +138,7 @@ def _register_submitted_source(
             stage='persistence_validation',
             queue_feedback=not is_htmx,
         )
-    except Exception as exc:
+    except SQLAlchemyError as exc:
         logger.exception('%s metrics-source creation failed.', provider.label)
         return None, _persistence_failure(
             action_url=action_url,

@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/action_button.html" as action_button %}
 <form method="POST"
       action="{{ url_for('settings.general', tab='regional-format') }}"
@@ -18,7 +19,18 @@
                     <i data-lucide="calendar-range" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-bold text-content-primary">Regional Format</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-bold text-content-primary">Regional Format</h2>
+                        {{ info_tip.render('general-regional-title-guide',
+                                                'Regional Format',
+                                                'Choose your locale, date format, and 12/24-hour clock presentation.',
+                                                items=[
+                                                'Formats are personal display preferences; the KAORI interface language stays unchanged.',
+                                                'Canonical UTC records, execution schedules, and external provider settings are not changed.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
                         Set how dates and times are rendered for this account without changing KAORI interface language or canonical data.
                     </p>

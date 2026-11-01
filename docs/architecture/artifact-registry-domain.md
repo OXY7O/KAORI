@@ -953,3 +953,40 @@ current Kubernetes Pod generation, Runtime Correlation input signature and job
 history; then run **Artifact Registry Runtime Correlation** via canonical
 Jobs & Executions. Do not run provider scans, edit binding tables or infer
 remediation from the absence of an unrefreshed runtime finding.
+
+
+### Exact-CVE runtime impact drill-down (#2603)
+
+The first CVE impact vertical slice is exposed from **Artifact Registry → Security →
+Vulnerabilities → Impact**; it is not a separate Security Posture scanner or a
+new generic application inventory. A case-insensitive, syntactically valid,
+**exact CVE ID** selects scanner findings from the latest *usable successful*
+committed Registry scan for each immutable artifact digest. Scopes include only
+active/enabled Registry integrations with committed inventory. Failed refreshes
+do not erase older good findings; a newer successful scan with no matching CVE
+supersedes an older positive finding.
+
+The impact read model correlates matched artifact IDs with the existing
+RegistryWorkloadBinding rows, preserving distinct cluster, namespace, workload,
+Pod and container evidence. Digest matches are labeled strong; mutable tag
+matches remain weaker. Both finding and runtime lists use the shared server-side
+pagination contract with five records by default. The detail route retains the
+existing `artifact_registry.view` authorization requirement and never queries
+Harbor, Kubernetes or another provider on an operator GET.
+
+**No-match and no-runtime-binding results are not all-clear statements.**
+The page surfaces canonical Runtime Correlation snapshot readiness (including
+`Inputs Changed`, `Stale`, missing prerequisites and failed/partial refresh)
+along with each scan observation/freshness. Registry Security scan coverage is
+independently authoritative; only a fresh, capable scanner source can support
+a negative assertion within its own qualified evidence scope. Kubernetes
+runtime bindings do not establish the canonical logical Service or owning
+Team; direct VM/bare-metal PHP installations and standalone Docker runtimes
+are out of scope for this slice.
+
+Future cross-domain application and owner joins belong under Service Catalog
+#711 and Security Posture #721. Host/runtime package collection belongs to
+the appropriate external-host/source authority; new advisory ingestion,
+prioritization and recommendations must use central Intelligence #900.
+The design and later workstreams remain tracked under #2600, while this
+bounded read-only implementation and DevContainer UAT are governed by #2603.

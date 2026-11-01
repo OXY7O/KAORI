@@ -13,7 +13,7 @@ from app.kubernetes.operations.configmaps.routes import (
     delete_configmap_page,
     update_configmap_page,
 )
-from app.kubernetes.operations.operation_flow import cluster_required
+from app.kubernetes.operations.operation_flow import cluster_required, get_operations_cluster_posture
 from app.kubernetes.operations.secrets.crud_routes import (
     create_secret,
     delete_secret,
@@ -73,7 +73,10 @@ kubernetes_operations_bp = Blueprint(
 )
 def kubernetes_operations_overview():
     """Permission-scoped capability navigation; never reads live provider state."""
-    return render_template('kubernetes/operations/overview.html')
+    return render_template(
+        'kubernetes/operations/overview.html',
+        cluster_posture=get_operations_cluster_posture(),
+    )
 
 
 kubernetes_operations_bp.add_url_rule(

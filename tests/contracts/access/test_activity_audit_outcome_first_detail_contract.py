@@ -70,3 +70,27 @@ def test_optional_evidence_uses_shared_accessible_disclosure_not_custom_js() -> 
     assert 'View Technical Evidence' in detail
     for prohibited in ('onclick=', 'hx-post=', '<form', 'style='):
         assert prohibited not in detail
+
+
+def test_warning_detail_uses_attention_not_an_implied_failure_or_retry() -> None:
+    detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
+    assert "'Failure Summary' if item.status == 'error' else 'Attention Summary'" in detail
+    assert "'Next Review Step' if item.status == 'error' else 'Review Guidance'" in detail
+    assert "item.status == 'error' and item.failure_summary else item.message" in detail
+    assert "{% elif item.status == 'error' %}" in detail
+    assert 'Recorded outcome and available evidence.' in detail
+    assert "'Recorded Failure Context' if item.status == 'error' else 'Recorded Context'" in detail
+    assert 'Review recorded changes and trace references if further verification is needed.' in detail
+    assert 'before deciding whether to retry.' in detail
+
+
+def test_warning_preserves_recorded_evidence_and_error_review_guidance() -> None:
+    detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
+    assert '{% if item.failure_summary %}' in detail
+    assert "item.status == 'error'" in detail
+    assert 'item.changed_fields' in detail
+    assert 'item.trace_references' in detail
+    assert 'item.failure_context' in detail
+    assert 'item.related_sources' in detail
+    assert 'No separate failure-context fields are available in this Activity Register entry.' in detail
+    assert 'data-activity-outcome="recorded"' in detail

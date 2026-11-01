@@ -7,6 +7,14 @@ python scripts/verify_final_release.py --all --runtime
 ```
 
 
+## Reading Developer Check and Full Admission coverage
+
+**A small number of green gate rows does not mean only that many tests were run.** Each named verifier may inspect many modules, functions, templates, revisions and source contracts. Developer Check lists only checks **actually selected by changed-path routing**, including exact commands, elapsed durations, executed outcomes and the focused pytest path selection in the GitHub Step Summary. During execution, expand the relevant GitHub Actions step to see the current check's command and native diagnostic stdout, with a 60-second heartbeat for long-running commands. A check not selected is NOT RUN, not PASS. Do not divide selected-check counts by application domains as a proxy for coverage.
+
+Full Admission owns the comprehensive release suite. Its Static & Governance execution summary enumerates individual existing verifiers and links to the short-lived, complete per-verifier log artifact even after success. During Full Admission execution, the expanded Static step also shows per-verifier commands and bounded successful PASS details; long-running static and captured pytest jobs expose heartbeats without inventing interim counts. A complete raw verifier log is retained as diagnostic evidence instead of being dumped into GitHub's live console. The release-surface registry is a distinct source-registration inventory, not a test result. Executed tests are counted by pytest/JUnit and taxonomy; security scans, frontend build/verification and Runtime & DAST are separate outcome/evidence boundaries. A green Developer Check never replaces the frozen-candidate Full Admission or human UAT.
+
+Keep established `verify_*` file names and contract test modules as canonical programmatic identities until a complete reference/compatibility migration is separately authorized. Prefer precise human-readable labels and exact source commands in CI output to renaming scripts only for appearance. The regular release CLI's quiet PASS and detailed FAIL remain in force.
+
 ## Practical test commands
 
 Use the narrowest owning test first, then broaden the evidence before release.

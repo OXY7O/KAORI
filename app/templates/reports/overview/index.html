@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Reports Overview{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
@@ -60,6 +61,17 @@
             </div>
         </section>
         {% include "reports/overview/partials/_reporting_operational_posture.html" %}
-        {% include "reports/overview/partials/_reporting_estate_capability.html" %}
+        <section class="space-y-4" aria-labelledby="reporting-landscape-heading">
+            {{ section_intro.render('Reporting Landscape',
+                        'Review published and planned reporting coverage alongside retained artifact evidence.',
+                        'reporting-landscape-heading') }}
+            {% include "reports/overview/partials/_reporting_estate_capability.html" %}
+        </section>
+        <section class="space-y-4" aria-labelledby="reporting-governance-heading">
+            {{ section_intro.render('Reporting Governance',
+                        'Review published contracts, schedules, and templates for governed report generation.',
+                        'reporting-governance-heading') }}
+            {% include "reports/overview/partials/_reporting_contracts_automation.html" %}
+        </section>
     </div>
 {% endblock dashboard_content %}

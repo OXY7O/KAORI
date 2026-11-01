@@ -241,8 +241,19 @@ class IntegrationRegistry:
                 'app.integrations.observability.alert_source.providers.alertmanager',
                 'app.integrations.storage.object_storage.providers.minio',
                 'app.integrations.registry.providers.harbor',
+                'app.integrations.secrets_management.secrets_pki.providers.vault',
             ):
                 import_module(module_path)
+            # GitHub App remains inert while provider_matrix is planned.
+            # Once an explicitly admitted UAT/provider matrix is deployed,
+            # register the existing SC-02 Kernel descriptor on web and workers.
+            if provider_kind('source_control', 'github').available:
+                # The kernel owns lazy built-in loading; the provider contract
+                # imports kernel types and must not become a reciprocal import.
+                provider = import_module(
+                    'app.integrations.source_control.source_control.providers.github.kernel_contract'
+                )
+                provider.register_after_admission(self)
             self._builtins_loaded = True
 
     def get(self, integration_type: str) -> IntegrationModule:

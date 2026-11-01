@@ -466,10 +466,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.highest_projected_label == 'Memory'
     assert snapshot.highest_projected_percent == 92.0
     assert snapshot.has_historical_series is True
-    assert snapshot.insight == (
-        'Memory has the highest 60-day utilization projection at 92%. '
-        'Review projected demand against worker capacity and available headroom.'
-    )
+    assert snapshot.insight == '60-day forecast peak: Memory 92%; review worker headroom.'
 
 
 def test_dashboard_kpi_display_copy_uses_title_case() -> None:
@@ -584,6 +581,8 @@ def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeyp
     monkeypatch.setattr(service, 'read_snapshots', fake_read_snapshots)
     monkeypatch.setattr(service, '_latest_inventory_sync', lambda *_args: None)
     monkeypatch.setattr(service, 'count_records', lambda *_args: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_reports', lambda _cluster_id: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_artifact_records', lambda _cluster_id: 0)
     monkeypatch.setattr(
         service,
         'read_dashboard_snapshot',

@@ -104,6 +104,17 @@ Overview · Systems · Buckets & Containers
 Overview · Projects · Repositories · Artifacts
 ```
 
+### Assurance / Security
+
+The Security parent exposes **Overview** and **Findings** as level-2 sidebar
+capabilities, not duplicate page-level tabs. The Overview uses the standard
+Operational Dashboard four-tab internal framework, while Findings uses canonical
+server pagination and source-domain CVE impact deep links. CVE detail still belongs
+to the authoritative Artifact Registry source; future Security detail pages may
+use approved level-3 Integrated Workspace Tabs where true peer views exist.
+Neither provider instances nor unimplemented Security capabilities are shown
+as navigation.
+
 ### Artifact Registry / Security
 
 ```text
@@ -117,6 +128,14 @@ Security detailed views remain route-level navigation above the Hero. Vulnerabil
 ```text
 Overview · Capacity & Usage · Performance · Forecast · Top Consumers · Alerts & Anomalies
 ```
+
+### Secrets & PKI / Lifecycle & Assurance
+
+```text
+Lifecycle & Assurance · Leases · Consumers · Governance
+```
+
+These four peer, URL-owned detailed views use the shared `components/workspace_tabs.html` `render_navigation()` contract through `secrets_pki/_lifecycle_navigation.html`. Their navigation sits above the Hero, with an explicit active route, keyboard-focus visibility and canonical horizontal overflow; raw page-local links or floating pills do not satisfy the level-3 contract. Provider-qualified operational evidence and the full unabridged status remain in the corresponding content sections.
 
 ## Context Is Not Navigation
 

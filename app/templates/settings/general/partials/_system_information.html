@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
          data-system-information-workspace="unified"
          data-system-information-visual-hierarchy="release-led">
@@ -9,7 +10,18 @@
                     <i data-lucide="badge-info" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-bold text-content-primary">System Information</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-bold text-content-primary">System Information</h2>
+                        {{ info_tip.render('general-system-title-guide',
+                                                'System Information',
+                                                'Read-only release identity, optional build provenance, and curated capabilities.',
+                                                items=[
+                                                'Unavailable build metadata is shown as Not supplied rather than invented.',
+                                                'Secrets, internal endpoints and configuration access are excluded; capabilities do not prove live provider readiness.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Release identity, build provenance, and product capability reference.</p>
                 </div>
             </div>

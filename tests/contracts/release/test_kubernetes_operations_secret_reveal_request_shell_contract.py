@@ -29,7 +29,13 @@ def test_secret_reveal_request_uses_shared_block_shell_authority() -> None:
     assert 'kubernetes_operations.request_secret_reveal' in source
     assert 'data-operation-submit' in source
     assert 'data-loading-label="Submitting request..."' in source
-    assert 'No Secret value is rendered or persisted by KAORI.' in source
+    assert (
+        'KAORI records request details, not Secret values. Verify and reveal once in My Requests after approval.'
+        in source
+    )
+    assert 'TLS private keys and SSH private keys are never revealable.' not in source
+    assert 'Next: open My Requests' not in source
+    assert 'Submitting records the target, selected key, reason, ticket, actor, and policy.' not in source
     assert 'This live Secret currently has no revealable key names.' in source
     assert 'Select a Secret Target' in source
 

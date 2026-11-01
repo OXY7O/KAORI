@@ -81,7 +81,10 @@ def test_telegram_uses_section_title_guide_and_one_desktop_input_row() -> None:
         'Changing this requires a new Test Delivery.',
     ):
         assert guidance in registry
-    assert "data-kaori-info-tip-variant=\"{{ 'guide' if guide_variant else 'icon' }}\"" in info_tip
+    assert (
+        "data-kaori-info-tip-variant=\"{{ 'guide' if guide_variant else 'action' if action_variant else 'icon' }}\""
+        in info_tip
+    )
     assert 'role="tooltip"' in info_tip
     assert "root.closest('dialog[open]')" in javascript
     assert 'openDialog instanceof HTMLDialogElement ? openDialog : document.body' in javascript

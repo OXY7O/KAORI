@@ -6,9 +6,7 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
-from app.common.presentation import present_key_label
-from app.integrations.binding_service import SourceBindingSpec, create_source_binding
-from app.integrations.coverage import build_binding_workspace
+from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
     BindingRegistryFilters,
     ProviderRegistryFilters,
@@ -28,7 +26,8 @@ from app.integrations.orchestration.container_orchestrator.frontpage import (
 )
 from app.integrations.orchestration.container_orchestrator.tenant_capsule_web import capsule_rbac_operation
 from app.integrations.overview_workspace import build_integrations_overview
-from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
+from app.integrations.provider_matrix import provider_kinds
+from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
@@ -39,6 +38,7 @@ from app.integrations.service import (
     build_kubernetes_detail,
     build_metrics_source_page,
 )
+from app.integrations.taxonomy import get_domain_definition
 from app.integrations.validation.state import (
     build_validation_snapshot,
     get_active_validation_task_id,
@@ -125,6 +125,71 @@ def storage() -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def registry() -> ResponseReturnValue:
     return _render_domain_page('registry')
+
+
+@integrations_bp.get('/secrets-management')
+@permission_required('integrations.manage')
+def secrets_management() -> ResponseReturnValue:
+    return _render_domain_page('secrets_management')
+
+
+@integrations_bp.get('/source-control')
+@permission_required('integrations.manage')
+def source_control() -> ResponseReturnValue:
+    return _render_domain_page('source_control')
+
+
+# The provider matrix defines which implementations may register; destinations
+# remain provider-owned routes, never a second KAORI registration implementation.
+_PROVIDER_REGISTRATION_ENDPOINTS = {
+    ('container_orchestrator', 'kubernetes'): 'cluster.add_cluster',
+    ('alert_source', 'alertmanager'): 'alertmanager.new_instance',
+    ('object_storage', 'minio'): 'minio.new_instance',
+    ('registry', 'harbor'): 'harbor.new_instance',
+    ('secrets_pki', 'vault'): 'vault.new_instance',
+    ('source_control', 'github'): 'github_source.new_connection',
+}
+
+
+@integrations_bp.get('/providers/<string:integration_type>')
+@permission_required('integrations.manage')
+def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
+    """Select an admitted provider before entering its owned registration form."""
+    if integration_type == 'metrics_source':
+        return redirect(url_for('integrations.select_metrics_source_provider'))
+
+    kinds = sorted(provider_kinds(integration_type), key=lambda kind: (not kind.available, kind.label.casefold()))
+    if not kinds:
+        abort(404)
+
+    domain = get_domain_definition(kinds[0].domain_key)
+    providers = [
+        {
+            'key': kind.key,
+            'label': kind.label,
+            'adapter': (
+                'Not implemented'
+                if kind.adapter_key == 'not_implemented'
+                else kind.adapter_key.replace('_', ' ').title()
+            ),
+            'protocol': ('Not defined' if kind.protocol == 'not_defined' else kind.protocol.replace('_', ' ').upper()),
+            'lifecycle': kind.lifecycle,
+            'available': kind.available,
+            'registration_url': (
+                url_for(_PROVIDER_REGISTRATION_ENDPOINTS[(kind.integration_type, kind.key)])
+                if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS
+                else None
+            ),
+        }
+        for kind in kinds
+    ]
+    return render_template(
+        'integrations/provider_selector.html',
+        domain=domain,
+        integration_type=integration_type,
+        providers=providers,
+        available_count=sum(bool(provider['registration_url']) for provider in providers),
+    )
 
 
 @integrations_bp.get('/runtime/<string:detail_key>/details')
@@ -563,6 +628,9 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
 @integrations_bp.get('/observability/metrics-sources/new')
 @permission_required('integrations.manage')
 def select_metrics_source_provider() -> ResponseReturnValue:
+    # Keep provider-specific capability definitions authoritative while reusing
+    # the same admitted/planned registration contract as other Integrations.
+    admitted_kinds = {kind.key: kind for kind in provider_kinds('metrics_source')}
     providers = [
         {
             'key': provider.key,
@@ -571,11 +639,30 @@ def select_metrics_source_provider() -> ResponseReturnValue:
             'icon': provider.icon,
             'adapter_key': provider.adapter_key,
             'query_language': provider.query_language,
-            'registration_url': url_for('integrations.register_metrics_source', provider_key=provider.key),
+            'adapter': provider.adapter_key.replace('_', ' ').title(),
+            'protocol': provider.query_language.upper(),
+            'secondary_label': 'Query Language',
+            'lifecycle': admitted_kinds[provider.key].lifecycle,
+            'registration_url': (
+                url_for('integrations.register_metrics_source', provider_key=provider.key)
+                if admitted_kinds[provider.key].available
+                else None
+            ),
         }
         for provider in provider_definitions()
     ]
-    return render_template('integrations/observability/metrics_source/provider_selector.html', providers=providers)
+    return render_template(
+        'integrations/observability/metrics_source/provider_selector.html',
+        domain=get_domain_definition('observability'),
+        integration_type='metrics_source',
+        providers=providers,
+        available_count=sum(bool(provider['registration_url']) for provider in providers),
+        guide_title='Metrics Provider Selection',
+        guide_text=(
+            'Metrics adapters define protocol, query language, validation and query horizon. '
+            'KAORI manages connection evidence and qualified consumer routing.'
+        ),
+    )
 
 
 @integrations_bp.route('/observability/metrics-sources/<string:provider_key>/new', methods=['GET', 'POST'])
@@ -654,150 +741,6 @@ def alertmanager() -> ResponseReturnValue:
             'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html', **context
         )
     return render_template('integrations/observability/alert_source/providers/alertmanager/frontpage.html', **context)
-
-
-def _binding_response(integration_type: str, *, scope_key: str) -> ResponseReturnValue:
-    submitted = dict(request.form) if request.method == 'POST' else {}
-    feedback = None
-
-    if request.method == 'POST':
-        source_id = request.form.get('source_id', type=int)
-        cluster_id = request.form.get('scope_key', scope_key).strip()
-        selector_label = request.form.get('selector_label', '').strip()
-        selector_value = request.form.get('selector_value', '').strip()
-        selector_operator = request.form.get('selector_operator', '=').strip() or '='
-        role = request.form.get('binding_role', 'primary').strip().lower()
-        priority = request.form.get('priority', 100, type=int) or 100
-        routing_policy = None
-        if integration_type == 'metrics_source':
-            routing_weight = request.form.get('routing_weight', type=int)
-            routing_policy = {
-                'query_horizon': request.form.get('query_horizon', 'balanced').strip().lower() or 'balanced',
-                'weight': 100 if routing_weight is None else routing_weight,
-            }
-        source = None
-        cluster = None
-        binding = None
-        try:
-            if source_id is None:
-                raise ValueError(f'Select an existing {present_key_label(integration_type)} source.')
-            cluster = get_cluster(cluster_id)
-            if cluster is None:
-                raise ValueError('The selected Kubernetes scope no longer exists.')
-            created_binding = create_source_binding(
-                integration_type,
-                integration_instance_id=source_id,
-                spec=SourceBindingSpec(
-                    asset_type='kubernetes_cluster',
-                    asset_key=str(cluster.id),
-                    role=role,
-                    priority=priority,
-                    selector_label=selector_label,
-                    selector_value=selector_value,
-                    selector_operator=selector_operator,
-                    routing_policy=routing_policy,
-                ),
-                asset=cluster,
-            )
-            source = created_binding.source
-            cluster = created_binding.asset
-            binding = created_binding.binding
-            if source is None or cluster is None or binding is None:
-                raise ValueError('KAORI could not resolve the saved source binding context.')
-        except ValueError as exc:
-            feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type=f'{integration_type}_binding_create_rejected',
-                status='error',
-                title=f'{present_key_label(integration_type)} binding not saved',
-                message='KAORI could not create the requested source binding.',
-                detail=str(exc),
-                action_url=request.path,
-                action_label='Review binding',
-                action_icon='link-2',
-                metadata={
-                    'integration_type': integration_type,
-                    'scope_type': 'kubernetes_cluster',
-                    'scope_key': cluster_id,
-                    'source_id': source_id,
-                    'selector_label': selector_label or None,
-                },
-                queue_feedback=not is_htmx_request(),
-            )
-        except Exception as exc:
-            current_app.logger.exception(
-                'Unexpected %s binding persistence failure for scope %s and source %s',
-                integration_type,
-                cluster_id,
-                source_id,
-            )
-            feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type=f'{integration_type}_binding_create_failed',
-                status='error',
-                title=f'{present_key_label(integration_type)} binding not saved',
-                message='KAORI could not persist the source binding.',
-                detail='Review KAORI logs and database connectivity before retrying.',
-                action_url=request.path,
-                action_label='Review binding',
-                action_icon='link-2',
-                metadata={
-                    'integration_type': integration_type,
-                    'scope_key': cluster_id,
-                    'source_id': source_id,
-                    'reason': type(exc).__name__,
-                },
-                queue_feedback=not is_htmx_request(),
-            )
-        else:
-            feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type=f'{integration_type}_binding_created',
-                status='success',
-                title=f'{present_key_label(integration_type)} binding saved',
-                message=f'{source.name} is associated with {cluster.name} and requires binding validation.',
-                detail=f'Binding selector: {selector_label}={selector_value}. Source credentials and runtime remain shared; operational resolution stays blocked until validation succeeds.',
-                action_url=(
-                    url_for('metrics.instance_detail', instance_id=source.id) + '#scope'
-                    if integration_type == 'metrics_source'
-                    else url_for('alertmanager.instance_detail', instance_id=source.id) + '#scope'
-                ),
-                action_label='Review source binding',
-                action_icon='route',
-                metadata={
-                    'integration_type': integration_type,
-                    'binding_id': binding.id,
-                    'scope_key': cluster.id,
-                    'source_id': source.id,
-                    'selector_label': selector_label,
-                    'selector_value': selector_value,
-                },
-                queue_feedback=not is_htmx_request(),
-            )
-            if not is_htmx_request():
-                return redirect(
-                    url_for(
-                        'integrations.metrics_sources'
-                        if integration_type == 'metrics_source'
-                        else 'integrations.alertmanager'
-                    )
-                    + '#integration-coverage'
-                )
-
-    context = build_binding_workspace(
-        integration_type,
-        scope_key=scope_key,
-        submitted=submitted,
-        operation_feedback=feedback,
-    )
-    if context['cluster'] is None and request.method == 'GET':
-        abort(404)
-    context['notification_context'] = (
-        get_navigation_notification_context(user_id=int(current_user.id)) if feedback is not None else None
-    )
-    if is_htmx_request():
-        return render_template('integrations/bindings/partials/_workspace.html', **context)
-    return render_template('integrations/bindings/source.html', **context)
 
 
 @integrations_bp.route('/metrics-sources/bind', methods=['GET', 'POST'])

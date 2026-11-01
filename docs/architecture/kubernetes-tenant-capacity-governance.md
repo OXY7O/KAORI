@@ -320,7 +320,7 @@ Recorded/Cutoff and capacity dataset/snapshot state use a compact two-column
 definition list. Traceability is a quiet, default-closed native disclosure
 within the same surface; correlation and snapshot IDs retain selectable
 monospace values and are never hidden from keyboard users. No extra cards,
-new components, action footer, provider calls, data mutation or admission
+new components, provider calls, data mutation or admission
 recalculation were introduced. The modal explicitly resets `text-left` from
 the registry Action cell, matching the #1053 alignment correction.
 
@@ -333,6 +333,28 @@ Allow/Block and Healthy/Unknown/Overcommitted cases; duplicate/long names,
 full reasons, nullable legacy evidence, screen width and dark mode,
 keyboard/focus and HTMX pagination. CI/CD, Full Admission, staging deployment
 and main promotion remain **HOLD** until explicitly authorized.
+
+### Admission Evidence native Close footer (#775 DevContainer UAT)
+
+DevContainer UAT for adopted Capsule `GlobalResourceQuota` shared allocation
+verified a committed `Allow / Healthy` admission decision, and requested a
+dedicated footer Close control on the **Namespace Provisioning → Capacity
+Decisions → View More → Admission Evidence** read-only modal. Reuse the
+existing KAORI native dialog button and `data-kaori-dialog-close` controller:
+a secondary Close action at the right side of a fixed, bordered footer;
+the existing header X remains available. The evidence body uses
+`min-h-0 flex-1 overflow-y-auto` so it alone scrolls for long reasons,
+profile identity and expanded Traceability. The footer remains reachable at
+narrow/short viewport heights without shifting the parent table.
+This action only closes the dialog, with no POST, capacity admission
+recalculation or provider mutation. Native keyboard Escape/focus-restoration,
+light/dark and reduced-motion behavior remain owned by shared dialog logic.
+
+Human Visual QA remains pending: allow/block and healthy/unknown cases,
+Traceability open/closed, short-height desktop and 360/390 mobile, focus and
+Escape, close from either header or footer, no unintended page-level scroll.
+Executable contract test, Jinja rendering, styling checks and official gates
+remain separate from this source-only review integration.
 
 ## Tenant Allocation Overview (#1034)
 
@@ -578,3 +600,18 @@ Staging UAT for #654 must demonstrate:
 5. Overcommitted state after simulated/real capacity contraction without rewriting existing Tenant allocations;
 6. recovery after capacity increases or Tenant commitment is reduced;
 7. persisted decision history with snapshot cutoff and policy/budget inputs.
+
+
+### Capacity Allocation Tabs and Full Budget Registry (2026-10-26 UAT)
+
+The current Resource Profiles → Capacity Governance workspace presents **Tenant Allocation Overview** and **Allocation Budget** as two query-backed tabs within one shared KAORI tab surface, matching the Membership Registry navigation standard.
+
+- The **Overview** tab keeps the committed per-cluster charts, explicit unknown/stale evidence, CPU/Memory Limit Exposure, explanations, and Tenant Contributions read-only inspection.
+- The **Allocation Budget** tab now uses a **compact canonical cluster registry** with one row per Ready cluster showing capacity state, evidence freshness, and committed Namespace count. Its `View Details` action opens the existing KAORI **static expandable row** (not a separate modal) containing CPU Requests, Memory Requests, Pod Slots, and Logical Storage cards with Budget, Committed, Headroom, and ratio/progress or unavailable evidence.
+- The **How allocation budgets work** explanation is a read-only native dialog triggered beside **View Contributions** in Tenant Allocation Overview; the old inline accordion is removed.
+- Filters are Search, Environment, Capacity State, Evidence, and Resource; the shared registry handles latest-request-wins HTMX filtering, conditional Clear Filters, page reset, rows-per-page, and pagination. Pagination counts **clusters**, while each displayed cluster expands into the selected resource rows.
+- The read-only percentage and headroom values continue to be produced by `build_tenant_allocation_bars` from the existing committed #654 evidence, never recalculated from formatted strings or observed workload utilization.
+- `Unknown` and `Not Governed` explicitly retain unavailable ratios; they are not zero budget or free headroom. Logical Storage remains a governed *admission ceiling*, not backend physical capacity.
+- The capacity policy form remains outside the inner tabs. Switching tabs does not perform a provider mutation or alter admission authority.
+
+This UX supersedes the older modal/table presentation described in the historical **Allocation Budget registry and detail visual hierarchy (#1053)** subsection above; that subsection remains for implementation history, not as the current UAT UI contract.

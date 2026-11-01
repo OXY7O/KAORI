@@ -65,7 +65,15 @@ Selecting a graph resource uses the existing one-hop neighborhood focus to foreg
 
 ## Compact Hierarchy and Viewport Safety
 
-Hierarchy View retains the existing Cytoscape breadth-first layout, but node spacing adapts to the visible graph: compact at 8 or fewer nodes, intermediate through 35, and the established wide spacing for larger views. Layout fitting uses the visible graph's bounding box including external node labels and a bounded canvas safety margin. Resize only re-fits when visible evidence is clipped by the resized viewport; normal operator pan/zoom remains under the user's control. Dependency View remains independent, preserving its existing COSE geometry. Namespace grouping, list fallback and snapshot read boundary do not change.
+Hierarchy View retains the existing Cytoscape breadth-first layout, with compact node-count-aware spacing (small graphs through 8 resources; moderately dense through 35; larger views). Dependency View retains its existing COSE layout geometry. Both layouts disable Cytoscape's layout-level automatic fitting; KAORI owns final viewport selection after layout settles.
+
+- **Compact scope:** Fit the visible graph and external resource labels in the canvas with bounded safety margins.
+- **Dense scope:** When more than 12 visible resources would require a full-graph zoom below 0.72, initially zoom to 0.82 around the selected node, active Namespace, or Cluster anchor. This is a **focal viewport**, not evidence truncation: all committed nodes and relationships remain in the graph, Resource List, inspector, and exports. Display a neutral accessible hint naming the resource count and explaining pan/zoom plus Fit. Keep Resource List as the accessible complete-identity view.
+- **Fit:** The explicit toolbar button still fits the **entire** visible graph, including external labels and a bounded margin. If this overview requires microscopic labels, a compact neutral KAORI viewport hint distinguishes overview from readable focus and directs the operator to zoom or Resource List. The hint uses the existing Violet icon surface, a short mode title, resource-count chip, and one concise, single-line supporting sentence (responsive width with ellipsis fallback). Its content is announced through an accessible status region; it never blocks canvas interactions and does not introduce a warning/incident status or a new shared component. Do not claim every label is readable simultaneously in a dense overview.
+- **Resize and view switches:** A focused graph does not automatically refit because its offscreen nodes are deliberately outside the focal viewport; retain operator pan/zoom. Fit again only when the unfocused visible graph is clipped by an actual viewport resize, and initialize a viewport when switching from an initially hidden Resource List.
+- **Reset/layout/filter/reload:** Apply the readable focal decision to a newly laid-out graph, without changing filters, committed graph evidence, relationship counts, or export content.
+
+The graph's existing pan/zoom and hierarchy collapse interactions remain available. Namespace grouping, list fallback, current committed generation read boundary, truncation warning, and dark-mode surface tokens do not change.
 
 ## Canonical Server Architecture
 
@@ -107,34 +115,44 @@ projection. Namespace and Node ORM fetches therefore use a deterministic
 `max_nodes` SQL window, with independent exact committed-generation SQL counts
 for omitted-type reporting. Namespace selector bootstrap projects DISTINCT scalar
 cluster/namespace values rather than full Namespace ORM records. Deeper graph
-modes intentionally retain full relationship candidate loading until a separate
-relation-preserving bounded strategy can be verified for Service selectors,
-Ingress, Pod configuration references, and PVC/PV links. Do not apply an
-unconditional SQL LIMIT to those relationship-sensitive paths.
+modes reuse current-generation, type-specific SQL candidate windows, a
+relationship-safe parent budget, and scalar selector/reference qualification
+before ORM projection. Do not apply an unconditional SQL LIMIT to a
+relationship-sensitive source without preserving graph/omission equivalence.
 
 
 ## Bounded relationship candidates (Depth 2 / 3 / Full)
 
-When the complete Cluster + Namespace parent cohort fits within 350 graph nodes,
-repository queries retain deterministic type-specific prefixes with exact SQL
-counts for omitted-by-type evidence. Namespace-backed types must have a latest
-committed Namespace parent. ConfigMap/Secret and PVC/PV candidates have separate
-budgets matching the fair group-selection algorithm. Namespace-specific Node
-placement uses committed SQL EXISTS rather than loading all Pods. All/Compute
-Pod scopes use bounded query prefixes; Networking/Configuration/Storage Pod
-scopes retain complete candidates because their selection depends on labels and
-JSON references. Namespace-selected PVC/PV bindings retain complete scoped
-candidates. Parent-heavy graph scopes preserve the previous safe full load and
-truncation path until equivalent bounded relationship closure is proven. No
-live Kubernetes API calls are permitted in read operations.
+Graph parent rows (Cluster + current Namespace) always consume the visible
+350-node budget before resources. For deep scopes, Namespaces are SQL-counted
+and only the available parent-prefix is materialized. If parents fill the
+budget, resource families receive a zero-row ORM budget but still report
+exact eligible committed-generation SQL totals, preserving omitted-by-type
+evidence. If parents fit, families use stable type-specific SQL prefixes and
+independent exact counts, including ConfigMap/Secret and PVC/PV quotas.
+Namespace-backed nodes require a current committed Namespace parent.
+Namespace-specific Node placement uses correlated committed SQL EXISTS.
 
+All/Compute Pods use bounded type prefixes. Configuration and Storage Pods
+are first filtered in SQL using the presence of committed JSON references;
+they then use the same deterministic bounded ORM/count path. Deep Networking
+Pod relevance requires **all** current Service selectors, including selectors
+from Services beyond the visible prefix. The repository streams selector
+scalar rows in batches, retains distinct nonempty selectors by
+cluster/namespace, scans only committed Pod ID/labels scalars to count the
+matching cohort, and materializes at most the graph-budget matching Pod
+records. Rendered Service ORM rows themselves use bounded SQL prefixes.
+The selector index scales with the number of distinct selector maps and its
+high-cardinality performance must still be measured; it is not a bounded
+selector-index memory guarantee or proof of a latency target.
 
-Deep Networking Pod visibility also depends on **all** committed Service
-selectors; for Networking Depth 3/Full, Service ORM selection deliberately
-remains complete. The graph still applies its ordinary bounded visible-node
-budget afterward, but no selector may be discarded before determining which
-Pods are relevant. Benchmark and verify this fallback before any later SQL
-selector pushdown optimization.
+Namespace-scoped PVC/PV queries retain the earlier current-generation
+correlated SQL EXISTS on the PVC's referenced volume name (same cluster and
+selected namespace). Claims and matching volumes are SQL-counted and
+independently limited. Preserve deterministic visible nodes/edges, complete
+Service selector semantics, precise omission counts, cache authority and the
+committed-state read boundary. No provider API calls, new graph components or
+unconditional LIMIT across relationship-sensitive sets.
 
 ## Reusable topology presentation primitives
 

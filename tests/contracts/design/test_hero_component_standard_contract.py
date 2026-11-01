@@ -35,6 +35,38 @@ def test_hero_component_standard_is_enforced() -> None:
     assert 'KAORI Hero component standard passed' in result.stdout
 
 
+def test_secrets_pki_hero_descriptions_use_static_qualified_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    resolver = verifier['_secrets_pki_workspace_descriptions']
+    descriptions = resolver()
+    assert set(descriptions) == {
+        'app/secrets_pki/evidence_workspaces.py:certificates',
+        'app/secrets_pki/evidence_workspaces.py:pki',
+        'app/secrets_pki/evidence_workspaces.py:expiration',
+        'app/secrets_pki/operational_evidence_workspaces.py:leases',
+        'app/secrets_pki/operational_evidence_workspaces.py:consumers',
+        'app/secrets_pki/operational_evidence_workspaces.py:governance',
+    }
+    for owner, description in descriptions.items():
+        verifier['_validate_description_budget'](description, owner=owner)
+
+    original_read = resolver.__globals__['_read']
+    source = ROOT / 'app/secrets_pki/evidence_workspaces.py'
+
+    def non_static_description(path: Path) -> str:
+        content = original_read(path)
+        if path == source:
+            return content.replace(
+                "'Review public certificates and independent consumer evidence.'",
+                'dynamic_provider_description',
+            )
+        return content
+
+    monkeypatch.setitem(resolver.__globals__, '_read', non_static_description)
+    with pytest.raises(AssertionError, match='static literals'):
+        resolver()
+
+
 def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
     source = (ROOT / 'app/templates/integrations/delivery/notification_channels/index.html').read_text(encoding='utf-8')
     verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
@@ -42,8 +74,15 @@ def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
 
     for label in ('Delivery Capability', 'Provider Registry', 'Delivery Evidence'):
         assert label in source
-    assert '{% for provider in payload.providers %}' in source
-    assert 'notification_subsection(provider.label' in source
+
+    channels = (
+        ROOT / 'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    ).read_text(encoding='utf-8')
+    assert '{% for provider in payload.providers %}' in channels
+    assert '{{ provider.label }}' in channels
+    assert '{{ provider.description }}' in channels
+    assert 'table_label.status_label(provider.status, provider.tone' in channels
+    assert 'Open {{ provider.label }} setup guide' in channels
 
 
 def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None:
@@ -349,3 +388,154 @@ def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> N
     assert object_storage_pages.count("'Object Storage Analytics',") == 6
     for title in ('Overview', 'Capacity & Usage', 'Performance', 'Forecast', 'Top Consumers', 'Alerts & Anomalies'):
         assert f"        '{title}'," in object_storage_pages
+
+
+def test_secrets_pki_lifecycle_compact_hero_and_integrated_navigation_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_lifecycle_compact_hero']
+    check()
+
+    read = check.__globals__['_read']
+    lifecycle_path = ROOT / 'app/templates/secrets_pki/lifecycle.html'
+    navigation_path = ROOT / 'app/templates/secrets_pki/_lifecycle_navigation.html'
+
+    def legacy_single_quotes(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            assert 'lifecycle_navigation.render("lifecycle")' in source
+            return source.replace(
+                'lifecycle_navigation.render("lifecycle")', "lifecycle_navigation.render('lifecycle')"
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', legacy_single_quotes)
+    check()
+
+    def wrong_navigation_key(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace('lifecycle_navigation.render("lifecycle")', 'lifecycle_navigation.render("leases")')
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', wrong_navigation_key)
+    with pytest.raises(AssertionError, match='must render shared peer navigation'):
+        check()
+
+    def misplaced_navigation(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace('{{ lifecycle_navigation.render("lifecycle") }}', '').replace(
+                '<section class="{{ page_hero.shell_classes() }}">',
+                '<section class="{{ page_hero.shell_classes() }}">{{ lifecycle_navigation.render("lifecycle") }}',
+                1,
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', misplaced_navigation)
+    with pytest.raises(AssertionError, match='peer navigation must appear above Hero'):
+        check()
+
+    def broken_copy(path: Path) -> str:
+        source = read(path)
+        if path == lifecycle_path:
+            return source.replace(
+                'Missing evidence is not zero; TLS delivery is unverified.',
+                'Missing evidence is not zero. Validity and matching fingerprints do not '
+                'prove rotation, delivery, trust or endpoint TLS serving.',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', broken_copy)
+    with pytest.raises(AssertionError, match='one-line candidate'):
+        check()
+
+    def raw_navigation(path: Path) -> str:
+        source = read(path)
+        if path == navigation_path:
+            return source.replace('workspace_tabs.render_navigation(', 'raw_navigation(')
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', raw_navigation)
+    with pytest.raises(AssertionError, match='Integrated Workspace Tabs'):
+        check()
+
+
+def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_copy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_overview_blocked_dashboard']
+    check()
+
+    original_read = check.__globals__['_read']
+    overview = ROOT / 'app/templates/secrets_pki/overview.html'
+
+    def verbose_hero(path: Path) -> str:
+        source = original_read(path)
+        if path == overview:
+            return source.replace(
+                "blocked_info='Qualify Vault and collect KV v2 inventory.'",
+                "blocked_info='Register a Vault source, approve KV v2 metadata mounts, "
+                "and run the registered inventory job.'",
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', verbose_hero)
+    with pytest.raises(AssertionError, match='one-line copy budget'):
+        check()
+
+    def wrong_blocker(path: Path) -> str:
+        source = original_read(path)
+        if path == overview:
+            return source.replace(
+                '{% include "components/states/_blocked_state.html" %}',
+                '{% include "components/states/_empty_state.html" %}',
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', wrong_blocker)
+    with pytest.raises(AssertionError, match='canonical _blocked_state'):
+        check()
+
+
+@pytest.mark.parametrize('workspace', ['inventory', 'lifecycle'])
+def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
+    workspace: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_secrets_pki_missing_vault_source_prerequisites']
+    check()
+    original_read = check.__globals__['_read']
+    candidate = ROOT / f'app/templates/secrets_pki/{workspace}.html'
+
+    def _mutate(replacement: str):
+        def changed(path: Path) -> str:
+            source = original_read(path)
+            if path == candidate:
+                return source.replace('{% include "components/states/_blocked_state.html" %}', replacement)
+            return source
+
+        return changed
+
+    monkeypatch.setitem(
+        check.__globals__,
+        '_read',
+        _mutate('{% include "components/states/_empty_state.html" %}'),
+    )
+    with pytest.raises(AssertionError, match='shared blocked prerequisite component'):
+        check()
+
+    def false_ready_metrics(path: Path) -> str:
+        source = original_read(path)
+        if path == candidate:
+            return source.replace(
+                '{% include "components/states/_blocked_state.html" %}',
+                "{{ metric_card.render('False Zero', 0, 'Unqualified', 'server') }}",
+            )
+        return source
+
+    monkeypatch.setitem(check.__globals__, '_read', false_ready_metrics)
+    with pytest.raises(AssertionError, match='shared blocked prerequisite component'):
+        check()

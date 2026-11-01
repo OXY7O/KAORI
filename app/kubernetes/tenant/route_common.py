@@ -7,7 +7,10 @@ from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
-from app.kubernetes.tenant.access_service import get_tenant_access_context
+from app.kubernetes.tenant.access_service import (
+    get_provider_access_evidence_registry_context,
+    get_tenant_access_context,
+)
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_credential_registry_context,
@@ -280,6 +283,14 @@ def _tenant_section_redirect(section: str):
         return response
 
     if request.headers.get('HX-Request') != 'true':
+        if resolved_section == 'memberships':
+            return redirect(
+                url_for('tenant.tenants', section=resolved_section, membership_view=_membership_registry_view())
+            )
+        if resolved_section == 'access-grants' and request.values.get('access_inventory_view'):
+            return redirect(
+                url_for('tenant.tenants', section=resolved_section, access_inventory_view=_access_inventory_view())
+            )
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
     context = _tenant_workspace_context(include_sync=False)
@@ -302,6 +313,14 @@ def _tenant_section_redirect(section: str):
     response = make_response(rendered)
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Pragma'] = 'no-cache'
+    if resolved_section == 'memberships':
+        response.headers['HX-Replace-Url'] = url_for(
+            'tenant.tenants', section=resolved_section, membership_view=_membership_registry_view()
+        )
+    if resolved_section == 'access-grants' and request.values.get('access_inventory_view'):
+        response.headers['HX-Replace-Url'] = url_for(
+            'tenant.tenants', section=resolved_section, access_inventory_view=_access_inventory_view()
+        )
     return response
 
 
@@ -354,8 +373,14 @@ def _discovery_section_context() -> dict[str, Any]:
     )
 
 
+def _membership_registry_view() -> str:
+    """One URL-owned registry view; reject unexpected query/form values."""
+    return 'groups' if request.values.get('membership_view') == 'groups' else 'memberships'
+
+
 def _memberships_section_context() -> dict[str, Any]:
     return {
+        'active_membership_view': _membership_registry_view(),
         **get_membership_registry_context(
             page=_query_int('membership_page'),
             per_page=_query_int('membership_per_page', 5),
@@ -374,16 +399,38 @@ def _memberships_section_context() -> dict[str, Any]:
     }
 
 
+def _access_inventory_view() -> str:
+    """Only approved provider inspection tabs may be selected."""
+    selected = request.values.get('access_inventory_view')
+    return selected if selected in {'grants', 'capsule', 'native'} else 'grants'
+
+
 def _access_grants_section_context() -> dict[str, Any]:
-    return get_access_grant_registry_context(
-        page=_query_int('grant_page'),
-        per_page=_query_int('grant_per_page', 5),
-        tenant_id=_query_text('grant_tenant_id'),
-        status=_query_text('grant_status'),
-        reconciliation_status=_query_text('grant_reconciliation_status'),
-        scope_type=_query_text('grant_scope_type'),
-        search=_query_text('grant_search'),
+    active_view = _access_inventory_view()
+    provider_evidence = (
+        get_provider_access_evidence_registry_context(
+            provider=active_view,
+            page=_query_int('access_evidence_page'),
+            per_page=_query_int('access_evidence_per_page', 5),
+            search=_query_text('access_evidence_search'),
+            status=_query_text('access_evidence_status'),
+        )
+        if active_view in {'capsule', 'native'}
+        else {}
     )
+    return {
+        **provider_evidence,
+        **get_access_grant_registry_context(
+            page=_query_int('grant_page'),
+            per_page=_query_int('grant_per_page', 5),
+            tenant_id=_query_text('grant_tenant_id'),
+            status=_query_text('grant_status'),
+            reconciliation_status=_query_text('grant_reconciliation_status'),
+            scope_type=_query_text('grant_scope_type'),
+            search=_query_text('grant_search'),
+        ),
+        'active_access_inventory_view': active_view,
+    }
 
 
 def _credentials_section_context() -> dict[str, Any]:

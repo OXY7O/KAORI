@@ -66,7 +66,12 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'Integration Contract' in overview
     assert 'Consumer Resolution' in overview
     assert 'Authority Boundary' in overview
-    assert 'md:grid-cols-3' in overview
+    # Architectural explanations live in the shared Guide, not persistent footer cards.
+    assert 'md:grid-cols-3' not in overview
+    assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in overview
+    assert 'info_tip.render(' in overview
+    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
+        assert f'"{section} — "' in overview
 
 
 def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
@@ -192,15 +197,18 @@ def test_observability_coverage_includes_kubernetes_and_object_storage_assets() 
     assert 'url_for(provider.registry_endpoint' in coverage_template
 
 
-def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> None:
+def test_metrics_source_provider_selector_inherits_canonical_shared_hero() -> None:
     selector = read('app/templates/integrations/observability/metrics_source/provider_selector.html')
+    shared = read('app/templates/integrations/provider_selector.html')
 
-    assert 'page_hero.shell_classes()' in selector
-    assert 'page_hero.layout_classes()' in selector
-    assert 'page_hero.content_classes()' in selector
-    assert "page_hero.intro('chart-spline', 'Integrations', 'plus')" in selector
-    assert '<h1 class="{{ page_hero.title_classes() }}">Register Metrics Source</h1>' in selector
-    assert 'page_hero.hero(' not in selector
+    assert '{% extends "integrations/provider_selector.html" %}' in selector
+    assert 'page_hero.shell_classes()' in shared
+    assert 'page_hero.layout_classes()' in shared
+    assert 'page_hero.content_classes()' in shared
+    assert 'page_hero.intro(domain.icon, domain.label, "package-search")' in shared
+    assert '<h1 class="{{ page_hero.title_classes() }}">Choose Provider</h1>' in shared
+    assert 'page_hero.hero(' not in shared
+    assert 'page_hero.shell_classes()' not in selector
 
 
 def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
@@ -233,3 +241,109 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert 'registry_metrics_readiness(identity)' in presentation
     assert 'RegistryCollectionState' in presentation
     assert 'RegistryWebhookEndpoint' in presentation
+
+
+def test_every_provider_integration_overview_inherits_canonical_title_guide() -> None:
+    shared = read('app/templates/integrations/components/_provider_frontpage.html')
+    tip = read('app/templates/components/info_tip.html')
+    pages = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
+        'app/templates/integrations/observability/metrics_source/frontpage.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/index.html',
+        'app/templates/integrations/registry/providers/harbor/index.html',
+        'app/templates/integrations/secrets_management/vault/index.html',
+        'app/templates/integrations/source_control/github/index.html',
+    )
+
+    assert 'components/info_tip.html' in shared
+    assert shared.count('info_tip.render(') == 1
+    # Whitespace around the Jinja replace call is owned by djLint.
+    assert '"provider-overview-" ~ (title|lower|replace(" ", "-")' in shared
+    assert 'title ~ " Guide"' in shared
+    assert 'items=overview_guide_items' in shared
+    assert 'md:grid-cols-3' not in shared
+    assert 'integration_ui.metric_grid_classes(4)' in shared
+    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
+        assert f'"{section} — "' in shared
+    assert 'bg-surface-card px-5 py-4 sm:px-6' not in shared
+    assert 'placement="right", variant="guide"' in shared
+    for token in (
+        'contract_title',
+        'contract_description',
+        'resolution_title',
+        'resolution_description',
+        'authority_title',
+        'authority_description',
+    ):
+        assert token in shared
+    assert 'data-kaori-info-tip-trigger' in tip
+    assert 'data-kaori-info-tip-variant' in tip
+
+    for path in pages:
+        page = read(path)
+        assert 'integrations/components/_provider_frontpage.html' in page, path
+        assert page.count('provider_front.overview(') == 1, path
+        if path == 'app/templates/integrations/secrets_management/vault/index.html':
+            # The Vault registry owns a second title-level Guide, not an Overview duplicate.
+            assert page.count('info_tip.render(') == 1, path
+            assert "info_tip.render('vault-connection-registry-guide'," in page
+            assert 'title_extra=header_guide' in page
+            assert "variant='guide'" in page
+            assert 'info_tip.render(' not in page.split('integration_tabs.render("vault"', 1)[0]
+        else:
+            assert 'info_tip.render(' not in page, path
+
+    github = read('app/templates/integrations/source_control/github/index.html')
+    assert 'Register GitHub Apps with governed Source Control evidence.' in github
+    assert 'whitespace-nowrap' not in github
+    assert 'line-clamp' not in github
+
+
+def test_provider_workspace_tabs_share_title_description_and_existing_tab_geometry() -> None:
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
+    pages = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
+        'app/templates/integrations/observability/metrics_source/frontpage.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/index.html',
+        'app/templates/integrations/registry/providers/harbor/index.html',
+        'app/templates/integrations/secrets_management/vault/index.html',
+        'app/templates/integrations/source_control/github/index.html',
+    )
+
+    assert 'integrations/components/_workspace.html' in tabs
+    assert 'integration_ui.section_header("layout-dashboard",' in tabs
+    assert '"Integration Workspace"' in tabs
+    assert '"Switch between integration coverage and registered connections."' in tabs
+    assert 'data-kaori-integration-workspace-section' in tabs
+    assert 'integration_ui.workspace_section_intro(' in tabs
+    assert 'Provider Connections & Coverage' in tabs
+    assert 'Monitor provider readiness, committed coverage, and registered connections.' in tabs
+    outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
+    assert 'integration_ui.palette_icon(' not in outer_heading
+    assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
+    assert 'components/info_tip.html' in tabs
+    assert tabs.count('info_tip.render(') == 1
+    assert '"integration-workspace-" ~ provider_key' in tabs
+    assert 'placement="right"' in tabs
+    assert 'variant="guide"' in tabs
+    assert 'items=workspace_guide_items' in tabs
+    for section in ('Integration Coverage —', 'Connection Registry —', 'Authority Boundary —'):
+        assert section in tabs
+    shared_header = read('app/templates/integrations/components/_workspace.html')
+    assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
+    assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in shared_header
+    assert (
+        'palette_icon(' not in shared_header.split('macro workspace_section_intro', 1)[1].split('{%- endmacro %}', 1)[0]
+    )
+    assert 'title_extra=None' in shared_header
+    assert '{% if title_extra %}{{ title_extra }}{% endif %}' in shared_header
+    assert 'title_extra=workspace_guide' in tabs
+    assert tabs.index('integration_ui.section_header(') < tabs.index('framed_workspace_tabs.render(')
+    assert 'framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label)' in tabs
+    assert "('coverage', 'Integration Coverage'" in tabs
+    assert "('registry', 'Connection Registry'" in tabs
+    assert 'x-on:popstate.window="syncTab()"' in tabs
+    for page in pages:
+        assert 'components/integration_workspace_tabs.html' in read(page), page

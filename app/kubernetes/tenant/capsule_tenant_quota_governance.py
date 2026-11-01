@@ -55,7 +55,10 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
     _commit_governance as _commit_governance_impl,
 )
 from app.kubernetes.tenant.providers import TenantProviderState
-from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
+from app.kubernetes.tenant.service import (
+    _validate_resource_profile_attachment_controls,
+    _validate_resource_profile_base_controls,
+)
 from app.models.tenant import Tenant, TenantLifecycleStatus
 
 _cluster_client = _provider_cluster_client
@@ -153,6 +156,9 @@ def cutover_capsule_tenant_resource_quota(
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
     profile = _profile(profile_id)
+    # Fail closed before reading/mutating Capsule: this quota-only path
+    # cannot promise Native LimitRange or per-PVC policy writes.
+    _validate_resource_profile_base_controls(profile, tenant)
     _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_tenant_quota_cutover_state(tenant)
     if not state['supported']:
@@ -273,6 +279,9 @@ def change_capsule_tenant_resource_quota(
         raise ValueError('Drifted Capsule Tenant allocation must be reconciled before a new allocation change.')
 
     profile = _profile(profile_id)
+    # Fail closed before reading/mutating Capsule: this quota-only path
+    # cannot promise Native LimitRange or per-PVC policy writes.
+    _validate_resource_profile_base_controls(profile, tenant)
     _validate_resource_profile_attachment_controls(profile, tenant)
     expected_source = governance.get('provider_source')
     expected_source = expected_source if isinstance(expected_source, Mapping) else {}
@@ -706,6 +715,8 @@ def get_capsule_tenant_quota_context(
     *,
     drift_page: int = 1,
     drift_per_page: int = 5,
+    drift_tenant_id: str = '',
+    drift_search: str = '',
 ) -> dict[str, Any]:
     tenants = (
         Tenant.query.filter(
@@ -736,6 +747,17 @@ def get_capsule_tenant_quota_context(
         if _governance(tenant).get('authority') == _AUTHORITY
         and _governance(tenant).get('control_state') == _CONTROL_DRIFTED
     ]
+    normalized_tenant_id = str(drift_tenant_id or '').strip()
+    normalized_search = str(drift_search or '').strip()[:160]
+    if normalized_tenant_id:
+        drifted = [tenant for tenant in drifted if str(tenant.id) == normalized_tenant_id]
+    if normalized_search:
+        needle = normalized_search.casefold()
+        drifted = [
+            tenant
+            for tenant in drifted
+            if needle in str(tenant.name or '').casefold() or needle in str(tenant.provider_reference or '').casefold()
+        ]
     visible_drifted, pagination = paginate_sequence(
         drifted,
         page=drift_page,
@@ -749,6 +771,7 @@ def get_capsule_tenant_quota_context(
         'capsule_tenant_quota_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_tenant_quota_managed': managed,
         'capsule_tenant_quota_drifted': visible_drifted,
+        'capsule_tenant_quota_filters': {'tenant_id': normalized_tenant_id, 'search': normalized_search},
         'capsule_tenant_quota_drift_pagination': pagination,
         'capsule_tenant_quota_drift_state': {
             tenant.id: build_capsule_tenant_quota_drift_action_state(tenant) for tenant in visible_drifted

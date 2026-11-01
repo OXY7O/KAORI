@@ -10,8 +10,10 @@ def read(path: str) -> str:
 def test_native_external_access_observer_has_explicit_read_only_authority() -> None:
     service = read('app/kubernetes/tenant/external_native_access_observation.py')
     routes = read('app/kubernetes/tenant/routes_access.py')
-    context = read('app/kubernetes/tenant/access_service.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    context = read('app/kubernetes/tenant/admin_workspace.py')
+    facade = read('app/kubernetes/tenant/access_service.py')
+    assert 'get_tenant_access_context as get_tenant_access_context' in facade
+    ui = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
 
     assert 'def observe_external_native_access_committed(' in service
     assert "tenant.provider_key != 'native_kubernetes'" in service
@@ -43,16 +45,25 @@ def test_native_external_access_observer_has_explicit_read_only_authority() -> N
     assert 'tenant.observe_native_external_access_route' in ui
     assert 'name="csrf_token"' in ui
     assert 'name="tenant_id"' in ui
-    assert 'binding.ownership' in ui
-    assert 'binding.claimed_grant_marker' in ui
-    assert 'Labels indicate possible correlation' in ui
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'binding.ownership' in detail
+    assert 'binding.claimed_grant_marker' in detail
+    assert 'Labels indicate possible correlation' in detail
 
 
-def test_native_access_observation_reuses_capsule_workspace_without_duplicate_new_surface() -> None:
-    ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> None:
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    tabs = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
-    assert workspace.count('_external_capsule_access_inventory.html') == 1
-    assert ui.count('data-external-native-access-inventory') == 1
-    assert ui.count('External Capsule Access Inventory') == 1
-    assert ui.count('Native Namespace RBAC Inventory') == 1
-    assert ui.count('method="post"') >= 2
+    assert workspace.count('_access_inventory_workspace.html') == 1
+    assert tabs.count('_external_capsule_access_inventory.html') == 1
+    assert tabs.count('_native_namespace_rbac_inventory.html') == 1
+    assert 'workspace_tabs.render_query_tabs' in tabs
+    assert capsule.count('External Capsule Access Inventory') == 1
+    assert native.count('data-external-native-access-inventory') == 1
+    assert native.count('Native Namespace RBAC Inventory') == 1
+    assert 'name="access_inventory_view" value="native"' in native
+    assert 'name="access_inventory_view" value="capsule"' in capsule
+    assert native.count('method="post"') >= 1
+    assert 'method="post"' in read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')

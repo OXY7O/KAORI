@@ -1,0 +1,152 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
+{% import "integrations/components/_provider_registration_context.html" as registration_context %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% block title %}Replace GitHub Installation · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-github-installation-replacement>
+        {{ provider_edit_hero.render("git-branch",
+                "Source Control Integration",
+                "settings-2",
+                "Replace GitHub Installation",
+                "Review GitHub identity while preserving existing evidence.",
+                "git-branch",
+                "GitHub REST API",
+                "Existing Installation",
+                canonical.name,
+                canonical.environment|replace("_", " ") |title,
+        canonical.readiness_status or "validation_required",
+        url_for('github_source_uat.edit_connection', installation_id=installation.id),
+        "GitHub replacement posture") }}
+        <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+            <section class="{{ ui.section_shell_classes() }} xl:col-span-8">
+                {{ ui.section_header('git-branch',
+                                'Replacement Installation',
+                                'Enter the new GitHub App, Installation and Account IDs; verify before registering the successor.') }}
+                <form id="github-installation-replacement-form"
+                      method="post"
+                      action="{{ url_for('github_source_uat.replace_installation', installation_id=installation.id) }}"
+                      autocomplete="off"
+                      class="space-y-5 p-4 sm:p-5"
+                      x-data="{ connectionVerified: false, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; $refs.connectionProof.value = ''; $refs.connectionTestResult.replaceChildren(); }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; $refs.connectionProof.value = event.detail?.proof || ''; } }"
+                      x-on:input.capture="invalidateConnectionTest($event)"
+                      x-on:change.capture="invalidateConnectionTest($event)"
+                      x-on:github-connection-tested.window="applyConnectionTest($event)">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden"
+                           name="connection_test_proof"
+                           x-ref="connectionProof"
+                           value="">
+                    {% if message %}
+                        {{ operational_callout.render('Replacement Review', message, icon='triangle-alert', tone='warning', variant='semantic') }}
+                    {% endif %}
+                    {% if form.csrf_token.errors %}
+                        {{ operational_callout.render('Session Validation', 'Refresh and retry; the form could not be verified.', icon='shield-alert', tone='warning', variant='semantic') }}
+                    {% endif %}
+                    <div class="rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3">
+                        <p class="text-sm font-semibold text-content-primary">Historical Connection Preserved</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI creates a new connection; the existing installation and evidence remain intact.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="{{ form.successor_name.id }}"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.successor_name.label.text }}</label>
+                            {{ form.successor_name(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">A unique name keeps the new installation distinguishable from historical evidence.</p>
+                            {% for error in form.successor_name.errors %}
+                                <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            {% for field in [form.app_id, form.installation_id, form.account_id] %}
+                                <div>
+                                    <label for="{{ field.id }}"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", inputmode="numeric") }}
+                                    {% for error in field.errors %}
+                                        <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <section aria-label="Replacement GitHub App credentials"
+                             class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                        {% call connection_validation_header.render(
+                            'App Credential',
+                            'Use protected credentials for the new GitHub App.',
+                            icon='shield-check'
+                            ) %}
+                            <button type="button"
+                                    hx-post="{{ url_for('github_source_uat.replace_installation', installation_id=installation.id) }}"
+                                    hx-include="#github-installation-replacement-form"
+                                    hx-vals='{"action":"test"}'
+                                    hx-target="#github-replacement-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-disabled-elt="this"
+                                    x-on:click="connectionVerified = false; $refs.connectionProof.value = ''; $refs.connectionTestResult.replaceChildren(); const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                    class="{{ action_button.classes('secondary') }} w-full sm:w-auto">
+                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                                Test Replacement
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-4 p-4 sm:p-5">
+                            <p class="text-xs leading-5 text-content-secondary">Same App: leave both fields blank. New App: provide PEM and webhook secret.</p>
+                            <div>
+                                <label for="{{ form.private_key_pem.id }}"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.private_key_pem.label.text }}</label>
+                                {{ form.private_key_pem(class_="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 font-mono text-sm leading-6 text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                {% for error in form.private_key_pem.errors %}
+                                    <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.webhook_secret.id }}"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.webhook_secret.label.text }}</label>
+                                {{ form.webhook_secret(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                {% for error in form.webhook_secret.errors %}
+                                    <p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div id="github-replacement-test-result"
+                             x-ref="connectionTestResult"
+                             aria-live="polite"></div>
+                    </section>
+                    <div class="flex flex-col gap-3 border-t border-outline-subtle pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-xs leading-5 text-content-secondary">Original connection and evidence remain intact.</p>
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
+                               class="{{ action_button.classes('secondary') }}">Cancel</a>
+                            <button type="submit"
+                                    name="action"
+                                    value="replace"
+                                    class="{{ action_button.classes('primary') }}">
+                                <i data-lucide="git-branch-plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register Replacement
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+                {% set replacement_flow = [('Enter New Identity', 'Change the GitHub App, installation, account IDs and unique name.'), ('Test Replacement', 'Verify provider-owned identity and repository selection.'), ('Register Successor', 'Save a separate canonical installation, preserving the predecessor.'), ('Validate & Transition', 'Run Full Validation before retiring the old.')] %}
+                {{ registration_context.render('GitHub Replacement Flow',
+                                'Controlled provider identity transition.',
+                                replacement_flow,
+                                'Source Control Registry',
+                                'Compare old and new connection evidence.',
+                                url_for('github_source.index', tab='registry') ,
+                'Open Source Control Registry',
+                flow_icon='workflow',
+                flow_note='Grants and evidence are not migrated.',
+                related_icon='git-branch',
+                authority_boundary='GitHub authorizes App and installation access; KAORI preserves both generations of evidence.') }}
+            </aside>
+        </div>
+    </div>
+{% endblock dashboard_content %}

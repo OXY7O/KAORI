@@ -303,3 +303,26 @@ Future implementation issues should reference it when they introduce:
 For existing work, Registry / Artifact Registry #558 and #899 are the first explicit consumers of this standard.
 
 The standard changes ownership and implementation boundaries only. It does not enable new provider mutation or bypass existing Developer Check, Full Admission, staging/UAT, security, RBAC, or human-acceptance requirements.
+
+
+## Security Posture committed correlation consumer (#721 / #2610)
+
+The Security parent under Assurance is a **consumer** of committed domain evidence.
+The first review/UAT slice implements Security → Overview / Findings based on
+active, inventory-backed Registry scan snapshots and their Kubernetes runtime
+bindings. Artifact Registry keeps scanner/source and digest authority; the
+canonical Runtime Correlation job keeps input generation and freshness authority.
+
+Access to the Security workspace requires `security_posture.view`. Displaying
+Registry CVE or runtime evidence additionally requires the existing
+`artifact_registry.view` permission. Future providers must use their own
+domain-specific read grants, never acquire visibility merely from this parent
+permission. No global security finding store, generic CMDB, CVE ingestion engine,
+local scanner, recommendation engine or raw CVE alert dispatch is introduced.
+
+Observed finding counts must not be labeled organization-wide coverage.
+Unknown/missing/partial/stale scans, unmatched source identity and changed runtime
+correlation cannot prove remediation. Existing Intelligence owns recommendations,
+accepted risk and alerts; Reports owns publication; individual source domains
+retain provider mutations and evidence collection. This implements the first
+bounded UX/composition contract, not all candidate Security Posture capabilities.

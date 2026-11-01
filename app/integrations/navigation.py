@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from app.integrations.kernel.registry import registry
-from app.integrations.taxonomy import ordered_domain_definitions
+from app.integrations.provider_matrix import provider_kinds
+from app.integrations.taxonomy import get_domain_definition, ordered_domain_definitions
 
 
 def _endpoint_matches(endpoint: str, prefix: str) -> bool:
@@ -31,7 +32,18 @@ def integration_endpoint_owner(endpoint: str | None) -> dict[str, str] | None:
     return None
 
 
-def build_integration_navigation_context(endpoint: str | None) -> dict[str, Any]:
+def provider_selector_domain(integration_type: str | None) -> dict[str, str] | None:
+    """Resolve provider chooser ownership using the Integration Provider Matrix."""
+    providers = provider_kinds(integration_type or '')
+    if not providers:
+        return None
+    domain = get_domain_definition(providers[0].domain_key)
+    return {'key': domain.key, 'label': domain.label}
+
+
+def build_integration_navigation_context(
+    endpoint: str | None, *, selected_domain_key: str | None = None
+) -> dict[str, Any]:
     """Build registry-driven Integration sidebar state without provider-name branching."""
 
     current_endpoint = str(endpoint or '').strip()
@@ -49,6 +61,12 @@ def build_integration_navigation_context(endpoint: str | None) -> dict[str, Any]
             if any(_endpoint_matches(current_endpoint, prefix) for prefix in prefixes):
                 active_domain_key = module.domain_key
                 break
+
+    if current_endpoint in {
+        'integrations.choose_integration_provider',
+        'integrations.select_metrics_source_provider',
+    } and selected_domain_key in {domain.key for domain in domains}:
+        active_domain_key = selected_domain_key
 
     overview_active = current_endpoint == 'integrations.overview'
     notification_channels_active = current_endpoint.startswith('notification_channels.')

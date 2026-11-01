@@ -41,7 +41,7 @@ def test_dashboard_response_guidance_explains_alert_provenance() -> None:
         assert 'components/operational_alert_response.html' in content
 
     assert "source_title='Alert Data Source'" in shared_response
-    assert 'KAORI Alert Intelligence · Active AlertCase records' in shared_response
+    assert 'KAORI Alert Intelligence · Active AlertCase records and operational insights.' in shared_response
     assert 'Recommendation-origin durable alert cases' not in shared_response
     assert 'Raw source alerts remain in Analytics' not in shared_response
 

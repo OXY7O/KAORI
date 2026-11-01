@@ -40,9 +40,9 @@
     }
 
     function render(root = document) {
-        const panel =
-            root.querySelector?.('[data-object-storage-trend-panel]') ||
-            document.querySelector('[data-object-storage-trend-panel]')
+        const panel = root.matches?.('[data-object-storage-trend-panel]')
+            ? root
+            : root.querySelector?.('[data-object-storage-trend-panel]')
         if (!panel || typeof Chart === 'undefined') return
         const canvas = panel.querySelector('[data-object-storage-chart]')
         if (!canvas) return
@@ -169,9 +169,9 @@
     }
 
     function renderBucketForecastChart(root = document) {
-        const panel =
-            root.querySelector?.('[data-object-storage-bucket-forecast-chart-panel]') ||
-            document.querySelector('[data-object-storage-bucket-forecast-chart-panel]')
+        const panel = root.matches?.('[data-object-storage-bucket-forecast-chart-panel]')
+            ? root
+            : root.querySelector?.('[data-object-storage-bucket-forecast-chart-panel]')
         if (!panel || typeof Chart === 'undefined') return
         const canvas = panel.querySelector('[data-object-storage-bucket-forecast-chart]')
         if (!canvas) return
@@ -260,13 +260,50 @@
         renderBucketForecastChart(root)
     }
 
-    function destroyAllCharts() {
-        destroyChart()
-        destroyBucketForecastChart()
+    function chartInsideSwap(chart, target) {
+        return Boolean(chart?.canvas && target && (target === chart.canvas || target.contains?.(chart.canvas)))
     }
 
-    document.addEventListener('DOMContentLoaded', () => renderAll(document))
+    function syncForecastClearFilters(root = document) {
+        const panel = root.matches?.('#object-storage-bucket-forecast-table-panel')
+            ? root
+            : root.querySelector?.('#object-storage-bucket-forecast-table-panel')
+        if (!panel) return
+        const form = panel.querySelector('#object-storage-bucket-forecast-table-filter')
+        const action = panel.querySelector('[data-kaori-forecast-clear-filters]')
+        if (!form || !action) return
+
+        const search = form.elements.namedItem('forecast_q')?.value?.trim() || ''
+        const watch = form.elements.namedItem('forecast_watch')?.value || 'all'
+        const history = form.elements.namedItem('forecast_history_state')?.value || 'all'
+        const active = Boolean(search || watch !== 'all' || history !== 'all')
+        action.classList.toggle('hidden', !active)
+        action.classList.toggle('flex', active)
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAll(document)
+        syncForecastClearFilters(document)
+    })
     document.addEventListener('kaori:analytics-tab-visible', (event) => renderAll(event.target))
-    document.body.addEventListener('htmx:afterSwap', (event) => renderAll(event.target))
-    document.body.addEventListener('htmx:beforeSwap', destroyAllCharts)
+    document.addEventListener('change', (event) => {
+        const form = event.target.closest?.('#object-storage-bucket-forecast-table-filter')
+        if (form) syncForecastClearFilters(form.closest('#object-storage-bucket-forecast-table-panel'))
+    })
+    document.addEventListener('input', (event) => {
+        const form = event.target.closest?.('#object-storage-bucket-forecast-table-filter')
+        if (form) syncForecastClearFilters(form.closest('#object-storage-bucket-forecast-table-panel'))
+    })
+    document.body.addEventListener('htmx:beforeSwap', (event) => {
+        const target = event.detail?.target || event.target
+        if (chartInsideSwap(window[chartKey], target)) destroyChart()
+        if (chartInsideSwap(window[bucketForecastChartKey], target)) destroyBucketForecastChart()
+    })
+    document.body.addEventListener('htmx:afterSwap', (event) => {
+        let target = event.detail?.target
+        if (!target?.isConnected) target = event.target
+        if (!target?.isConnected || target === document.body) return
+        renderAll(target)
+        syncForecastClearFilters(target)
+    })
 })()

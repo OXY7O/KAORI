@@ -69,6 +69,17 @@ contract_profiles:
   notes: Stable Harbor API v2.0 read contract; inventory and supply-chain evidence remain capability-driven.
   query_profile: null
 
+- key: vault-approle-read-v1
+  products:
+  - vault
+  adapter_key: vault_http_v1
+  required_capabilities:
+  - health
+  - approle
+  - token_lookup
+  notes: Vault HTTPS AppRole identity, lookup-self and health; mount discovery is optional and independently scoped.
+  query_profile: null
+
 products:
 - key: kubernetes
   label: Kubernetes
@@ -182,6 +193,29 @@ products:
   capability_summary: Harbor API v2.0 read access and Registry provider readiness evidence.
   validation_basis: Live Harbor identity, version, health, and read capability probes decide operational readiness.
 
+- key: vault
+  label: HashiCorp Vault
+  icon: key-round
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: vault_sys_health
+  contract_profile: vault-approle-read-v1
+  qualification_floor: '1.9'
+  qualification_ceiling_exclusive: '2.2'
+  minimum_label: v1.9
+  recommended_label: v2.1.x
+  qualified_version_label: v1.9–v2.1.x
+  current_version_label: v2.1.x
+  upstream_supported_version_label: v2.1.x
+  supported_version_label: 'v1.9–v2.1.x · KAORI policy v1 (2026-09-19)'
+  anchor_release_label: 'v1.9 · 2021 release'
+  upper_release_label: 'v2.1.1 · available at 2026-09-19 policy snapshot'
+  upstream_lifecycle_label: 'Current v2.1.x at policy snapshot; older versions need operator lifecycle review'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: Safe read-only Vault health, AppRole identity and mount metadata readiness.
+  validation_basis: Live Vault version, AppRole lookup-self and scoped read API capability checks.
+
 qualifications:
 - key: kubernetes-extended
   product: kubernetes
@@ -265,3 +299,20 @@ qualifications:
   upstream_lifecycle: current
   required_capabilities: []
   notes: Harbor v2.13–v2.15 are current at the 2026-09-19 KAORI policy snapshot; live API evidence remains authoritative.
+
+- key: vault-extended
+  product: vault
+  version_constraint: '>=1.9,<2.1'
+  contract_profile: vault-approle-read-v1
+  support_level: extended_supported
+  upstream_lifecycle: historical
+  required_capabilities: []
+  notes: Historical Vault versions require independent upstream patch/security review.
+- key: vault-current
+  product: vault
+  version_constraint: '>=2.1,<2.2'
+  contract_profile: vault-approle-read-v1
+  support_level: current
+  upstream_lifecycle: current_at_policy_snapshot
+  required_capabilities: []
+  notes: Vault v2.1.x qualifies to the 2026-09-19 policy snapshot; v2.2+ remains unverified until updated approval.

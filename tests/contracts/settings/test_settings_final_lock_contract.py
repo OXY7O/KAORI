@@ -60,6 +60,10 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert '--color-surface-hover: var(--kaori-surface-hover);' in styles
     assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'class="flex gap-2 overflow-x-auto"' in shared
+    query_tab_macro = shared.split('{% macro render_query_tabs(', 1)[1]
+    # An active tab's negative bottom margin creates a 1px vertical scroll range:
+    # overflow-x-auto also computes overflow-y:auto, rendering a phantom scrollbar.
+    assert '-mb-px' not in query_tab_macro
     assert 'role="tablist"' in shared
     assert 'role="tab"' in shared
     assert 'hx-get="{{ tab_href }}"' in shared

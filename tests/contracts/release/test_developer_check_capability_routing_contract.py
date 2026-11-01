@@ -130,8 +130,11 @@ def test_release_surface_coverage_output_distinguishes_registration_from_executi
     assert quality_gate.count("'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'") == 1
     assert 'RELEASE_SURFACE_COVERAGE_LOG="$log_file"' in quality_gate
     assert 'if [[ "$group" == \'Domain & Capability Contracts\' ]]' in quality_gate
-    assert 'Registered capability evidence (not per-capability test PASS)' in quality_gate
-    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in quality_gate
+    assert 'Registered capability ownership' in quality_gate
+    assert 'Source ownership only — NOT executed tests or Staging Acceptance.' in quality_gate
+    assert '            /^  REGISTERED — / {' in quality_gate
+    assert 'FAIL — malformed or empty registered capability ownership' in quality_gate
+    assert 'Full verifier mapping: %s' in quality_gate
 
     source = (ROOT / 'scripts/verify_release_surface_coverage.py').read_text(encoding='utf-8')
     assert 'EVIDENCE REGISTERED ONLY' in source

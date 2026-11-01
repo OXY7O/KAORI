@@ -11,12 +11,14 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
-        {% call detail.workspace_header(detail_description, 'network') %}
+        {% call detail.workspace_header(detail_description, 'network',
+            context_items=[
+            {'label': service.cluster_name, 'icon': 'building-2'},
+            {'label': service.namespace, 'icon': 'folder-tree'},
+            {'label': service.type, 'icon': 'network'}
+            ], compact=true) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(service.name) }}
-                {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
-                {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
-                {{ table_label.metadata_label(service.type) }}
+                {{ detail.inventory_title(service.name, compact=true) }}
                 {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
             {% endcall %}
         {% endcall %}

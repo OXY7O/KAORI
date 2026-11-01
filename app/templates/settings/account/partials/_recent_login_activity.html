@@ -86,8 +86,8 @@
                     <tr>
                         <th class="{{ table_ui.header_cell_classes() }}">Event</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Source</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Result</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Context</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Result</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -119,15 +119,6 @@
                                     <span>Recorded IP: {{ metadata.get("ip_address") or 'Unavailable' }}</span>
                                 </p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
-                                {% if is_logout and is_success %}
-                                    {{ table_label.metadata_label('Recorded', 'check') }}
-                                {% elif is_success %}
-                                    {{ table_label.status_indicator_label('Success', 'normal') }}
-                                {% else %}
-                                    {{ table_label.status_indicator_label('Failed', 'critical') }}
-                                {% endif %}
-                            </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-56">
                                 {% if is_logout %}
                                     <p class="text-sm font-semibold text-content-secondary">Session Ended</p>
@@ -148,6 +139,15 @@
                                             {% if metadata.get('device_type') %} · {{ metadata.get("device_type") }}{% endif %}
                                         </span>
                                     </p>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
+                                {% if is_logout and is_success %}
+                                    {{ table_label.metadata_label('Recorded', 'check') }}
+                                {% elif is_success %}
+                                    {{ table_label.status_indicator_label('Success', 'normal') }}
+                                {% else %}
+                                    {{ table_label.status_indicator_label('Failed', 'critical') }}
                                 {% endif %}
                             </td>
                         </tr>

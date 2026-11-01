@@ -7,6 +7,7 @@ from dataclasses import replace
 from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.http import is_htmx_request
 from app.integrations.observability.alert_source.providers.alertmanager.application.forms import (
@@ -134,7 +135,7 @@ def new_instance_response() -> ResponseReturnValue:
                         },
                         queue_feedback=not is_htmx,
                     )
-                except Exception as exc:
+                except SQLAlchemyError as exc:
                     logger.exception('Alertmanager instance creation failed.')
                     operation_feedback = record_instance_activity(
                         user_id=int(current_user.id),

@@ -58,33 +58,36 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
 def test_reports_overview_uses_operational_reading_and_contract_boundary_not_generic_tips() -> None:
     posture = read('app/templates/reports/overview/partials/_reporting_operational_posture.html')
     estate = read('app/templates/reports/overview/partials/_reporting_estate_capability.html')
+    contracts = read('app/templates/reports/overview/partials/_reporting_contracts_automation.html')
 
     assert 'Operational Reading' in posture
     assert 'Performance Tip' not in posture
     assert 'Completion Rate measures resolved requests only' in posture
     assert 'Report Coverage &amp; Artifact Estate' in estate
-    assert 'Contracts &amp; Automation' in estate
+    assert 'Contracts &amp; Automation' in contracts
     assert 'Retained Artifact Mix' in estate
-    assert 'Published Contract Families' in estate
-    assert 'Automation Boundary' in estate
+    assert 'Published Contract Families' in contracts
+    assert 'Automation Boundary' in contracts
     assert 'Output Contract' in estate
     assert 'Format Tip' not in estate
     assert 'Published formats stay family-owned' in estate
-    assert 'Published contracts are admitted to Generate' in estate
+    assert 'Published contracts are admitted to Generate' in contracts
     assert 'Analytics Reports' in estate and 'PDF · XLSX · CSV' in estate
     assert 'Inventory Reports' in estate and 'XLSX · CSV' in estate
     assert 'Candidate Domains' in estate and 'Contract + renderer required' in estate
     assert 'text-[' not in estate
+    assert 'text-[' not in contracts
 
 
 def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_service() -> None:
     service = read('app/reports/overview/service.py')
     catalog = read('app/reports/catalog.py')
+    definitions = read('app/definitions/report_coverage.py')
     document = yaml.safe_load(read('app/definitions/catalogs/reports/coverage.yaml'))
 
     assert document['schema_version'] == 1
     assert document['kind'] == 'report_coverage_catalog'
-    assert {item['key'] for item in document['domains']} == {'object_storage', 'server', 'hci'}
+    assert {item['key'] for item in document['domains']} == {'object_storage', 'server', 'hci', 'secrets_pki'}
     object_storage = next(item for item in document['domains'] if item['key'] == 'object_storage')
     assert object_storage['status'] == 'Published'
     assert object_storage['tone'] == 'normal'
@@ -92,7 +95,9 @@ def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_se
     assert 'SERVER_REPORT_TYPE_COVERAGE' not in service
     assert 'HCI_REPORT_TYPE_COVERAGE' not in service
     assert 'REPORT_COVERAGE_DOMAINS' in service
-    assert "load_definition_document('reports/coverage.yaml'" in catalog
+    assert "load_definition_document('reports/coverage.yaml'" in definitions
+    assert 'REPORT_COVERAGE_DOMAINS as REPORT_COVERAGE_DOMAINS' in catalog
+    assert "load_definition_document('reports/coverage.yaml'" not in catalog
 
 
 def test_reports_overview_surfaces_object_storage_without_overclaiming_generate_support() -> None:
@@ -109,7 +114,7 @@ def test_reports_overview_surfaces_object_storage_without_overclaiming_generate_
     assert "'published_count': len(published_items)" in service
     assert 'Reporting Domain Coverage' in estate
     assert 'Only Published contracts are selectable in Generate.' in estate
-    assert 'Published means both a canonical report contract and renderer are registered' in estate
+    assert 'Published = registered contract + renderer; candidates cannot run.' in estate
 
 
 def test_reports_overview_does_not_execute_legacy_unrendered_context_builders() -> None:

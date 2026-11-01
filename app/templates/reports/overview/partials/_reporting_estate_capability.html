@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/table.html" as table_ui %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="reporting-estate-capability-title"
          data-reports-overview-block="estate-capability">
@@ -39,9 +39,6 @@
                         class="text-sm font-semibold leading-5 text-content-primary">Reporting Domain Coverage</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Publication state by infrastructure domain. Only Published contracts are selectable in Generate.</p>
                 </div>
-                <i data-lucide="network"
-                   class="h-4 w-4 shrink-0 text-kaori-primary"
-                   aria-hidden="true"></i>
             </div>
             <div class="divide-y divide-outline-subtle border-y border-outline-subtle"
                  data-report-domain-coverage="true">
@@ -55,7 +52,8 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">{{ domain.label }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ domain.description }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-secondary sm:line-clamp-2 sm:min-h-10"
+                                   title="{{ domain.description }}">{{ domain.description }}</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 pl-12 sm:flex-col sm:items-end sm:pl-0">
@@ -80,9 +78,7 @@
                     </span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-primary">Publication Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            Published means both a canonical report contract and renderer are registered. Candidate coverage remains non-executable until those publication controls are complete.
-                        </p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary xl:whitespace-nowrap">Published = registered contract + renderer; candidates cannot run.</p>
                     </div>
                 </div>
             </div>
@@ -95,9 +91,6 @@
                         class="text-sm font-semibold leading-5 text-content-primary">Artifact Estate</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Retained artifact volume, storage footprint, retained mix, and published output boundaries.</p>
                 </div>
-                <i data-lucide="archive"
-                   class="h-4 w-4 shrink-0 text-kaori-primary"
-                   aria-hidden="true"></i>
             </div>
             {% set retained = payload.summary_cards[0] %}
             {% set footprint = payload.artifact_statistics[2] %}
@@ -112,7 +105,7 @@
                             Retained Artifacts
                         </div>
                         <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ retained.value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Ready or archived artifacts retained in the reporting estate.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Ready or archived artifacts.</p>
                     </div>
                     <div class="border-t border-outline-subtle px-4 py-4 sm:border-t-0">
                         <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
@@ -126,47 +119,33 @@
                     </div>
                 </div>
             </div>
-            <div class="mt-5 grid gap-5 sm:grid-cols-2"
-                 data-artifact-estate-distribution="true">
-                <div>
+            <div class="mt-5 space-y-4" data-artifact-estate-distribution="true">
+                <section aria-labelledby="retained-artifact-mix-title">
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Retained Artifact Mix</p>
-                        <i data-lucide="layers-2"
-                           class="h-4 w-4 text-kaori-primary"
-                           aria-hidden="true"></i>
+                        <h4 id="retained-artifact-mix-title"
+                            class="text-xs font-semibold uppercase tracking-wide text-content-muted">Retained Artifact Mix</h4>
                     </div>
-                    <div class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2"
+                         data-artifact-family-tiles="true">
                         {% for item in payload.artifact_portfolio.families %}
-                            <div class="flex items-center justify-between gap-4 py-3">
-                                <span class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
-                                    <i data-lucide="{{ item.icon }}"
-                                       class="h-4 w-4 text-kaori-primary"
-                                       aria-hidden="true"></i>
-                                    {{ item.label }}
-                                </span>
-                                <strong class="text-sm text-content-primary">{{ item.value }}</strong>
-                            </div>
+                            {{ evidence_tile.snapshot(item.label, item.value, item.icon, 'Retained family') }}
                         {% endfor %}
                     </div>
-                </div>
-                <div>
+                </section>
+                <section aria-labelledby="artifact-output-formats-title">
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output Formats</p>
-                        <i data-lucide="file-stack"
-                           class="h-4 w-4 text-kaori-primary"
-                           aria-hidden="true"></i>
+                        <h4 id="artifact-output-formats-title"
+                            class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output Formats</h4>
                     </div>
-                    <div class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
+                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3"
+                         data-artifact-format-tiles="true">
                         {% for item in payload.artifact_portfolio.formats %}
-                            <div class="flex items-center justify-between gap-4 py-3">
-                                <span class="text-sm font-medium text-content-secondary">{{ item.label }}</span>
-                                <strong class="text-sm text-content-primary">{{ item.value }}</strong>
-                            </div>
+                            {{ evidence_tile.snapshot(item.label, item.value, 'file-stack', 'Output format') }}
                         {% endfor %}
                     </div>
-                </div>
+                </section>
             </div>
-            <div class="mt-auto pt-4">
+            <div class="mt-4">
                 <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 px-4 py-3"
                      data-output-contract="true">
                     <div class="flex items-start gap-3">
@@ -196,95 +175,5 @@
                 </div>
             </div>
         </article>
-    </div>
-    <div class="border-t border-outline-subtle px-5 py-5 sm:px-6"
-         aria-labelledby="contracts-automation-title">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="workflow" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0 max-w-2xl">
-                    <h3 id="contracts-automation-title"
-                        class="text-base font-semibold leading-6 text-content-primary">Contracts &amp; Automation</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Published contracts, templates, and schedules approved for governed generation.</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-2 sm:min-w-[28rem]">
-                <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.available_contracts }}</p>
-                    <p class="mt-0.5 text-xs font-semibold text-content-muted">Published Contracts</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.active_schedules }} / {{ payload.automation_summary.total_schedules }}</p>
-                    <p class="mt-0.5 text-xs font-semibold text-content-muted">Active Schedules</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.custom_templates }}</p>
-                    <p class="mt-0.5 text-xs font-semibold text-content-muted">Custom Templates</p>
-                </div>
-            </div>
-        </div>
-        <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-4"
-                 data-contract-family-summary="true">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Published Contract Families</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Family-level contract counts that are currently published to the Generate workflow.</p>
-                    </div>
-                    <i data-lucide="folder-tree"
-                       class="h-4 w-4 shrink-0 text-kaori-primary"
-                       aria-hidden="true"></i>
-                </div>
-                <div class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
-                    {% for group in payload.reporting_coverage %}
-                        <div class="flex items-start justify-between gap-4 py-3">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ group.label }}</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ group.description }}</p>
-                                </div>
-                            </div>
-                            <div class="shrink-0 text-right">
-                                <p class="text-lg font-semibold tracking-tight text-content-primary">{{ group.contract_count }}</p>
-                                <p class="mt-0.5 text-xs font-semibold text-content-muted">Published</p>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 px-4 py-4"
-                 data-contract-automation-boundary="true">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm ring-1 ring-kaori-primary/10"
-                          aria-hidden="true">
-                        <i data-lucide="workflow" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-semibold text-content-primary">Automation Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Published contracts are admitted to Generate, schedules automate only published contracts, and templates stay reusable structure without changing contract availability.</p>
-                        <div class="mt-3 divide-y divide-kaori-primary/10 border-y border-kaori-primary/10">
-                            <div class="flex items-center justify-between gap-3 py-2">
-                                <span class="text-xs font-semibold text-content-secondary">Published Contracts</span>
-                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.available_contracts }}</span>
-                            </div>
-                            <div class="flex items-center justify-between gap-3 py-2">
-                                <span class="text-xs font-semibold text-content-secondary">Recurring Schedules</span>
-                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.active_schedules }} Active · {{ payload.automation_summary.total_schedules }} Total</span>
-                            </div>
-                            <div class="flex items-center justify-between gap-3 py-2">
-                                <span class="text-xs font-semibold text-content-secondary">Reusable Templates</span>
-                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.custom_templates }} Custom</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </section>

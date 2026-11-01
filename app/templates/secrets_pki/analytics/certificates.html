@@ -1,0 +1,82 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% block title %}PKI Expiration Analytics · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-expiration-analytics" class="min-w-0 space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('chart-no-axes-combined', 'Secrets & PKI Analytics', 'certificate') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Certificate Expiration</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Review current public PKI expiry windows using committed evidence.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database-zap', 'Committed KAORI State') }}
+                            {{ page_hero.meta_label('calendar-clock', 'Current-generation Snapshot') }}
+                            {{ page_hero.meta_label('shield-check', 'No Secret Material') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="PKI analytics evidence context">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Evidence Readiness', pki_validity.label, 'shield-check') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('clock-3', 'Observed', pki_validity.last_observed_at|user_datetime if pki_validity.last_observed_at else 'Not Qualified', 'Committed generation') }}
+                            {{ page_hero.context_metric('calendar-clock', 'Horizon', 'Next 30 Days', 'UTC validity, not forecast') }}
+                        </div>
+                        {{ page_hero.context_info('lock-keyhole', 'No certificate identities, Secret values, Vault paths, keys or raw provider payloads.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {{ section_intro.render('Certificate Expiration Horizon',
+                'Exclusive expiry intervals use current UTC time and the same complete, fresh, approved stored public-certificate observations as Inventory.',
+                supporting='This is a snapshot-derived operational view, not retained historical time series.') }}
+        {% if pki_validity.status == 'ready' %}
+            <div role="status" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {{ metric_card.render('Expires Within 7 Days', pki_validity.expires_within_7d,
+                                'Currently valid certificates expiring within seven days.', 'calendar-clock', source_label='Committed PKI') }}
+                {{ metric_card.render('Expires in 8–30 Days', pki_validity.expires_8_to_30d,
+                                'Currently valid certificates after day seven through day thirty.', 'calendar-range', source_label='Committed PKI') }}
+                {{ metric_card.render('Expires After 30 Days', pki_validity.expires_after_30d,
+                                'Currently valid certificates outside the thirty-day horizon.', 'shield-check', source_label='Committed PKI') }}
+                {{ metric_card.render('Already Expired', pki_validity.expired,
+                                'Public X.509 notAfter has passed; revocation is not assessed.', 'triangle-alert', source_label='Committed PKI') }}
+                {{ metric_card.render('Not Yet Valid', pki_validity.not_yet_valid,
+                                'Public X.509 notBefore is in the future.', 'clock-3', source_label='Committed PKI') }}
+                {{ metric_card.render('Unknown Chronology', pki_validity.unknown,
+                                'Missing or invalid validity times remain unclassified.', 'circle-help', source_label='Committed PKI') }}
+            </div>
+        {% else %}
+            {% call section_card.render('Expiration Evidence Not Qualified',
+                'The approved source set must be ready, complete and fresh before any numeric expiry counts can be displayed.',
+                'shield-alert') %}
+                <p role="status" class="text-sm text-status-warning-text">
+                    {{ pki_validity.label }}. An unavailable or partial collection does not prove that no certificates are nearing expiry.
+                </p>
+            {% endcall %}
+        {% endif %}
+        {% call section_card.render('Data Readiness & Evidence Boundary',
+            'Expiration analytics is strictly separated from trust, issuance, revocation, materialization and consumer adoption.',
+            'shield-check') %}
+            <div role="status" class="space-y-3 text-sm text-content-secondary">
+                <p>
+                    Collection state: <span class="font-semibold text-content-primary">{{ pki_validity.label }}</span>.
+                    Qualified stored public certificates:
+                    <span class="font-semibold text-content-primary">{{ pki_validity.observed_stored_certificates if pki_validity.observed_stored_certificates is not none else 'Not Qualified' }}</span>.
+                </p>
+                <p>Only explicitly opted-in public certificates stored in approved Vault PKI mounts are eligible. A qualified empty collection is zero observed stored certificates, not zero issued certificates.</p>
+                <p>Within the validity period does not prove chain trust, non-revocation, correct rotation, Kubernetes materialization or active endpoint TLS serving. No source-specific search, identity drill-down or export is available until resource authorization is admitted.</p>
+                <a href="{{ url_for('secrets_pki.inventory') }}"
+                   class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                    Review Inventory Evidence
+                </a>
+            </div>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

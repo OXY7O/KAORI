@@ -11,10 +11,41 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `generated_report`: terminal Generated Reports metadata from `reports`; Ready and Archived rows archive their binary PDF/XLSX/CSV evidence with SHA-256 verification before source cleanup, while active generation remains protected.
 - `alert_incident`: closed Alert Operations case evidence (timeline, notification delivery, postmortem) with compacted hot case index preserved for History.
 - `tenant_audit_evidence`: committed normalized Tenant/Kubernetes audit correlation evidence; the Kubernetes API audit provider remains authoritative for raw event logs.
+- `audit_event`: separate source-owned administrative `audit_events` across KAORI producers; paused manual archive-only, summary/redaction only. Raw metadata and archive export are not admitted.
 
-The registered adapter catalog currently contains **seven** managed domains. The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
+The registered adapter catalog now contains **nine** managed domains after paused, archive-only Notification Delivery and AuditEvent extensions (historical seven-domain catalog before #2848). The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
 
 Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
+
+## Execution and pending-source retention admission (#2906)
+
+All nine registered adapters use one persisted, enabled `DataLifecyclePolicy`
+as a mandatory execution precondition **inside the engine**, not merely in
+the web queue controller. Read-only Preview does not create a policy.
+CLI/direct task calls cannot silently fall back to adapter defaults.
+
+`notification_delivery` and `audit_event` are strictly paused/manual
+Archive Only domains. Both reject scheduled dispatch, destructive cleanup,
+and cold archive-object purge even after a manual Archive Only run. For
+Notification Delivery, a direct CLI run is an explicit manual operation
+only when the saved policy is enabled, unscheduled and `archive_only`;
+Delivery's hot journal, deduplication, channel dependencies and all-time
+metrics stay authoritative until #2868/#2869/#2870 are admitted. AuditEvent
+retains the **stricter** active Local Database Super Admin/worker requester
+requirements #2891, and never allows CLI run without a requester.
+
+These are execution constraints, not an approval of source retention,
+recovery, legal holds, scheduled execution or data deletion. Do not mistake
+verified archive history for verified individual-record lookup or restore.
+
+## Complete end-to-end UAT authority
+
+Before promoting any Data Lifecycle change, use
+[`docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md`](../../../../docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md)
+for all registered adapters, then execute source-specific negative checks
+from the existing AuditEvent and Delivery authorities. A successful source
+contract or verified bundle is not runtime checksum, PostgreSQL cleanup,
+archive restore or human acceptance proof.
 
 ## Safety invariants
 
@@ -119,3 +150,106 @@ The Generated Reports table remains a hot operational registry. Data Lifecycle o
 ### Storage ownership
 
 Lifecycle domains do not configure independent archive buckets. Hot source storage remains domain-owned (for example, Runtime Observations live in PostgreSQL table `integration_runtime_observations`), while every domain writes verified cold evidence to the shared **Archive Storage** profile. Runtime Observations archive structured provider-neutral evidence as JSONL.GZ + manifest JSON and do not carry supplemental binary artifacts. Generated Reports are the exception at the payload level: their PDF/XLSX/CSV files are copied as supplemental evidence into the same shared archive target. The Retention Policies workspace exposes this boundary without probing the backend; readiness and verification stay demand-loaded in **Archive Storage**.
+
+## Notification Delivery ledger schema-only extension (#2868)
+
+A candidate durable identity schema can reserve `(channel_id,event_key)`
+without copying secrets or transport replay data. The model/migration is
+**inert by default**: no writer, backfill, dispatch behavior, archive lookup
+or cleanup enablement is introduced. The hot `NotificationDelivery` unique
+key is still authoritative. Apply the versioned migration only in the
+approved DevContainer migrator context, then validate schema and PostgreSQL
+behavior before designing an atomic dual-write rollout. See
+`docs/architecture/notification-delivery-lifecycle-safety.md`.
+
+## Notification Delivery — archive-only safety admission (#2848)
+
+`notification_delivery` is a separate provider-neutral archive domain for
+`notification_deliveries`; it is **not** the persistent user Notification Center
+(`operational_activity`) and **not** a substitute for Activity Audit or Alert
+Incident archives. It uses the shared preview, immutable JSONL.GZ and manifest,
+verified storage, canonical Jobs, policy and permission controls.
+
+First admission is **paused, manual, archive-only** (90-day eligible hot boundary,
+365-day archive-retention proposal, batch size 1,000). Only aged `sent` and
+`skipped` records with both `created_at` and `updated_at` older than the cutoff
+are selected. `queued` and all `failed` attempts are protected while recovery
+rules remain provider/domain-owned. Archives retain event/channel correlation,
+status, attempts and timestamp fields, but **not** `payload_json`, encrypted
+transport replay envelopes, credentials or untrusted provider error strings.
+Archive export requires the existing Data Lifecycle permissions and shared
+archive storage protections; operators should still treat correlation
+identifiers as sensitive.
+
+**Hot cleanup, scheduled dispatch, and any destructive purge of hot rows are
+NOT ADMITTED**. The policy UI permits Archive Only; both mutation/queue and
+engine preflight reject unsupported cleanup, and the adapter itself refuses
+direct cleanup. No automatic policy is created by GET. A manually enabled,
+persisted policy may be used for explicit archive-only UAT after storage
+readiness review. Repeated archive-only executions may produce overlapping
+verified bundles; they do not relieve hot storage pressure yet. The existing
+archive-retention purge contract still applies to expired archive *objects*.
+
+The later #2850 safety foundation must implement durable dedup keys,
+cross-domain Alert Incident deletion ownership, channel lifetime dependency
+and source-linked historical aggregate preservation, with migration/backfill
+and concurrency tests, **before** hot cleanup can be admitted. The operational
+journal and Overview remain truthful only for committed hot state in this
+phase (currently the complete delivery history). Archive History lists
+artifact-level bundles only; it does not provide individual delivery lookup.
+
+### Alert Incident compaction ownership guard (#2850 partial)
+
+Alert Incident archive serialization retains a snapshot of firing/resolved
+delivery outcomes in its verified case bundle. **Compaction must not delete
+the canonical `NotificationDelivery` rows**, even for closed archived cases.
+Those shared rows remain hot-owned by Notification Channels for replay
+idempotency, retained evidence and channel deletion dependencies. Incident
+compaction still clears incident-local case events, silences and heavy case
+fields after archive verification; this is not a change to incident closure.
+
+This source-ownership correction is only the first safety slice of #2850.
+Durable post-hot-cleanup deduplication, historical aggregates, channel
+dependency indexing and source record-level archive lookup are not admitted.
+`notification_delivery` remains paused/manual archive-only.
+
+## AuditEvent — paused manual archive-only boundary (#2890, 2026-10-23)
+
+The **ninth** registered Data Lifecycle adapter `audit_event` governs the
+`audit_events` table independently from `operational_activity` (shared
+Notification-backed Activity Register), `job_execution`, and
+`tenant_audit_evidence`. Access → Activity Audit Administrative Source
+Evidence is only a **permission-scoped hot projection** of selected
+`AuditEvent` producers; the archive domain is broader. Never treat these
+sources as one store or duplicate committed rows in the Access UI.
+
+This first implementation provides bounded ID/cutoff Preview, immutable
+JSONL.GZ + manifest and shared checksum verification, but is **paused by
+default** (no database policy row created by ordinary GET), manual only,
+and **archive-only**. Fallback defaults 365 hot / 3650 archive days and
+batch 250 are **proposals for operator review**, not an approved legal
+retention policy. Source record count and hot evidence remain unchanged
+after archive-only processing. Archive serialization stores only record
+identity, nullable actor FK and sanitized target/action/summary/timestamp.
+It intentionally omits free-form metadata, IP, user agent and any fabricated
+immutable actor snapshot; such minimally redacted bundles **are not
+sufficient evidence for hot cleanup**.
+
+For this interim security admission, the domain, aggregate counts, Preview,
+Archive History entries and mutation calls are restricted to an authorized
+**Local Database Super Admin**; ordinary lifecycle readers/managers cannot
+bypass source-level permissions. Export/download of the bundles remains
+blocked even for Super Admin until #2891 verifies producer-by-producer
+source permissions and privacy. The Archive History view is artifact-level; no per-record cold
+search is provided.
+
+Server policy admission, queue admission, scheduled task, archive engine,
+and domain adapter **all fail closed** on hot cleanup/scheduling. The
+archive engine also rejects destructive archive-object purge for this
+domain pending legal-hold/retention governance; the scheduled worker does
+not auto-purge it during manual archive operation. This extension does
+not modify the historical v1.3 baseline or the existing admitted domain
+behavior. Related authority: foundation #2889, archive child #2890,
+source-security and retention policy #2891, verified compaction and
+permissioned archive lookup #2892. DevContainer functional/security UAT
+and official gates remain pending.

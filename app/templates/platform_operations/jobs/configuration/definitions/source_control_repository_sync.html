@@ -1,0 +1,42 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "platform_operations/jobs/configuration/_schedule_policy.html" as schedule_policy %}
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set can_configure = current_user.has_permission('jobs.configure') and current_user.has_permission(definition.configure_permission) %}
+{% set overview_metrics = [
+    ('git-branch', 'GitHub Installations', selected_job.registered_system_count, 'Committed connections'),
+    ('shield-check', 'Eligible Installations', selected_job.eligible_system_count, 'Admitted / Ready grants'),
+    ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Scheduler cadence when enabled'),
+    ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', 'Canonical JobExecution evidence')
+] %}
+{% set overview_notice = "GitHub is planned until provider admission. Synchronization requires an explicitly validated installation. Incomplete scans preserve committed evidence and do not imply deletion. Scheduling is disabled by default." %}
+{% set overview_notice_short = "Validated GitHub App required; incomplete scans preserve evidence, and scheduling remains off by default." %}
+{% set execution_safety_short = "Admitted GitHub App grants required; incomplete scans retain history and scheduling remains off by default." %}
+<div class="space-y-5">
+    {% include "platform_operations/jobs/configuration/_job_overview.html" %}
+    <section class="{{ operational_section.shell_classes() }}">
+        {{ schedule_policy.header('Repository Reconciliation Policy',
+                'Only admitted GitHub App installations with verified access are eligible.',
+                policy) }}
+        <form method="post"
+              action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-target="#job-configuration-workspace"
+              hx-swap="outerHTML">
+            {{ policy_form.hidden_tag() }}
+            <div class="space-y-5 p-5 sm:p-6">
+                {{ schedule_policy.controls(policy_form, definition, can_configure,
+                                'Automatic Repository Reconciliation',
+                                'Sync authorized GitHub repositories when due.',
+                                icon='git-branch',
+                                interval_label='Execution Interval',
+                                policy_error=policy_error|default(none) ) }}
+                {{ schedule_policy.timeline(policy) }}
+            </div>
+            {{ schedule_policy.footer(can_configure,
+                        'Only verified GitHub App installations are eligible; incomplete scans preserve committed evidence.') }}
+        </form>
+    </section>
+    {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
+</div>

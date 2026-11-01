@@ -178,6 +178,59 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='source_control',
+        label='Source Control',
+        icon='git-branch',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'source_control.overview',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'repositories',
+                'Repositories',
+                'folder-git-2',
+                'source_control.repositories',
+                ('integrations.manage',),
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
+        key='secrets_pki',
+        label='Secrets & PKI',
+        icon='key-round',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview', 'Overview', 'layout-dashboard', 'secrets_pki.overview', ('secrets_pki.view',)
+            ),
+            WorkspaceCapabilityDefinition(
+                'inventory', 'Inventory', 'boxes', 'secrets_pki.inventory', ('secrets_pki.view',)
+            ),
+            WorkspaceCapabilityDefinition(
+                'lifecycle', 'Lifecycle & Assurance', 'shield-check', 'secrets_pki.lifecycle', ('secrets_pki.view',)
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
+        key='security_posture',
+        label='Security',
+        icon='shield-alert',
+        section='Assurance',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview', 'Overview', 'layout-dashboard', 'security_posture.overview', ('security_posture.view',)
+            ),
+            WorkspaceCapabilityDefinition(
+                'findings', 'Findings', 'shield-alert', 'security_posture.findings', ('security_posture.view',)
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='intelligence',
         label='Intelligence',
         icon='brain-circuit',
@@ -322,6 +375,20 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 ('integrations.manage',),
             ),
             WorkspaceCapabilityDefinition(
+                'secrets_management',
+                'Secrets Management',
+                'key-round',
+                'integrations.secrets_management',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'source_control',
+                'Source Control',
+                'git-branch',
+                'integrations.source_control',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
                 'send',
@@ -349,6 +416,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'Identity Providers',
                 'fingerprint',
                 'identity_providers.index',
+                ('identity_providers.view',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'authentication_security',
+                'Authentication Security',
+                'shield-check',
+                'access.authentication_security.index',
                 ('identity_providers.view',),
             ),
             WorkspaceCapabilityDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),

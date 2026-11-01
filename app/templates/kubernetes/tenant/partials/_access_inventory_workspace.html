@@ -1,0 +1,32 @@
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% set access_inventory_tabs = [
+    ('grants', 'Access Grant Registry', 'shield-check', url_for('tenant.tenants', section='access-grants', access_inventory_view='grants')),
+    ('capsule', 'Capsule External Access', 'shield-question', url_for('tenant.tenants', section='access-grants', access_inventory_view='capsule')),
+    ('native', 'Native Namespace RBAC', 'shield-search', url_for('tenant.tenants', section='access-grants', access_inventory_view='native'))
+] %}
+<section id="tenant-access-inventory-workspace"
+         class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-label="Tenant Access Registry and Inventory"
+         hx-select="#tenant-admin-workspace">
+    {{ workspace_tabs.render_query_tabs(access_inventory_tabs,
+        active_access_inventory_view,
+        aria_label='Tenant Access Registry and Inventory',
+        hx_target='#tenant-admin-workspace',
+        hx_indicator='#tenant-admin-loading',
+        hx_sync='#tenant-admin-workspace:replace') }}
+    <div class="min-w-0 p-4 sm:p-5">
+        {% if active_access_inventory_view == 'grants' %}
+            <div id="access-grant-registry-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_access_grant_registry.html" %}
+            </div>
+        {% elif active_access_inventory_view == 'native' %}
+            <div id="native-access-inventory-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_native_namespace_rbac_inventory.html" %}
+            </div>
+        {% else %}
+            <div id="capsule-access-inventory-panel" class="min-w-0">
+                {% include "kubernetes/tenant/partials/_external_capsule_access_inventory.html" %}
+            </div>
+        {% endif %}
+    </div>
+</section>

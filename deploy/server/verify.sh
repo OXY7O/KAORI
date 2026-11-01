@@ -49,6 +49,7 @@ application_services=(
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
 services=(postgres redis "${application_services[@]}")
+printf '⏳ UAT verification · checking web, ten workers, Beat, PostgreSQL and Redis container states\n'
 
 for service in "${services[@]}"; do
   cid="$("${compose[@]}" ps -q "$service")"
@@ -58,6 +59,7 @@ for service in "${services[@]}"; do
 done
 printf '✅ Runtime containers running\n'
 
+printf '⏳ UAT verification · checking database/cache health and private ports\n'
 for service in postgres redis; do
   cid="$("${compose[@]}" ps -q "$service")"
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$cid")"
@@ -74,6 +76,7 @@ printf '✅ KAORI web is Docker-network only\n'
 
 
 if [[ -n "$KAORI_EXPECTED_IMAGE" ]]; then
+  printf '⏳ UAT verification · confirming every application service uses accepted immutable digest\n'
   [[ "$KAORI_EXPECTED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || fail 'KAORI_EXPECTED_IMAGE must be immutable'
   for service in "${application_services[@]}"; do
     cid="$("${compose[@]}" ps -q "$service")"
@@ -83,6 +86,7 @@ if [[ -n "$KAORI_EXPECTED_IMAGE" ]]; then
   printf '🐳 Immutable application image PASS\n'
 fi
 
+printf '⏳ UAT verification · checking exact Beat count and ten target worker queues\n'
 beat_count="$("${compose[@]}" ps -q beat | sed '/^$/d' | wc -l | tr -d ' ')"
 [[ "$beat_count" == '1' ]] || fail "expected exactly one Beat container, found $beat_count"
 
@@ -151,6 +155,7 @@ for node, service in zip(expected, services, strict=True):
 printf '✅ Worker queues and Beat PASS\n'
 # Verify actual database sessions and environment of each running service;
 # Compose parity alone is insufficient to establish runtime least privilege.
+printf '⏳ UAT verification · checking effective PostgreSQL access for every application service\n'
 for service in "${application_services[@]}"; do
   cid="$("${compose[@]}" ps -q "$service")"
   docker exec "$cid" python scripts/server_database_boundary.py runtime >/dev/null ||
@@ -159,6 +164,7 @@ done
 printf '🔒 Every application service has restricted PostgreSQL access PASS\n'
 
 
+printf '⏳ UAT verification · probing internal web readiness (not public-edge acceptance)\n'
 "${compose[@]}" exec -T web python -c \
   "import urllib.request; request = urllib.request.Request('http://127.0.0.1:5000/health/ready', headers={'Host': 'localhost'}); urllib.request.urlopen(request, timeout=10).read()" \
   >/dev/null || fail 'internal web readiness failed inside the web container'

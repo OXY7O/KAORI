@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
@@ -12,10 +14,14 @@ from app.integrations.delivery.notification_channels.forms import (
 )
 from app.integrations.delivery.notification_channels.lifecycle import (
     NotificationChannelDeletionBlocked,
+    NotificationChannelRetirementBlocked,
     delete_channel,
+    retire_channel,
 )
 from app.integrations.delivery.notification_channels.service import (
+    ChannelRegistryFilters,
     DeliveryPagination,
+    DeliveryRegistryFilters,
     create_channel,
     get_channel,
     get_notification_channels_payload,
@@ -41,19 +47,32 @@ def index() -> ResponseReturnValue:
     requested_tab = str(request.args.get('tab') or 'overview').strip().lower()
     active_tab = 'channels' if edit_id else (requested_tab if requested_tab in _WORKSPACE_TABS else 'overview')
     payload = get_notification_channels_payload(
-        channel_page=request.args.get('channel_page', default=1, type=int),
-        channel_per_page=request.args.get('channel_per_page', default=5, type=int),
-        channel_search=request.args.get('channel_search', ''),
-        channel_provider=request.args.get('channel_provider', ''),
-        channel_state=request.args.get('channel_state', ''),
-        delivery_pagination=DeliveryPagination(
-            page=request.args.get('delivery_page', default=1, type=int),
-            per_page=request.args.get('delivery_per_page', default=5, type=int),
+        channel_filters=ChannelRegistryFilters(
+            page=request.args.get('channel_page', default=1, type=int),
+            per_page=request.args.get('channel_per_page', default=5, type=int),
+            search=request.args.get('channel_search', ''),
+            provider=request.args.get('channel_provider', ''),
+            state=request.args.get('channel_state', ''),
+            lifecycle=request.args.get('channel_lifecycle', 'active'),
         ),
-        delivery_event_key=request.args.get('delivery_event_key', ''),
+        include_overview=active_tab == 'overview',
+        delivery_filters=DeliveryRegistryFilters(
+            pagination=DeliveryPagination(
+                page=request.args.get('delivery_page', default=1, type=int),
+                per_page=request.args.get('delivery_per_page', default=5, type=int),
+            ),
+            event_key=request.args.get('delivery_event_key', ''),
+            provider=request.args.get('delivery_provider', ''),
+            domain=request.args.get('delivery_domain', ''),
+            severity=request.args.get('delivery_severity', ''),
+            status=request.args.get('delivery_status', ''),
+        ),
         can_view_reports=current_user.has_permission('reports.view'),
     )
-    form_channel = get_channel_form_view(get_channel(edit_id)) if edit_id else None
+    edit_channel = get_channel(edit_id) if edit_id else None
+    if edit_id and (edit_channel is None or edit_channel.lifecycle_state != 'active'):
+        abort(404)
+    form_channel = get_channel_form_view(edit_channel) if edit_channel else None
     requested_provider = str(request.args.get('provider') or '').strip().lower()
     supported_provider_keys = {str(provider['key']) for provider in payload['providers']}
     initial_provider = requested_provider if requested_provider in supported_provider_keys else ''
@@ -75,14 +94,7 @@ def create() -> ResponseReturnValue:
     errors = validate_channel_input(data)
     if errors:
         _queue_configuration_feedback(errors, provider_key=data.provider_key)
-        return redirect(
-            url_for(
-                'notification_channels.index',
-                tab='channels',
-                configure=1,
-                provider=data.provider_key,
-            )
-        )
+        return redirect(_channel_return_url(configure=1, provider=data.provider_key))
     channel = create_channel(data, user_id=int(current_user.id))
     _record_channel_activity(
         channel.id,
@@ -92,7 +104,7 @@ def create() -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(_channel_return_url())
 
 
 @notification_channels_bp.post('/<int:channel_id>/update')
@@ -101,18 +113,13 @@ def update(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     data = parse_channel_form(request.form, existing=channel)
     errors = validate_channel_input(data, existing=channel)
     if errors:
         _queue_configuration_feedback(errors, provider_key=channel.provider_key)
-        return redirect(
-            url_for(
-                'notification_channels.index',
-                tab='channels',
-                edit=channel_id,
-                configure=1,
-            )
-        )
+        return redirect(_channel_return_url(edit=channel_id, configure=1))
     update_channel(channel, data, user_id=int(current_user.id))
     _record_channel_activity(
         channel.id,
@@ -122,7 +129,7 @@ def update(channel_id: int) -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(_channel_return_url())
 
 
 @notification_channels_bp.post('/<int:channel_id>/test')
@@ -131,6 +138,8 @@ def test(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '')
     result = test_channel(channel, base_url=base_url)
     _record_channel_activity(
@@ -142,7 +151,44 @@ def test(channel_id: int) -> ResponseReturnValue:
         provider_key=channel.provider_key,
         status='success' if result.success else 'error',
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(_channel_return_url())
+
+
+@notification_channels_bp.post('/<int:channel_id>/retire')
+@permission_required('integrations.manage')
+def retire(channel_id: int) -> ResponseReturnValue:
+    channel = get_channel(channel_id)
+    if channel is None:
+        abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
+    reason = str(request.form.get('retirement_reason') or '')
+    try:
+        retire_channel(channel, reason=reason, user_id=int(current_user.id))
+    except NotificationChannelRetirementBlocked as exc:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='integration.notification_channel.retirement_blocked',
+            status='warning',
+            title='Notification channel retirement blocked',
+            message=str(exc),
+            action_url=url_for('notification_channels.index', tab='channels'),
+            action_label='Review channel dependencies',
+            action_icon='shield-alert',
+            metadata={'module': 'integrations', 'channel_id': channel_id, 'provider_key': channel.provider_key},
+            queue_feedback=True,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
+        )
+        return redirect(_channel_return_url())
+    _record_channel_activity(
+        channel.id,
+        'retired',
+        'Notification channel retired',
+        f'{channel.name} has been retired; provider delivery is disabled and committed history is retained.',
+        channel_name=channel.name,
+        provider_key=channel.provider_key,
+    )
+    return redirect(_channel_return_url(channel_lifecycle='retired'))
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')
@@ -151,6 +197,8 @@ def delete(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     name = channel.name
     provider_key = channel.provider_key
     try:
@@ -174,7 +222,7 @@ def delete(channel_id: int) -> ResponseReturnValue:
             queue_feedback=True,
             delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
-        return redirect(url_for('notification_channels.index', tab='channels'))
+        return redirect(_channel_return_url())
     record_operational_activity(
         user_id=int(current_user.id),
         event_type='integration.notification_channel.deleted',
@@ -193,7 +241,29 @@ def delete(channel_id: int) -> ResponseReturnValue:
         queue_feedback=True,
         delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(_channel_return_url())
+
+
+def _channel_return_query() -> dict[str, str | int]:
+    """Preserve bounded channel registry state across POST/redirect and HTMX."""
+    query: dict[str, str | int] = {}
+    for name in ('channel_search', 'channel_provider', 'channel_state'):
+        value = str(request.form.get(name) or '').strip()[:128]
+        if value:
+            query[name] = value
+    if request.form.get('channel_lifecycle') == 'retired':
+        query['channel_lifecycle'] = 'retired'
+    for name in ('channel_page', 'channel_per_page'):
+        value = request.form.get(name, default=0, type=int)
+        if value > 0:
+            query[name] = min(value, 1000)
+    return query
+
+
+def _channel_return_url(**overrides: str | int) -> str:
+    """Encode bounded POST return filters as URL data, never Flask options."""
+    query = {'tab': 'channels', **_channel_return_query(), **overrides}
+    return f'{url_for("notification_channels.index")}?{urlencode(query)}'
 
 
 def _queue_configuration_feedback(errors: list[str], *, provider_key: str) -> None:

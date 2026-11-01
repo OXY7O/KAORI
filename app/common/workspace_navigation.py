@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from flask import url_for
 
+from app.common.workspace_authorization import local_super_admin
 from app.common.workspace_navigation_catalog import (
     _CAPABILITY_CONTEXT_KEYS,
     _CAPABILITY_VIEWS,
@@ -235,6 +236,9 @@ def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
 
 
 def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceCapabilityDefinition, ...]:
+    if workspace.key == 'source_control':
+        if not local_super_admin(user):
+            return ()
     return tuple(tab for tab in workspace.capabilities if _has_any_permission(user, tab.permissions))
 
 
@@ -248,6 +252,12 @@ def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDe
 
 
 def _workspace_key(endpoint: str) -> str | None:
+    if endpoint.startswith('source_control.'):
+        return 'source_control'
+    if endpoint.startswith('secrets_pki.'):
+        return 'secrets_pki'
+    if endpoint.startswith('security_posture.'):
+        return 'security_posture'
     if endpoint.startswith('artifact_registry.'):
         return 'artifact_registry'
     if endpoint.startswith('analytics.object_storage_'):
@@ -265,7 +275,18 @@ def _workspace_key(endpoint: str) -> str | None:
     if endpoint.startswith(('jobs.', 'platform_operations.')):
         return 'operations_center'
     if endpoint.startswith(
-        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'harbor.', 'cluster.')
+        (
+            'integrations.',
+            'notification_channels.',
+            'metrics.',
+            'alertmanager.',
+            'minio.',
+            'harbor.',
+            'vault.',
+            'cluster.',
+            'github_source.',
+            'github_source_uat.',
+        )
     ):
         return 'integrations'
     if endpoint.startswith(('access.', 'users.', 'identity_providers.')):
@@ -276,12 +297,28 @@ def _workspace_key(endpoint: str) -> str | None:
 
 
 _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
+    'source_control': {'source_control.repositories': 'repositories'},
+    'secrets_pki': {
+        'secrets_pki.overview': 'overview',
+        'secrets_pki.inventory': 'inventory',
+        'secrets_pki.scoped_registry': 'inventory',
+        'secrets_pki.certificates': 'inventory',
+        'secrets_pki.pki': 'inventory',
+        'secrets_pki.expiration': 'inventory',
+        'secrets_pki.lifecycle': 'lifecycle',
+        'secrets_pki.leases': 'lifecycle',
+        'secrets_pki.consumers': 'lifecycle',
+        'secrets_pki.governance': 'lifecycle',
+    },
     'settings': {'settings.account': 'account'},
     'integrations': {
         'integrations.observability': 'observability',
+        'integrations.select_metrics_source_provider': 'observability',
         'integrations.storage': 'storage',
         'integrations.orchestration': 'orchestration',
         'integrations.registry': 'registry',
+        'integrations.secrets_management': 'secrets_management',
+        'integrations.source_control': 'source_control',
     },
 }
 
@@ -297,6 +334,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('object_storage_dashboard.', 'overview'),
         ('object_storage_inventory.', 'inventory'),
     ),
+    'security_posture': (('security_posture.findings', 'findings'),),
     'artifact_registry': (
         ('artifact_registry.inventory', 'inventory'),
         ('artifact_registry.security', 'security'),
@@ -341,12 +379,16 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('alertmanager.', 'observability'),
         ('minio.', 'storage'),
         ('harbor.', 'registry'),
+        ('vault.', 'secrets_management'),
+        ('github_source.', 'source_control'),
+        ('github_source_uat.', 'source_control'),
         ('cluster.', 'orchestration'),
         ('integrations.kubernetes', 'orchestration'),
     ),
     'access': (
         ('users.', 'users'),
         ('identity_providers.', 'identity_providers'),
+        ('access.authentication_security.', 'authentication_security'),
         ('access.roles.', 'roles'),
         ('access.permissions.', 'permissions'),
         ('access.activity_audit.', 'activity_audit'),
@@ -377,6 +419,8 @@ def build_sidebar_navigation(
     endpoint: str | None,
     user: Any,
     query_args: Mapping[str, Any] | None = None,
+    *,
+    active_capability_override: str | None = None,
 ) -> tuple[dict[str, Any], ...]:
     if not getattr(user, 'is_authenticated', False):
         return ()
@@ -404,6 +448,12 @@ def build_sidebar_navigation(
         active_capability = (
             _active_capability_key(workspace.key, resolved_endpoint) if active_workspace == workspace.key else None
         )
+        if (
+            workspace.key == 'integrations'
+            and resolved_endpoint == 'integrations.choose_integration_provider'
+            and active_capability_override in {capability.key for capability in visible_capabilities}
+        ):
+            active_capability = active_capability_override
         context = _preserved_context(
             query_args,
             _WORKSPACE_CONTEXT_KEYS.get(workspace.key, ()),

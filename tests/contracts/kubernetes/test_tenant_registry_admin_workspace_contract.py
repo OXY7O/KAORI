@@ -177,6 +177,55 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     assert 'paginate_query(' in read_model
 
 
+def test_membership_registries_use_settings_query_tabs_without_desktop_overflow() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
+
+    assert 'components/workspace_tabs.html' in workspace
+    assert 'workspace_tabs.render_query_tabs(membership_registry_tabs' in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert "hx_sync='#tenant-admin-workspace:replace'" in workspace
+    assert 'components/content_tabs.html' not in workspace
+    assert "('memberships', 'Membership Registry'" in workspace
+    assert "('groups', 'Tenant Group Registry'" in workspace
+    assert "membership_view='groups'" in workspace
+    assert "membership_view='memberships'" in workspace
+    assert "active_membership_view == 'groups'" in workspace
+    assert "hx_target='#tenant-admin-workspace'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert 'hx-push-url="true"' in settings_tabs
+    assert workspace.count('partials/_membership_registry.html') == 1
+    assert workspace.count('partials/_group_registry.html') == 1
+    assert 'name="membership_view" value="groups"' in workspace
+
+    assert 'def _membership_registry_view() -> str:' in routes
+    assert "request.values.get('membership_view') == 'groups'" in routes
+    assert "'active_membership_view': _membership_registry_view()" in routes
+    assert "response.headers['HX-Replace-Url']" in routes
+
+    for registry, selected in ((membership, 'memberships'), (groups, 'groups')):
+        assert "'membership_view': '" + selected + "'" in registry
+        assert 'name="membership_view" value="' + selected + '"' in registry
+        assert 'registry_ui.filter_form' in registry
+        assert 'registry_ui.footer' in registry
+        assert 'registry_ui.clear_filters_link' in registry
+
+    assert "table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0')" in groups
+    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
+    assert 'min-w-[1250px]' not in groups
+    assert 'min-w-[1100px]' not in membership
+    assert 'title="{{ group.subject_name }}"' in groups
+    assert 'overflow-x-auto' in groups
+    assert 'name="membership_view" value="groups"' in groups
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in setup
+    assert "'capsule-initial-owner-guide-tip'" in setup
+
+
 def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
@@ -193,7 +242,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' not in workspace
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
-    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
     assert 'Namespace scope needs one target.' in workspace
     assert 'grant_footer_classes' in workspace
     assert 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3' in workspace
@@ -206,8 +255,15 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
-    assert 'access-profile-tip' in workspace
-    assert 'access-scope-tip' in workspace
+    assert 'access-membership-tip' not in workspace
+    assert 'access-profile-tip' not in workspace
+    assert 'access-scope-tip' not in workspace
+    for field_id in ('access-grant-membership', 'access-grant-profile', 'access-grant-scope'):
+        assert f'for="{field_id}"' in workspace
+        assert f'id="{field_id}"' in workspace
+    assert 'Prepare approved ClusterRoles.' in workspace
+    assert workspace.count("variant='guide'") == 1
+    assert 'flex flex-wrap items-center justify-between' in workspace
     assert 'data-access-membership' in workspace
     assert 'data-access-context-scope' in workspace
     assert 'data-access-environment-field' in workspace
@@ -216,14 +272,123 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'data-tenant-id="{{ environment.tenant_id }}"' in workspace
     assert 'data-tenant-id="{{ namespace.environment.tenant_id }}"' in workspace
     assert 'hx-target="#tenant-admin-workspace"' in workspace
-    assert '_access_grant_registry.html' in workspace
+    assert '_access_inventory_workspace.html' in workspace
     assert "'Access Grant Registry'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'Inspect' in registry
-    assert 'Reconcile' in registry
-    assert 'Revoke' in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    assert 'View Details' in registry
+    assert 'Reconcile' in detail
+    assert 'Revoke' in detail
     assert 'def get_access_grant_registry_context(' in read_model
+
+
+def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_hover() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'components/info_tip.html' not in registry
+    assert 'access-grant-reconciliation-' not in registry
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_access_grant_row_detail.html' in registry
+    assert 'access-grant-more-actions-' not in registry
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'Retry provider-side reconciliation for this committed grant.' in detail
+    assert 'Remove this grant while keeping the Membership intact.' in detail
+    assert 'aria-label="Governed grant actions"' in detail
+    assert 'Grant Context' in detail
+    assert 'sm:grid-cols-2 lg:grid-cols-4' in detail
+    assert 'lg:grid-cols-2' in detail
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' not in detail
+    assert 'tenant.reconcile_access_grant_route' in detail
+    assert 'tenant.revoke_access_grant_route' in detail
+    assert 'No membership or RBAC mutation' in capsule
+    assert 'does not import IdP users' in capsule
+    assert '<label for="access-grant-membership"' in form
+
+
+def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidence() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
+    grant = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
+
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+
+    assert '_access_inventory_workspace.html' in grant
+    assert '_access_grant_registry.html' not in grant
+    assert 'workspace_tabs.render_query_tabs(access_inventory_tabs' in workspace
+    assert 'Access Registry &amp; Inventory' not in workspace
+    assert 'tenant-access-inventory-title' not in workspace
+    assert 'aria-label="Tenant Access Registry and Inventory"' in workspace
+    assert 'class="min-w-0 p-4 sm:p-5"' in workspace
+    assert "access_inventory_view='grants'" in workspace
+    assert "active_access_inventory_view == 'grants'" in workspace
+    assert '_access_grant_registry.html' in workspace
+    assert 'name="access_inventory_view" value="grants"' in registry
+    assert "'access_inventory_view': 'grants'" in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    assert "query_params={'section': 'access-grants', 'access_inventory_view': 'grants'}" in registry
+    # Registry owns Inspect/filter state; Reconcile and Revoke live in expanded evidence.
+    assert registry.count('name="access_inventory_view" value="grants"') == 2
+    assert detail.count('name="access_inventory_view" value="grants"') == 2
+    assert "'grants', 'capsule', 'native'" in routes
+    assert "access_inventory_view='capsule'" in workspace
+    assert "access_inventory_view='native'" in workspace
+    assert "active_access_inventory_view == 'native'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert workspace.count('_access_grant_registry.html') == 1
+    assert workspace.count('_external_capsule_access_inventory.html') == 1
+    assert workspace.count('_native_namespace_rbac_inventory.html') == 1
+    assert 'hx-push-url="true"' in settings_tabs
+
+    assert 'def _access_inventory_view() -> str:' in routes
+    assert "'active_access_inventory_view': active_view" in routes
+    assert 'active_view = _access_inventory_view()' in routes
+    assert "request.values.get('access_inventory_view')" in routes
+    assert "'HX-Replace-Url'" in routes
+
+    for panel, provider in ((capsule, 'capsule'), (native, 'native')):
+        assert f'name="access_inventory_view" value="{provider}"' in panel
+        assert 'name="csrf_token"' in panel
+        assert 'Latest Inspection' in panel
+        assert 'Not inspected' in panel
+        assert 'Provider Authority' in panel
+        assert 'Inspection Target' in panel
+        assert 'Inspection Evidence' in panel
+        assert '_provider_access_evidence_rows.html' in panel
+        assert 'table_label.result_count(access_evidence_pagination.total_items)' in panel
+        assert 'read-only' in panel.lower()
+        assert 'bg-surface-hover px-5 py-4' in panel
+
+    assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
+    assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
+    assert 'recent_capsule_access_remediation' not in capsule
+    assert 'recent_native_access_remediation' not in native
+    assert '_provider_access_remediation_detail.html' in read(
+        'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
+    )
+    rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'No committed external-access inspection yet.' in rows
+    assert 'No committed Native RBAC observation yet.' in rows
+    assert 'observe_capsule_external_access_route' in capsule
+    assert 'observe_native_external_access_route' in native
+    assert 'components/action_button.html' in native
+    assert 'components/table_label.html' in native
+    assert 'name="tenant_id"' in capsule
+    assert 'name="tenant_id"' in native
+    assert 'Review Profile Match' in detail
+    assert 'Analyze Access Drift' in detail
+    assert 'Analyze Native Access Drift' in detail
 
 
 def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
@@ -253,9 +418,10 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'name="application_name"' in workspace
     assert 'Generate Human Access Token' in registry
     assert 'Generate Deployment Kubeconfig' in registry
-    assert 'Access Gateway' in registry
-    assert 'Pipeline Kubeconfig' in registry
-    assert 'title="{{ delivery_label }}"' in registry
+    credential_detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
+    assert 'Access Gateway' in credential_detail
+    assert 'Pipeline Kubeconfig' in credential_detail
+    assert 'delivery_label' in credential_detail
     assert 'Manually place the generated token into the approved access account' in registry
     assert 'JumpServer' not in registry
     assert 'JumpServer' not in workspace
@@ -263,6 +429,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'Reveal JumpServer Token' not in registry
     assert 'Generate CI/CD Kubeconfig' not in registry
 
+    detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
     assert "'Credential Lifecycle'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
@@ -273,42 +440,32 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
     assert 'table_ui.action_grid_classes(2)' not in registry
-    assert 'flex flex-wrap items-center justify-end gap-1.5' in registry
-    assert 'data-kaori-dialog-open' in registry
-    assert 'data-kaori-native-dialog' in registry
-    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in registry
-    assert 'aria-haspopup="dialog"' in registry
-    assert 'More Actions' in registry
-    assert 'Revoke Access' in registry
-    assert 'Revoke Credential' in registry
-    assert 'Suspend Credential' in registry
-    assert 'Renew Credential' in registry
-    assert 'No actions' in registry
-    assert 'Read-only' in registry
-    assert "credential.status == 'revoked'" in registry
-    assert "credential.status == 'suspended'" in registry
-    assert "credential.status in ['active', 'renewal_due']" in registry
-    assert "credential.reconciliation_status == 'ready'" in registry
-    assert 'and delivery_targets' in registry
-    # More is a shared native dialog outside the scrolling table, not a clipped popover.
-    assert registry.index('data-kaori-native-dialog') > registry.index('registry_ui.footer(')
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_credential_row_detail.html' in registry
+    assert 'credential-more-actions-' not in registry
+    assert 'Revoke Credential' in detail
+    assert 'Invalidate access' in detail
+    assert 'Suspend Credential' in detail
+    assert 'Renew' in detail
+    assert 'No actions' in detail
+    assert 'Read-only' in detail
+    assert "credential.status == 'revoked'" in detail
+    assert "credential.status == 'suspended'" in detail
+    assert "credential.reconciliation_status == 'ready'" in detail or registry
+    assert 'data-kaori-dialog-open' in detail
+    assert 'data-kaori-native-dialog' not in detail
     for route in (
         'renew_credential_route',
         'resume_credential_route',
         'suspend_credential_route',
         'revoke_credential_route',
     ):
-        assert route in registry
-    assert registry.count('hx-target="#tenant-admin-workspace"') == 5
-    assert 'name="csrf_token"' in registry
-    assert 'flex flex-wrap justify-end gap-1.5' not in registry
-    assert 'Type / Delivery' in registry
-    assert 'Owner / Delivery' not in registry
-    for action in ('Renew', 'Suspend', 'Resume', 'Revoke'):
-        assert action in registry
+        assert route in detail
+    assert 'name="csrf_token"' in detail
     assert 'components/one_time_secret.html' in registry
-    assert 'data-credential-material-open' in registry
-    assert 'Generate' in registry
+    assert 'data-credential-material-open' in detail
+    assert 'Generate' in detail
     assert 'Generate Kubeconfig' in registry
     assert 'data-credential-material-namespace' in registry
     assert 'data-credential-material-ttl' in registry
@@ -321,6 +478,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
 def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_namespace_access_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_namespace_access_detail.html')
     read_model = read('app/kubernetes/tenant/admin_workspace.py')
 
     assert 'Effective Namespace Access' in workspace
@@ -333,10 +491,11 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     assert "'Namespace Access Registry'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
-    assert 'approved_access_methods' in registry
-    assert 'credential.token' not in registry
-    assert 'credential.kubeconfig' not in registry
-    assert 'private_key' not in registry
+    assert '_namespace_access_detail.html' in registry
+    assert 'approved_access_methods' in detail
+    assert 'credential.token' not in registry + detail
+    assert 'credential.kubeconfig' not in registry + detail
+    assert 'private_key' not in registry + detail
     assert 'def get_namespace_access_registry_context(' in read_model
     assert 'paginate_sequence(' in read_model
 
@@ -368,11 +527,14 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
     assert credentials.count('flex h-full flex-col overflow-visible') >= 2
     assert 'overflow-visible rounded-xl' in namespace_access
 
-    # Field-specific guidance remains allowed when semantics are unique to the field.
-    assert 'capsule-owner-kind-tip' in tenant_form
-    assert 'capsule-owner-subject-tip' in tenant_form
-    assert 'access-profile-tip' in grants
-    assert 'access-scope-tip' in grants
+    # Capsule ownership has one section-owned Guide; distinct field helpers remain.
+    assert "'capsule-initial-owner-guide-tip'" in tenant_form
+    assert 'capsule-owner-kind-tip' not in tenant_form
+    assert 'capsule-owner-subject-tip' not in tenant_form
+    assert 'access-profile-tip' not in grants
+    assert 'access-scope-tip' not in grants
+    assert 'access-membership-tip' not in grants
+    assert "'access-grant-form-tip'" in grants
 
 
 def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> None:
@@ -433,6 +595,21 @@ def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
     assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
 
 
+def test_overview_operational_attention_has_section_intro_above_card() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+    assert 'components/section_intro.html' in overview
+    assert 'aria-labelledby="tenant-operational-oversight-heading"' in overview
+    assert "section_intro.render('Operational Oversight'," in overview
+    assert 'Prioritized Tenant conditions and recent committed activity requiring operational review.' in overview
+    assert "'tenant-operational-oversight-heading')" in overview
+    assert overview.index("section_intro.render('Operational Oversight',") < overview.index(
+        "'Operational Attention & Activity'"
+    )
+    assert overview.index("'Multi-Cluster Posture'") < overview.index("'Operational Oversight'")
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "'Tenant Estate by Cluster'" not in overview  # Owning card stays in the shared partial.
+
+
 def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
@@ -444,7 +621,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
@@ -548,14 +725,28 @@ def test_namespace_access_security_boundary_matches_peer_surface() -> None:
     assert 'bg-status-info-soft' not in workspace
 
 
-def test_operational_attention_peer_cards_preserve_bounded_alignment() -> None:
+def test_operational_attention_card_preserves_bounded_responsive_alignment() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
 
-    assert 'xl:items-stretch' in overview
-    assert overview.count("extra_classes='flex h-full flex-col'") >= 2
-    assert overview.count("body_classes='flex flex-1 flex-col p-0'") >= 2
+    # #3144 approved one section card with two accessible, independent areas.
+    assert overview.count("'Operational Attention & Activity'") == 1
+    assert overview.count("body_classes='p-0'") >= 2
+    assert 'grid min-w-0 xl:grid-cols-12' in overview
+    assert 'flex min-w-0 flex-col xl:col-span-7' in overview
+    assert 'xl:col-span-5 xl:border-l xl:border-t-0' in overview
+    assert 'aria-labelledby="tenant-attention-list-title"' in overview
+    assert 'aria-labelledby="tenant-recent-activity-title"' in overview
+
+    # Bounded committed previews never claim fleet-wide totals.
+    assert "selectattr('tone', 'equalto', 'critical')" in overview
+    assert "selectattr('tone', 'equalto', 'warning')" in overview
+    assert "' Critical shown'" in overview
+    assert "' Warnings shown'" in overview
+    assert "' Recent events shown'" in overview
     assert 'Showing {{ tenant_attention_rows|length }} prioritized condition' in overview
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in overview
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "url_for('tenant.operations', tab='activity')" in overview
 
 
 def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> None:
@@ -565,7 +756,7 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
 
     assert (
         "macro render(id, title, text='', items=None, placement='left', button_text=None, "
-        "button_classes=None, variant='icon')" in component
+        "button_classes=None, variant='icon', trigger_icon='info')" in component
     )
     assert "variant == 'guide' and not button_text" in component
     assert 'data-kaori-info-tip-variant' in component
@@ -581,7 +772,11 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     assert 'button_classes if button_classes else action_button.classes' in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
-    assert 'circle-help' in component
+    assert 'data-lucide="{{ trigger_icon }}"' in component
+    assert "trigger_icon='info'" in component
+    assert "variant == 'action' and button_text" in component
+    assert 'circle-help' not in component
+    assert 'never a question-mark icon' in component
 
     assert 'portal.appendChild(preview)' in controller
     assert "event.key === 'Escape'" in controller
@@ -618,14 +813,19 @@ def test_tenant_mutations_return_to_the_relevant_administration_section() -> Non
     assert "return redirect(url_for('tenant.tenants'))" not in routes
 
 
-def test_overview_attention_and_activity_rows_share_peer_geometry() -> None:
+def test_overview_attention_and_activity_rows_keep_independent_evidence_and_empty_states() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
     workspace = read('app/kubernetes/tenant/workspace.py')
 
-    assert overview.count('min-h-[7.5rem]') >= 3
+    assert overview.count('min-h-[7rem]') == 2
     assert 'Committed governance finding' in overview
     assert 'Recent Tenant Activity' in overview
     assert 'Needs Attention' in overview
+    assert 'No active attention items' in overview
+    assert 'No recent Tenant activity' in overview
+    assert 'item.status, item.tone' in overview
+    assert '{{ item.detail }}' in overview
+    assert '{{ item.time }}' in overview
     assert 'def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3)' in workspace
     assert 'def _tenant_recent_activity(*, limit: int = 3)' in workspace
     assert 'h-[calc(100%+1rem)]' not in overview
@@ -826,9 +1026,12 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
 
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     assert 'data-tenant-native-cutover-workspace' in namespace_page
-    assert 'Adopted Native Governance Cutover' in namespace_page
+    assert 'Adopted Native Governance Cutover' in read(
+        'app/templates/kubernetes/tenant/partials/_allocation_cutover.html'
+    )
     assert 'data-tenant-capsule-allocation-workspace' in namespace_page
-    assert 'Capsule Allocation Governance' in namespace_page
+    assert "'native-cutover', 'Native Cutover'" in namespace_page
+    assert "'capsule-governance', 'Capsule Governance'" in namespace_page
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
 
 
@@ -1208,14 +1411,16 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
     assert 'name="capsule_owner_subject"' in form
     assert '<option value="capsule">Capsule</option>' in form
     assert 'capability checked on submit' not in form
-    assert 'capsule-owner-kind-tip' in form
-    assert 'capsule-owner-subject-tip' in form
-    assert 'Owner Subject is required for every Owner Kind.' in form
+    assert 'capsule-owner-kind-tip' not in form
+    assert 'capsule-owner-subject-tip' not in form
+    assert "'capsule-initial-owner-guide-tip'" in form
+    assert 'Owner Subject must match the identity recognized by Kubernetes authentication.' in form
     assert 'User example — alice@example.com' in form
     assert 'Group example — oidc:org:platform-team' in form
     assert 'ServiceAccount example — system:serviceaccount:platform:deployer' in form
     assert 'Required for Capsule provider ownership; separate from KAORI Memberships.' in form
-    assert 'Existing Capsule Tenant? Use Discovery → Adoption.' in form
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in form
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
     assert 'Capsule capability and admission are validated when Add Tenant is submitted.' in form
     assert 'tenant_setup_provider.js' in page
 
@@ -1310,7 +1515,8 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
         in workspace
     )
     assert 'Filtered by Membership Tenant' in workspace
-    assert 'Tenant scope still uses namespaced RBAC' in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Kubernetes RBAC remains authoritative for effective access after reconciliation.' in workspace
     assert "'select Membership first'" in scope_js
     assert 'tenant_access_grant_form.js' in page
 
@@ -1364,6 +1570,7 @@ def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    capacity_registry = read('app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html')
     table_standard = read('docs/design/components/TABLE_AND_LABEL.md')
     status_dialog_standard = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
 
@@ -1373,7 +1580,7 @@ def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
 
     assert 'tenant-registry-status-tip' in registry
     assert 'tenant-discovery-status-tip' in discovery
-    assert 'allocation-budget-status-tip' in capacity
+    assert 'allocation-budget-status-tip' in capacity_registry
     assert 'Do not repeat generic' in table_standard
     assert 'outside the table scroll container' in table_standard
     assert 'do **not** use a repeated per-row Status Detail trigger' in status_dialog_standard
@@ -1643,7 +1850,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Adopted Native Governance Cutover' in cutover_ui
     assert 'KAORI Preset · Locked' in cutover_ui
     assert 'Custom · Editable' in cutover_ui
-    assert 'Adopted Baseline · Observed' in cutover_ui
+    assert 'Observed Provider Baseline' in cutover_ui
     assert 'KAORI Managed' in cutover_ui
     assert 'Cut Over Governance' in cutover_ui
     assert 'Use current provider baseline · Custom' in cutover_ui
@@ -1659,7 +1866,9 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
     assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
-    assert 'KAORI Managed · Only after verified cutover' in cutover_ui
+    assert 'Proposed KAORI Managed Contract' in cutover_ui
+    assert 'Original Native ResourceQuota / LimitRange UID and resourceVersion' in cutover_ui
+    assert 'must match committed legacy observation.' in cutover_ui
     assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
 
     assert 'Managed Contract Comparison' in allocation_change
@@ -1787,8 +1996,13 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
 
     assert '_capsule_shared_allocation_drift.html' in operations_page
     assert 'Capsule Shared Allocation Drift' in drift_ui
-    assert 'Reapply KAORI Intent' in drift_ui
-    assert 'Accept Provider State' in drift_ui
+    assert drift_ui.count('Reapply Intent') == 2
+    assert drift_ui.count('Accept Provider') == 2
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')"
+    ) in drift_ui
+    assert drift_ui.count('<form method="post"') == 2
+    assert drift_ui.count('name="csrf_token"') == 2
     assert 'source.get("uid")' in drift_ui
     assert 'source.get("resource_version")' in drift_ui
     assert 'ops_capsule_shared_page' in routes
@@ -1894,8 +2108,13 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert '_capsule_tenant_quota_drift.html' in operations_page
     assert 'Capsule Tenant Quota Drift' in drift_ui
-    assert 'Reapply KAORI Intent' in drift_ui
-    assert 'Accept Provider State' in drift_ui
+    assert drift_ui.count('Reapply Intent') == 2
+    assert drift_ui.count('Accept Provider') == 2
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')"
+    ) in drift_ui
+    assert drift_ui.count('<form method="post"') == 2
+    assert drift_ui.count('name="csrf_token"') == 2
     assert 'source.get("uid")' in drift_ui
     assert 'source.get("resource_version")' in drift_ui
 
@@ -1924,28 +2143,43 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
 
 
-def test_credential_and_grant_dialog_mutations_use_canonical_workflow_actions() -> None:
+def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions() -> None:
     action = read('app/templates/components/action_button.html')
     assert "variant == 'critical'" in action
     assert 'bg-status-critical' in action
-    assert 'h-10' in action
-    for filename, expected_routes in (
+    for filename, routes in (
         (
-            '_credential_registry.html',
-            ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
+            '_credential_row_detail.html',
+            (
+                'renew_credential_route',
+                'resume_credential_route',
+                'suspend_credential_route',
+                'revoke_credential_route',
+            ),
         ),
-        ('_access_grant_registry.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
+        ('_access_grant_row_detail.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
     ):
-        registry = read(f'app/templates/kubernetes/tenant/partials/{filename}')
-        assert '{% import "components/action_button.html" as action_button %}' in registry
-        assert 'class="{{ action_button.classes(\'secondary\', full=true) }}"' in registry
-        assert 'class="{{ action_button.classes(\'critical\', full=true) }}"' in registry
-        assert 'class="{{ table_ui.action_classes(true) }} w-full' not in registry
-        assert 'hx-target="#tenant-admin-workspace"' in registry
-        assert 'hx-disabled-elt="find button"' in registry
-        assert 'name="csrf_token"' in registry
-        assert 'data-kaori-native-dialog' in registry
-        for route in expected_routes:
-            assert route in registry
-        # Compact registry More launchers intentionally stay table action buttons.
-        assert 'table_ui.action_classes()' in registry
+        detail = read(f'app/templates/kubernetes/tenant/partials/{filename}')
+        assert 'components/action_button.html' in detail
+        if filename == '_access_grant_row_detail.html':
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
+            assert "action_button.classes('secondary', full=true)" not in detail
+            assert "action_button.classes('critical', full=true)" not in detail
+            assert detail.count('class="ml-auto shrink-0"') == 2
+            assert 'lg:grid-cols-2' in detail
+        else:
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
+        assert 'hx-target="#tenant-admin-workspace"' in detail
+        assert 'hx-disabled-elt="find button"' in detail
+        assert 'name="csrf_token"' in detail
+        assert 'data-kaori-native-dialog' not in detail
+        for route in routes:
+            assert route in detail
+    for registry in ('_credential_registry.html', '_access_grant_registry.html'):
+        source = read(f'app/templates/kubernetes/tenant/partials/{registry}')
+        assert 'detail_row.toggle_button(' in source
+        assert 'detail_row.static_detail_row(' in source
+        assert 'View Details' in source
+        assert 'data-dialog-target="credential-more-actions-' not in source

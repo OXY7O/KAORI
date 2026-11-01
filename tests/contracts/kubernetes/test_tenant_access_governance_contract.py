@@ -76,6 +76,7 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
             ),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_membership_registry.html').read_text(encoding='utf-8'),
             (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_registry.html').read_text(encoding='utf-8'),
+            read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html'),
         ]
     )
 
@@ -139,6 +140,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     routes = read_routes()
     registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
     grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    grant_detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     docs = read('docs/architecture/kubernetes-tenant-access-governance.md')
 
@@ -157,8 +159,11 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
 
     assert "url_for('tenant.reactivate_membership_route', membership_id=membership.id)" in registry
     assert 'Reactivate' in registry
-    assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_registry
-    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_registry
+    assert '_access_grant_row_detail.html' in grant_registry
+    assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_detail
+    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_detail
+    assert "url_for('tenant.revoke_access_grant_route', grant_id=grant.id)" in grant_detail
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in grant_detail
     assert 'Reactivation does not restore old grants.' in workspace
 
     assert 'Previous Access Grants remain revoked permanently' in docs
@@ -192,7 +197,9 @@ def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> 
     assert 'Reactivate' in registry
     assert 'data-tenant-group-edit-open' in registry
     assert 'tenant-group-retire-modal' in registry
-    assert 'No external IdP group is deleted.' in registry
+    assert 'KAORI does not modify or delete the authoritative external group.' in registry
+    assert 'Retire requires revoked Memberships and reconciled grants.' in registry
+    assert 'Revoked memberships, access grants, correlation, and audit evidence remain queryable.' in registry
     assert 'data-tenant-group-edit-modal' in modal_js
     assert 'htmx:afterRequest' in modal_js
 
@@ -233,9 +240,13 @@ def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_com
 
 
 def test_access_profiles_render_in_least_privilege_operator_order() -> None:
-    service = read('app/kubernetes/tenant/access_service.py')
+    workspace = read('app/kubernetes/tenant/admin_workspace.py')
 
-    assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service
+    assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in workspace
+    assert 'ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]' in workspace
+    assert 'for key in profile_order' in workspace
+    assert 'if key in LATEST_ACCESS_PROFILE_VERSION' in workspace
+    assert "'access_profiles': profiles" in workspace
 
 
 def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helper_copy() -> None:
@@ -243,9 +254,16 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     script = read('app/static/js/tenant_access_grant_form.js')
 
     assert 'Apply Access Grant' in workspace
-    assert 'access-membership-tip' in workspace
-    assert 'access-profile-tip' in workspace
-    assert 'access-scope-tip' in workspace
+    # The accepted Grant Context preview replaces the former three inline tooltips.
+    for field_id, label in (
+        ('access-grant-membership', 'Membership'),
+        ('access-grant-profile', 'Access Profile'),
+        ('access-grant-scope', 'Scope'),
+    ):
+        assert f'for="{field_id}"' in workspace
+        assert f'>{label}</label>' in workspace
+    for removed_tip in ('access-membership-tip', 'access-profile-tip', 'access-scope-tip'):
+        assert removed_tip not in workspace
     assert 'data-access-profile-guidance' not in workspace
     assert 'data-access-scope-guidance' not in workspace
     assert 'Select Membership first; incompatible profiles are filtered automatically.' not in workspace
@@ -275,30 +293,45 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert 'data-access-scope-guidance' not in script
 
 
-def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_popover() -> None:
+def test_access_grant_registry_reconciliation_uses_canonical_expandable_evidence() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
-    info_tip = read('app/templates/components/info_tip.html')
-    info_tip_script = read('app/static/js/info_tips.js')
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    shared = read('app/templates/components/details/_expandable_row.html')
 
-    assert '{% import "components/info_tip.html" as info_tip %}' in registry
+    # Reconciliation remains visible in the registry even before detail expansion.
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
-    assert 'info_tip.render(' in registry
-    assert "'access-grant-reconciliation-' ~ grant.id" in registry
-    assert "grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.'" in registry
-    assert "placement='left'" in registry
-    assert 'max-w-[260px]' not in registry
-    assert 'role="tooltip"' in info_tip
-    assert 'data-kaori-info-tip-trigger' in info_tip
-    assert "event.key === 'Escape'" in info_tip_script
-    assert "document.addEventListener('click'" in info_tip_script
-    assert "document.addEventListener('focusin'" in info_tip_script
-    assert "document.addEventListener('htmx:beforeSwap'" in info_tip_script
+    assert 'aria-label="Access Grant actions"' in registry
+    assert "url_for('tenant.inspect_access_grant_route', grant_id=grant.id)" in registry
+    assert 'name="csrf_token"' in registry
+
+    # Use the existing accessible, static expandable table row, not a legacy tooltip.
+    assert '{% import "components/details/_expandable_row.html" as detail_row %}' in registry
+    assert "detail_row.toggle_button('tenant-access-grants'" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in registry
+    assert "{% include 'kubernetes/tenant/partials/_access_grant_row_detail.html' %}" in registry
+    assert 'data-detail-toggle' in shared
+    assert 'aria-controls="{{ row_id }}"' in shared
+    assert 'aria-expanded="false"' in shared
+    assert 'data-detail-static="true"' in shared
+
+    # The expanded evidence preserves the principal/tenant/profile/scope and fail-closed actions.
+    assert 'data-access-grant-expanded-evidence' in detail
+    assert 'aria-label="Access Grant expanded details"' in detail
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'Provider Reconciliation' in detail
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in detail
+    for label in ('Principal', 'Tenant', 'Profile', 'Scope'):
+        assert f'>{label}</dt>' in detail
+    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in detail
+    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in detail
+    assert "url_for('tenant.revoke_access_grant_route', grant_id=grant.id)" in detail
+    assert 'name="csrf_token"' in detail
 
 
 def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_provider_mutation() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     modal = read('app/templates/kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html')
-    service = read('app/kubernetes/tenant/access_service.py')
+    workspace_owner = read('app/kubernetes/tenant/admin_workspace.py')
     access = read('app/kubernetes/tenant/access.py')
     reconciliation = read('app/kubernetes/tenant/capsule_access_reconciliation.py')
     native_dialogs = read('app/static/js/native_dialogs.js')
@@ -323,8 +356,8 @@ def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_
     assert 'data-kaori-dialog-open' in native_dialogs
     assert 'data-kaori-copy-root' in clipboard
     assert 'data-kaori-download-button' in clipboard
-    assert 'capsule_cluster_role_manifest(profile)' in service
-    assert 'yaml.safe_dump_all(' in service
+    assert 'capsule_cluster_role_manifest(profile)' in workspace_owner
+    assert 'yaml.safe_dump_all(' in workspace_owner
     assert 'def capsule_cluster_role_manifest(' in access
     assert 'capsule_cluster_role_name(profile)' in reconciliation
     assert 'create_cluster_role(' not in modal
@@ -357,104 +390,161 @@ def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -
     assert 'membership.focus({ preventScroll: true })' in script
 
 
-def test_access_grants_included_capsule_evidence_template_compiles_and_renders() -> None:
-    """#1211: a malformed include must never turn Access Grants GET/HTMX into HTTP 500."""
+def test_access_grants_included_provider_evidence_templates_compile_and_render() -> None:
+    """#1211: both read-only provider tabs must render without an HTTP 500."""
     from types import SimpleNamespace
 
     from jinja2 import Environment, FileSystemLoader
 
     templates = ROOT / 'app/templates'
     environment = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+
+    # The bare Jinja test harness registers the same filter names the app does.
+    # No provider or database access is needed to render the empty committed state.
+    def environment_name(value: object, empty: str = 'Environment not specified') -> str:
+        return str(value) if value else empty
+
+    def url_for(_endpoint: str, **_params: object) -> str:
+        return '/test/tenant/access'
+
+    def csrf_token() -> str:
+        return 'test-csrf'
+
+    environment.filters['environment_name'] = environment_name
+    environment.filters['user_datetime'] = str
+    environment.globals['url_for'] = url_for
+    environment.globals['csrf_token'] = csrf_token
+    environment.globals['request'] = SimpleNamespace(view_args={})
     for name in (
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
         'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'kubernetes/tenant/partials/_access_inventory_workspace.html',
         'kubernetes/tenant/partials/_external_capsule_access_inventory.html',
+        'kubernetes/tenant/partials/_native_namespace_rbac_inventory.html',
     ):
         environment.get_template(name)
 
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    inventory = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
     assert "('access-grants', 'Access Grants'" in workspace
     assert "hx_target='#tenant-admin-workspace'" in workspace
     assert "hx_select='#tenant-admin-workspace'" in workspace
     assert '_tenant_access_grants_workspace.html' in workspace
-    assert '_external_capsule_access_inventory.html' in grants
+    assert '_access_inventory_workspace.html' in grants
+    assert 'workspace_tabs.render_query_tabs(' in inventory
+    assert "active_access_inventory_view == 'grants'" in inventory
+    assert '_access_grant_registry.html' in inventory
+    assert '_external_capsule_access_inventory.html' in inventory
+    assert '_native_namespace_rbac_inventory.html' in inventory
 
-    view = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    pagination = SimpleNamespace(
+        total_items=0,
+        start_item=0,
+        end_item=0,
+        page=1,
+        total_pages=1,
+        per_page=5,
+        allowed_per_page=(5, 10, 25),
+        prev_page=1,
+        next_page=1,
+        has_prev=False,
+        has_next=False,
+    )
     baseline = {
         'can_manage': False,
         'external_capsule_tenants': [],
         'recent_external_capsule_access': [],
-        'recent_capsule_access_drift': [],
-        'recent_capsule_access_remediation': [],
-        'recent_native_access_remediation': [
-            SimpleNamespace(
-                metadata_json={
-                    'provider': 'native_kubernetes',
-                    'tenant_id': 'kaori-demo',
-                    'explicit_reconcile_count': 0,
-                    'manual_review_count': 0,
-                    'items': [],
-                }
-            )
-        ],
         'external_native_tenants': [],
         'recent_external_native_access': [],
         'recent_external_access_profile_reviews': [],
-        'recent_native_access_drift': [],
+        'access_evidence_total': 0,
+        'access_evidence_review_required': 0,
+        'access_evidence_filters': SimpleNamespace(search='', status=''),
+        'access_evidence_pagination': pagination,
+        'access_evidence_rows': [],
+        'access_evidence_drift_by_tenant': {},
+        'access_evidence_remediation_by_observation': {},
     }
-    rendered = view.render(**baseline)
-    assert 'Governed Remediation Decisions' in rendered
-    assert 'Native Kubernetes · Tenant kaori-demo' in rendered
-    assert 'Preview only: no Kubernetes mutation.' in rendered
-    baseline['recent_native_access_remediation'] = [SimpleNamespace(metadata_json=None)]
-    assert 'Governed Remediation Decisions' in view.render(**baseline)
-    assert '{% set plan = event.metadata_json or {} %}' in read(
-        'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
-    )
+
+    capsule = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    rendered_capsule = capsule.render(**baseline)
+    assert 'External Capsule Access Inventory' in rendered_capsule
+    assert 'Capsule remains authoritative.' in rendered_capsule
+    assert 'No committed external-access inspection yet.' in rendered_capsule
+    assert 'data-kaori-canonical-registry-footer="tenant-capsule-evidence-registry"' in rendered_capsule
+
+    native = environment.get_template('kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    rendered_native = native.render(**baseline)
+    assert 'Native Namespace RBAC Inventory' in rendered_native
+    assert 'No committed Native RBAC observation yet.' in rendered_native
+    assert 'Inspection does not mutate membership, identity or RBAC.' in rendered_native
+    assert 'data-kaori-canonical-registry-footer="tenant-native-evidence-registry"' in rendered_native
+
+    for rendered in (rendered_capsule, rendered_native):
+        assert 'data-tenant-provider-evidence-loading' in rendered
+        assert 'data-kaori-canonical-registry-filter' in rendered
+        assert 'name="csrf_token"' not in rendered
+
+    evidence_rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    assert '{% set evidence = event.metadata_json or {} %}' in evidence_rows
+    assert '_provider_access_evidence_detail.html' in evidence_rows
 
 
-def test_access_grant_registry_actions_fit_desktop_and_use_existing_native_more_dialog() -> None:
-    """#1215: no clipped actions or mutation form trapped in horizontally scrolling table."""
+def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_detail() -> None:
+    """#1215: no clipped actions or mutation controls inside a scrolling table."""
     from jinja2 import Environment
 
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
-    Environment(autoescape=True).parse(registry)
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    shared = read('app/templates/components/details/_expandable_row.html')
     credentials = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    credential_detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
+    Environment(autoescape=True).parse(registry)
+    Environment(autoescape=True).parse(detail)
+
     assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in registry
     assert 'overflow-x-auto xl:overflow-visible' in registry
     assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" not in registry
     assert 'w-[20%]">Actions' in registry
     assert 'min-w-[15rem] flex-wrap' not in registry
     assert 'flex items-center justify-end gap-1.5 whitespace-nowrap' in registry
-    assert registry.count('data-kaori-dialog-open') == 1
-    assert registry.count('data-kaori-native-dialog') == 1
-    assert registry.count('data-kaori-dialog-close') == 1
-    assert 'access-grant-more-actions-{{ grant.id }}' in registry
-    assert 'aria-haspopup="dialog"' in registry
-    assert 'aria-labelledby="access-grant-more-actions-{{ grant.id }}-title"' in registry
-    assert 'aria-describedby="access-grant-more-actions-{{ grant.id }}-description"' in registry
-    assert 'data-kaori-native-dialog' in credentials
-    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in credentials
+    assert 'aria-label="Access Grant actions"' in registry
+    assert "detail_row.toggle_button('tenant-access-grants'" in registry
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in registry
+    assert "{% include 'kubernetes/tenant/partials/_access_grant_row_detail.html' %}" in registry
+    assert 'aria-expanded="false"' in shared
+    assert 'aria-controls="{{ row_id }}"' in shared
+    assert 'data-detail-static="true"' in shared
+    assert 'aria-label="Access Grant expanded details"' in detail
+
+    # Both registries use the shared accessible detail row; credential material
+    # generation retains its separate governed one-time request dialog.
+    assert "detail_row.toggle_button('tenant-credentials'" in credentials
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in credentials
+    assert '_credential_row_detail.html' in credentials
+    assert 'aria-label="Credential expanded details"' in credential_detail
+    assert 'data-dialog-target="credential-material-request-{{ credential.id }}"' in credential_detail
+    assert 'data-kaori-native-dialog' not in registry
 
     viewport_end = registry.index('</table>')
     footer_end = registry.index('registry_ui.footer(', viewport_end)
-    dialog_start = registry.index('<dialog id="access-grant-more-actions-{{ grant.id }}"')
-    assert viewport_end < footer_end < dialog_start
+    assert viewport_end < footer_end
     assert registry.index('inspect_access_grant_route') < viewport_end
-    assert registry.index('reconcile_access_grant_route') > dialog_start
-    assert registry.index('revoke_access_grant_route') > dialog_start
-    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in registry
-    assert "{% if grant.status == 'active' %}" in registry
-
-    for route in ('inspect', 'reconcile', 'revoke'):
-        endpoint = f'tenant.{route}_access_grant_route'
-        assert registry.count(f'action="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
-        assert registry.count(f'hx-post="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
-    assert registry.count('name="csrf_token"') == 3
-    assert registry.count('hx-target="#tenant-admin-workspace"') == 3
-    assert registry.count('hx-select="#tenant-admin-workspace"') == 3
-    assert registry.count('hx-disabled-elt="find button"') == 3
+    assert 'reconcile_access_grant_route' not in registry
+    assert 'revoke_access_grant_route' not in registry
+    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in detail
+    assert "if grant.status == 'active'" in detail
+    for route in ('reconcile_access_grant_route', 'revoke_access_grant_route'):
+        endpoint = f'tenant.{route}'
+        assert detail.count(f'action="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+        assert detail.count(f'hx-post="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+    assert registry.count('name="csrf_token"') == 1
+    assert detail.count('name="csrf_token"') == 2
+    assert detail.count('hx-target="#tenant-admin-workspace"') == 2
+    assert detail.count('hx-select="#tenant-admin-workspace"') == 2
+    assert detail.count('hx-disabled-elt="find button"') == 2
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'access_grant_pagination.allowed_per_page' in registry
+    assert "action_button.classes('critical')" in detail

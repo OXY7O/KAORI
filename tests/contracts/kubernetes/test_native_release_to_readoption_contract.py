@@ -22,7 +22,7 @@ def test_canonical_native_handoff_release_handback_are_separate_explicit_routes(
     assert 'confirm_successor_handback' in html
     assert 'csrf_token()' in html
     assert 'Finalize Verified Native Release' in html
-    assert 'Verify Provider &amp; Hand Back as Platform Admin' in html
+    assert 'Verify Provider &amp; Accept as Platform Admin' in html
     assert 'kubernetes_successor_token' not in html
 
 

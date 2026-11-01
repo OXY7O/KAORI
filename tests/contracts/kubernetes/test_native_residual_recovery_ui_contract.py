@@ -42,7 +42,7 @@ def test_recovery_is_scoped_to_verified_native_handback_in_tenant_detail():
     assert 'Pending Independent Review' in partial
     assert 'Recovery Check · If Blocked' in partial
     assert 'Check Discovery First' in partial
-    assert 'If your Namespace is already eligible' in partial
+    assert 'If eligible, use Review Adoption.' in partial
 
 
 def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_guard():
@@ -129,6 +129,8 @@ def test_recovery_redesign_uses_readable_steps_and_distinct_assessment_plan_sect
     assert 'Assessment Actions' in partial
     assert 'Prepare Recovery Plan' in partial
     assert 'sm:grid-cols-2' in partial
+    assert 'data-native-residual-prepare-form' in partial
+    assert 'data-native-residual-recovery-workspace' in partial
     assert 'hover:bg-kaori-soft/30' in partial
     assert 'bg-kaori-primary' in partial
     assert 'No retry or automatic cleanup is available' in partial
@@ -159,3 +161,73 @@ def test_recovery_redesign_preserves_distinct_sensitive_workflow_forms():
     assert 'if recovery_execution' in partial
     assert 'if recovery_verified' in partial
     assert 'This link does not adopt automatically.' in partial
+
+
+def test_recovery_prepare_form_is_compact_with_unchanged_governed_inputs():
+    partial = source(PARTIAL)
+    detail = source(DETAIL)
+    Environment().parse(partial)
+    Environment().parse(detail)
+    form = next(
+        item
+        for item in re.findall(r'<form\b.*?</form>', partial, flags=re.DOTALL)
+        if 'data-native-residual-prepare-form' in item
+    )
+    assert 'max-w-2xl' not in form
+    assert 'items-start gap-3' in form
+    assert 'name="change_reference"' in form
+    assert 'minlength="3"' in form and 'maxlength="120"' in form
+    assert 'name="confirm_native_residual_prepare"' in form
+    assert re.search(r'name="confirm_native_residual_prepare"\s+value="prepare"\s+required', form)
+    assert 'name="csrf_token"' in form and 'hx-post=' in form
+    assert 'no Kubernetes changes.' in form
+    assert 'Prepare Recovery Plan' in form
+    assert 'Prepare Governed Recovery Plan' not in form
+    assert 'Different Admin reviews the exact plan SHA' in partial
+    assert 'Label-only PATCH with verified read-back' in partial
+    assert 'Check fresh Discovery first. If eligible, use Review Adoption.' in partial
+    assert 'recovery_plan.requested_by != current_user.id' in partial
+    assert 'row.native_residual_approval_current' in partial
+    assert partial.count('name="csrf_token"') == 4
+
+
+def test_native_handback_title_uses_existing_kaori_guide_without_extra_provider_action():
+    detail = source(DETAIL)
+    handback = detail.split('id="tenant-native-handback"', 1)[1].split('id="tenant-capsule-handback"', 1)[0]
+    assert handback.count("info_tip.render('tenant-native-platform-handback-guide'") == 1
+    assert "'Platform Admin Handback & Re-adopt'" in handback
+    assert "variant='guide'" in handback
+    assert 'Fresh Discovery and explicit Review Adoption are separate from handback.' in handback
+    assert 'tenant.verify_native_successor_handback_route' in handback
+    assert handback.count('name="confirm_successor_handback"') == 1
+    assert 'name="release_plan_sha256"' in handback
+    assert detail.count('<form method="post"') == 23
+
+
+def test_residual_recovery_uses_balanced_assessment_and_plan_columns():
+    partial = source(PARTIAL)
+    Environment().parse(partial)
+    assert partial.count('data-native-residual-recovery-workspace') == 1
+    workspace = partial.split('data-native-residual-recovery-workspace', 1)[1].split('        {% endif %}', 1)[0]
+    assert 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in partial
+    assert 'aria-labelledby="tenant-recovery-assessment-heading"' in workspace
+    assert 'aria-labelledby="tenant-recovery-prepare-heading"' in workspace
+    assert 'lg:border-r lg:border-outline-subtle' in workspace
+    assert 'border-t border-outline-subtle p-4 lg:border-t-0' in workspace
+    assert 'mt-3 grid min-w-0 gap-2"' in workspace
+    assert 'mt-3 grid min-w-0 gap-2 sm:grid-cols-2' not in workspace
+    assert 'max-w-2xl' not in workspace
+    assert 'Check Discovery First' in workspace
+    assert 'Assess Live Provider Residue (Read-only)' in workspace
+    assert 'Prepare Recovery Plan' in workspace
+    assert workspace.count('<section ') == 2
+    assert workspace.count('</section>') == 2
+    assert 'data-native-residual-prepare-form' in workspace
+    assert 'minlength="3"' in workspace and 'maxlength="120"' in workspace
+    assert 'name="confirm_native_residual_prepare"' in workspace
+    assert 'value="prepare"' in workspace
+    assert 'required' in workspace
+    assert workspace.count('name="csrf_token"') == 2
+    assert workspace.count('hx-post=') == 2
+    assert partial.count('name="csrf_token"') == 4
+    assert partial.count('type="submit"') == 4

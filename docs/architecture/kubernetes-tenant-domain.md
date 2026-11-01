@@ -1925,3 +1925,380 @@ design; Native PATCH is never reused blindly for Capsule. This change is
 merged only into the local DevContainer review branch. Unit/contract gates,
 Kubernetes UAT, security/visual review, staging promotion and deployment
 remain HOLD until expressly authorized.
+
+## Release Step 3 Dev Container visual refinement (2026-10-23)
+
+The accepted functional Native lifecycle UAT covered externally adopted Namespace,
+managed Resource Profile changes, and provider-preserving Release. The next
+presentation increment under #2401 rebalances **Independent Approval and Handoff**
+without changing the governing transaction. Pending/acknowledged/expired plan
+state, successor/change record and full Plan SHA remain committed evidence. The
+acknowledged Native step uses two equal-width responsive peer surfaces for
+Handoff Actions and External Handoff & Read-Back instead of a 3:2 desktop split.
+On narrow screens the peers stack without clipping identifiers.
+
+**Evidence Boundaries** is a native keyboard-accessible disclosure within the
+read-back surface, keeping all three original boundaries available without an
+oversized always-open nested information block. The Native Transfer Preview
+retains its required checkbox, original CSRF/HTMX POST target and non-mutating
+server-side dry-run semantics, but places the explanation and compact CTA
+adjacent at desktop widths while stacking them on mobile. Provider identity,
+read-back and Release admission gates are unchanged. Nothing in the redesigned
+presentation confers independent review, verified successor consent, provider
+transfer or a Released state.
+
+Visual QA for this increment must capture Native acknowledged state (including
+unverified external reference and verified Platform Admin), pending/expired
+and blocked alternatives, optional Capsule paths, long exact SHA/UID/RV,
+keyboard disclosure/focus, light/dark and responsive breakpoints. Jinja parse,
+focused Tenant contract tests, and the existing lint/quality checks remain
+required; official staging admission and provider mutation remain HOLD.
+
+## Release Step 3 flat workflow sheet — Dev Container review (2026-10-23)
+
+Follow-up human visual feedback for #2401 rejected repeated bordered cards in
+the acknowledged Native Release view. The existing reviewed Jinja implementation
+is flattened without introducing a new UI component, workflow state, provider
+request, RBAC permission or transaction. Approval Expired remains the single
+semantic warning. The recorded review state, planned successor/change record,
+and full Plan SHA-256 form an unboxed summary strip separated by a rule.
+
+The accepted-plan workspace retains its two peer sections. Handoff Actions
+uses divider-separated committed evidence rows (unverified external reference
+and independently verified Platform Admin authority); External Handoff &
+Read-Back uses plain informational text with a single non-authorizing recovery
+deep-link when prerequisites expire. Evidence Boundaries and historic Native
+Dry-Run retain their keyboard-accessible native disclosures with thin dividers
+instead of nested panels. High-impact forms and required confirmations remain
+distinct where needed for operational safety. Violet semantic status badges,
+light/dark design tokens and responsive wrapping remain authoritative.
+
+This is a **presentation-only** change: all original POST endpoints, HTMX
+targets, CSRF forms, permission predicates, dry-run, immutable plan SHA,
+external successor consent, provider read-back and Released gates remain
+unchanged. Source-level structural checks cover original Jinja controls,
+23 forms/CSRF/HTMX POST and 8 disclosure pairs. Human Dev Container visual QA
+must still verify expired/acknowledged/pending and blocked states, native/Capsule
+branches, long identifiers, small screens, keyboard and light/dark mode before
+acceptance. Official Developer Check, Full Admission, staging/main admission,
+deployment and release remain on HOLD.
+
+## Native Release Step 3 evidence row refinement — 2026-10-23
+
+The follow-up #2401 visual feedback requires shorter copy in the Platform Admin
+Approved, External Handoff & Read-Back, and Approval Expired sections, and a
+more readable expanded Native Dry-Run evidence register.
+
+The accepted-plan preview remains a read-only, non-mutating server dry-run
+receipt; it is never provider ownership transfer. Its native accessible
+disclosure separates Native Dry-Run, the committed outcome, and a neutral
+`Historical / Not Current` marker, derived exclusively from
+`native_release_readiness.dry_run_passed`. The original plan SHA correlation,
+component coverage, exact Kubernetes Kind/Name, and untruncated UID are
+preserved. Resource identities are displayed as responsive two-column rows
+with thin dividers and selectable identifiers. Each UID reuses the existing
+KAORI clipboard handler (`app/static/js/clipboard.js`) using
+`data-kaori-copy-root`, `data-kaori-copy-source`, and
+`data-kaori-copy-button`. There is no new JavaScript or provider request.
+
+Dry-run errors remain visible if present, while a missing error list
+does not create an empty error container. The UI still states
+`Provider mutation: none. Release is still blocked.` An expired plan
+still requires original-requester restart with a new SHA and independent
+review; previous references and dry-runs may not be reused. Shorter
+copy does not change SelfSubjectReview/SelfSubjectAccessReview checks.
+
+No changes to the external engine, Native/Capsule authority, reviewer
+separation, approval freshness, HTMX/CSRF, provider mutation, or Release
+finalization. Dev Container Visual QA is required in both themes and
+responsive breakpoints, historical/current/expired, long UID, error,
+copy, and keyboard cases. Official admission and deployment remain HOLD.
+
+## Native Release Platform Admin consent and concise prerequisites — 2026-10-23
+
+Follow-up to #2401 preserves the approved Native Release Governance Step 3
+workflow but reduces overlong instructions: expired approval still requires
+the **original requester** to restart with a new plan SHA and independent
+review; stale evidence is invalid. An external successor reference alone
+does not prove consent. KAORI still checks provider identity and scoped
+authority with its existing Kubernetes X.509 connection before recording
+explicit Platform Admin consent; no separate successor credentials are
+collected.
+
+The native acceptance confirmation now uses a single compact Violet-soft
+surface with a left accent and visible focus-within state, consistent with
+the existing KAORI semantic tokens and without another surrounding card.
+"Platform Admin Consent" is an action prompt, not an Approved/Released
+status badge. The existing **required** checkbox and immutable plan SHA
+remain bound to the same POST, verified provider scope and RBAC; a checked
+box is explicit authorization for this one governed consent submission,
+not a completed provider transfer or license to change Kubernetes
+resource values. No new workflow, JS, provider calls or data state.
+
+Dev Container Visual QA must cover keyboard checkbox/focus, checked/
+unchecked validation, mobile and light/dark modes, expired/stale and
+ready-to-consent conditions, long identifiers, and confirmation that
+the independent review, provider handoff and Release remain separate.
+Runtime tests, official Developer Check/Full Admission and staging
+promotion remain HOLD pending explicit human authorization.
+
+## Release independent approval Guide and compact consent — 2026-10-23
+
+Step 3 of Native Tenant Release reuses the canonical `components/info_tip.html`
+title-level `variant='guide'` immediately beside **Independent Approval
+and Handoff**, not an independent help button. The shared Info Tip controller
+handles pointer hover, keyboard focus and touch; the Guide describes the
+distinct requester/reviewer, immutable plan SHA, Platform Admin consent,
+external successor acceptance, provider handoff/read-back and Release gates.
+Mandatory evidence, expired warnings and explicit acknowledgement remain
+visible independently of the popover.
+
+The source-authoritative external-reference recording checkbox now states
+that a reference is for external verification only and does not prove
+acceptance or authorize transfer. The original requester still cannot
+self-approve or substitute references/dry-runs for independent authorized
+Platform Admin verification and acceptance.
+
+Platform Admin consent keeps its single `required` checkbox, form CSRF,
+HTMX POST, plan SHA and exact-scope governance. The prior strong Violet
+left border is removed; the same neutral-border Violet-soft background
+retains accessible focus-within feedback without depicting approval as
+already completed. Its abbreviated attestation is one visual line when
+the desktop column permits and wraps naturally on narrow viewports.
+`I authorize handoff for this plan SHA and exact scope; values stay unchanged.`
+is a confirmation of a bounded decision, not provider execution.
+
+This presentation-only work changes neither Kubernetes X.509/RBAC checks,
+independent reviewer requirements, provider-owned state, SHA binding,
+Dry-Run, provider mutation or Release gating. It needs Dev Container
+Visual QA in light/dark, narrow/wide and keyboard/touch paths, including
+long names, stale evidence and false/true confirmation. All official
+Developer Check / Full Admission / promotion gates stay HOLD.
+
+## Native Handoff Step 3 compact desktop actions — 2026-10-23
+
+Human Dev Container review of the acknowledged Native Release step revealed
+unnecessary nested borders and long two-line explanatory copy. The existing
+two-column Handoff Actions / External Handoff & Read-Back layout now reserves
+slightly more desktop width for read-back content while preserving natural
+wrapping on mobile. This is a presentation choice, not a new layout system.
+
+External reference and Platform Admin evidence remain divider-separated
+committed rows with concise status text. The External Handoff inspection
+form loses its extra rounded bordered card and uses a simple inline
+divider. Its required confirmation still asserts **external operator handoff
+has completed**, requests **read-only Kubernetes marker inspection**, and
+cannot itself record successor consent, write provider resources, or Release.
+The existing governed Native Handoff executor remains the KAORI-controlled
+transfer path; no external provider authority is adopted by KAORI.
+
+Native Transfer Preview remains a required checkbox plus a secondary
+action, displayed in a thin full-width border/divider row rather than
+an inset filled card. Its text explicitly states that the server-side
+dry-run does not persist provider metadata, quota, or limits. The HTMX POST,
+CSRF, fingerprint/SHA correlation, provider checks and eventual execution
+and finalization gates are all unchanged.
+
+Desktop copy is shortened to fit normal available line widths where
+practical; text deliberately retains responsive wrapping and overflow
+protection on smaller windows and with browser zoom. Accessibility,
+light/dark contrast, keyboard checkbox focus, pending/expired/blocked
+branches, and Native/Capsule boundaries require Dev Container Visual QA.
+Previous Native Adopt → Resource Profile change → Release UAT acceptance
+does not cover this newly revised visual state. Official CI/CD admission,
+staging/main promotion and release remain HOLD.
+
+## Native Release Step 4 expired restart evidence row — 2026-10-23
+
+A targeted Dev Container visual refinement under #1091 shortens only
+the original-requester Restart Expired Handoff Plan confirmation area.
+The UI displays a compact read-only note: committed read-back reported
+zero transferred resources, but any restart still checks the current
+authoritative provider state (exact UID/resourceVersion, ownership,
+and dependencies) and grants no automatic clearance. A small Info icon
+uses existing Violet tokens without adding a nested warning card.
+
+The required confirmation remains an explicit, separately readable
+checkbox acknowledging unchanged provider ownership, followed by the
+existing Restart Expired Handoff Plan secondary action. Spacing and
+responsive button width are unified with the KAORI form-action grammar.
+No label, handler, POST/HTMX/CSRF, plan SHA, requester-only/RBAC gate,
+read-back freshness condition, or audit evidence semantics changed.
+The button still does not bypass blocked read-back or provider recovery.
+
+Dev Container visual QA must cover normal desktop, mobile, light/dark,
+keyboard focus, expired and blocked cases and non-mutation semantics.
+Official Developer Check, Full Admission and staging/main remain HOLD.
+
+## Expired Native restart semantic info strip — 2026-10-23
+
+Screenshot feedback for #1091 shortens the zero-transfer read-back note and presents it with existing KAORI semantic info colors, without promoting evidence to approval. The note explicitly says the committed read-back **reports** zero transferred objects, while restart still rechecks UID/resourceVersion, ownership and dependencies; there is no automatic clearance. In its compact UI copy, `UID/version` represents the exact UID/resourceVersion verification already enforced by provider authority. The note is visual guidance only; original requester, required checkbox, SHA-bound POST/CSRF, recovery blocks and provider checks remain unchanged. Local browser Visual QA for themes, narrow width and accessibility remains PENDING. Official admission remains HOLD.
+
+## Native Step 3 full-width execution action strip — Dev Container UAT
+
+Human screenshot feedback for #2401 identified a visually unbalanced
+execute form occupying only three-fifths of the workspace, leaving a large
+empty right column below the accepted Handoff Actions and Read-Back peers.
+With the existing KAORI design tokens, the Native Provider Handoff POST
+now spans the complete content width as a subtle Violet-soft action strip.
+The provider preflight copy and bounded operator confirmation sit together
+on the left; the execution CTA aligns to the right on desktop and stacks
+naturally on narrow devices. No extra nested bordered card was added.
+
+The explicit required checkbox still acknowledges the exact plan handoff,
+unchanged CPU, memory, quotas and workloads, and recovery after failure.
+Provider verification is unchanged: KAORI rechecks scoped kubeconfig
+identity and permission against the external authoritative provider.
+The status strip below reports the observed count but explicitly states
+external acceptance and Release remain unverified. A successful dry-run
+or recorded review never substitutes for provider transfer evidence.
+
+This is presentation-only: the exact form POST URL, plan SHA-256 binding,
+CSRF/HTMX, original RBAC, independent reviewer, accepted-provider scope,
+execution/recovery controls and finalization remain unchanged. Visual QA
+is pending for eligible and blocked states, responsive breakpoints,
+light/dark, keyboard confirmation and actual negative provider tests.
+Official Developer Check, Full Admission and staging/main remain HOLD.
+
+## Independent reviewer eligibility Info state — Dev Container review (2026-10-23)
+
+The Step 3 pending-plan notice for a different authorized reviewer uses the existing KAORI semantic Info surface rather than an unaccented neutral border. Concise visible copy states reviewer eligibility (Tenant and Integrations Manage), plan SHA and provider evidence review. This is **available to review**, not an approval or Release state. When committed dependency evidence blocks the reviewer, the existing warning branch remains warning-colored and unchanged. The independent requester-versus-reviewer condition, required checkbox, active-plan fingerprint and authority gates remain exactly as before. No new UI component or provider call is introduced. Responsive wrap, light/dark contrast and actual approval/blocked provider behaviors require Dev Container human Visual QA; official CI/CD remains HOLD.
+
+## Native verified Release full-width action sheet — Dev Container review (2026-10-23)
+
+Step 4 screenshot feedback rejected the centered `max-w-4xl` bordered
+Finalize card and its awkward blank surrounding width. The existing
+verified Native Release POST is now a full-width, compact governance
+action sheet using the standard KAORI surface and divider hierarchy.
+The provider-readback title and readiness status sit together; a
+required exact-scope Release confirmation remains adjacent to the
+provider-evidence context. On desktop the finalization action is
+right-aligned. On narrow viewports the button stacks with readable
+text, without fixed line length, forced nowrap or horizontal clipping.
+
+Only the browser-facing explanation has been condensed. This branch
+still requires a committed handoff, fresh whole-scope read-back, no
+dependencies, unchanged Namespace/ResourceQuota/LimitRange and
+CPU/memory values, the original scoped plan SHA and the existing
+authorized governance actor. The confirmation still explicitly
+preserves all external Kubernetes resources. No mutation occurs until
+the original guarded POST; the button is not a substitute for CI/UAT.
+
+The expired-plan informational note now reads `0 transfers reported`
+rather than implying zero mutation was proven. Restart still verifies
+UID/resourceVersion, ownership and dependencies and is not cleared
+automatically. The original conditional check, provider queries,
+role restrictions, CSRF/HTMX and audit semantics are unchanged.
+
+Visual QA needed before human acceptance: desktop/mobile, both
+themes, readiness vs expired/blocked branches, checkbox keyboard
+focus, long plan SHA, provider rejection and finalization safety.
+Official Developer Check, Full Admission, staging/main admission and
+release remain HOLD.
+
+## Verified handoff next-action copy — Dev Container review (2026-10-23)
+
+The Step 4 Next Required Action summary now reads `Handoff verified. Complete checks before authorized Release.` This is presentation-only; the committed provider handoff and fresh admission evidence remain separate from the guarded Release POST. No provider verification, permissions, data model, or other action path changes. Browser Visual QA and local runtime tests remain PENDING; official CI/CD admission remains HOLD.
+
+## Native Platform Admin Handback form-action redesign — 2026-10-23
+
+Screenshot-led visual follow-up to #1132 reuses the approved KAORI
+`components/form_action_bar.html` (embedded mode) inside the existing
+released Native Tenant Handback & Re-adopt disclosure. This is not a new
+action pattern or a new adoption path: the previous nested border/card
+and full-width secondary-looking submit button are removed in favor of
+an unboxed verification and mandatory consent area, plus the shared
+footer with a short helper and one clearly labeled primary action.
+
+The compact operator text explains that KAORI checks Platform Admin
+identity and scoped Kubernetes get/patch access through its registered
+X.509 connection without requesting successor credentials. The operator
+still explicitly authorizes removal of KAORI governance metadata from
+the exact Released resources; names, specs, CPU, memory and quotas must
+remain unchanged. The original required checkbox, `release_plan_sha256`,
+server route, HTMX/CSRF, current-user permissions, provider source of
+truth and recovery state remain authoritative. Handback does not re-adopt
+resources by itself; clean Discovery and new-generation adoption still
+require their distinct governed flow.
+
+Dev Container Visual QA must cover unchecked/checked confirmation,
+desktop/mobile, light/dark, keyboard focus, blocked provider identity,
+partial/verified handback receipts and residual cleanup transitions.
+Runtime pytest/Jinja rendering and official CI/CD admission remain HOLD.
+
+## Native residual recovery compact form and Handback Guide — 2026-10-23
+
+Under existing #1132, the Prepare Recovery Plan area is left-aligned and
+width-limited with shared responsive utility classes rather than a long
+full-width change-reference field. The existing change reference remains
+required (3–120 characters) and the independent operator confirmation
+remains required. The confirmation continues to attest to a fresh
+provider assessment and zero Kubernetes mutation. The POST/HTMX target,
+CSRF, current user and subsequent independent plan approval are unchanged.
+
+The recovery stages now use shorter explanations for independent approval
+and conditional label-only PATCH + verified provider read-back. Discovery
+is still the first option: eligible Namespace generations use ordinary
+Review Adoption; historical Resource Profile residue requires a separate
+assessment, change reference and independent governance.
+
+The Native Platform Admin Handback & Re-adopt summary now has the existing
+`components/info_tip.html` title Guide, explaining provider identity,
+unchanged resource values, guarded metadata handback and the independent
+future Discovery/Adoption process. The shared Info Tip controller already
+prevents clicking an Info Tip inside a `<summary>` from toggling its
+disclosure. This help is non-authorizing and never replaces mandatory
+checkboxes, audits or provider evidence.
+
+Visual QA requires light/dark, keyboard and touch Guide behavior, small
+viewports, long change references, and verified/blocked recovery states.
+Official CI/CD admission remains HOLD.
+
+## Tenant Namespace Allocation Lineage contextual Guide — 2026-10-23
+
+Existing #1136 Namespace/Profile mapping now supplies a canonical
+`components/info_tip.html` Guide through the shared
+`operational_section_card.render(header_badge=...)` slot. This is
+title-adjacent contextual help, not a new UI component or navigation
+mode. It distinguishes committed pinned quota/limit snapshots from
+live Kubernetes utilization and requires verified provider UID plus
+committed Release/Re-adopt predecessor lineage before displaying history.
+Allocation Change, Release, Handback and Re-adopt remain separate
+provider-governed workflow actions. The existing five-row tenant-scoped
+read model and rendered resource cards are unchanged, and no provider
+request or mutation is introduced.
+
+Human Dev Container Visual QA should check desktop/mobile wrapping,
+light/dark contrast and hover/focus/touch tooltip behavior. Runtime
+Jinja/pytest and official CI/CD admission remain HOLD.
+
+## Native residual recovery balanced assessment / plan workspace — 2026-10-23
+
+Screenshot-led #1132 review identified excessive blank space to the right
+of a capped Prepare Recovery Plan form within a full-width outer card.
+The pending-plan state now composes **Assessment Actions** and **Prepare
+Recovery Plan** in one shared, responsive two-column surface rather than
+two stacked bordered subcards. On desktop the assessment column has
+45% of track weight and the form 55%; on narrow viewports they stack.
+The two existing actions (navigate to fresh Discovery and explicit
+read-only provider residue assessment) stack as separate rows on the
+left. The input, required no-mutation confirmation and primary
+`Prepare Recovery Plan` POST fill the right track. This eliminates
+the arbitrary form max-width, aligns both workflows and reduces visual
+nesting without inventing a new UI component or combined authorization.
+
+The four governance-stage descriptions are shorter and explicitly
+remain stage descriptions, not proof of completed recovery. The
+Discovery-first callout remains visible above the shared workspace.
+The assessment and preparation forms still use separate existing
+routes, CSRF, HTMX loading/disabled state, current-user permissions,
+change-reference length checks and required explicit preparation
+confirmation. The later independent SHA approval, conditional label-only
+PATCH, verified read-back and fresh Discovery/Re-adopt remain separate
+stages. Committed state remains the ordinary UI authority.
+
+Source contracts guard balanced section structure, responsive layout,
+no extra forms, original safety attributes and separate action routes.
+Browser Visual QA must verify long change references, desktop/mobile,
+light/dark, keyboard and negative assessment/approval states. Runtime
+tests and official Developer Check/Full Admission remain HOLD.

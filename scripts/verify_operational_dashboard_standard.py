@@ -46,11 +46,13 @@ ARTIFACT_PROVIDER_HEALTH = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_provider_health.html'
 )
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
+ARTIFACT_ROUTE_SCOPE = ROOT / 'app' / 'artifact_registry' / 'route_scope.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 ARTIFACT_PRESENTATION_COMMON = ROOT / 'app' / 'artifact_registry' / 'presentation_common.py'
 ARTIFACT_PRESENTATION_OVERVIEW = ROOT / 'app' / 'artifact_registry' / 'presentation_overview.py'
 OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
 DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
+COMMON_OPERATIONAL_TABS = ROOT / 'app' / 'common' / 'operational_tabs.py'
 COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
@@ -549,16 +551,24 @@ def _verify_artifact_registry_dashboard(
     )
     if reporting.index('reporting_workspace.summary(') >= reporting.index('reporting_workspace.guidance('):
         raise AssertionError('Artifact Registry reporting must present summary before governed guidance')
+    route_scope = _read(ARTIFACT_ROUTE_SCOPE)
     _require(
-        routes,
+        route_scope,
         (
-            "@permission_required('artifact_registry.view')",
             'def _overview_provider_id() -> int | None:',
             "request.args.get('provider_id')",
             'if raw is None or not raw.strip():',
             'except (TypeError, ValueError):',
             'if provider_id < 1:',
             'abort(404)',
+        ),
+        'Artifact Registry fail-closed provider scope helper',
+    )
+    _require(
+        routes,
+        (
+            "@permission_required('artifact_registry.view')",
+            'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id',
             'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",
@@ -736,6 +746,7 @@ def verify() -> None:
     )
     object_routes = _read(OBJECT_ROUTES)
     dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
+    common_operational_tabs = _read(COMMON_OPERATIONAL_TABS)
     common_pagination = _read(COMMON_PAGINATION)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
@@ -1149,6 +1160,8 @@ def verify() -> None:
         ),
         'shared reporting dashboard workspace',
     )
+    # Keep the approved six-step workflow and evidence boundary, not retired copy.
+    expected_alert_steps = ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record')
     for owner, source in (
         ('Kubernetes alert response guidance', alert_guidance),
         ('Object Storage alert response guidance', object_alert_guidance),
@@ -1156,12 +1169,21 @@ def verify() -> None:
         _require(
             source,
             (
-                'before acting on the signal',
-                'establish an accountable owner',
-                'remains auditable',
+                'components/operational_alert_response.html',
+                'alert_response_steps',
+                'alert_response.render(',
+                'committed snapshot',
+                'alert-source evidence',
+                'owner',
+                'safety guardrails',
+                'follow-up evidence',
+                *(f"'{step}'" for step in expected_alert_steps),
             ),
-            f'{owner} detailed step copy',
+            f'{owner} controlled alert workflow',
         )
+        step_positions = [source.index(f"'{step}'") for step in expected_alert_steps]
+        if step_positions != sorted(step_positions):
+            raise AssertionError(f'{owner}: controlled response steps must retain canonical order')
     _require(
         alert_summary_workspace,
         (
@@ -1188,17 +1210,33 @@ def verify() -> None:
     ):
         if retired in alert_summary_workspace:
             raise AssertionError(f'shared Alerts Summary retains domain adapter API: {retired}')
-    for owner, source, row_token in (
-        ('Kubernetes Alerts Summary', alert_summary, 'rows=dashboard.alerts_snapshot.items'),
-        ('Object Storage Alerts Summary', object_alert_summary, 'rows=dashboard.alerts.rows'),
-        ('Artifact Registry Alerts Summary', artifact_alert_summary, 'rows=overview.alerts.rows'),
+    # The shared renderer, not the domain-specific subtitle, enforces the five-case cap.
+    for owner, source, row_token, description in (
+        (
+            'Kubernetes Alerts Summary',
+            alert_summary,
+            'rows=dashboard.alerts_snapshot.items',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Object Storage Alerts Summary',
+            object_alert_summary,
+            'rows=dashboard.alerts.rows',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Artifact Registry Alerts Summary',
+            artifact_alert_summary,
+            'rows=overview.alerts.rows',
+            'Active Registry AlertCases and recent cases.',
+        ),
     ):
         _require(
             source,
             (
                 'components/operational_alert_summary.html',
                 'alert_summary.render(',
-                'up to five recent',
+                f"description='{description}'",
                 "empty_label='No Active Cases'",
                 "empty_title='No Active Alert Cases'",
                 'No active recommendation-origin AlertCases',
@@ -1248,9 +1286,18 @@ def verify() -> None:
     )
     _require(
         reporting_builder,
-        ('query_all(Report, selected_cluster_id, limit=4)',),
-        'Kubernetes Recent Report Activity builder',
+        (
+            'def _kubernetes_report_query(',
+            "Report.report_domain == 'kubernetes'",
+            'Report.cluster_id == selected_cluster_id',
+            '_kubernetes_report_query(selected_cluster_id)',
+            '.order_by(Report.created_at.desc(), Report.id.desc())',
+            '.limit(4)',
+        ),
+        'Kubernetes domain-scoped, stable, four-record Recent Report Activity builder',
     )
+    if 'query_all(Report' in reporting_builder:
+        raise AssertionError('Kubernetes Report preview must retain the domain-scoped reporting query')
     _require(
         object_reporting_summary,
         ('reporting_workspace.summary(',),
@@ -1556,21 +1603,36 @@ def verify() -> None:
             )
 
     _verify_route_authorization_order(routes)
+    # Tab selection is one neutral contract; keep the Dashboard facade's
+    # historical public names while forbidding a second local tab definition.
     _require(
-        dashboard_application_contract,
+        common_operational_tabs,
         (
             'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (',
             "'overview'",
             "'capacity'",
             "'signals'",
             "'reporting'",
-            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
-            'normalize_operational_tab',
-            'normalize_dashboard_page_size',
-            'is_htmx_request',
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB = OPERATIONAL_DASHBOARD_TABS[0]',
+            'def normalize_operational_tab(',
         ),
         'shared Operational Dashboard application contract',
     )
+    _require(
+        dashboard_application_contract,
+        (
+            'from app.common.operational_tabs import (',
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB as DEFAULT_OPERATIONAL_DASHBOARD_TAB',
+            'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS',
+            'normalize_operational_tab as normalize_operational_tab',
+            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
+            'normalize_dashboard_page_size',
+            'is_htmx_request',
+        ),
+        'Dashboard application contract re-exports and pagination',
+    )
+    if 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in dashboard_application_contract:
+        raise AssertionError('Dashboard application contract must not duplicate shared tab definitions')
     _require(
         common_pagination,
         (
@@ -1735,6 +1797,7 @@ def verify() -> None:
             'Artifact Registry Overview',
             'Source Control/GitHub',
             'app/dashboards/common/operational.py',
+            'app/common/operational_tabs.py',
             'app/common/pagination.py',
             'components/operational_dashboard_workspace.html',
             'components/operational_signal_overview.html',

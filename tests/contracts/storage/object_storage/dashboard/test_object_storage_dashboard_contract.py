@@ -205,7 +205,7 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
     assert "assert 'dependency_blocked_step = 4' in dependency_blocker" in verifier
     assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
     assert (
-        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
+        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Recommendations')"
         in verifier
     )
 
@@ -268,10 +268,12 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
         assert token in consumers
     assert 'consumer_panel' in kubernetes_consumers
     assert 'build_forecast_view(payload, state)' in service
-    assert (
-        'Current committed bucket forecasts show no capacity pressure within the 90-day attention window. Continue monitoring growth and utilization.'
-        in presentation
+    assert 'No bucket forecast shows 90-day capacity pressure; monitor growth.' in presentation
+    assert 'Keep analytics and forecasts current; review concentration before growth.' in capacity
+    expected_consumer_copy = (
+        "f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'"
     )
+    assert expected_consumer_copy in presentation
     assert "'chart_items': [chart_item] if chart_item else []" in presentation
     assert "'usage': usage_items" in presentation
     assert "'requests': request_items" in presentation
@@ -342,10 +344,32 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'components/operational_alert_response.html' in response
     assert 'Alert Interpretation & Response' in shared_response
     assert 'Controlled Response Flow' in shared_response
+    # Shorten domain-owned guidance only; preserve the six canonical flow steps.
+    for guidance in (
+        'Confirm scope, committed snapshot freshness, and alert-source evidence.',
+        'Rank severity, blast radius, affected bucket or request path, and owner.',
+        'Correlate capacity, requests, growth, provider state, and alerts.',
+        'Confirm alert recovery, request health, storage availability, and capacity.',
+        'Record decisions, actions, verification, and follow-up evidence.',
+    ):
+        assert guidance in response
+        assert len(guidance) <= 76
+    assert "'Potential impact. Start triage and assign ownership.'" in response
     assert 'components/numbered_governance_steps.html' in shared_response
     assert 'components/operational_flow_steps.html' not in response
     assert 'components/operational_recommendation_cards.html' in actions
     assert 'Recommended Actions' in shared_recommendations
+    # Both domains already use the same renderer; lock its existing 2-line
+    # preview and ellipsized source without trimming committed action content.
+    assert "source_icon='database'" in actions
+    assert "source_icon='database'" in kubernetes_actions
+    for token in (
+        'line-clamp-2 break-words text-sm font-semibold leading-5',
+        'mt-2 line-clamp-2 text-xs leading-5 text-content-muted',
+        'title="{{ action.title }}"',
+        '<span class="truncate">{{ action.source }}</span>',
+    ):
+        assert token in shared_recommendations
     assert 'kubernetes/dashboard/partials/_recommended_actions.html' in kubernetes_signals
     assert 'dashboard-recommended-actions' in kubernetes_actions
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
@@ -599,6 +623,7 @@ def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_ton
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     registry = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
     application = read('app/dashboards/common/operational.py')
+    shared_tabs = read('app/common/operational_tabs.py')
     storage_routes = read('app/storage/object_storage/dashboard/routes.py')
     registry_routes = read('app/artifact_registry/routes.py')
     kubernetes_routes = read('app/kubernetes/dashboard/routes.py')
@@ -632,8 +657,9 @@ def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_ton
     for route in (storage_routes, registry_routes, kubernetes_routes):
         assert 'normalize_operational_tab' in route
         assert 'normalize_dashboard_page_size' in route
+    assert 'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS' in application
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
-        assert tab in application
+        assert tab in shared_tabs
 
 
 def test_object_storage_fleet_inventory_freshness_qualifies_partial_and_missing() -> None:

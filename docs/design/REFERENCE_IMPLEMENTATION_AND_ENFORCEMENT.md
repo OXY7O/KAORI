@@ -59,6 +59,7 @@ A production reference proves that a component or pattern is used in the real KA
 | Navigation / application shell | shared sidebar/navbar/navigation owners | every authenticated KAORI workspace | `verify_application_shell_standard.py`; shell contracts; responsive browser tests |
 | Operational toast / feedback | `operational_toast.html`; `operational_progress_toast.html`; `operation_feedback_oob.html` | Metrics Source, Alertmanager, and provider operational flows | application-shell/feedback contracts + browser tests; #613 shared reduced-motion contract |
 | Workspace tabs | `workspace_tabs.html`; `framed_workspace_tabs.html`; `segmented_tabs.html`; `content_tabs.html` | Kubernetes Operations, Integrations, Analytics, Topology | `verify_ui_style.py`; reuse ownership contracts; styling-guide contract |
+| Title-adjacent Guide / inline Info Tip | `components/info_tip.html`; `components/INFO_TIP.md` | Tenant Membership Registry, Integration Workspace, GitHub connection detail headers | `test_info_tip_standard_contract.py`; `test_info_tip_guide_rollout_contract.py`; provider contracts | rendered Violet `info + Guide` label in desktop/mobile, light/dark, hover/focus/touch |
 | Context / guidance / summary cards | `context_guidance_card.html`; `information_guide_card.html`; `workspace_summary_card.html`; `page_context_card.html` | Register Alertmanager Instance; Alertmanager Instance Manage | reusable ownership contracts; `verify_ui_reuse.py`; `verify_ui_style.py` |
 
 ## Page Archetype Production References

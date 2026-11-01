@@ -14,9 +14,22 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user, login_required
+from flask_login import current_user, login_fresh, login_required
+from flask_wtf.csrf import validate_csrf
+from sqlalchemy.exc import SQLAlchemyError
+from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
+from app.access.authentication.mfa.qr import build_totp_qr_data_uri
+from app.access.authentication.mfa.service import (
+    MfaVerificationError,
+    begin_mfa_enrollment,
+    confirm_mfa_enrollment,
+    mfa_enrolled,
+    mfa_policy_mode,
+    regenerate_mfa_recovery_codes,
+    verify_mfa_challenge,
+)
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -28,8 +41,20 @@ from app.common.timezone import (
     timezone_choice_groups,
 )
 from app.models import User
+from app.platform_operations.notifications.feedback import (
+    OperationalDeliveryPolicy,
+    OperationalFeedbackSpec,
+    build_operational_feedback,
+    queue_operational_feedback,
+)
+from app.platform_operations.notifications.service import create_transient_feedback
+from app.security.credentials import CredentialEncryptionError
 from app.settings.account.actions import process_password_change
-from app.settings.account.queries import authentication_activity_summary, recent_authentication_events
+from app.settings.account.queries import (
+    account_mfa_factor,
+    authentication_activity_summary,
+    recent_authentication_events,
+)
 from app.settings.general.actions import (
     save_regional_format_preference,
     save_timezone_preference,
@@ -171,11 +196,109 @@ def general():
 @bp.post('/general/browser-timezone')
 @login_required
 def sync_browser_timezone():
+    # The browser includes a session-bound Flask-WTF token for this JSON mutation.
+    # The preference forms' CSRF validation does not cover a standalone POST.
+    try:
+        validate_csrf(request.headers.get('X-CSRFToken'))
+    except ValidationError:
+        return jsonify({'status': 'invalid_csrf'}), 400
+
     user = cast(User, current_user._get_current_object())
     payload = request.get_json(silent=True) or {}
     browser_timezone = str(payload.get('timezone') or '').strip()
     status, timezone = sync_browser_timezone_preference(user=user, browser_timezone=browser_timezone)
     return jsonify({'status': status, 'timezone': timezone}), 400 if status == 'invalid_timezone' else 200
+
+
+def _mfa_account_error_message(error: MfaVerificationError) -> str:
+    """Translate known MFA failures into safe actionable account guidance."""
+    return {
+        'Sign in again before changing MFA.': (
+            'Your sign-in session is no longer fresh. Sign out and sign back in before trying again.'
+        ),
+        'Your current password was not accepted.': (
+            'Current password was not accepted. Verify your password and try again.'
+        ),
+        'MFA is already enrolled.': 'MFA is already enrolled. Use the recovery section below.',
+        'Start MFA enrollment again.': 'Generate a new setup key before verifying a code.',
+        'MFA enrollment expired; start again.': 'Setup key expired. Generate a new setup key and retry.',
+        'Verification code was not accepted.': (
+            'Verification code was not accepted. Check your authenticator time and retry.'
+        ),
+    }.get(str(error), 'MFA request was not accepted. Verify your session and retry.')
+
+
+def _process_account_mfa_action(
+    user: User, *, is_htmx: bool
+) -> tuple[str | None, str | None, list[str] | None, dict[str, Any] | None]:
+    """Process a fresh-session MFA mutation and preserve its feedback semantics."""
+    mfa_setup_secret: str | None = None
+    mfa_setup_qr_src: str | None = None
+    mfa_recovery_codes: list[str] | None = None
+    mfa_toast: dict[str, Any] | None = None
+    action = str(request.form.get('mfa_action') or '')
+    status = 'error'
+    title = 'MFA request not accepted'
+    message = 'Verify your sign-in session and retry.'
+    committed_audit = False
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+        if not login_fresh():
+            raise MfaVerificationError('Sign in again before changing MFA.')
+        if action in {'begin', 'regenerate'} and user.auth_source == 'database':
+            password = str(request.form.get('current_password') or '')
+            if not password or not user.check_password(password):
+                raise MfaVerificationError('Your current password was not accepted.')
+        if action == 'begin':
+            mfa_setup_secret = begin_mfa_enrollment(user)
+            # QR contains the same one-time setup secret. Never persist it
+            # or send it to a third-party QR endpoint.
+            mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
+            title = 'Authenticator setup started'
+            message = 'Scan the QR code or enter the setup key, then verify one code.'
+        elif action == 'confirm':
+            mfa_recovery_codes = confirm_mfa_enrollment(user, str(request.form.get('verification_code') or ''))
+            title = 'MFA enabled'
+            message = 'Save the recovery codes now. They will not be shown again.'
+        elif action == 'regenerate':
+            verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
+            mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
+            title = 'Recovery codes regenerated'
+            message = 'Save the new codes now. Previously unused codes are invalid.'
+        else:
+            raise MfaVerificationError('Unsupported MFA operation.')
+        status = 'success'
+        # The factor service already staged and committed the Activity
+        # Audit event. This toast must not generate another audit record.
+        committed_audit = True
+    except ValidationError:
+        title = 'MFA form expired'
+        message = 'Refresh this page and submit again.'
+    except MfaVerificationError as exc:
+        title = 'MFA request not accepted'
+        message = _mfa_account_error_message(exc)
+    except (CredentialEncryptionError, SQLAlchemyError):
+        title = 'MFA temporarily unavailable'
+        message = 'MFA configuration is temporarily unavailable.'
+        current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
+
+    if committed_audit:
+        mfa_toast = build_operational_feedback(
+            OperationalFeedbackSpec(
+                status=status,
+                title=title,
+                message=message,
+                activity_audit_saved=True,
+                notification_deck_visible=False,
+                delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+            )
+        )
+    else:
+        mfa_toast = create_transient_feedback(status=status, title=title, message=message)
+    if not is_htmx:
+        queue_operational_feedback(mfa_toast)
+
+    return mfa_setup_secret, mfa_setup_qr_src, mfa_recovery_codes, mfa_toast
 
 
 @bp.route('/account', methods=['GET', 'POST'])
@@ -184,7 +307,7 @@ def account():
     user = cast(User, current_user._get_current_object())
     is_htmx = bool(request.headers.get('HX-Request'))
     active_tab = (request.args.get('tab') or 'profile').strip().lower()
-    if active_tab not in {'profile', 'activity', 'credentials'}:
+    if active_tab not in {'profile', 'activity', 'credentials', 'mfa'}:
         active_tab = 'profile'
 
     password_form = ChangePasswordForm()
@@ -193,7 +316,7 @@ def account():
     password_feedback: dict[str, str] | None = None
     password_toast: dict[str, Any] | None = None
     notification_changed = False
-    if password_form.is_submitted():
+    if password_form.is_submitted() and active_tab != 'mfa':
         active_tab = 'credentials'
         result = process_password_change(
             user=user,
@@ -208,6 +331,23 @@ def account():
         if result.saved and not is_htmx:
             return redirect(url_for('settings.account', tab='credentials'))
 
+    mfa_setup_secret: str | None = None
+    mfa_setup_qr_src: str | None = None
+    mfa_recovery_codes: list[str] | None = None
+    mfa_toast: dict[str, Any] | None = None
+    if active_tab == 'mfa' and request.method == 'POST':
+        mfa_setup_secret, mfa_setup_qr_src, mfa_recovery_codes, mfa_toast = _process_account_mfa_action(
+            user, is_htmx=is_htmx
+        )
+
+    mfa_factor = account_mfa_factor(user.id)
+    mfa_state = {
+        'enrolled': mfa_enrolled(user.id),
+        'enrollment_pending': bool(mfa_factor is not None and not mfa_factor.enabled),
+        'policy_mode': mfa_policy_mode(),
+        'recovery_count': len(mfa_factor.recovery_hashes or []) if mfa_factor is not None and mfa_factor.enabled else 0,
+    }
+
     identity_context = build_user_identity_context(user)
     recent_login_events = recent_authentication_events(user.id)
     activity_summary = authentication_activity_summary(recent_login_events)
@@ -218,6 +358,11 @@ def account():
         'can_change_password': can_change_password,
         'password_feedback': password_feedback,
         'password_toast': password_toast,
+        'mfa_state': mfa_state,
+        'mfa_setup_secret': mfa_setup_secret,
+        'mfa_setup_qr_src': mfa_setup_qr_src,
+        'mfa_toast': mfa_toast if is_htmx else None,
+        'mfa_recovery_codes': mfa_recovery_codes,
         'identity_context': identity_context,
         'recent_login_events': recent_login_events,
         'activity_summary': activity_summary,
@@ -225,6 +370,10 @@ def account():
     }
     template_name = 'settings/account/partials/_page_content.html' if is_htmx else 'settings/account/index.html'
     response = make_response(render_template(template_name, **context))
+    if mfa_setup_secret is not None or mfa_recovery_codes is not None:
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Referrer-Policy'] = 'no-referrer'
     if notification_changed:
         response.headers['HX-Trigger'] = json.dumps(
             {

@@ -13,6 +13,10 @@ from app.integrations.observability.alert_source.providers.alertmanager.binding_
 from app.integrations.observability.alert_source.providers.alertmanager.client_factory import build_client
 from app.integrations.observability.alert_source.providers.alertmanager.exceptions import AlertmanagerError
 from app.integrations.observability.alert_source.providers.alertmanager.probes import discover_payload_capabilities
+from app.integrations.observability.alert_source.providers.alertmanager.vault_alert_evidence import (
+    qualify_vault_alert_sample,
+)
+from app.integrations.observability.alert_source.providers.alertmanager.vault_scope import require_vault_alert_scope
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
 
@@ -43,16 +47,39 @@ def validate_binding(
             commit=commit,
         )
 
+    if binding.asset_type == 'vault_instance':
+        try:
+            require_vault_alert_scope(asset_key=binding.asset_key, selector_json=binding.selector_json)
+        except ValueError:
+            return _persist_blocked(
+                binding,
+                profile_key=profile.profile_key,
+                message=(
+                    'Vault Alert Source binding is missing an eligible canonical instance or exact identity selector.'
+                ),
+                commit=commit,
+            )
+
     filters = list(selector_filters(binding.selector_json))
     binding.validation_profile = profile.profile_key
     matched_alerts = 0
     available_capabilities: set[str] = {'alerts_v2'}
     alerts: list[dict[str, Any]] = []
     silences: list[dict[str, Any]] = []
+    vault_sample: dict[str, Any] | None = None
 
     try:
         client = build_client(instance)
         payload = client.get_alerts(filters=filters)
+        if binding.asset_type == 'vault_instance':
+            vault_sample = qualify_vault_alert_sample(asset_key=binding.asset_key, payload=payload)
+            if vault_sample['status'] == 'blocked':
+                return _persist_blocked(
+                    binding,
+                    profile_key=profile.profile_key,
+                    message='Vault Alert Source sample has invalid identity, shape or safety bounds.',
+                    commit=commit,
+                )
         alerts = payload if isinstance(payload, list) else []
         silence_payload = client.get_silences(filters=filters)
         silences = silence_payload if isinstance(silence_payload, list) else []
@@ -63,7 +90,14 @@ def validate_binding(
         missing_required = tuple(
             capability for capability in profile.required_capabilities if capability not in available_capabilities
         )
-        if binding.asset_type != 'global' and not alerts:
+        if (
+            binding.asset_type == 'vault_instance'
+            and vault_sample is not None
+            and vault_sample['status'] == 'incomplete'
+        ):
+            binding.validation_status = 'degraded'
+            binding.validation_message = 'Vault Alert Source sample cannot qualify alert status/severity evidence.'
+        elif binding.asset_type != 'global' and not alerts:
             binding.validation_status = 'ready'
             binding.validation_message = (
                 f'{profile.label} accepted the governed selector. No active alert currently matches it, '
@@ -85,7 +119,11 @@ def validate_binding(
             )
     except AlertmanagerError as exc:
         binding.validation_status = 'blocked'
-        binding.validation_message = f'Consumer binding validation failed: {exc}'
+        binding.validation_message = (
+            'Vault Alert Source query failed; examine the provider without exposing alert details.'
+            if binding.asset_type == 'vault_instance'
+            else f'Consumer binding validation failed: {exc}'
+        )
         missing_required = tuple(profile.required_capabilities)
         alerts = []
         silences = []
@@ -104,8 +142,19 @@ def validate_binding(
         'optional_capabilities': list(profile.optional_capabilities),
         'available_capabilities': sorted(available_capabilities),
         'missing_required_capabilities': list(missing_required),
-        'sample_alert_names': _sample_alert_names(alerts),
-        'identity_observed': bool(alerts) if binding.asset_type != 'global' else True,
+        'sample_alert_names': [] if binding.asset_type == 'vault_instance' else _sample_alert_names(alerts),
+        'identity_observed': (
+            vault_sample['identity_observed']
+            if binding.asset_type == 'vault_instance' and vault_sample is not None
+            else bool(alerts)
+            if binding.asset_type != 'global'
+            else True
+        ),
+        **(
+            {'vault_alert_sample': vault_sample}
+            if binding.asset_type == 'vault_instance' and vault_sample is not None
+            else {}
+        ),
     }
     binding.last_validated_at = datetime.now(UTC)
     if commit:

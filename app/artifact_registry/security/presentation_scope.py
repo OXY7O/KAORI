@@ -56,3 +56,20 @@ def _security_snapshot_context(
             else 'warning'
         ),
     }
+
+
+def _evidence_state(value: str | None, *, evidence: str) -> dict[str, str]:
+    key = str(value or '').strip().lower()
+    if evidence == 'signature':
+        if key == 'signed':
+            return {'label': 'Observed', 'tone': 'normal'}
+        if key == 'unsigned':
+            return {'label': 'Not Observed', 'tone': 'warning'}
+        return {'label': 'Not Collected' if not key else 'Not Observed', 'tone': 'unknown'}
+    if evidence == 'sbom':
+        if key == 'available':
+            return {'label': 'Available', 'tone': 'normal'}
+        if key == 'observed':
+            return {'label': 'Observed', 'tone': 'info'}
+        return {'label': 'Not Collected' if not key else 'Not Available', 'tone': 'unknown'}
+    return {'label': key.replace('_', ' ').title() if key else 'Not Collected', 'tone': 'unknown'}

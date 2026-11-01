@@ -17,7 +17,13 @@ def test_operational_workflow_catalog_uses_shared_surface_shell_authority() -> N
     assert SHARED_SHELL in source
     assert COPIED_SHELL not in source
 
-    assert "{% macro render(title, description, eyebrow='Operational Workflow Catalog', aria_label=None) -%}" in source
+    assert (
+        "{% macro render(title, description, eyebrow='Operational Workflow Catalog', aria_label=None, "
+        "info_id=None, info_title=None, info_text='', info_items=None) -%}"
+    ) in source
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert '{% if info_id and info_title %}' in source
+    assert "info_tip.render(info_id, info_title, info_text, info_items, placement='right', variant='guide')" in source
     assert 'aria-label="{{ aria_label or title }}"' in source
     assert '{{ eyebrow }}' in source
     assert '{{ title }}' in source

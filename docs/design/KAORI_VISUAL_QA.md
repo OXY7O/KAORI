@@ -59,6 +59,7 @@ The first executable deterministic catalog is intentionally bounded to stable re
 
 - Welcome;
 - Settings / General;
+- Settings / Account (stable test-owned local identity and empty activity sample);
 - Notification Center.
 
 Expansion must add stable fixture authority before promoting another route from runtime-dependent to deterministic.
@@ -87,6 +88,45 @@ Machine assertions must express measurable layout facts. They must not encode su
 The source-controlled `tests/ui/baselines/authenticated-visual.json` manifest stores normalized visual signatures and expected dimensions.
 
 The signature is produced from a reduced, quantized visual thumbnail. This intentionally removes low-value raster/PNG encoding noise while preserving visible composition changes.
+
+For proven one-channel 8-bit rasterization rounding at an existing 24-unit
+thumbnail quantization boundary, the shared Visual QA assertion may reconstruct
+**only one** alternate channel bucket and accept it **only** when the
+reconstructed thumbnail hash matches the unchanged human-approved signature
+exactly. Image dimensions must match first; two changed channels, changes away
+from an exact one-level threshold, and layout/content drift remain failures.
+The exception emits an explicit test warning. This is not permission to update
+baselines, loosen viewport geometry or discard screenshots. Real Welcome mobile
+light/dark evidence and the repeatability investigation are tracked under #2196.
+
+### Artifact-proven repeatable mobile raster variants (#2196)
+
+The canonical 12 Welcome baseline fingerprints and dimensions remain **unchanged**.
+Two independently reproduced CI screenshots contain the exact same application
+content/geometry as the human-reviewed reference images, with only subpixel
+antialiasing variations. Original and later screenshot PNGs were directly
+compared at their native dimensions:
+
+- `welcome-light-mobile`, 390x844: reviewed evidence
+  [#41063819874](https://github.com/OXY7O/KAORI/actions/runs/41063819874),
+  variant [#41307712956](https://github.com/OXY7O/KAORI/actions/runs/41307712956):
+  108/329,160 pixels differ, per-RGB-channel delta at most 2.
+- `welcome-dark-small-mobile`, 360x800: reviewed evidence
+  [#41137574450](https://github.com/OXY7O/KAORI/actions/runs/41137574450),
+  variant [#41301151684](https://github.com/OXY7O/KAORI/actions/runs/41301151684):
+  48/288,000 pixels differ, per-RGB-channel delta at most 2.
+
+For those two exact surface/viewport/theme keys only, after the canonical
+normalized digest and single-channel quantization guards have failed, the
+shared assertion may accept the **byte-exact SHA256 of the previously inspected
+variant PNG**, but only while the manifest's original human-reviewed normalized
+digest is also an exact match and the canonical viewport dimensions pass.
+Every different PNG byte sequence, changed or missing approved manifest SHA,
+other viewport/theme, layout/content change, or changed geometry still fails.
+This is a finite evidence-bound repeatability exception, not a new generic
+pixel threshold, perceptual-diff policy, alternate visual baseline manifest,
+or permission for rebaselining. Each use emits a visible warning. These two
+fixed artifacts require independent evidence review before promotion.
 
 Ordinary CI must never rewrite this manifest.
 
@@ -275,3 +315,22 @@ A human UAT rejection becomes a new executable contract when the acceptance inte
 9. Obtain staging integration evidence and human UAT before promotion.
 
 Never regenerate baselines merely to make a failing test green.
+
+### Settings Account UAT expansion (#2880)
+
+`settings.account` is a deterministic *test-owned* browser surface. The
+existing Playwright suite checks Account Profile, Recent Authentication
+Activity empty state and Credential Management across the six canonical
+viewports and light/dark, with shared responsive geometry, HTMX tab
+navigation, screenshots/traces and accessible nonvisual pending status.
+It uses a mocked local account and empty authentication activity rather
+than a live provider or database audit. It **never submits passwords** or
+changes session state. Evidence is captured under the existing
+`tmp/ci-artifacts/test-output/ui-browser` directory.
+
+Account does **not** receive new unchecked screenshot SHA baselines.
+Current baseline manifest only locks the twelve reviewed Welcome theme/
+viewport screenshots. Promote an Account baseline only after explicit
+review on a pinned browser/runtime/asset version using the governed
+baseline-update procedure. Source admission alone is not Visual QA PASS;
+all browser assertions and human inspection remain independently required.

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from re import fullmatch
 from typing import Literal
 
-from flask import current_app, request
+from flask import current_app, request, session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.identity_provider.catalog import provider_label
@@ -51,6 +52,14 @@ def _reason_label(reason: str) -> str:
     return labels.get(normalized, normalized.replace('_', ' ').title() or 'No reason recorded')
 
 
+def _audit_session_reference() -> str | None:
+    """Allow only a KAORI-generated non-credential correlation reference."""
+    value = session.get('auth_session_ref')
+    if isinstance(value, str) and fullmatch(r'[0-9a-f]{32}', value):
+        return value
+    return None
+
+
 def record_authentication_activity(
     *,
     action: AuthenticationAction,
@@ -85,6 +94,10 @@ def record_authentication_activity(
         if authenticated_actor is not None
         else unauthenticated_actor_snapshot()
     )
+
+    # Failed attempts are not an authenticated actor and must never inherit
+    # a session correlation reference from a previous/other account.
+    session_reference = _audit_session_reference() if authenticated_actor is not None else None
 
     activity = Notification()
     # Keep failed attempts linked to a resolved target account so Account &
@@ -135,6 +148,10 @@ def record_authentication_activity(
         'request_path': _bounded_text(request.path, limit=500),
         'request_endpoint': _bounded_text(request.endpoint, limit=160),
         'target_user_id': user.id if user is not None else None,
+        'session_reference': session_reference,
+        # A successful sign-in issues a new generation, invalidating previous
+        # issued logins. This is not a claim about the number of browser devices.
+        'session_policy': 'single_active_login_generation' if success and not is_logout else None,
     }
     # Defense in depth for this direct audit-only Notification producer; the
     # standard operational writer is not on the authentication commit path.

@@ -111,3 +111,13 @@ Provider runtime and binding behavior is implemented in `runtime.py`,
 every operation directly to those modules. This package must not import
 `app.integrations.observability.alert_source.providers.alertmanager.application`; the web/domain package calls it only through the Integration
 Registry.
+
+## Vault source sample qualification (#2786, HV-12)
+
+Vault `vault-alerts-v1` binding validation additionally classifies a bounded,
+exact-identity subset of Alertmanager response metadata to an allowlisted
+severity/state aggregate. Counts are **last validation samples**, never live
+AlertCase evidence. Missing/incomplete/out-of-scope evidence fails closed
+without a secret-bearing payload or implicit notification routing.
+See `app/secrets_pki/TELEMETRY_BINDING.md` for accepted statuses, limitations
+and DevContainer acceptance requirements.

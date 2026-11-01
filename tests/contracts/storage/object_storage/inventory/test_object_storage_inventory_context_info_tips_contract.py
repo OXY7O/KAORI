@@ -38,7 +38,17 @@ def test_storage_title_help_preserves_missing_evidence_interpretation() -> None:
 def test_shared_info_tip_remains_keyboard_and_touch_accessible() -> None:
     shared = (ROOT / 'app/templates/components/info_tip.html').read_text(encoding='utf-8')
     js = (ROOT / 'app/static/js/info_tips.js').read_text(encoding='utf-8')
-    assert "aria-label=\"{{ 'Open guide: ' if guide_variant else 'More information about ' }}{{ title }}\"" in shared
+    # Exercise all approved labels, including action-only unavailable help.
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = env.get_template('components/info_tip.html').module.render
+    icon = str(render('object-storage-inline-help', 'Bucket Details'))
+    guide = str(render('object-storage-guide', 'Bucket Inventory', variant='guide'))
+    action = str(render('object-storage-disabled-help', 'Retry', button_text='Retry', variant='action'))
+    assert 'aria-label="More information about Bucket Details"' in icon
+    assert 'aria-label="Open guide: Bucket Inventory"' in guide
+    assert 'aria-label="Why Retry is unavailable"' in action
     assert "variant='icon'" in shared
     assert "variant == 'guide' and not button_text" in shared
     assert 'aria-controls="{{ id }}-tooltip"' in shared

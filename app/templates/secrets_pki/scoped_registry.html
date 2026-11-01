@@ -1,0 +1,134 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/operational_section_card.html" as section_card %}
+{% block title %}Scoped Secret Registry · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-scoped-registry" class="min-w-0 space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('lock-keyhole', 'Secrets & PKI', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Scoped Secret Registry</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Inspect scoped Vault metadata without exposing Secret material.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', 'Exact Approved Scope') }}
+                            {{ page_hero.meta_label('database-zap', 'Committed KAORI Evidence') }}
+                            {{ page_hero.meta_label('lock-keyhole', 'No Material Access') }}
+                        </div>
+                    {% endcall %}
+                </div>
+            </div>
+        </section>
+        {% call section_card.render('Resource Scope',
+            'Use an exact Vault instance ID and opaque approved policy reference from Access governance.',
+            'shield-check') %}
+            <form action="{{ url_for('secrets_pki.scoped_registry') }}"
+                  method="get"
+                  class="{{ table_ui.filter_layout_classes() }}">
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Vault Instance ID</span>
+                    <input class="{{ table_ui.filter_input_classes() }}"
+                           type="text"
+                           name="instance_id"
+                           inputmode="numeric"
+                           pattern="[1-9][0-9]*"
+                           required
+                           value="{{ instance_id if instance_id is not none else '' }}"
+                           autocomplete="off">
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Approved Scope Reference</span>
+                    <input class="{{ table_ui.filter_input_classes() }}"
+                           type="text"
+                           name="scope_ref"
+                           minlength="36"
+                           maxlength="36"
+                           required
+                           autocomplete="off"
+                           value="{{ scope_ref or '' }}"
+                           placeholder="Approved policy UUID">
+                </label>
+                <div data-kaori-filter-action>
+                    <button class="{{ table_ui.action_classes(size='header') }}" type="submit">Review Committed Metadata</button>
+                </div>
+            </form>
+            <p class="mt-3 text-xs leading-5 text-content-muted">
+                An instance grant alone is insufficient; mount-level scope must be approved.
+                Missing, stale or denied evidence never means Vault is empty or healthy.
+            </p>
+        {% endcall %}
+        {% call section_card.render('Authorized Metadata',
+            'Only current, complete, source-qualified observations are shown. Page size: 5.',
+            'database-zap') %}
+            {% if registry is none %}
+                {% set blocked_state_label = "Scope Required" %}
+                {% set blocked_state_title = "Choose an Approved Vault Scope" %}
+                {% set blocked_state_description = "Enter an exact instance and scope policy reference to request an audited metadata read." %}
+                {% set blocked_state_tone = "unknown" %}
+                {% include 'components/states/_blocked_state.html' %}
+            {% elif registry.status != 'ready' %}
+                {% set blocked_state_label = "Source Not Qualified" %}
+                {% set blocked_state_title = "Committed Metadata Unavailable" %}
+                {% set blocked_state_description = "A current complete source generation is required. No zero count or deletion is inferred." %}
+                {% include 'components/states/_blocked_state.html' %}
+            {% else %}
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[790px]') }}">
+                        <caption class="sr-only">Authorized Vault Secret metadata, without Secret paths or values</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Canonical Identity</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Current Version</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed Versions</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">CAS Required</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed At</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for item in registry.rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <span class="font-mono text-xs text-content-primary">{{ item.secret_identity_id }}</span>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.logical_lifecycle }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.current_version }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.observed_version_count }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ 'Yes' if item.cas_required else 'No' }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ item.last_observed_at|user_datetime }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td class="px-5 py-8 text-center text-content-muted" colspan="6">
+                                        A complete qualified scan observed no Secret metadata records.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="mt-4 flex items-center justify-between gap-3"
+                     aria-label="Scoped Secret pagination">
+                    <span class="text-xs text-content-muted">
+                        {{ registry.total_items }} qualified records · Page {{ registry.page }}
+                        of {{ registry.total_pages }}
+                    </span>
+                    <div class="{{ pagination_ui.navigation_group_classes() }}">
+                        {% if registry.page > 1 %}
+                            <a href="{{ url_for('secrets_pki.scoped_registry', instance_id=instance_id, scope_ref=scope_ref, page=registry.page - 1) }}"
+                               class="{{ pagination_ui.navigation_classes(false) }}">Previous</a>
+                        {% endif %}
+                        {% if registry.total_pages and registry.page < registry.total_pages %}
+                            <a href="{{ url_for('secrets_pki.scoped_registry', instance_id=instance_id, scope_ref=scope_ref, page=registry.page + 1) }}"
+                               class="{{ pagination_ui.navigation_classes(false) }}">Next</a>
+                        {% endif %}
+                    </div>
+                </nav>
+            {% endif %}
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}
