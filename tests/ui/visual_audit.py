@@ -45,10 +45,9 @@ def _matches_proven_raster_variant(key: str, actual_png: bytes, expected_visual_
     """Match only an independently inspected, exact raw PNG on the original approved SHA."""
     source = _PROVEN_RASTER_VARIANTS.get(key)
     return (
-        source is not None
-        and source[0] == expected_visual_sha
-        and hashlib.sha256(actual_png).hexdigest() == source[1]
+        source is not None and source[0] == expected_visual_sha and hashlib.sha256(actual_png).hexdigest() == source[1]
     )
+
 
 DETERMINISTIC_VISUAL_SURFACES: dict[str, tuple[str, str]] = {
     'welcome.index': ('Welcome', '/welcome'),
