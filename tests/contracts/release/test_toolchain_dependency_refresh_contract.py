@@ -6,6 +6,8 @@ NODE_VERSION = '22.23.2'
 NPM_VERSION = '10.9.9'
 PYRIGHT_VERSION = '1.1.414'
 PARCEL_WATCHER_VERSION = '2.6.0'
+BROTLI_VERSION = '1.2.1'
+DNSPYTHON_VERSION = '2.9.0'
 URLLIB3_VERSION = '2.8.0'
 OAUTHLIB_VERSION = '4.0.0'
 
@@ -65,6 +67,15 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     assert f'oauthlib=={OAUTHLIB_VERSION}' in base_lock
     assert 'oauthlib==3.3.1' not in base_in
     assert 'oauthlib==3.3.1' not in base_lock
+
+    for name, version, vulnerable in (
+        ('Brotli', BROTLI_VERSION, '1.2.0'),
+        ('dnspython', DNSPYTHON_VERSION, '2.8.0'),
+    ):
+        assert f'{name}=={version}' in base_in
+        assert f'{name}=={version}' in base_lock
+        assert f'{name}=={vulnerable}' not in base_in
+        assert f'{name}=={vulnerable}' not in base_lock
 
 
 def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
