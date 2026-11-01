@@ -99,6 +99,35 @@ The exception emits an explicit test warning. This is not permission to update
 baselines, loosen viewport geometry or discard screenshots. Real Welcome mobile
 light/dark evidence and the repeatability investigation are tracked under #2196.
 
+### Artifact-proven repeatable mobile raster variants (#2196)
+
+The canonical 12 Welcome baseline fingerprints and dimensions remain **unchanged**.
+Two independently reproduced CI screenshots contain the exact same application
+content/geometry as the human-reviewed reference images, with only subpixel
+antialiasing variations. Original and later screenshot PNGs were directly
+compared at their native dimensions:
+
+- `welcome-light-mobile`, 390x844: reviewed evidence
+  [#41063819874](https://github.com/OXY7O/KAORI/actions/runs/41063819874),
+  variant [#41307712956](https://github.com/OXY7O/KAORI/actions/runs/41307712956):
+  108/329,160 pixels differ, per-RGB-channel delta at most 2.
+- `welcome-dark-small-mobile`, 360x800: reviewed evidence
+  [#41137574450](https://github.com/OXY7O/KAORI/actions/runs/41137574450),
+  variant [#41301151684](https://github.com/OXY7O/KAORI/actions/runs/41301151684):
+  48/288,000 pixels differ, per-RGB-channel delta at most 2.
+
+For those two exact surface/viewport/theme keys only, after the canonical
+normalized digest and single-channel quantization guards have failed, the
+shared assertion may accept the **byte-exact SHA256 of the previously inspected
+variant PNG**, but only while the manifest's original human-reviewed normalized
+digest is also an exact match and the canonical viewport dimensions pass.
+Every different PNG byte sequence, changed or missing approved manifest SHA,
+other viewport/theme, layout/content change, or changed geometry still fails.
+This is a finite evidence-bound repeatability exception, not a new generic
+pixel threshold, perceptual-diff policy, alternate visual baseline manifest,
+or permission for rebaselining. Each use emits a visible warning. These two
+fixed artifacts require independent evidence review before promotion.
+
 Ordinary CI must never rewrite this manifest.
 
 The only update control is:
