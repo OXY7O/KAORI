@@ -220,9 +220,7 @@ def test_proven_raster_artifact_requires_approved_sha_and_exact_bytes(
         )
 
 
-def test_proven_raster_artifact_cannot_bypass_geometry(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_proven_raster_artifact_cannot_bypass_geometry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import tests.ui.visual_audit as visual
 
     page = _test_page()
