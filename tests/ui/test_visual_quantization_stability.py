@@ -58,7 +58,6 @@ def test_unrelated_color_change_cannot_use_white_boundary_exception() -> None:
     )
 
 
-
 def test_single_non_white_quantization_edge_recreates_exact_reviewed_sha() -> None:
     # One raw channel differs by one 8-bit level precisely at the 35/36
     # decision boundary; other color channels are unchanged.
