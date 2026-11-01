@@ -50,7 +50,9 @@ def _totp(secret: str) -> TOTP:
         key = base64.b32decode(secret, casefold=False)
     except (ValueError, binascii.Error) as exc:
         raise MfaVerificationError('MFA factor is unavailable.') from exc
-    return TOTP(key, 6, hashes.SHA1(), 30)
+    # RFC 6238 TOTP uses keyed HMAC-SHA1; preserve compatibility with enrolled authenticators.
+    # This is not SHA-1 for passwords or unkeyed digests.
+    return TOTP(key, 6, hashes.SHA1(), 30)  # nosec B303
 
 
 def _accepted_step(secret: str, code: str, *, last_accepted_step: int | None, now: datetime) -> int | None:
