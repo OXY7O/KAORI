@@ -205,7 +205,7 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
     assert "assert 'dependency_blocked_step = 4' in dependency_blocker" in verifier
     assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
     assert (
-        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
+        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Recommendations')"
         in verifier
     )
 
@@ -623,6 +623,7 @@ def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_ton
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     registry = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
     application = read('app/dashboards/common/operational.py')
+    shared_tabs = read('app/common/operational_tabs.py')
     storage_routes = read('app/storage/object_storage/dashboard/routes.py')
     registry_routes = read('app/artifact_registry/routes.py')
     kubernetes_routes = read('app/kubernetes/dashboard/routes.py')
@@ -656,8 +657,9 @@ def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_ton
     for route in (storage_routes, registry_routes, kubernetes_routes):
         assert 'normalize_operational_tab' in route
         assert 'normalize_dashboard_page_size' in route
+    assert 'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS' in application
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
-        assert tab in application
+        assert tab in shared_tabs
 
 
 def test_object_storage_fleet_inventory_freshness_qualifies_partial_and_missing() -> None:
