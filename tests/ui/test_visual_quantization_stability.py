@@ -13,7 +13,11 @@ import pytest
 from PIL import Image
 from playwright.sync_api import Page
 
-from tests.ui.visual_audit import _matches_single_white_quantization_edge, assert_visual_baseline
+from tests.ui.visual_audit import (
+    _matches_single_quantization_edge,
+    _matches_single_white_quantization_edge,
+    assert_visual_baseline,
+)
 
 
 def _digest(*channels: int) -> str:
@@ -51,6 +55,46 @@ def test_unrelated_color_change_cannot_use_white_boundary_exception() -> None:
         bytes((200, 249, 252)),
         bytes((192, 240, 255)),
         _digest(216, 240, 240),
+    )
+
+
+
+def test_single_non_white_quantization_edge_recreates_exact_reviewed_sha() -> None:
+    # One raw channel differs by one 8-bit level precisely at the 35/36
+    # decision boundary; other color channels are unchanged.
+    assert _matches_single_quantization_edge(
+        bytes((34, 35, 36)),
+        bytes((24, 24, 48)),
+        _digest(24, 24, 24),
+    )
+    assert _matches_single_quantization_edge(
+        bytes((34, 35, 35)),
+        bytes((24, 24, 24)),
+        _digest(24, 24, 48),
+    )
+
+
+def test_quantization_guard_rejects_two_changed_channels() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((36, 36, 35)),
+        bytes((48, 48, 24)),
+        _digest(24, 24, 24),
+    )
+
+
+def test_quantization_guard_rejects_non_boundary_drift() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((33, 34, 34)),
+        bytes((24, 24, 24)),
+        _digest(48, 24, 24),
+    )
+
+
+def test_quantization_guard_rejects_invalid_normalized_thumbnail() -> None:
+    assert not _matches_single_quantization_edge(
+        bytes((34, 35, 36)),
+        bytes((24, 24, 24)),
+        _digest(24, 24, 48),
     )
 
 
