@@ -178,7 +178,13 @@ def test_templates_use_violet_shared_components_and_no_sensitive_fields():
     assert 'components/operational_metric_card.html' in html
     assert 'components/operational_section_card.html' in html
     assert "metric.value if metric.value is not none else 'Not Qualified'" in html
-    assert 'secrets_pki.lifecycle' in html
+    navigation = (ROOT / 'app/templates/secrets_pki/_lifecycle_navigation.html').read_text(
+        encoding='utf-8',
+    )
+    assert 'secrets_pki/_lifecycle_navigation.html' in html
+    assert 'lifecycle_navigation.render(workspace)' in html
+    for endpoint in ('lifecycle', 'leases', 'consumers', 'governance'):
+        assert f"url_for('secrets_pki.{endpoint}')" in navigation
     for forbidden in (
         'row.path',
         'row.secret_value',
