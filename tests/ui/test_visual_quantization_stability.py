@@ -187,3 +187,57 @@ def test_material_drift_still_fails_with_screenshot_evidence(tmp_path: Path, mon
             evidence_root=evidence,
         )
     assert (evidence / 'welcome-light-mobile-actual.png').is_file()
+
+
+def test_proven_raster_artifact_requires_approved_sha_and_exact_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    page = _test_page()
+    actual_png = page.screenshot.return_value
+    expected_sha = '0' * 64
+    exact_png_sha = hashlib.sha256(actual_png).hexdigest()
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {'welcome-light-mobile': (expected_sha, exact_png_sha)},
+    )
+
+    assert visual._matches_proven_raster_variant('welcome-light-mobile', actual_png, expected_sha)
+    assert not visual._matches_proven_raster_variant('welcome-light-mobile', actual_png + b'x', expected_sha)
+    assert not visual._matches_proven_raster_variant('welcome-light-mobile', actual_png, '1' * 64)
+    assert not visual._matches_proven_raster_variant('welcome-dark-mobile', actual_png, expected_sha)
+
+    with pytest.warns(UserWarning, match='exact reviewed one-time raster artifact variant'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path),
+            evidence_root=tmp_path / 'evidence',
+        )
+
+
+def test_proven_raster_artifact_cannot_bypass_geometry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    page = _test_page()
+    actual_png = page.screenshot.return_value
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {'welcome-light-mobile': ('0' * 64, hashlib.sha256(actual_png).hexdigest())},
+    )
+    with pytest.raises(AssertionError, match='dimensions changed'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path, height=800),
+            evidence_root=tmp_path / 'evidence',
+        )
