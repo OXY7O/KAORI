@@ -1,11 +1,11 @@
 # Source Control — GitHub App Multi-Organization Foundation
 
-**Status:** Architecture discussion addendum agreed for the next Source Control phase; pending normal documentation review/admission. Not an implemented capability.
+**Status:** Accepted GitHub App architecture scope; this addendum is being reviewed for documentation admission. The GitHub provider is `available` in the admitted `kaori/staging` source as of 2026-11-02; this does not establish real multi-organization UAT, #724 resource-scoped operational access, or GHES support.
 **Foundation authority:** [#559](https://github.com/OXY7O/KAORI/issues/559) and its accepted architecture-decision comments.
 **Documentation work item:** [#958](https://github.com/OXY7O/KAORI/issues/958).
 **Relevant authorities:** #561 (roadmap); #711/#723 (Service and Team ownership); #712 (Asset identity); #624 (Integrations navigation); #888/#891 (browser authentication); #440/#529 (delivery evidence); #724 (resource-scoped authorization); #638/#641 (security).
 
-This addendum records the **GitHub App onboarding, multi-organization, and host-compatibility decisions** made after #559. It does **not** replace #559's accepted contracts for revisions, pull requests, reviews, checks, Actions, governance, contributions, deployments, audit, or lineage. Those accepted decision records remain authoritative. The current KAORI Integration Kernel and taxonomy do **not yet** register Source Control as a deployed provider capability. SC-01/SC-02 must qualify and verify any registration.
+This addendum records the **GitHub App onboarding, multi-organization, and host-compatibility decisions** made after #559. It does **not** replace #559's accepted contracts for revisions, pull requests, reviews, checks, Actions, governance, contributions, deployments, audit, or lineage. Those accepted decision records remain authoritative. SC-01/SC-02/SC-03 source integration was subsequently admitted into `kaori/staging` via #3399, including canonical provider registration and committed repository inventory. This admission is distinct from live GitHub App/multi-organization acceptance and does not authorize production webhook activation.
 
 ## Decision summary
 
@@ -22,7 +22,7 @@ This addendum records the **GitHub App onboarding, multi-organization, and host-
 | Execution authority | GitHub owns repository/PR/review/Actions/release/deployment controls. KAORI normalizes, correlates, governs, and audits; it does not clone GitHub or independently approve/execute provider operations. |
 | Delivery | Discuss/approve architecture first; implement only through bounded child issues of #559 and normal KAORI admission/UAT. |
 
-These are product and architecture decisions, **not claims that multi-org connectivity, GitHub App authentication, or Source Control persistence are already implemented**.
+These are architecture decisions, **not a claim that real two-organization isolation tests, broad production resource scope, webhook delivery, or GHES support are complete**. The first-phase GitHub App boundary and Source Control persistence are already represented in admitted staging source; qualification and human acceptance remain separate.
 
 ## Ownership and information architecture
 
@@ -49,9 +49,9 @@ Source Control
 └── Audit / flow evidence
 ~~~
 
-The exact Source Control navigation composition remains governed by #559 and the approved KAORI sidebar/workspace standard; the diagram illustrates identities, **not** a new sidebar/tab hierarchy. In the integration registry, use the existing `IntegrationModule`, `IntegrationImplementation`, `IntegrationInstance`, adapter/definition, readiness, lifecycle, and shared-workspace contracts. A new `source_control` domain/capability must be introduced through the canonical taxonomy, not a GitHub-specific global navigation branch.
+The exact Source Control navigation composition remains governed by #559 and the approved KAORI sidebar/workspace standard; the diagram illustrates identities, **not** a new sidebar/tab hierarchy. In the integration registry, use the existing `IntegrationModule`, `IntegrationImplementation`, `IntegrationInstance`, adapter/definition, readiness, lifecycle, and shared-workspace contracts. The admitted `source_control` domain/capability was introduced through the canonical taxonomy, not a GitHub-specific global navigation branch.
 
-The `IntegrationInstance` remains the canonical *provider connection* identity; it must not be confused with the GitHub *account* owning repositories or with a GitHub *App installation* authorization grant. Resolve exact cardinality and persistence using the existing integration kernel in SC-01; do not introduce a second global integration registry or duplicate App private keys per repository/installation.
+The `IntegrationInstance` remains the canonical *provider connection* identity; it must not be confused with the GitHub *account* owning repositories or with a GitHub *App installation* authorization grant. Retain SC-01's explicit cardinality and persistence within the existing integration kernel; do not introduce a second global integration registry or duplicate App private keys per repository/installation.
 
 ## Stable identities and scope
 
@@ -130,7 +130,7 @@ The existing CDEvents #440 architecture currently uses a KAORI-specific delivery
 
 ## Bounded implementation sequence and acceptance handoff
 
-Implementation is **not** authorized directly from closed architecture issue #559 or this documentation addendum. Create reviewable child workstreams:
+Implementation was **not** authorized directly from closed architecture issue #559 or this documentation addendum. The issue-scoped initial SC-01/02/03 workstreams were admitted into staging under #3399; further expansion still requires explicit child issue authority, quality gates and applicable real-provider UAT:
 
 1. **SC-01 — Taxonomy and identity contract:** capability registration, IntegrationInstance/App/installation/account/repository cardinality, host-qualification, schema and resource-scoped RBAC; document the no-duplicate-provider-registry decision.
 2. **SC-02 — GitHub App provider onboarding:** secure credentials/token broker, installation selection, dual repository grants, capability/readiness, webhook verification, rate-limit/revocation and admin UX.
