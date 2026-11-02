@@ -7,7 +7,7 @@ ordered. HTTP routes retain their own RBAC/UAT privilege checks.
 from __future__ import annotations
 
 from flask import request
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.pagination import paginate_query
@@ -28,6 +28,31 @@ def _validation_job_for(canonical, *, operation: str = 'full_validation') -> dic
 def _runtime_search_pattern(value: str) -> str:
     """Literal case-insensitive SQL LIKE pattern for bounded registry search."""
     return '%' + value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+
+
+def _installation_job_predicate(*, integration_instance_id: int, installation_id: int) -> ColumnElement[bool]:
+    """Match only canonical validation/refresh or exact-installation inventory jobs.
+
+    Scope keys can be shared by unrelated job families; provider attribution
+    must verify type, operation, scope kind and the canonical target identity.
+    """
+    return and_(
+        JobExecution.integration_type == 'source_control',
+        or_(
+            and_(
+                JobExecution.job_type == 'integration_operation',
+                JobExecution.operation.in_(('full_validation', 'runtime_refresh')),
+                JobExecution.scope_type == 'integration_instance',
+                JobExecution.integration_instance_id == integration_instance_id,
+            ),
+            and_(
+                JobExecution.job_type == 'source_control_repository_inventory',
+                JobExecution.operation == 'sync_source_control_repositories',
+                JobExecution.scope_type == 'source_control_installation',
+                JobExecution.scope_key == f'installation:{installation_id}',
+            ),
+        ),
+    )
 
 
 def _runtime_context(installation: SourceInstallation) -> dict:
@@ -59,11 +84,10 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     # Both option registries are derived from the authorised installation scope,
     # never the provider or unrestricted tenant-wide JobExecution history.
     scoped_jobs = JobExecution.query.filter(
-        JobExecution.integration_type == 'source_control',
-        or_(
-            JobExecution.integration_instance_id == installation.integration_instance_id,
-            JobExecution.scope_key == f'installation:{installation.id}',
-        ),
+        _installation_job_predicate(
+            integration_instance_id=installation.integration_instance_id,
+            installation_id=installation.id,
+        )
     )
     job_queue_options = [
         value
@@ -132,10 +156,13 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     )
 
     last_refresh = (
-        JobExecution.query.filter_by(
-            integration_type='source_control',
-            integration_instance_id=installation.integration_instance_id,
-            operation='runtime_refresh',
+        JobExecution.query.filter(
+            _installation_job_predicate(
+                integration_instance_id=installation.integration_instance_id,
+                installation_id=installation.id,
+            ),
+            JobExecution.job_type == 'integration_operation',
+            JobExecution.operation == 'runtime_refresh',
         )
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .first()

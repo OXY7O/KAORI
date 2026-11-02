@@ -1854,3 +1854,28 @@ Official Developer Check, Full Admission, promotion, release and
 provider mutation remain **HOLD** until independently authorized. The
 Secret Management UAT starts as its **own domain workstream**, not as an
 implicit validation or closure of Source Control's pending negative tests.
+
+
+## JobExecution installation evidence isolation — #3021 (2026-11-02 workbench)
+
+The GitHub installation Runtime → Jobs table and its queue-filter options must
+read only committed `source_control` jobs that match either (a) exact canonical
+connection Full Validation / Runtime Refresh, or (b) exact installation-scoped
+Repository Inventory Sync. Other providers, job types, scope types, operations
+or installations **must not** be attributed to that GitHub installation even
+when their `scope_key` text coincides. A list of five rows, pagination count,
+queue filters and Last Runtime Refresh all reuse this evidence boundary.
+
+Use the existing focused unit regression on the reviewed source:
+
+```bash
+pytest -q tests/unit/test_source_control_github_job_evidence_scope.py
+```
+
+For real nonproduction UAT, create qualifying validation/refresh and inventory
+jobs for installation A, then create unrelated job-family and installation-B
+jobs with overlapping scope text. Inspect Runtime → Jobs, queue filters and
+Last Runtime Refresh for installation A. Only jobs proven for A may appear.
+Record exact head SHA, database fixtures or redacted evidence, outcome,
+and Human Acceptance before consolidated staging admission. This is not
+authorization to enable webhook ingress or broad resource access (#724).
