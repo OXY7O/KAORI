@@ -67,3 +67,24 @@ The repository workflow in `.github/workflows/deploy-staging-host.yml` is the st
 Every canonical production application worker, including `registry-security-worker`, must appear in `compose.server.yml` with `env_file: !override` for split `app.env`, `secrets.env`, and generated `release.env`. The server deploy, verification, and database-restore paths must account for the same workers; otherwise Docker Compose can fall back to the deprecated `.env.production` file. The existing UAT deployment contract tests enforce that parity.
 
 Persistent Docker volume names retain their established identities so renaming this repository boundary does not orphan existing staging data.
+
+## PostgreSQL migration authority and DBA-owned databases — pending implementation
+
+The current server adapter still assumes bundled PostgreSQL/Redis and runs the
+Compose `migrate` service using existing application environment. **This does
+not yet satisfy** the approved separation of runtime PostgreSQL credentials
+from migration/DDL authority. Do not present current server mode as supporting
+external DBA PostgreSQL or a validated least-privilege migrator.
+
+The approved production target (#621, #622, #1439, #1440) supports two guarded
+execution modes: (1) a one-shot migration process with a separate protected
+DDL credential, and (2) DBA-executed reviewed SQL when DBAs do not provide
+migration passwords. In both cases web/workers/Beat use only a non-owner
+`DATABASE_URL`; the DBA owns server, database/role provisioning, HA, backup,
+restore and remote storage. A runtime user/password is NOT a grant to perform
+DDL, role creation or database backup/restore.
+
+Refer to [DBA and bundled migration contract](../../docs/operations/postgres-dba-migration-contract.md)
+for role/access matrix, required SQL package and proof of execution, security
+gates and external-provider ownership. Implement this only via #1439/#1440,
+with regression and production-like UAT before enabling on the server.
