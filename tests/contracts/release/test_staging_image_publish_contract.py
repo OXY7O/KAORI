@@ -167,29 +167,18 @@ def test_staging_publish_wait_does_not_occupy_kaori_ci_runner() -> None:
 
 def test_rc_runtime_isolates_compose_and_preserves_failure_diagnostics() -> None:
     workflow = publish_source()
-    runtime = (ROOT / '.github' / 'ci' / 'run-runtime-validation.sh').read_text(
-        encoding='utf-8'
-    )
+    runtime = (ROOT / '.github' / 'ci' / 'run-runtime-validation.sh').read_text(encoding='utf-8')
     runtime_section = workflow.split('      - name: Validate Runtime & DAST\n', 1)[1].split(
         '      - name: Reserve RC Git Tag\n', 1
     )[0]
 
     assert 'id: runtime_dast' in runtime_section
-    assert (
-        'COMPOSE_PROJECT_NAME="kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-rc-runtime"'
-        in runtime_section
-    )
+    assert 'COMPOSE_PROJECT_NAME="kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-rc-runtime"' in runtime_section
     assert 'KAORI_CI_TOOLCHAIN_IMAGE="$CI_TOOLCHAIN_IMAGE"' in runtime_section
     assert 'run-runtime-validation.sh "$CANDIDATE_IMAGE"' in runtime_section
     assert 'Upload RC Runtime Diagnostics' in runtime_section
-    assert (
-        "if: ${{ failure() && steps.runtime_dast.outcome == 'failure' }}"
-        in runtime_section
-    )
-    assert (
-        'name: rc-runtime-${{ github.run_id }}-${{ github.run_attempt }}'
-        in runtime_section
-    )
+    assert "if: ${{ failure() && steps.runtime_dast.outcome == 'failure' }}" in runtime_section
+    assert 'name: rc-runtime-${{ github.run_id }}-${{ github.run_attempt }}' in runtime_section
     assert 'tmp/ci-artifacts/runtime' in runtime_section
     assert 'tmp/ci-artifacts/zap' in runtime_section
     assert 'retention-days: 3' in runtime_section
