@@ -32,6 +32,8 @@ When a new domain/provider is added, update the existing taxonomy, release-surfa
 
 ## Release Candidate expanded-step execution evidence
 
+The RC Runtime & DAST step uses a per-run/per-attempt isolated Docker Compose project, consistent with Full Admission, and the exact CI toolchain image. Failed Reports worker probes preserve the final Celery inspection output, worker process logs and Compose container status under `tmp/ci-artifacts/runtime`; the RC workflow uploads these as a short-retention diagnostic artifact on Runtime & DAST failure. Logs are retained for inspection rather than printed indiscriminately into the public console. These diagnostics do **not** relax the Reports worker queue/task checks, production image scan, migration, DAST, or the fail-closed requirement for an immutable RC.
+
 After successful exact staging Full Admission, the existing `Release Candidate` workflow shows live, operator-readable phase start and actual completion within each expanded job step: accepted staging SHA and quality run, production image build, Trivy HIGH/CRITICAL scan, isolated runtime/DAST validation, immutable Git tag reservation, registry push/pull and digest capture, OCI metadata verification, SPDX/SLSA attestations, and GitHub prerelease publication. The native GitHub step conclusion remains the authoritative success/failure signal, not printed preview labels. Never infer UAT host deployment or human acceptance from RC publication; keep immutable artifact and attestation evidence as the verifiable source of truth. Console status messages contain only approved release identities and phase labels, not registry secrets or OIDC tokens.
 
 ## Delivery model
