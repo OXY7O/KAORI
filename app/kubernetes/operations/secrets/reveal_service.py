@@ -26,6 +26,15 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_enabled_namespace_names,
     get_namespace_policy,
 )
+from app.kubernetes.operations.secrets.reveal_policy import (
+    _as_aware as _as_aware,
+)
+from app.kubernetes.operations.secrets.reveal_policy import (
+    _lock_active_request_scope as _lock_active_request_scope,
+)
+from app.kubernetes.operations.secrets.reveal_policy import (
+    get_secret_reveal_approvers as get_secret_reveal_approvers,
+)
 from app.kubernetes.operations.secrets.reveal_read_model import (
     MyRevealFilters as MyRevealFilters,
     PendingRevealFilters as PendingRevealFilters,
@@ -35,15 +44,6 @@ from app.kubernetes.operations.secrets.reveal_read_model import (
     _now as _now,
     get_reveal_clusters as get_reveal_clusters,
     get_reveal_page_context as get_reveal_page_context,
-)
-from app.kubernetes.operations.secrets.reveal_policy import (
-    _as_aware as _as_aware,
-)
-from app.kubernetes.operations.secrets.reveal_policy import (
-    _lock_active_request_scope as _lock_active_request_scope,
-)
-from app.kubernetes.operations.secrets.reveal_policy import (
-    get_secret_reveal_approvers as get_secret_reveal_approvers,
 )
 from app.models import Cluster, SecretRevealRequest
 from app.platform_operations.notifications.feedback import OperationalActionPresentation, OperationalDeliveryPolicy
