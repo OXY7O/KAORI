@@ -67,7 +67,7 @@ printf '✅ Runtime web readiness PASS\n'
 printf '⏳ Runtime/DAST · waiting for Reports worker readiness (max 30 attempts)\n'
 worker_ready=0
 for attempt in $(seq 1 30); do
-  if "${COMPOSE[@]}" exec -T ci python scripts/verify_reports_worker_runtime.py --timeout 1 >/dev/null 2>&1; then
+  if "${COMPOSE[@]}" exec -T ci python scripts/verify_reports_worker_runtime.py --timeout 1 > tmp/ci-artifacts/runtime/reports-worker-probe.log 2>&1; then
     worker_ready=1
     break
   fi
@@ -77,8 +77,9 @@ for attempt in $(seq 1 30); do
   sleep 2
 done
 if [[ "$worker_ready" != "1" ]]; then
-  "${COMPOSE[@]}" logs --no-color runtime-reports-worker > tmp/ci-artifacts/runtime/reports-worker.log || true
-  printf 'KAORI production Reports worker did not become ready within 60 seconds\n' >&2
+  "${COMPOSE[@]}" logs --no-color runtime-reports-worker > tmp/ci-artifacts/runtime/reports-worker.log 2>&1 || true
+  "${COMPOSE[@]}" ps --all > tmp/ci-artifacts/runtime/reports-worker-containers.log 2>&1 || true
+  printf 'KAORI production Reports worker failed 30 readiness probes; inspect retained worker, probe, and container diagnostics.\n' >&2
   exit 1
 fi
 printf '✅ Runtime Reports worker readiness PASS\n'
