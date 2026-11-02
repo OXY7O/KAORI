@@ -359,12 +359,26 @@ jobs:
           printf '✅ RC security · HIGH/CRITICAL image scan PASS\n'
 
       - name: Validate Runtime & DAST
+        id: runtime_dast
         shell: bash
         run: |
           set -Eeuo pipefail
+          export COMPOSE_PROJECT_NAME="kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-rc-runtime"
+          export KAORI_CI_TOOLCHAIN_IMAGE="$CI_TOOLCHAIN_IMAGE"
           printf '⏳ RC runtime · executing production readiness and baseline DAST\n'
           bash .github/ci/run-runtime-validation.sh "$CANDIDATE_IMAGE"
           printf '✅ RC runtime · production readiness and baseline DAST PASS\n'
+
+      - name: Upload RC Runtime Diagnostics
+        if: ${{ failure() && steps.runtime_dast.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rc-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            tmp/ci-artifacts/runtime
+            tmp/ci-artifacts/zap
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Reserve RC Git Tag
         shell: bash
