@@ -1,15 +1,26 @@
-# GitHub.com GitHub App transport — SC-02
+# GitHub.com GitHub App — staging lifecycle and SC-02 transport
 
 Parent Source Control [#559](https://github.com/OXY7O/KAORI/issues/559);
 architecture [#958](https://github.com/OXY7O/KAORI/issues/958);
 implementation [#2741](https://github.com/OXY7O/KAORI/issues/2741).
 Depends on SC-01 [#2740](https://github.com/OXY7O/KAORI/issues/2740).
 
-This **first transport increment** is intentionally NOT a registered/available
-GitHub provider. The canonical provider matrix remains `planned`; the normal
-Integrations workspace reuses shared KAORI UI and has no connect/test buttons
-until the complete secure registration/validation/JobExecution lifecycle is
-admitted.
+## Current staging provider boundary (2026-11-02)
+
+The canonical provider matrix in `kaori/staging` lists GitHub as **`available`**. The issue-scoped SC-01/SC-02/SC-03 work was subsequently reconciled into the reviewed source, integrated through [#3399](https://github.com/OXY7O/KAORI/pull/3399), and passed Full Admission and staging deployment. The shared `Integrations → Source Control → GitHub` registration, Full Validation/Runtime Refresh, committed inventory and JobExecution plumbing are represented in the accepted staging source. This is **not** proof that a real GitHub App installation completed provider UAT or that hosted Human UAT and broader operational authorization are approved.
+
+- `require_uat_access()` limits installation-specific UAT to active **local database Super Admin** accounts; route-level permission checks also apply. #724 resource-scoped production access remains a separate authority.
+- GitHub App/installation/account credentials and provider grants remain authoritative externally. KAORI commits bounded, verified inventory; it must not expose installation tokens or private keys in jobs or responses.
+- Signed webhook ingress and the recovery/consumer loop remain independently **default-off** through `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED` and `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED`. Registration and inventory code being admitted never implies a webhook was enabled or that the event was reconciled.
+- See the [existing GitHub App Dev Container UAT procedure](../../../../../../docs/operations/github-source-control-devcontainer-uat.md) for historical review-workbench scenarios; new UAT evidence must reference the actual current staging candidate. The older workbench-only HOLD notes do not describe the source already admitted to staging.
+
+## Historical SC-02 transport-only checkpoint
+
+The **first transport increment** was intentionally not registered/available:
+GitHub was `planned`, the shared Integrations workspace had no connect/test
+actions, and canonical worker/validation admission remained future work.
+The sections below retain that incremental history rather than contradicting
+the current admitted staging baseline.
 
 ## Security and authority boundary
 
@@ -40,7 +51,7 @@ admitted.
   KAORI-side set. Revocation, partial evidence, unsupported permissions and
   API outage must not silently become Ready.
 
-## Subsequent work within #2741
+## Historical planned follow-ups within #2741
 
 - Add protected App-config credential storage/reference model by reusing
   `app/security/credentials.py` (not GitHub OAuth SSO); preserve a single App
@@ -54,19 +65,19 @@ admitted.
   GitHub clone.
 - Add durable signed ingress and proven scoped event dedup before exposing a
   webhook endpoint; SC-03 owns authoritative repository reconciliation.
-- Run existing quality gates, DB/migration checks, end-to-end GitHub.com UAT
-  with separate installations and explicit human acceptance on the temporary
-  review flow. Official CI/CD, staging and main remain HOLD.
+- At the original Draft stage, existing quality gates, DB/migration checks,
+  end-to-end GitHub.com UAT and explicit human acceptance were still required;
+  official staging and main remained HOLD. Current staging admission is noted above.
 
 References: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
 and https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 
-## Increment SC-02 registration and runtime contracts
+## Historical SC-02 registration and runtime contract checkpoint
 
 - `registration.py` checks approved KAORI environment values, credential shape, exact App/installation/account scope, duplicate names/installations, protected App reuse and always revalidates live grant on save. **Save explicitly rejects the provider while the canonical provider matrix remains `planned`**; no unadmitted connection is created.
 - `readiness.py` assesses per-capability permission coverage, separately from repository collection. Observed access cannot yield Ready until real worker/inventory/UAT admission.
-- `adapter.py` implements unregistered candidate operations for Test Connection, Full Validation and lightweight Runtime Refresh, retaining only sanitized canonical `IntegrationInstance` metadata. There is no job/worker registration or exposed routes yet.
-- No new provider-specific UI components exist. When introduced, the provider must reuse KAORI shared Integrations Hero/cards/tables, HTMX, pagination 5, feedback, accessibility and RBAC.
+- At this historical checkpoint, `adapter.py` implemented unregistered candidate operations for Test Connection, Full Validation and lightweight Runtime Refresh, retaining only sanitized canonical `IntegrationInstance` metadata. No worker registration or exposed routes existed **at that time**; the current staging implementation is described above.
+- At this historical checkpoint no provider-specific UI had yet been introduced. The admitted staging implementation reuses existing Integrations Hero/cards/tables, HTMX, pagination 5, feedback, accessibility and RBAC.
 
 ## Durable webhook staging (non-operational candidate)
 
@@ -79,11 +90,11 @@ eligibility, then stages an idempotent database record. A repeated delivery
 with changed payload is explicitly rejected. The caller must COMMIT before
 a separate, scope-qualified reconciliation job is admitted.
 
-No route or worker is wired, no raw payload is retained, no repository fact is
-accepted as provider evidence, and no event is sent to Notification Channels.
-Webhook ingress is disabled while the GitHub provider is `planned`; SC-03
-must implement the follow-up authoritative refresh and committed provider
-state, including all/selected repository grant coverage.
+At the historical ledger-only checkpoint no route or worker was wired. The
+current staged source includes separate gated ingress and worker/recovery code,
+but both webhook feature switches are default-off. A transport receipt alone
+is not committed repository evidence or a Notification Channels event. SC-03
+reconciliation remains bound to independently verified installation grants.
 
 ## Integration Kernel admission handoff
 
@@ -95,13 +106,12 @@ to inline execution, Full Validation to the existing
 `integration-runtime` queue. The shared Source Control domain page remains
 the detail location; no new provider-specific component is needed here.
 
-The descriptor is **not imported by the Kernel builtin loader**. Its
-`register_after_admission()` refuses registration while the canonical GitHub
-matrix entry is `planned`. Following reviewed SC-01/SC-02 UAT, a separately
-approved workstream must enable the provider, connect the canonical worker
-lifecycle, install the reusable forms/HTMX views, prove the webhook ingress
-transaction-to-dispatch transition and perform security/visual acceptance.
-Draft PR #2766 is not that approval.
+The initial descriptor was **not imported by the Kernel builtin loader**;
+`register_after_admission()` rejects `planned` providers. The subsequent
+staging integration supplies provider wiring, canonical workers and reusable
+forms/HTMX views. Independent webhook ingress/consumer activation, #724 scope
+and real provider/security/visual UAT remain gated. The historical Draft
+PR #2766 by itself was not admission authority.
 
 The webhook inbox cannot be interpreted as a source event or a notification
 event. Only the SC-03 provider collector can commit repository/workflow state
@@ -127,7 +137,7 @@ database with the project's standard migrations procedure; no live database
 changes are authorized by this documentation.
 
 
-## Shared GitHub App onboarding preview
+## Historical GitHub App onboarding preview
 
 The application bootstrap registers `github_source_bp` and the existing
 `Integrations → Source Control` shared workspace links to it. Routes:
@@ -148,10 +158,10 @@ identity/scope probe and Save revalidates the grant before committing a
 non-ready canonical connection. Live validation, JobExecution/status
 presentation, provider promotion and production webhook ingress remain blocked.
 
-This is a UI review shell with **disabled actions**, not evidence of
-successfully connected GitHub installations. Source Control currently has
-no committed repository inventory (SC-03), so the overview intentionally
-uses `Not Observed` / `Not Admitted` instead of invented zero counts.
+At the initial `planned` stage this was a UI review shell with **disabled
+actions**, not evidence of real installations. Later SC-03 work added committed
+inventory to the staging source; missing inventory or grant evidence must still
+render Unknown/Not Observed rather than invented zero counts.
 It reuses existing Violet, Hero, domain cards, Flask-WTF, accessibility,
 responsive and light/dark classes; no provider-specific stylesheet.
 
