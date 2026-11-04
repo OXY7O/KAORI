@@ -37,12 +37,14 @@ if [[ -d .git || -f .git ]]; then
     # Process substitution hides the producer exit status: a failed git
     # ls-files must never be mistaken for a clean (empty) tracked-source set.
     tracked_list="$(mktemp)"
-    if ! git -c safe.directory="$ROOT" ls-files > "$tracked_list"; then
+    # NUL framing preserves literal filenames even when Git quotePath would
+    # escape tabs/newlines in its default newline-delimited presentation.
+    if ! git -c safe.directory="$ROOT" ls-files -z > "$tracked_list"; then
         rm -f "$tracked_list"
         printf 'ERROR: Git tracked-source enumeration failed.\n' >&2
         exit 1
     fi
-    mapfile -t candidates < "$tracked_list"
+    mapfile -d '' -t candidates < "$tracked_list"
     rm -f "$tracked_list"
     source_label='tracked source'
 else

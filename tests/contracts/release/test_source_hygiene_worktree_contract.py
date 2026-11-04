@@ -140,3 +140,38 @@ def test_git_ls_files_failure_cannot_pass_as_empty_tracked_source(tmp_path: Path
     assert check.returncode != 0
     assert 'Git tracked-source enumeration failed' in check.stderr
     assert 'tracked source is clean' not in check.stdout
+
+
+def test_tracked_control_character_filename_is_not_hidden_by_git_quotepath(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    # Git's default text ls-files quotes and escapes tab/newline filenames.
+    # NUL-delimited enumeration must pass their literal bytes to the guard.
+    generated = checkout / '.ruff_cache' / 'tab\tcache'
+    generated.parent.mkdir()
+    generated.write_text('generated\n', encoding='utf-8')
+    _git(checkout, 'add', '-f', '.ruff_cache/tab\tcache')
+
+    check = _run_hygiene(checkout)
+    assert check.returncode != 0
+    assert 'generated/runtime artifacts are present in tracked source' in check.stderr
+    assert '.ruff_cache/' in check.stderr
+    assert 'tracked source is clean' not in check.stdout
+
+
+def test_allowed_tracked_newline_filename_remains_one_candidate(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    unusual = checkout / 'safe\nfile.txt'
+    unusual.write_text('allowed source\n', encoding='utf-8')
+    _git(checkout, 'add', 'safe\nfile.txt')
+
+    check = _run_hygiene(checkout)
+    assert check.returncode == 0, check.stderr
+    assert '[KAORI hygiene] tracked source is clean (4 files checked).' in check.stdout
