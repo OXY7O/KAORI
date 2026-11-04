@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -102,3 +103,40 @@ def test_invalid_git_pointer_fails_closed_instead_of_scanning_zero_tracked_files
     check = _run_hygiene(archive)
     assert check.returncode != 0
     assert 'Git metadata is present but no valid working tree was found' in check.stderr
+
+
+def test_git_ls_files_failure_cannot_pass_as_empty_tracked_source(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    # Keep rev-parse real but simulate a failed tracked-source enumeration.
+    # The old process substitution masked the Git failure and printed PASS.
+    git_executable = shutil.which('git')
+    assert git_executable is not None
+    fake_bin = tmp_path / 'bin'
+    fake_bin.mkdir()
+    fake_git = fake_bin / 'git'
+    fake_git.write_text(
+        '#!/usr/bin/env bash\n'
+        'for arg in "$@"; do\n'
+        '  if [[ "$arg" == "ls-files" ]]; then exit 42; fi\n'
+        'done\n'
+        f'exec "{git_executable}" "$@"\n',
+        encoding='utf-8',
+    )
+    fake_git.chmod(0o755)
+    environment = os.environ.copy()
+    environment['PATH'] = f"{fake_bin}{os.pathsep}{environment['PATH']}"
+    check = subprocess.run(
+        ['bash', 'scripts/verify_source_hygiene.sh'],
+        cwd=checkout,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=environment,
+    )
+    assert check.returncode != 0
+    assert 'Git tracked-source enumeration failed' in check.stderr
+    assert 'tracked source is clean' not in check.stdout
