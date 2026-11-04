@@ -337,6 +337,15 @@ run_static_group() {
                         invalid = 1
                         next
                     }
+                    # Reject blank, whitespace-padded and comma-corrupted
+                    # names. Malformed ownership must never become "1 named".
+                    for (j = 1; j <= verifier_count; j++) {
+                        if (verifiers[j] !~ /^[A-Za-z0-9_./-]+$/) {
+                            invalid = 1
+                            break
+                        }
+                    }
+                    if (invalid) next
                     verifier_label = verifier_count " named"
                 }
                 names[++total] = title
