@@ -383,6 +383,38 @@ def test_registered_capability_table_parses_evidence_and_fails_closed(tmp_path: 
     assert rejected.returncode != 0
     assert 'malformed or empty registered capability ownership' in rejected.stderr
 
+    # A verifier label must be a non-empty, properly delimited filename.
+    # Previously these malformed lists were silently presented as "1 named".
+    for malformed_verifiers in (
+        '   ',
+        'verify_welcome_final_lock.py, ',
+        'verify_welcome_final_lock.py,  verify_other.py',
+        'verify_welcome_final_lock.py,,verify_other.py',
+    ):
+        evidence.write_text(
+            '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
+            f'static verifier(s): {malformed_verifiers}\n',
+            encoding='utf-8',
+        )
+        malformed_result = subprocess.run(
+            ['awk', program, str(evidence)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert malformed_result.returncode != 0, malformed_verifiers
+        assert 'malformed or empty registered capability ownership' in malformed_result.stderr
+
+    evidence.write_text(
+        '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
+        'static verifier(s): verify_welcome_final_lock.py, verify_other.py\n',
+        encoding='utf-8',
+    )
+    multiple = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert multiple.returncode == 0, multiple.stderr
+    assert '2 named' in multiple.stdout
+    assert 'verify_other.py' not in multiple.stdout
+
 
 def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
