@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -126,8 +127,6 @@ def test_git_ls_files_failure_cannot_pass_as_empty_tracked_source(tmp_path: Path
         encoding='utf-8',
     )
     fake_git.chmod(0o755)
-    import os
-
     environment = os.environ.copy()
     environment['PATH'] = f"{fake_bin}{os.pathsep}{environment['PATH']}"
     check = subprocess.run(
