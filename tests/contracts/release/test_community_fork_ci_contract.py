@@ -53,8 +53,9 @@ def test_trusted_developer_check_and_promotion_remain_fork_closed() -> None:
     full_admission = developer['jobs']['full-admission']
     assert 'github.event.pull_request.head.repo.full_name == github.repository' in full_admission['if']
     assert "needs.developer-check.result == 'success'" in full_admission['if']
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in (
-        developer['jobs']['ready-admission-guard']['if']
+    assert (
+        'github.event.pull_request.head.repo.full_name == github.repository'
+        in (developer['jobs']['ready-admission-guard']['if'])
     )
 
     profile = quality['jobs']['validation-profile']
