@@ -16,7 +16,7 @@ from app.common.workspace_authorization import local_super_admin as shared_local
 from app.common.workspace_navigation import _visible_capabilities
 from app.common.workspace_navigation_catalog import WORKSPACES
 from app.models.integration import IntegrationInstance
-from app.models.source_control import SourceInstallation, SourceRepositoryCollectionState
+from app.models.source_control import SourceAccount, SourceInstallation, SourceRepositoryCollectionState
 from app.source_control import presentation, routes
 
 
@@ -27,6 +27,7 @@ def committed_product_db(monkeypatch):
         bind=engine,
         tables=[
             IntegrationInstance.__table__,
+            SourceAccount.__table__,
             SourceInstallation.__table__,
             SourceRepositoryCollectionState.__table__,
         ],
@@ -34,6 +35,16 @@ def committed_product_db(monkeypatch):
     with Session(engine) as session:
         monkeypatch.setattr(presentation, 'db', SimpleNamespace(session=session))
         now = datetime.now(UTC)
+        account = SourceAccount(
+            provider_key='github',
+            host_key='github.com',
+            native_account_id='42',
+            account_type='Organization',
+            login='shared-org',
+            last_observed_at=now,
+        )
+        session.add(account)
+        session.flush()
         for native_id, status, observed_count, generation in [
             ('100', 'committed', 0, 1),
             ('200', 'not_collected', None, 0),
@@ -55,6 +66,7 @@ def committed_product_db(monkeypatch):
                 host_key='github.com',
                 native_app_id='1',
                 native_installation_id=native_id,
+                account_id=account.id if native_id != '200' else None,
                 repository_scope='selected',
             )
             session.add(installation)
@@ -91,9 +103,37 @@ def test_product_overview_preserves_verified_zero_unknown_and_degraded_history(c
     assert not by_native_id['200']['committed']
     assert by_native_id['300']['observed_count'] == 3
     assert by_native_id['300']['collection_status'] == 'degraded'
+    assert by_native_id['100']['account'].native_account_id == '42'
+    assert by_native_id['100']['account'].account_type == 'Organization'
+    assert by_native_id['300']['account'].id == by_native_id['100']['account'].id
+    assert by_native_id['200']['account'] is None
     # Observed per-installation grants must never be summed into a global
     # repository count: the same repository may have overlapping grants.
     assert 'repository_total' not in scope
+
+
+def test_product_overview_ignores_account_from_another_provider_host(committed_product_db):
+    account = committed_product_db.query(SourceAccount).one()
+    account.host_key = 'ghes.example.com'
+    committed_product_db.flush()
+
+    scope = presentation.build_source_control_overview()
+    assert scope['installation_count'] == 3
+    assert all(item['account'] is None for item in scope['installations'])
+
+
+def test_product_overview_excludes_mismatched_integration_authority(committed_product_db):
+    installation = (
+        committed_product_db.query(SourceInstallation).filter_by(native_installation_id='300').one()
+    )
+    connection = committed_product_db.get(IntegrationInstance, installation.integration_instance_id)
+    assert connection is not None
+    connection.integration_type = 'artifact_registry'
+    committed_product_db.flush()
+
+    scope = presentation.build_source_control_overview()
+    assert scope['installation_count'] == 2
+    assert {item['installation'].native_installation_id for item in scope['installations']} == {'100', '200'}
 
 
 @pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1', '9' * 64])
@@ -200,6 +240,10 @@ def test_product_templates_use_existing_source_control_inventory_contract():
         assert 'components/page_hero.html' in text
         assert 'components/operational_section_card.html' in text
         assert '<style' not in text
+    assert 'GitHub Account</th>' in overview
+    assert 'item.account.native_account_id' in overview
+    assert 'item.account.last_observed_at' in overview
+    assert 'Account Not Observed' in overview
     assert 'inventory.total is not none' in inventory
     assert 'integrations/source_control/github/_inventory_table.html' in inventory
     assert 'inventory_href_endpoint' in reusable
