@@ -1,0 +1,71 @@
+# Version-update PRs are non-authoritative intake until adopted by a
+# maintainer into a canonical KAORI issue-linked work branch.
+# This file takes effect for scheduled updates only after governed promotion
+# onto the repository default branch.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /requirements
+    target-branch: kaori/staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 2
+    assignees:
+      - lethisa
+    labels:
+      - area:platform
+      - scope:ci
+    groups:
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /
+    target-branch: kaori/staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 2
+    assignees:
+      - lethisa
+    labels:
+      - area:platform
+      - scope:ci
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: kaori/staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 2
+    assignees:
+      - lethisa
+    labels:
+      - area:platform
+      - scope:ci
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
