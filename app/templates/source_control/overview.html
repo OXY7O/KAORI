@@ -90,8 +90,12 @@
                                                 'Native Account #' ~ item.account.native_account_id,
                                                 'users') }}
                                             <p class="mt-1 text-xs text-content-secondary">
-                                                {{ item.account.account_type if item.account.account_type else 'Type Unknown' }}
-                                                · {{ item.account.last_observed_at|user_datetime if item.account.last_observed_at else 'Observation Unknown' }}
+                                                {{ item.account.account_type or 'Type Unknown' }} ·
+                                                {% if item.account.last_observed_at %}
+                                                    {{ item.account.last_observed_at|user_datetime }}
+                                                {% else %}
+                                                    Observation Unknown
+                                                {% endif %}
                                             </p>
                                         {% else %}
                                             <span class="text-content-secondary">Account Not Observed</span>
