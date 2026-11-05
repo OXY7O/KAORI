@@ -28,6 +28,7 @@ def test_fork_validation_uses_only_ephemeral_unprivileged_runners() -> None:
     steps = job['steps']
     checkout = steps[0]
     assert checkout['with']['ref'] == '${{ github.event.pull_request.head.sha }}'
+    assert checkout['with']['repository'] == '${{ github.event.pull_request.head.repo.full_name }}'
     assert checkout['with']['persist-credentials'] is False
     assert checkout['with']['fetch-depth'] == 0
     assert all(
@@ -35,6 +36,10 @@ def test_fork_validation_uses_only_ephemeral_unprivileged_runners() -> None:
         for step in steps
     )
     assert any('git diff --check' in step.get('run', '') for step in steps)
+    identity = steps[1]
+    assert identity['env']['BASE_REPOSITORY'] == '${{ github.repository }}'
+    assert 'git fetch --no-tags --depth=1' in identity['run']
+    assert 'https://github.com/${BASE_REPOSITORY}.git' in identity['run']
     assert any('compileall' in step.get('run', '') for step in steps)
     assert any('npm ci --ignore-scripts' in step.get('run', '') for step in steps)
     assert any('npm run check-format' in step.get('run', '') for step in steps)
