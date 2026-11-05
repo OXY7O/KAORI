@@ -399,3 +399,14 @@ python scripts/verify_final_release.py --all --runtime
 ```
 
 Do not create a parallel pipeline to bypass these authorities.
+
+
+## Community fork checks — untrusted source boundary (#4214)
+
+Public contributors can open Pull Requests targeting `kaori/staging` from forks. These are **feedback-only external submissions**, not issue-authorized trusted work branches and not staging admission. The new `.github/workflows/community-fork-check.yml` intentionally runs only for a **different source repository** and only on a GitHub-hosted ephemeral `ubuntu-24.04` runner with a read-only token. It checks exact fork head identity, whitespace, Python compilation and npm/Prettier formatting after a lockfile install with npm lifecycle scripts disabled. It does not run privileged Docker, migrations, local provider integration tests, runtime/DAST, publish, deploy or Full Admission. Those checks remain **NOT RUN**, never implied PASS, for fork submissions.
+
+The existing `Developer Check` self-hosted route rejects fork-sourced PR heads and gates every descendant job on a trusted route. Its Ready Full Admission is also restricted to same-repository issue-linked branches. The standalone `quality.yml` pull request gate permits only the approved same-repository promotion lineage to `main`. Do **not** use `pull_request_target` to check out or run external code, grant secrets to a fork workflow, or make a fork check a substitute for the existing exact-head accepted engineering gate.
+
+Maintainer adoption: triage the proposed contribution, require a canonical governing Issue, review the diff and rights/publication constraints, then transfer/apply an accepted change into a maintainer-owned `kaori/*-<issue>-*` branch created from current `kaori/staging`. Use the ordinary Draft → Ready Developer Check → Full Admission → staging/UAT → Human Acceptance → promotion flow. External contributors cannot directly satisfy trusted admission or production release authorization.
+
+Branch protection/ruleset required-check contexts must distinguish `Untrusted Fork Validation` from `Developer Check` and `Ready Admission Guard` so skipped trusted jobs are not mistaken for a pass and ordinary trusted branches are not blocked by a fork-only required check. The first-time contributor workflow approval and public repository Actions policies remain GitHub-admin decisions, not a source-code enablement claim.
