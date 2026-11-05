@@ -60,6 +60,6 @@ def test_canonical_product_direction_keeps_dual_delivery_as_unreleased_roadmap()
         'separately accepted release evidence',
     ):
         assert boundary in source
-    assert 'external distribution, sale or third-party SaaS' in source
+    assert 'external\ndistribution, sale or third-party SaaS' in source
     assert 'prior written authorization' in license_text
     assert 'commercially\navailable offerings' in source
