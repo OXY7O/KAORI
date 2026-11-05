@@ -21,3 +21,13 @@ def test_community_intake_preserves_private_security_and_acceptance() -> None:
     assert "actual negative-test evidence" in content
     assert "human acceptance" in content
     assert "OXY7O/.github#2" in content
+
+
+def test_public_readme_does_not_advertise_unapproved_community_launch() -> None:
+    """Pre-launch intake guidance must not imply live public support channels."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "[`SECURITY.md`](SECURITY.md)" in readme
+    assert "internal-use proprietary project" in readme
+    assert "github.com/oxy7o/kaori/discussions" not in readme.lower()
+    assert "discussions are enabled" not in readme.lower()
+    assert "not distributed under an OSI open-source license" in readme
