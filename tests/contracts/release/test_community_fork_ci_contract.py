@@ -30,8 +30,10 @@ def test_fork_validation_uses_only_ephemeral_unprivileged_runners() -> None:
     assert checkout['with']['ref'] == '${{ github.event.pull_request.head.sha }}'
     assert checkout['with']['persist-credentials'] is False
     assert checkout['with']['fetch-depth'] == 0
-    assert all('persist-credentials' not in step.get('with', {}) or step['with']['persist-credentials'] is False
-               for step in steps)
+    assert all(
+        'persist-credentials' not in step.get('with', {}) or step['with']['persist-credentials'] is False
+        for step in steps
+    )
     assert any('git diff --check' in step.get('run', '') for step in steps)
     assert any('compileall' in step.get('run', '') for step in steps)
     assert any('npm ci --ignore-scripts' in step.get('run', '') for step in steps)
