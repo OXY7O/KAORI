@@ -44,7 +44,7 @@ def test_canonical_product_direction_keeps_dual_delivery_as_unreleased_roadmap()
     assert '## 2. Delivery Models and Roadmap Maturity' in source
     for model in (
         'Customer-managed self-hosted KAORI — Planned',
-        'OXY7O-managed subscription KAORI — Planned',
+        'OXY7O-managed subscription KAORI — Planned for dedicated customer',
         'Multi-organization subscription SaaS — Future',
     ):
         assert model in source
