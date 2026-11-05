@@ -30,4 +30,4 @@ def test_public_readme_does_not_advertise_unapproved_community_launch() -> None:
     assert "internal-use proprietary project" in readme
     assert "github.com/OXY7O/KAORI/discussions" not in readme.lower()
     assert "discussions are enabled" not in readme.lower()
-    assert "open-source license" not in readme.lower()
+    assert "not distributed under an OSI open-source license" in readme
