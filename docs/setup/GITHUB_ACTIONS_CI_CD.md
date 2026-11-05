@@ -12,6 +12,13 @@ This document describes the current KAORI Continuous Integration, Continuous Del
 
 Executable authority remains in the repository workflows, deployment tooling, and existing verifiers. Documentation never substitutes for exact-source evidence.
 
+### Dependency update intake — Dependabot (#4219)
+
+The repository-owned `.github/dependabot.yml` defines bounded weekly version-update *proposals* for the existing pip requirements, root npm lockfile and pinned GitHub Actions. It targets `kaori/staging`, limits open update PRs per ecosystem, and groups minor/patch version proposals to reduce review noise. GitHub processes scheduled updates from the **default-branch** configuration; a file committed only on a staging work branch is **not proof of an active schedule**. Dependency Graph, alerts, security updates and secret-scanning settings require separate GitHub-admin verification under #4215.
+
+Dependabot generates `dependabot/*` branches, which intentionally do **not** satisfy the existing `kaori/*-<issue>-*` trusted work-branch contract. Treat bot PRs as advisory intake: assess vulnerability severity, provenance, compatibility and license changes; open/link a governed Issue and adopt the reviewed dependency change on an issue-linked KAORI work branch before Developer Check, Ready Full Admission, staging UAT and eventual promotion. Do not relabel an automatically skipped trusted job as a PASS, directly merge the bot PR into `main`, grant bot updates deployment secrets or configure automerge.
+
+
 ## Operator-facing gate evidence (issue #3941)
 
 **Developer Check is changed-path selected; Full Admission is comprehensive.** A green `Python & Governance` lane reports the actual commands selected by the canonical planner, not a count of all Python functions, test cases or release domains. GitHub Actions **Step Summary** records the command, outcome, elapsed time and the selected route; **the expanded running step log** additionally streams the selected command and verifier stdout, with a 60-second heartbeat for long-running Developer Check commands. an unselected check is **NOT RUN**, never implied PASS. Frontend and focused pytest selectors are reported separately; pytest result counts come from actual executed pytest/JUnit, not static file registration.
