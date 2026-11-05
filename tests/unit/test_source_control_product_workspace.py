@@ -123,9 +123,7 @@ def test_product_overview_ignores_account_from_another_provider_host(committed_p
 
 
 def test_product_overview_excludes_mismatched_integration_authority(committed_product_db):
-    installation = (
-        committed_product_db.query(SourceInstallation).filter_by(native_installation_id='300').one()
-    )
+    installation = committed_product_db.query(SourceInstallation).filter_by(native_installation_id='300').one()
     connection = committed_product_db.get(IntegrationInstance, installation.integration_instance_id)
     assert connection is not None
     connection.integration_type = 'artifact_registry'
