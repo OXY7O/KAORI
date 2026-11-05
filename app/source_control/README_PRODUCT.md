@@ -26,6 +26,25 @@ This product workspace follows approved domain authority [#559](https://github.c
 
 Each needs its own committed collector/evidence contract, ownership, permission boundary, negative tests, and UAT before appearing as a data-backed operational tab. No guessed trend, CI success rate, DORA measurement, policy compliance or source-to-runtime link is acceptable.
 
+
+## Approved workspace and ownership decision map — #4058
+
+This is a decision index for the approved #4027 Source Control and #4028 Developer Workspace workstreams, **not** an assertion that deferred pages or provider capabilities are implemented. Preserve the current Violet Sidebar v2 and page-local navigation contract (#747/#748); do not create parallel global navigation for provider-specific operations.
+
+| Approved responsibility | Current authority and maturity | Boundary |
+| --- | --- | --- |
+| Source Control Overview | Current bounded implementation (#3375, #4030): committed GitHub installation and observed account identity | Account, installation, organization and canonical Team are distinct; never infer cross-installation visibility |
+| Organizations / Accounts and Repositories | Organizations full-workspace inventory is pending #4030; installation-scoped Repositories is currently bounded | Reuse the existing SC-03 repository inventory; Full Workspace Modal and server-side filters/pagination for expanded inventory, not a cloned data store |
+| Pull Requests, Actions / CI, Branch Governance | Planned SC-04, SC-06, SC-07 under #4027 | Provider evidence and exact SHA precede checks, approvals or compliance claims |
+| Engineering Flow and Releases / Deployments | Planned SC-05, SC-08 under #4027 | No fabricated DORA, developer ranking, deployment success or source-to-runtime lineage |
+| Cross-domain lineage | Planned SC-09 under #4027 | Source Control supplies source evidence; Registry, Security, Kubernetes and operational owners retain their respective authority |
+| Developer Self-Service versus Management | Planned persona experience under #4028 and #561 | Self-service requests cannot bypass Management approvals, server-side authorization or existing shared Jobs execution |
+| Role Category, Service Catalog and Team | Planned #4060, #711/#723 and resource-scope #724 | Personas do not create grants; service ownership and Team identity are not provider GitHub account identities |
+
+Provider capability differences belong to the provider-specific integration and collector contracts, not to universal UI promises. GitHub is the current bounded implementation; future providers require separately admitted capability/evidence mappings. Shared Jobs, Intelligence and Registry remain their canonical cross-domain owners (#440/#537 and existing domain authorities); Source Control may reference their committed evidence but must not duplicate their state machines.
+
+Use existing HTMX partials, Full Workspace Modal, 5/10/25/50 server-side pagination (default 5), and evidence-first unknown/zero/degraded semantics. Every future management action requires permission and approval at its server-side boundary; a navigation item, role label, observed installation or successful read does not confer execution rights. The #724 resource-scope policy and negative authorization tests are prerequisites to non-admin or cross-installation exposure. Treat unresolved provider permission and persona decisions as pending authority review, not silently implemented behavior.
+
 ## QA/UAT (PENDING)
 
 Use existing KAORI Ruff, djlint, pyright, pytest/contract, Sidebar Navigation Standard, Visual QA and Gherkin scenario catalog. Real Dev Container tests must prove 403 for non-authorized users; 404 for invalid installation; two-installation isolation; unknown versus verified zero; retained degraded snapshots; filters/5-default-pagination; no provider access during GET; light/dark/responsive/keyboard/HTMX. Record exact candidate SHA, provider scope, observed browser/DB evidence, and Human Acceptance. Official Developer Check, Full Admission, `kaori/staging`, `main` and release stay HOLD until authorization.
