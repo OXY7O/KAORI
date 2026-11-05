@@ -4,7 +4,11 @@ This product workspace follows approved domain authority [#559](https://github.c
 
 ## Current bounded Dev Container implementation
 
-- `/source-control/` — Overview: active installation identities and committed collection coverage/status, with last committed observation. **No summed repository counts** across overlapping installations.
+- `/source-control/` — Overview: active installation identities and committed collection coverage/status,
+  with last committed observation. Its installation table shows the separately linked provider-native GitHub
+  Account identity (native ID, observed login/type and observation time when available), or explicit unknown
+  state when no matching account is observed. Account is **not** an App installation or KAORI Team.
+  **No summed repository counts** across overlapping installations.
 - `/source-control/repositories` — explicit installation selection and committed repository grants from SC-03's existing `read_installation_inventory` (search/visibility/archive, 5/10/25/50 pagination, default 5; branch/default-branch SHA only when committed).
 - Existing GitHub integration routes remain the sole authority for validation, synchronization and mutation.
 - GET reads committed KAORI database evidence; zero means a completed observed collection returned zero, **unknown does not mean zero**. Retained prior snapshots do not certify provider health or current freshness.
