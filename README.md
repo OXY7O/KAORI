@@ -139,6 +139,10 @@ Security issues must be reported privately according to [`SECURITY.md`](SECURITY
 | Delivery workflow | [`docs/engineering/KAORI_DELIVERY_WORKFLOW.md`](docs/engineering/KAORI_DELIVERY_WORKFLOW.md) |
 | Standalone examples | [`example/README.md`](example/README.md) |
 
+## Community Feedback (Pre-launch)
+
+Public feedback and external contribution intake are **not yet launched**. Maintainers use the [community intake triage contract](docs/engineering/COMMUNITY_INTAKE_TRIAGE.md) to evaluate suggestions and external pull requests before accepting any governed engineering Issue. This guidance does not indicate that GitHub Discussions or public contribution acceptance is enabled. Report security concerns privately via [`SECURITY.md`](SECURITY.md), never in public discussions.
+
 ## Repository Governance
 
 Executable work is governed by an Issue, isolated branch, reviewable PR, exact-SHA Developer Check, staging integration, comprehensive Full Admission, and explicit human acceptance before production promotion. `main` and `kaori/staging` are the only long-lived product authorities; temporary work branches are retired after integration.
