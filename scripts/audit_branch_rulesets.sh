@@ -15,7 +15,11 @@ fi
 
 # Validate the entire input set before making any authenticated calls.
 for repo in "$@"; do
-  if [[ ! "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+  # Reject path-like dot segments even though they match the character class.
+  # A repository slug is a literal GitHub owner/name, never "." or "..".
+  owner="${repo%%/*}"
+  name="${repo#*/}"
+  if [[ ! "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ || "$owner" == "." || "$owner" == ".." || "$name" == "." || "$name" == ".." ]]; then
     echo "ERROR: invalid owner/repository argument" >&2
     exit 2
   fi
