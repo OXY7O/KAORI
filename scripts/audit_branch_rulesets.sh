@@ -13,13 +13,16 @@ if (( "$#" == 0 )); then
   set -- OXY7O/KAORI OXY7O/kaori-website OXY7O/kaori-docs
 fi
 
-failed=0
+# Validate the entire input set before making any authenticated calls.
 for repo in "$@"; do
   if [[ ! "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
     echo "ERROR: invalid owner/repository argument" >&2
     exit 2
   fi
+done
 
+failed=0
+for repo in "$@"; do
   printf '\n=== %s ===\n' "$repo"
   # These commands enumerate configured/effective rules; they do not test
   # legacy protection, bypass actors, required checks or negative push cases.
