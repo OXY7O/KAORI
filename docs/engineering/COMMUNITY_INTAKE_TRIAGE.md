@@ -18,6 +18,21 @@ GitHub Discussions, when enabled by an administrator, is a feedback and conversa
 
 For every submission: search for duplicates first, distinguish **acknowledged** from **accepted**, record a concise reason when declining, and avoid promising a support SLA. An accepted Issue must still follow [KAORI Delivery Workflow](../engineering/KAORI_DELIVERY_WORKFLOW.md) and applicable staging/DevContainer UAT boundaries. Fork feedback does not confer trusted CI, staging admission, deployment, or human acceptance.
 
+## Sanitized triage rehearsal (documentation example, NOT an executed Discussion)
+
+This example makes the acceptance boundary reviewable without implying that public Discussions is enabled or that a real contributor was contacted. A maintainer must separately perform and record the live test required by the activation checklist.
+
+| Field | Example evidence / decision |
+| --- | --- |
+| Intake surface | Hypothetical Idea: "Show the last successful repository inventory refresh" |
+| Sanitized reproduction | No credentials, installation IDs, private repository names, API payloads or customer data; describe expected versus observed UI behavior only |
+| Duplicate search | Search existing Source Control issues (for example [#4030](https://github.com/OXY7O/KAORI/issues/4030)) before proposing a new issue |
+| Classification | Feature suggestion, **acknowledged only**; not an accepted engineering commitment |
+| Maintainer decision | Link the existing issue if scope matches; otherwise request refinement or decline with a reason. Do not auto-create a Ready issue |
+| Project metadata | Only after explicit acceptance, maintain native Issue Type, Status, Priority, Sprint, Story Points, parent/dependencies and owner in GitHub, not copied into prose |
+| Delivery authority | If accepted, issue-scoped work and required checks; exploratory DevContainer review in `kaori/review/staging-uat` does not constitute staging admission |
+| Closure evidence | Record the actual Discussion URL, linked issue/decision, sanitized reviewer evidence and date **only when the live rehearsal is performed** |
+
 ## Activation checklist (human/admin controlled)
 
 - [ ] Rights/publication review records GO for the relevant repository (#4212).
