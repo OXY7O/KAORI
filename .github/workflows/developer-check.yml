@@ -29,7 +29,8 @@ jobs:
   route:
     name: Route Checks
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       python: ${{ steps.route.outputs.python }}
@@ -431,7 +432,8 @@ jobs:
       - python-check
       - validation-check
     if: ${{ always() && needs.route.result == 'success' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Aggregate Selected Checks
@@ -538,7 +540,8 @@ jobs:
     name: Ready Admission Guard
     needs: [developer-check, full-admission]
     if: ${{ always() && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Enforce Completed Full Admission
