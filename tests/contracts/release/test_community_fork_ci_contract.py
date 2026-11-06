@@ -51,7 +51,13 @@ def test_trusted_developer_check_and_promotion_remain_fork_closed() -> None:
 
     route = developer['jobs']['route']
     assert 'github.event.pull_request.head.repo.full_name == github.repository' in route['if']
-    assert route['runs-on'] == ['self-hosted', 'linux', 'x64', 'platform-ci']
+    # #4238: the trusted lightweight route migrates to hosted without changing
+    # the fail-closed same-repository guard. Both placements are allowed only
+    # during the separate staged runner migration; fork feedback is hosted.
+    assert route['runs-on'] in (
+        'ubuntu-24.04',
+        ['self-hosted', 'linux', 'x64', 'platform-ci'],
+    )
     for name in ('toolchain', 'python-check', 'validation-check', 'developer-check'):
         assert 'route' in developer['jobs'][name]['needs']
 
