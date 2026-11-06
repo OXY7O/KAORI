@@ -520,3 +520,19 @@ Merged temporary branches are deleted when no active dependency remains. `main` 
 ## Platform Governance Convergence
 
 When Platform Governance / Platform Workflow standards are formally approved, KAORI converges by gap analysis, terminology mapping, migration planning, replacing duplicated rules, referencing platform authority, and retaining KAORI-specific extensions.
+
+## GitHub branch-control activation preflight (issue #4216)
+
+**Status: evidence checklist only; not a declaration that protection is enabled.** Before an administrator changes rulesets, use the live repository Settings and exact existing workflow job contexts for KAORI, Website and Docs. Each repository must retain its own check names and deployment authority. Record sanitized screenshots or API/CLI output in the governing issue, with reviewer, date, repository, branch and effective inherited ruleset provenance. Do not publish bypass identities, credentials or sensitive organization policy details.
+
+| Test | Expected result | Evidence required before acceptance |
+| --- | --- | --- |
+| Enumerate effective branch rules for `main` and `kaori/staging` | No direct deletion or non-fast-forward update; identify legacy protections and inherited rules without assuming they are sufficient | Effective rule list, enforcement status, bypass scope, repository and branch |
+| Non-bypass direct push and force-push attempt to protected branches | Both rejected; never use a privileged maintainer identity as the negative-test actor | Sanitized rejected command/HTTP status and actor role, no tokens |
+| PR into `kaori/staging` with exact current Developer Check | Existing required check context resolves and succeeds only for a valid tested candidate | PR URL, exact head SHA, check name/conclusion and required-check mapping |
+| PR with failing or absent required check | Merge blocked; no permanently pending context for external fork PRs | Negative PR/check evidence and whether the workflow trigger actually runs |
+| External fork validation | Untrusted fork code executes only on approved hosted read-only runners, never on privileged self-hosted runners | Fork PR URL, job runner, token permissions and failed/successful check outcomes (#4214) |
+| `kaori/staging` to `main` promotion | Governed PR, human review and immutable release evidence; direct push blocked | Accepted source SHA, check lineage, approval and promotion PR |
+| Emergency/break-glass path | Explicitly approved, time-bounded and auditable; no undocumented bypass | Private owner acceptance and sanitized audit reference |
+
+**Activation order:** first verify #4214 fork-safe behavior and actual check contexts, then propose required-check/review settings for maintainer acceptance, then perform both positive and negative tests. A green Developer Check alone does not establish branch protection, Full Admission, or human UAT. Do not activate settings or claim a control PASS from this documentation change.
