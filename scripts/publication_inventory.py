@@ -18,7 +18,10 @@ def inventory(repo):
     repo = Path(repo).resolve()
     if git(repo, 'rev-parse', '--is-inside-work-tree').strip() != b'true':
         raise ValueError('not a git worktree')
-    # Normalize subdirectory invocations to the repository root: git ls-files\n    # otherwise counts only the caller's current subdirectory.\n    repo = Path(git(repo, 'rev-parse', '--show-toplevel').decode().strip()).resolve()\n    # A shallow checkout cannot establish complete publication history.
+    # Normalize subdirectory invocations to the repository root: git ls-files
+    # otherwise counts only the caller's current subdirectory.
+    repo = Path(git(repo, 'rev-parse', '--show-toplevel').decode().strip()).resolve()
+    # A shallow checkout cannot establish complete publication history.
     shallow = git(repo, 'rev-parse', '--is-shallow-repository').strip() == b'true'
     commits = int(git(repo, 'rev-list', '--all', '--count').strip())
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/tags').splitlines()
