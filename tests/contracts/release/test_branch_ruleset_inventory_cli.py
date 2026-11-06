@@ -58,3 +58,11 @@ def test_lookup_failure_is_fail_closed_not_reported_as_complete(tmp_path: Path) 
     assert len(calls) == 1
     assert "INCOMPLETE" in result.stderr
     assert "INVENTORY COMPLETE" not in result.stdout
+
+
+def test_dot_segment_repository_names_rejected_without_cli_calls(tmp_path: Path) -> None:
+    for invalid in ("../KAORI", "./KAORI", "OXY7O/..", "OXY7O/."):
+        result, calls = _run(tmp_path, ["OXY7O/KAORI", invalid])
+        assert result.returncode == 2, invalid
+        assert "invalid owner/repository" in result.stderr
+        assert calls == [], invalid
