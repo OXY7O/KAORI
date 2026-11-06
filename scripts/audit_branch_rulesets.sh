@@ -33,7 +33,8 @@ for repo in "$@"; do
   if ! gh ruleset list --repo "$repo"; then
     echo "UNKNOWN: ruleset inventory failed; check auth and repository access" >&2
     failed=1
-    continue
+    # A failed list does not establish that per-branch checks are unavailable.
+    # Continue independent effective-rule lookups and retain the incomplete result.
   fi
   for branch in main kaori/staging; do
     printf '\n--- %s ---\n' "$branch"
