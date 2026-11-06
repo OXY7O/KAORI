@@ -22,6 +22,8 @@ def inventory(repo):
     shallow = git(repo, 'rev-parse', '--is-shallow-repository').strip() == b'true'
     commits = int(git(repo, 'rev-list', '--all', '--count').strip())
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/tags').splitlines()
+    remote_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/remotes').splitlines()
+    other_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/notes', 'refs/stash').splitlines()
     tracked = git(repo, 'ls-files', '-z').split(b'\0')
     tracked_count = sum(bool(name) for name in tracked)
     history_objects = git(repo, 'rev-list', '--objects', '--all').splitlines()
