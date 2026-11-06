@@ -31,3 +31,11 @@ def test_public_readme_does_not_advertise_unapproved_community_launch() -> None:
     assert "github.com/oxy7o/kaori/discussions" not in readme.lower()
     assert "discussions are enabled" not in readme.lower()
     assert "not distributed under an OSI open-source license" in readme
+
+
+def test_readme_links_prelaunch_triage_without_claiming_community_activation() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "[community intake triage contract](docs/engineering/COMMUNITY_INTAKE_TRIAGE.md)" in readme
+    assert "not yet launched" in readme
+    assert "does not indicate that GitHub Discussions" in readme
+    assert "[`SECURITY.md`](SECURITY.md)" in readme
