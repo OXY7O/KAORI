@@ -95,6 +95,21 @@ class ReleaseAssetInventoryTests(unittest.TestCase):
                 self.assertEqual(result["release_metadata_access"], "FAILED_OR_INCOMPLETE")
                 self.assertNotIn("private", json.dumps(result))
 
+    def test_duplicate_json_keys_fail_closed_at_any_depth(self):
+        payloads = [
+            '[[{"id":1,"id":2,"draft":false,"prerelease":false,"assets":[]}]]',
+            '[[{"id":1,"draft":false,"prerelease":false,"assets":[{"id":10,"id":11}]}]]',
+            '[[{"id":1,"draft":false,"draft":true,"prerelease":false,"assets":[]}]]',
+        ]
+        for payload in payloads:
+            with self.subTest(payload=payload):
+                def runner(command, **kwargs):
+                    return subprocess.CompletedProcess(command, 0, payload, "")
+                result = module.inventory("OXY7O/KAORI", runner)
+                self.assertEqual(result["release_metadata_access"], "FAILED_OR_INCOMPLETE")
+                self.assertIsNone(result["release_count"])
+                self.assertEqual(result["assessment"], "INCOMPLETE")
+
     def test_invalid_repository_rejected_before_runner(self):
         def runner(*args, **kwargs):
             self.fail("runner must not be called")
