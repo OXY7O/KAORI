@@ -23,14 +23,23 @@ def inventory(repository, runner=subprocess.run):
         if not isinstance(pages, list) or not pages:
             raise ValueError("invalid pagination")
         artifacts = []
+        declared_total = None
         for page in pages:
             if not isinstance(page, dict) or not isinstance(page.get("artifacts"), list):
                 raise ValueError("invalid artifact page")
+            total = page.get("total_count")
+            if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+                raise ValueError("invalid total_count")
+            if declared_total is not None and total != declared_total:
+                raise ValueError("inconsistent total_count")
+            declared_total = total
             entries = page["artifacts"]
             if any(not isinstance(item, dict) or
                    not isinstance(item.get("expired"), bool) for item in entries):
                 raise ValueError("invalid artifact entries")
             artifacts.extend(entries)
+        if len(artifacts) != declared_total:
+            raise ValueError("incomplete artifact pagination")
         # An artifact may be listed more than once only if the upstream API
         # pagination is inconsistent. Fail closed instead of silently double-counting.
         ids = [a.get("id") for a in artifacts]
