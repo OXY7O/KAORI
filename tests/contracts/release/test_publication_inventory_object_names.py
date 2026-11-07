@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "publication_inventory.py"
+SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "publication_inventory.py"
 
 
 def _git(repo, *args):
