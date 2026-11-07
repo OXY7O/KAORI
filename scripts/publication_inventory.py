@@ -29,6 +29,10 @@ def inventory(repo):
     other_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/notes', 'refs/stash').splitlines()
     tracked = git(repo, 'ls-files', '-z').split(b'\0')
     tracked_count = sum(bool(name) for name in tracked)
+    # Gitlinks (mode 160000) refer to separately governed source histories.
+    # Count them without printing paths, remote URLs, or submodule contents.
+    staged = git(repo, 'ls-files', '--stage', '-z').split(b'\0')
+    submodule_count = sum(entry.startswith(b'160000 ') for entry in staged if entry)
     # Omit path names: filenames containing newlines must not inflate object counts.
     history_objects = git(repo, 'rev-list', '--objects', '--no-object-names', '--all').splitlines()
     return {'repository': repo.name, 'history_commit_count': commits,
@@ -37,9 +41,10 @@ def inventory(repo):
             'other_local_ref_count': len(other_refs),
             'shallow_checkout': shallow,
             'tracked_head_file_count': tracked_count,
+            'tracked_gitlink_count': submodule_count,
             'reachable_history_object_count': len(history_objects),
             'assessment': 'INCOMPLETE',
-            'limitations': 'Shallow checkout may omit history; only locally fetched refs are counted; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance'}
+            'limitations': 'Shallow checkout may omit history; only locally fetched refs are counted; gitlink repositories need independent review; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance'}
 
 
 def main():
