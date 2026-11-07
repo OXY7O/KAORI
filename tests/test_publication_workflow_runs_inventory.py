@@ -111,6 +111,26 @@ class WorkflowRunInventoryTests(unittest.TestCase):
         self.assertIsNone(result["conclusion_counts"])
         self.assertNotIn("never-print", json.dumps(result))
 
+    def test_sanitized_lifecycle_status_aggregation(self):
+        records = [
+            {"id": 1, "status": "completed", "conclusion": "success"},
+            {"id": 2, "status": "queued", "conclusion": None},
+            {"id": 3, "status": "in_progress", "conclusion": None},
+            {"id": 4, "status": "sensitive-provider-status", "conclusion": None},
+        ]
+        result = self.run_inventory([{"total_count": 4, "workflow_runs": records}])
+        self.assertEqual(result["status_counts"],
+                         {"completed": 1, "queued": 1, "in_progress": 1, "other": 1})
+        self.assertEqual(sum(result["status_counts"].values()), result["run_count"])
+        self.assertNotIn("sensitive-provider-status", json.dumps(result))
+
+    def test_invalid_status_fails_closed(self):
+        result = self.run_inventory([{"total_count": 1, "workflow_runs":
+                                     [{"id": 1, "status": {"private": "never-print"}}]}])
+        self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
+        self.assertIsNone(result["status_counts"])
+        self.assertNotIn("never-print", json.dumps(result))
+
     def test_invalid_repository_never_invokes_runner(self):
         for value in ("../KAORI", "OXY7O/..", "OXY7O/KAORI;id", None):
             with self.subTest(value=value):
