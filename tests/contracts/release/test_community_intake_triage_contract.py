@@ -7,7 +7,9 @@ TRIAGE = ROOT / "docs/engineering/COMMUNITY_INTAKE_TRIAGE.md"
 def test_community_intake_is_explicitly_prelaunch_and_issue_governed() -> None:
     content = TRIAGE.read_text(encoding="utf-8")
     assert "pre-launch / maintainer preparation" in content
-    assert "does not assert that GitHub Discussions" in content
+    assert "has_discussions=true" in content
+    assert "live acceptance NOT VERIFIED" in content
+    assert "not** accepted community launch" in content
     assert "GitHub Project" in content
     assert "create one bounded Issue" in content
     assert "maintainer-owned issue-linked branch" in content
