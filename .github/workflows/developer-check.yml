@@ -28,8 +28,8 @@ env:
 jobs:
   route:
     name: Route Checks
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    # A skipped job can satisfy a required check: run on a hosted worker and
+    # FAIL untrusted origins explicitly before checkout or privileged work.
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -47,6 +47,22 @@ jobs:
       reuse: ${{ steps.reuse.outcome == 'success' && steps.reuse.outputs.reuse == 'true' }}
       reuse_reason: ${{ steps.reuse.outputs.reuse_reason }}
     steps:
+      - name: Reject untrusted pull request before checkout
+        shell: bash
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'BLOCK: external fork is not authorized for trusted KAORI Developer Check.' >&2
+            exit 1
+          }
+          [[ "$HEAD_REF" == kaori/* && "$HEAD_REF" != kaori/staging ]] || {
+            echo 'BLOCK: source must be an issue-linked KAORI work branch, not staging.' >&2
+            exit 1
+          }
+
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -431,8 +447,9 @@ jobs:
       - toolchain
       - python-check
       - validation-check
-    if: ${{ always() && needs.route.result == 'success' }}
-    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    # Required Developer Check must FAIL when route denies a fork/invalid branch.
+    # Never skip the required status context on a failed or skipped route.
+    if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -440,6 +457,7 @@ jobs:
         shell: bash
         env:
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          ROUTE_RESULT: ${{ needs.route.result }}
           VERIFIED_DRAFT_REUSE: ${{ needs.route.outputs.reuse }}
           VERIFIED_DRAFT_REASON: ${{ needs.route.outputs.reuse_reason }}
           ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
@@ -456,6 +474,10 @@ jobs:
           VALIDATION_RESULT: ${{ needs.validation-check.result }}
         run: |
           set -Eeuo pipefail
+          [[ "$ROUTE_RESULT" == "success" ]] || {
+            echo 'BLOCK: required Developer Check denied; trusted route did not succeed.' >&2
+            exit 1
+          }
           python_required=false
           validation_required=false
           toolchain_required=false
