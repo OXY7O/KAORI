@@ -42,12 +42,23 @@ def inventory(repository, runner=subprocess.run):
         if (len(ids) != len(runs) or any(type(i) is not int or i <= 0 for i in ids)
                 or len(ids) != len(set(ids))):
             raise ValueError("invalid or duplicate run IDs")
+        # Aggregate only fixed outcome categories. Never emit workflow names, URLs,
+        # actor identities, job logs or unrecognized provider-controlled values.
+        outcomes = {"success": 0, "failure": 0, "cancelled": 0,
+                    "timed_out": 0, "action_required": 0, "other": 0}
+        for run in runs:
+            conclusion = run.get("conclusion")
+            if conclusion is not None and not isinstance(conclusion, str):
+                raise ValueError("invalid conclusion")
+            key = conclusion if conclusion in outcomes and conclusion != "other" else "other"
+            outcomes[key] += 1
     except (OSError, RuntimeError, ValueError, TypeError, subprocess.TimeoutExpired):
         return {"repository": repository, "assessment": "INCOMPLETE",
-                "run_metadata_access": "FAILED_OR_INCOMPLETE", "run_count": None,
+                "run_metadata_access": "FAILED_OR_INCOMPLETE", "run_count": None, "conclusion_counts": None,
                 "limitations": "Metadata unavailable or incomplete; no logs/content/rights clearance"}
     return {"repository": repository, "assessment": "INCOMPLETE",
             "run_metadata_access": "READ", "run_count": len(runs),
+            "conclusion_counts": outcomes,
             "limitations": "Retained run metadata only; logs, deleted runs, secrets and rights not reviewed"}
 
 
