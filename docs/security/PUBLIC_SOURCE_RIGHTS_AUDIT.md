@@ -15,6 +15,18 @@
 | Website and Docs | Independent owner-repository audits and generated-site publication checks | NOT VERIFIED |
 | Secret-scanning effectiveness | Existing Gitleaks/GitHub controls and historical coverage independently evidenced | NOT VERIFIED |
 
+## Verified public repository metadata — 2026-11-08 (limited scope)
+
+Read-only GitHub repository metadata and root `LICENSE` file reads established only the **current public/default-branch disclosure posture** below. These reads do not scan previous Git history, secret values, published build output, release assets, logs, third-party rights or contributor grants. They are **not** a per-repository publication or relicensing GO.
+
+| Repository | Visibility / default branch | Root code/content license on default branch | Finding |
+| --- | --- | --- | --- |
+| [OXY7O/KAORI](https://github.com/OXY7O/KAORI) | `public` / `main` | `KAORI INTERNAL USE LICENSE` | Published source is not yet licensed for unrestricted OSI reuse |
+| [OXY7O/kaori-website](https://github.com/OXY7O/kaori-website) | `public` / `main` | Root `LICENSE` absent | Website source and protected brand/material scopes require explicit license and rights review |
+| [OXY7O/kaori-docs](https://github.com/OXY7O/kaori-docs) | `public` / `main` | `KAORI INTERNAL USE LICENSE` | Code and publication-approved content require separately accepted rights/licensing scope |
+
+**Observed controls are not sign-off:** Public visibility is enabled for all three repositories and is not equivalent to open-source licensing. The current approved *proposal* is Apache-2.0 for rights-cleared source code and a distinct CC BY 4.0 scope for approved public documentation, with brand/trademark and third-party exclusions. No current license file was changed. Default-branch metadata says nothing about private history, previous releases or legal ownership; retain all eight coverage categories as **NOT VERIFIED** until their independent evidence is accepted.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
