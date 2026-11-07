@@ -46,3 +46,17 @@ def test_public_metadata_snapshot_never_replaces_rights_signoff() -> None:
     assert "No current license file was changed" in content
     assert content.count("| NOT VERIFIED |") == 8
     assert "**Decision: NO-GO" in content
+
+
+def test_release_and_workflow_snapshot_is_partial_not_exposure_clearance() -> None:
+    content = AUDIT.read_text(encoding="utf-8")
+    assert "Public release and workflow metadata snapshot — 2026-11-08" in content
+    for repo in ("OXY7O/KAORI", "OXY7O/kaori-website", "OXY7O/kaori-docs"):
+        assert repo in content
+    assert "3,583" in content and "251" in content and "222" in content
+    assert "0 attached Release assets" in content
+    assert "not** mean no registry OCI images" in content
+    assert "NOT VERIFIED**, not zero" in content
+    assert "not** a completed pagination" in content
+    assert "**Decision: NO-GO" in content
+    assert content.count("| NOT VERIFIED |") == 8
