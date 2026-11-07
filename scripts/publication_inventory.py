@@ -29,7 +29,7 @@ def inventory(repo):
     other_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/notes', 'refs/stash').splitlines()
     tracked = git(repo, 'ls-files', '-z').split(b'\0')
     tracked_count = sum(bool(name) for name in tracked)
-    history_objects = git(repo, 'rev-list', '--objects', '--all').splitlines()
+    # Omit path names: filenames containing newlines must not inflate object counts.\n    history_objects = git(repo, 'rev-list', '--objects', '--no-object-names', '--all').splitlines()
     return {'repository': repo.name, 'history_commit_count': commits,
             'local_branch_and_tag_ref_count': len(refs),
             'remote_tracking_ref_count': len(remote_refs),
