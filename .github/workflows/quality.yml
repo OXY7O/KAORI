@@ -599,7 +599,7 @@ jobs:
       - validation-profile
       - full-admission-gates
       - integration-smoke
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout Source
