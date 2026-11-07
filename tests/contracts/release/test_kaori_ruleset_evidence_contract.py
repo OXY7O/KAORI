@@ -9,27 +9,48 @@ ROOT = Path(__file__).resolve().parents[3]
 EVIDENCE = ROOT / "docs/engineering/KAORI_BRANCH_RULESETS_EVIDENCE.md"
 
 
-def test_ruleset_handover_does_not_claim_unverified_controls() -> None:
+def test_ruleset_handover_distinguishes_configured_rules_from_effective_enforcement() -> None:
     text = EVIDENCE.read_text(encoding="utf-8")
     assert "PARTIALLY VERIFIED, NOT ACCEPTED" in text
-    assert "26596521" in text
-    assert "refs/heads/main" in text
-    assert "refs/heads/kaori/staging" in text
-    assert "deletion" in text and "non_fast_forward" in text
+    for ruleset_id in (
+        "26596521", "26684718", "26685250",
+        "26685572", "26685631", "26685877",
+        "26687947", "26688007", "26688106",
+    ):
+        assert ruleset_id in text
+    for observed_value in (
+        "refs/heads/main",
+        "refs/heads/kaori/staging",
+        "deletion",
+        "non_fast_forward",
+        "required_approving_review_count: 0",
+        "required_review_thread_resolution: false",
+        "Developer Check",
+        "KAORI CI / Admission",
+        "Website Validation",
+        "Docs Validation",
+    ):
+        assert observed_value in text
 
-    unverified = (
-        "Required PR review / resolved conversations",
-        "Exact required check contexts",
+    gaps = {
+        "Required PR review / resolved conversations": "GAP VERIFIED",
+        "Exact required check contexts": "VERIFIED (configured for staging)",
+        "Website and Docs repository protections": "PARTIALLY VERIFIED",
+    }
+    for control, expected_state in gaps.items():
+        rows = [line for line in text.splitlines() if line.startswith(f"| {control} |")]
+        assert len(rows) == 1, control
+        assert f"| {expected_state}" in rows[0], control
+
+    for control in (
         "Direct-push prevention / merge method policy",
         "Repository Actions permissions / runner groups / environments",
         "Organization 2FA / app permissions / emergency access",
-        "Website and Docs repository protections",
-    )
-    for control in unverified:
-        rows = [line for line in text.splitlines() if line.startswith(f"| {control} |")]
-        assert len(rows) == 1, control
-        assert "| NOT VERIFIED |" in rows[0], control
-
+        "main",
+    ):
+        assert control in text
+    assert "NOT VERIFIED (effective)" in text
+    assert "GitHub Settings mutations" in text
 
 def test_ruleset_handover_preserves_admission_and_security_boundaries() -> None:
     text = EVIDENCE.read_text(encoding="utf-8")
