@@ -15,8 +15,11 @@ def inventory(repository, runner=subprocess.run):
         raise ValueError("invalid owner/repository")
     command = ["gh", "api", "--paginate", "--slurp",
                f"repos/{repository}/releases?per_page=100"]
-    result = runner(command, capture_output=True, text=True, check=False)
-    if result.returncode != 0:
+    try:
+        result = runner(command, capture_output=True, text=True, check=False)
+    except OSError:
+        result = None
+    if result is None or result.returncode != 0:
         return {"repository": repository, "assessment": "INCOMPLETE",
                 "release_metadata_access": "FAILED",
                 "release_count": None, "asset_count": None,
@@ -27,8 +30,18 @@ def inventory(repository, runner=subprocess.run):
             raise ValueError("invalid release pagination")
         releases = [release for page in pages for release in page]
         if any(not isinstance(release, dict) or
+               not isinstance(release.get("id"), int) or isinstance(release.get("id"), bool) or
                not isinstance(release.get("assets"), list) for release in releases):
             raise ValueError("invalid release metadata")
+        ids = [release["id"] for release in releases]
+        if len(ids) != len(set(ids)):
+            raise ValueError("duplicate release IDs")
+        for release in releases:
+            asset_ids = [asset.get("id") for asset in release["assets"] if isinstance(asset, dict)]
+            if (len(asset_ids) != len(release["assets"]) or
+                any(not isinstance(asset_id, int) or isinstance(asset_id, bool) for asset_id in asset_ids) or
+                len(asset_ids) != len(set(asset_ids))):
+                raise ValueError("invalid or duplicate asset IDs")
     except (ValueError, TypeError):
         return {"repository": repository, "assessment": "INCOMPLETE",
                 "release_metadata_access": "INVALID",
