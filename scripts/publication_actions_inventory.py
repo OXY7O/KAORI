@@ -16,7 +16,7 @@ def inventory(repository, runner=subprocess.run):
     command = ["gh", "api", "--paginate", "--slurp",
                f"repos/{repository}/actions/artifacts?per_page=100"]
     try:
-        result = runner(command, capture_output=True, text=True, check=False)
+        result = runner(command, capture_output=True, text=True, check=False, timeout=30)
         if result.returncode != 0:
             raise RuntimeError("API failed")
         pages = json.loads(result.stdout)
@@ -43,9 +43,9 @@ def inventory(repository, runner=subprocess.run):
         # An artifact may be listed more than once only if the upstream API
         # pagination is inconsistent. Fail closed instead of silently double-counting.
         ids = [a.get("id") for a in artifacts]
-        if any(not isinstance(i, int) or isinstance(i, bool) for i in ids) or len(ids) != len(set(ids)):
+        if any(not isinstance(i, int) or isinstance(i, bool) or i <= 0 for i in ids) or len(ids) != len(set(ids)):
             raise ValueError("missing or duplicate artifact IDs")
-    except (OSError, RuntimeError, ValueError, TypeError):
+    except (OSError, RuntimeError, ValueError, TypeError, subprocess.TimeoutExpired):
         return {"repository": repository, "assessment": "INCOMPLETE",
                 "artifact_metadata_access": "FAILED_OR_INVALID",
                 "artifact_count": None, "expired_count": None,
