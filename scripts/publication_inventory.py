@@ -23,7 +23,11 @@ def inventory(repo):
     repo = Path(git(repo, 'rev-parse', '--show-toplevel').decode().strip()).resolve()
     # A shallow checkout cannot establish complete publication history.
     shallow = git(repo, 'rev-parse', '--is-shallow-repository').strip() == b'true'
-    commits = int(git(repo, 'rev-list', '--all', '--count').strip())
+    # Detached HEAD can contain a commit absent from every local ref.
+    # Include it in the inventory without implying remote/public completeness.
+    referenced_commits = set(git(repo, 'rev-list', '--all').splitlines())
+    head_outside_refs = git(repo, 'rev-parse', 'HEAD').strip() not in referenced_commits
+    commits = int(git(repo, 'rev-list', '--all', 'HEAD', '--count').strip())
     refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/tags').splitlines()
     remote_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/remotes').splitlines()
     other_refs = git(repo, 'for-each-ref', '--format=%(refname)', 'refs/notes', 'refs/stash').splitlines()
@@ -34,17 +38,18 @@ def inventory(repo):
     staged = git(repo, 'ls-files', '--stage', '-z').split(b'\0')
     submodule_count = sum(entry.startswith(b'160000 ') for entry in staged if entry)
     # Omit path names: filenames containing newlines must not inflate object counts.
-    history_objects = git(repo, 'rev-list', '--objects', '--no-object-names', '--all').splitlines()
+    history_objects = git(repo, 'rev-list', '--objects', '--no-object-names', '--all', 'HEAD').splitlines()
     return {'repository': repo.name, 'history_commit_count': commits,
             'local_branch_and_tag_ref_count': len(refs),
             'remote_tracking_ref_count': len(remote_refs),
             'other_local_ref_count': len(other_refs),
             'shallow_checkout': shallow,
+            'head_outside_local_refs': head_outside_refs,
             'tracked_head_file_count': tracked_count,
             'tracked_gitlink_count': submodule_count,
             'reachable_history_object_count': len(history_objects),
             'assessment': 'INCOMPLETE',
-            'limitations': 'Shallow checkout may omit history; only locally fetched refs are counted; gitlink repositories need independent review; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance'}
+            'limitations': 'Shallow checkout may omit history; only locally fetched refs and checked-out HEAD are counted; gitlink repositories need independent review; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance'}
 
 
 def main():

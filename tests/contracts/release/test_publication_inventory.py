@@ -28,3 +28,29 @@ class InventoryTests(unittest.TestCase):
             self.assertGreater(result['reachable_history_object_count'], 2)
             self.assertNotIn('temporary-secret-name', str(result))
             self.assertEqual(result['assessment'], 'INCOMPLETE')
+
+    def test_detached_head_commit_is_included_without_exposing_content(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d)
+
+            def git(*args):
+                return subprocess.run(['git', '-C', d, *args], check=True,
+                                      capture_output=True).stdout.strip()
+
+            git('init', '-q')
+            git('config', 'user.name', 'Test')
+            git('config', 'user.email', 'test@example.invalid')
+            (repo / 'base.txt').write_text('base')
+            git('add', '.')
+            git('commit', '-qm', 'base')
+            base = git('rev-parse', 'HEAD').decode()
+            git('checkout', '--detach', '-q', base)
+            (repo / 'private-detached-name.txt').write_text('placeholder')
+            git('add', '.')
+            git('commit', '-qm', 'detached')
+            result = inventory(repo)
+            self.assertTrue(result['head_outside_local_refs'])
+            self.assertEqual(result['history_commit_count'], 2)
+            self.assertGreaterEqual(result['reachable_history_object_count'], 6)
+            self.assertNotIn('private-detached-name', str(result))
+            self.assertEqual(result['assessment'], 'INCOMPLETE')
