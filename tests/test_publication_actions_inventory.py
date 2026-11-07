@@ -69,6 +69,14 @@ class ArtifactInventoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.inventory("OXY7O/KAORI;rm -rf /")
 
+    def test_rejects_dot_segment_repository_without_invoking_gh(self):
+        def forbidden_runner(*args, **kwargs):
+            self.fail("GitHub CLI must not run for invalid repository segments")
+        for invalid in ("../KAORI", "OXY7O/..", "./KAORI", "OXY7O/.", None):
+            with self.subTest(repository=invalid):
+                with self.assertRaises(ValueError):
+                    module.inventory(invalid, forbidden_runner)
+
 
 if __name__ == "__main__":
     unittest.main()
