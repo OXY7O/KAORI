@@ -51,6 +51,43 @@ class WorkflowRunInventoryTests(unittest.TestCase):
         result = self.run_inventory([], returncode=1)
         self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
 
+    def test_malformed_pages_and_run_records_fail_closed(self):
+        cases = [
+            [],
+            {},
+            [None],
+            [{"workflow_runs": [], "total_count": True}],
+            [{"workflow_runs": [], "total_count": -1}],
+            [{"workflow_runs": [], "total_count": "0"}],
+            [{"workflow_runs": [None], "total_count": 1}],
+            [{"workflow_runs": ["unexpected"], "total_count": 1}],
+            [{"workflow_runs": [{"name": "missing id"}], "total_count": 1}],
+        ]
+        for pages in cases:
+            with self.subTest(pages=pages):
+                result = self.run_inventory(pages)
+                self.assertEqual(result["assessment"], "INCOMPLETE")
+                self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
+                self.assertIsNone(result["run_count"])
+
+    def test_missing_cli_and_timeout_fail_closed_without_details(self):
+        for error in (FileNotFoundError("sensitive executable path"),
+                      subprocess.TimeoutExpired(["gh", "api", "sensitive"], 30)):
+            with self.subTest(error=type(error).__name__):
+                def runner(*args, **kwargs):
+                    raise error
+                result = module.inventory("OXY7O/KAORI", runner)
+                self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
+                self.assertIsNone(result["run_count"])
+                self.assertNotIn("sensitive", json.dumps(result))
+
+    def test_invalid_json_and_api_stderr_are_not_exposed(self):
+        def runner(command, **kwargs):
+            return subprocess.CompletedProcess(command, 0, "{invalid-json", "private diagnostic")
+        result = module.inventory("OXY7O/KAORI", runner)
+        self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
+        self.assertNotIn("private diagnostic", json.dumps(result))
+
     def test_invalid_repository_never_invokes_runner(self):
         for value in ("../KAORI", "OXY7O/..", "OXY7O/KAORI;id", None):
             with self.subTest(value=value):
