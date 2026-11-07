@@ -32,3 +32,17 @@ def test_publication_audit_does_not_authorize_license_cutover_or_public_findings
     assert "#4213" in content
     assert "#4215" in content
     assert LICENSE.is_file()
+
+
+
+def test_public_metadata_snapshot_never_replaces_rights_signoff() -> None:
+    content = AUDIT.read_text(encoding="utf-8")
+    assert "Verified public repository metadata" in content
+    for repo in ("OXY7O/KAORI", "OXY7O/kaori-website", "OXY7O/kaori-docs"):
+        assert repo in content
+    assert content.count("KAORI INTERNAL USE LICENSE") == 2
+    assert "Root `LICENSE` absent" in content
+    assert "not equivalent to open-source licensing" in content
+    assert "No current license file was changed" in content
+    assert content.count("| NOT VERIFIED |") == 8
+    assert "**Decision: NO-GO" in content
