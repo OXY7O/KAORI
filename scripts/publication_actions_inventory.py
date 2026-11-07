@@ -11,7 +11,9 @@ import subprocess
 
 
 def inventory(repository, runner=subprocess.run):
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+    if (not isinstance(repository, str) or
+            not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) or
+            any(part in (".", "..") for part in repository.split("/"))):
         raise ValueError("invalid owner/repository")
     command = ["gh", "api", "--paginate", "--slurp",
                f"repos/{repository}/actions/artifacts?per_page=100"]
