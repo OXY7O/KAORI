@@ -1,10 +1,10 @@
 # Community feedback intake — maintainer triage contract
 
-**Status: pre-launch / maintainer preparation.** This document does not assert that GitHub Discussions, private vulnerability reporting, external contribution acceptance, or public support commitments are enabled. External contribution launch requires explicit maintainer acceptance after #4212 (publication and rights), #4214 (fork-safe validation), #4215 (native security), #4216 (rulesets), and the shared OXY7O/.github policy issue #2.
+**Status: pre-launch / maintainer preparation.** GitHub repository metadata reported `has_discussions=true` for `OXY7O/KAORI` on 2026-11-08 (Asia/Jakarta). This observation establishes only the repository toggle, **not** accepted community launch, configured categories/moderation, a successful live triage rehearsal, private vulnerability reporting, external contribution acceptance, or public support commitments. External contribution launch requires explicit maintainer acceptance after #4212 (publication and rights), #4214 (fork-safe validation), #4215 (native security), #4216 (rulesets), and the shared OXY7O/.github policy issue #2.
 
 ## One planning authority
 
-GitHub Discussions, when enabled by an administrator, is a feedback and conversation surface—not a substitute for a governed KAORI Issue or GitHub Project. Do not copy Project Status, Priority, Sprint, Story Points, Issue Type, or relationship metadata into Issue bodies. Maintain native metadata and relationships using the existing taxonomy and delivery workflow.
+GitHub Discussions is a feedback and conversation surface—not a substitute for a governed KAORI Issue or GitHub Project. Its observed repository toggle does not authorize issue intake or release by itself. Do not copy Project Status, Priority, Sprint, Story Points, Issue Type, or relationship metadata into Issue bodies. Maintain native metadata and relationships using the existing taxonomy and delivery workflow.
 
 ## Maintainer decision path
 
@@ -20,7 +20,7 @@ For every submission: search for duplicates first, distinguish **acknowledged** 
 
 ## Sanitized triage rehearsal (documentation example, NOT an executed Discussion)
 
-This example makes the acceptance boundary reviewable without implying that public Discussions is enabled or that a real contributor was contacted. A maintainer must separately perform and record the live test required by the activation checklist.
+This example makes the acceptance boundary reviewable without implying that community launch was approved or that a real Discussion was created or a contributor contacted. A maintainer must separately perform and record the live test required by the activation checklist.
 
 | Field | Example evidence / decision |
 | --- | --- |
@@ -38,7 +38,7 @@ This example makes the acceptance boundary reviewable without implying that publ
 - [ ] Rights/publication review records GO for the relevant repository (#4212).
 - [ ] Fork safety and security controls have actual negative-test evidence (#4214/#4215/#4216).
 - [ ] Shared organization community policy is accepted (OXY7O/.github#2).
-- [ ] Maintainer enables GitHub Discussions and confirms the intended categories: Announcements, Ideas, Q&A, General, Show and Tell.
+- [ ] Admin verifies the observed `has_discussions=true` setting, actual public access, moderation and intended categories (Announcements, Ideas, Q&A, General, Show and Tell); toggle observed 2026-11-08, **live acceptance NOT VERIFIED**.
 - [ ] Private vulnerability intake is independently verified; public navigation never directs vulnerability details to Discussions.
 - [ ] A sanitized test Discussion is triaged against existing Issue/Project metadata without creating a duplicate.
 - [ ] README, contribution and support links are updated only after their actual destinations exist and launch is approved.
