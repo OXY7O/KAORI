@@ -33,7 +33,15 @@ def inventory(repository, runner=subprocess.run):
             raise ValueError("API failed")
         if not isinstance(response.stdout, str) or len(response.stdout.encode('utf-8')) > MAX_RESPONSE_BYTES:
             raise ValueError('response exceeds inventory budget')
-        pages = json.loads(response.stdout)
+        def reject_duplicate_keys(pairs):
+            record = {}
+            for key, value in pairs:
+                if key in record:
+                    raise ValueError("ambiguous JSON metadata")
+                record[key] = value
+            return record
+
+        pages = json.loads(response.stdout, object_pairs_hook=reject_duplicate_keys)
         if not isinstance(pages, list) or not pages or len(pages) > MAX_PAGES:
             raise ValueError("invalid pagination")
         releases = []
