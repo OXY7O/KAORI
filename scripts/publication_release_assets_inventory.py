@@ -9,6 +9,10 @@ import json
 import re
 import subprocess
 
+MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+MAX_PAGES = 1000
+MAX_ASSETS = 100000
+
 
 def inventory(repository, runner=subprocess.run):
     if (not isinstance(repository, str)
@@ -27,8 +31,10 @@ def inventory(repository, runner=subprocess.run):
                           check=False, timeout=30)
         if response.returncode:
             raise ValueError("API failed")
+        if not isinstance(response.stdout, str) or len(response.stdout.encode('utf-8')) > MAX_RESPONSE_BYTES:
+            raise ValueError('response exceeds inventory budget')
         pages = json.loads(response.stdout)
-        if not isinstance(pages, list) or not pages:
+        if not isinstance(pages, list) or not pages or len(pages) > MAX_PAGES:
             raise ValueError("invalid pagination")
         releases = []
         for page in pages:
@@ -59,6 +65,8 @@ def inventory(repository, runner=subprocess.run):
                     raise ValueError("invalid asset ID")
                 asset_ids.add(aid)
                 asset_count += 1
+                if asset_count > MAX_ASSETS:
+                    raise ValueError('asset inventory exceeds budget')
         # GitHub release listings are retention- and permission-dependent; no
         # historical completeness can be inferred from successful pagination.
         result.update(release_metadata_access="READ", release_count=len(releases),
