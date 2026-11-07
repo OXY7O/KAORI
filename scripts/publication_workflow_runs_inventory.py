@@ -46,7 +46,13 @@ def inventory(repository, runner=subprocess.run):
         # actor identities, job logs or unrecognized provider-controlled values.
         outcomes = {"success": 0, "failure": 0, "cancelled": 0,
                     "timed_out": 0, "action_required": 0, "other": 0}
+        statuses = {"completed": 0, "queued": 0, "in_progress": 0, "other": 0}
         for run in runs:
+            status = run.get("status")
+            if status is not None and not isinstance(status, str):
+                raise ValueError("invalid status")
+            status_key = status if status in statuses and status != "other" else "other"
+            statuses[status_key] += 1
             conclusion = run.get("conclusion")
             if conclusion is not None and not isinstance(conclusion, str):
                 raise ValueError("invalid conclusion")
@@ -54,11 +60,11 @@ def inventory(repository, runner=subprocess.run):
             outcomes[key] += 1
     except (OSError, RuntimeError, ValueError, TypeError, subprocess.TimeoutExpired):
         return {"repository": repository, "assessment": "INCOMPLETE",
-                "run_metadata_access": "FAILED_OR_INCOMPLETE", "run_count": None, "conclusion_counts": None,
+                "run_metadata_access": "FAILED_OR_INCOMPLETE", "run_count": None, "conclusion_counts": None, "status_counts": None,
                 "limitations": "Metadata unavailable or incomplete; no logs/content/rights clearance"}
     return {"repository": repository, "assessment": "INCOMPLETE",
             "run_metadata_access": "READ", "run_count": len(runs),
-            "conclusion_counts": outcomes,
+            "conclusion_counts": outcomes, "status_counts": statuses,
             "limitations": "Retained run metadata only; logs, deleted runs, secrets and rights not reviewed"}
 
 
