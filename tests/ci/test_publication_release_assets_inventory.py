@@ -74,3 +74,27 @@ def test_invalid_repository_never_calls_cli():
             pass
         else:
             raise AssertionError("invalid repository accepted")
+
+
+def test_oversized_response_fails_closed_without_echoing_content(monkeypatch):
+    monkeypatch.setattr(module, "MAX_RESPONSE_BYTES", 20)
+    result = module.inventory("OXY7O/KAORI", fake([[{"id": 1, "draft": False,
+        "prerelease": False, "assets": [], "body": "private-value"}]]))
+    assert result["release_metadata_access"] == "FAILED_OR_INCOMPLETE"
+    assert result["release_count"] is None
+    assert "private-value" not in json.dumps(result)
+
+
+def test_page_budget_fails_closed(monkeypatch):
+    monkeypatch.setattr(module, "MAX_PAGES", 1)
+    result = module.inventory("OXY7O/KAORI", fake([[], []]))
+    assert result["release_metadata_access"] == "FAILED_OR_INCOMPLETE"
+
+
+def test_asset_budget_fails_closed(monkeypatch):
+    monkeypatch.setattr(module, "MAX_ASSETS", 1)
+    release = {"id": 1, "draft": False, "prerelease": False,
+               "assets": [{"id": 1}, {"id": 2}]}
+    result = module.inventory("OXY7O/KAORI", fake([[release]]))
+    assert result["asset_count"] is None
+    assert result["assessment"] == "INCOMPLETE"
