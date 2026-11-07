@@ -88,6 +88,29 @@ class WorkflowRunInventoryTests(unittest.TestCase):
         self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
         self.assertNotIn("private diagnostic", json.dumps(result))
 
+    def test_sanitized_outcome_aggregation(self):
+        records = [
+            {"id": 1, "conclusion": "success", "name": "private workflow", "logs_url": "https://private.invalid"},
+            {"id": 2, "conclusion": "failure"},
+            {"id": 3, "conclusion": None},
+            {"id": 4, "conclusion": "unexpected-sensitive-value"},
+        ]
+        result = self.run_inventory([{"total_count": 4, "workflow_runs": records}])
+        self.assertEqual(result["conclusion_counts"],
+                         {"success": 1, "failure": 1, "cancelled": 0,
+                          "timed_out": 0, "action_required": 0, "other": 2})
+        self.assertEqual(sum(result["conclusion_counts"].values()), result["run_count"])
+        self.assertNotIn("private workflow", json.dumps(result))
+        self.assertNotIn("unexpected-sensitive-value", json.dumps(result))
+        self.assertNotIn("private.invalid", json.dumps(result))
+
+    def test_malformed_conclusion_fails_closed(self):
+        result = self.run_inventory([{"total_count": 1, "workflow_runs":
+                                      [{"id": 1, "conclusion": {"secret": "never-print"}}]}])
+        self.assertEqual(result["run_metadata_access"], "FAILED_OR_INCOMPLETE")
+        self.assertIsNone(result["conclusion_counts"])
+        self.assertNotIn("never-print", json.dumps(result))
+
     def test_invalid_repository_never_invokes_runner(self):
         for value in ("../KAORI", "OXY7O/..", "OXY7O/KAORI;id", None):
             with self.subTest(value=value):
