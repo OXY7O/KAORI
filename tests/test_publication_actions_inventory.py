@@ -45,6 +45,26 @@ class ArtifactInventoryTests(unittest.TestCase):
         self.assertEqual(report["artifact_metadata_access"], "FAILED_OR_INVALID")
         self.assertIsNone(report["artifact_count"])
 
+    def test_timeout_fails_closed_without_disclosing_command(self):
+        def runner(command, **kwargs):
+            self.assertEqual(kwargs["timeout"], 30)
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"], output="private")
+        report = module.inventory("OXY7O/KAORI", runner)
+        self.assertEqual(report["artifact_metadata_access"], "FAILED_OR_INVALID")
+        self.assertIsNone(report["artifact_count"])
+        self.assertNotIn("private", json.dumps(report))
+
+    def test_nonpositive_artifact_id_fails_closed(self):
+        for invalid_id in (0, -1):
+            with self.subTest(invalid_id=invalid_id):
+                pages = [{"total_count": 1, "artifacts": [{"id": invalid_id, "expired": False}]}]
+                report = module.inventory(
+                    "OXY7O/KAORI",
+                    lambda c, **k: subprocess.CompletedProcess(c, 0, json.dumps(pages), ""),
+                )
+                self.assertEqual(report["artifact_metadata_access"], "FAILED_OR_INVALID")
+                self.assertIsNone(report["artifact_count"])
+
     def test_rejects_untrusted_repository(self):
         with self.assertRaises(ValueError):
             module.inventory("OXY7O/KAORI;rm -rf /")
