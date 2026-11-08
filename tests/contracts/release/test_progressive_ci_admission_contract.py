@@ -206,6 +206,25 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
     assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
 
 
+
+def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\\n  validation-profile:', 1)[1].split('\\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\\n  full-admission-gates:', 1)[1].split('\\n  integration-smoke:', 1)[0]
+    admission = workflow.split('\\n  admission:', 1)[1]
+
+    assert 'runs-on: ubuntu-24.04' in admission
+    assert admission.count('python3 scripts/ci_admission.py ') == 3
+    assert 'docker run' not in admission
+    assert 'CI_TOOLCHAIN_IMAGE:' not in admission
+    assert 'statuses: write' in admission
+    assert 'name: CI Admission' in admission
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in profile
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in matrix
+    assert 'Resolve CI Toolchain' in profile
+    assert 'CI_TOOLCHAIN_IMAGE=' in matrix
+
+
 def test_full_admission_junit_handoff_survives_failed_job_reruns() -> None:
     source = read(WORKFLOW)
     matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
