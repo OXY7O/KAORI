@@ -85,10 +85,9 @@
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         {% if item.account %}
-                                            {{ table_ui.title_cell(
-                                                item.account.login if item.account.login else 'Account Name Unknown',
-                                                'Native Account #' ~ item.account.native_account_id,
-                                                'users') }}
+                                            {{ table_ui.title_cell(item.account.login if item.account.login else 'Account Name Unknown',
+                                                                                        'Native Account #' ~ item.account.native_account_id,
+                                                                                        'users') }}
                                             <p class="mt-1 text-xs text-content-secondary">
                                                 {{ item.account.account_type or 'Type Unknown' }} ·
                                                 {% if item.account.last_observed_at %}

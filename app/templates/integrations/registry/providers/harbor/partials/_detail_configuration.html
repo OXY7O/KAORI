@@ -71,7 +71,9 @@ setup_reference_template="integrations/registry/providers/harbor/partials/_minim
             {% if receiver_host in ['localhost', '127.0.0.1'] or request.host.startswith('[::1]') %}
                 <p class="mt-2 flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2 text-xs leading-5 text-content-secondary"
                    role="note">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                    <i data-lucide="triangle-alert"
+                       class="mt-0.5 h-4 w-4 shrink-0"
+                       aria-hidden="true"></i>
                     <span>This loopback URL is normally unreachable from Harbor on another host or container. Configure a Harbor-reachable HTTPS address before testing delivery.</span>
                 </p>
             {% endif %}
