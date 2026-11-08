@@ -76,7 +76,7 @@ def test_ruleset_handover_flags_skipped_required_checks_without_claiming_staging
         "before checkout",
         "Draft PR to official staging",
         "PENDING",
-        "real fork negative test",
+        "Real fork negative test",
         "403 Resource not accessible by integration",
         "different conditions",
         "single-maintainer deadlock",
