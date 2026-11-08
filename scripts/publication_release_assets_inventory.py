@@ -12,6 +12,7 @@ import subprocess
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 MAX_PAGES = 1000
 MAX_ASSETS = 100000
+MAX_RELEASES = 100000
 
 
 def inventory(repository, runner=subprocess.run):
@@ -48,6 +49,8 @@ def inventory(repository, runner=subprocess.run):
         for page in pages:
             if not isinstance(page, list):
                 raise ValueError("invalid page")
+            if len(releases) + len(page) > MAX_RELEASES:
+                raise ValueError('release inventory exceeds budget')
             releases.extend(page)
         ids, asset_ids = set(), set()
         asset_count = drafts = prereleases = 0
@@ -81,7 +84,7 @@ def inventory(repository, runner=subprocess.run):
                       asset_count=asset_count, draft_count=drafts,
                       prerelease_count=prereleases,
                       limitations="Accessible release/asset metadata only; deleted releases, asset bytes, workflow logs, secrets and rights not reviewed")
-    except (OSError, ValueError, TypeError, subprocess.TimeoutExpired):
+    except (OSError, ValueError, TypeError, UnicodeError, subprocess.TimeoutExpired):
         pass
     return result
 
