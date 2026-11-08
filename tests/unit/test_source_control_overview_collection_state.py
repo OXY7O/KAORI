@@ -11,7 +11,7 @@ from app.source_control import presentation
 
 
 class _Query:
-    def __init__(self, rows: list[tuple[object, object, object | None]]) -> None:
+    def __init__(self, rows: list[tuple[object, object, object | None, object | None]]) -> None:
         self._rows = rows
 
     def join(self, *_args: object) -> _Query:
@@ -29,7 +29,7 @@ class _Query:
     def limit(self, *_args: object) -> _Query:
         return self
 
-    def all(self) -> list[tuple[object, object, object | None]]:
+    def all(self) -> list[tuple[object, object, object | None, object | None]]:
         return self._rows
 
 
@@ -50,7 +50,7 @@ def test_source_control_overview_reports_committed_only_when_generation_exists(
         if generation is not None
         else None
     )
-    rows = [(SimpleNamespace(id=17), SimpleNamespace(id=21), collection)]
+    rows = [(SimpleNamespace(id=17), SimpleNamespace(id=21), collection, None)]
     query = _Query(rows)
     monkeypatch.setattr(
         presentation,
@@ -65,6 +65,7 @@ def test_source_control_overview_reports_committed_only_when_generation_exists(
     assert overview['installation_count'] == 1
     assert overview['committed_count'] == int(committed)
     assert overview['uncollected_count'] == int(not committed)
+    assert installation['account'] is None
     assert installation['committed'] is committed
     assert installation['observed_count'] == (0 if committed else None)
     assert installation['coverage'] == ('complete' if committed else 'unknown')

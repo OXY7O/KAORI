@@ -62,11 +62,12 @@
                 {% include "components/states/_empty_state.html" %}
             {% else %}
                 <div class="w-full min-w-0 overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[840px]') }}">
+                    <table class="{{ table_ui.table_classes('min-w-[1020px]') }}">
                         <caption class="sr-only">Committed inventory coverage per GitHub App installation.</caption>
                         <thead class="{{ table_ui.head_classes() }}">
                             <tr>
                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Installation</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">GitHub Account</th>
                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection</th>
                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Coverage</th>
                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed Repositories</th>
@@ -81,6 +82,23 @@
                                         {{ table_ui.title_cell(item.connection.name,
                                                                                 'Installation #' ~ item.installation.native_installation_id,
                                                                                 'git-branch') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {% if item.account %}
+                                            {{ table_ui.title_cell(item.account.login if item.account.login else 'Account Name Unknown',
+                                                                                        'Native Account #' ~ item.account.native_account_id,
+                                                                                        'users') }}
+                                            <p class="mt-1 text-xs text-content-secondary">
+                                                {{ item.account.account_type or 'Type Unknown' }} ·
+                                                {% if item.account.last_observed_at %}
+                                                    {{ item.account.last_observed_at|user_datetime }}
+                                                {% else %}
+                                                    Observation Unknown
+                                                {% endif %}
+                                            </p>
+                                        {% else %}
+                                            <span class="text-content-secondary">Account Not Observed</span>
+                                        {% endif %}
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else 'not_observed',

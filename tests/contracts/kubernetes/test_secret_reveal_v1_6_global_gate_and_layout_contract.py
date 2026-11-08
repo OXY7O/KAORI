@@ -9,9 +9,11 @@ def read(relative: str) -> str:
 
 def test_protected_reveal_global_gate_is_explicit_without_bypassing_policy() -> None:
     service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    read_model = read('app/kubernetes/operations/secrets/reveal_read_model.py')
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
-    clusters_block = service.split('def get_reveal_clusters(', 1)[1].split('def get_reveal_workspace(', 1)[0]
+    clusters_block = read_model.split('def get_reveal_clusters(', 1)[1].split('@dataclass(', 1)[0]
+    assert 'get_reveal_clusters as get_reveal_clusters,' in service
     assert 'if not _global_enabled():' in clusters_block
     assert 'return []' in clusters_block
     assert '_cluster_ready(cluster)' in clusters_block
@@ -32,11 +34,13 @@ def test_protected_reveal_global_gate_is_explicit_without_bypassing_policy() -> 
 
 def test_protected_reveal_reports_configured_policy_count_while_global_gate_is_off() -> None:
     service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    read_model = read('app/kubernetes/operations/secrets/reveal_read_model.py')
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
-    assert 'SecretRevealNamespacePolicy' in service
-    assert "SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))" in service
-    assert "'configured_reveal_namespace_count': configured_reveal_namespace_count" in service
+    assert 'get_reveal_page_context as get_reveal_page_context,' in service
+    assert 'SecretRevealNamespacePolicy' in read_model
+    assert "SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))" in read_model
+    assert "'configured_reveal_namespace_count': configured_reveal_namespace_count" in read_model
     assert 'configured_reveal_namespace_count' in page
     assert 'policy-enabled Namespace' in page
 

@@ -337,6 +337,15 @@ run_static_group() {
                         invalid = 1
                         next
                     }
+                    # Reject blank, whitespace-padded and comma-corrupted
+                    # names. Malformed ownership must never become "1 named".
+                    for (j = 1; j <= verifier_count; j++) {
+                        if (verifiers[j] !~ /^[A-Za-z0-9_./-]+$/) {
+                            invalid = 1
+                            break
+                        }
+                    }
+                    if (invalid) next
                     verifier_label = verifier_count " named"
                 }
                 names[++total] = title
@@ -399,6 +408,11 @@ render_test_taxonomy_summary() {
 
 run_static() {
     mkdir -p "$STATIC_OUTPUT_DIR"
+
+    # Static checks run in an isolated checkout: compiled Violet CSS is generated,
+    # never tracked (#4355). Build it before Dark Mode Standard verifies tokens.
+    run_timed_setup 'Static CSS npm dependencies' npm ci --no-audit --no-fund
+    run_timed_setup 'Static CSS build' npm run build-css
     {
         printf '### Static & Governance — executed verifier inventory\n\n'
         printf 'Each row below is an **executed** verifier, not a count of individual unit tests.\n'

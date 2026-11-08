@@ -21,11 +21,11 @@ command -v npm >/dev/null 2>&1 || fail 'npm is unavailable.'
 log 'Installing exact frontend dependencies from package-lock.json...'
 npm ci --no-audit --no-fund
 
-log 'Creating committed browser-ready vendor assets and compiled CSS...'
+log 'Preparing pinned browser-ready vendor assets and locally generated CSS...'
 npm run prepare-frontend
 
 log 'Running frontend functional and contract gates...'
 ./scripts/test_offline_frontend.sh
 
 log 'Frontend bootstrap completed.'
-log 'Commit app/static/vendor, app/static/css/output.css, and intentional source changes only.'
+log 'Commit app/static/vendor and intentional source changes only; app/static/css/output.css is generated and ignored.'

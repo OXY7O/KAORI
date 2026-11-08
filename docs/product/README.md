@@ -14,9 +14,42 @@ Recommended platform-level description:
 
 > KAORI provides unified infrastructure visibility, operational workflows, analytics, reporting, and governance to support reliable day-to-day operations and proactive infrastructure management.
 
-## 2. Capability Domains
+## 2. Delivery Models and Roadmap Maturity
 
-### 2.1 Compute and Infrastructure Assets
+KAORI remains **one capability- and domain-first product** with source-qualified
+operational evidence and provider-authoritative integrations. The approved
+dual-delivery roadmap (#4184) describes two potential distribution and hosting
+models, not separate feature platforms:
+
+- **Customer-managed self-hosted KAORI — Planned.** Deployment in an
+  approved customer environment would require explicit distribution and support
+  terms, installation/upgrade, security, backup and recovery acceptance.
+- **OXY7O-managed subscription KAORI — Planned for dedicated customer
+  instances.** The initial managed direction uses a separately governed
+  runtime, data, worker, credential and recovery boundary per customer
+  organization; shared-host or Compose separation alone is not proof of
+  security isolation.
+- **Multi-organization subscription SaaS — Future.** Shared-service
+  operation and multiple customer organizations, each with authorized users,
+  require reviewed identity, authorization, data and job isolation, audit,
+  recovery and negative cross-customer security evidence.
+
+These labels describe **roadmap maturity**, not implemented or commercially
+available offerings. Existing local deployments and `app.kaori.cloud` do not
+establish customer distribution, managed SaaS readiness or general
+availability. The current internal-use `LICENSE` does not authorize external
+distribution, sale or third-party SaaS without prior written approval.
+
+**Kubernetes Tenant** is the existing Kubernetes cluster/namespace governance
+domain, **not** a SaaS customer organization. Multiple users in one KAORI
+instance do not establish multi-customer isolation. The Phase 0 architecture
+assessment (#4185) must resolve those boundaries before implementation
+readiness can be claimed. Website and public Docs availability statements
+remain tied to separately accepted release evidence and approvals.
+
+## 3. Capability Domains
+
+### 3.1 Compute and Infrastructure Assets
 
 KAORI provides a common operational layer for compute and runtime infrastructure integrated into the platform.
 
@@ -24,13 +57,13 @@ The platform-level experience must use global terms such as **infrastructure ass
 
 This domain is expected to expand as additional infrastructure tools and platforms are integrated.
 
-### 2.2 Storage Integration
+### 3.2 Storage Integration
 
 KAORI will provide visibility and operational context for storage services integrated into the platform.
 
 The initial direction is object-storage integration through an S3-compatible interface. Platform-level descriptions must remain implementation-neutral. Specific software, endpoint configuration, credentials, bucket behavior, retention rules, and deployment choices belong in the related integration and implementation documentation.
 
-### 2.3 Infrastructure Mapping
+### 3.3 Infrastructure Mapping
 
 KAORI will provide visual mapping to help users understand how infrastructure assets are connected and where operational risk may propagate.
 
@@ -43,7 +76,7 @@ The mapping capability includes:
 
 Mapping must be built from normalized inventory and relationship data. It must not fabricate dependencies when the source data is incomplete.
 
-### 2.4 Asset Inventory
+### 3.4 Asset Inventory
 
 KAORI maintains normalized inventory for every supported infrastructure integration.
 
@@ -51,7 +84,7 @@ Inventory provides identity, ownership, environment, lifecycle, status, relation
 
 Each integration owns its collection and normalization adapter. KAORI owns the unified inventory contract and user experience.
 
-### 2.5 Operational Analytics
+### 3.5 Operational Analytics
 
 KAORI transforms infrastructure data into operational insight that supports day-to-day readiness and proactive management.
 
@@ -66,7 +99,7 @@ The analytics direction includes:
 
 Analytics must clearly identify scope, source, freshness, and unavailable states. Recommendations must be evidence-based and linked to impacted assets and remediation guidance.
 
-### 2.6 Centralized Operational Activities
+### 3.6 Centralized Operational Activities
 
 KAORI may provide selected infrastructure operation workflows when centralization improves consistency, safety, auditability, and operator efficiency.
 
@@ -82,7 +115,7 @@ Operational workflows must follow these rules:
 
 KAORI should not add an operation merely because an integrated source exposes an API. The workflow must provide operational value beyond opening the source tool directly.
 
-### 2.7 Reporting and Historical Context
+### 3.7 Reporting and Historical Context
 
 KAORI provides historical and management-ready reporting for infrastructure operations.
 
@@ -97,7 +130,7 @@ Reporting includes:
 
 Reports must preserve data scope, source status, generation time, and relevant limitations.
 
-### 2.8 Administration, Governance, and Audit
+### 3.8 Administration, Governance, and Audit
 
 KAORI provides the administrative foundation required to operate the platform safely.
 
@@ -113,7 +146,7 @@ This direction includes:
 
 UI visibility is never a substitute for server-side authorization.
 
-### 2.9 Cross-Domain Security Posture
+### 3.9 Cross-Domain Security Posture
 
 **Security** is the user-facing Assurance parent workspace for the approved
 cross-domain **Security Posture** capability (#721), rather than a new scanner
@@ -132,7 +165,7 @@ accepted risk, escalation and automation decisions; Reports owns publication.
 Navigation only exposes implemented permissioned capabilities, and an empty
 finding list is never represented as proof of global security health.
 
-## 3. Product and Integration Principles
+## 4. Product and Integration Principles
 
 ### Capability-first, not product-first
 
@@ -158,7 +191,7 @@ Unavailable, unsupported, stale, partial, or planned capabilities must be shown 
 
 New infrastructure categories and integrations should be added without renaming the platform, creating a second global navigation model, or rewriting shared product positioning.
 
-## 4. Capability Maturity Labels
+## 5. Capability Maturity Labels
 
 Use these labels consistently in planning and review documents:
 
@@ -169,7 +202,7 @@ Use these labels consistently in planning and review documents:
 
 Do not present planned or future capability as currently available.
 
-## 5. Wording Contract
+## 6. Wording Contract
 
 ### Preferred global wording
 
@@ -193,7 +226,7 @@ Do not present planned or future capability as currently available.
 
 Technology-specific wording remains valid on integration setup, domain inventory, operational workflow, troubleshooting, and implementation documentation pages.
 
-## 6. Page Review Contract
+## 7. Page Review Contract
 
 Every KAORI page review must verify:
 
@@ -208,7 +241,7 @@ Every KAORI page review must verify:
 9. **Extensibility** — the page does not hard-code a global platform concept to one integration.
 10. **Wording** — user-facing descriptions communicate function rather than promoting a product or implementation choice.
 
-## 7. Documentation Hierarchy
+## 8. Documentation Hierarchy
 
 Use this documentation order when making changes:
 
@@ -219,7 +252,7 @@ Use this documentation order when making changes:
 
 When a feature changes product direction or architecture, update the relevant README in the same patch.
 
-## 8. Platform Boundary
+## 9. Platform Boundary
 
 KAORI integrates with infrastructure systems and data sources; it does not need to replace every source platform, collector, monitoring engine, configuration system, or infrastructure manager.
 

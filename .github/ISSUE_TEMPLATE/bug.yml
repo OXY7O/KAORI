@@ -6,6 +6,10 @@ body:
     attributes:
       value: |
         Use a concise sentence-case title that describes the defect. Native GitHub Issue Type is the type authority; do not add `[BUG]` to the title.
+
+        Public reports must use sanitized, reproducible evidence. Never include passwords, tokens, private endpoints, customer/user identifiers, unsanitized logs, or operational secrets. Report suspected vulnerabilities privately via [KAORI Security Policy](https://github.com/OXY7O/KAORI/blob/main/SECURITY.md), not through a public Issue.
+
+        A community report is input for maintainer triage, not automatic acceptance into the governed KAORI backlog or a commitment to implement a fix.
   - type: textarea
     id: observed
     attributes:

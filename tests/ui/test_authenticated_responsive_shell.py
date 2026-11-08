@@ -40,7 +40,31 @@ def _assert_no_document_overflow(page: Page) -> None:
         '() => ({ scrollWidth: document.documentElement.scrollWidth, '
         'clientWidth: document.documentElement.clientWidth })'
     )
-    assert dimensions['scrollWidth'] <= dimensions['clientWidth']
+    if dimensions['scrollWidth'] > dimensions['clientWidth']:
+        # Bounded geometry-only diagnostics: no text, attributes, URLs or user data.
+        offenders = page.evaluate(
+            """() => {
+                const viewport = document.documentElement.clientWidth;
+                return Array.from(document.querySelectorAll('body *'))
+                    .map(el => {
+                        const rect = el.getBoundingClientRect();
+                        return {
+                            tag: el.tagName.toLowerCase(),
+                            right: Math.round(rect.right),
+                            left: Math.round(rect.left),
+                            width: Math.round(rect.width),
+                        };
+                    })
+                    .filter(item => item.right > viewport + 1 && item.width > 0)
+                    .sort((a, b) => b.right - a.right)
+                    .slice(0, 8);
+            }"""
+        )
+        pytest.fail(
+            f'document overflow: scrollWidth={dimensions["scrollWidth"]}, '
+            f'clientWidth={dimensions["clientWidth"]}, '
+            f'offender_geometry={offenders}'
+        )
 
 
 def _capture(page: Page, scenario: str, viewport_name: str) -> None:

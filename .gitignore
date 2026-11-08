@@ -133,6 +133,10 @@ postgres-data/
 
 node_modules/
 
+# Compiled Tailwind CSS is generated locally from frontend/styles.css.
+# Pinned vendor assets and fonts remain under their existing ownership.
+/app/static/css/output.css
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
