@@ -129,7 +129,17 @@ def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission(
     route_header = developer.split('\n  route:', 1)[1].split('\n    steps:', 1)[0]
     assert 'github.event.pull_request.draft == true' not in route_header
     assert 'github.event.pull_request.draft == false' not in route_header
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route_header
+    assert '    if:' not in route_header
+    assert 'runs-on: ubuntu-24.04' in route_header
+    route_body = developer.split('\n  route:', 1)[1].split('\n  toolchain:', 1)[0]
+    assert 'Reject untrusted pull request before checkout' in route_body
+    assert 'HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}' in route_body
+    assert 'HEAD_REF: ${{ github.event.pull_request.head.ref }}' in route_body
+    assert 'BLOCK: external fork is not authorized' in route_body
+    aggregate = developer.split('\n  developer-check:', 1)[1].split('\n  full-admission:', 1)[0]
+    assert 'if: ${{ always() }}' in aggregate
+    assert 'ROUTE_RESULT: ${{ needs.route.result }}' in aggregate
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in aggregate
 
     # Reusable Full Admission still receives the caller PR context and therefore
     # retains the existing feature-PR routing guard inside the called workflow.
