@@ -22,15 +22,15 @@ from app.kubernetes.operations.secrets.live_service import (
     read_live_secret,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
-    get_configured_enabled_namespace_names,
-    get_enabled_namespace_names,
-    get_namespace_policy,
-)
-from app.kubernetes.operations.secrets.reveal_policy import (
     _as_aware as _as_aware,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
     _lock_active_request_scope as _lock_active_request_scope,
+)
+from app.kubernetes.operations.secrets.reveal_policy import (
+    get_configured_enabled_namespace_names,
+    get_enabled_namespace_names,
+    get_namespace_policy,
 )
 from app.kubernetes.operations.secrets.reveal_policy import (
     get_secret_reveal_approvers as get_secret_reveal_approvers,
