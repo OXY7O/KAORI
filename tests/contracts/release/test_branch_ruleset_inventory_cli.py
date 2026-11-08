@@ -55,7 +55,11 @@ def test_invalid_argument_rejected_before_any_authenticated_lookup(tmp_path: Pat
 def test_lookup_failure_is_fail_closed_not_reported_as_complete(tmp_path: Path) -> None:
     result, calls = _run(tmp_path, ['OXY7O/KAORI'], fail=True)
     assert result.returncode == 1
-    assert len(calls) == 1
+    assert calls == [
+        'ruleset list --repo OXY7O/KAORI',
+        'ruleset check main --repo OXY7O/KAORI',
+        'ruleset check kaori/staging --repo OXY7O/KAORI',
+    ]
     assert 'INCOMPLETE' in result.stderr
     assert 'INVENTORY COMPLETE' not in result.stdout
 
