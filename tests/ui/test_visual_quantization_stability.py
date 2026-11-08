@@ -295,4 +295,3 @@ def test_multiple_proven_mobile_raster_variants_keep_exact_png_and_manifest_auth
             manifest_path=_manifest(tmp_path, height=800),
             evidence_root=tmp_path / 'evidence',
         )
-
