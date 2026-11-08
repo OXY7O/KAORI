@@ -36,3 +36,24 @@ def test_security_baseline_preserves_private_reporting_and_fork_boundary() -> No
     assert "pull_request_target" in baseline
     assert "workflow_run" in baseline
     assert "human acceptance" in baseline
+
+
+def test_native_security_readback_does_not_promote_holding_source_to_activation() -> None:
+    content = BASELINE.read_text(encoding="utf-8")
+    assert "Verified code and public metadata snapshot — 2026-11-08" in content
+    for statement in (
+        "merged only to review holding",
+        "NOT ACTIVE",
+        "404 Not Found",
+        "Security Gate",
+        ".github/ci/run-security-static.sh",
+        "Trivy",
+        "default setup",
+        "does not prove CodeQL is disabled",
+        "NOT EXPOSED / UNSUPPORTED is not DISABLED",
+        "actual external fork run",
+        "All ten checklist controls",
+    ):
+        assert statement in content
+    assert "| Dependabot version updates | NOT VERIFIED |" in content
+    assert "**Status: PREPARED / NOT VERIFIED.**" in content
