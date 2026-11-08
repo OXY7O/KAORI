@@ -657,7 +657,6 @@ jobs:
         id: full_test_evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
         shell: bash
-        env:
         run: |
           set -Eeuo pipefail
           printf '⏳ CI Admission · extracting actual pytest/JUnit taxonomy from uploaded gate evidence\n'
@@ -672,7 +671,6 @@ jobs:
         id: full-evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full_test_evidence.outcome == 'success' }}
         shell: bash
-        env:
         run: |
           set -Eeuo pipefail
           printf '⏳ CI Admission · committing exact source-tree and five-gate evidence identity\n'
