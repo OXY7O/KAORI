@@ -658,17 +658,10 @@ jobs:
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
         run: |
           set -Eeuo pipefail
           printf '⏳ CI Admission · extracting actual pytest/JUnit taxonomy from uploaded gate evidence\n'
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py test-summary \
+          python3 scripts/ci_admission.py test-summary \
               --junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml \
               --junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml \
               --junit tmp/ci-artifacts/admission-junit/functional/e2e.xml \
@@ -680,17 +673,10 @@ jobs:
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full_test_evidence.outcome == 'success' }}
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
         run: |
           set -Eeuo pipefail
           printf '⏳ CI Admission · committing exact source-tree and five-gate evidence identity\n'
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py write-evidence \
+          python3 scripts/ci_admission.py write-evidence \
               --source-sha "${{ needs.validation-profile.outputs.source_sha }}" \
               --source-tree "${{ needs.validation-profile.outputs.source_tree }}" \
               --run-id "$GITHUB_RUN_ID" \
@@ -719,7 +705,6 @@ jobs:
         if: ${{ always() }}
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           PROFILE: ${{ needs.validation-profile.outputs.display_profile }}
           FALLBACK: ${{ needs.validation-profile.outputs.fallback }}
@@ -769,13 +754,7 @@ jobs:
             esac
           fi
 
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py summary \
+          python3 scripts/ci_admission.py summary \
               --result "$RESULT" \
               --profile "$PROFILE" \
               --commit-sha "${{ needs.validation-profile.outputs.source_sha }}" \
