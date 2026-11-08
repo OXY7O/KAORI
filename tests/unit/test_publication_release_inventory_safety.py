@@ -1,10 +1,9 @@
 """Regression tests for sanitized release inventory pagination (#4212)."""
 import importlib.util
 import json
+import unittest
 from pathlib import Path
 from types import SimpleNamespace
-import unittest
-
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "publication_release_inventory.py"
 spec = importlib.util.spec_from_file_location("publication_release_inventory", SCRIPT)
