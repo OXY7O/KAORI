@@ -50,14 +50,27 @@ def test_trusted_developer_check_and_promotion_remain_fork_closed() -> None:
     quality = yaml.safe_load(QUALITY_WORKFLOW.read_text(encoding='utf-8'))
 
     route = developer['jobs']['route']
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route['if']
-    # #4238: the trusted lightweight route migrates to hosted without changing
-    # the fail-closed same-repository guard. Both placements are allowed only
-    # during the separate staged runner migration; fork feedback is hosted.
-    assert route['runs-on'] in (
-        'ubuntu-24.04',
-        ['self-hosted', 'linux', 'x64', 'platform-ci'],
-    )
+    # GitHub treats a skipped required job as successful: an untrusted fork
+    # must execute a failing hosted guard, not a job-level condition.
+    assert 'if' not in route
+    assert route['runs-on'] == 'ubuntu-24.04'
+    guard, checkout = route['steps'][:2]
+    assert guard['name'] == 'Reject untrusted pull request before checkout'
+    assert guard['env']['HEAD_REPO'] == '${{ github.event.pull_request.head.repo.full_name }}'
+    assert guard['env']['HEAD_REF'] == '${{ github.event.pull_request.head.ref }}'
+    assert 'exit 1' in guard['run']
+    assert 'HEAD_REPO' in guard['run']
+    assert 'HEAD_REF' in guard['run']
+    assert checkout['name'] == 'Checkout Work Branch'
+    assert checkout['with']['persist-credentials'] is False
+
+    # The required aggregate must execute after a denied/cancelled route and
+    # fail non-success; existing delivery contracts execute negative cases.
+    aggregate = developer['jobs']['developer-check']
+    assert aggregate['if'] == '${{ always() }}'
+    assert aggregate['runs-on'] == 'ubuntu-24.04'
+    assert aggregate['steps'][0]['env']['ROUTE_RESULT'] == '${{ needs.route.result }}'
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in aggregate['steps'][0]['run']
     for name in ('toolchain', 'python-check', 'validation-check', 'developer-check'):
         assert 'route' in developer['jobs'][name]['needs']
 
