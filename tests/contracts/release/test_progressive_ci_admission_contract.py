@@ -150,8 +150,8 @@ def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -
     assert 'CI_TOOLCHAIN_IMAGE:' not in admission
     assert 'statuses: write' in admission
     assert 'name: CI Admission' in admission
-    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in profile
-    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in matrix
+    assert 'runs-on: ubuntu-24.04' in profile
+    assert 'runs-on: ubuntu-24.04' in matrix
     assert 'Resolve CI Toolchain' in profile
     assert 'CI_TOOLCHAIN_IMAGE=' in matrix
 
@@ -227,6 +227,38 @@ def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> N
     assert 'runs-on: ubuntu-24.04' in toolchain
 
 
+def test_hosted_admission_profile_matrix_and_smoke_preserve_exact_source_authority() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    smoke = workflow.split('\n  integration-smoke:', 1)[1].split('\n  admission:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    for block in (profile, matrix, smoke, admission):
+        assert 'runs-on: ubuntu-24.04' in block
+    assert 'docker run' not in profile
+    assert 'docker build' not in profile
+    assert 'python3 scripts/ci_admission.py route' in profile
+    assert 'python3 scripts/ci_admission.py find-evidence' in profile
+    assert 'python3 scripts/ci_admission.py verify-lineage' in profile
+    assert 'toolchain_image: ${{ steps.toolchain.outputs.image }}' in profile
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in profile
+    for block in (matrix, smoke):
+        assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in block
+        assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in block
+        assert 'docker image inspect "$image" >/dev/null' in block
+        assert 'needs.validation-profile.outputs.toolchain_image' in block
+    assert 'max-parallel: 1' in matrix
+    assert 'strategy:' in matrix and 'fail-fast: true' in matrix
+    assert 'Run Security Gate' in matrix
+    assert 'Run Functional Tests' in matrix
+    assert 'Run Static & Governance' in matrix
+    assert 'Validate Runtime & DAST' in matrix
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in smoke
+    assert 'statuses: write' in admission
+    assert 'KAORI CI / Admission' in admission
+
+
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
     source = read(WORKFLOW)
     matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
@@ -234,7 +266,7 @@ def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> Non
     assert 'needs: validation-profile' in matrix
     assert 'strategy:' in matrix
     assert 'fail-fast: true' in matrix
-    # Temporary 8-GB builder budget (#2219): serialize heavy matrix legs,
+    # Preserve the governed serial admission matrix until hosted capacity is measured,
     # without skipping any required gate or weakening fail-fast admission.
     assert 'max-parallel: 1' in matrix
     assert 'max-parallel: 2' not in matrix
