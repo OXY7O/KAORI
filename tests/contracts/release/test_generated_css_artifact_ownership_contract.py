@@ -60,9 +60,9 @@ def test_production_image_uses_an_independent_frontend_build() -> None:
     dockerfile = _read('Dockerfile')
     package = json.loads(_read('package.json'))
 
-    frontend = dockerfile.split('FROM node:22.23.2-alpine AS frontend-build', 1)[1].split(
-        'FROM base AS production', 1
-    )[0]
+    frontend = dockerfile.split('FROM node:22.23.2-alpine AS frontend-build', 1)[1].split('FROM base AS production', 1)[
+        0
+    ]
     production = dockerfile.split('FROM base AS production', 1)[1]
     assert 'npm ci' in frontend
     assert 'npm run build-frontend' in frontend
