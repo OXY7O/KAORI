@@ -3,6 +3,7 @@
 
 This does not scan for secrets or establish publication/rights clearance.
 """
+
 import argparse
 import json
 import subprocess
@@ -28,10 +29,14 @@ def inventory(repo):
     referenced_commits = set(git(repo, 'rev-list', '--all').splitlines())
     # An initialized repository may not have a HEAD commit yet. Keep its
     # inventory explicitly incomplete instead of failing before assessment.
-    has_head = subprocess.run(
-        ['git', '-C', str(repo), 'rev-parse', '--verify', 'HEAD^{commit}'],
-        capture_output=True, check=False,
-    ).returncode == 0
+    has_head = (
+        subprocess.run(
+            ['git', '-C', str(repo), 'rev-parse', '--verify', 'HEAD^{commit}'],
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
     head_outside_refs = has_head and git(repo, 'rev-parse', 'HEAD').strip() not in referenced_commits
     revisions = ['--all', 'HEAD'] if has_head else ['--all']
     commits = int(git(repo, 'rev-list', *revisions, '--count').strip())
@@ -46,18 +51,21 @@ def inventory(repo):
     submodule_count = sum(entry.startswith(b'160000 ') for entry in staged if entry)
     # Omit path names: filenames containing newlines must not inflate object counts.
     history_objects = git(repo, 'rev-list', '--objects', '--no-object-names', *revisions).splitlines()
-    return {'repository': repo.name, 'history_commit_count': commits,
-            'local_branch_and_tag_ref_count': len(refs),
-            'remote_tracking_ref_count': len(remote_refs),
-            'other_local_ref_count': len(other_refs),
-            'shallow_checkout': shallow,
-            'head_commit_present': has_head,
-            'head_outside_local_refs': head_outside_refs,
-            'tracked_head_file_count': tracked_count,
-            'tracked_gitlink_count': submodule_count,
-            'reachable_history_object_count': len(history_objects),
-            'assessment': 'INCOMPLETE',
-            'limitations': 'Shallow checkout may omit history; only locally fetched refs and checked-out HEAD are counted; gitlink repositories need independent review; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance'}
+    return {
+        'repository': repo.name,
+        'history_commit_count': commits,
+        'local_branch_and_tag_ref_count': len(refs),
+        'remote_tracking_ref_count': len(remote_refs),
+        'other_local_ref_count': len(other_refs),
+        'shallow_checkout': shallow,
+        'head_commit_present': has_head,
+        'head_outside_local_refs': head_outside_refs,
+        'tracked_head_file_count': tracked_count,
+        'tracked_gitlink_count': submodule_count,
+        'reachable_history_object_count': len(history_objects),
+        'assessment': 'INCOMPLETE',
+        'limitations': 'Shallow checkout may omit history; only locally fetched refs and checked-out HEAD are counted; gitlink repositories need independent review; no remote release assets, Actions logs/artifacts, secret scanning, ownership or license clearance',
+    }
 
 
 def main():
