@@ -44,7 +44,7 @@ jobs:
   validation-profile:
     name: Resolve Profile
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && ((github.base_ref == 'kaori/staging' && startsWith(github.head_ref, 'kaori/') && github.head_ref != 'kaori/staging') || (github.base_ref == 'main' && github.head_ref == 'kaori/staging'))) }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       profile: ${{ steps.final.outputs.profile }}
@@ -74,7 +74,6 @@ jobs:
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Source Identity
@@ -111,7 +110,6 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           DISPATCH_PROFILE: ${{ inputs.validation_profile }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" && "${DISPATCH_PROFILE:-full}" == "full" ]]; then
@@ -122,13 +120,7 @@ jobs:
               echo 'reason=Manual dispatch requested Full Admission.'
             } >> "$GITHUB_OUTPUT"
           else
-            docker run --rm \
-              --user "$(id -u):$(id -g)" \
-              --env HOME=/tmp \
-              --volume "$PWD:/workspace" \
-              --workdir /workspace \
-              "$CI_TOOLCHAIN_IMAGE" \
-              python scripts/ci_admission.py route \
+            python3 scripts/ci_admission.py route \
                 --event-name "$EVENT_NAME" \
                 --ref "$EVENT_REF" \
                 --base-ref "${BASE_REF:-}" \
@@ -143,17 +135,9 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --env GH_TOKEN \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py find-evidence \
+          python3 scripts/ci_admission.py find-evidence \
               --repository "$GITHUB_REPOSITORY" \
               --token "$GH_TOKEN" \
               --workflow quality.yml \
@@ -174,16 +158,9 @@ jobs:
           EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
           EVIDENCE_SOURCE_SHA: ${{ steps.evidence.outputs.evidence_source_sha }}
           EVIDENCE_SOURCE_TREE: ${{ steps.evidence.outputs.evidence_source_tree }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py verify-lineage \
+          python3 scripts/ci_admission.py verify-lineage \
               --profile "$PROFILE" \
               --source-sha "$SOURCE_SHA" \
               --source-tree "$SOURCE_TREE" \
