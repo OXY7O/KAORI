@@ -20,6 +20,8 @@ Use `Refs #<issue>` while work is still moving through staging/UAT. Use `Closes 
 
 Refs #
 
+For external fork proposals without an accepted governing Issue, reference the relevant existing Issue or (when available) Discussion for maintainer triage. Do not claim that public PR creation, an unsolicited proposal, or community review constitutes acceptance. Maintainers must accept/link a governed Issue and adopt approved changes into an issue-linked, trusted `kaori/*` work branch before entering the normal staging path.
+
 ## Acceptance Criteria Coverage
 
 Summarize how the linked Issue acceptance criteria are satisfied. Distinguish implementation-complete criteria from staging/UAT criteria that are still pending.
@@ -36,9 +38,11 @@ Keep this concise and evidence-based:
 
 Link the relevant run when useful. Do not paste raw logs into the PR body.
 
+For external fork PRs, record any public fork-check result separately as **feedback only**. Fork checks (when available) are not trusted Developer Check PASS, Full Admission, staging validation, or UAT evidence. Mark unexecuted checks `NOT RUN`; never infer a passing result from skipped or unavailable workflows. Trusted checks must validate the maintainer-controlled, issue-linked `kaori/*` source at its exact SHA.
+
 ## Security Impact
 
-State the trust-boundary, secret, dependency, vulnerability, authorization, or security-validation impact. Use `None — <reason>` when there is no meaningful security impact.
+State the trust-boundary, secret, dependency, vulnerability, authorization, or security-validation impact. Use `None — <reason>` when there is no meaningful security impact. Never include secrets, private endpoints/hostnames, credentials, unsanitized logs, or exploitable vulnerability details in a public PR. Follow [SECURITY.md](https://github.com/OXY7O/KAORI/blob/main/SECURITY.md) for private security reporting.
 
 ## Migration / Data Impact
 
@@ -54,7 +58,7 @@ State logging, metrics, alerts, runtime behavior, rollback, support, deployment,
 - [ ] Integrated into `kaori/staging` and full staging CI passed.
 - [ ] Local UAT from `kaori/staging` passed and explicit acceptance is recorded.
 
-A change is not `Done` merely because implementation and branch CI are complete.
+A change is not `Done` merely because implementation and branch CI are complete. For external fork submissions awaiting maintainer adoption, leave staging/UAT boxes unchecked: community review and safe fork feedback are not release or human-acceptance authority.
 
 ## Artifact / Release Evidence
 
@@ -85,6 +89,7 @@ State the release target or Milestone when one exists, plus compatibility/rollou
 - [ ] Linked work and acceptance coverage are traceable.
 - [ ] Assignee, canonical labels, Project membership, lifecycle Status, Sprint, and Milestone are synchronized where applicable; Issue-only planning fields are not duplicated onto the PR.
 - [ ] The PR body does not contain a duplicate `Project Metadata` table or substitute labels for Project/native fields.
+- [ ] If external/community-sourced, the proposal has been triaged under a governing Issue and has not been mistaken for licensed open-source release clearance, trusted CI, or staging/UAT acceptance.
 - [ ] Required CI evidence is green with no unexplained failure, traceback, HTTP 5xx, migration error, runtime error, or unexpected skip.
 - [ ] Security, migration/data, and operational impacts are addressed.
 - [ ] Documentation/contracts are aligned when applicable.

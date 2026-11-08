@@ -91,6 +91,27 @@ KAORI stores only the webhook token digest. Generating a new token rotates the p
 credential. Disabling webhook admission does not disable scheduled Registry reconciliation,
 which remains the correctness and repair path.
 
+The receiver URL is rendered from KAORI's current request authority. Operators must
+confirm that Harbor can reach the **actual** endpoint from Harbor's host/container and
+that a trusted HTTPS transport is available outside local development. A displayed
+`localhost` or `127.0.0.1` URL is not a valid cross-host deployment address.
+
+The receive route accepts `Authorization: Bearer <token>` or
+`X-KAORI-Webhook-Token: <token>`. Configure the selected header only where the
+supported Harbor version and deployment provide an appropriate header facility.
+The token is shown only at generation/rotation; never record it in a UAT screenshot,
+log, URL, or tracked evidence. The receive route returns HTTP 400 for invalid JSON,
+401 for a missing/invalid/disabled token, and HTTP 202 for an authenticated parsed
+event, including deduplicated events or a `refresh_failed` enqueue outcome.
+
+**Admission Ready is not webhook-delivery verification.** A last-event timestamp
+shows intake activity, not provider reconciliation success. Inspect the committed
+webhook event status and linked JobExecution/Inventory evidence before claiming
+that the targeted refresh completed. Identical event re-delivery is deduplicated;
+scheduled Inventory reconciliation continues to repair missed/out-of-order events.
+The review-only Gherkin matrix and evidence checklist are in
+`docs/reviews/2026-10-18-harbor-webhook-uat.md`.
+
 Artifact Registry → Governance consumes committed retention, immutability, and replication
 evidence only; it does not own webhook credential configuration or Metrics Source readiness.
 

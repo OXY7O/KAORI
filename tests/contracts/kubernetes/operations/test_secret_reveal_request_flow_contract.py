@@ -159,7 +159,7 @@ def test_approved_request_cta_uses_bounded_focused_navigation_instead_of_native_
 
 def test_requester_approval_notification_opens_exact_owned_request_and_preserves_step_up() -> None:
     routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
-    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    service = read('app/kubernetes/operations/secrets/reveal_read_model.py')
     table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     docs = read('app/kubernetes/operations/secrets/README.md')

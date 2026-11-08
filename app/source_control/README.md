@@ -1,18 +1,29 @@
-# Source Control — SC-01 foundation
+# Source Control — canonical identity and GitHub lifecycle
 
 Authority: [#559](https://github.com/OXY7O/KAORI/issues/559), [#958](https://github.com/OXY7O/KAORI/issues/958), implementation [#2740](https://github.com/OXY7O/KAORI/issues/2740).
 
-This initial SC-01 increment reserves the **Source Control** capability in the canonical integration taxonomy, and **GitHub** in the provider matrix as **planned**, not Available. The shared Integrations domain route uses the existing workspace; no provider adapter/instance is registered and no live GitHub access, tokens, inventory or Product UI are claimed.
+## Current admitted staging baseline (2026-11-02)
+
+The canonical provider matrix on `kaori/staging` declares `Source Control → GitHub` as **`available`**, after the reviewed [#3399](https://github.com/OXY7O/KAORI/pull/3399) staging integration. SC-01 identities, the GitHub App SC-02 registration/validation boundary, and SC-03 committed installation-scoped repository inventory are represented in the staged source. Full Admission and staging deployment have passed for the accepted source; this does **not** by itself prove live GitHub App installation UAT, broader production authorization, or hosted Human UAT acceptance.
+
+- GitHub remains the external source of truth. KAORI records normalized, generation-fenced inventory and authoritative JobExecution evidence; standard operational views should use committed KAORI state.
+- Installation-specific UAT operations are restricted to an active **local database Super Admin** through `require_uat_access()`, alongside route-level `integrations.manage` where applicable. **#724** resource-scoped access for broader use is not superseded by the provider matrix's `available` lifecycle.
+- Signed webhook HTTP ingress and the maintenance inbox consumer retain **independent default-off gates**: `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false` and `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`. A committed webhook receipt is not a completed repository reconciliation.
+- The [existing GitHub App Dev Container UAT runbook](../../docs/operations/github-source-control-devcontainer-uat.md) records earlier review-workbench procedures and verification cases; use the current staging SHA and appropriate environment for new evidence. Historical review-branch HOLD statements in that record are not the current staging lifecycle authority.
+
+## Historical SC-01 foundation checkpoint
+
+The original SC-01 increment reserved the **Source Control** capability in the canonical integration taxonomy, and initially registered **GitHub** in the provider matrix as **planned**, not Available. The shared Integrations domain route used the existing workspace; no provider adapter/instance was registered and no live GitHub access, tokens, inventory or Product UI were claimed at that checkpoint.
 
 `identity.py` defines immutable, host-qualified provider-native keys for App installation, account, repository, exact revision and branch/tag reference. It does **not** represent a GitHub App installation as an account, infer repository access from a name, interpret branch/tag as immutable source, or provide authorization by itself.
 
-## Next bounded SC-01 work
+## Historical SC-01 next steps
 
 - Review the new inert persisted identities against the live schema and verify migrations/foreign keys with Dev Container tests.
 - Preserve committed relationship history, effective dates, observation/freshness, and explicit access-lost vs deleted semantics.
 - Verify existing migrations, identity service, RBAC/#724, definition and navigation contracts before marking SC-01 complete.
 
-SC-02 (#2741) owns provider authentication/readiness; SC-03 (#2742) owns authorized collection, snapshot publication and reconciliation. Do not activate GitHub in the provider matrix until its real adapter and security/validation gates are admitted.
+SC-02 (#2741) owns provider authentication/readiness; SC-03 (#2742) owns authorized collection, snapshot publication and reconciliation. At the SC-01 checkpoint, activation of GitHub in the provider matrix remained gated on adapter admission and security/validation evidence; the current staging state is recorded above.
 
 
 ## Persisted identity contract (SC-01 increment)
@@ -47,15 +58,17 @@ authorization or observation evidence.
 **UI contract:** reuse the existing Integration domain page and its shared
 Hero, cards, tables, modals, pagination, HTMX and semantic state components.
 No GitHub-specific page or duplicated Violet styles are introduced by SC-01.
-The provider remains `planned` until qualified SC-02 readiness/UAT.
+At the SC-01-only checkpoint, the provider remained `planned`; this historical statement does not describe the current staging matrix.
 
 
-## SC-03 — GitHub committed Repository Inventory (#2742, in implementation)
+## Historical SC-03 candidate — committed GitHub Repository Inventory (#2742)
 
-This section is a **candidate on issue-scoped branch**, not an admitted
-capability. It depends on SC-01 #2740 and SC-02 #2741, whose Draft PRs
-remain unmerged. GitHub is still `planned`; no connection, JobExecution
-or repository inventory may be advertised Ready in live UI.
+This section preserves the original **issue-scoped SC-03 candidate** and its
+Draft PR context; it is not a current statement that the staged provider is
+`planned`. Staged registration, jobs and committed repository inventory were
+integrated separately through the approved review snapshot. Live provider
+readiness still requires actual provider and security evidence, not merely
+a successful code admission.
 
 - `repository_discovery.py` asks GitHub.com for the installation's exact
   granted repository pages (20 per page, bounded to 200 pages). It verifies
@@ -134,18 +147,18 @@ No extra schema migration is required for refs: this increment reuses SC-01 Sour
 
 **Dev Container checks still required (not executed):** `python scripts/verify_migration_graph.py`, `python scripts/verify_definition_registry.py`, `ruff`, `djlint`, `pyright`, focused `pytest` for `test_source_control_repository_registered_job.py`, `test_source_control_repository_worker_contract.py`, `test_source_control_github_webhook_handoff.py`, plus PostgreSQL migration upgrade/downgrade, worker preflight, negative RBAC test and visual light/dark/responsive review.
 
-**Release boundary:** SC-01 #2740 → SC-02 #2741 → SC-03 #2742 are stacked Draft PRs. No source provider activation, official CI/CD admission, holding/staging/main merge, real live GitHub App UAT or human acceptance is implied by these commits.
+**Historical release boundary:** SC-01 #2740 → SC-02 #2741 → SC-03 #2742 were stacked Draft PRs; those individual heads did not authorize admission. The subsequent reviewed source was separately admitted into `kaori/staging` through #3399. Do not infer real live GitHub App UAT, hosted Human Acceptance or `main` promotion from either source admission or the earlier Draft PRs.
 
 ### SC-03 — Signed ingress and JobExecution completion recovery (candidate)
 
 SC-03 now includes **two independent, default-off admission switches**:
 
 - `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false`: `/integrations/source-control/github/webhook` responds **404** before reading the body or querying an installation. The Source Control provider matrix must also be admitted before the endpoint accepts a POST. Rate limiting is applied; the 256 KiB raw-body bound, JSON content type, authenticated HMAC-SHA256, UUID replay key and exact installation scope are enforced before a delivery is committed. A successful request returns **202** only for committed transport receipt, **not** reconciliation completion. The route never dispatches a job or trusts payload repository metadata.
-- `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`: no Source Control webhook maintenance beat entry is added while disabled; its Celery task is registered only on the existing `maintenance` queue. An explicitly enabled task still declines processing if GitHub is `planned`.
+- `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false`: no Source Control webhook maintenance beat entry is added while disabled; its Celery task is registered only on the existing `maintenance` queue. An explicitly enabled task still declines processing if GitHub is `planned` on the executing branch; the independent ingress/consumer flags remain required on the current `available` staging provider.
 
 `webhook_recovery.recover_webhook_inbox` examines up to 25 eligible committed delivery rows per pass, respecting due retry/backoff and only polling queued jobs once their canonical JobExecution is terminal or missing. Failed preclaim verification gets bounded retry then `requires_review`; abandoned `dispatching` becomes `dispatch_uncertain` and is **not automatically resent**. A broker/persistence exception of unknown dispatch acceptance also becomes `dispatch_uncertain`, not optimistic re-enqueue.
 
 `webhook_completion.reconcile_delivery_completion` checks canonical Source Control `JobExecution` job type, operation, integration and **exact installation scope** before recording `reconciled_success`, `reconciled_partial`, `reconciled_failure` or `reconciled_canceled`. An active job stays `queued` in the transport ledger. Missing, expired or cross-installation execution becomes `requires_review`. These labels describe transport-to-job correlation, not raw webhook proof of GitHub data.
 
-Remaining admission requirements: actual execution of existing `ruff`, `pytest`, `pyright`, `djlint` and `verify_*`, PostgreSQL migration upgrade/downgrade, real HMAC/replay/rate-limit and two-App/installation isolation tests, Celery worker restart/registration, dispatch crash recovery, #724 resource-scoped Inventory UI policy, Visual QA and human acceptance. **Do not enable either switch in Dev Container or staging without an explicit UAT plan and approval.** Official CI/CD and merges remain HOLD.
+**Remaining provider-specific UAT:** verify two-App/installation isolation, live HMAC/replay/rate-limit negatives, worker restart/registration, crash recovery, #724 resource-scope decisions, Visual QA, and explicit human acceptance on the exact running source. The admitted staging source already has CI gate evidence, which must not be mistaken for those live checks. **Do not enable either webhook switch without an explicit UAT plan and approval.**
 

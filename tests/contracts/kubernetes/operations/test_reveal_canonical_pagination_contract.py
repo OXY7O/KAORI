@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
-    source = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
-    body = source.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
+    source = (ROOT / 'app/kubernetes/operations/secrets/reveal_read_model.py').read_text()
+    body = source.split('def get_reveal_page_context(', 1)[1]
     assert 'pending_filters: PendingRevealFilters = PendingRevealFilters()' in body
     assert 'pagination: PendingRevealPagination = PendingRevealPagination()' in source
     assert 'my_filters: MyRevealFilters = MyRevealFilters()' in body
@@ -34,8 +34,8 @@ def test_reveal_route_preserves_separate_htmx_windows() -> None:
 
 
 def test_review7_my_requests_uses_sql_filters_with_requester_isolation() -> None:
-    service = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
-    block = service.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
+    service = (ROOT / 'app/kubernetes/operations/secrets/reveal_read_model.py').read_text()
+    block = service.split('def get_reveal_page_context(', 1)[1]
     my_fields = service.split('class MyRevealFilters:', 1)[1].split('class PendingRevealFilters:', 1)[0]
     assert 'search: str' in my_fields
     assert 'status: str' in my_fields
@@ -142,7 +142,7 @@ def test_pending_approval_table_uses_full_canonical_registry_and_permission_scop
     template = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html').read_text()
     shared = (ROOT / 'app/templates/components/table.html').read_text()
     registry = (ROOT / 'app/templates/components/table_registry.html').read_text()
-    service = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
+    service = (ROOT / 'app/kubernetes/operations/secrets/reveal_read_model.py').read_text()
     routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
 
     assert 'table_ui.inventory_block_header(' in template
@@ -230,7 +230,7 @@ def test_pending_decision_editor_preserves_security_and_prevents_poll_loss() -> 
 
 
 def test_reveal_history_read_does_not_expire_globally_or_load_all_approvers() -> None:
-    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    service = read('app/kubernetes/operations/secrets/reveal_read_model.py')
     model = read('app/models/secret_reveal.py')
     table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
     assert '_expire_stale_requests()' not in service
@@ -243,7 +243,8 @@ def test_reveal_history_read_does_not_expire_globally_or_load_all_approvers() ->
     assert "return 'expired' if deadline <=" in model
 
     policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
-    assert 'get_secret_reveal_approvers as get_secret_reveal_approvers' in service
+    mutation_service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    assert 'get_secret_reveal_approvers as get_secret_reveal_approvers' in mutation_service
     approvers = policy.split('def get_secret_reveal_approvers(', 1)[1]
     assert 'Permission.key ==' in approvers
     assert 'Role.is_active.is_(True)' in approvers

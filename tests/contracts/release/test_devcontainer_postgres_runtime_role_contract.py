@@ -5,6 +5,7 @@ Source-only regression (not executed while CI/CD remains HOLD).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -276,4 +277,4 @@ def test_devcontainer_app_environment_template_documents_real_three_file_ownersh
     assert "drop_value(source, 'POSTGRES_PASSWORD')" in host
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in host
     assert "values.get('APP_ENV', 'development') != 'development'" in host
-    assert "'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD'" in host
+    assert re.search(r"'KAORI_MIGRATOR_PASSWORD',\s*'KAORI_RUNTIME_PASSWORD'", host)

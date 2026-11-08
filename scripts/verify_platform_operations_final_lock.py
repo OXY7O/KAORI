@@ -658,8 +658,20 @@ def main() -> int:
             errors.append(f'Secret Reveal Kubernetes boundary evidence missing: {required}')
 
     protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    protected_reveal_read_model = read('app/kubernetes/operations/secrets/reveal_read_model.py')
     for required in (
         'cluster_reveal_readiness,',
+        'def _cluster_ready(cluster: Cluster) -> bool:',
+        'return cluster_reveal_readiness(cluster)',
+        'def get_reveal_clusters() -> list[Cluster]:',
+        'if _cluster_ready(cluster) and get_configured_enabled_namespace_names(cluster.id)',
+    ):
+        if required not in protected_reveal_read_model:
+            errors.append(f'Secret Reveal v1.5 read-model authority missing: {required}')
+    for required in (
+        '_cluster_ready as _cluster_ready,',
+        'get_reveal_clusters as get_reveal_clusters,',
+        'get_reveal_page_context as get_reveal_page_context,',
         'get_configured_enabled_namespace_names,',
         'get_enabled_namespace_names,',
         'get_namespace_policy,',
@@ -781,7 +793,7 @@ def main() -> int:
         "SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))",
         "'configured_reveal_namespace_count': configured_reveal_namespace_count",
     ):
-        if required not in protected_reveal_service:
+        if required not in protected_reveal_read_model:
             errors.append(f'Secret Reveal v1.6 configured-policy evidence missing: {required}')
     for required in (
         "layout_classes(width='default')",

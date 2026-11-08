@@ -10,6 +10,7 @@ def read(relative: str) -> str:
 def test_platform_configuration_and_protected_reveal_share_policy_authority() -> None:
     policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
     protected = read('app/kubernetes/operations/secrets/reveal_service.py')
+    read_model = read('app/kubernetes/operations/secrets/reveal_read_model.py')
 
     assert 'def cluster_reveal_readiness(' in policy
     assert 'def get_namespace_policy(' in policy
@@ -17,11 +18,15 @@ def test_platform_configuration_and_protected_reveal_share_policy_authority() ->
     assert 'def update_cluster_reveal_readiness(' in policy
     assert 'def set_namespace_reveal_policy(' in policy
 
-    assert 'cluster_reveal_readiness,' in protected
+    assert 'cluster_reveal_readiness,' in read_model
+    assert 'return cluster_reveal_readiness(cluster)' in read_model
+    assert 'if _cluster_ready(cluster) and get_configured_enabled_namespace_names(cluster.id)' in read_model
+    assert '_cluster_ready as _cluster_ready,' in protected
+    assert 'get_reveal_clusters as get_reveal_clusters,' in protected
+    assert 'get_reveal_page_context as get_reveal_page_context,' in protected
     assert 'get_configured_enabled_namespace_names,' in protected
     assert 'get_enabled_namespace_names,' in protected
     assert 'get_namespace_policy,' in protected
-    assert 'return cluster_reveal_readiness(cluster)' in protected
     assert 'configured_names = get_configured_enabled_namespace_names(normalized_cluster_id)' in protected
     assert 'namespaces = get_enabled_namespace_names(normalized_cluster_id)' in protected
 

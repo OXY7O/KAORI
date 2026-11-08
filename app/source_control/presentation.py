@@ -6,9 +6,11 @@ aggregation. Every caller must enforce the local UAT scope until #724 lands.
 
 from __future__ import annotations
 
+from sqlalchemy import and_
+
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
-from app.models.source_control import SourceInstallation, SourceRepositoryCollectionState
+from app.models.source_control import SourceAccount, SourceInstallation, SourceRepositoryCollectionState
 
 _MAX_UAT_INSTALLATIONS = 50
 
@@ -24,6 +26,7 @@ def build_source_control_overview() -> dict:
             SourceInstallation,
             IntegrationInstance,
             SourceRepositoryCollectionState,
+            SourceAccount,
         )
         .join(
             IntegrationInstance,
@@ -33,9 +36,19 @@ def build_source_control_overview() -> dict:
             SourceRepositoryCollectionState,
             SourceRepositoryCollectionState.installation_id == SourceInstallation.id,
         )
+        .outerjoin(
+            SourceAccount,
+            and_(
+                SourceAccount.id == SourceInstallation.account_id,
+                SourceAccount.provider_key == SourceInstallation.provider_key,
+                SourceAccount.host_key == SourceInstallation.host_key,
+            ),
+        )
         .filter(
             SourceInstallation.provider_key == 'github',
             SourceInstallation.host_key == 'github.com',
+            IntegrationInstance.integration_type == 'source_control',
+            IntegrationInstance.provider_key == 'github',
             IntegrationInstance.lifecycle_status == 'active',
         )
         .order_by(SourceInstallation.id)
@@ -44,12 +57,13 @@ def build_source_control_overview() -> dict:
     )
     has_more = len(records) > _MAX_UAT_INSTALLATIONS
     installations = []
-    for installation, connection, collection in records[:_MAX_UAT_INSTALLATIONS]:
+    for installation, connection, collection, account in records[:_MAX_UAT_INSTALLATIONS]:
         committed = bool(collection is not None and collection.committed_generation > 0)
         installations.append(
             {
                 'installation': installation,
                 'connection': connection,
+                'account': account,
                 'collection': collection,
                 'committed': committed,
                 'observed_count': collection.observed_count if collection is not None and committed else None,

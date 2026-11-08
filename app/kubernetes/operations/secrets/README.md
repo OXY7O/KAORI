@@ -451,3 +451,22 @@ approved 5/10/25/50 sizes. Independent query parameters, tab anchors,
 permission-gated Approvals, existing HTMX fragments, and the existing
 consumer-facing pagination aliases are preserved. Pages are clamped and
 empty windows use 0–0 count labels rather than a custom 3-row default.
+
+
+## Protected Reveal committed request read model (#3495)
+
+`reveal_read_model.py` owns **committed request and pending-approval metadata**
+projections: requester-scoped SQL filtering, effective expiry, permission-gated
+approval counts, readiness and canonical pagination (default 5). This read path
+must never load Secret values or invoke the Kubernetes provider.
+
+`reveal_service.py` retains create/approve/reveal mutations, live Secret
+revalidation, transaction locks, one-time consumption and audit evidence. Its
+existing public read-model names are re-exported for route compatibility.
+The contracts in `tests/contracts/kubernetes/operations/` validate both the
+read-model scope and guarded mutation-service authority.
+
+Run the existing Ruff, Pyright, relevant pytest/security contracts and Code
+Health checks on the **combined Dev Container workbench** before treating this
+refactor as accepted. A source-only merge into temporary review/UAT is not
+Full Admission, provider UAT or human acceptance.
