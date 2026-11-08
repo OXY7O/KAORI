@@ -27,6 +27,7 @@ def test_ci_tool_downloads_keep_checksum_verification() -> None:
 
     assert dockerfile.count('sha256sum -c -') == 4
 
+
 def test_official_rest_fallback_preserves_all_pinned_ci_tool_checksums() -> None:
     dockerfile = DOCKERFILE.read_text(encoding='utf-8')
 
