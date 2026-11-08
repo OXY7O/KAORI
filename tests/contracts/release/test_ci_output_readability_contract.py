@@ -392,8 +392,7 @@ def test_registered_capability_table_parses_evidence_and_fails_closed(tmp_path: 
         'verify_welcome_final_lock.py,,verify_other.py',
     ):
         evidence.write_text(
-            '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
-            f'static verifier(s): {malformed_verifiers}\n',
+            f'  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); static verifier(s): {malformed_verifiers}\n',
             encoding='utf-8',
         )
         malformed_result = subprocess.run(
