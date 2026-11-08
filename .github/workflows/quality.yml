@@ -242,7 +242,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Build canonical toolchain on isolated hosted gate
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
         shell: bash
         env:
           EXPECTED_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
@@ -254,10 +255,29 @@ jobs:
             echo 'BLOCK: admission gate toolchain identity mismatch' >&2
             exit 1
           }
-          docker build --file .github/ci/Dockerfile --tag "$image" .
-          docker image inspect "$image" >/dev/null
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
           printf '✅ Hosted Full Admission gate toolchain key: %s\n' "$key"
 
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing gates
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
       - name: Prepare Gate Contract
         shell: bash
         run: |
@@ -556,7 +576,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Build canonical toolchain on isolated hosted smoke
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
         shell: bash
         env:
           EXPECTED_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
@@ -568,10 +589,29 @@ jobs:
             echo 'BLOCK: Fast Smoke toolchain identity mismatch' >&2
             exit 1
           }
-          docker build --file .github/ci/Dockerfile --tag "$image" .
-          docker image inspect "$image" >/dev/null
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
           printf '✅ Hosted Fast Smoke toolchain key: %s\n' "$key"
 
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing gates
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
       - name: Prepare Smoke Contract
         shell: bash
         run: |
