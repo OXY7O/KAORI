@@ -45,9 +45,10 @@ def test_hosted_toolchain_uses_pinned_branch_scoped_buildkit_cache() -> None:
         assert source.count(expected_setup) == expected_jobs
         assert source.count(expected_build) == expected_jobs
         assert source.count('cache-from: type=gha,scope=kaori-ci-toolchain-v1') == expected_jobs
-        assert source.count(
-            'cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m'
-        ) == expected_jobs
+        assert (
+            source.count('cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m')
+            == expected_jobs
+        )
         assert source.count('file: .github/ci/Dockerfile') >= expected_jobs
         assert source.count('tags: ${{ steps.hosted-toolchain.outputs.image }}') == expected_jobs
         assert source.count('push: false') == expected_jobs
@@ -71,6 +72,7 @@ def test_cached_layers_do_not_replace_exact_source_validation() -> None:
     assert 'Validate Runtime & DAST' in full
     assert 'name: CI Admission' in full
     assert 'statuses: write' in full
+
 
 def test_buildkit_caches_downloads_without_replacing_install_steps() -> None:
     ci_source = read(CI_DOCKERFILE)
