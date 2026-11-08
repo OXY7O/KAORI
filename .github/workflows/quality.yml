@@ -546,7 +546,7 @@ jobs:
     if: ${{ needs.validation-profile.outputs.execution == 'fast' }}
     needs: validation-profile
     name: Fast Smoke
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout Source
@@ -555,6 +555,23 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Build canonical toolchain on isolated hosted smoke
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: Fast Smoke toolchain identity mismatch' >&2
+            exit 1
+          }
+          docker build --file .github/ci/Dockerfile --tag "$image" .
+          docker image inspect "$image" >/dev/null
+          printf '✅ Hosted Fast Smoke toolchain key: %s\n' "$key"
+
       - name: Prepare Smoke Contract
         shell: bash
         run: |
