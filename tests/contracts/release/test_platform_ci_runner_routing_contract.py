@@ -5,7 +5,7 @@ EXPECTED_RUNNERS = {
         'route': 'runs-on: ubuntu-24.04',
         'developer-check': 'runs-on: ubuntu-24.04',
         'ready-admission-guard': 'runs-on: ubuntu-24.04',
-        'toolchain': 'runs-on: [self-hosted, linux, x64, kaori-ci]',
+        'toolchain': 'runs-on: ubuntu-24.04',
         'python-check': 'runs-on: ubuntu-24.04',
         'validation-check': 'runs-on: ubuntu-24.04',
     },
