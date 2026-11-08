@@ -262,7 +262,7 @@ def test_hosted_admission_profile_matrix_and_smoke_preserve_exact_source_authori
         assert 'load: true' in block
         assert 'cache-from: type=gha,scope=kaori-ci-toolchain-v1' in block
         assert 'needs.validation-profile.outputs.toolchain_image' in block
-    assert 'max-parallel: 1' in matrix
+    assert 'max-parallel: 5' in matrix
     assert 'strategy:' in matrix and 'fail-fast: true' in matrix
     assert 'Run Security Gate' in matrix
     assert 'Run Functional Tests' in matrix
@@ -280,12 +280,12 @@ def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> Non
     assert 'needs: validation-profile' in matrix
     assert 'strategy:' in matrix
     assert 'fail-fast: true' in matrix
-    # Preserve the governed serial admission matrix until hosted capacity is measured,
-    # without skipping any required gate or weakening fail-fast admission.
-    assert 'max-parallel: 1' in matrix
-    assert 'max-parallel: 2' not in matrix
-    assert matrix.index('gate: functional') < matrix.index('gate: static')
-    assert 'Under serial admission, start the longest Functional gate first.' in matrix
+    # All five comprehensive checks may run on independent ephemeral hosted
+    # workers; do not mistake a cancelled sibling for admitted coverage.
+    assert 'runs-on: ubuntu-24.04' in matrix
+    assert 'max-parallel: 5' in matrix
+    assert 'max-parallel: 1' not in matrix
+    assert matrix.count('\n          - gate: ') == 5
     for gate in (
         'gate: static',
         'gate: security',
