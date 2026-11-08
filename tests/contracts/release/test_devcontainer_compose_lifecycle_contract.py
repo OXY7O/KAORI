@@ -158,9 +158,11 @@ def test_devcontainer_browser_matches_the_pinned_ci_playwright_runtime() -> None
     assert 'python -m playwright install --with-deps chromium' in development
     assert 'python -m playwright install --with-deps chromium' in ci_dockerfile
     assert 'chmod -R a+rX /ms-playwright' in development
-    assert development.index('python -m pip install -r /tmp/requirements/dev.txt') < development.index(
-        'python -m playwright install --with-deps chromium'
-    ) < development.index('USER vscode')
+    assert (
+        development.index('python -m pip install -r /tmp/requirements/dev.txt')
+        < development.index('python -m playwright install --with-deps chromium')
+        < development.index('USER vscode')
+    )
     assert 'python -m playwright install' not in dockerfile.split('FROM base AS production', 1)[1]
 
 
