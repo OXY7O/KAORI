@@ -8,12 +8,12 @@ from scripts.publication_release_assets_inventory import inventory
 def test_deeply_nested_release_metadata_fails_closed_without_disclosure():
     # A deeply nested, otherwise valid JSON document exceeds the parser's
     # recursion budget. The inventory must return sanitized INCOMPLETE.
-    payload = "[" * 1500 + "0" + "]" * 1500
     sensitive_marker = "DO_NOT_ECHO_RELEASE_METADATA"
+    payload = "[" * 1500 + json.dumps(sensitive_marker) + "]" * 1500
 
     def runner(command, **kwargs):
         assert command[:2] == ["gh", "api"]
-        return subprocess.CompletedProcess(command, 0, payload + sensitive_marker)
+        return subprocess.CompletedProcess(command, 0, payload)
 
     result = inventory("OXY7O/KAORI", runner=runner)
     assert result["assessment"] == "INCOMPLETE"
