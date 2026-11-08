@@ -34,6 +34,9 @@ tmp
 
 node_modules
 
+# Production CSS comes from the isolated frontend-build stage, never local output.
+/app/static/css/output.css
+
 .vscode
 .devcontainer
 
