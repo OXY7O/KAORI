@@ -277,4 +277,4 @@ def test_devcontainer_app_environment_template_documents_real_three_file_ownersh
     assert "drop_value(source, 'POSTGRES_PASSWORD')" in host
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in host
     assert "values.get('APP_ENV', 'development') != 'development'" in host
-    assert re.search(r"'KAORI_MIGRATOR_PASSWORD',\\s*'KAORI_RUNTIME_PASSWORD'", host)
+    assert re.search(r"'KAORI_MIGRATOR_PASSWORD',\s*'KAORI_RUNTIME_PASSWORD'", host)
