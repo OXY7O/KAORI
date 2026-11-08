@@ -53,4 +53,4 @@ def test_actionlint_official_rest_fallback_preserves_pinned_binary_and_checksums
     # Existing provider checksum list remains mandatory on primary or fallback.
     assert 'grep " actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz$"' in dockerfile
     assert dockerfile.count('sha256sum -c -') == 4
-    assert 'SHELL ["\/bin\/bash", "-o", "pipefail", "-c"]'.replace('\\/', '/') in dockerfile
+    assert 'SHELL ["/bin/bash", "-o", "pipefail", "-c"]' in dockerfile
