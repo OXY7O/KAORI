@@ -128,7 +128,7 @@ def test_git_ls_files_failure_cannot_pass_as_empty_tracked_source(tmp_path: Path
     )
     fake_git.chmod(0o755)
     environment = os.environ.copy()
-    environment['PATH'] = f"{fake_bin}{os.pathsep}{environment['PATH']}"
+    environment['PATH'] = f'{fake_bin}{os.pathsep}{environment["PATH"]}'
     check = subprocess.run(
         ['bash', 'scripts/verify_source_hygiene.sh'],
         cwd=checkout,

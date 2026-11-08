@@ -35,8 +35,7 @@ class InventoryTests(unittest.TestCase):
             repo = Path(d)
 
             def git(*args):
-                return subprocess.run(['git', '-C', d, *args], check=True,
-                                      capture_output=True).stdout.strip()
+                return subprocess.run(['git', '-C', d, *args], check=True, capture_output=True).stdout.strip()
 
             git('init', '-q')
             git('config', 'user.name', 'Test')
