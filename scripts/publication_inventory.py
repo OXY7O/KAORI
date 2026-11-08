@@ -26,7 +26,8 @@ def inventory(repo):
     shallow = git(repo, 'rev-parse', '--is-shallow-repository').strip() == b'true'
     # Detached HEAD can contain a commit absent from every local ref.
     # Include it in the inventory without implying remote/public completeness.
-    referenced_commits = set(git(repo, 'rev-list', '--all').splitlines())
+    # Git's --all also expands detached HEAD; enumerate real refs only.
+    referenced_commits = set(git(repo, 'rev-list', '--glob=refs/*').splitlines())
     # An initialized repository may not have a HEAD commit yet. Keep its
     # inventory explicitly incomplete instead of failing before assessment.
     has_head = (
