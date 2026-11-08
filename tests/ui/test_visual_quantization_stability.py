@@ -240,6 +240,7 @@ def test_proven_raster_artifact_cannot_bypass_geometry(tmp_path: Path, monkeypat
             evidence_root=tmp_path / 'evidence',
         )
 
+
 def test_multiple_proven_mobile_raster_variants_keep_exact_png_and_manifest_authority(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
