@@ -12,6 +12,7 @@ first-install authority. NEVER rotate/replace credentials for populated data.
 Schema and first administrator are initialized only by the guarded virgin
 schema Compose job; existing database upgrades remain operator-triggered.
 """
+
 from __future__ import annotations
 
 import base64
@@ -28,10 +29,7 @@ ADMIN_ENV = SECRET_DIR / 'postgres-bootstrap.env'
 MIGRATOR_ENV = SECRET_DIR / 'postgres-migrate.env'
 BACKUP_ENV = SECRET_DIR / 'application-env-before-three-role.bak'
 RUNTIME_ROLE = 'kaori_runtime'
-PLACEHOLDER = (
-    'postgresql://kaori_runtime:'
-    'generated-by-devcontainer-initialize-command@db:5432/kaori'
-)
+PLACEHOLDER = 'postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori'
 
 
 def abort(message: str) -> None:
@@ -75,8 +73,7 @@ def check_regular_file(path: Path) -> None:
 
 def create_private(path: Path, value: str) -> None:
     check_regular_file(path)
-    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600),
-                   'w', encoding='utf-8') as stream:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w', encoding='utf-8') as stream:
         stream.write(value)
     # On Windows bind mounts, host NTFS ACLs are the effective control.
     try:
@@ -130,8 +127,7 @@ def main() -> None:
 
     data_exists = check_pgdata()
     source = (
-        APP_ENV.read_text(encoding='utf-8') if APP_ENV.exists()
-        else (ROOT / '.env.example').read_text(encoding='utf-8')
+        APP_ENV.read_text(encoding='utf-8') if APP_ENV.exists() else (ROOT / '.env.example').read_text(encoding='utf-8')
     )
     values = env_values(source)
     if values.get('APP_ENV', 'development') != 'development':
@@ -141,8 +137,11 @@ def main() -> None:
     if values.get('POSTGRES_USER', 'postgres') not in ('postgres', 'kaori'):
         abort('unexpected local PostgreSQL bootstrap username')
     for key in (
-        'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD',
-        'KAORI_DB_MIGRATION_URL', 'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
+        'KAORI_MIGRATOR_PASSWORD',
+        'KAORI_RUNTIME_PASSWORD',
+        'KAORI_DB_MIGRATION_URL',
+        'PGPASSWORD',
+        'POSTGRES_PASSWORD_FILE',
     ):
         if key in values:
             abort(f'{key} must not be present in shared application .env')
@@ -186,8 +185,7 @@ def main() -> None:
         runtime_pw = secrets.token_urlsafe(36)
         migrate_pw = secrets.token_urlsafe(36)
         SECRET_DIR.mkdir(parents=True, exist_ok=True)
-        create_private(ADMIN_ENV,
-                       f'POSTGRES_PASSWORD={admin_pw}\nKAORI_RUNTIME_PASSWORD={runtime_pw}\n')
+        create_private(ADMIN_ENV, f'POSTGRES_PASSWORD={admin_pw}\nKAORI_RUNTIME_PASSWORD={runtime_pw}\n')
         create_private(MIGRATOR_ENV, f'KAORI_MIGRATOR_PASSWORD={migrate_pw}\n')
         expected_url = f'postgresql://kaori_runtime:{quote(runtime_pw, safe="")}@db:5432/kaori'
 
@@ -204,7 +202,8 @@ def main() -> None:
         if data_exists:
             abort('existing database with absent integration encryption key')
         source = set_value(
-            source, 'INTEGRATION_CREDENTIAL_KEY',
+            source,
+            'INTEGRATION_CREDENTIAL_KEY',
             base64.urlsafe_b64encode(os.urandom(32)).decode('ascii'),
         )
     if not values.get('ADMIN_PASSWORD') or values['ADMIN_PASSWORD'].startswith('replace-'):
