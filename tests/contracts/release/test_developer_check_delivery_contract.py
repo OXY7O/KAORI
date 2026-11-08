@@ -1,3 +1,5 @@
+import os
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -30,17 +32,19 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
         'ready-admission-guard',
     }
     assert jobs['route']['name'] == 'Route Checks'
-    assert jobs['route']['if'] == (
-        '${{ github.event.pull_request.head.repo.full_name == github.repository && '
-        "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
-        "github.event.pull_request.head.ref != 'kaori/staging' }}"
-    )
+    assert 'if' not in jobs['route']
+    assert jobs['route']['runs-on'] == 'ubuntu-24.04'
+    assert jobs['route']['steps'][0]['name'] == 'Reject untrusted pull request before checkout'
+    assert jobs['route']['steps'][0]['env']['HEAD_REPO'] == '${{ github.event.pull_request.head.repo.full_name }}'
+    assert jobs['route']['steps'][0]['env']['HEAD_REF'] == '${{ github.event.pull_request.head.ref }}'
     assert jobs['toolchain']['name'] == 'Prepare Toolchain'
     assert jobs['toolchain']['needs'] == 'route'
     assert jobs['python-check']['name'] == 'Python & Governance'
     assert jobs['validation-check']['name'] == 'Frontend & Focused Validation'
     assert jobs['developer-check']['name'] == 'Developer Check'
-    assert jobs['developer-check']['if'].startswith('${{ always()')
+    assert jobs['developer-check']['if'] == '${{ always() }}'
+    assert jobs['developer-check']['runs-on'] == 'ubuntu-24.04'
+    assert jobs['developer-check']['steps'][0]['env']['ROUTE_RESULT'] == '${{ needs.route.result }}'
     assert set(jobs['python-check']['needs']) == {'route', 'toolchain'}
     assert set(jobs['validation-check']['needs']) == {'route', 'toolchain', 'python-check'}
     assert set(jobs['developer-check']['needs']) == {
@@ -134,7 +138,7 @@ def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> Non
     assert jobs['full-admission']['needs'] == 'developer-check'
     assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
     assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
-    assert 'github.event.pull_request.draft == true' not in jobs['route']['if']
+    assert 'if' not in jobs['route']  # Fork/branch denial runs as a failing hosted step.
     assert 'uses: ./.github/workflows/quality.yml' in source
 
 
@@ -262,3 +266,70 @@ def test_delivery_standard_codifies_pre_ready_and_batch_repair() -> None:
         'small issue',
     ):
         assert token in source
+
+
+def test_untrusted_source_is_rejected_before_checkout_on_hosted_runner() -> None:
+    """Execute the existing Route Checks trust gate with harmless PR identities."""
+    jobs = yaml.safe_load(read(DEVELOPER_WORKFLOW))['jobs']
+    route = jobs['route']
+    assert route['runs-on'] == 'ubuntu-24.04'
+    assert 'if' not in route
+    first, checkout = route['steps'][:2]
+    assert first['name'] == 'Reject untrusted pull request before checkout'
+    assert checkout['name'] == 'Checkout Work Branch'
+    assert 'actions/checkout@' in checkout['uses']
+    assert checkout['with']['persist-credentials'] is False
+
+    for head_repo, head_ref, accepted in (
+        ('OXY7O/KAORI', 'kaori/chore-4238-hosted-developer-check-light', True),
+        ('external/KAORI-fork', 'kaori/chore-4238-hosted-developer-check-light', False),
+        ('OXY7O/KAORI', 'main', False),
+        ('OXY7O/KAORI', 'kaori/staging', False),
+    ):
+        env = {
+            **os.environ,
+            'GITHUB_REPOSITORY': 'OXY7O/KAORI',
+            'HEAD_REPO': head_repo,
+            'HEAD_REF': head_ref,
+        }
+        process = subprocess.run(
+            ['bash', '-c', first['run']],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (process.returncode == 0) is accepted, (head_repo, head_ref, process.stderr)
+
+
+def test_required_developer_check_fails_for_non_success_route_result() -> None:
+    """A GitHub required check must FAIL instead of being conditionally skipped."""
+    jobs = yaml.safe_load(read(DEVELOPER_WORKFLOW))['jobs']
+    aggregate = jobs['developer-check']
+    assert aggregate['name'] == 'Developer Check'
+    assert aggregate['runs-on'] == 'ubuntu-24.04'
+    assert aggregate['if'] == '${{ always() }}'
+    script = aggregate['steps'][0]['run']
+    assert aggregate['steps'][0]['env']['ROUTE_RESULT'] == '${{ needs.route.result }}'
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in script
+    guard = script.split('python_required=false', 1)[0]
+    for route_result, accepted in (
+        ('success', True),
+        ('failure', False),
+        ('skipped', False),
+        ('cancelled', False),
+    ):
+        process = subprocess.run(
+            ['bash', '-c', guard],
+            env={**os.environ, 'ROUTE_RESULT': route_result},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (process.returncode == 0) is accepted, (route_result, process.stderr)
+
+    assert jobs['toolchain']['needs'] == 'route'
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
