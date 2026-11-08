@@ -56,9 +56,7 @@ def test_official_rest_fallback_preserves_all_pinned_ci_tool_checksums() -> None
         assert asset_id in dockerfile
 
     fallback_lines = [
-        line.strip()
-        for line in dockerfile.splitlines()
-        if 'curl ' in line and 'https://api.github.com/repos/' in line
+        line.strip() for line in dockerfile.splitlines() if 'curl ' in line and 'https://api.github.com/repos/' in line
     ]
     assert len(fallback_lines) == 8
     for line in fallback_lines:
