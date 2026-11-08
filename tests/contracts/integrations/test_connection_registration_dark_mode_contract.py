@@ -11,16 +11,14 @@ def read(relative: str) -> str:
 def test_related_workspace_card_uses_global_contextual_violet_surface_in_dark_mode() -> None:
     source = read('app/templates/components/related_page_card.html')
 
-    assert 'kaori-brand-domain-panel' in source
-    assert 'text-brand-foreground' in source
-    assert 'text-brand-foreground-muted' in source
-    assert 'bg-brand-surface' in source
-    assert 'bg-brand-surface-strong' in source
+    assert 'kaori-brand-domain-panel' not in source
+    assert 'bg-kaori-soft' in source
+    assert 'border-kaori-primary/20' in source
+    assert 'dark:border-brand-outline' in source
     assert 'dark:bg-surface-card' not in source
-    assert 'dark:text-content-primary' not in source
-    assert 'bg-brand-surface-strong' in source
+    assert 'bg-kaori-primary' in source
     assert 'hover:bg-kaori-primary-hover' in source
-    assert 'hover:text-white' in source
+    assert 'text-white' in source
 
 
 def test_shared_connection_guidance_uses_accent_violet_not_bright_supporting_text() -> None:

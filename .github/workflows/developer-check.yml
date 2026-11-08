@@ -1,4 +1,4 @@
-name: KAORI Developer Check
+name: Developer Check
 
 on:
   pull_request:
@@ -13,9 +13,13 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  statuses: write
 
 concurrency:
-  group: kaori-developer-check-${{ github.event.pull_request.number }}
+  # Queue generation 2 (#2058): retire the wedged PR concurrency key without relaxing gates.
+  # Keep one active run per PR and cancel superseded validation runs on new exact-head SHAs.
+  group: kaori-developer-check-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
@@ -24,8 +28,9 @@ env:
 jobs:
   route:
     name: Route Checks
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # A skipped job can satisfy a required check: run on a hosted worker and
+    # FAIL untrusted origins explicitly before checkout or privileged work.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       python: ${{ steps.route.outputs.python }}
@@ -36,9 +41,29 @@ jobs:
       reports: ${{ steps.route.outputs.reports }}
       wide: ${{ steps.route.outputs.wide }}
       test_paths: ${{ steps.route.outputs.test_paths }}
+      template_paths: ${{ steps.route.outputs.template_paths }}
       summary: ${{ steps.route.outputs.summary }}
+      source_tree: ${{ steps.route.outputs.source_tree }}
+      reuse: ${{ steps.reuse.outcome == 'success' && steps.reuse.outputs.reuse == 'true' }}
+      reuse_reason: ${{ steps.reuse.outputs.reuse_reason }}
     steps:
-      - name: Check Out Work Branch Source
+      - name: Reject untrusted pull request before checkout
+        shell: bash
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'BLOCK: external fork is not authorized for trusted KAORI Developer Check.' >&2
+            exit 1
+          }
+          [[ "$HEAD_REF" == kaori/* && "$HEAD_REF" != kaori/staging ]] || {
+            echo 'BLOCK: source must be an issue-linked KAORI work branch, not staging.' >&2
+            exit 1
+          }
+
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
@@ -52,233 +77,203 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -Eeuo pipefail
-          changed_file="$(mktemp)"
-          git diff --name-only "$BASE_SHA" "$KAORI_SOURCE_SHA" > "$changed_file"
+          python3 scripts/developer_check_plan.py \
+            --base "$BASE_SHA" \
+            --head "$KAORI_SOURCE_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+          printf 'source_tree=%s\n' "$(git show -s --format=%T HEAD)" >> "$GITHUB_OUTPUT"
 
-          python=false
-          templates=false
-          frontend=false
-          migrations=false
-          contracts=false
-          reports=false
-          wide=false
-          declare -A selected_tests=()
+      # Draft evidence is a preflight identity artifact, NOT a PASS assertion.
+      # Ready independently verifies the completed original workflow and all jobs.
+      - name: Write Draft Route Identity
+        id: draft-identity
+        if: ${{ github.event.pull_request.draft == true }}
+        continue-on-error: true
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ROUTE_SUMMARY: ${{ steps.route.outputs.summary }}
+          SOURCE_TREE: ${{ steps.route.outputs.source_tree }}
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci_admission.py write-draft-developer-evidence \
+            --repository "$GITHUB_REPOSITORY" --pull-number "$PR_NUMBER" \
+            --base-sha "$BASE_SHA" --head-sha "$KAORI_SOURCE_SHA" \
+            --source-tree "$SOURCE_TREE" --plan "$ROUTE_SUMMARY" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --output tmp/ci-artifacts/developer-check/draft-developer-evidence.json
 
-          while IFS= read -r path; do
-            [[ -n "$path" ]] || continue
+      - name: Upload Draft Route Identity
+        if: ${{ github.event.pull_request.draft == true && steps.draft-identity.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kaori-draft-developer-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/developer-check/draft-developer-evidence.json
+          if-no-files-found: error
+          retention-days: 2
 
-            case "$path" in
-              .github/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
-                wide=true
-                python=true
-                templates=true
-                frontend=true
-                migrations=true
-                contracts=true
-                ;;
-            esac
+      - name: Verify Prior Exact Draft Evidence
+        id: reuse
+        if: ${{ github.event.pull_request.draft == false }}
+        continue-on-error: true
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ROUTE_SUMMARY: ${{ steps.route.outputs.summary }}
+          SOURCE_TREE: ${{ steps.route.outputs.source_tree }}
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci_admission.py find-draft-developer-evidence \
+            --repository "$GITHUB_REPOSITORY" \
+            --pull-number "$PR_NUMBER" --head-sha "$KAORI_SOURCE_SHA" \
+            --base-sha "$BASE_SHA" --source-tree "$SOURCE_TREE" \
+            --plan "$ROUTE_SUMMARY" --run-id "$GITHUB_RUN_ID"
 
-            case "$path" in
-              *.py) python=true ;;
-            esac
-            case "$path" in
-              app/templates/*|app/*/templates/*) templates=true ;;
-            esac
-            case "$path" in
-              app/static/*|frontend/*|package.json|package-lock.json)
-                frontend=true
-                ;;
-            esac
-            case "$path" in
-              migrations/*|app/*/models.py|app/*/models/*)
-                migrations=true
-                contracts=true
-                ;;
-            esac
-
-            case "$path" in
-              app/welcome/*|tests/welcome/*) selected_tests[tests/welcome]=1 ;;
-              app/access/*|app/users/*|tests/access/*) selected_tests[tests/access]=1 ;;
-              app/integrations/*|tests/integrations/*) selected_tests[tests/integrations]=1 ;;
-              app/kubernetes/*|tests/kubernetes/*) selected_tests[tests/kubernetes]=1 ;;
-              app/storage/*|app/object_storage/*|tests/storage/*|tests/object_storage/*)
-                selected_tests[tests/storage]=1
-                [[ -d tests/object_storage ]] && selected_tests[tests/object_storage]=1
-                ;;
-              app/platform_operations/*|tests/platform_operations/*)
-                contracts=true
-                selected_tests[tests/platform_operations]=1
-                ;;
-              app/reports/*|tests/reports/*|scripts/verify_analytics_pdf_publication.py)
-                reports=true
-                contracts=true
-                selected_tests[tests/reports]=1
-                ;;
-              app/settings/*|tests/settings/*) selected_tests[tests/settings]=1 ;;
-              app/intelligence/*|tests/intelligence/*) [[ -d tests/intelligence ]] && selected_tests[tests/intelligence]=1 ;;
-              app/vault/*|tests/vault/*)
-                [[ -d tests/vault ]] && selected_tests[tests/vault]=1
-                selected_tests[tests/access]=1
-                ;;
-              tests/ui/*)
-                frontend=true
-                selected_tests[tests/ui]=1
-                ;;
-              tests/contracts/access/*)
-                contracts=true
-                selected_tests[tests/contracts/access]=1
-                ;;
-              tests/contracts/analytics/*)
-                contracts=true
-                reports=true
-                selected_tests[tests/contracts/analytics]=1
-                ;;
-              tests/contracts/architecture/*)
-                contracts=true
-                selected_tests[tests/contracts/architecture]=1
-                ;;
-              tests/contracts/dashboards/*)
-                contracts=true
-                selected_tests[tests/contracts/dashboards]=1
-                ;;
-              tests/contracts/definitions/*)
-                contracts=true
-                selected_tests[tests/contracts/definitions]=1
-                ;;
-              tests/contracts/design/*)
-                contracts=true
-                selected_tests[tests/contracts/design]=1
-                ;;
-              tests/contracts/integrations/*)
-                contracts=true
-                selected_tests[tests/contracts/integrations]=1
-                ;;
-              tests/contracts/intelligence/*)
-                contracts=true
-                selected_tests[tests/contracts/intelligence]=1
-                ;;
-              tests/contracts/kubernetes/*)
-                contracts=true
-                selected_tests[tests/contracts/kubernetes]=1
-                ;;
-              tests/contracts/platform_operations/*)
-                contracts=true
-                selected_tests[tests/contracts/platform_operations]=1
-                ;;
-              tests/contracts/release/*)
-                wide=true
-                python=true
-                templates=true
-                frontend=true
-                migrations=true
-                contracts=true
-                selected_tests[tests/contracts/release]=1
-                ;;
-              tests/contracts/reports/*)
-                contracts=true
-                reports=true
-                selected_tests[tests/contracts/reports]=1
-                ;;
-              tests/contracts/settings/*)
-                contracts=true
-                selected_tests[tests/contracts/settings]=1
-                ;;
-              tests/contracts/storage/*)
-                contracts=true
-                selected_tests[tests/contracts/storage]=1
-                ;;
-              tests/contracts/welcome/*)
-                contracts=true
-                selected_tests[tests/contracts/welcome]=1
-                ;;
-              app/*)
-                contracts=true
-                ;;
-              tests/contracts/*)
-                contracts=true
-                ;;
-            esac
-          done < "$changed_file"
-
-          if [[ "$wide" == "true" ]]; then
-            selected_tests[tests/contracts]=1
-            selected_tests[tests/migrations]=1
-          fi
-
-          test_paths=''
-          for path in "${!selected_tests[@]}"; do
-            [[ -e "$path" ]] || continue
-            test_paths+="${test_paths:+ }$path"
-          done
-
-          summary="python=$python templates=$templates frontend=$frontend migrations=$migrations contracts=$contracts reports=$reports wide=$wide tests=${test_paths:-none}"
-          {
-            printf 'python=%s\n' "$python"
-            printf 'templates=%s\n' "$templates"
-            printf 'frontend=%s\n' "$frontend"
-            printf 'migrations=%s\n' "$migrations"
-            printf 'contracts=%s\n' "$contracts"
-            printf 'reports=%s\n' "$reports"
-            printf 'wide=%s\n' "$wide"
-            printf 'test_paths=%s\n' "$test_paths"
-            printf 'summary=%s\n' "$summary"
-          } >> "$GITHUB_OUTPUT"
-
-          printf '📦 Developer Check route — %s\n' "$summary"
-
-  developer-check:
-    name: Developer Check
+  toolchain:
+    name: Prepare Toolchain
     needs: route
-    if: ${{ always() && needs.route.result == 'success' }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 20
+    # Pure documentation/copy outside validation authority does not need a CI image.
+    if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      image: ${{ steps.toolchain.outputs.image }}
     steps:
-      - name: Check Out Work Branch Source
+      - name: Checkout Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Developer Check toolchain — %s\n' "$image"
+
+  python-check:
+    name: Python & Governance
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
         shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
-          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: toolchain identity differs from trusted preparation job' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted Python toolchain — exact key %s (cached image build follows)\n' "$key"
 
-      - name: Run Path-Aware Checks
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing checks
         shell: bash
         env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
+
+      - name: Run Python & Governance Checks
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
-          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
-          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           CHECK_REPORTS: ${{ needs.route.outputs.reports }}
           CHECK_WIDE: ${{ needs.route.outputs.wide }}
-          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
-          ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
         run: |
           set -Eeuo pipefail
           started="$(date +%s)"
 
+          # This is an execution report, not the count of Python functions,
+          # contracted capabilities, or pytest cases covered by each verifier.
+          {
+            printf '### Python & Governance — executed validation\n\n'
+            printf 'Route: python=%s, contracts=%s, migrations=%s, reports=%s, wide=%s.\n\n' \
+              "$CHECK_PYTHON" "$CHECK_CONTRACTS" "$CHECK_MIGRATIONS" "$CHECK_REPORTS" "$CHECK_WIDE"
+            printf '| Check | Exact command | Outcome | Duration |\n'
+            printf '| --- | --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          executed_checks=0
+
           run_toolchain() {
             local label="$1"
             shift
-            local check_started elapsed
+            local check_started elapsed status=0 command_display check_pid heartbeat_pid
             check_started="$(date +%s)"
-            printf '⏳ %s\n' "$label"
+            printf -v command_display '%q ' "$@"
+            printf '⏳ %s · %s\n' "$label" "$command_display"
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               --env HOME=/tmp \
               --volume "$PWD:/workspace" \
               --workdir /workspace \
               "$CI_TOOLCHAIN_IMAGE" \
-              "$@"
+              "$@" &
+            check_pid=$!
+            (
+              while kill -0 "$check_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$check_pid" >/dev/null 2>&1; then
+                  elapsed=$(( $(date +%s) - check_started ))
+                  printf '⏳ %s still running · ⏱ %dm %02ds\n' \
+                    "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+              done
+            ) &
+            heartbeat_pid=$!
+            wait "$check_pid" || status=$?
+            kill "$heartbeat_pid" >/dev/null 2>&1 || true
+            wait "$heartbeat_pid" >/dev/null 2>&1 || true
             elapsed=$(( $(date +%s) - check_started ))
+            executed_checks=$((executed_checks + 1))
+            if (( status != 0 )); then
+              printf "| %s | \`%s\` | FAIL (exit %d) | %dm %02ds |\n" \
+                "$label" "$command_display" "$status" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              printf '❌ %s · exit %d · ⏱ %dm %02ds\n' \
+                "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+              return "$status"
+            fi
+            printf "| %s | \`%s\` | PASS | %dm %02ds |\n" \
+              "$label" "$command_display" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
             printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
           }
 
@@ -289,10 +284,6 @@ jobs:
           if [[ "$CHECK_PYTHON" == "true" ]]; then
             run_toolchain 'Ruff Check' python -m ruff check app migrations tests scripts
             run_toolchain 'Ruff Format' python -m ruff format --check app migrations tests scripts
-          fi
-
-          if [[ "$CHECK_TEMPLATES" == "true" ]]; then
-            run_toolchain 'DjLint' python -m djlint app/templates --check
           fi
 
           if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
@@ -310,33 +301,206 @@ jobs:
             run_toolchain 'Analytics PDF Publication' python scripts/verify_analytics_pdf_publication.py
           fi
 
+          elapsed=$(( $(date +%s) - started ))
+          printf '\n**Python & Governance:** %s checks executed and passed in %dm %02ds. Unselected path-aware checks were NOT RUN.\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+          printf '✅ Python & Governance PASS · %s checks · ⏱ %dm %02ds\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60))
+
+  validation-check:
+    name: Frontend & Focused Validation
+    # Both kaori-ci runner services share host 'kaori': serialize memory-intensive
+    # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
+    needs: [route, toolchain, python-check]
+    if: ${{ !cancelled() && needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    runs-on: ubuntu-24.04
+    # Full affected-capability Draft selection may include thousands of browser cases.
+    # Allow a completed failure report; do not narrow tests or relax the aggregate.
+    timeout-minutes: 75
+    steps:
+      - name: Checkout Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: toolchain identity differs from trusted preparation job' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted focused-test toolchain — exact key %s (cached image build follows)\n' "$key"
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing checks
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
+
+      - name: Prepare Isolated Focused Test Runtime
+        id: focused-runtime
+        if: ${{ needs.route.outputs.test_paths != '' || needs.route.outputs.contracts == 'true' }}
+        shell: bash
+        env:
+          TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
+          CI_UID="$(id -u)"
+          CI_GID="$(id -g)"
+          export CI_UID CI_GID
+          export COMPOSE_PROJECT_NAME="kaori-devcheck-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-focused"
+          {
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=$KAORI_CI_TOOLCHAIN_IMAGE"
+            echo "CI_UID=$CI_UID"
+            echo "CI_GID=$CI_GID"
+            echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+          } >> "$GITHUB_ENV"
+          docker compose --file .github/ci/compose.yml up --detach --wait postgres redis
+
+      - name: Run Frontend & Focused Validation
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          TEMPLATE_PATHS: ${{ needs.route.outputs.template_paths }}
+          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+        run: |
+          set -Eeuo pipefail
+          started="$(date +%s)"
+
+          # This is an execution report, not the count of Python functions,
+          # contracted capabilities, or pytest cases covered by each verifier.
+          {
+            printf '### Frontend & Focused Validation — executed validation\n\n'
+            printf 'Route: templates=%s, frontend=%s, contracts=%s, selected pytest paths=%s.\n\n' \
+              "$CHECK_TEMPLATES" "$CHECK_FRONTEND" "$CHECK_CONTRACTS" "${TEST_PATHS:-none}"
+            printf '| Check | Exact command | Outcome | Duration |\n'
+            printf '| --- | --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          executed_checks=0
+
+          run_toolchain() {
+            local label="$1"
+            shift
+            local check_started elapsed status=0 command_display check_pid heartbeat_pid
+            check_started="$(date +%s)"
+            printf -v command_display '%q ' "$@"
+            printf '⏳ %s · %s\n' "$label" "$command_display"
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --volume "$PWD:/workspace" \
+              --workdir /workspace \
+              "$CI_TOOLCHAIN_IMAGE" \
+              "$@" &
+            check_pid=$!
+            (
+              while kill -0 "$check_pid" >/dev/null 2>&1; do
+                sleep 60
+                if kill -0 "$check_pid" >/dev/null 2>&1; then
+                  elapsed=$(( $(date +%s) - check_started ))
+                  printf '⏳ %s still running · ⏱ %dm %02ds\n' \
+                    "$label" $((elapsed / 60)) $((elapsed % 60))
+                fi
+              done
+            ) &
+            heartbeat_pid=$!
+            wait "$check_pid" || status=$?
+            kill "$heartbeat_pid" >/dev/null 2>&1 || true
+            wait "$heartbeat_pid" >/dev/null 2>&1 || true
+            elapsed=$(( $(date +%s) - check_started ))
+            executed_checks=$((executed_checks + 1))
+            if (( status != 0 )); then
+              printf "| %s | \`%s\` | FAIL (exit %d) | %dm %02ds |\n" \
+                "$label" "$command_display" "$status" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              printf '❌ %s · exit %d · ⏱ %dm %02ds\n' \
+                "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+              return "$status"
+            fi
+            printf "| %s | \`%s\` | PASS | %dm %02ds |\n" \
+              "$label" "$command_display" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+            printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
+          }
+
+          if [[ "$CHECK_TEMPLATES" == "true" ]]; then
+            if [[ -n "$TEMPLATE_PATHS" ]]; then
+              # The canonical planner only outputs existing, safe, owned leaf HTML paths.
+              # Shell arrays preserve argument boundaries; no eval or dynamic shell commands.
+              read -r -a changed_templates <<< "$TEMPLATE_PATHS"
+              run_toolchain 'DjLint Changed Templates' python -m djlint "${changed_templates[@]}" --check
+            else
+              # Shared, removed, unknown, or wide validation-authority changes widen.
+              run_toolchain 'DjLint Full Templates' python -m djlint app/templates --check
+            fi
+          fi
+
           if [[ "$CHECK_FRONTEND" == "true" ]]; then
             run_toolchain 'Frontend Dependencies' bash -lc 'npm ci --no-audit --no-fund'
             run_toolchain 'Frontend Test Assets' bash -lc 'npm run build-css'
             run_toolchain 'Frontend Format' bash -lc 'npm run check-format'
           fi
 
-          if [[ "$CHECK_CONTRACTS" == "true" ]]; then
-            paths="$TEST_PATHS"
-            if [[ -z "$paths" ]]; then
-              paths='tests/contracts/release'
-            fi
+          paths="$TEST_PATHS"
+          if [[ "$CHECK_CONTRACTS" == "true" && -z "$paths" ]]; then
+            paths='tests/contracts/release'
+          fi
+          if [[ -n "$paths" ]]; then
             printf '⏳ Focused Tests — %s\n' "$paths"
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
-          elif [[ -n "$TEST_PATHS" ]]; then
-            printf '⏳ Focused Tests — %s\n' "$TEST_PATHS"
-            # TEST_PATHS is assembled only from the static whitelist above.
-            # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $TEST_PATHS"
+            # Reuse the Full Admission test service: exact-run isolated PostgreSQL/Redis.
+            test_started="$(date +%s)"
+            test_status=0
+            docker compose --file .github/ci/compose.yml run --rm --no-deps ci \
+              bash -lc "pytest -q --tb=short $paths" || test_status=$?
+            test_elapsed=$(( $(date +%s) - test_started ))
+            if (( test_status != 0 )); then
+              printf "| Focused pytest | \`pytest -q --tb=short %s\` | FAIL (exit %d) | %dm %02ds |\n" \
+                "$paths" "$test_status" $((test_elapsed / 60)) $((test_elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+              exit "$test_status"
+            fi
+            executed_checks=$((executed_checks + 1))
+            printf "| Focused pytest | \`pytest -q --tb=short %s\` | PASS | %dm %02ds |\n" \
+              "$paths" $((test_elapsed / 60)) $((test_elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+            printf '✅ Focused Tests · ⏱ %dm %02ds\n' $((test_elapsed / 60)) $((test_elapsed % 60))
           fi
 
           elapsed=$(( $(date +%s) - started ))
-          printf '\n✅ Developer Check PASS\n'
-          printf '📦 %s\n' "$ROUTE_SUMMARY"
-          printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-          printf '➡️ Work-branch validation stays targeted in both Draft and Ready states; comprehensive validation begins only after merge to kaori/staging.\n'
+          printf '\n**Frontend & Focused Validation:** %s selected checks passed in %dm %02ds. Unselected checks were NOT RUN.\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60)) >> "$GITHUB_STEP_SUMMARY"
+          printf '✅ Frontend & Focused Validation PASS · %s checks · ⏱ %dm %02ds\n' \
+            "$executed_checks" $((elapsed / 60)) $((elapsed % 60))
+
+      - name: Stop Isolated Focused Test Runtime
+        if: ${{ always() && steps.focused-runtime.outcome != 'skipped' }}
+        shell: bash
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
@@ -346,3 +510,143 @@ jobs:
           path: tmp/ci-artifacts/test-output/ui-browser
           if-no-files-found: ignore
           retention-days: 3
+
+  developer-check:
+    name: Developer Check
+    needs:
+      - route
+      - toolchain
+      - python-check
+      - validation-check
+    # Required Developer Check must FAIL when route denies a fork/invalid branch.
+    # Never skip the required status context on a failed or skipped route.
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate Selected Checks
+        shell: bash
+        env:
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          ROUTE_RESULT: ${{ needs.route.result }}
+          VERIFIED_DRAFT_REUSE: ${{ needs.route.outputs.reuse }}
+          VERIFIED_DRAFT_REASON: ${{ needs.route.outputs.reuse_reason }}
+          ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
+          CHECK_PYTHON: ${{ needs.route.outputs.python }}
+          CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
+          CHECK_REPORTS: ${{ needs.route.outputs.reports }}
+          CHECK_WIDE: ${{ needs.route.outputs.wide }}
+          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+          TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}
+          PYTHON_RESULT: ${{ needs.python-check.result }}
+          VALIDATION_RESULT: ${{ needs.validation-check.result }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$ROUTE_RESULT" == "success" ]] || {
+            echo 'BLOCK: required Developer Check denied; trusted route did not succeed.' >&2
+            exit 1
+          }
+          python_required=false
+          validation_required=false
+          toolchain_required=false
+
+          if [[ "$CHECK_PYTHON" == "true" || "$CHECK_MIGRATIONS" == "true" || "$CHECK_REPORTS" == "true" || "$CHECK_WIDE" == "true" ]]; then
+            python_required=true
+          fi
+          if [[ "$CHECK_TEMPLATES" == "true" || "$CHECK_FRONTEND" == "true" || "$CHECK_CONTRACTS" == "true" || -n "$TEST_PATHS" ]]; then
+            validation_required=true
+          fi
+          if [[ "$python_required" == "true" || "$validation_required" == "true" ]]; then
+            toolchain_required=true
+          fi
+
+          assert_lane() {
+            local label="$1"
+            local required="$2"
+            local result="$3"
+            if [[ "$required" == "true" ]]; then
+              [[ "$result" == "success" ]] || {
+                printf '❌ %s — %s\n' "$label" "$result"
+                exit 1
+              }
+            else
+              [[ "$result" == "skipped" || "$result" == "success" ]] || {
+                printf '❌ %s — unexpected %s\n' "$label" "$result"
+                exit 1
+              }
+            fi
+          }
+
+          if [[ "$VERIFIED_DRAFT_REUSE" == "true" ]]; then
+            # Never claim a Ready PASS when any heavy lane executed unexpectedly.
+            [[ "$PR_DRAFT" == "false" && "$TOOLCHAIN_RESULT" == "skipped" && \
+               "$PYTHON_RESULT" == "skipped" && "$VALIDATION_RESULT" == "skipped" ]] || {
+              printf '❌ Verified Draft evidence routing mismatch; Ready admission denied.\n'
+              exit 1
+            }
+            printf '✅ Developer Check PASS · verified exact Draft evidence\n'
+            printf '📦 %s\n' "$ROUTE_SUMMARY"
+            printf '➡️ %s · starting governed Full Admission.\n' "$VERIFIED_DRAFT_REASON"
+            exit 0
+          fi
+
+          {
+            printf '### Developer Check — path-aware execution boundary\n\n'
+            printf "Selected plan: \`%s\`\n\n" "$ROUTE_SUMMARY"
+            printf '| Lane | Required by plan | Actual GitHub result |\n'
+            printf '| --- | --- | --- |\n'
+            printf '| Prepare Toolchain | %s | %s |\n' "$toolchain_required" "$TOOLCHAIN_RESULT"
+            printf '| Python & Governance | %s | %s |\n' "$python_required" "$PYTHON_RESULT"
+            printf '| Frontend & Focused Validation | %s | %s |\n\n' "$validation_required" "$VALIDATION_RESULT"
+            printf 'SKIPPED means not executed by the changed-path plan or verified exact-Draft reuse; it never means PASS.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          assert_lane 'Prepare Toolchain' "$toolchain_required" "$TOOLCHAIN_RESULT"
+
+          assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
+          assert_lane 'Frontend & Focused Validation' "$validation_required" "$VALIDATION_RESULT"
+
+          printf '✅ Developer Check PASS\n'
+          printf '📦 %s\n' "$ROUTE_SUMMARY"
+          if [[ "$PR_DRAFT" == "true" ]]; then
+            printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready.\n'
+          else
+            printf '➡️ Ready exact-head Developer Check PASS; starting governed Full Admission.\n'
+          fi
+
+  full-admission:
+    name: Full Admission
+    needs: developer-check
+    # Skipped predecessor lanes are expected after verified Draft reuse; do not let
+    # GitHub's implicit success() short-circuit the mandatory Full Admission job.
+    # !cancelled() preserves cancellation safety; the aggregate must be SUCCESS.
+    if: ${{ !cancelled() && needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    uses: ./.github/workflows/quality.yml
+
+  # Independent fail-closed terminal check. GitHub may report a workflow green
+  # even when an essential reusable job was skipped due to dependency status.
+  # Never interpret such a Ready run as successful frozen admission.
+  ready-admission-guard:
+    name: Ready Admission Guard
+    needs: [developer-check, full-admission]
+    if: ${{ always() && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Enforce Completed Full Admission
+        shell: bash
+        env:
+          DEVELOPER_RESULT: ${{ needs.developer-check.result }}
+          FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "$DEVELOPER_RESULT" != "success" || "$FULL_ADMISSION_RESULT" != "success" ]]; then
+            printf '❌ Ready Admission Guard — Developer Check=%s, Full Admission=%s\n' \
+              "$DEVELOPER_RESULT" "$FULL_ADMISSION_RESULT"
+            exit 1
+          fi
+          printf '✅ Ready Admission Guard PASS — comprehensive Full Admission completed successfully.\n'

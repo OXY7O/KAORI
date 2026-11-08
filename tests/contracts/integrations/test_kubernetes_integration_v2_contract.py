@@ -115,7 +115,9 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     assert "runtime_gate_label = 'Observation Required'" in runtime
     assert 'Not Observed' in runtime
     assert 'Persisted Runtime Refresh evidence' in runtime
-    assert 'Health gate only; validation remains independent.' in runtime
+    assert (
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in runtime
+    )
     assert 'Validation Readiness' in runtime
 
 
@@ -242,7 +244,7 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     assert 'Core Kubernetes readiness is unaffected' in validation
     assert "'requirement_label': 'Required' if required else 'Optional'" in service
     assert 'Optional Capability Access Is Limited' in capability
-    assert 'Do not expand the baseline ClusterRole.' in capability
+    assert 'do not broaden the baseline ClusterRole' in capability
     assert 'badge_oob("kubernetes", "validation", validation_state.readiness_label)' in capability
 
 
@@ -484,10 +486,11 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
         'palette_icon("server-cog", connection_icon_tone)' in registry
         or "palette_icon('server-cog', connection_icon_tone)" in registry
     )
-    assert (
-        "registry_header(title, description, icon, loading_id, title_id=None, tone='brand', action_html='')"
-        in provider_registry
-    )
+    assert '{% macro registry_header(' in provider_registry
+    assert "tone='brand'" in provider_registry
+    assert "action_html=''" in provider_registry
+    assert 'result_count=none' in provider_registry
+    assert 'table_label.result_count(result_count)' in provider_registry
     assert '{{ action_html }}' in provider_registry
 
 

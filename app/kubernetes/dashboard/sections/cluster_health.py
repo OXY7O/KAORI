@@ -5,7 +5,6 @@ from typing import Any
 from app.kubernetes.dashboard.schema import (
     AlertsSnapshot,
     CapacitySnapshot,
-    ClusterHealthPagination,
     ClusterHealthRow,
     ClusterStatusSignals,
 )
@@ -20,53 +19,6 @@ from app.kubernetes.dashboard.utils import (
     plural_suffix,
     safe_float,
 )
-
-
-def _normalize_page_number(value: str | int | None) -> int:
-    try:
-        page = int(value or 1)
-    except (TypeError, ValueError):
-        return 1
-
-    return max(page, 1)
-
-
-def paginate_sequence(
-    *,
-    items: list[Any],
-    page: str | int | None,
-    per_page: int = 5,
-) -> tuple[list[Any], ClusterHealthPagination]:
-    per_page = max(per_page, 1)
-    total_items = len(items)
-    total_pages = max((total_items + per_page - 1) // per_page, 1)
-    current_page = min(_normalize_page_number(page), total_pages)
-
-    start_index = (current_page - 1) * per_page
-    end_index = start_index + per_page
-    visible_items = items[start_index:end_index]
-
-    if total_items == 0:
-        start_item = 0
-        end_item = 0
-    else:
-        start_item = start_index + 1
-        end_item = min(end_index, total_items)
-
-    pagination = ClusterHealthPagination(
-        page=current_page,
-        per_page=per_page,
-        total_items=total_items,
-        total_pages=total_pages,
-        has_prev=current_page > 1,
-        has_next=current_page < total_pages,
-        prev_page=max(current_page - 1, 1),
-        next_page=min(current_page + 1, total_pages),
-        start_item=start_item,
-        end_item=end_item,
-    )
-
-    return visible_items, pagination
 
 
 def build_cluster_health(

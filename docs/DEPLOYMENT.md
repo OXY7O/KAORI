@@ -1,49 +1,57 @@
 # KAORI Deployment
 
-Use an immutable tagged image and a production environment file based on `.env.production.example`. `KAORI_IMAGE` and `APP_VERSION` must identify the same release. The canonical running guide is `docs/RUNNING.md`; this document records deployment-specific contracts and worker details.
+**Canonical governed server mode:** split `/etc/kaori/app.env`, `/etc/kaori/secrets.env`, and `/etc/kaori/deploy.env`, plus pipeline-generated `/var/lib/kaori/deploy-state/release.env`. The base `compose.production.yml` is always merged with `deploy/server/compose.server.yml`. The root `.env.production.example` is **deprecated** and must never be copied to create a runtime environment.
 
-## Production Release Startup
+For the other two modes, use [`docs/RUNNING.md`](RUNNING.md): root `.env` + Dev Container for live development, or `example/kaori/.env` + its own Compose stack for a disposable admitted-RC laptop run.
 
-Back up PostgreSQL before applying a new release. Then validate configuration, migrate, and start the complete production stack:
+## Governed server release deployment
 
-```bash
-docker compose -f compose.production.yml run --rm validate
-docker compose -f compose.production.yml run --rm migrate
-docker compose -f compose.production.yml up -d
-docker compose -f compose.production.yml ps
-```
+Follow [`deploy/server/README.md`](../deploy/server/README.md) and the protected GitHub workflow `.github/workflows/deploy-staging-host.yml`. It passes an immutable image digest, exact admitted SHA, and RC release tag to `deploy/server/deploy.sh`. The adapter performs **infrastructure startup → pre-migration backup → environment validation → migration → all canonical workers and Beat → runtime verification → retained release identity**. Public Nginx/Certbot publication is a separate operator boundary.
 
-Confirm the `web` service becomes healthy and review the logs before opening traffic:
+Before deployment, provision host-owned files using:
 
-```bash
-docker compose -f compose.production.yml logs --tail=100 web
-```
+- `deploy/env/app.env.example` → `/etc/kaori/app.env` (portable application configuration)
+- `deploy/env/secrets.env.example` → `/etc/kaori/secrets.env` (runtime secrets, mode 0600)
+- `deploy/env/deploy.env.example` → `/etc/kaori/deploy.env` (deployment adapter)
+- Governed release process → `/var/lib/kaori/deploy-state/release.env` (generated immutable image and build identity)
 
-After the stack is running, verify worker queue ownership and run the runtime-aware final gate from a release checkout when the environment provides its required services:
+Do **not** launch `docker compose -f compose.production.yml up` by itself: it does not activate the server's split environment, internal-only application network, or database/Redis overlay.
+
+After a successful governed deployment, on the server run:
 
 ```bash
-python scripts/verify_final_release.py --all --runtime
+bash deploy/server/verify.sh
 ```
 
-Rollback must use a previously approved immutable image and a migration plan appropriate to the schema revision. Do not point `KAORI_IMAGE` at an unversioned `latest` tag.
+For **read-only** operational Compose inspection on the deployment host, establish a privileged session that can read those files and load the current admitted release identity. From the checkout at `/opt/kaori`:
 
-## Production Principles
+```bash
+set -a
+source /etc/kaori/deploy.env
+source /var/lib/kaori/deploy-state/release.env
+set +a
 
-The canonical development and production runbook is `docs/RUNNING.md`.
+kaori_compose() {
+  docker compose --env-file /etc/kaori/deploy.env \
+    -f compose.production.yml -f deploy/server/compose.server.yml "$@"
+}
+kaori_compose ps
+kaori_compose logs --tail=100 web
+```
 
+The `kaori_compose` function below is for inspection **in the same shell session**. Do not use ad hoc service restarts or partial `up` commands in place of the governed release, migration, and rollback process.
 
-- Build the Dockerfile `production` target in CI.
-- Deploy an immutable registry image tagged with a version or commit SHA.
-- Keep PostgreSQL, Redis, and S3/MinIO credentials outside the repository.
-- Validate production environment variables before migration.
-- Back up PostgreSQL before every schema migration.
-- Run migration once, separately from web startup.
-- Run dedicated Celery `inventory` and `maintenance` workers as separate services.
-- Use dedicated Redis logical databases for Celery broker, rate limiting, and task results.
-- Bootstrap the first administrator only during initial installation.
-- Place Gunicorn behind a trusted HTTPS reverse proxy.
+## Production principles
 
-Standalone public-edge publication is an independent infrastructure lifecycle. Use `docs/deployment/SHARED_EDGE_OPERATIONS.md` for post-deploy publication, recovery, host-port/permission diagnosis, ACME HTTP-01 verification, and publication-only reruns. Do not redeploy KAORI solely to repair an edge-only failure.
+- Build the Dockerfile production target in CI and deploy one admitted immutable image digest.
+- Keep PostgreSQL, Redis, integration credentials, and secrets outside the repository.
+- Validate configuration, back up existing database state, then migrate exactly once.
+- Deploy all canonical Celery workers (including `registry-security-worker`) and exactly one Beat process from the same image digest.
+- Use dedicated Redis logical databases for Celery broker, rate limiting, and results.
+- Bootstrap the first administrator only on first installation, then remove `ADMIN_PASSWORD`.
+- Run Gunicorn on the private Compose network behind a separately governed HTTPS reverse proxy.
+
+For edge-only recovery, use `docs/deployment/SHARED_EDGE_OPERATIONS.md` without redeploying KAORI.
 
 ## Metrics Source Hard-Cut Deployment
 
@@ -123,15 +131,7 @@ The maintenance worker and the target analytics or forecasting workers must shar
 
 The dashboard web process reads committed inventory and analytics snapshots only. This release adds the `dashboard.kubernetes.alerts` dataset and removes live Capacity, Top Consumers, Forecast, and Alerts execution from dashboard HTTP requests.
 
-No database migration or new environment variable is required. Deploy the same image to web, beat, analytics worker, and forecasting worker:
-
-```bash
-docker compose -f compose.production.yml up -d --no-deps \
-  web \
-  analytics-worker \
-  forecasting-worker \
-  beat
-```
+No additional database migration or environment variable is required for this dashboard feature. Deploy the same admitted image to **all** KAORI services through the governed server release workflow; do not manually start a subset of web/Beat/analytics/forecasting services.
 
 Run one manual refresh after deployment:
 
@@ -152,10 +152,7 @@ The Forecast policy always retains `analytics.forecast` with `history_window=30d
 Verify committed rows:
 
 ```bash
-docker compose -f compose.production.yml exec db psql \
-  -U "${POSTGRES_USER:-postgres}" \
-  -d "${POSTGRES_DB:-kaori}" \
-  -c "
+kaori_compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
 SELECT
     cluster_id,
     dataset_key,
@@ -172,7 +169,7 @@ WHERE dataset_key IN (
     'analytics.forecast'
 )
 ORDER BY cluster_id, dataset_key, generated_at DESC;
-"
+SQL
 ```
 
 Run code validation:
@@ -218,21 +215,12 @@ Deployment validation:
 
 Report generation is not executed by Gunicorn, the generic inventory worker, or the maintenance worker. Deploy the dedicated `reports-worker` with the same image, database, broker, result backend, artifact-storage volume, and `REPORTS_CELERY_QUEUE` value used by the web process.
 
-```bash
-docker compose -f compose.production.yml up -d --no-deps \
-  web \
-  reports-worker \
-  maintenance-worker \
-  beat
-```
-
-Verify the process identity and queue subscription:
+Deploy through the governed server workflow, which starts the complete set of services from the same immutable image. To inspect the reports worker and verify queue ownership **after deployment**, use the read-only `kaori_compose` helper established above:
 
 ```bash
-docker compose -f compose.production.yml ps reports-worker
-docker compose -f compose.production.yml logs --tail=100 reports-worker
-docker compose -f compose.production.yml exec web \
-  python scripts/verify_reports_worker_runtime.py
+kaori_compose ps reports-worker
+kaori_compose logs --tail=100 reports-worker
+kaori_compose exec -T web python scripts/verify_reports_worker_runtime.py
 ```
 
 The inspection must show `reports@...` consuming the configured Reports queue. The following tasks must route to that same queue:

@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.8
+# KAORI Hero Component Standard v1.9
 
 This document is the authoritative implementation and semantic contract for authenticated KAORI page heroes.
 
@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.8 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, and tablet/desktop Hero grammar while adding a **phone-native compact composition** below `sm` (640 px). The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
+The v1.9 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, responsive Hero grammar, and v1.8 phone-native compact composition while making **non-redundant eyebrow/title identity** an explicit KAORI-wide semantic contract. The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
 
 ## Purpose
 
@@ -104,6 +104,37 @@ Explicit exceptions:
 
 Metadata communicates identity, scope, evidence boundary, or stable operating context. Health/severity belongs in semantic status components.
 
+### Eyebrow and title ownership
+
+The eyebrow supplies **domain/capability/context**. The `h1` supplies the **current page, task, object, or workspace identity**. Together they form one semantic identity and must not restate the same noun phrase.
+
+Canonical pattern:
+
+```text
+Eyebrow = where / domain context
+Title   = what / current destination
+```
+
+Approved examples:
+
+```text
+KUBERNETES TENANT → Overview
+OBJECT STORAGE INVENTORY → Overview
+KUBERNETES ANALYTICS → Capacity
+ACCESS → Users
+```
+
+Rejected semantic duplication:
+
+```text
+OBJECT STORAGE INVENTORY → Object Storage Overview
+KUBERNETES TENANT → Kubernetes Tenant Overview
+```
+
+Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. When an eyebrow already establishes the domain, prefer a concise destination title such as `Overview`, `Capacity`, `Users`, or `Operations`. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
+
+This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Active authenticated surfaces are progressively migrated to the navigation-owned vocabulary and deterministic static eyebrow/H1 pairs are verifier-audited for repeated semantic tokens. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
+
 ## Operational Dashboard Hero Profile
 
 Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired reference implementation.
@@ -146,7 +177,7 @@ The paired Kubernetes/Object Storage dashboards use:
 
 Inventory, Kubernetes Operations, Kubernetes Governance, and equivalent Object Storage operational workspaces follow the Kubernetes Operations/Governance reference pattern. The context uses the domain readiness label/title, one resource-availability metric such as `Connected Clusters` or `Registered Systems`, a `Workspace State` value of `Blocked`, and one concise information strip. The shared renderer owns the geometry; domain wrappers own nouns and setup wording.
 
-The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card.
+The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card. The shared Kubernetes zero-cluster onboarding owner is `components/cluster/_onboarding_banner.html`, and every consumer uses one canonical remediation flow: `Open Cluster Integrations` → `Register Cluster` → `Run Sync`, with the primary action targeting `integrations.kubernetes`. Surface-specific Hero/readiness context may remain domain-aware, but consumers must not override the shared onboarding semantics. The direct `Add Cluster` route remains a separate resource-creation workflow, not the canonical zero-cluster onboarding CTA.
 
 ### Analytics blocked context
 
@@ -162,6 +193,15 @@ Analytics uses:
 Blocked Analytics still renders the profile's three metadata labels through `page_hero.analytics_metadata(...)`. The Kubernetes Storage Analysis regression case is authoritative: readiness may change, but metadata remains visible beside it.
 
 The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
+
+## Kubernetes blocker-family lock
+
+Kubernetes has exactly two prerequisite blocker families:
+
+1. **General Kubernetes prerequisite** — Dashboard, Inventory, Operations, Governance, Tenant, and equivalent operational workspaces use the shared cluster blocked Hero context plus the shared cluster onboarding banner. The Hero explains readiness but does not duplicate the remediation CTA; the onboarding banner owns `Open Cluster Integrations → Register Cluster → Run Sync`.
+2. **Analytics dependency blocker** — Kubernetes/Object Storage Analytics use `Analytics Readiness` in the Hero plus the shared dependency/setup-path surface below it. Route-level Analytics navigation remains available while blocked so operators can understand the analytical workspace family; normal Kubernetes Analytics Overview may suppress that route row only because its internal summary Content Tabs already own the same peer vocabulary.
+
+A domain must not introduce a third blocked-state geometry or a page-local remediation sequence for equivalent semantics.
 
 ## Theme and surface contract
 
@@ -236,6 +276,12 @@ Copy budget is canonical and executable:
 - metric label: 1–3 words;
 - metric helper: optional and concise.
 
+**Secrets & PKI source gating:** Inventory and Lifecycle & Assurance also reuse `page_hero.blocked_context_body(...)` when no eligible Vault Integration exists. Registration is not committed inventory; no-source pages keep their title, sidebar route and readable reason for blocking while operational metrics stay gated. Integrated states retain the approved existing right-panel semantics, and independent evidence cannot be invented. The existing Hero verifier and authenticated 1440 × 900 browser evidence protect this condition.
+
+For a blocked Dashboard, its Hero-right information strip is a concise next-action summary only; the shared below-Hero prerequisite blocker owns complete setup steps and permission-aware navigation. A two-line Hero instruction is a visual QA failure even when the static primary-description budget passes. Do not use `nowrap`, ellipsis, clipping or page-specific font reduction to obtain a false single-line PASS. Secrets & PKI Overview is a specific regression case: missing qualified KV v2 inventory must render `components/states/_blocked_state.html` rather than a dashed empty-state panel.
+
+For compact right-side evidence cards at the canonical **1440 × 900** workspace baseline, visible metric values and the information strip must remain **natural single lines** at their shared type scale, without `nowrap`, ellipsis or clipping. This is a *rendered geometry* requirement, not an unconditional 68-character guarantee: shorten summary labels or rebalance content using approved components; preserve complete provider/evidence diagnostics in the below-Hero detail. At smaller breakpoints, retain the existing responsive, readable wrap and visibility rules. The Secrets & PKI Lifecycle negative regression locks bounded KV v2/PKI hero summaries and an evidence caveat; authenticated Playwright verifies the actual line boxes at 1440 × 900.
+
 Reference examples are `Review health, capacity, alerts, inventory, and prioritized actions.` and `Review report execution, artifact readiness, storage, and lifecycle state.`
 
 Word count and the maximum 68 characters are executable copy-density boundaries. The rendered non-phone single-line invariant is the visual authority: fitting the character budget alone is not sufficient if the text still overflows or wraps at the canonical non-phone viewport matrix. The 8–12 word range is preferred for scanability. Descriptions remain action-oriented and start with an imperative-style action verb; semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
@@ -247,6 +293,10 @@ The Hero is a stable page anchor. Filtering, pagination, polling, runtime refres
 A lazy right-side context partial may update only its owned context region while preserving shell dimensions. State changes must not remove a profile-defined persistent metadata row.
 
 ## Empty, Blocked, and Degraded behavior
+
+Provider-prerequisite blocking follows the locked cross-domain contract in `PROVIDER_PREREQUISITE.md`.
+A missing provider does not change route navigation, Hero identity, or profile metadata roles. The Hero-right
+blocked context is readiness-only; the below-Hero provider setup blocker owns the full remediation action.
 
 The Hero remains visible when no records exist or a dependency is blocked/degraded.
 

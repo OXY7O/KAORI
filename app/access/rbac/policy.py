@@ -52,6 +52,14 @@ def permission_keys_are_delegable_by_actor(actor: User, permission_keys: Iterabl
 
 
 def role_is_delegable_by_actor(actor: User, role: Role | None) -> bool:
+    """Only active roles are eligible for assignment or clone-source delegation."""
     if role is None or not role.is_active:
+        return False
+    return permission_keys_are_delegable_by_actor(actor, role.permission_keys())
+
+
+def role_is_manageable_by_actor(actor: User, role: Role | None) -> bool:
+    """Management authority survives deactivation; assignment authority does not."""
+    if role is None:
         return False
     return permission_keys_are_delegable_by_actor(actor, role.permission_keys())

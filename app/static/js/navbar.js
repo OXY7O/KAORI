@@ -2,6 +2,8 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('kaoriNavbar', () => ({
         quickOpen: false,
         quickActionsReturnTarget: null,
+        breadcrumbOpen: false,
+        breadcrumbReturnTarget: null,
         searchOpen: false,
         globalSearchReturnTarget: null,
         searchQuery: '',
@@ -88,10 +90,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         closeMenus() {
+            const breadcrumbReturnTarget = this.breadcrumbOpen ? this.breadcrumbReturnTarget : null
             const quickActionsReturnTarget = this.quickOpen ? this.quickActionsReturnTarget : null
             const globalSearchReturnTarget = this.searchOpen ? this.globalSearchReturnTarget : null
             const userMenuReturnTarget = this.userOpen ? this.userMenuReturnTarget : null
             const aboutWasOpen = this.aboutOpen
+            this.breadcrumbOpen = false
             this.quickOpen = false
             this.searchOpen = false
             this.notificationDeckOpen = false
@@ -100,6 +104,8 @@ document.addEventListener('alpine:init', () => {
             this.globalSearchAbortController?.abort()
             if (aboutWasOpen) {
                 this.restoreFocus(document.querySelector?.('button[aria-label="Open user menu"]') || null)
+            } else if (breadcrumbReturnTarget) {
+                this.restoreFocus(breadcrumbReturnTarget)
             } else if (quickActionsReturnTarget) {
                 this.restoreFocus(quickActionsReturnTarget)
             } else if (globalSearchReturnTarget) {
@@ -109,12 +115,26 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        toggleBreadcrumb() {
+            const opening = !this.breadcrumbOpen
+            if (opening) {
+                this.breadcrumbReturnTarget = this.currentFocusTarget()
+            }
+            this.breadcrumbOpen = opening
+            this.quickOpen = false
+            this.searchOpen = false
+            this.notificationDeckOpen = false
+            this.userOpen = false
+            this.aboutOpen = false
+        },
+
         toggleQuickActions() {
             const opening = !this.quickOpen
             if (opening) {
                 this.quickActionsReturnTarget = this.currentFocusTarget()
             }
             this.quickOpen = opening
+            this.breadcrumbOpen = false
             this.searchOpen = false
             this.notificationDeckOpen = false
             this.userOpen = false
@@ -123,6 +143,7 @@ document.addEventListener('alpine:init', () => {
 
         openNotificationDeck(tab = 'notifications') {
             this.notificationDeckTab = tab
+            this.breadcrumbOpen = false
             this.searchOpen = false
             this.notificationDeckOpen = true
             this.quickOpen = false
@@ -137,6 +158,7 @@ document.addEventListener('alpine:init', () => {
                 this.userMenuReturnTarget = this.currentFocusTarget()
             }
             this.userOpen = opening
+            this.breadcrumbOpen = false
             this.searchOpen = false
             this.quickOpen = false
             this.notificationDeckOpen = false
@@ -145,6 +167,7 @@ document.addEventListener('alpine:init', () => {
 
         openAbout() {
             this.aboutOpen = true
+            this.breadcrumbOpen = false
             this.searchOpen = false
             this.quickOpen = false
             this.notificationDeckOpen = false
@@ -168,6 +191,7 @@ document.addEventListener('alpine:init', () => {
         openGlobalSearch() {
             this.globalSearchReturnTarget = this.currentFocusTarget()
             this.searchOpen = true
+            this.breadcrumbOpen = false
             this.quickOpen = false
             this.notificationDeckOpen = false
             this.userOpen = false

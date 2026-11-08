@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
+from celery.app.task import Task
 from celery.exceptions import CeleryError
 from flask import current_app
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -252,6 +254,11 @@ def get_job_by_task_id(task_id: str) -> JobExecution | None:
     return JobExecution.query.filter_by(celery_task_id=task_id).first()
 
 
+def _lock_job_by_task_id(task_id: str) -> JobExecution | None:
+    """Serialize worker lifecycle writes with concurrent terminal-state changes."""
+    return JobExecution.query.filter_by(celery_task_id=task_id).with_for_update().first()
+
+
 def _terminalize(job: JobExecution, status: str) -> None:
     job.status = status
     job.active_deduplication_key = None
@@ -307,7 +314,7 @@ def mark_job_running(
     stage: str | None = None,
     target: str | None = None,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal or job.status == 'cancel_requested':
@@ -341,9 +348,9 @@ def update_job_progress(
     stage: str | None = None,
     target: str | None = None,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
-    if job is None:
-        return None
+    job = _lock_job_by_task_id(task_id)
+    if job is None or job.is_terminal or job.status == 'cancel_requested':
+        return job
     if current is not None:
         job.progress_current = max(current, 0)
     if total is not None:
@@ -395,7 +402,7 @@ def mark_job_succeeded(
     result_reference: str | None = None,
     partial: bool = False,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
@@ -420,7 +427,7 @@ def mark_job_succeeded(
 
 
 def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | None = None) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
@@ -438,6 +445,20 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     _set_progress_metadata(job, stage='Failed')
     _append_automatic_terminal_audit(job)
     db.session.commit()
+    # This is an outbound side effect, never a prerequisite for committing job failure.
+    # Delivery reads the same committed identity in an independent maintenance task.
+    try:
+        from app.platform_operations.jobs.notification_delivery_task import dispatch_failed_job_notification
+
+        cast(Task, dispatch_failed_job_notification).apply_async(
+            args=[job.id],
+            queue=str(current_app.config.get('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'),
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError):
+        logging.getLogger(__name__).warning(
+            'Job failure notification enqueue unavailable for committed JobExecution %s.',
+            job.public_id,
+        )
     return job
 
 
@@ -454,7 +475,7 @@ def request_job_cancel(job: JobExecution) -> JobExecution:
 
 
 def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | None = None) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal or job.status == 'cancel_requested':
@@ -471,7 +492,7 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
 
 
 def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
@@ -497,10 +518,15 @@ def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobEx
             'Only queued jobs or cooperative analytics and forecasting jobs can be canceled.'
         )
     if job.celery_task_id:
-        current_app.extensions['celery'].control.revoke(
-            job.celery_task_id,
-            terminate=terminate,
-        )
+        try:
+            current_app.extensions['celery'].control.revoke(
+                job.celery_task_id,
+                terminate=terminate,
+            )
+        except (CeleryError, KombuOperationalError, OSError) as exc:
+            raise JobCancellationNotAllowed(
+                'Celery cancellation could not be confirmed. The execution remains active.'
+            ) from exc
     if job.status == 'queued':
         if job.celery_task_id:
             return mark_job_canceled(job.celery_task_id, message='Canceled before worker execution') or job
@@ -581,11 +607,21 @@ def recover_stale_jobs() -> dict[str, int]:
             and job.cancel_requested_at < cancel_cutoff
         ):
             if job.celery_task_id:
-                current_app.extensions['celery'].control.revoke(
-                    job.celery_task_id,
-                    terminate=True,
-                    signal='SIGTERM',
-                )
+                try:
+                    current_app.extensions['celery'].control.revoke(
+                        job.celery_task_id,
+                        terminate=True,
+                        signal='SIGTERM',
+                    )
+                except (CeleryError, KombuOperationalError, OSError):
+                    current_app.logger.warning(
+                        'Could not revoke overdue cancellation for job %s; keeping cancellation pending.',
+                        job.public_id,
+                        exc_info=True,
+                    )
+                    # Do not release the deduplication slot or claim a worker stopped.
+                    # Reconcile other stale jobs; retry this cancellation later.
+                    continue
             _terminalize(job, 'canceled')
             job.error_code = None
             job.error_message = None

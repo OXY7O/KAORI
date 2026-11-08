@@ -7,14 +7,18 @@ ROOT = Path(__file__).resolve().parents[3]
 TARGET_PATH = ROOT / 'app' / 'templates' / 'access' / 'identity_providers' / 'directory_provisioning.html'
 BASELINE_PATH = ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'
 COPIED_SHELL = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
-SHARED_SHELL = '{{ surface_ui.block_classes() }}'
+SHARED_SHELL = '{{ surface_ui.block_classes(allow_overflow=true) }}'
 
 
 def test_directory_provisioning_page_uses_shared_surface_shell_authority() -> None:
     source = TARGET_PATH.read_text(encoding='utf-8')
 
     assert '{% import "components/table_primitives.html" as surface_ui %}' in source
-    assert source.count(f'<section class="{SHARED_SHELL}">') == 2
+    assert source.count(f'<section class="{SHARED_SHELL}"') == 1
+    shell = source.split(f'<section class="{SHARED_SHELL}"', 1)[1].split('</section>', 1)[0]
+    assert 'Directory Identity Search' in shell
+    assert 'Directory Search Results' in shell
+    assert 'data-directory-search-results' in shell
     assert COPIED_SHELL not in source
 
     assert 'Directory Identity Search' in source

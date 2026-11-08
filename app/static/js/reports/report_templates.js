@@ -39,6 +39,7 @@
         if (!reportType || !outputFormat || !resetSections || !sectionError) return
 
         form.dataset.initialized = 'true'
+        const hasServerErrors = form.dataset.templateHasServerErrors === 'true'
 
         const sync = (reset = false) => {
             const selectedType = reportType.value
@@ -47,7 +48,11 @@
                 option.hidden = !formats.includes(option.value)
                 option.disabled = !formats.includes(option.value)
             })
-            if (!formats.includes(outputFormat.value)) outputFormat.value = formats[0] || ''
+            // A failed POST must not overwrite its rejected output choice on initial render.
+            // Changing the report type explicitly may choose a new compatible default.
+            if (!formats.includes(outputFormat.value) && !(hasServerErrors && !reset)) {
+                outputFormat.value = formats[0] || ''
+            }
 
             form.querySelectorAll('[data-template-section-group]').forEach((group) => {
                 const active = group.dataset.templateSectionGroup === selectedType

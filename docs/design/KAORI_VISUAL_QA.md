@@ -59,6 +59,7 @@ The first executable deterministic catalog is intentionally bounded to stable re
 
 - Welcome;
 - Settings / General;
+- Settings / Account (stable test-owned local identity and empty activity sample);
 - Notification Center.
 
 Expansion must add stable fixture authority before promoting another route from runtime-dependent to deterministic.
@@ -87,6 +88,91 @@ Machine assertions must express measurable layout facts. They must not encode su
 The source-controlled `tests/ui/baselines/authenticated-visual.json` manifest stores normalized visual signatures and expected dimensions.
 
 The signature is produced from a reduced, quantized visual thumbnail. This intentionally removes low-value raster/PNG encoding noise while preserving visible composition changes.
+
+For proven one-channel 8-bit rasterization rounding at an existing 24-unit
+thumbnail quantization boundary, the shared Visual QA assertion may reconstruct
+**only one** alternate channel bucket and accept it **only** when the
+reconstructed thumbnail hash matches the unchanged human-approved signature
+exactly. Image dimensions must match first; two changed channels, changes away
+from an exact one-level threshold, and layout/content drift remain failures.
+The exception emits an explicit test warning. This is not permission to update
+baselines, loosen viewport geometry or discard screenshots. Real Welcome mobile
+light/dark evidence and the repeatability investigation are tracked under #2196.
+
+### Artifact-proven repeatable mobile raster variants (#2196, #4348)
+
+The canonical twelve Welcome baseline fingerprints and dimensions remain **unchanged**.
+The original two independently reproduced CI raster variants from #2196 retained
+exactly the same application content/geometry as the human-reviewed reference PNGs,
+with only subpixel antialiasing differences:
+
+- `welcome-light-mobile`, 390×844: original approved evidence
+  [#41063819874](https://github.com/OXY7O/KAORI/actions/runs/41063819874),
+  variant [#41307712956](https://github.com/OXY7O/KAORI/actions/runs/41307712956):
+  108/329,160 pixels differ, maximum per-RGB-channel delta 2/255.
+- `welcome-dark-small-mobile`, 360×800: approved evidence
+  [#41137574450](https://github.com/OXY7O/KAORI/actions/runs/41137574450),
+  variant [#41301151684](https://github.com/OXY7O/KAORI/actions/runs/41301151684):
+  48/288,000 pixels differ, maximum per-channel delta 2/255.
+
+A **separate light/mobile raster variant** was independently extracted and
+compared from the actual failing [Full Admission #42470804698](https://github.com/OXY7O/KAORI/actions/runs/42470804698),
+artifact `tests-42470804698-1` (ID `13613054900`), exact candidate source
+`913a1fe1dccac521f77b57fd8c36364730b5b2e9`:
+
+- `ui-browser/visual-welcome-index-light-mobile.png`: raw SHA256
+  `3cd27318fdadd3f8cb62ebc5e6c1a5550fde8ccb76fb13cf98e24cff2d366bcb`,
+  **byte-identical** to the original approved Light Mobile PNG documented in #2196.
+- `ui-browser/welcome-light-mobile-actual.png`: raw SHA256
+  `44a7da200c6e75dd3507bfdfe7d9c66acd7c00c6027f0d36858f91e3f6d746d8`.
+  Both screenshots have **390×844** geometry; native RGB comparison shows
+  **138/329,160 pixels differ, maximum per-channel delta 2/255**. Independent
+  screenshot viewing shows no content, alignment or component changes. Its
+  normalized visual digest differed, so the original visual test correctly FAILed.
+
+A **new Dark Small-Mobile raster variant** (issue #4353) was confirmed from
+the *same canonical test case* in two GitHub-hosted Full Admission runs, not
+from the separate `visual-welcome-index` screenshot scenario:
+- Passing [#42470804698](https://github.com/OXY7O/KAORI/actions/runs/42470804698)
+  artifact `tests-42470804698-1` (ID `13613054900`),
+  `ui-browser/welcome-dark-small-mobile.png`, raw SHA256
+  `eb06353d4195f75239d3c6d0f4e4df9cbf2e2c430909d55c1b04f6688b875a14`:
+  **byte-identical to the approved original** documented in #2196.
+- Failing [#42475695760](https://github.com/OXY7O/KAORI/actions/runs/42475695760),
+  artifact `tests-42475695760-1` (ID `13615436726`),
+  `ui-browser/welcome-dark-small-mobile-actual.png`, raw SHA256
+  `7d7b6ac51fd3cb60ded45ded8b2c2cc32383dc665da9c58de1e5c315565ca2c9`.
+- Both PNGs are **360×800**. Native same-case RGB comparison finds
+  **72/288,000 pixels differ, maximum per-channel delta 2/255**,
+  confined to antialiasing near text/icons. No theme-toggle state,
+  layout, content or geometry change is present. The failed normalized
+  fingerprint `02e86f1c0cb1d0acc5963238d671818bb12e6bccb63dc3685d3253d1db70178a`
+  did not match the original approved `47dbac59b975c21d8d47c55a405c28a61a9bb99ef7ad933e36dac19ce6168145`,
+  so the original CI failure was correct pending evidence review.
+
+The new exact raw Dark Small-Mobile signature is enumerated under the existing
+#2196 finite-variant guard, requires unchanged approved normalized digest and
+360×800 geometry, and still rejects every other raw PNG and all alternate
+theme/viewport keys. This evidence is **not** permission to widen a pixel
+threshold or automatically accept a visual difference; independent human Visual
+QA approval and exact-source Full Admission remain mandatory.
+
+The approved manifest continues to require the exact original normalized
+fingerprint and viewport geometry. For those **two** exact theme/viewport keys
+only, the shared assertion may accept **only the individually enumerated raw PNG
+SHA256 signatures**, and only after the canonical thumbnail fingerprint and
+single-edge quantization guards fail. The new #4348 entry is one additional
+specific Light Mobile signature; it does not expand surface, theme, viewport,
+layout threshold or allowed pixel tolerance. Arbitrary different PNG bytes,
+wrong baseline SHA, viewport/geometry differences and changed content still FAIL.
+The test emits a visible warning for any accepted exact variant.
+
+This is an **issue-scoped proposed extension of the previously approved #2196
+mechanism**, not an automatic Visual QA acceptance: independent review of the
+actual artifact screenshots and exact-source Developer Check/Full Admission,
+staging smoke and human UAT remain required **before promotion**. No normalized
+manifest SHA is regenerated. Never add a generic fuzzy threshold, screenshot
+masking, new baseline manifest or broad raster exception to force green CI.
 
 Ordinary CI must never rewrite this manifest.
 
@@ -275,3 +361,22 @@ A human UAT rejection becomes a new executable contract when the acceptance inte
 9. Obtain staging integration evidence and human UAT before promotion.
 
 Never regenerate baselines merely to make a failing test green.
+
+### Settings Account UAT expansion (#2880)
+
+`settings.account` is a deterministic *test-owned* browser surface. The
+existing Playwright suite checks Account Profile, Recent Authentication
+Activity empty state and Credential Management across the six canonical
+viewports and light/dark, with shared responsive geometry, HTMX tab
+navigation, screenshots/traces and accessible nonvisual pending status.
+It uses a mocked local account and empty authentication activity rather
+than a live provider or database audit. It **never submits passwords** or
+changes session state. Evidence is captured under the existing
+`tmp/ci-artifacts/test-output/ui-browser` directory.
+
+Account does **not** receive new unchecked screenshot SHA baselines.
+Current baseline manifest only locks the twelve reviewed Welcome theme/
+viewport screenshots. Promote an Account baseline only after explicit
+review on a pinned browser/runtime/asset version using the governed
+baseline-update procedure. Source admission alone is not Visual QA PASS;
+all browser assertions and human inspection remain independently required.

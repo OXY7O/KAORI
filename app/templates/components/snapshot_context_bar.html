@@ -37,7 +37,11 @@
     exceptions_supporting='',
     coverage_tone='normal',
     exceptions_tone='normal',
-    metric_icon_palette='brand'
+    metric_icon_palette='brand',
+    latest_label='Latest Collected',
+    scope_metric_label='Active Scope',
+    coverage_metric_label='Committed Coverage',
+    exceptions_metric_label='Snapshot Exceptions'
     ) -%}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="{{ title }}">
@@ -64,10 +68,10 @@
                 </div>
             </div>
             <dl class="grid min-w-0 gap-y-4 border-t border-outline-subtle pt-4 sm:grid-cols-2 sm:gap-x-6 xl:col-span-8 xl:grid-cols-4 xl:gap-x-0 xl:divide-x xl:divide-outline-subtle xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-                {{ metric('clock-3', 'Latest Collected', latest_collected, latest_supporting, icon_palette=metric_icon_palette) }}
-                {{ metric('crosshair', 'Active Scope', scope_label, scope_supporting, icon_palette=metric_icon_palette) }}
-                {{ metric('database-backup', 'Committed Coverage', coverage_label, coverage_supporting, coverage_tone, metric_icon_palette) }}
-                {{ metric('scan-search', 'Snapshot Exceptions', exceptions_label, exceptions_supporting, exceptions_tone, metric_icon_palette) }}
+                {{ metric('clock-3', latest_label, latest_collected, latest_supporting, icon_palette=metric_icon_palette) }}
+                {{ metric('crosshair', scope_metric_label, scope_label, scope_supporting, icon_palette=metric_icon_palette) }}
+                {{ metric('database-backup', coverage_metric_label, coverage_label, coverage_supporting, coverage_tone, metric_icon_palette) }}
+                {{ metric('scan-search', exceptions_metric_label, exceptions_label, exceptions_supporting, exceptions_tone, metric_icon_palette) }}
             </dl>
         </div>
     </section>

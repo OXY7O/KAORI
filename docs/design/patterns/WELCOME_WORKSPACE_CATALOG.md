@@ -59,6 +59,7 @@ Do not paginate the current Welcome catalog. Add pagination only when the catalo
 - desktop uses a fixed category anchor and flexible card grid;
 - smaller screens stack the anchor above the cards;
 - semantic reading order is unchanged.
+- Playwright validates catalog content/search geometry at large-desktop, laptop, compact-laptop, tablet, mobile, and small-mobile viewports; full light/dark Welcome visual baselines remain separately reviewed evidence.
 ## Security boundary
 
 - `/` and `/welcome` require an authenticated session.
@@ -87,6 +88,7 @@ tests/welcome/test_welcome_characterization.py
 tests/security/welcome/test_welcome_security.py
 tests/rendering/welcome/test_welcome_rendering.py
 tests/e2e/welcome/test_welcome_smoke.py
+tests/ui/test_representative_interactions.py
 tests/migrations/test_retire_welcome_view_permission.py
 ```
 
@@ -98,6 +100,10 @@ The canonical quality gate runs the Welcome verifier directly, executes permanen
 
 Integrations remains a standalone Welcome workspace because it is an independent root menu. It is grouped with **Platform Operations** under the `Act / Infrastructure Operations` capability area, while provider/domain navigation remains inside the Integrations workspace. The Platform Operations card must not inherit `integrations.manage`; each workspace is discovered only through its own authorization boundary.
 
+Tenant Management is also a first-class Welcome workspace under **Act / Infrastructure Operations**. It represents the governed Kubernetes tenancy capability—tenant definitions, resource profiles, namespace provisioning, access/capacity governance, and lifecycle operations—and is discoverable only through `tenant.view`.
+
+Access remains one platform-administration workspace. Its discoverability includes `identity_providers.view` alongside user/role/audit permissions so Identity Provider and Directory Provisioning capabilities do not become hidden behind unrelated user-management authority.
+
 ## Cross-domain visibility workspaces
 
 Inventory and Analytics cards are permission-owned by their asset domain. Kubernetes permissions must not implicitly reveal Object Storage workspaces.
@@ -105,8 +111,9 @@ Inventory and Analytics cards are permission-owned by their asset domain. Kubern
 ```text
 Kubernetes Inventory      → inventory.view
 Object Storage Inventory  → object_storage_inventory.view
+Artifact Registry         → artifact_registry.view
 Kubernetes Analytics      → analytics.view
 Object Storage Analytics  → object_storage_analytics.view
 ```
 
-Object Storage Inventory and Analytics use the `Storage` scope and live in `Understand / Visibility & Operational Insight`. They remain separate workspaces because committed inventory and operational analytics have different evidence boundaries and authorization contracts.
+Object Storage Inventory and Analytics use the `Storage` scope and live in `Understand / Visibility & Operational Insight`. Artifact Registry uses the `Registry` scope in the same capability group and is discoverable only through `artifact_registry.view`; its card remains provider-neutral and routes to committed Registry inventory, security, runtime, governance, and analytics evidence rather than to a Harbor-specific page. These workspaces remain separate because their evidence boundaries and authorization contracts are independent.

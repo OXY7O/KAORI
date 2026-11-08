@@ -9,7 +9,7 @@ from app.reports.export.routes import (
     download_report_artifact,
     generate_report_output,
 )
-from app.reports.generate.routes import generate_report
+from app.reports.generate.routes import generate_namespace_options, generate_report
 from app.reports.generated.routes import (
     archive_generated_report,
     bulk_archive_generated_reports,
@@ -31,6 +31,7 @@ from app.reports.schedules.routes import (
     create_schedule,
     delete_schedule,
     run_schedule,
+    schedule_namespace_options,
     schedules,
     toggle_schedule,
     update_schedule,
@@ -166,6 +167,13 @@ reports_bp.add_url_rule(
 )
 
 reports_bp.add_url_rule(
+    '/generate/namespaces',
+    endpoint='generate_namespace_options',
+    view_func=generate_namespace_options,
+    methods=['GET'],
+)
+
+reports_bp.add_url_rule(
     '/templates',
     endpoint='report_templates',
     view_func=report_templates,
@@ -226,6 +234,13 @@ reports_bp.add_url_rule(
     methods=[
         'GET',
     ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/namespaces',
+    endpoint='schedule_namespace_options',
+    view_func=schedule_namespace_options,
+    methods=['GET'],
 )
 
 reports_bp.add_url_rule(

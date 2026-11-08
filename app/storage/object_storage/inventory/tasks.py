@@ -29,6 +29,7 @@ def _build_result(
     failed_systems: list[str],
     started_at: str,
     duration_seconds: float,
+    empty_reconciliation_evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     failed_count = len(failed_systems)
     if failed_count == total_count and total_count:
@@ -52,6 +53,14 @@ def _build_result(
         if failed_systems
         else f'{bucket_count} bucket record(s) are represented by the latest committed object-storage snapshots.'
     )
+    if empty_reconciliation_evidence and not failed_systems:
+        title = 'Object Storage Empty Inventory Reconciled'
+        message = 'A verified empty provider snapshot replaced the previously committed bucket inventory.'
+        deleted = sum(int(item.get('removed_bucket_count') or 0) for item in empty_reconciliation_evidence)
+        detail = (
+            f'{deleted} previously committed bucket/container asset(s) were removed after '
+            'explicit operator confirmation and two successful bucket-discovery checks.'
+        )
     return {
         'status': status,
         'title': title,
@@ -68,6 +77,7 @@ def _build_result(
         'finished_at': _now_iso(),
         'duration_seconds': duration_seconds,
         'current_system_name': None,
+        'empty_reconciliation_evidence': empty_reconciliation_evidence or [],
     }
 
 
@@ -91,6 +101,7 @@ def _complete_object_storage_sync(
         failed_systems=state['failed_systems'],
         started_at=state['started_at'],
         duration_seconds=round(perf_counter() - state['started_timer'], 1),
+        empty_reconciliation_evidence=state['empty_reconciliation_evidence'],
     )
     result['failure_evidence'] = state['failure_evidence']
     if state['requested_by_user_id'] is not None:
@@ -111,6 +122,7 @@ def _complete_object_storage_sync(
                 'bucket_count': state['bucket_count'],
                 'failed_systems': state['failed_systems'],
                 'failure_evidence': state['failure_evidence'],
+                'empty_reconciliation_evidence': state['empty_reconciliation_evidence'],
                 'duration_seconds': result['duration_seconds'],
             },
         )
@@ -134,6 +146,7 @@ def sync_all_object_storage_task(
     requested_by_user_id: int | None,
     targets: list[dict[str, str]] | None = None,
     job_execution_id: int | None = None,
+    empty_reconciliation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     context = JobExecutionContext(task_id, job_execution_id)
@@ -145,6 +158,7 @@ def sync_all_object_storage_task(
     bucket_count = 0
     failed_systems: list[str] = []
     failure_evidence: list[dict[str, str]] = []
+    empty_reconciliation_evidence: list[dict[str, Any]] = []
     context.start(
         message='Preparing object-storage inventory synchronization.',
         total=total_count,
@@ -217,10 +231,25 @@ def sync_all_object_storage_task(
                 instance = db.session.get(MinioInstance, instance_id)
                 if instance is None:
                     raise LookupError('The MinIO connection was deleted after the inventory job was admitted.')
+                # The authorization is bound to one target and the worker rechecks
+                # the locked committed snapshot before independent provider verification.
+                scoped_confirmation = (
+                    empty_reconciliation
+                    if empty_reconciliation is not None
+                    and str(empty_reconciliation.get('system_id')) == str(target['system_id'])
+                    else None
+                )
+                if empty_reconciliation is not None and scoped_confirmation is None:
+                    raise RuntimeError(
+                        'The confirmed-empty reconciliation was not bound to this exact inventory target.'
+                    )
                 result = sync_object_storage_inventory(
                     instance,
                     progress_callback=report_bucket_progress,
+                    empty_reconciliation=scoped_confirmation,
                 )
+                if reconciled_evidence := result.get('empty_reconciliation_evidence'):
+                    empty_reconciliation_evidence.append(reconciled_evidence)
                 synced_count += 1
                 bucket_count += int(result.get('total') or 0)
             except Exception as exc:
@@ -261,6 +290,7 @@ def sync_all_object_storage_task(
                 'bucket_count': bucket_count,
                 'failed_systems': failed_systems,
                 'failure_evidence': failure_evidence,
+                'empty_reconciliation_evidence': empty_reconciliation_evidence,
                 'started_at': started_at,
                 'started_timer': started_timer,
             },
@@ -281,6 +311,7 @@ def sync_all_object_storage_task(
             'bucket_count': bucket_count,
             'failed_systems': failed_systems,
             'failure_evidence': failure_evidence,
+            'empty_reconciliation_evidence': empty_reconciliation_evidence,
             'requested_by_user_id': requested_by_user_id,
             'started_at': started_at,
             'finished_at': _now_iso(),

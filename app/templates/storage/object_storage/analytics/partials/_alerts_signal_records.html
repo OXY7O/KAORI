@@ -1,35 +1,82 @@
-<section class="{{ analysis_surface.evidence_shell_classes() }}">
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         data-object-storage-boundary-evaluations>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                  aria-hidden="true">
+                <i data-lucide="list-tree" class="h-5 w-5"></i>
+            </span>
             <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Anomaly Signal Detail</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect the current evaluation result for each supported operating boundary. Unknown means evidence is insufficient, not healthy.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Anomaly Signal Evaluation</h2>
+                    {{ info_tip.render('object-storage-anomaly-signal-evaluation-guide',
+                                        'Anomaly Signal Evaluation Guide',
+                                        'KAORI evaluates committed operational metrics against fixed Object Storage boundaries; these are not Alertmanager lifecycle events or advanced Intelligence correlations.',
+                                        items=[
+                                        'All four boundaries are shown, including Normal and Unknown, even when no warning or critical signal is triggered.',
+                                        'Thresholds use committed capacity, request error ratio, waiting requests and offline nodes; no live provider query occurs when the tab opens.',
+                                        'Provider Alerts remain owned by Alertmanager (or narrower Metrics Source ALERTS fallback). Intelligence correlation is a separate capability.',
+                                        ],
+                                        placement='right', variant='guide') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Review every operating boundary, observed metric, and evaluation; missing evidence stays Unknown.
+                </p>
             </div>
         </div>
     </header>
-    <div class="divide-y divide-outline-subtle">
-        {% for signal in metrics.signals %}
-            <article class="flex items-start gap-3 px-5 py-4 sm:px-6">
-                <span class="{{ analysis_surface.semantic_icon_classes(signal.severity) }}">
-                    <i data-lucide="{{ 'circle-check' if signal.severity == 'normal' else 'circle-help' if signal.severity == 'unknown' else 'triangle-alert' }}"
-                       class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <p class="text-sm font-semibold text-content-primary">{{ signal.title }}</p>
-                        {{ table_label.status_label(signal.severity|replace('_', ' ') |title, signal.severity) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ signal.detail }}</p>
-                </div>
-            </article>
-        {% else %}
-            {% set empty_state_icon = "list-tree" %}
-            {% set empty_state_label = "No Data" %}
-            {% set empty_state_title = "No Anomaly Signal Definitions" %}
-            {% set empty_state_description = "No anomaly signal definition is available for the selected Object Storage scope." %}
-            {% set empty_state_min_height = "min-h-[160px]" %}
-            {% include 'components/states/_empty_state.html' %}
-        {% endfor %}
-    </div>
+    {% if metrics.boundary_evaluations %}
+        <div class="overflow-x-auto" data-object-storage-boundary-table>
+            <table class="{{ table_ui.table_classes('min-w-[740px]') }}">
+                <caption class="sr-only">
+                    Four committed KAORI Object Storage operating-boundary evaluations, separate from provider alerts.
+                </caption>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Operating Boundary</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Threshold</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evaluation</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
+                    {% for boundary in metrics.boundary_evaluations %}
+                        <tr class="{{ table_ui.row_classes() }}"
+                            data-object-storage-boundary="{{ boundary.key }}">
+                            <th scope="row"
+                                class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
+                                <span class="inline-flex items-center gap-2 whitespace-nowrap">
+                                    <span class="{{ analysis_surface.semantic_icon_classes(boundary.severity) }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ 'circle-check' if boundary.severity == 'normal' else 'circle-help' if boundary.severity == 'unknown' else 'triangle-alert' }}"
+                                           class="h-4 w-4"></i>
+                                    </span>
+                                    {{ boundary.title }}
+                                </span>
+                            </th>
+                            <td class="{{ table_ui.cell_classes() }} font-semibold tabular-nums text-content-primary">{{ boundary.observed }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ boundary.threshold }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_label(boundary.severity|title, boundary.severity, size='compact') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ boundary.evaluation }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="border-t border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">
+            This is deterministic KAORI metric evaluation, not a provider alert or an automated root-cause diagnosis.
+        </p>
+    {% else %}
+        {% set empty_state_icon = "list-tree" %}
+        {% set empty_state_label = "No Data" %}
+        {% set empty_state_title = "No Boundary Evaluation Available" %}
+        {% set empty_state_description = "Committed Object Storage evaluation data is not available for this scope." %}
+        {% set empty_state_min_height = "min-h-[160px]" %}
+        <div class="p-5 sm:p-6">{% include 'components/states/_empty_state.html' %}</div>
+    {% endif %}
 </section>

@@ -105,12 +105,14 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
         'Dashboards',
         'Kubernetes Inventory',
         'Object Storage Inventory',
+        'Artifact Registry',
         'Kubernetes Analytics',
         'Object Storage Analytics',
         'Intelligence',
         'Integrations',
         'Platform Operations',
         'Kubernetes Operations',
+        'Tenant Management',
         'Kubernetes Governance',
         'Reports',
         'Access',
@@ -126,7 +128,8 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
 
     assert "'title': 'Kubernetes Cluster'" not in shortcuts
     assert "('jobs.view', 'platform_operations.overview.index')" in shortcuts
-    assert "('jobs.configure', 'platform_operations.overview.index')" in shortcuts
+    assert "('platform_operations.view_data_lifecycle', 'platform_operations.overview.index')" in shortcuts
+    assert "('kubernetes_secrets.manage_reveal', 'platform_operations.overview.index')" in shortcuts
     assert "('integrations.manage', 'integrations.overview')" in shortcuts
     assert "'title': 'Integrations'" in shortcuts
     platform_block = shortcuts.split("'title': 'Platform Operations'", 1)[1].split(
@@ -143,3 +146,30 @@ def test_welcome_object_storage_cards_use_dedicated_permissions() -> None:
     assert "'title': 'Object Storage Analytics'" in shortcuts
     assert "('object_storage_analytics.view', 'analytics.object_storage_overview')" in shortcuts
     assert "'scope': 'Storage'" in shortcuts
+
+
+def test_welcome_tenant_and_access_cards_track_current_capabilities() -> None:
+    shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
+
+    assert "'title': 'Tenant Management'" in shortcuts
+    assert "'label': 'Governed Tenancy'" in shortcuts
+    assert "('tenant.view', 'tenant.index')" in shortcuts
+
+    access_block = shortcuts.split("'title': 'Access'", 1)[1].split("'title': 'Settings'", 1)[0]
+    assert "('identity_providers.view', 'access.overview.index')" in access_block
+    assert 'identity providers' in access_block.lower()
+    assert 'directory-projected external identities' in access_block.lower()
+
+
+def test_welcome_artifact_registry_card_uses_dedicated_permission() -> None:
+    shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
+
+    assert "'title': 'Artifact Registry'" in shortcuts
+    assert "'label': 'Registry Visibility & Supply Chain'" in shortcuts
+    assert "'scope': 'Registry'" in shortcuts
+    assert "('artifact_registry.view', 'artifact_registry.overview')" in shortcuts
+    block = shortcuts.split("'title': 'Artifact Registry'", 1)[1].split(
+        "'title': 'Kubernetes Analytics'",
+        1,
+    )[0]
+    assert 'Harbor' not in block

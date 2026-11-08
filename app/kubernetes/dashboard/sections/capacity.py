@@ -121,7 +121,7 @@ def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
         risk='Unknown',
         insight=insight,
         risk_detail='Overall worker capacity risk cannot be calculated because one or more required metrics are unavailable.',
-        recommended_action='Verify the selected cluster Metrics Source connection and kube-state-metrics node-role labels, then reload the snapshot.',
+        recommended_action='Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.',
         source_status='Unavailable',
     )
 
@@ -147,7 +147,7 @@ def _capacity_risk_guidance(
     if risk == 'Medium':
         return (
             f'{resource} utilization is {utilization:.0f}%. Capacity remains usable, but the operational buffer is narrowing.',
-            'Validate workload requests and limits, monitor the growth trend, and confirm that planned deployments fit within current worker headroom.',
+            'Validate requests/limits, growth, and planned deployments against current worker headroom.',
         )
     if risk == 'Low':
         return (

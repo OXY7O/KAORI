@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from celery import shared_task
 
+from app.platform_operations.jobs.notification_delivery_task import (
+    dispatch_failed_job_notification as dispatch_failed_job_notification,
+)
 from app.platform_operations.jobs.scheduler import dispatch_due_job_policies
 from app.platform_operations.jobs.service import recover_stale_jobs
 

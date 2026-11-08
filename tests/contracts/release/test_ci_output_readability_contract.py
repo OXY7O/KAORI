@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 STAGING_DEPLOY_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
 CI_ADMISSION = ROOT / 'scripts/ci_admission.py'
 
@@ -59,6 +60,36 @@ def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
     assert 'Detailed output is retained in' in source
 
 
+def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+
+    assert 'if [[ "$group" == \'Engineering Quality\' ]]' in capture
+    assert 'local elapsed=$(( $(date +%s) - started ))' in capture
+    assert 'printf \'✅ %s — %s · ⏱ %dm %02ds\\n\' "$group" "$label"' in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert 'if [[ "$label" == \'Release Surface Coverage\' ]]' in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    quality = source.split("run_static_group 'Engineering Quality'", 1)[1].split('run_contract_migration_gate', 1)[0]
+    assert quality.count("'python ") >= 18
+
+
+def test_static_pyright_stats_stay_bounded_to_success_and_keep_full_coverage() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+    static = source.split('run_static() {', 1)[1].split('run_contract_migration_gate', 1)[0]
+
+    assert "'Pyright' 'python -m pyright --project pyrightconfig.json --stats'" in static
+    assert 'if [[ "$label" == \'Pyright\' ]]' in capture
+    assert 'Pyright analysis stats' in capture
+    assert 'tail -n 24 "$log_file"' in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    assert source.count("'Pyright' 'python -m pyright --project pyrightconfig.json --stats'") == 1
+
+
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
@@ -71,23 +102,74 @@ def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> N
 def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execution() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
+    assert '--junitxml="$TEST_OUTPUT_DIR/contract-migration.xml"' in source
     assert '--junitxml="$TEST_OUTPUT_DIR/release-suite.xml"' in source
     assert '--junitxml="$TEST_OUTPUT_DIR/e2e.xml"' in source
     assert 'ci_admission.py test-summary' in source
-    assert "-m 'not debug and not e2e'" in source
+    assert "-m 'not debug and not e2e and not contract and not migration'" in source
+    assert 'Domain Characterization Tests' not in source
 
 
-def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: Path) -> None:
-    junit = tmp_path / 'release-suite.xml'
-    junit.write_text(
+def test_full_admission_setup_timing_preserves_failure_and_existing_gate_ownership() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    timed = source.split('run_timed_setup() {', 1)[1].split('run_pytest_capture() {', 1)[0]
+    functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
+    frontend = source.split('run_frontend() {', 1)[1].split('run_smoke() {', 1)[0]
+
+    assert '"$@" || status=$?' in timed
+    assert 'return "$status"' in timed
+    assert "printf '❌ %s · exit %d" in timed
+    assert "printf '✅ %s · ⏱ %dm %02ds" in timed
+    assert "run_timed_setup 'Functional npm dependencies' npm ci --no-audit --no-fund" in functional
+    assert "run_timed_setup 'Functional CSS build' npm run build-css" in functional
+    for label, command in (
+        ('Frontend npm dependencies', 'npm ci --no-audit --no-fund'),
+        ('Frontend format check', 'npm run check-format'),
+        ('Frontend asset build', 'npm run build-frontend'),
+        ('Frontend asset verification', 'npm run verify-frontend'),
+    ):
+        assert f"run_timed_setup '{label}' {command}" in frontend
+    assert functional.index('Functional CSS build') < functional.index("'Functional Tests'")
+    assert '--durations=15' in functional
+    assert 'run_e2e_gate' in functional
+
+
+def test_functional_full_suite_records_bounded_slowest_pytest_durations() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
+
+    assert 'run_pytest_capture \\' in functional
+    assert "'Functional Tests'" in functional
+    assert '--durations=15' in functional
+    assert functional.count('--durations=15') == 1
+    assert '--junitxml="$TEST_OUTPUT_DIR/release-suite.xml"' in functional
+    assert "-m 'not debug and not e2e and not contract and not migration'" in functional
+    assert 'run_e2e_gate' in functional
+    assert 'render_test_taxonomy_summary' in functional
+    assert 'pytest "$@" >"$log_file" 2>&1' in source
+
+
+def test_taxonomy_summary_merges_split_junit_evidence_by_kaori_test_purpose(tmp_path: Path) -> None:
+    release_junit = tmp_path / 'release-suite.xml'
+    release_junit.write_text(
         """<?xml version="1.0" encoding="utf-8"?>
 <testsuites>
-  <testsuite name="pytest" tests="7" failures="0" errors="0" skipped="0">
+  <testsuite name="pytest" tests="5" failures="0" errors="0" skipped="0">
     <testcase classname="tests.unit.reports.test_unit" name="test_unit" />
     <testcase classname="tests.welcome.test_page" name="test_functional" />
     <testcase classname="tests.integration.kubernetes.test_repo" name="test_integration" />
     <testcase classname="tests.security.test_rbac" name="test_security" />
     <testcase classname="tests.rendering.test_template" name="test_rendering" />
+  </testsuite>
+</testsuites>
+""",
+        encoding='utf-8',
+    )
+    contract_junit = tmp_path / 'contract-migration.xml'
+    contract_junit.write_text(
+        """<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" tests="2" failures="0" errors="0" skipped="0">
     <testcase classname="tests.contracts.release.test_contract" name="test_contract" />
     <testcase classname="tests.migrations.test_upgrade" name="test_migration" />
   </testsuite>
@@ -97,7 +179,15 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
     )
 
     completed = subprocess.run(
-        [sys.executable, str(CI_ADMISSION), 'test-summary', '--junit', str(junit)],
+        [
+            sys.executable,
+            str(CI_ADMISSION),
+            'test-summary',
+            '--junit',
+            str(contract_junit),
+            '--junit',
+            str(release_junit),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -115,6 +205,45 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
         '✅ Migration Tests · 1 test',
     ):
         assert expected in completed.stdout
+
+
+def test_full_admission_aggregates_split_junit_artifacts_before_evidence() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for token in (
+        'Upload Static JUnit Evidence',
+        'Upload Functional JUnit Evidence',
+        'Download Static JUnit Evidence',
+        'Download Functional JUnit Evidence',
+        'Write Full Test Taxonomy Summary',
+        'full-admission-junit-static-',
+        'full-admission-junit-functional-',
+        'admission-junit/static/contract-migration.xml',
+        'admission-junit/functional/release-suite.xml',
+        'admission-junit/functional/e2e.xml',
+    ):
+        assert token in workflow
+
+
+def test_successful_functional_timing_artifact_is_bounded_and_does_not_replace_junit() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    timing = workflow.split('      - name: Upload Successful Functional Timing Report\n', 1)[1].split(
+        '      - name: Upload Static Diagnostics\n', 1
+    )[0]
+
+    assert "if: ${{ success() && matrix.gate == 'functional' }}" in timing
+    assert 'full-admission-functional-timing-${{ github.run_id }}-${{ github.run_attempt }}' in timing
+    assert 'path: tmp/ci-artifacts/test-output/functional-tests.*.log' in timing
+    assert 'path: tmp/ci-artifacts/test-output\n' not in timing
+    assert 'if-no-files-found: error' in timing
+    assert 'retention-days: 3' in timing
+    assert 'Upload Functional JUnit Evidence' in workflow
+    assert 'tmp/ci-artifacts/test-output/release-suite.xml' in workflow
+    assert 'tmp/ci-artifacts/test-output/e2e.xml' in workflow
+    failure_upload = workflow.split('      - name: Upload Test Diagnostics\n', 1)[1].split(
+        '      - name: Upload Runtime Diagnostics\n', 1
+    )[0]
+    assert "if: ${{ failure() && matrix.gate == 'functional' }}" in failure_upload
 
 
 def test_raw_ci_diagnostics_are_uploaded_as_artifacts() -> None:
@@ -141,21 +270,289 @@ def test_admission_summary_reports_real_failure_state_instead_of_hardcoded_pass(
     assert "printf '➡️ %s\\n'" in workflow
 
 
-def test_long_static_gate_has_periodic_heartbeat() -> None:
+def test_long_static_gate_has_non_blocking_periodic_heartbeat() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
     assert 'Static & Governance still running' in workflow
     assert 'sleep 60' in workflow
+    assert 'heartbeat_pid=$!' in workflow
+    assert 'wait "$gate_pid" || gate_status=$?' in workflow
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'wait "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'exit "$gate_status"' in workflow
     assert '⏱ %dm %02ds' in workflow
 
 
 def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() -> None:
     workflow = STAGING_DEPLOY_WORKFLOW.read_text(encoding='utf-8')
 
-    assert 'name: KAORI Staging Deployment' in workflow
+    assert 'name: Staging Deploy' in workflow
     assert 'name: Release Evidence' in workflow
     assert 'name: Deploy Staging' in workflow
     assert 'description: Accepted KAORI RC tag' in workflow
     assert "printf 'Staging authority resolved:" in workflow
     assert 'KAORI UAT VPS Deploy' not in workflow
     assert 'Deploy Immutable Candidate to UAT VPS' not in workflow
+
+
+def test_developer_check_publishes_only_executed_checks_and_selected_route() -> None:
+    workflow = DEVELOPER_WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'Python & Governance — executed validation' in workflow
+    assert 'Frontend & Focused Validation — executed validation' in workflow
+    assert 'Developer Check — path-aware execution boundary' in workflow
+    assert 'printf -v command_display' in workflow
+    assert workflow.count('check_pid=$!') == 2
+    assert workflow.count('wait "$check_pid" || status=$?') == 2
+    assert workflow.count('kill "$heartbeat_pid" >/dev/null 2>&1 || true') == 2
+    assert 'still running · ⏱' in workflow
+    assert 'executed_checks=$((executed_checks + 1))' in workflow
+    assert '|| status=$?' in workflow
+    assert 'return "$status"' in workflow
+    assert 'test_status=$?' in workflow
+    assert 'exit "$test_status"' in workflow
+    assert 'Unselected path-aware checks were NOT RUN.' in workflow
+    assert 'Unselected checks were NOT RUN.' in workflow
+    assert 'SKIPPED means not executed' in workflow
+    assert 'GITHUB_STEP_SUMMARY' in workflow
+
+
+def test_full_static_verifier_report_is_execution_based_and_reuses_existing_logs() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'verification-report.md' in source
+    assert 'Every executed verifier is published as evidence' in source
+    assert 'Registered capability evidence is a separate source-ownership inventory' in source
+    assert 'Registered capability ownership (not executed tests)' in source
+    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in source
+    assert source.count("sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'") == 1
+    assert 'Registered capability ownership' in source
+    assert 'Source ownership only — NOT executed tests or Staging Acceptance.' in source
+    assert 'registered_modules += module_count' in source
+    assert 'verifier_names == "none (contract tests only)"' in source
+    assert 'Full verifier mapping: %s' in source
+    assert 'malformed or empty registered capability ownership' in source
+    assert 'command_display="$3"' in source
+    assert '"$group" "$label" "$command_display"' in source
+    assert '$(basename "$log_file")' in source
+    assert 'PASS | %dm %02ds' in source
+    assert 'FAIL (exit %d)' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert 'cat "$report" >> "$GITHUB_STEP_SUMMARY"' in workflow
+    assert 'Upload Successful Static Verification Details' in workflow
+    assert 'full-admission-static-verifiers-' in workflow
+    assert 'if-no-files-found: error' in workflow
+    assert 'Upload Static Diagnostics' in workflow
+
+
+def test_registered_capability_table_parses_evidence_and_fails_closed(tmp_path: Path) -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    prefix = "        awk '\n            /^  REGISTERED — /"
+    suffix = '\n        \' "$RELEASE_SURFACE_COVERAGE_LOG"'
+    assert source.count(prefix) == 1
+    assert source.count(suffix) == 1
+    program = '            /^  REGISTERED — /' + source.split(prefix, 1)[1].split(suffix, 1)[0]
+
+    evidence = tmp_path / 'release-coverage.log'
+    evidence.write_text(
+        '  EVIDENCE REGISTERED ONLY — not a test execution result or Staging Acceptance\n'
+        '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
+        'static verifier(s): verify_welcome_final_lock.py\n'
+        '  REGISTERED — Artifact Registry [BASELINE LOCKED]: 16 contract test module(s); '
+        'static verifier(s): none (contract tests only)\n'
+        '  REGISTERED — Runtime Health [SYSTEM LOCKED]: 1 contract test module(s); '
+        'static verifier(s): none (contract tests only)\n',
+        encoding='utf-8',
+    )
+    result = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert 'REGISTERED: 3 surfaces · 19 contract-module registrations · 2 contracts-only' in result.stdout
+    assert 'Artifact Registry' in result.stdout
+    assert 'BASELINE LOCKED' in result.stdout
+    assert 'contracts only' in result.stdout
+    assert 'verify_welcome_final_lock.py' not in result.stdout
+    assert 'NOT executed tests or Staging Acceptance' in result.stdout
+
+    evidence.write_text(
+        '  REGISTERED — Welcome [LOCKED]: invalid contract test module(s); static verifier(s): abc.py\n',
+        encoding='utf-8',
+    )
+    rejected = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert rejected.returncode != 0
+    assert 'malformed or empty registered capability ownership' in rejected.stderr
+
+    # A verifier label must be a non-empty, properly delimited filename.
+    # Previously these malformed lists were silently presented as "1 named".
+    for malformed_verifiers in (
+        '   ',
+        'verify_welcome_final_lock.py, ',
+        'verify_welcome_final_lock.py,  verify_other.py',
+        'verify_welcome_final_lock.py,,verify_other.py',
+    ):
+        evidence.write_text(
+            f'  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); static verifier(s): {malformed_verifiers}\n',
+            encoding='utf-8',
+        )
+        malformed_result = subprocess.run(
+            ['awk', program, str(evidence)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert malformed_result.returncode != 0, malformed_verifiers
+        assert 'malformed or empty registered capability ownership' in malformed_result.stderr
+
+    evidence.write_text(
+        '  REGISTERED — Welcome [LOCKED]: 2 contract test module(s); '
+        'static verifier(s): verify_welcome_final_lock.py, verify_other.py\n',
+        encoding='utf-8',
+    )
+    multiple = subprocess.run(['awk', program, str(evidence)], capture_output=True, text=True, check=False)
+    assert multiple.returncode == 0, multiple.stderr
+    assert '2 named' in multiple.stdout
+    assert 'verify_other.py' not in multiple.stdout
+
+
+def test_full_admission_gate_summary_uses_real_step_outcomes() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for step in (
+        'static_gate',
+        'security_gate',
+        'functional_gate',
+        'frontend_gate',
+        'runtime_build',
+        'runtime_scan',
+        'runtime_dast',
+    ):
+        assert f'id: {step}' in workflow
+        assert f'steps.{step}.outcome' in workflow
+    for marker in (
+        'Tool chain: actionlint, zizmor, shellcheck, hadolint, gitleaks, Bandit, Semgrep, pip-audit (base/dev) and npm audit',
+        'Only stages reached before the failure may have executed.',
+        'Functional release suite and dedicated E2E suite',
+        'Runtime and DAST results are deployment/security checks',
+        'Upload Successful Security Scan Evidence',
+        'full-admission-security-scans-',
+    ):
+        assert marker in workflow
+    assert 'Publish Executed Gate Coverage' in workflow
+    assert 'if: ${{ always() }}' in workflow
+
+
+def test_full_admission_expanded_step_live_progress_preserves_evidence_and_exit_codes() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    # Live progress belongs to the existing GitHub Actions job, not a second
+    # verifier/test invocation or a misleading registered-capability count.
+    assert 'KAORI_CI_LIVE_LOG=1' in workflow
+    assert workflow.count('KAORI_CI_LIVE_LOG=1') == 4
+    assert 'active-verifier.txt' in source
+    assert 'active-verifier.txt' in workflow
+    assert 'current: %s' in workflow
+    assert 'Verified output sample (up to 6 PASS lines' in source
+    assert 'No standardized PASS detail; consult raw verifier log.' in source
+    assert 'Full diagnostic log: %s' in source
+    assert 'if [[ "${KAORI_CI_LIVE_LOG:-0}"' in source
+    assert 'pytest "$@" >"$log_file" 2>&1 &' in source
+    assert 'test_pid=$!' in source
+    assert 'wait "$test_pid" || status=$?' in source
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in source
+    assert 'final pytest counts pending' in source
+    assert 'if (( status == 0 )); then' in source
+    assert 'print_pytest_failure_excerpt "$log_file"' in source
+    assert 'run_command_capture "$group" "$label" bash -lc "$command"' in source
+    assert 'run_contract_migration_gate' in source
+    assert 'run_e2e_gate' in source
+    assert 'CI Admission · JUnit taxonomy evidence assembled' in workflow
+    assert 'CI Admission · exact source evidence document generated' in workflow
+    assert 'selected path validated; executed/reused boundaries retained' in workflow
+    assert 'Run Fast Smoke' in workflow
+
+    security = (ROOT / '.github/ci/run-security-static.sh').read_text(encoding='utf-8')
+    for scanner_result in (
+        'Workflow lint PASS',
+        'Workflow security lint PASS',
+        'Shell lint PASS',
+        'Dockerfile lint PASS',
+        'Redacted secret scan PASS',
+        'Semgrep SAST PASS',
+        'Base dependency audit PASS',
+        'Development dependency audit PASS',
+        'Node dependency audit PASS',
+    ):
+        assert scanner_result in security
+
+
+def test_runtime_and_dast_expanded_steps_report_actual_live_phases() -> None:
+    runtime = (ROOT / '.github/ci/run-runtime-validation.sh').read_text(encoding='utf-8')
+    zap = (ROOT / '.github/ci/run-zap-baseline.sh').read_text(encoding='utf-8')
+    for marker in (
+        'Runtime/DAST · starting isolated PostgreSQL',
+        'Runtime/DAST · applying candidate database migration',
+        'Candidate database migration PASS',
+        'Runtime/DAST · web readiness pending',
+        'Runtime/DAST · Reports worker readiness pending',
+        'Runtime Reports worker contract PASS',
+        'Runtime/DAST · starting ZAP baseline scan',
+        'Runtime baseline DAST PASS',
+    ):
+        assert marker in runtime
+    assert 'if (( attempt % 10 == 0 )); then' in runtime
+    assert 'bash .github/ci/run-zap-baseline.sh' in runtime
+    assert 'zap-baseline.py' in zap
+    assert 'PASS — KAORI ZAP Baseline' in zap
+
+
+def test_static_live_stdout_is_allowlisted_not_arbitrary_raw_pass_text() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'Only fixed-format identity and numeric code-health metrics.' in source
+    assert 'Never echo arbitrary raw PASS content into public CI logs.' in source
+    assert '/^PASS — KAORI [A-Za-z ]+$/' in source
+    assert '/^[[:space:]]+PASS — [0-9]+ modules and [0-9]+ functions /' in source
+    assert 'printf "  %s\\n", substr($0, 1, 200)' in source
+    assert 'Full diagnostic log: %s' in source
+
+
+def test_static_verifier_purpose_is_explained_without_claiming_provider_test_pass() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'verifier_purpose() {' in source
+    assert 'Purpose / scope' in source
+    assert '🎯 Scope:' in source
+    assert 'Source Control domain but is not a GitHub functional-test result' in source
+    assert 'REGISTERED is not TEST PASS' in source
+    assert '"$(verifier_purpose "$group" "$label")" "$command_display"' in source
+
+
+def test_future_capability_gate_evidence_rule_remains_in_existing_authorities() -> None:
+    terminal = (ROOT / 'docs/engineering/TERMINAL_OUTPUT.md').read_text(encoding='utf-8')
+    coverage = (ROOT / 'docs/architecture/RELEASE_SURFACE_COVERAGE.md').read_text(encoding='utf-8')
+    delivery = (ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md').read_text(encoding='utf-8')
+    template = (ROOT / '.github/PULL_REQUEST_TEMPLATE.md').read_text(encoding='utf-8')
+
+    assert '## Mandatory capability and gate evidence' in terminal
+    assert all(
+        field in terminal
+        for field in (
+            '**Identity**',
+            '**Purpose / scope**',
+            '**Execution**',
+            '**Result**',
+            '**Evidence**',
+            '**Failure**',
+            '**Traceability**',
+        )
+    )
+    assert 'Registration in the release-surface registry means **REGISTERED**' in terminal
+    assert 'generic fallback description is for legacy coverage only' in terminal
+    assert '### Required admission format for new or changed capabilities' in coverage
+    assert 'Integrations → Source Control → GitHub' in coverage
+    assert '## New/Changed Capability — Mandatory Gate Evidence' in delivery
+    assert 'Reviewers must reject a new capability' in delivery
+    assert 'New/changed feature, domain, capability, provider or verifier' in template
+    assert 'REGISTERED is not TEST PASS' in template

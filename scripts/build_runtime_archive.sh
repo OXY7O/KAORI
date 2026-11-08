@@ -24,6 +24,20 @@ printf '== KAORI Release · Runtime Package ==\n'
 printf '  version : v%s\n' "$version"
 printf '  output  : %s\n' "$output"
 
+# Runtime archives must carry freshly built CSS, not a stale/untracked
+# stylesheet from a developer worktree. Reuse the locked frontend pipeline.
+command -v npm >/dev/null 2>&1 || {
+    printf 'FAIL — Runtime Package requires npm to compile frontend assets.\n' >&2
+    exit 1
+}
+npm ci --no-audit --no-fund
+npm run build-frontend
+npm run verify-frontend
+[[ -s app/static/css/output.css ]] || {
+    printf 'FAIL — Runtime Package is missing generated Tailwind CSS.\n' >&2
+    exit 1
+}
+
 copy_tree() {
     local path="$1"
     [[ -e "$path" ]] || {
@@ -77,6 +91,18 @@ with ZipFile(output) as archive:
         raise SystemExit('runtime archive is missing application package')
     if not any(name.startswith('kaori/migrations/') for name in names):
         raise SystemExit('runtime archive is missing migrations')
+    required_assets = {
+        'kaori/app/static/css/output.css',
+        'kaori/app/static/vendor/manifest.json',
+        'kaori/app/static/vendor/alpine/alpine.min.js',
+        'kaori/app/static/vendor/htmx/htmx.min.js',
+        'kaori/app/static/vendor/lucide/lucide.min.js',
+        'kaori/app/static/vendor/chartjs/chart.umd.min.js',
+        'kaori/app/static/fonts/inter/inter-latin-wght-normal.woff2',
+    }
+    missing_assets = sorted(required_assets.difference(names))
+    if missing_assets:
+        raise SystemExit(f'runtime archive is missing required frontend assets: {missing_assets}')
 print(f'PASS — runtime package contains {len(names)} application files')
 PY
 

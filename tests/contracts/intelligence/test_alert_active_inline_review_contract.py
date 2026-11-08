@@ -57,6 +57,7 @@ def test_alert_review_uses_full_width_stacked_incident_workspace() -> None:
 def test_operator_actions_preserve_no_javascript_fallback_and_htmx_updates() -> None:
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
     routes = read('app/intelligence/alert_intelligence/routes.py')
+    route_utils = read('app/intelligence/alert_intelligence/route_utils.py')
 
     for action in (
         'alert_intelligence.acknowledge',
@@ -72,8 +73,12 @@ def test_operator_actions_preserve_no_javascript_fallback_and_htmx_updates() -> 
     ):
         assert f"action=\"{{{{ url_for('{action}'" in workspace
         assert f"htmx_form_attrs(url_for('{action}'" in workspace
-    assert 'def _modal_case_htmx_request()' in routes
-    assert 'def _modal_case_response(' in routes
+    assert 'modal_case_htmx_request as _modal_case_htmx_request' in routes
+    assert 'modal_case_response as _modal_case_response' in routes
+    assert 'def modal_case_htmx_request()' in route_utils
+    assert 'def modal_case_response(' in route_utils
+    assert "request.headers.get('HX-Request') == 'true'" in route_utils
+    assert ".strip().startswith('alert-case-modal-content-')" in route_utils
     assert 'return _modal_case_response(case_id=case.public_id, tab=tab)' in routes
     assert 'operation_feedback_oob.html' in read('app/templates/intelligence/partials/_alert_ops_active_table.html')
 

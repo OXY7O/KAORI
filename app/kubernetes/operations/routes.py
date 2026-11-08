@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint
+from flask import Blueprint, render_template
 
+from app.access.rbac.decorators import any_permission_required
 from app.kubernetes.operations.configmaps.routes import (
     configmap_delete_target,
     configmap_editor,
@@ -12,6 +13,7 @@ from app.kubernetes.operations.configmaps.routes import (
     delete_configmap_page,
     update_configmap_page,
 )
+from app.kubernetes.operations.operation_flow import cluster_required, get_operations_cluster_posture
 from app.kubernetes.operations.secrets.crud_routes import (
     create_secret,
     delete_secret,
@@ -47,6 +49,38 @@ kubernetes_operations_bp = Blueprint(
     'kubernetes_operations',
     __name__,
     url_prefix='/kubernetes-operations',
+)
+
+
+@any_permission_required(
+    'kubernetes_configmaps.view',
+    'kubernetes_configmaps.create',
+    'kubernetes_configmaps.update',
+    'kubernetes_configmaps.delete',
+    'kubernetes_secrets.view',
+    'kubernetes_secrets.create',
+    'kubernetes_secrets.replace',
+    'kubernetes_secrets.delete',
+    'kubernetes_secrets.reveal',
+    'kubernetes_secrets.approve_reveal',
+    'kubernetes_secrets.rotate_tls',
+    'kubernetes_secrets.bulk_rotate_tls',
+)
+@cluster_required(
+    'Kubernetes Operations',
+    page_title='Operations Overview',
+    page_description='Manage audited tasks; Kubernetes executes each change.',
+)
+def kubernetes_operations_overview():
+    """Permission-scoped capability navigation; never reads live provider state."""
+    return render_template(
+        'kubernetes/operations/overview.html',
+        cluster_posture=get_operations_cluster_posture(),
+    )
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/', endpoint='overview', view_func=kubernetes_operations_overview, methods=['GET']
 )
 
 

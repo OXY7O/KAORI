@@ -39,6 +39,12 @@ The interface is information-first. Violet establishes KAORI identity, hierarchy
 - The practical component-selection and page-review contract is `docs/design/KAORI_STYLING_GUIDE.md`.
 - Page-local copies of hero, pagination, table, label, expandable-content, or right-context-rail utility bundles are prohibited.
 
+The consolidated foundation and content-density decision registry is `docs/design/FOUNDATION_AND_CONTENT_DENSITY.md`. It resolves foundation-selection and density questions while this document and the owning component contracts remain the normative detailed authorities.
+
+The consolidated responsive, accessibility, state, HTMX, overlay, and interaction registry is `docs/design/RESPONSIVE_ACCESSIBILITY_INTERACTION.md`. It selects existing shared owners and executable evidence; detailed component contracts remain normative.
+
+The Design System v2 production-reference and enforcement map is `docs/design/REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md`. It binds current authority to active references, existing executable enforcement, baseline/debt policy, and Visual QA without introducing a second validation framework.
+
 ## Brand palette
 
 | Role | Light mode | Dark mode |
@@ -87,7 +93,7 @@ Use functional token names rather than literal color names.
 
 ## Dark mode
 
-KAORI dark mode follows **neutral-first surfaces with controlled Violet**. The surface order is `page → shell → card → elevated`; Bright Violet is reserved for focus, primary interaction, selected state, and small identity accents. Large repeated surfaces remain neutral. A sparse explicit workspace/domain handoff may use the shared deep-Violet `.kaori-brand-domain-panel` (for example `Related Page Card`). The Welcome capability anchor is the one product-landing exception that reuses the exact `.kaori-hero-shell` surface, including dark mode, to keep the catalog visually tied to the Hero. Page-local Violet surfaces are not allowed.
+KAORI dark mode follows **neutral-first surfaces with controlled Violet**. The surface order is `page → shell → card → elevated`; Bright Violet is reserved for focus, primary interaction, selected state, and small identity accents. Large repeated surfaces remain neutral. Explicit workspace/domain handoffs such as `Related Page Card` use the shared soft-Violet contextual treatment; the retired solid `.kaori-brand-domain-panel` treatment must not return. The Welcome capability anchor is the one product-landing exception that reuses the exact `.kaori-hero-shell` surface, including dark mode, to keep the catalog visually tied to the Hero. Page-local Violet surfaces are not allowed.
 
 The exact palette, Hero exception, sidebar treatment, prohibited patterns, and enforcement procedure are owned by `docs/design/components/DARK_MODE.md`. Page and module documentation may not redefine dark tokens.
 

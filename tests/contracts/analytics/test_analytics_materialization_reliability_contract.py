@@ -206,3 +206,26 @@ def test_unused_live_alert_comparison_wrapper_is_removed() -> None:
     assert 'def build_cluster_signal_overview' not in signals
     assert 'def build_anomalies' not in anomalies
     assert 'AlertClusterSignalComparisonRow' not in contracts
+
+
+def test_committed_snapshot_batch_reader_reuses_single_snapshot_semantics() -> None:
+    service = _read('app/kubernetes/analytics/materialization/service.py')
+    capacity = _read('app/kubernetes/tenant/capacity_governance.py')
+
+    assert 'def _read_snapshot_result(snapshot: AnalyticsSnapshot | None' in service
+    assert 'def read_snapshots(' in service
+    assert 'parameters_by_cluster: Mapping[str, dict[str, Any] | None]' in service
+    assert 'AnalyticsSnapshot.cluster_id.in_(fingerprints)' in service
+    assert 'AnalyticsSnapshot.parameter_fingerprint.in_(set(fingerprints.values()))' in service
+    assert 'return _read_snapshot_result(snapshot, dataset_key=dataset_key)' in service
+
+    fleet = capacity.split('def build_capacity_governance_summaries', 1)[1].split(
+        'def enforce_namespace_allocation_preflight',
+        1,
+    )[0]
+    assert 'snapshots = _read_capacity_snapshots(normalized_ids)' in fleet
+    assert '_read_capacity_snapshot(cluster_id)' not in fleet
+    assert 'snapshot_result=snapshots[cluster_id]' in fleet
+    assert 'def _read_capacity_snapshots(cluster_ids: list[str])' in capacity
+    assert "dataset_key='analytics.capacity'" in capacity
+    assert 'parameters_by_cluster={' in capacity

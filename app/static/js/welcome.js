@@ -56,6 +56,7 @@
 
             if (event.key === '/' && !editingText) {
                 event.preventDefault()
+                event.stopImmediatePropagation()
                 searchInput.focus()
             }
 

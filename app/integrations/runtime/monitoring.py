@@ -8,7 +8,7 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.integrations.contracts import IntegrationNotRegistered
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.integrations.validation.scheduling import enqueue_runtime_refresh
 from app.models.integration import IntegrationInstance
 

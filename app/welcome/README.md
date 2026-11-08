@@ -18,6 +18,8 @@ Welcome is the authenticated platform landing page and is not an infrastructure 
 - Permission checks in Welcome control discoverability only. Every target route and protected action must continue to enforce authorization on the server side.
 - Empty capability groups are not rendered. This prevents headings or counts from exposing inaccessible features.
 - New integrations should extend existing capability groups where possible instead of creating product-specific global navigation categories.
+- Tenant Management is a first-class Compute workspace under **Act / Infrastructure Operations** and is discoverable through `tenant.view`.
+- Access discoverability includes `identity_providers.view` so identity-provider-only administrative roles can reach the Access workspace without requiring unrelated user/role permissions.
 
 ## Presentation contract
 
@@ -46,6 +48,7 @@ Welcome uses the layered KAORI release strategy:
 - **Security Regression** — `tests/security/welcome/test_welcome_security.py`.
 - **Rendering/UI Contract** — `tests/rendering/welcome/test_welcome_rendering.py`.
 - **End-to-End Smoke** — `tests/e2e/welcome/test_welcome_smoke.py`, using the real Flask application, routing, session, Flask-Login, shared layout, and application shell while isolating external persistence/provider dependencies so the smoke remains deterministic in local and CI runs.
+- **Playwright UI / Visual QA** — `tests/ui/test_representative_interactions.py` exercises current Welcome capability content, search keyboard behavior, card geometry, screenshots, and traces across the canonical viewport matrix; the existing Welcome light/dark visual-baseline test remains the reviewed composition authority.
 - **Migration Test** — `tests/migrations/test_retire_welcome_view_permission.py` protects retirement of the non-enforcing legacy permission.
 
 ## Release evidence
@@ -53,6 +56,8 @@ Welcome uses the layered KAORI release strategy:
 - `scripts/verify_welcome_final_lock.py` is the canonical Welcome release verifier and must be called directly by `scripts/quality_gate.sh`.
 - `tests/welcome/test_welcome_characterization.py` is permanent behavioral evidence for permission-filtered discoverability, universal Settings access, first-authorized target resolution, and multi-permission deduplication.
 - `tests/contracts/welcome/test_welcome_navigation_contract.py` remains supporting structural/UI evidence; it must not be the only Welcome test.
+- `tests/ui/test_representative_interactions.py::test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports` is deterministic browser evidence for current catalog content and interaction geometry.
+- Source-controlled Welcome visual signatures remain unchanged until the content delta is explicitly accepted through the governed visual-baseline procedure.
 - `scripts/verify_feature_test_coverage.py` requires Welcome functional, security, rendering, and E2E evidence after this final recheck.
 - `welcome.view` must not return to `DEFAULT_PERMISSIONS`; authentication, not a synthetic permission, owns Welcome admission.
 

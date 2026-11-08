@@ -39,3 +39,9 @@ Use for compact interpretation cards such as Critical, Warning, Info, Normal, or
 ```
 
 Page templates must not copy the semantic class bundle inline. Standard compact labels remain borderless and continue to use `table_label.html`.
+
+## Access-denied guidance ownership
+
+**Access Denied / Access Role Unavailable** uses a **single, two-area recovery panel**, not a pair of standalone callouts or a compressed Analytics interpretation grid. This panel reuses the neutral `guidance_card_classes()` shell and `role_icon_classes()` from `analytics/components/_analysis_surfaces.html`, with an asymmetric responsive body dedicated to **reason first** and **administrator next step second**. Its behavior and accessibility rules are documented in `ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md`.
+
+Continue to use `operational_callout.render` for standalone informational or semantic notices in operational views. Do not substitute a series of small notices for an actionable 403 recovery workflow. All authorization and audit checks remain server-owned.

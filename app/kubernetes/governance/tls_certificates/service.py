@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
 from flask import current_app
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, func, or_, tuple_
 
 from app.extensions.db import db
 from app.kubernetes.governance.tls_certificates.certificate import (
+    TLSValidityPolicy,
+    classify_certificate_validity,
     matching_certificate_pattern,
     validity_policy_from_config,
 )
@@ -114,7 +116,23 @@ def _filters(args: Any) -> dict[str, Any]:
     }
 
 
-def _base_query(filters: dict[str, Any]):
+def _validity_status_expression(*, now: datetime, policy: TLSValidityPolicy):
+    """SQL equivalent of current-time expiry classification, preserving parse errors."""
+    expiry = TLSCertificateInventory.not_after
+    derived = case(
+        (expiry <= now, 'expired'),
+        (expiry <= now + timedelta(days=policy.critical_window_days), 'critical'),
+        (expiry <= now + timedelta(days=policy.renewal_window_days), 'warning'),
+        else_='healthy',
+    )
+    return case(
+        (TLSCertificateInventory.status.in_(('invalid', 'unknown')), TLSCertificateInventory.status),
+        (expiry.is_(None), 'unknown'),
+        else_=derived,
+    )
+
+
+def _base_query(filters: dict[str, Any], *, validity_expression=None):
     query = TLSCertificateInventory.query
 
     if filters['cluster_id']:
@@ -124,7 +142,8 @@ def _base_query(filters: dict[str, Any]):
         query = query.filter(TLSCertificateInventory.namespace == filters['namespace'])
 
     if filters['status'] != 'all':
-        query = query.filter(TLSCertificateInventory.status == filters['status'])
+        status_column = validity_expression if validity_expression is not None else TLSCertificateInventory.status
+        query = query.filter(status_column == filters['status'])
 
     if filters['search']:
         search = f'%{filters["search"]}%'
@@ -140,14 +159,15 @@ def _base_query(filters: dict[str, Any]):
     return query
 
 
-def _summary(query) -> dict[str, int]:
+def _summary(query, *, validity_expression=None) -> dict[str, int]:
+    status_column = validity_expression if validity_expression is not None else TLSCertificateInventory.status
     status_counts = {
         status: count
         for status, count in query.with_entities(
-            TLSCertificateInventory.status,
+            status_column,
             func.count(TLSCertificateInventory.id),
         )
-        .group_by(TLSCertificateInventory.status)
+        .group_by(status_column)
         .all()
     }
     coverage_counts = {
@@ -241,10 +261,23 @@ def _host_coverage_rows(record: TLSCertificateInventory) -> list[dict[str, Any]]
 def _present_record(
     record: TLSCertificateInventory,
     collection_state: TLSCertificateCollectionState | None,
+    *,
+    evaluated_at: datetime,
+    validity_policy: TLSValidityPolicy,
 ) -> TLSCertificateInventory:
-    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
-        record.status or 'unknown', _STATUS_PRESENTATION['unknown']
-    )
+    # Preserve persisted collection-time facts; only presentation is dynamic.
+    evaluated_status = record.status or 'unknown'
+    evaluated_days = None if evaluated_status in ('invalid', 'unknown') else record.days_remaining
+    if evaluated_status not in ('invalid', 'unknown'):
+        if record.not_after is not None:
+            evaluated_days, evaluated_status, _ = classify_certificate_validity(
+                record.not_after,
+                now=evaluated_at,
+                policy=validity_policy,
+            )
+        else:
+            evaluated_days, evaluated_status = None, 'unknown'
+    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(evaluated_status, _STATUS_PRESENTATION['unknown'])
     coverage_label, coverage_tone, coverage_icon = _COVERAGE_PRESENTATION.get(
         record.coverage_state or TLS_COVERAGE_NOT_REPORTED,
         _COVERAGE_PRESENTATION[TLS_COVERAGE_NOT_REPORTED],
@@ -270,6 +303,9 @@ def _present_record(
         record,
         'presentation',
         {
+            'validity_status': evaluated_status,
+            'validity_days_remaining': evaluated_days,
+            'validity_evaluated_at': evaluated_at,
             'status_label': status_label,
             'status_tone': status_tone,
             'status_icon': status_icon,
@@ -432,32 +468,43 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
         filters['namespace'] = ''
         filters['page'] = 1
 
+    validity_policy = validity_policy_from_config(current_app.config)
+    evaluated_at = datetime.now(UTC)
+    validity_expr = _validity_status_expression(now=evaluated_at, policy=validity_policy)
     severity_order = case(
-        (TLSCertificateInventory.status == 'expired', 0),
-        (TLSCertificateInventory.status == 'invalid', 1),
-        (TLSCertificateInventory.status == 'critical', 2),
-        (TLSCertificateInventory.status == 'warning', 3),
-        (TLSCertificateInventory.status == 'unknown', 4),
+        (validity_expr == 'expired', 0),
+        (validity_expr == 'invalid', 1),
+        (validity_expr == 'critical', 2),
+        (validity_expr == 'warning', 3),
+        (validity_expr == 'unknown', 4),
         else_=5,
     )
-    query = _base_query(filters).order_by(
+    query = _base_query(filters, validity_expression=validity_expr).order_by(
         severity_order,
-        TLSCertificateInventory.days_remaining.asc().nullslast(),
+        TLSCertificateInventory.not_after.asc().nullslast(),
         TLSCertificateInventory.namespace.asc(),
         TLSCertificateInventory.secret_name.asc(),
+        TLSCertificateInventory.id.asc(),
     )
     total_items = query.count()
     pagination = _build_pagination(page=filters['page'], per_page=filters['per_page'], total_items=total_items)
     records = query.offset((pagination['page'] - 1) * pagination['per_page']).limit(pagination['per_page']).all()
 
-    base_query = _base_query({**filters, 'page': 1})
-    summary = _summary(base_query)
+    base_query = _base_query({**filters, 'page': 1}, validity_expression=validity_expr)
+    summary = _summary(base_query, validity_expression=validity_expr)
     from app.kubernetes.governance.tls_certificates.sync_state import build_tls_sync_state
 
     sync_state = build_tls_sync_state(cluster_id=filters['cluster_id'] or None)
     state_map = _collection_states([record.cluster_id for record in records])
-    records = [_present_record(record, state_map.get(str(record.cluster_id))) for record in records]
-    validity_policy = validity_policy_from_config(current_app.config)
+    records = [
+        _present_record(
+            record,
+            state_map.get(str(record.cluster_id)),
+            evaluated_at=evaluated_at,
+            validity_policy=validity_policy,
+        )
+        for record in records
+    ]
 
     return {
         'records': records,
@@ -489,7 +536,12 @@ def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory |
     if record is None:
         return None
     state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
-    return _present_record(record, state)
+    return _present_record(
+        record,
+        state,
+        evaluated_at=datetime.now(UTC),
+        validity_policy=validity_policy_from_config(current_app.config),
+    )
 
 
 def _persist_collection_state(
@@ -510,7 +562,11 @@ def _persist_collection_state(
     state.ingress_mapping_status = ingress_status
     state.secret_collection_detail = secret_detail
     state.ingress_mapping_detail = ingress_detail
-    state.collected_at = collected_at
+    # The state row records each attempt via updated_at. Only a successful
+    # Secret collection advances the durable source-evidence clock; failure
+    # must not rewrite the age of retained certificate rows.
+    if secret_status == TLS_COLLECTION_COLLECTED:
+        state.collected_at = collected_at
     state.updated_at = datetime.now(UTC)
     return state
 
@@ -545,40 +601,56 @@ def sync_tls_certificates_for_cluster(
     if progress_callback is not None:
         progress_callback(76, f'Reconciling TLS inventory records for {cluster.name}.')
 
-    existing = {
-        (record.namespace, record.secret_name): record
-        for record in TLSCertificateInventory.query.filter(TLSCertificateInventory.cluster_id == cluster.id).all()
-    }
-    seen: set[tuple[str, str]] = set()
+    # Reconcile in bounded ORM batches. The collected_at marker is an exact
+    # successful generation identity used for scoped stale pruning; it is
+    # committed atomically with the inventory rows and collection state.
+    generation = datetime.now(UTC)
     total_records = len(records)
+    seen: set[tuple[str, str]] = set()
+    batch_size = 100
+    for start in range(0, total_records, batch_size):
+        payloads = records[start : start + batch_size]
+        keys = [(item['namespace'], item['secret_name']) for item in payloads]
+        if len(keys) != len(set(keys)) or seen.intersection(keys):
+            db.session.rollback()
+            raise ValueError('TLS collection returned duplicate Secret identities; inventory was not changed.')
+        seen.update(keys)
+        existing = {
+            (record.namespace, record.secret_name): record
+            for record in TLSCertificateInventory.query.filter(
+                TLSCertificateInventory.cluster_id == cluster.id,
+                tuple_(TLSCertificateInventory.namespace, TLSCertificateInventory.secret_name).in_(keys),
+            ).all()
+        }
+        for offset, payload in enumerate(payloads, start=start + 1):
+            key = (payload['namespace'], payload['secret_name'])
+            record = existing.get(key)
+            if record is None:
+                record = _new_tls_inventory_record(
+                    cluster_id=cluster.id,
+                    namespace=payload['namespace'],
+                    secret_name=payload['secret_name'],
+                )
+                db.session.add(record)
+            for field, value in payload.items():
+                if field != 'collected_at':
+                    setattr(record, field, value)
+            record.collected_at = generation
+            if progress_callback is not None:
+                reconcile_percent = 76 + int((offset / total_records) * 14)
+                progress_callback(
+                    reconcile_percent,
+                    f'Reconciled {offset} of {total_records} TLS inventory records for {cluster.name}.',
+                )
+        # Flush each bounded page rather than holding all dirty ORM objects.
+        db.session.flush()
 
-    for index, payload in enumerate(records, start=1):
-        key = (payload['namespace'], payload['secret_name'])
-        seen.add(key)
-        record = existing.get(key)
-        if record is None:
-            record = _new_tls_inventory_record(
-                cluster_id=cluster.id,
-                namespace=payload['namespace'],
-                secret_name=payload['secret_name'],
-            )
-            db.session.add(record)
-
-        for field, value in payload.items():
-            setattr(record, field, value)
-
-        if progress_callback is not None and total_records:
-            reconcile_percent = 76 + int((index / total_records) * 14)
-            progress_callback(
-                reconcile_percent,
-                f'Reconciled {index} of {total_records} TLS inventory records for {cluster.name}.',
-            )
-
-    stale_records = [record for key, record in existing.items() if key not in seen]
     if progress_callback is not None:
         progress_callback(93, f'Removing stale TLS inventory records for {cluster.name}.')
-    for record in stale_records:
-        db.session.delete(record)
+    db.session.query(TLSCertificateInventory).filter(
+        TLSCertificateInventory.cluster_id == cluster.id,
+        TLSCertificateInventory.collected_at != generation,
+    ).delete(synchronize_session=False)
 
     if progress_callback is not None:
         progress_callback(97, f'Committing TLS inventory snapshot for {cluster.name}.')

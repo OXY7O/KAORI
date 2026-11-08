@@ -6,7 +6,7 @@ from typing import Any
 from app.extensions.db import db
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
-from app.integrations.storage.object_storage.providers.minio.capabilities import CAPABILITY_KEYS, CAPABILITY_PROFILE
+from app.integrations.storage.object_storage.providers.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.storage.object_storage.providers.minio.client import (
     probe_instance_runtime_health,
     test_instance_connection,
@@ -131,7 +131,9 @@ class MinioRuntimeAdapter:
         instance.compatibility_status = compatibility.status
         instance.compatibility_profile = compatibility.profile_key
         instance.capability_profile = CAPABILITY_PROFILE
-        instance.capabilities = list(CAPABILITY_KEYS)
+        # Full Validation demonstrates authenticated S3 access and ListBuckets only.
+        # Optional bucket configuration reads belong to Inventory Sync, not this probe.
+        instance.capabilities = [cap.key for cap in API_CAPABILITIES if cap.required]
         instance.last_response_time_ms = result.latency_ms
         instance.last_validated_at = now
         instance.last_checked_at = now

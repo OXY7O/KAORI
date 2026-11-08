@@ -40,6 +40,7 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     presentation = read('app/platform_operations/overview/presentation.py')
     lifecycle = read('app/platform_operations/data_lifecycle/presentation.py')
     kubernetes = read('app/platform_operations/kubernetes/presentation.py')
+    kubernetes_read_model = read('app/platform_operations/kubernetes/read_model.py')
     kubernetes_routes = read('app/platform_operations/kubernetes/routes.py')
 
     assert 'build_job_execution_status_context()' in presentation
@@ -52,9 +53,12 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     assert "JobExecution.job_type == 'data_lifecycle'" in lifecycle
 
     assert 'def build_kubernetes_administration_summary()' in kubernetes
-    assert 'Cluster.query' in kubernetes
-    assert 'cluster_reveal_readiness' in kubernetes
-    assert 'SecretRevealNamespacePolicy.query' in kubernetes
+    assert 'counts = administration_counts()' in kubernetes
+    assert 'def administration_counts()' in kubernetes_read_model
+    assert 'from app.models import Cluster, SecretRevealNamespacePolicy' in kubernetes_read_model
+    assert 'Cluster.secret_reveal_encryption_verified.is_(True)' in kubernetes_read_model
+    assert 'Cluster.secret_reveal_audit_verified.is_(True)' in kubernetes_read_model
+    assert 'eligible_reveal_clusters' in kubernetes_read_model
     assert '**build_kubernetes_administration_summary(),' in kubernetes_routes
 
 
@@ -105,9 +109,9 @@ def test_platform_operations_overview_is_first_navigation_target() -> None:
     assert "url_for('platform_operations.overview.index')" in menu
     assert (
         menu.index('Overview')
-        < menu.index('Jobs &amp; Executions')
+        < menu.index('>Jobs</span>')
         < menu.index('Data Lifecycle')
-        < menu.index('Kubernetes Administration')
+        < menu.index('>Kubernetes Admin</span>')
     )
     assert "endpoint.startswith('platform_operations.overview.')" in breadcrumb
     assert "('jobs.view', 'platform_operations.overview.index')" in welcome
@@ -138,15 +142,17 @@ def test_platform_operations_overview_does_not_collapse_unknown_or_disabled_post
     assert 'unknown_workspace_count' in presentation
     assert 'review_workspace_count = attention_workspace_count + unknown_workspace_count' in presentation
     assert "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in presentation
-    assert 'elif not global_enabled:' in presentation
-    assert "status_label, status_tone = 'Global Gate Disabled', 'warning'" in presentation
+    assert "status_label = str(kubernetes['administration_status_label'])" in presentation
+    assert "status_tone = str(kubernetes['administration_status_tone'])" in presentation
+    assert 'elif ready_count < cluster_count:' not in presentation
 
 
 def test_platform_operations_operating_boundaries_are_permission_scoped() -> None:
     template = read('app/templates/platform_operations/overview/index.html')
     presentation = read('app/platform_operations/overview/presentation.py')
 
-    assert '<h1 class="{{ page_hero.title_classes() }}">Platform Overview</h1>' in template
+    assert "page_hero.intro('workflow', 'Operations Center', 'panels-top-left')" in template
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in template
     assert '{% for workspace in platform_overview.workspaces %}' in template
     assert '{{ workspace.boundary_title }}' in template
     assert '{{ workspace.boundary_description }}' in template
@@ -154,3 +160,15 @@ def test_platform_operations_operating_boundaries_are_permission_scoped() -> Non
     for title in ('Execution Evidence', 'Lifecycle Governance', 'Protected Administration'):
         assert title in presentation
         assert title not in template
+
+
+def test_platform_operations_workspace_description_is_compact_and_accessible() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    assert 'class="min-w-0 truncate px-5 text-sm leading-6 text-content-secondary"' in template
+    assert 'title="{{ workspace.description }}">{{ workspace.description }}</p>' in template
+    assert "'description': 'Readiness and protected access controls.'" in presentation
+    assert "'description': 'Protected Kubernetes controls with readiness and authorization gates.'" not in presentation
+    assert 'lg:grid-cols-3' in template
+    assert 'for workspace in platform_overview.workspaces' not in presentation

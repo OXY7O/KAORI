@@ -54,6 +54,19 @@ def test_alert_incident_archive_is_closed_only_and_preserves_searchable_index() 
     assert 'schedule_hour=4' in migration and 'schedule_minute=45' in migration
 
 
+def test_incident_archive_never_deletes_cross_domain_notification_delivery() -> None:
+    domain = read('app/platform_operations/data_lifecycle/retention/domains/alert_incident.py')
+    retention = read('app/platform_operations/data_lifecycle/retention/domains/notification_delivery.py')
+    cleanup = domain.split('def cleanup_records(', 1)[1].split('def _serialize(', 1)[0]
+    serialization = domain.split('def _serialize(', 1)[1]
+    assert 'NotificationDelivery.query.filter(' not in cleanup
+    assert 'NotificationDelivery.query.filter(' in serialization
+    assert "NotificationDelivery.event_key.like(f'alert-case:{case.public_id}:%')" in serialization
+    assert 'Notification Delivery journal' in domain or 'Notification Channels' in cleanup
+    assert 'cleanup_supported = False' in retention
+    assert 'return cleaned' in cleanup
+
+
 def test_alert_operations_permissions_split_operator_decisions_from_integration_governance() -> None:
     routes = read('app/intelligence/alert_intelligence/routes.py')
 

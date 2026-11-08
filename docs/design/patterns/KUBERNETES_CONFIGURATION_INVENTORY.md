@@ -16,6 +16,14 @@ The page owns one `#configuration-page-workspace` containing Hero, Snapshot Cont
 
 The compact table contains Configuration Object, Scope, Object Type, Key Index & Mutation, Current Pod References, and Details. Age remains in the detail workspace.
 
+### Table layout and concise evidence copy
+
+The six-column fixed-width inventory allocates **Configuration Object 27%, Scope 23%, Object Type 11%, Key Index & Mutation 15%, Current Pod References 14%, Details 10%**. Long object names and cluster/namespace scope receive half of the available width. Preserve `min-w-[72rem]`, responsive horizontal scrolling, shared table primitives, accessible headings, and View Details.
+
+Object Type shows the ConfigMap/Secret badge. The ConfigMap supporting line reads **Values not stored** (KAORI's protected persistence boundary); Secret supporting text remains its factual Kubernetes Secret type, with truncation and a full hover title. Key count and **Mutable / Immutable** are compact siblings; mutation describes whether updates are permitted, **not** observed modification history.
+
+**Current Pod References** uses a factual compact number and noun, such as **0 Pods**, **1 Pod**, or **2 Pods**, only when committed Pod collection is `Collected`; its supporting line reads **In committed snapshot**. If collection is unavailable, retain **Not Reported** and the source collection-state explanation. Preserve full canonical labels and supporting evidence in hover titles and the detail workspace. A zero does not prove the object has no consumers outside the committed Pod snapshot.
+
 ## Detail contract
 
 The detail workspace shows identity, protected data boundary, a bounded key preview, evidence-aware Pod references, committed-snapshot guidance, and permission-gated links to ConfigMap or Secret Operations. The key preview shows at most 100 entries while preserving the factual total.

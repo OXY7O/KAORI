@@ -82,3 +82,25 @@ A refresh failure must not disable Quick Actions or Account.
 ## JavaScript quality gate
 
 Every first-party file under `app/static/js/`, `frontend/**/*.js`, and `scripts/**/*.mjs` must parse with Node's syntax checker. Prettier remains the formatting authority. The shell verifier additionally rejects a complex inline navbar `x-data` implementation.
+
+## Application-shell top boundary
+
+The authenticated application shell owns one vertical scrollport:
+
+```text
+navbar / breadcrumb context
+↓
+main[data-kaori-main-scroll]
+↓
+page content inset
+```
+
+The main scroll owner must preserve the same top scroll-padding as the page-content inset:
+
+- default: `scroll-pt-5`;
+- `lg`: `scroll-pt-6`;
+- `2xl`: `scroll-pt-7`.
+
+This protects fragment navigation, `scrollIntoView()`, HTMX/history-driven focus targets, and other programmatic scroll alignment from colliding with the top edge of the application content viewport.
+
+Do not compensate with page-local `mt-*`, inline offsets, or domain-specific spacer elements. The shared shell owns this boundary.

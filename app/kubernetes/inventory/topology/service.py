@@ -117,6 +117,7 @@ def build_topology_graph(
         latest_inventory=latest_inventory,
         namespace=filters['namespace'],
         selection=selection,
+        max_nodes=_TOPOLOGY_MAX_NODES,
     )
     payload = TopologyGraphBuilder(records, selection, max_nodes=_TOPOLOGY_MAX_NODES).build(
         filters=filters,

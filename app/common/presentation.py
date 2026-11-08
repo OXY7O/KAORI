@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -73,3 +74,18 @@ def present_milliseconds(value: int | float | None, *, empty: str = 'Not observe
     if value is None:
         return empty
     return f'{int(value)} ms'
+
+
+def pretty_structured_json(value: object) -> str | None:
+    """Pretty-print valid JSON objects/arrays for read-only metadata; leave other values unchanged."""
+    if not isinstance(value, str) or not value.lstrip().startswith(('{', '[')):
+        return None
+
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, RecursionError):
+        return None
+
+    if not isinstance(parsed, (dict, list)):
+        return None
+    return json.dumps(parsed, indent=2, ensure_ascii=False)

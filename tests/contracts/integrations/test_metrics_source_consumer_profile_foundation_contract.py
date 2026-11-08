@@ -83,6 +83,9 @@ def test_metrics_source_ui_separates_provider_and_consumer_readiness() -> None:
         'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.'
         in validation
     )
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in validation
+    assert 'Core APIs Ready' in validation
+    assert 'provider compatibility remains Degraded' in validation
     assert 'Consumer Bindings' in scope
     assert 'Consumer Identity Boundary' in scope
     assert 'consumer_profile_label' in registry
@@ -114,3 +117,20 @@ def test_integration_docs_lock_provider_core_and_consumer_profile_boundary() -> 
         'Consumer eligibility combines provider-owned execution capability evidence with asset-specific Binding Validation evidence.'
         in workspace_standard
     )
+
+
+def test_metrics_source_effective_resolution_projects_registered_consumer_assets() -> None:
+    presentation = read('app/integrations/observability/metrics_source/application/presentation.py')
+    scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+
+    assert 'if binding.asset_type != KUBERNETES_CLUSTER_SCOPE' not in presentation
+    assert 'scope = (binding.asset_type, str(binding.asset_key))' in presentation
+    assert 'get_consumer_asset_definition(binding.asset_type)' in presentation
+    assert 'resolve_consumer_asset(binding.asset_type, binding.asset_key)' in presentation
+    assert 'profile = get_binding_validation_profile(current_instance.adapter_key, binding.asset_type)' in presentation
+    assert 'scope_type=binding.asset_type' in presentation
+    assert "'binding_capabilities': ('metrics',)" in presentation
+    assert "'technical_capabilities': ()," in presentation
+    assert "'selected_status': selected_status" in presentation
+    assert 'consumer.selected_status' in scope
+    assert "candidate.operational_state == 'healthy'" in scope

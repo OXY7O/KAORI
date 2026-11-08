@@ -70,7 +70,11 @@ fi
 
 if [[ "$install_required" == true ]]; then
     log 'Installing frontend dependencies with npm ci...'
-    npm ci --no-audit --no-fund
+    # Fail predictably on registry problems instead of waiting through npm's
+    # long default network timeouts. Reuse the cache whenever possible.
+    if ! npm ci --no-audit --no-fund --prefer-offline --fetch-retries=1 --fetch-timeout=30000; then
+        fail 'npm ci failed. Inspect the npm registry/network error above; node_modules is not ready.'
+    fi
     [[ -x node_modules/.bin/tailwindcss ]] || fail 'Tailwind CLI was not installed in node_modules/.bin.'
     printf '%s\n' "$lock_hash" > "$stamp_file"
 else
@@ -79,6 +83,35 @@ fi
 
 repair_frontend_output_permissions
 
-log 'Vendoring browser dependencies and building Tailwind CSS...'
-npm run prepare-frontend
-log 'Frontend assets are local, verified, and ready.'
+# This stamp lives in the node_modules volume and is invalidated when
+# frontend source, template classes, or vendoring/build scripts change.
+# The VS Code watcher handles subsequent CSS edits during an open session.
+build_stamp='node_modules/.kaori-frontend-inputs.sha256'
+inputs_hash="$(
+    {
+        sha256sum package.json package-lock.json \
+            scripts/vendor_frontend_assets.mjs \
+            scripts/verify_frontend_assets.mjs \
+            scripts/verify_css_build.mjs
+        find frontend app/templates app/static/js -type f -print0 \
+            | LC_ALL=C sort -z \
+            | xargs -0 -r sha256sum
+    } | sha256sum | awk '{print $1}'
+)"
+stored_inputs_hash=''
+if [[ -f "$build_stamp" ]]; then
+    stored_inputs_hash="$(tr -d '[:space:]' < "$build_stamp")"
+fi
+
+if [[ "$install_required" == true ]] \
+    || [[ "$stored_inputs_hash" != "$inputs_hash" ]] \
+    || [[ ! -f app/static/css/output.css ]] \
+    || [[ ! -f app/static/vendor/manifest.json ]] \
+    || [[ ! -f app/static/fonts/inter/inter-latin-wght-normal.woff2 ]]; then
+    log 'Vendoring browser dependencies and building Tailwind CSS...'
+    npm run prepare-frontend
+    printf '%s\n' "$inputs_hash" > "$build_stamp"
+    log 'Frontend assets are local, verified, and ready.'
+else
+    log 'Frontend inputs unchanged; skipping redundant asset rebuild.'
+fi

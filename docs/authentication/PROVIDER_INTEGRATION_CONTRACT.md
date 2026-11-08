@@ -106,6 +106,79 @@ OIDC implementations validate discovery metadata, issuer, audience, signature, t
 
 A future provider that reuses an existing adapter is added to the catalog without adding a route branch. A genuinely different protocol adds a new adapter package and registry entry.
 
+## Browser Protocol and Provider Profile Contract
+
+Browser SSO separates three concerns that must not collapse into one vendor adapter:
+
+```text
+Provider Definition
+→ Reusable Protocol Adapter
+→ Provider Profile / Identity Resolver
+→ Normalized SsoIdentity
+```
+
+The provider catalog owns a `browser_profile` for every browser provider. The profile is source-controlled configuration, not runtime user input, and defines:
+
+- protocol: `oidc` or `oauth2`;
+- scopes;
+- trusted discovery or authorization/token endpoints;
+- optional user-info endpoint;
+- identity resolver key;
+- PKCE policy;
+- bounded authorization parameters.
+
+The profile is intentionally independent from the persisted provider instance. Runtime provider instances store client configuration and secret references; they do not become the authority for protocol endpoints or provider identity semantics.
+
+### OIDC adapter contract
+
+OIDC is an authentication protocol and therefore may own a complete reusable browser adapter.
+
+The reusable OIDC adapter owns:
+
+- Authorization Code flow;
+- discovery and issuer metadata validation;
+- authorization/token/JWKS endpoint resolution;
+- ID-token signature verification;
+- issuer, audience, and temporal-claim validation;
+- immutable `sub`;
+- transaction-bound nonce;
+- state/session binding;
+- PKCE S256 when required or preferred by the admitted provider profile;
+- normalized claim projection;
+- bounded timeout/TLS/error behavior.
+
+A conforming OIDC provider should normally require only a provider definition/profile, admission policy, guidance, and optional bounded claim mapping. It must not copy the protocol stack into `providers/<provider>/`.
+
+### OAuth2 adapter contract
+
+OAuth 2.0 alone is not a universal identity protocol. KAORI must not interpret an arbitrary OAuth2 access token as a normalized user identity.
+
+Reusable OAuth2 code owns only the Authorization Code transport/security primitives:
+
+- authorization request construction;
+- token exchange;
+- exact redirect binding;
+- state/session binding;
+- PKCE S256 according to the admitted provider profile;
+- bounded endpoint/client configuration;
+- transient token handling;
+- timeout/TLS/error normalization.
+
+Provider-specific identity resolvers own the authenticated identity API and immutable-subject projection. GitHub is the reference shape: reusable OAuth2 transport plus a GitHub resolver for the user/email APIs and immutable numeric subject.
+
+### Extension rule
+
+Adding a provider that fits an admitted protocol adapter must not require:
+
+- a new authentication route branch;
+- a User Management branch;
+- RBAC changes;
+- session-lifecycle changes;
+- database-schema changes;
+- a copy of an existing OIDC/OAuth2 protocol implementation.
+
+If a provider cannot fit an admitted adapter, create a bounded adapter workstream first.
+
 ## Identity Projection and JIT
 
 Pre-provisioned access resolves by provider instance plus immutable external subject. Controlled JIT requires:

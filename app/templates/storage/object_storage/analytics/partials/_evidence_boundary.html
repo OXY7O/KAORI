@@ -57,7 +57,7 @@
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                         {{ table_label.status_label('No Current Samples', 'unknown', size='compact') }}
-                        <p class="mt-2 text-xs leading-5 text-content-muted">The worker query was valid but returned no samples in the selected scope or time window.</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The worker query succeeded but found no samples for the selected scope and time window. Check scope, time range, and scrape coverage; missing samples are not zero usage.</p>
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                         {{ table_label.status_label('Metric Not Scraped', 'warning', size='compact') }}

@@ -207,7 +207,10 @@ def _public_key_matches_certificate(cert_bytes: bytes, key_bytes: bytes) -> bool
             signature = private_key.sign(message, crypto.padding.PKCS1v15(), crypto.hashes.SHA256())
             public_key.verify(signature, message, crypto.padding.PKCS1v15(), crypto.hashes.SHA256())  # type: ignore[attr-defined]
             return True
-    except Exception:
+    except (crypto.invalid_signature, TypeError, ValueError):
+        # Expected signature/key-shape mismatches are invalid, never evidence
+        # authorizing Secret rotation. Unexpected crypto defects are handled
+        # by the outer fail-closed validation boundary.
         return False
 
     return False

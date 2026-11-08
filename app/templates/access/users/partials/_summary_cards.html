@@ -16,9 +16,9 @@
     </header>
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set metrics = [
-                    ('circle-check', 'Active Accounts', summary.active, 'Lifecycle is active; effective access still depends on identity and RBAC admission.', 'bg-status-normal-soft text-status-normal-text'),
-                    ('pause-circle', 'Inactive Accounts', summary.inactive, 'Access is paused while the account record remains managed.', 'bg-status-info-soft text-status-info-text'),
-                    ('shield-alert', 'Access Findings', summary.access_review, 'Active accounts blocked by RBAC, identity-provider, or invalid emergency-access state.', 'bg-status-warning-soft text-status-warning-text'),
+                    ('circle-check', 'Active Accounts', summary.active, 'Active; RBAC and identity still gate access.', 'bg-status-normal-soft text-status-normal-text'),
+                    ('pause-circle', 'Inactive Accounts', summary.inactive, 'Inactive; account remains managed.', 'bg-status-info-soft text-status-info-text'),
+                    ('shield-alert', 'Access Findings', summary.access_review, 'Blocked by RBAC, identity or emergency state.', 'bg-status-warning-soft text-status-warning-text'),
                     ('shield-check', 'Local Super Admins', summary.active_super_admins, 'Active Local Database break-glass authority.', 'bg-kaori-soft text-kaori-primary')
                 ] %}
         {% for icon, label, value, description, tone in metrics %}
@@ -39,10 +39,10 @@
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% set boundaries = [
-                            ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
-                            ('building-2', 'Directory', summary.directory ~ (' Account' if summary.directory == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
-                            ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Browser SSO identities remain provider-owned.'),
-                            ('rotate-ccw', 'Deleted & Restore', summary.deleted ~ (' Account' if summary.deleted == 1 else ' Accounts'), 'Restore returns Deleted → Inactive and never reactivates access; activation remains explicit.')
+                            ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials.'),
+                            ('building-2', 'Directory', summary.directory ~ (' Account' if summary.directory == 1 else ' Accounts'), 'Directory owns its credentials.'),
+                            ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'SSO identity remains provider-owned.'),
+                            ('rotate-ccw', 'Deleted & Restore', summary.deleted ~ (' Account' if summary.deleted == 1 else ' Accounts'), 'Restore: Deleted → Inactive; manual activation.')
                         ] %}
             {% for icon, title, value, description in boundaries %}
                 <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">

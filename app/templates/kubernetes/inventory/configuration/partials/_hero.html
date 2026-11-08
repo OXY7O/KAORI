@@ -2,18 +2,13 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('file-key-2', 'Kubernetes Configuration Inventory', 'braces') %}
-                <h1 class="{{ page_hero.title_classes() }}">Configuration Inventory</h1>
+            {% call page_hero.intro('file-key-2', 'Kubernetes Inventory', 'braces') %}
+                <h1 class="{{ page_hero.title_classes() }}">Configuration</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review ConfigMaps, Secrets, references, and mutation evidence.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {% if cluster_onboarding.is_blocked %}
-                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
-                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
-                    {% else %}
-                        {{ page_hero.meta_label('files', inventory.total_items ~ ' Configuration Objects in Scope') }}
-                        {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
-                        {{ page_hero.meta_label('folder-tree', inventory.namespace_count ~ ' Namespaces') }}
-                    {% endif %}
+                    {{ page_hero.meta_label('files', inventory.total_items ~ ' Configuration Objects in Scope') }}
+                    {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
+                    {{ page_hero.meta_label('folder-tree', inventory.namespace_count ~ ' Namespaces') }}
                 </div>
             {% endcall %}
         </div>
@@ -35,7 +30,7 @@
                         ('key-round', 'Indexed Key Names', inventory.total_key_names, 'Values excluded') ,
             ('shield-check', 'Persisted Values', 'None', 'Never exported')
             ],
-            'Manage Clusters',
+            'Open Cluster Integrations',
             url_for('integrations.kubernetes'),
             'server-cog'
             ) }}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func
@@ -34,6 +35,13 @@ class NotificationChannelUsage:
                 'Remove the channel from those schedules before deleting it.'
             )
         return ' '.join(reasons)
+
+
+class NotificationChannelRetirementBlocked(ValueError):
+    """A terminal retirement must not silently break report schedules or history."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class NotificationChannelDeletionBlocked(ValueError):
@@ -90,7 +98,33 @@ def channel_usage_map(channel_ids: list[int]) -> dict[int, NotificationChannelUs
     }
 
 
+def retire_channel(channel: NotificationChannel, *, reason: str, user_id: int) -> None:
+    """Retire a channel without deleting provider/evidence identity or delivery history."""
+    normalized_reason = str(reason or '').strip()
+    if not 8 <= len(normalized_reason) <= 500:
+        raise NotificationChannelRetirementBlocked('Provide a retirement reason between 8 and 500 characters.')
+
+    # Lock the channel row before the irreversible lifecycle transition.
+    locked = db.session.get(NotificationChannel, channel.id, with_for_update=True)
+    if locked is None or locked.lifecycle_state != 'active':
+        raise NotificationChannelRetirementBlocked('This channel is already retired or unavailable.')
+    usage = get_channel_usage(locked.id)
+    if usage.report_schedules:
+        raise NotificationChannelRetirementBlocked(
+            f'{usage.report_schedules} report schedule(s) reference this channel. Remove those references before retirement.'
+        )
+    locked.enabled = False
+    locked.lifecycle_state = 'retired'
+    locked.retired_at = datetime.now(UTC)
+    locked.retired_by_user_id = user_id
+    locked.retirement_reason = normalized_reason
+    locked.updated_by_user_id = user_id
+    db.session.commit()
+
+
 def delete_channel(channel: NotificationChannel) -> None:
+    if channel.lifecycle_state == 'retired':
+        raise NotificationChannelRetirementBlocked('Retired channels are retained for historical audit.')
     usage = get_channel_usage(channel.id)
     if usage.blocked:
         raise NotificationChannelDeletionBlocked(usage)

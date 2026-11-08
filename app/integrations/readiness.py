@@ -7,6 +7,17 @@ from typing import Any, TypedDict
 _READY = 'ready'
 
 
+def source_operational_enabled(source: Any) -> bool:
+    """Read-model gate for the registered source and its canonical lifecycle."""
+    canonical = getattr(source, 'integration_instance', None)
+    return bool(
+        getattr(source, 'enabled', True)
+        and canonical is not None
+        and getattr(canonical, 'enabled', False)
+        and getattr(canonical, 'lifecycle_status', None) == 'active'
+    )
+
+
 class OperationalPosture(TypedDict):
     status: str
     label: str
@@ -119,6 +130,6 @@ def resolve_cluster_coverage(
     return resolve_binding_operational_status(
         source_readiness=getattr(source, 'readiness_status', None),
         binding_validation=getattr(binding, 'validation_status', None),
-        source_enabled=bool(getattr(source, 'enabled', True)),
+        source_enabled=source_operational_enabled(source),
         binding_enabled=bool(getattr(binding, 'enabled', True)),
     )

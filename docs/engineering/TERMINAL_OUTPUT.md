@@ -15,6 +15,24 @@ PASS — <result>
 
 Use `PASS`, `FAIL`, `SKIP`, and `REUSED` as stable result vocabulary. Normal success output should stay short. A failure must identify the first actionable boundary, then allow the underlying tool to print its raw diagnostic output.
 
+## Mandatory capability and gate evidence
+
+Every new or materially changed KAORI feature, domain, capability, provider, operator surface, or validation gate **must** use the existing release-ownership and CI evidence format. This is an admission/review requirement, not a reason to create a new tool or duplicate verifier.
+
+In GitHub Actions, the operator-facing record for each **executed** check must make these fields discoverable using the existing Step Summary, expanded steps and retained artifacts:
+
+- **Identity** — domain/capability/provider or gate owner, and the exact verifier/check label.
+- **Purpose / scope** — what contract is protected, its relevant boundaries, and what the check does **not** prove.
+- **Execution** — the canonical command or actual test selector; skipped or reused work must not be presented as freshly executed.
+- **Result** — PASS/FAIL/SKIP/REUSED (or the existing explicit FALLBACK/NOT RUN/BLOCKED state where applicable), with actual result and elapsed duration.
+- **Evidence** — executed verifier/JUnit/security/runtime/DAST output, raw diagnostic artifact or validated run reference, and exact source identity when release-authoritative.
+- **Failure** — the first actionable boundary, concise diagnostic context, and a pointer to retained full logs; do not conceal failing checks behind a green aggregate.
+- **Traceability** — governing Issue, reviewable PR, owning release surface, test/contract paths, exact SHA and staging/UAT acceptance when applicable.
+
+Registration in the release-surface registry means **REGISTERED**, never an executed test PASS. A static verifier protects only its declared contract; provider functional/security behavior, deployment and human acceptance require their independently executed evidence. Do not add a per-capability PASS status unless a real executed test or verifier justifies it.
+
+Keep ordinary CLI success short and failures actionable. A registered capability inventory should use a concise aligned table (surface, lock state, registered contract-module count, verifier count or contract-only ownership) and retain its full per-surface verifier filenames in a raw evidence artifact/report. The inventory remains `REGISTERED`, never a standalone test PASS; incomplete ownership evidence must fail closed. In CI, place a clear purpose next to the actual command and preserve the existing report columns (group, check, purpose/scope, command, outcome, duration and raw-log reference). A new verifier must have a meaningful, specific purpose; the generic fallback description is for legacy coverage only, not an acceptable new-feature specification. Never print secrets to make evidence more verbose.
+
 ## Terminology
 
 Use these operator-facing terms consistently:

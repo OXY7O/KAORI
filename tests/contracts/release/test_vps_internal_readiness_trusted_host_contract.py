@@ -11,8 +11,8 @@ def test_internal_readiness_uses_trusted_host_without_widening_allowlist() -> No
     app_env_source = APP_ENV_TEMPLATE.read_text(encoding='utf-8')
     compose_source = PRODUCTION_COMPOSE.read_text(encoding='utf-8')
 
-    assert 'TRUSTED_HOSTS=kaori.cloud,localhost' in app_env_source
-    assert 'TRUSTED_HOSTS=kaori.cloud,localhost,127.0.0.1' not in app_env_source
+    assert 'TRUSTED_HOSTS=change-me.example.com,localhost' in app_env_source
+    assert 'TRUSTED_HOSTS=change-me.example.com,localhost,127.0.0.1' not in app_env_source
     trusted_request = "urllib.request.Request('http://127.0.0.1:5000/health/ready', headers={'Host': 'localhost'})"
     assert trusted_request in verify_source
     assert trusted_request in compose_source

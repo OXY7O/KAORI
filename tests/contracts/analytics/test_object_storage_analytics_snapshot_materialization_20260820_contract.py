@@ -133,10 +133,16 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
     readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
 
     assert 'Pages read worker-materialized analytics snapshots' in controls
-    assert 'Analytics Worker Snapshot' in controls
-    assert 'Loading Committed Analytics Snapshot' in controls
-    assert blocker.count('Object Storage → Metrics → Analytics Snapshot') == 2
-    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
+    assert 'Latest Analytics Data Snapshot' in controls
+    assert 'shared_readiness.snapshot_card(' in controls
+    assert 'shared_readiness.source_card(' in controls
+    assert 'analytics/components/_controls_readiness.html' in controls
+    assert 'shared_readiness.frame(' in controls
+    assert "'object-storage-analytics-refresh-indicator'" in controls
+    assert blocker.count('Object Storage → Metrics Source → Alert Source → Analytics Snapshot') == 1
+    assert blocker.count('Object Storage → Metrics Source → Alert Source') == 2
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-4"') == 1
     assert "'Analytics Readiness'" in blocked_hero
     assert "'Active Scope'" in blocked_hero
     assert "'Missing Evidence'" in blocked_hero

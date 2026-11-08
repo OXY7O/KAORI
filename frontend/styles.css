@@ -44,7 +44,6 @@
     --kaori-hero-tile: rgba(255, 255, 255, 0.08);
     --kaori-hero-chip: rgba(255, 255, 255, 0.08);
     --kaori-hero-outline: rgba(255, 255, 255, 0.16);
-    --kaori-brand-domain-panel: #5b21b6;
 
     --kaori-sidebar-content-muted: #d8d1e1;
     --kaori-sidebar-section: rgba(255, 255, 255, 0.48);
@@ -161,7 +160,6 @@
     --kaori-hero-tile: rgba(255, 255, 255, 0.065);
     --kaori-hero-chip: rgba(255, 255, 255, 0.075);
     --kaori-hero-outline: rgba(233, 228, 255, 0.16);
-    --kaori-brand-domain-panel: #2f1a4f;
 
     --kaori-sidebar-content-muted: #b9b1c4;
     --kaori-sidebar-section: #81788e;
@@ -350,10 +348,6 @@
 
 .kaori-hero-chip {
     background: var(--kaori-hero-chip);
-}
-
-.kaori-brand-domain-panel {
-    background: var(--kaori-brand-domain-panel);
 }
 
 .sidebar-parent-active {
@@ -629,9 +623,32 @@ span.inline-flex[class*='bg-kaori-soft'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .notification-progress-indeterminate {
+    .notification-progress-indeterminate,
+    .kaori-loading-bar-segment,
+    .animate-pulse,
+    .animate-spin {
+        animation: none !important;
+    }
+
+    .notification-progress-indeterminate,
+    .kaori-loading-bar-segment {
         width: 100%;
-        animation: none;
+        transform: none !important;
+        will-change: auto;
+    }
+
+    .htmx-indicator,
+    [data-operational-toast],
+    [data-resource-detail-dialog],
+    [data-side-drawer-dialog],
+    #notification-deck {
+        transition: none !important;
+    }
+
+    [data-resource-detail-dialog],
+    [data-side-drawer-dialog],
+    #notification-deck {
+        transform: none !important;
     }
 }
 
@@ -785,4 +802,92 @@ thead th {
 .kaori-native-dialog::backdrop {
     background: var(--kaori-surface-overlay);
     backdrop-filter: blur(1px);
+}
+
+/* KAORI Resource Profile Registry: keep offline CSS behavior identical before and
+ * after the Dev Container compiles newly introduced responsive Tailwind classes. */
+@media (min-width: 1280px) {
+    [data-kaori-responsive-registry='resource-profiles'] > table {
+        display: table;
+        table-layout: fixed;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > thead {
+        display: table-header-group;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody {
+        display: table-row-group;
+        padding: 0;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr {
+        display: table-row;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr > td {
+        display: table-cell;
+        padding: 0.75rem 1rem !important;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr > td:last-child {
+        padding-inline: 0.5rem !important;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] [data-kaori-profile-column-label] {
+        display: none;
+    }
+}
+@media (max-width: 1279px) {
+    [data-kaori-responsive-registry='resource-profiles'] > table {
+        display: block;
+        width: 100%;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > thead {
+        display: none;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody {
+        display: block;
+        padding: 0.75rem;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--kaori-outline-subtle);
+        border-radius: 0.5rem;
+        background: var(--kaori-surface-card);
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr:last-child {
+        margin-bottom: 0;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr > td {
+        display: block;
+        min-width: 0;
+        padding: 0.5rem 0 !important;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr > td:first-child {
+        grid-column: 1 / -1;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr > td:last-child {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr[data-kaori-registry-empty] {
+        display: block;
+        padding: 0;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr[data-kaori-registry-empty] > td {
+        padding: 0 !important;
+    }
+    [data-kaori-responsive-registry='resource-profiles'] [data-kaori-profile-column-label] {
+        display: block;
+    }
+}
+@media (max-width: 639px) {
+    [data-kaori-responsive-registry='resource-profiles'] > table > tbody > tr {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }

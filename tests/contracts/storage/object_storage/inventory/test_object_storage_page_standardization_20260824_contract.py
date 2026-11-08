@@ -22,7 +22,7 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert 'Committed inventory is available; snapshot or provider conditions need review.' in system_presentation
-    assert 'Used size and object count are optional usage evidence.' in presentation
+    assert 'Usage metrics are optional.' in presentation
     assert 'Latest committed inventory observation.' in summary
     assert (
         'Usage is collected separately from quota. Prefer provider_metrics; '
@@ -40,19 +40,27 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
         assert wording not in combined
 
 
-def test_system_id_reuses_shared_accessible_copy_interaction() -> None:
+def test_system_id_uses_read_only_inventory_row_without_clipboard_controls() -> None:
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
     shared_detail = read('app/templates/components/details/_detail_content.html')
     clipboard = read('app/static/js/clipboard.js')
     app_layout = read('app/templates/layouts/app.html')
 
-    assert (
-        "detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2', copyable=true)"
-    ) in detail
+    assert ("detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2')") in detail
+    assert 'copyable=true' not in detail
+    inventory_row = shared_detail.split('{% macro inventory_technical_row(', 1)[1].split(
+        '{% macro inventory_status_row(', 1
+    )[0]
+    assert 'technical_value.render(display_value' in inventory_row
+    assert 'copyable=false' in inventory_row
+    for token in ('data-kaori-copy-root', 'data-kaori-copy-source', 'data-kaori-copy-button'):
+        assert token not in inventory_row
+
+    # Global non-Inventory Clipboard behavior remains available and accessible.
     assert 'data-kaori-copy-button' in shared_detail
     assert 'aria-label="Copy {{ label }}"' in shared_detail
     assert 'data-kaori-copy-label aria-live="polite"' in shared_detail
-    assert 'data-kaori-copy-source' in shared_detail
+    assert 'data-kaori-copy-source' in clipboard
     assert "filename='js/clipboard.js'" in app_layout
     assert 'navigator.clipboard?.writeText' in clipboard
     assert "document.execCommand('copy')" in clipboard
@@ -80,10 +88,14 @@ def test_inventory_heroes_follow_copy_budget_and_shared_hero_contract() -> None:
 def test_system_posture_counts_all_provider_attention_without_downgrading_blocked_state() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     hero = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
+    systems_builder = presentation.split('def build_systems(', 1)[1].split('def build_system_detail(', 1)[0]
 
-    assert (
-        "'attention_systems': sum(1 for row in rows if row['status_tone'] in {'critical', 'warning', 'unknown'})"
-    ) in presentation
+    assert 'query.order_by(None)' in systems_builder
+    assert "func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed', 'warning', 'unknown'))" in (
+        systems_builder
+    )
+    assert "'attention_systems': int(attention or 0)" in systems_builder
+    assert systems_builder.index('query.order_by(None)') < systems_builder.index('paged, pagination = paginate_query(')
     assert "'Blocked' if inventory.blocked_systems" in hero
     assert "'critical' if inventory.blocked_systems" in hero
     assert "'Attention Required' if inventory.attention_systems" in hero
@@ -110,6 +122,24 @@ def test_object_storage_inventory_has_no_page_local_palette_or_typography_drift(
     assert 'data-kaori-inventory-detail="v10"' in source
 
 
+def test_systems_and_namespaces_use_canonical_resource_section_hierarchy() -> None:
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_page_workspace.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_page_workspace.html')
+
+    for workspace in (systems, buckets):
+        assert 'components/section_intro.html' in workspace
+        assert "'Operational Posture'" in workspace
+        assert "'Inventory Records'" in workspace
+        assert workspace.index("'Operational Posture'") < workspace.index("'Inventory Records'")
+
+    assert 'System Inventory Posture' in read(
+        'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html'
+    )
+    assert 'Object Storage Namespace Posture' in read(
+        'app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html'
+    )
+
+
 def test_inventory_tables_keep_canonical_scope_refresh_and_pagination_ownership() -> None:
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
     system_rows = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
@@ -129,3 +159,86 @@ def test_inventory_tables_keep_canonical_scope_refresh_and_pagination_ownership(
         assert 'components/states/_empty_state.html' in rows
 
     assert presentation.count('per_page: int = 5') >= 2
+
+
+def test_object_storage_concise_descriptions_cover_all_reviewed_surfaces() -> None:
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html')
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    system = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+    copy_by_surface = (
+        (
+            systems,
+            (
+                'Systems matching active filters.',
+                'Provider-ready inventory systems.',
+                'Systems with committed snapshots.',
+                'Provider conditions require review.',
+            ),
+        ),
+        (
+            bucket,
+            (
+                'Bucket identity and location.',
+                'Snapshot source and freshness.',
+                'Quota and collected usage.',
+                'Observed protection controls.',
+                'Lifecycle and access posture.',
+                'Provider metadata and endpoint.',
+            ),
+        ),
+        (
+            system,
+            (
+                'System identity and release.',
+                'Endpoint and validation status.',
+                'Committed snapshot and coverage.',
+            ),
+        ),
+    )
+    for source, descriptions in copy_by_surface:
+        for copy in descriptions:
+            assert source.count(copy) == 1
+            assert len(copy) <= 39
+
+    fleet = read('app/storage/object_storage/inventory/presentation.py')
+    for copy in (
+        'No committed assets to assess.',
+        'Quota assessed;',
+        'need quota evidence.',
+        'Review flags;',
+        'No flags;',
+        'All assets have protection evidence.',
+        'Public exposure flagged;',
+        'No public assets observed;',
+        'No assets classified public.',
+        'Usage metrics are optional.',
+        'No committed assets for usage.',
+    ):
+        assert copy in fleet
+
+    # State classification and snapshot authority still own the metric values.
+    for token in (
+        'quota_title, quota_tone',
+        'protection_title, protection_tone',
+        'exposure_title, exposure_tone',
+        "'quota_assessed': quota_assessed",
+        "'protection_assessed': protection_assessed",
+        "'exposure_assessed': exposure_assessed",
+        "'usage_collected': usage_collected",
+    ):
+        assert token in fleet
+
+
+def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    old = 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.'
+    assert old in presentation
+    assert old not in client
+    assert "title == 'MinIO Bucket Configuration'" in presentation
+    assert "normalized_description = 'Collected MinIO S3 settings.'" in presentation
+    assert "'description': normalized_description" in presentation
+    assert "'description': 'Collected MinIO S3 settings.'" in client
+    assert 'section.description' in bucket
+    assert 'bucket.provider_detail_sections' in bucket

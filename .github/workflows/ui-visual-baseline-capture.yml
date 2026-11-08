@@ -1,4 +1,4 @@
-name: KAORI UI Visual Baseline Capture
+name: Visual Baseline
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
-      - name: Check Out Requested Source
+      - name: Checkout Requested Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
@@ -47,7 +47,7 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Capture Login Visual Baseline Candidate
+      - name: Capture Login Baseline
         if: ${{ inputs.capture_scope != 'authenticated' }}
         shell: bash
         env:
@@ -66,7 +66,7 @@ jobs:
             "$CI_TOOLCHAIN_IMAGE" \
             bash -lc 'pytest -q tests/ui/test_visual_regression.py --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts/login'
 
-      - name: Build Authenticated Visual Test Assets
+      - name: Build Visual Test Assets
         if: ${{ inputs.capture_scope != 'login' }}
         shell: bash
         run: |
@@ -79,7 +79,7 @@ jobs:
             "$CI_TOOLCHAIN_IMAGE" \
             bash -lc 'npm ci --no-audit --no-fund && npm run build-css'
 
-      - name: Capture Authenticated Visual Baseline Candidate
+      - name: Capture Authenticated Baseline
         if: ${{ inputs.capture_scope != 'login' }}
         shell: bash
         env:
@@ -96,7 +96,7 @@ jobs:
             "$CI_TOOLCHAIN_IMAGE" \
             bash -lc 'pytest -q tests/ui/test_representative_interactions.py -k "welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark" --output tests/ui/artifacts/authenticated'
 
-      - name: Upload Baseline Review Evidence
+      - name: Upload Baseline Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

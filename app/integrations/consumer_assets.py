@@ -8,6 +8,7 @@ from app.definitions.integration_registry import integration_taxonomy_document
 from app.definitions.validation import require_list, require_mapping, require_str
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
 
@@ -22,6 +23,7 @@ class ConsumerAssetDefinition:
     selector_label: str
     selector_placeholder: str
     model: type[Any]
+    integration_type: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +49,7 @@ class ConsumerAssetGroup:
 _MODEL_BY_KEY: dict[str, type[Any]] = {
     'cluster': Cluster,
     'object_storage_system': ObjectStorageSystem,
+    'integration_instance': IntegrationInstance,
 }
 
 
@@ -69,6 +72,7 @@ def _load_definitions() -> tuple[ConsumerAssetDefinition, ...]:
                 selector_label=require_str(item, 'selector_label', f'consumer_assets[{index}]'),
                 selector_placeholder=require_str(item, 'selector_placeholder', f'consumer_assets[{index}]'),
                 model=model,
+                integration_type=(str(item.get('integration_type') or '').strip() or None),
             )
         )
     return tuple(definitions)
@@ -91,7 +95,13 @@ def resolve_consumer_asset(asset_type: str, asset_key: str) -> Any | None:
     key = str(asset_key or '').strip()
     if definition is None or not key:
         return None
-    return db.session.get(definition.model, key)
+    lookup_key: object = int(key) if definition.model is IntegrationInstance and key.isdigit() else key
+    asset = db.session.get(definition.model, lookup_key)
+    if asset is None:
+        return None
+    if definition.integration_type and str(getattr(asset, 'integration_type', '')) != definition.integration_type:
+        return None
+    return asset
 
 
 def consumer_asset_name(asset_type: str, asset_key: str) -> str:
@@ -116,13 +126,16 @@ def build_consumer_asset_groups(
         profile = profile_resolver(definition.asset_type)
         if profile is None:
             continue
+        query = definition.model.query
+        if definition.integration_type and definition.model is IntegrationInstance:
+            query = query.filter(IntegrationInstance.integration_type == definition.integration_type)
         assets = tuple(
             ConsumerAssetChoice(
                 key=str(asset.id),
                 name=str(asset.name),
                 environment=str(getattr(asset, 'environment', '') or ''),
             )
-            for asset in definition.model.query.order_by(definition.model.name.asc()).all()
+            for asset in query.order_by(definition.model.name.asc()).all()
         )
         groups.append(
             ConsumerAssetGroup(

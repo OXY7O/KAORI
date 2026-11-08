@@ -1,0 +1,13 @@
+{# Shared, transient KAORI toast; the footer alone owns connection test state. #}
+{% if verified %}
+    {% set toast_status = "success" %}
+    {% set toast_title = "GitHub App Connection Verified" %}
+    {% set toast_message = message or "GitHub App installation verified." %}
+{% else %}
+    {% set toast_status = "error" %}
+    {% set toast_title = "GitHub App Connection Not Verified" %}
+    {% set toast_message = message or "Run Test Connection again." %}
+{% endif %}
+{% with status=toast_status, title=toast_title, message=toast_message, toast_oob=true %}
+    {% include "components/operational_toast.html" %}
+{% endwith %}

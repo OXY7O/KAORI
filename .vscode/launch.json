@@ -3,6 +3,7 @@
   "configurations": [
     {
       "name": "KAORI: Flask Debug",
+      "envFile": "${workspaceFolder}/.env",
       "type": "debugpy",
       "request": "launch",
       "module": "flask",
@@ -24,6 +25,7 @@
     },
     {
       "name": "KAORI: Flask Auto Reload",
+      "envFile": "${workspaceFolder}/.env",
       "type": "debugpy",
       "request": "launch",
       "module": "flask",

@@ -3,15 +3,21 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import 'intelligence/components/_pagination.html' as intelligence_pagination %}
 {% if request.headers.get('HX-Request') == 'true' %}
+    {% include 'intelligence/partials/_catalog_hero_posture.html' %}
+    <input type="hidden"
+           id="catalog-filter-page-size"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}"
+           hx-swap-oob="outerHTML">
     <div id="catalog-summary-section" hx-swap-oob="outerHTML">
         {% include 'intelligence/partials/_catalog_summary.html' %}
     </div>
 {% endif %}
 <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-    <p class="text-xs leading-5 text-content-muted">
-        <span class="font-semibold text-content-primary">{{ payload.pagination.total_items }}</span>
-        matching rule{{ '' if payload.pagination.total_items == 1 else 's' }}
-    </p>
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-content-secondary">Rules</span>
+        {{ table_label.result_count(payload.pagination.total_items) }}
+    </div>
     <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
         {% if payload.active_filter_count|default(0) > 0 %}
             {{ registry_ui.clear_filters_action(url_for('intelligence.catalog', per_page=payload.pagination.per_page) ,
@@ -25,7 +31,6 @@
             lead=false
             ) }}
         {% endif %}
-        {{ table_label.metadata_label(payload.pagination.total_items ~ ' Rules', size='compact') }}
     </div>
 </div>
 {% include 'intelligence/partials/_catalog_records.html' %}

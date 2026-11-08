@@ -20,3 +20,7 @@ A destructive confirmation must include:
 - focus returned to the original trigger after cancellation.
 
 The UI confirmation never replaces server-side lifecycle checks. Binding blockers, last-owner rules, or other authority boundaries must be enforced again in the service layer.
+
+## Reduced motion
+
+Shared modal/drawer geometry and focus behavior remain identical when `prefers-reduced-motion: reduce` is active. Slide/fade transitions are suppressed and JavaScript must not retain transition-only close delays. The surface still opens, closes, restores focus where its accessibility contract requires it, and preserves all state/evidence semantics.

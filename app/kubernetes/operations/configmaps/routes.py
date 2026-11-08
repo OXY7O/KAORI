@@ -261,7 +261,7 @@ def configmap_namespace_options():
 @permission_required('kubernetes_configmaps.create')
 @cluster_required(
     'ConfigMap Management',
-    page_title='Create Kubernetes ConfigMap',
+    page_title='Create ConfigMap',
     page_description='Validate and create one ConfigMap under governed KAORI controls.',
 )
 def create_configmap_page():

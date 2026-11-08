@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.analytics.coercion import as_dict
 from app.common.analytics.params import (
@@ -148,7 +149,7 @@ def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
         dependency_blocker = metrics_source_connection_blocker(cluster, detail=message)
-    except Exception as exc:
+    except (SQLAlchemyError, RuntimeError, TypeError, ValueError) as exc:
         current_app.logger.exception(exc)
         dependency_blocker = metrics_source_connection_blocker(cluster, detail=str(exc))
 

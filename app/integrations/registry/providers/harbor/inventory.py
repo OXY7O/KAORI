@@ -1,0 +1,198 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+from urllib.parse import urlparse
+
+from app.integrations.registry.collectors import InventoryProgressCallback, RegistryInventoryCollector
+from app.integrations.registry.contracts import (
+    ArtifactRecord,
+    ProjectRecord,
+    RegistryInventoryEvidence,
+    RepositoryRecord,
+)
+from app.integrations.registry.providers.harbor.client_factory import build_client
+from app.integrations.registry.providers.harbor.exceptions import HarborResponseError
+from app.models.harbor import HarborInstance
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace('Z', '+00:00'))
+    except ValueError:
+        return None
+
+
+def _as_int(value: Any) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _repository_name(project_name: str, value: Any) -> str:
+    name = str(value or '').strip().strip('/')
+    prefix = f'{project_name}/'
+    return name[len(prefix) :] if name.startswith(prefix) else name
+
+
+def _validated_tags(value: Any, *, digest: str) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or any(
+        not isinstance(tag, dict) or not str(tag.get('name') or '').strip() for tag in value
+    ):
+        raise HarborResponseError(f'Harbor artifact {digest} has malformed tag inventory.')
+    return value
+
+
+def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
+    digest = str(raw_artifact.get('digest') or '').strip()
+    if not digest:
+        raise HarborResponseError('Harbor artifact discovery contained a record without a digest.')
+    if 'tags' not in raw_artifact:
+        raise HarborResponseError(
+            f'Harbor artifact {digest} omitted the requested tag inventory; '
+            'refusing to erase previously committed tag references.'
+        )
+    return ArtifactRecord(
+        digest=digest,
+        provider_native_id=str(raw_artifact.get('id') or '') or None,
+        artifact_type=str(raw_artifact.get('type') or '').strip() or None,
+        media_type=str(raw_artifact.get('media_type') or '').strip() or None,
+        size_bytes=_as_int(raw_artifact.get('size')),
+        push_time=_parse_datetime(raw_artifact.get('push_time')),
+        pull_time=_parse_datetime(raw_artifact.get('pull_time')),
+        tags=_validated_tags(raw_artifact.get('tags'), digest=digest),
+        provider_metadata={
+            key: raw_artifact.get(key)
+            for key in ('manifest_media_type', 'project_id', 'repository_id', 'extra_attrs')
+            if raw_artifact.get(key) is not None
+        },
+    )
+
+
+def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any]) -> RepositoryRecord | None:
+    repo_name = _repository_name(project_name, raw_repo.get('name'))
+    if not repo_name:
+        raise HarborResponseError(f'Harbor repository discovery in {project_name} contained an unnamed record.')
+    repository = RepositoryRecord(
+        name=repo_name,
+        provider_native_id=str(raw_repo.get('id') or '') or None,
+        artifact_count=_as_int(raw_repo.get('artifact_count')),
+        pull_count=_as_int(raw_repo.get('pull_count')),
+        description=str(raw_repo.get('description') or '').strip() or None,
+        provider_created_at=_parse_datetime(raw_repo.get('creation_time')),
+        provider_updated_at=_parse_datetime(raw_repo.get('update_time')),
+        provider_metadata={key: raw_repo.get(key) for key in ('project_id',) if raw_repo.get(key) is not None},
+    )
+    for raw_artifact in client.list_all_artifacts(
+        project_name_or_id=project_name,
+        repository_name=repo_name,
+    ):
+        if not isinstance(raw_artifact, dict):
+            raise HarborResponseError(f'Harbor artifact discovery in {project_name}/{repo_name} is malformed.')
+        artifact = _artifact_record(raw_artifact)
+        if artifact is not None:
+            repository.artifacts.append(artifact)
+    if repository.artifact_count is not None and len(repository.artifacts) < repository.artifact_count:
+        raise HarborResponseError(
+            f'Harbor artifact discovery for {project_name}/{repo_name} returned '
+            f'{len(repository.artifacts)} of {repository.artifact_count} provider-reported artifacts.'
+        )
+    return repository
+
+
+def _project_record(client: Any, raw_project: dict[str, Any]) -> ProjectRecord | None:
+    project_name = str(raw_project.get('name') or '').strip()
+    if not project_name:
+        raise HarborResponseError('Harbor project discovery contained an unnamed record.')
+    project = ProjectRecord(
+        name=project_name,
+        provider_native_id=str(raw_project.get('project_id') or '') or None,
+        public=bool(raw_project.get('public')) if raw_project.get('public') is not None else None,
+        repository_count=_as_int(raw_project.get('repo_count')),
+        provider_metadata={
+            key: raw_project.get(key)
+            for key in ('creation_time', 'update_time', 'metadata', 'owner_id', 'owner_name')
+            if raw_project.get(key) is not None
+        },
+    )
+    for raw_repo in client.list_all_repositories(project_name_or_id=project_name):
+        if not isinstance(raw_repo, dict):
+            raise HarborResponseError(f'Harbor repository discovery in {project_name} contains a non-object.')
+        repository = _repository_record(client, project_name, raw_repo)
+        if repository is not None:
+            project.repositories.append(repository)
+    if project.repository_count is not None and len(project.repositories) < project.repository_count:
+        raise HarborResponseError(
+            f'Harbor project {project_name} returned {len(project.repositories)} of '
+            f'{project.repository_count} provider-reported repositories.'
+        )
+    return project
+
+
+def collect_harbor_inventory(
+    instance: HarborInstance,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> RegistryInventoryEvidence:
+    """Collect only the canonical inventory facts owned by #895."""
+
+    client = build_client(instance)
+    if progress_callback is not None:
+        progress_callback(0, 0, 'Project Discovery')
+    raw_projects = client.list_all_projects()
+    if any(not isinstance(item, dict) for item in raw_projects):
+        raise HarborResponseError('Harbor project discovery contains non-object entries.')
+    repository_hint = sum(max(_as_int(project.get('repo_count')) or 0, 0) for project in raw_projects)
+    repository_processed = 0
+    if progress_callback is not None:
+        progress_callback(0, repository_hint, '')
+
+    projects: list[ProjectRecord] = []
+    for raw_project in raw_projects:
+        project = _project_record(client, raw_project)
+        if project is None:
+            continue
+        projects.append(project)
+        for repository in project.repositories:
+            repository_processed += 1
+            if progress_callback is not None:
+                progress_callback(
+                    repository_processed,
+                    max(repository_hint, repository_processed),
+                    f'{project.name}/{repository.name}',
+                )
+
+    if progress_callback is not None:
+        progress_callback(repository_processed, repository_processed, '')
+
+    parsed = urlparse(instance.endpoint)
+    return RegistryInventoryEvidence(
+        projects=projects,
+        provider_metadata={
+            'provider_key': 'harbor',
+            'source': 'harbor_api_v2',
+            'provider_record_id': int(instance.id),
+            'registry_host': (
+                f'{parsed.hostname.lower()}:{parsed.port}'
+                if parsed.hostname and parsed.port not in (None, 443)
+                else (parsed.hostname or '').lower() or None
+            ),
+            'registry_scheme': parsed.scheme or None,
+        },
+    )
+
+
+collector = RegistryInventoryCollector(
+    provider_key='harbor',
+    collect=collect_harbor_inventory,
+    collect_with_progress=collect_harbor_inventory,
+)

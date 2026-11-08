@@ -13,8 +13,8 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro(domain.icon, "Integrations · " ~ domain.label, domain.icon) %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }} Integrations</h1>
+                    {% call page_hero.intro(domain.icon, "Integrations", domain.icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ domain.description }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label("layers-3", stats.capability_types ~ " Capabilities") }}
@@ -43,7 +43,7 @@
                                 <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
                                 Integration Overview
                             </a>
-                            <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
+                            <a href="{{ url_for('integrations.overview', tab='runtime') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>
                                 Runtime Overview
@@ -141,7 +141,12 @@
                 </div>
             {% endcall %}
         {% endfor %}
-        {% include "integrations/partials/_domain_workspace.html" %}
+        <div class="space-y-3" data-kaori-domain-workspace-section>
+            {{ integration_ui.workspace_section_intro(domain.label ~ " Providers & Connections",
+                        "Review Source Control provider readiness and registered connections." if domain.key == "source_control" else "Review provider readiness, connections, and governed consumer bindings.",
+                        domain.label ~ " providers and connections") }}
+            {% include "integrations/partials/_domain_workspace.html" %}
+        </div>
         <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
              data-kaori-domain-operating-boundary>
             <div class="flex items-start gap-3">

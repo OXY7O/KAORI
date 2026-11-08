@@ -12,7 +12,6 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
     KubernetesDiscovery,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +29,12 @@ def test_cluster_runtime_health(
     runtime monitoring does not rebuild the full capability contract.
     """
     try:
-        with weak_tls_context(enabled=allow_weak_tls):
-            client_factory = KubernetesClient(
-                kubeconfig_content=kubeconfig_content,
-                verify_ssl=verify_ssl,
-            )
-            version_info = client_factory.version_api().get_code()
+        client_factory = KubernetesClient(
+            kubeconfig_content=kubeconfig_content,
+            verify_ssl=verify_ssl,
+            allow_weak_tls=allow_weak_tls,
+        )
+        version_info = client_factory.version_api().get_code()
 
         return {
             'success': True,
@@ -93,16 +92,14 @@ def test_cluster_connection(
     allow_weak_tls: bool = False,
 ) -> dict[str, Any]:
     try:
-        with weak_tls_context(
-            enabled=allow_weak_tls,
-        ):
-            client_factory = KubernetesClient(
-                kubeconfig_content=kubeconfig_content,
-                verify_ssl=verify_ssl,
-            )
-            api = client_factory.connect()
-            nodes = cast(V1NodeList, api.list_node())
-            version_info = client_factory.version_api().get_code()
+        client_factory = KubernetesClient(
+            kubeconfig_content=kubeconfig_content,
+            verify_ssl=verify_ssl,
+            allow_weak_tls=allow_weak_tls,
+        )
+        api = client_factory.connect()
+        nodes = cast(V1NodeList, api.list_node())
+        version_info = client_factory.version_api().get_code()
 
         git_version = getattr(version_info, 'git_version', None) or 'unknown'
         platform = getattr(version_info, 'platform', None)

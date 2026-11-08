@@ -1,14 +1,14 @@
 from datetime import UTC, datetime
 
-from app.integrations.observability.metrics_source.adapter import runtime_adapter
-from app.integrations.observability.metrics_source.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
     registry,
 )
+from app.integrations.observability.metrics_source.adapter import runtime_adapter
+from app.integrations.observability.metrics_source.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
 from app.models.metrics_source import MetricsSource
 
 
@@ -84,6 +84,7 @@ for provider_key in ('prometheus', 'thanos'):
             adapter_key='prometheus_http',
             adapter=runtime_adapter,
             instance_loader=model_loader(MetricsSource),
+            record_model=MetricsSource,
             canonical_record_loader=canonical_model_loader(MetricsSource),
             module_path='app.integrations.observability.metrics_source',
             detail_url_builder=_detail_url,

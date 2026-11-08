@@ -16,9 +16,13 @@ The canonical suite is `tests/access/authentication/`.
 
 - Local success is authoritative.
 - An existing local identity with a wrong password does not fall through to LDAP.
-- Unknown local identity may continue to enabled LDAP providers.
+- Unknown local identity or an existing externally provisioned LDAP account may continue to enabled, linked LDAP providers; the presence of its KAORI projection row does not grant local password authority.
 - Database unavailability stops external lookup.
 - LDAP provider unavailability is preserved after all external attempts.
+- Enabled → Disabled external provider transitions atomically advance auth_session_version only for externally owned linked identities; disabling an already disabled provider, ordinary edits and re-enabling do not rotate generations.
+- Old browser and remember cookies fail closed on the next request across app instances; enabling again cannot restore previous generations.
+- Provider disablement does not revoke unrelated providers' user projections or Local Database break-glass users. If the same KAORI external account links multiple provider instances of the same source, its sessions are conservatively revoked upon disabling any linked provider; no credential authority is transferred.
+- A revocation update or provider commit failure rolls back the transaction; the Activity Audit event records a count of linked accounts, not the number of active sessions.
 
 ### Local Database Provider
 
@@ -49,6 +53,12 @@ The canonical suite is `tests/access/authentication/`.
 ### Session, Readiness, and Identity Ownership
 
 - Successful login clears prior session state and establishes a fresh session.
+- A successful Local, LDAP or SSO login atomically increments its own user's session generation; old signed browser and remember cookies are denied on the next request while unrelated accounts remain authenticated.
+- Concurrent login transactions for the same user serialize generation increments. The response must bind to **its own** UPDATE RETURNING generation rather than an ORM refresh that could observe the newer login's generation.
+- Failed credentials, account disabled/deleted before issuance, source mismatch or SQL error must not commit a replacement generation or permit a new authenticated session.
+- The non-secret login-specific `auth_session_ref` is safe in success/login and logout Activity Audit only. A failed login may name a target user but cannot inherit authenticated actor or active-session correlation from other sessions.
+- Multiple browser tabs sharing the same copied signed cookie are out of scope for the one-login-generation guarantee; test that distinction rather than describing the feature as one physical device.
+- Guided two-browser UAT verifies Browser A login then Browser B login as the same user, A rejected, B allowed, optional remember-me old cookie rejected, independent user unaffected and clean audit correlation; also exercise two parallel login requests and provider-disable/password-change regressions.
 - Super-admin remember-me is denied unless explicitly enabled.
 - Logout clears auth and step-up state.
 - Readiness requires every table touched by the login path.
@@ -82,6 +92,7 @@ Test Local Database, LDAP, Google OIDC, and GitHub OAuth with:
 - wrong credential or denied authorization;
 - inactive KAORI projection;
 - disabled provider;
+- provider disabled **while already signed in** (old session rejected on next request; fresh login blocked; re-enable requires new session);
 - missing secret;
 - PostgreSQL unavailable;
 - external endpoint unavailable or TLS failure;

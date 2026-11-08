@@ -6,11 +6,14 @@ from typing import Any
 from flask import current_app, url_for
 
 from app.extensions.db import db
+from app.models.archive import ArchiveArtifact
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.policy_service import get_policy, update_policy
 from app.platform_operations.data_lifecycle.retention.service import get_archive_download_path, verify_archive_artifact
 from app.platform_operations.data_lifecycle.retention.tasks import run_domain_retention_task
 from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import record_operational_activity
 
 
@@ -21,11 +24,22 @@ def _int_value(values: Mapping[str, Any], name: str, default: int) -> int:
         return default
 
 
+def _check_audit_event_governance(domain_name: str, user_id: int) -> None:
+    if domain_name != 'audit_event':
+        return
+    user = db.session.get(User, user_id, populate_existing=True)
+    if user is None or not user.is_active or not user.is_super_admin or user.auth_source != 'database':
+        raise PermissionError('AuditEvent lifecycle requires authorized local Super Admin.')
+
+
 def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     domain = get_archive_domain(domain_name)
     fallback = domain.build_policy()
     try:
         settings = dict(fallback.settings or {})
+        if not getattr(domain, 'cleanup_supported', True) and str(values.get('operation_mode') or '') != 'archive_only':
+            raise ValueError('This domain supports Archive Only; hot cleanup is not admitted.')
         batch_size = _int_value(values, 'batch_size', fallback.batch_size)
         if domain_name == 'job_execution':
             settings['workload_retention_days'] = {
@@ -56,7 +70,9 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             archive_retention_days=_int_value(values, 'archive_retention_days', fallback.archive_retention_days),
             batch_size=batch_size,
             operation_mode=str(values.get('operation_mode') or 'archive_and_cleanup'),
-            schedule_enabled=values.get('schedule_enabled') == 'on',
+            schedule_enabled=(
+                values.get('schedule_enabled') == 'on' and domain_name not in {'notification_delivery', 'audit_event'}
+            ),
             schedule_hour=_int_value(values, 'schedule_hour', 2),
             schedule_minute=_int_value(values, 'schedule_minute', 0),
             protect_unreviewed=values.get('protect_unreviewed') == 'on',
@@ -68,6 +84,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             settings=settings,
         )
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_policy_updated',
             status='success',
@@ -83,6 +100,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
         db.session.rollback()
         current_app.logger.exception('Could not update data lifecycle policy.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_policy_update_failed',
             status='error',
@@ -95,9 +113,11 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
 
 
 def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     normalized_mode = str(mode or '').strip().lower()
     if normalized_mode not in {'archive_only', 'archive_and_cleanup'}:
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_rejected',
             status='error',
@@ -111,6 +131,18 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
     cleanup = normalized_mode == 'archive_and_cleanup'
     try:
         domain = get_archive_domain(domain_name)
+        if cleanup and not getattr(domain, 'cleanup_supported', True):
+            return record_operational_activity(
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+                user_id=user_id,
+                event_type='data_lifecycle_execution_rejected',
+                status='warning',
+                title='Archive-only safety boundary',
+                message='Hot cleanup is not admitted for this evidence domain.',
+                detail='Use Archive Only. Verified archives do not authorize deletion of the committed hot records.',
+                action_url=url_for('platform_operations.data_lifecycle.index', domain=domain_name),
+                metadata={'domain': domain_name, 'mode': normalized_mode, 'reason': 'cleanup_not_admitted'},
+            )
         stored_policy = get_policy(domain_name)
         policy = domain.build_policy()
         if stored_policy is None or not policy.enabled:
@@ -126,6 +158,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 )
             )
             return record_operational_activity(
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 user_id=user_id,
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
@@ -167,6 +200,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
             max_attempts=2,
         )
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_requested',
             status='info',
@@ -189,12 +223,16 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 'job_execution_id': job.id,
                 'celery_task_id': job.celery_task_id,
                 'created': created,
+                # Foreground acknowledgment is a toast; the canonical job
+                # already appears in Notification Deck → Active Work.
+                'feedback_delivery': 'toast',
             },
         )
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception('Could not queue data lifecycle execution.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_execution_queue_failed',
             status='error',
@@ -207,9 +245,15 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
 
 
 def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]:
+    artifact = db.session.get(ArchiveArtifact, archive_id)
+    if artifact is not None:
+        # Verify can mutate archive integrity/status metadata. Source authorization
+        # must precede verification, even when a caller knows an unlisted UUID.
+        _check_audit_event_governance(artifact.domain, user_id)
     try:
         result = verify_archive_artifact(archive_id)
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_archive_verified',
             status='success',
@@ -217,12 +261,13 @@ def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]
             message='KAORI verified the archive data and manifest checksums.',
             detail='The archive remains available according to its domain archive-retention policy.',
             action_url=url_for('platform_operations.data_lifecycle.index', tab='history'),
-            metadata=result,
+            metadata={**result, 'feedback_delivery': 'toast'},
         )
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception('Could not verify lifecycle archive.')
         return record_operational_activity(
+            delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
             user_id=user_id,
             event_type='data_lifecycle_archive_verification_failed',
             status='error',
@@ -230,7 +275,11 @@ def verify_lifecycle_archive(*, archive_id: str, user_id: int) -> dict[str, Any]
             message=f'The archive could not be verified because of {type(exc).__name__}.',
             detail='No hot record was modified.',
             action_url=url_for('platform_operations.data_lifecycle.index', tab='history'),
-            metadata={'archive_id': archive_id, 'error_type': type(exc).__name__},
+            metadata={
+                'archive_id': archive_id,
+                'error_type': type(exc).__name__,
+                'feedback_delivery': 'toast',
+            },
         )
 
 

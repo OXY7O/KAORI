@@ -137,6 +137,19 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
         sheet_names=('Analysis', 'Alerts & Anomalies', 'Recommendations'),
         primary_visual='composition_bar',
     ),
+    'tenant_governance': AnalyticsWorkbookProfile(
+        report_type='tenant_governance',
+        title='Tenant Governance',
+        description='Committed Tenant inventory, allocation, access, credential, provider, policy, Intelligence, and audit evidence.',
+        metric_specs=(
+            _metric('Tenants', fmt='#,##0'),
+            _metric('Namespaces', fmt='#,##0'),
+            _metric('Active Grants', fmt='#,##0'),
+            _metric('Credential Attention', fmt='#,##0'),
+        ),
+        sheet_names=('Tenants', 'Namespaces', 'Access', 'Credentials', 'Allocations', 'Governance'),
+        primary_visual='composition_bar',
+    ),
     'object_storage_analysis': AnalyticsWorkbookProfile(
         report_type='object_storage_analysis',
         title='Object Storage Analysis',
@@ -148,6 +161,19 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
             _metric('Utilization'),
         ),
         sheet_names=('Analysis', 'Top Consumers', 'Trends', 'Alerts & Anomalies'),
+        primary_visual='ranked_bar',
+    ),
+    'artifact_registry_analysis': AnalyticsWorkbookProfile(
+        report_type='artifact_registry_analysis',
+        title='Artifact Registry Analysis',
+        description='Committed Registry capacity, security, runtime correlation, governance, alert, and recommendation evidence.',
+        metric_specs=(
+            _metric('Projects', fmt='#,##0'),
+            _metric('Repositories', fmt='#,##0'),
+            _metric('Artifacts', fmt='#,##0'),
+            _metric('Storage'),
+        ),
+        sheet_names=('Analysis', 'Top Consumers', 'Alerts & Anomalies'),
         primary_visual='ranked_bar',
     ),
 }

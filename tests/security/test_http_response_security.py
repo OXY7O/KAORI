@@ -8,6 +8,7 @@ from flask import Response
 
 from app import create_app
 from app.access.authentication import routes as auth_routes
+from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
 from app.bootstrap import presentation as bootstrap_presentation
 from app.bootstrap.security import _protect_inline_scripts
 
@@ -36,6 +37,13 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(ready=True, setup_required=False, missing_tables=()),
     )
     monkeypatch.setattr(auth_routes, 'enabled_sso_providers', lambda: [])
+    # HTTP/CSP contracts exercise a real login response but do not own the
+    # persisted bot-policy schema; its fail-closed DB path has separate tests.
+    monkeypatch.setattr(
+        auth_routes,
+        'bot_policy_state',
+        lambda: BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+    )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
     return create_app('testing')
 

@@ -64,7 +64,7 @@ def test_runtime_primary_finding_replaces_duplicate_operational_focus_rows():
     source = _text(RUNTIME_WORKSPACE)
     assert 'data-kaori-runtime-primary-finding' in source
     assert 'Primary Finding' in source
-    assert '{{ runtime_state.summary }}' in source
+    assert '{{ runtime_primary_finding }}' in source
     assert 'Operational Focus' not in source
     assert 'data-kaori-operational-focus-list' not in source
     assert 'runtime_state.message' not in source

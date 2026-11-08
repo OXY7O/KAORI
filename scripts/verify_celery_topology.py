@@ -227,6 +227,7 @@ def validate(root: Path) -> list[str]:
     development_source = development_compose.read_text(encoding='utf-8')
     canonical_development_services = {
         'inventory-worker',
+        'registry-security-worker',
         'maintenance-worker',
         'runtime-worker',
         'validation-worker',
@@ -243,9 +244,15 @@ def validate(root: Path) -> list[str]:
     if '--hostname=reports@%h' not in development_source:
         errors.append('Dev Container reports-worker has no canonical reports hostname.')
 
+    if '--hostname=registry-security@%h' not in development_source:
+        errors.append('Dev Container registry-security-worker has no canonical registry-security hostname.')
+
     production_source = (root / 'compose.production.yml').read_text(encoding='utf-8')
     if '--hostname=reports@%h' not in production_source:
         errors.append('Production reports-worker has no canonical reports hostname.')
+
+    if '--hostname=registry-security@%h' not in production_source:
+        errors.append('Production registry-security-worker has no canonical registry-security hostname.')
 
     devcontainer_config = json.loads((root / '.devcontainer' / 'devcontainer.json').read_text(encoding='utf-8'))
     run_services = set(devcontainer_config.get('runServices') or [])

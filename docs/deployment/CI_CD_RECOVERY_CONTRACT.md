@@ -28,6 +28,12 @@ Continuous Delivery begins only from an admitted staging SHA. It produces an imm
 
 The release candidate must preserve source SHA, release version, OCI digest, SBOM, provenance, signature/verification evidence, and transition lineage. Tags are references; the captured digest is the deployable identity. Old tags or digests are never mutated to manufacture a new release lineage.
 
+## Expanded-step execution evidence through hosted UAT
+
+The existing `Release Candidate`, `Staging Deploy`, and `Staging Publication` GitHub Actions workflows must be readable **during** execution, not only through their final job status. Operator-safe, bounded expanded-step messages distinguish source/tag/digest authority, exact Full Admission evidence, RC publication, ephemeral SSH preparation, remote release artifact transfer, host preflight, pre-migration backup (when applicable), database migration, application/worker/Beat health, committed release state and independent public-edge reconciliation. Each successful phase is reported only after its canonical command or validation completes; a failed or skipped phase cannot be presented as PASS. Raw logs and immutable release artifacts remain authoritative.
+
+The backup subprocess used by `deploy/server/deploy.sh` emits a single path on stdout; progress must use stderr to preserve the machine-readable handoff. No console output may expose secret payloads, private database schemas/roles, environment file contents, registry passwords, private SSH keys or full remote credential-bearing scripts. A green internal deployment and public-edge reconciliation are operational evidence, **not** human UAT acceptance or authority for stable promotion.
+
 ## Continuous Deployment
 
 Automatic deployment is allowed only for environments whose governance explicitly permits it. Production is not such an environment under the current KAORI contract.

@@ -32,7 +32,9 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
     assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert 'Configuration Reference Posture' in summary
     assert 'Reference Evidence Gaps' in summary
-    assert 'Pod Reference Collection' in summary
+    assert 'ConfigMap Collection' not in summary
+    assert 'Secret Collection' not in summary
+    assert 'Pod Reference Collection' not in summary
     assert 'hx-target="#configuration-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
     assert 'aria-label="Configuration inventory filters"' in card

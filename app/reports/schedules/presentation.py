@@ -8,6 +8,7 @@ from app.reports.catalog import REPORT_TYPE_OPTIONS, get_report_type_label
 from app.reports.generate.form_options import PERIOD_OPTIONS
 from app.reports.schedules.support import ensure_utc, format_datetime, get_default_timezone
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
     resolve_report_scope,
@@ -48,6 +49,16 @@ def format_cadence_detail(schedule: ReportSchedule) -> str:
     return f'Every Day at {schedule.run_time}'
 
 
+def _schedule_scope_projection(schedule: ReportSchedule) -> tuple[str, str, str, str]:
+    scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
+    scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
+    if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return scope_asset_type, scope_asset_id, 'Object Storage System', schedule.namespace or 'System Scope'
+    if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return scope_asset_type, scope_asset_id, 'Artifact Registry', schedule.namespace or 'Integration Scope'
+    return scope_asset_type, scope_asset_id, 'Kubernetes Cluster', schedule.namespace or 'All Namespaces'
+
+
 def serialize_schedule(
     schedule: ReportSchedule,
     cluster_map: dict[str, str],
@@ -62,14 +73,7 @@ def serialize_schedule(
     delivery_channels = schedule.notification_channel_ids_as_list()
     delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
     scope = resolve_report_scope(schedule)
-    scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
-    scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
-    scope_label = (
-        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
-    )
-    namespace_label = schedule.namespace or (
-        'System Scope' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'
-    )
+    scope_asset_type, scope_asset_id, scope_label, namespace_label = _schedule_scope_projection(schedule)
     return {
         'id': schedule.id,
         'name': schedule.name,
@@ -83,6 +87,9 @@ def serialize_schedule(
         'object_storage_system_id': (
             schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else ''
         ),
+        'registry_integration_id': (
+            schedule.scope_asset_id if schedule.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else ''
+        ),
         'scope_asset_type': scope_asset_type,
         'scope_asset_id': scope_asset_id,
         'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}' if scope_asset_id else '',
@@ -93,7 +100,7 @@ def serialize_schedule(
         'namespace': namespace_label,
         'scope_detail': (
             scope_label
-            if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+            if scope_asset_type in {OBJECT_STORAGE_SYSTEM_ASSET_TYPE, ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}
             else f'{scope_label} · {namespace_label}'
         ),
         'period': format_period_label(schedule.period),
@@ -127,27 +134,34 @@ def serialize_schedule(
     }
 
 
+def present_delivery_result(delivery_result: dict[str, Any]) -> tuple[str, str]:
+    requested = int(delivery_result.get('requested', 0) or 0)
+    successful = int(delivery_result.get('successful', 0) or 0)
+    failed = int(delivery_result.get('failed', 0) or 0)
+    skipped = int(delivery_result.get('skipped', 0) or 0)
+    duplicate = int(delivery_result.get('duplicate', 0) or 0)
+    if requested == 0:
+        return 'No Delivery', 'unknown'
+    if failed:
+        return ('Delivery Failed', 'critical') if not successful else ('Partial Delivery', 'warning')
+    if skipped:
+        if duplicate >= requested:
+            return 'Already Delivered', 'normal'
+        return ('Partial Delivery', 'warning') if successful else ('Delivery Skipped', 'warning')
+    if successful:
+        return 'Delivered', 'normal'
+    return 'Delivery Pending', 'pending'
+
+
 def serialize_run(
     run: ReportScheduleRun,
     schedule_context_map: dict[int, dict[str, str]],
 ) -> dict[str, Any]:
     delivery_result = run.delivery_result or {}
-    requested = int(delivery_result.get('requested', 0) or 0)
     successful = int(delivery_result.get('successful', 0) or 0)
     failed = int(delivery_result.get('failed', 0) or 0)
     skipped = int(delivery_result.get('skipped', 0) or 0)
-    if requested == 0:
-        delivery_label = 'No Delivery'
-        delivery_tone = 'unknown'
-    elif failed:
-        delivery_label = 'Delivery Failed' if successful == 0 else 'Partial Delivery'
-        delivery_tone = 'critical' if successful == 0 else 'warning'
-    elif successful:
-        delivery_label = 'Delivered'
-        delivery_tone = 'normal'
-    else:
-        delivery_label = 'Delivery Pending'
-        delivery_tone = 'pending'
+    delivery_label, delivery_tone = present_delivery_result(delivery_result)
 
     duration = format_run_duration(run.started_at, run.finished_at)
     raw_snapshot = getattr(run, 'schedule_snapshot', None)
@@ -176,7 +190,7 @@ def serialize_run(
     return {
         'id': run.id,
         'schedule_id': run.schedule_id,
-        'schedule_name': schedule_context['name'],
+        'schedule_name': str(snapshot.get('name') or schedule_context['name']),
         'schedule_icon': schedule_context['icon'],
         'report_id': run.report_id,
         'job_execution_id': run.job_execution_id,
@@ -237,6 +251,9 @@ def schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'namespace': schedule.namespace or '',
         'object_storage_system_id': (
             schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else ''
+        ),
+        'registry_integration_id': (
+            schedule.scope_asset_id if schedule.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else ''
         ),
         'report_type': schedule.report_type,
         'period': schedule.period,

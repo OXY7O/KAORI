@@ -14,12 +14,13 @@
     <fieldset class="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
         <legend class="sr-only">{{ form.provider_key.label.text }}</legend>
         {% for definition in provider_options %}
+            {# Make the native radio the full-card hit target: Firefox must not depend on forwarding sibling-label clicks. #}
             <div class="relative min-w-0">
                 <input id="provider-key-{{ definition.provider_key }}"
                        type="radio"
                        name="{{ form.provider_key.name }}"
                        value="{{ definition.provider_key }}"
-                       class="peer sr-only"
+                       class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                        data-provider-option
                        data-provider-key="{{ definition.provider_key }}"
                        data-adapter-key="{{ definition.adapter_key }}"
@@ -28,7 +29,7 @@
                        data-configuration-profile="{{ definition.configuration_profile }}"
                        data-admission-policy="{{ definition.admission_policy }}"
                        data-provider-label="{{ definition.label }}"
-                       data-provider-icon="{{ definition.icon }}"
+                       data-provider-option-icon="{{ definition.icon }}"
                        data-enabled-copy="{{ definition.enabled_copy }}"
                        data-admission-label="{{ definition.admission_label }}"
                        data-admission-help="{{ definition.admission_help }}"
@@ -41,9 +42,10 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-secondary peer-checked:text-kaori-primary">
                             <i data-lucide="{{ definition.icon }}" class="h-5 w-5"></i>
                         </span>
-                        <span class="inline-flex items-center gap-1 rounded-md border border-outline-default bg-surface-card px-2 py-1 text-xs font-semibold text-content-muted peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary">
-                            <i data-lucide="check" class="h-3.5 w-3.5"></i>
-                            Select
+                        <span data-provider-option-badge
+                              class="inline-flex items-center gap-1 rounded-md border border-outline-default bg-surface-card px-2 py-1 text-xs font-semibold text-content-muted">
+                            <i data-lucide="check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            <span data-provider-option-status>Select</span>
                         </span>
                     </span>
                     <strong class="mt-4 text-sm font-semibold text-content-primary">{{ definition.label }}</strong>

@@ -29,7 +29,7 @@ def test_account_tabs_use_same_simple_navigation_contract_as_general() -> None:
         assert 'workspace_tabs.render_query_tabs(' in source
         assert 'role="tablist"' not in source
 
-    assert 'border-b border-outline-default bg-surface-subtle px-5 pt-4' in shared
+    assert 'border-b border-outline-default bg-surface-hover px-5 pt-4' in shared
     assert 'flex gap-2 overflow-x-auto' in shared
     assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'Account Profile & Access' in tabs
@@ -74,6 +74,24 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert 'Access Boundary' in profile
     assert 'table_label.status_indicator_label' in profile
     assert 'Read-Only Account View' in profile
+    assert "identity_context.identity_state == 'Local'" in profile
+    assert "identity_context.identity_state == 'Ready'" in profile
+    assert "table_label.metadata_label('Local Identity', 'database')" in profile
+    assert "table_label.status_indicator_label('Identity Linked', 'normal')" in profile
+    assert 'table_label.status_label(identity_context.identity_state, identity_context.identity_tone)' in profile
+    assert 'Provider Ready' not in profile
+    assert 'identity_context.provider_name != identity_context.type_label' in profile
+    assert 'RBAC permissions enforced after authentication.' in profile
+    assert 'Super Admin: Local Database only; separate from RBAC.' in profile
+    assert 'Password hashes and resets' in profile
+    assert "'Time zone: ' ~ current_timezone" in profile
+    assert "'Locale: ' ~ current_locale" in profile
+    assert 'Authentication Source' in profile
+    assert "current_user.last_auth_source == 'database'" in profile
+    assert 'Recorded Request IP' in profile
+    assert 'trusted reverse proxy or container-network address' in profile
+    assert 'bg-surface-subtle' not in profile
+    assert 'bg-kaori-soft/30' in profile
 
 
 def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -> None:
@@ -101,23 +119,76 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert '>Provider</th>' not in activity
     assert '>IP Address</th>' not in activity
     assert 'Access Granted' in activity
-    assert 'Sign-In Rejected' in activity
+    assert 'Sign-In Failed' in activity
     assert 'Session Ended' in activity
     assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
+    assert 'is_logout and is_success' in activity
+    assert "table_label.metadata_label('Recorded', 'check')" in activity
+    assert 'data-authentication-summary="compact-strip"' in activity
+    assert 'data-authentication-event-feed="primary"' in activity
+    assert 'Event Summary' in activity
+    assert 'Latest Events' in activity
+    assert 'Based on {{ activity_summary.total }} latest events (max 5), not full history' in activity
+    assert 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' in activity
+    assert 'bg-status-normal-soft text-status-normal-text' in activity
+    assert 'bg-status-critical-soft text-status-critical-text' in activity
+    assert 'bg-kaori-soft/50' not in activity
+    assert 'p-4 shadow-sm' not in activity
+    assert 'bg-kaori-soft/30' not in activity
+    assert 'Scroll horizontally to see all event details.' in activity
+    assert 'aria-label="Recent authentication events, newest first"' in activity
+    assert 'Counts from' not in activity
+    assert 'Showing ' in activity
+    assert 'max 5' in activity
     assert "table_label.status_indicator_label('Failed', 'critical')" in activity
     assert "category='access', search=current_user.username" in activity
 
     assert 'data-authentication-evidence-boundary="inline"' in activity
     assert 'Authentication Evidence' in activity
-    assert 'Identity & Source' in activity
-    assert 'Connection' in activity
-    assert 'Result & Time' in activity
-    assert 'Secrets are excluded' in activity
+    assert 'Event Summary' in activity
+    assert 'activity_summary.total' in activity
+    assert 'max 5' in activity
+    assert 'if activity_summary.failed' in activity
+    assert 'None in this sample' in activity
+    assert "table_label.status_indicator_label('Observed', 'critical')" in activity
+    assert "table_label.status_indicator_label('Review', 'critical')" not in activity
+    assert 'Sign-In Failed' in activity
+    assert 'Authentication did not complete' in activity
+    assert 'Credentials not accepted' not in activity
+    assert 'Recorded IP:' in activity
+    assert 'trusted proxy or container-network hop' in activity
+    assert "metadata.get('browser')" in activity
+    assert "metadata.get('device_type')" in activity
+    assert 'Identity & Source' not in activity
+    assert 'Result & Time' not in activity
+    assert 'Credentials and secrets are excluded' in activity
     assert 'Authentication Evidence Boundary' not in activity
     assert 'Recorded Evidence' not in activity
     assert 'Result Interpretation' not in activity
     assert 'Audit Privacy Boundary' not in activity
+
+
+def test_recent_authentication_activity_trails_with_right_aligned_result() -> None:
+    activity = read('app/templates/settings/account/partials/_recent_login_activity.html')
+
+    headers = (
+        '<th class="{{ table_ui.header_cell_classes() }}">Event</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Source</th>',
+        '<th class="{{ table_ui.header_cell_classes() }}">Context</th>',
+        '<th class="{{ table_ui.header_cell_classes(action=true) }}">Result</th>',
+    )
+    assert all(header in activity for header in headers)
+    assert list(map(activity.index, headers)) == sorted(map(activity.index, headers))
+
+    # Text-heavy context keeps normal reading direction; the trailing status badge is right aligned.
+    context_cell = '<td class="{{ table_ui.cell_classes() }} min-w-56">'
+    result_cell = '<td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">'
+    assert context_cell in activity
+    assert result_cell in activity
+    assert activity.index(context_cell) < activity.index(result_cell)
+    assert 'class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted"' in activity
+    assert '<span>{{ metadata.get("browser") or \'Browser unavailable\' }}' in activity
 
 
 def test_credential_workspace_keeps_action_left_and_security_context_right() -> None:
@@ -150,6 +221,41 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert 'Credential Owner' in context
     assert 'Password Policy' in context
     assert 'Session Handling' in context
+
+
+def test_provider_credential_guidance_reuses_local_visual_grammar_without_a_write_action() -> None:
+    credentials = read('app/templates/settings/account/partials/_change_password.html')
+    context = read('app/templates/settings/account/partials/_credential_information.html')
+    external = credentials.split('data-provider-credential-guidance="true"', 1)[1]
+
+    assert 'Provider Password & Recovery' in external
+    assert 'Password changes are managed by your identity provider, not KAORI.' in external
+    assert 'data-provider-credential-boundary="true"' in external
+    assert '{{ identity_context.credential_detail }}' in external
+    assert 'data-provider-password-guidance-panel="true"' in external
+    assert 'rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-4' in external
+    assert 'data-provider-password-guidance-list="true"' in external
+    assert 'sm:grid-cols-2' in external
+    assert 'Use provider recovery' in external
+    assert 'Contact IT support' in external
+    assert 'Sign in again' in external
+    assert 'Keep it private' in external
+    assert 'data-provider-password-safety-note="true"' in external
+    assert 'Password changes and recovery are unavailable in KAORI for this account.' in external
+    assert 'Credential Owner' not in external
+    assert '<form' not in external
+    assert 'data-local-password-action="true"' not in external
+    assert 'type="submit"' not in external
+    assert 'href=' not in external
+    assert 'Provider or IT Support' in context
+    assert 'Managed by KAORI' in context
+    assert 'Request Provider Recovery' in context
+    assert 'Verify With Provider' in context
+    assert 'Sign In to KAORI' in context
+    assert 'KAORI Applies Access' in context
+    assert 'KAORI audits observed sign-ins, not external password resets.' in context
+    provider_flow = context.split('{% else %}\n                    {% set flow_steps = [', 1)[1]
+    assert "'Record Audit Event'" not in provider_flow.split('{% endif %}', 1)[0]
 
 
 def test_credential_workspace_uses_natural_top_aligned_columns() -> None:

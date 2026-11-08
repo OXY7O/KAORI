@@ -42,6 +42,14 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
     assert 'Consumer Type' in modal
     assert 'Resolved Consumer Profile' in modal
     assert 'Create Binding' in modal
+    assert 'max-w-5xl' in modal
+    assert 'Choose the consumer, set preference and identity, then validate binding eligibility.' in modal
+    assert (
+        'This binding is asset-scoped. Role and priority set preference without bypassing readiness or validation.'
+        in modal
+    )
+    assert 'Saving creates Validation Required evidence. Validate the binding before it becomes eligible.' in modal
+    assert 'w-[min(46rem,calc(100vw-2rem))]' not in modal
 
     for source in (prom_scope, alert_scope):
         assert 'Add Binding' in source
@@ -75,8 +83,15 @@ def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutati
     for marker in ('Source', 'Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in shared_inventory
 
-    assert '_asset_owner_observability_sources.html' in kubernetes_lifecycle
-    assert 'asset_owner_sources.render(' in kubernetes_lifecycle
+    kubernetes_binding_registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+    )
+    assert (
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+        in kubernetes_lifecycle
+    )
+    assert '_asset_owner_observability_sources.html' in kubernetes_binding_registry
+    assert 'asset_owner_sources.render(' in kubernetes_binding_registry
     assert '_asset_owner_observability_sources.html' in minio_binding_registry
     assert 'asset_owner_sources.render(' in minio_binding_registry
     assert 'integrations/storage/object_storage/providers/minio/partials/_binding_registry.html' in minio_lifecycle
@@ -170,3 +185,43 @@ def test_binding_actions_keep_canonical_single_line_geometry() -> None:
     assert 'flex shrink-0 items-center justify-end gap-2' in modal
     assert 'shrink-0 items-center justify-center whitespace-nowrap' in modal
     assert 'gap-2 whitespace-nowrap rounded-lg bg-kaori-primary' in modal
+
+
+def test_source_binding_actions_use_shared_semantic_buttons() -> None:
+    workspace = read('app/templates/integrations/bindings/partials/_workspace.html')
+
+    assert 'components/action_button.html' in workspace
+    assert workspace.count("action_button.classes('primary')") == 2
+    assert workspace.count("action_button.classes('secondary')") == 3
+
+    # Each visible branch keeps the approved action intent, not a copied Violet bundle.
+    for action in (
+        'Review Binding',
+        'Register New Connection',
+        'Bind Existing Source',
+        'Review {{ provider.label }} Registry',
+        'Register {{ provider.label }} Connection',
+    ):
+        assert action in workspace
+    assert 'class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary' not in workspace
+    assert 'class="inline-flex min-h-9 items-center justify-center' not in workspace
+    assert 'class="mt-4 inline-flex min-h-10' not in workspace
+
+    # Mutation remains a single protected binding POST with the same isolation fields.
+    assert workspace.count('<form method="post"') == 1
+    assert 'hx-post="{{ url_for(provider.bind_endpoint, scope_key=cluster.id) }}"' in workspace
+    for name in (
+        'csrf_token',
+        'scope_type',
+        'scope_key',
+        'binding_role',
+        'priority',
+        'selector_operator',
+        'source_id',
+        'selector_label',
+        'selector_value',
+    ):
+        assert f'name="{name}"' in workspace
+    assert 'scope_row and scope_row.source' in workspace
+    assert 'elif selectable_source_count' in workspace
+    assert 'elif source_options' in workspace

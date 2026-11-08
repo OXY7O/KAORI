@@ -77,11 +77,12 @@ def test_reports_section_headings_use_canonical_icons() -> None:
     overview = read('app/templates/reports/overview/partials/_reporting_estate_capability.html')
     schedules = read('app/templates/reports/schedules/index.html')
 
-    contracts = overview.split('id="contracts-automation-title"', 1)[0][-1200:]
-    assert 'data-lucide="workflow"' in contracts
-    assert 'table_ui.block_icon_classes()' in contracts
-    assert 'data-lucide="workflow" class="h-5 w-5"' in contracts
-    assert 'flex min-w-0 items-start gap-3' in contracts
+    assert 'data-output-contract="true"' in overview
+    contracts = overview.split('data-output-contract="true"', 1)[1].split('</article>', 1)[0]
+    assert 'data-lucide="file-check-2"' in contracts
+    assert 'bg-surface-card text-kaori-primary' in contracts
+    assert 'flex items-start gap-3' in contracts
+    assert 'Published formats stay family-owned;' in contracts
 
     registry = schedules.split('aria-label="Schedule Registry"', 1)[1].split('schedule-registry-loading', 1)[0]
     assert 'data-lucide="calendar-clock"' in registry

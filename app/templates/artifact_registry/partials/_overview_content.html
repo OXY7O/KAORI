@@ -1,0 +1,38 @@
+{% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+{% import "components/operational_section_loading.html" as section_loading %}
+{% set dashboard_query = 'provider_id=' ~ (overview.selected_provider_id or '') ~ '&provider_health_page=' ~ overview.provider_health_pagination.page ~ '&provider_health_per_page=' ~ overview.provider_health_pagination.per_page %}
+<div class="space-y-5">
+    {% include "artifact_registry/partials/_overview_hero.html" %}
+    {% if overview.setup.is_blocked %}
+        {% include "artifact_registry/components/_setup_blocker.html" %}
+    {% else %}
+        {% call dashboard_workspace.controller(
+            overview.active_tab,
+            'artifact-registry-dashboard',
+            input_id='artifact-registry-dashboard-active-tab'
+            ) %}
+            {% include "artifact_registry/partials/_overview_signal_overview.html" %}
+            <div class="mt-5 space-y-5">
+                {{ dashboard_workspace.navigation('artifact-registry-dashboard',
+                                'Artifact Registry Overview Sections') }}
+                {% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}
+                    {% call dashboard_workspace.panel(
+                        tab_key,
+                        overview.active_tab,
+                        'artifact-registry-dashboard'
+                        ) %}
+                        <div id="artifact-registry-dashboard-section-{{ tab_key }}"
+                             hx-get="{{ url_for('artifact_registry.overview_section', section=tab_key) }}?{{ dashboard_query }}"
+                             hx-trigger="revealed"
+                             hx-target="this"
+                             hx-swap="outerHTML">
+                            {{ section_loading.section(tab_label,
+                                                        'Preparing committed Artifact Registry dashboard evidence.',
+                                                        tab_icon) }}
+                        </div>
+                    {% endcall %}
+                {% endfor %}
+            </div>
+        {% endcall %}
+    {% endif %}
+</div>

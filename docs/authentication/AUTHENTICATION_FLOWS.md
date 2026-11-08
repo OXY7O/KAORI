@@ -7,10 +7,10 @@ flowchart TD
     A[POST Username and Password] --> B[CSRF and Rate Limit]
     B --> C[Credential Orchestrator]
     C --> D[Local Database Provider]
-    D --> E{Local Identity Exists?}
-    E -- Valid --> F[Normalized Success]
-    E -- Exists but Rejected --> G[Stop: Local Authority]
-    E -- No Local Identity --> H[Enabled LDAP Links]
+    D --> E{Local Database Identity Claims Username?}
+    E -- Valid Local Credentials --> F[Normalized Success]
+    E -- Local Identity Rejected --> G[Stop: Local Authority]
+    E -- External Projection or No Local Identity --> H[Enabled LDAP Links]
     H --> I[LDAP User Bind]
     I --> J{Outcome}
     J -- Valid --> F
@@ -22,7 +22,7 @@ flowchart TD
     O --> P[Redirect to Welcome]
 ```
 
-The Local Database provider is evaluated first. LDAP is attempted only when no active Local Database identity claims the submitted username. This prevents a same-name external identity from bypassing local password authority.
+The Local Database provider is evaluated first. A failed Local Database login stops credential dispatch when the account belongs to the Local Database; a provisioned external identity may continue to its enabled LDAP link even though its KAORI user row exists. LDAP never replaces Local Database password authority, and database outages fail closed.
 
 LDAP authentication is link-based. KAORI loads enabled LDAP identity links case-insensitively and attempts them deterministically. `invalidCredentials` remains a credential rejection; connection, TLS, and operational bind failures become `provider_unavailable`.
 

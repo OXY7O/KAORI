@@ -11,7 +11,7 @@
 ] %}
 {% set evidence_items = [
     ("server", "brand", "Alertmanager API Endpoint", instance.endpoint, "Base API endpoint queried by KAORI."),
-    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for this source."),
+    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Defines whether KAORI verifies the source TLS certificate before trusted API access."),
     ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer selectors."),
     ("siren", "success" if instance.enabled else "warning", "Alerting Authority", deployment_label if instance.enabled else "Source Disabled", "Alertmanager owns alert routing and delivery; bindings only scope consumer use.")
 ] %}

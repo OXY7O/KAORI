@@ -5,19 +5,26 @@
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% set alert_filters_active = alert_table and (alert_table.search or alert_table.severity != 'all' or alert_table.state != 'all') %}
 <section id="object-storage-alert-records"
+         data-analytics-lazy-section="true"
+         data-analytics-load-state="idle"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Automatic prefers Alertmanager for receiver, silence, and inhibition lifecycle data; Metrics Source ALERTS provides narrower rule-state evidence.
-                </p>
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="bell-ring" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
+                        {% if alert_table %}{{ table_label.result_count(alert_table.pagination.total_items) }}{% endif %}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted xl:whitespace-nowrap">
+                        Review provider alerts; Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.
+                    </p>
+                </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.status_label(alert_source.label, alert_source.tone) }}
-                {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
-                {% if alert_table %}{{ table_label.metadata_label(alert_table.pagination.total_items ~ ' Alerts', 'bell-ring', size='compact') }}{% endif %}
                 {% if alert_filters_active %}
                     {{ registry_ui.clear_filters_action(url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') ,
                     table_ui.action_classes() ~ ' h-9 px-3',
@@ -27,6 +34,8 @@
                     sync='#object-storage-alert-records:replace'
                     ) }}
                 {% endif %}
+                {{ table_label.status_label(alert_source.label, alert_source.tone) }}
+                {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
             </div>
         </div>
         {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Provider Alerts') }}

@@ -30,7 +30,8 @@
         "Manage reusable Kubernetes API connections and their downstream consumer bindings.",
         "database-zap",
         "kubernetes-registry-loading",
-        action_html=registry_clear_action) }}
+        action_html=registry_clear_action,
+        result_count=pagination.total_items) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         <form method="get"

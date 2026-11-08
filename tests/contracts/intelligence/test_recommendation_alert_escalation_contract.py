@@ -115,7 +115,7 @@ def test_alert_case_workspace_exposes_only_kaori_recommendation_cases() -> None:
 
     assert "_VALID_SOURCE_TYPES = {'all', 'recommendation'}" in service
     assert "AlertCase.source_type == 'recommendation'" in service
-    assert "row.source_state in {'firing', 'unknown'}" in service
+    assert 'if is_active_alert_case(row)' in service
     assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
     for template in (active, history):
         assert 'Provider Alerts' not in template
@@ -136,3 +136,20 @@ def test_recommendations_can_filter_large_finding_sets_by_alert_handling() -> No
     assert 'filter_include_alert_handling = true' in workspace
     assert 'name="alert_handling"' in filters
     assert 'All Alert Handling' in service
+
+
+def test_registry_recommendation_alerts_use_registry_instance_source_lifecycle() -> None:
+    recommendation_source = read('app/intelligence/alert_intelligence/recommendation_source.py')
+    support = read('app/intelligence/alert_intelligence/recommendation_source_support.py')
+
+    assert "'registry': 'registry_instance'" in recommendation_source
+    assert "if normalized_domain == 'registry':" in recommendation_source
+    assert "identity.integration_type != 'registry'" in recommendation_source
+    assert "str(identity.lifecycle_status or '').lower() != 'active'" in recommendation_source
+    assert "str(identity.readiness_status or '').lower() == 'blocked'" in recommendation_source
+    assert "evidence.get('registry_instance_id')" in recommendation_source
+
+    assert "evidence.get('registry_instance_id')" in support
+    assert "evidence.get('registry_instance_name')" in support
+    assert "if domain == 'registry' and asset_key != 'unknown':" in support
+    assert "identity.integration_type == 'registry'" in support

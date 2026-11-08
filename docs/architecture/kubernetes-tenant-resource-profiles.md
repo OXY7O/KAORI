@@ -1,0 +1,1405 @@
+# Tenant Resource Profiles and Namespace Provisioning
+
+Issue #113 owns the first managed Tenant mutation slice: administrator-driven namespace creation plus ResourceQuota and LimitRange intent/evidence. Fast Track review #777 extends the Resource Profile operator-control contract without reopening the completed #113 baseline.
+
+## Ownership boundary
+
+- Tenant Management owns committed tenancy intent, Resource Profile assignment, provisioning state, and reconciliation evidence.
+- Kubernetes Inventory remains observational authority for collected namespace/resource state.
+- This slice implements only the Native Kubernetes namespace/quota/limit baseline needed by #113.
+- #120 remains authority for the broader Native Kubernetes Tenant capability/enforcement contract.
+- #654 owns Tenant Allocation Budget arithmetic, aggregate commitment, capacity state, and allocation allow/block decisions.
+- The original #113 baseline remains Native Kubernetes. Later bounded authorities #771 and #773 extend the same allocation lifecycle to admitted Capsule GlobalResourceQuota and legacy Tenant.spec.resourceQuotas paths without changing #113 ownership.
+
+## Resource Profile contract
+
+KAORI exposes five operator-facing Resource Profile classes:
+
+- **Small** (`small`) — built-in, KAORI-owned, versioned, and fixed.
+- **Medium** (`standard`) — built-in, KAORI-owned, versioned, and fixed. The persisted `standard` key is intentionally retained for backward compatibility.
+- **Large** (`large`) — built-in, KAORI-owned, versioned, and fixed.
+- **Extra Large** (`extra_large`) — built-in, KAORI-owned, versioned, and fixed.
+- **Custom** (`custom`) — operator-managed and editable within the supported validation contract.
+
+Built-in numeric values are server-authoritative; caller-supplied numeric overrides are ignored. Each supported quota or Container LimitRange dimension also has an explicit **Managed by KAORI** control. Checked means KAORI owns and materializes that dimension using the fixed preset value. Unchecked means the dimension is omitted from the committed profile/effective allocation and KAORI does not claim control over it.
+
+The managed-dimension selection is therefore an **ownership mask**, not an inline preset override. A built-in profile can control only the dimensions required by an operator while preserving stable preset semantics.
+
+When different numeric values are required, the operator must use a Custom profile. Custom may start empty or be **based on** Small, Medium, Large, or Extra Large. KAORI records the base preset class/version as lineage evidence while the resulting Custom values remain independently editable.
+
+Blank/null or unmanaged supported quota/LimitRange dimensions mean **KAORI does not configure that dimension**. Zero remains a distinct explicit value and must not be conflated with missing/unmanaged state.
+
+Supported baseline quota keys:
+
+- `requests.cpu`, `limits.cpu`
+- `requests.memory`, `limits.memory`
+- `pods`
+- `persistentvolumeclaims`
+- `requests.storage`
+- `services`
+- `configmaps`
+- `secrets`
+
+### Built-in preset values — version 1
+
+| Resource | Small | Medium | Large | Extra Large |
+| --- | ---: | ---: | ---: | ---: |
+| CPU requests | `1` | `2` | `4` | `8` |
+| CPU limits | `2` | `4` | `8` | `16` |
+| Memory requests | `2Gi` | `4Gi` | `8Gi` | `16Gi` |
+| Memory limits | `4Gi` | `8Gi` | `16Gi` | `32Gi` |
+| Pods | `10` | `20` | `40` | `80` |
+| PVCs | `5` | `10` | `20` | `40` |
+| Storage requests | `50Gi` | `100Gi` | `200Gi` | `400Gi` |
+| Services | `5` | `10` | `20` | `40` |
+| ConfigMaps | `25` | `50` | `100` | `200` |
+| Secrets | `25` | `50` | `100` | `200` |
+| Default CPU request | `100m` | `100m` | `250m` | `500m` |
+| Default CPU limit | `250m` | `500m` | `1` | `2` |
+| Default memory request | `128Mi` | `128Mi` | `256Mi` | `512Mi` |
+| Default memory limit | `256Mi` | `512Mi` | `1Gi` | `2Gi` |
+
+Changing these values is a governed product change and requires a new preset version. Existing namespace allocations do not silently inherit a later preset version.
+
+## Resource Profile control-state UX
+
+Resource Profile mutability is visible before an operator opens the detail dialog:
+
+- **KAORI Preset · Locked** — Small, Medium, Large, and Extra Large are code-owned/versioned baselines. Registry action is **View**. Numeric values are immutable; Managed toggles select the KAORI-owned subset.
+- **Custom · Editable** — operator-managed reusable allocation contract. Registry action is **Manage**.
+- **Adopted Baseline · Observed** remains allocation provenance, not a new built-in preset class. Provider observation is always the first step and records the live baseline without mutation.
+- Under **#777 managed adoption**, a new human-confirmed adoption proceeds from that observed baseline into a **provider-equivalent managed takeover** when every requested control has an admitted authoritative mutation path. KAORI materializes the observed values into committed profile/control state, writes the same effective values through that authority, and requires provider read-back before allocation control becomes **KAORI Managed**.
+- Native takeover keeps Namespace lifecycle ownership **Adopted** while allocation control becomes `kaori_managed`; these two ownership dimensions remain independently auditable.
+- Capsule takeover preserves mixed authority. Admitted shared allocation can become KAORI Managed, while Capsule-generated per-Namespace policy without an approved source-write contract is committed as `provider_mirrored_policy` and refreshed from provider authority.
+- Unsupported dimensions, conflicting quota owners, ambiguous authority, stale evidence, or missing capability fail adoption closed instead of leaving a partially managed takeover.
+
+Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
+
+### Create Resource Profile: compact progressive-disclosure layout (#777)
+
+The **Create Resource Profile** form starts with **Identity & Lineage**
+visible. The four field groups—**Basic Resources**, **Storage Guardrails**,
+**Object Limits**, and **Container Defaults**—are native, keyboard-accessible
+`details/summary` disclosures and all start **collapsed**. Their concise
+headings, scope descriptions and chevrons are visible before expansion.
+The existing Advanced Controls editor retains its separate collapsed
+disclosure behavior, matching the established KAORI pattern.
+
+Scope and effect information from existing Info Tips remains within each
+expanded group (outside the `summary` trigger), avoiding nested interactive
+controls inside the disclosure summary. Each closed group still contains the
+original resource inputs, `data-tenant-resource-field-wrap` bindings, **Managed**
+checkboxes, and quota/LimitRange values as descendants of the same POST form.
+Collapsing a group is *presentation only*: it never disables, clears, or omits
+a governed dimension. The existing preset-to-Custom script still discovers
+all fields, applies canonical preset values and the managed-dimension mask,
+and preserves the `control_contract_present` submission contract.
+
+No new JavaScript or CSS, alternate control taxonomy, data model, resource
+budget calculation, provider operation or validation gate is introduced.
+DevContainer Visual QA must confirm initial collapsed state, expand/collapse
+by pointer and keyboard, switching Medium/Custom while groups are closed,
+Managed toggles after expansion, responsive light/dark appearance, and
+Create submission. CI/CD remains HOLD pending explicit user approval.
+
+### Resource Profile Registry identity density (#1035)
+
+The Resource Profile Registry is a compact, fixed-column, server-rendered list for
+scanning profile contracts, allocations, references and lifecycle actions.
+It shows a **display-only concise profile identity**, not the full description:
+an `Adopted ` naming prefix becomes the small `Adopted baseline` supporting
+label, and a terminal UUID after ` · ` is abbreviated to its first eight
+characters. Other profile titles are capped at 44 visible characters using the
+existing Jinja truncate presentation rule. The registry also shows the stable
+local profile number (`#id`) to distinguish otherwise similar shortened titles.
+
+**The canonical `profile.name` and `profile.description` are unchanged.**
+Profile search still uses the original data. The existing **Manage** dialog is
+the full-detail authority: its title displays the full profile name, and a
+wrapping Description section displays the complete committed description for
+Custom and built-in profiles alike. Editable Custom form fields and built-in
+hidden values still carry their original names/descriptions. No provider,
+admission, quota or persistence code is changed.
+
+The shared table title cell, five-row default, filters, pagination, status
+labels, current action authorization and `data-kaori-native-dialog` behaviors
+remain untouched. Visual QA must check long adopted names, duplicate-looking
+short names, dark/light, mobile overflow and keyboard Manage accessibility.
+
+
+
+### Namespace Provisioning Registry: readable profile display (#1035 follow-up)
+
+DevContainer feedback identified dense adopted Resource Profile names and
+three stacked authority lines in the Namespace Provisioning Registry. The
+current review-branch implementation already has the approved Namespace
+Registry five-column layout and **View More** native dialog; an older
+five-column screenshot with separate Provider/State columns must not
+override that implementation.
+
+The registry now reuses the existing Resource Profile Registry display-only
+contract: hide the leading `Adopted `, show `Baseline N` instead of
+`Baseline · N`, abbreviate a terminal full UUID suffix to eight characters,
+and bound the visible profile text to 42 characters. The untouched canonical
+name stays in the cell `title` and inside the read-only View More modal.
+The secondary row displays committed snapshot version and provider together
+with a shared KAORI metadata label for the existing control state. Absence
+of a pinned version is shown as **No pinned snapshot**, never `v—`.
+Provider-mirrored, awaiting-takeover, unavailable and KAORI-managed states
+remain distinct; the original code and provider authority are not changed.
+
+The Namespace, Tenant/Environment, Allocation, State and Details fixed-column
+layout, HTMX filters, five-row pagination, frozen quota values, full
+reconciliation message and modal traceability remain unchanged. No new
+provider request, mutation, backend interpretation, taxonomy or JS component
+is introduced. DevContainer Visual QA is still required for long Native and
+Capsule profile names, released records, missing snapshot version, responsive
+overflow, light/dark styling and duplicate Namespace identities. CI/CD,
+Full Admission, staging/UAT and main promotion remain on HOLD.
+
+### Namespace Provisioning Registry row hierarchy (#1035 follow-up)
+
+A further DevContainer screenshot showed an older five-column registry with
+separate Resource Profile and Provider columns, unbounded adopted names and
+truncated reconciliation messages. The authoritative review-branch partial
+already renders a newer **Namespace / Tenant-Environment / Allocation / State /
+Details** table and a read-only committed evidence dialog. Do not reintroduce
+the old Provider column or duplicate its detail workflow.
+
+The current registry uses a predictable two-level row pattern. **Namespace**
+shows the full-on-hover identity, compact **Managed/Adopted ownership label**
+and committed generation (important for duplicate namespace history).
+**Tenant / Environment** preserves the tenant identity and environment.
+**Allocation** uses the previously approved short display-only profile name,
+and a single subdued `Snapshot vN / No pinned snapshot · Provider` line.
+**State** contains the authoritative provisioning status badge plus an
+optional compact `Control: ...` line derived from existing committed
+allocation-control evidence. Control is **not** treated as readiness or provider
+health. Full provenance and reconciliation text stay in the View More native
+dialog, whose read-only frozen allocation values remain authoritative.
+
+The fixed-layout table retains its existing `min-w-[1080px]` responsive
+scroll with proportions **25% / 18% / 32% / 15% / 10%**. The minimum Details
+column width still preserves the View More action; long names truncate
+visually with full `title` attributes. HTMX filter/search, default-five
+pagination, empty/error/loading conventions, native dialog, and light/dark
+tokens stay the same. No new backend model, arithmetic, provider call,
+mutation or component taxonomy is introduced.
+
+Review must verify Managed/Adopted, Ready/Released/Failed, Native/Capsule,
+missing snapshots, repeated namespaces across generations, long profile names
+and responsive desktop/mobile presentation. Verify the local DevContainer
+checkout actually points to `kaori/review/staging-uat` before comparing with
+screenshots. Runtime pytest/Jinja rendering and human Visual QA are pending;
+CI/CD, Full Admission, UAT deployment and main promotion remain HOLD.
+
+### Namespace Registry: compact row and committed evidence detail (#1035)
+
+Following human DevContainer review, the Namespace Registry retains the
+existing KAORI server-rendered fixed-width table, HTMX Tenant/Environment/State
+filters and search, five-row default pagination, empty/loading contracts and
+Violet light/dark patterns. The row is organized around **Namespace (23%)**,
+**Tenant / Environment (20%)**, **Allocation (33%)**, **State (14%)**, and
+**Details (10%)**. The Namespace cell identifies ownership and record
+generation; Allocation shows a concise profile title, pinned snapshot version,
+provider and control-state line. The state cell shows the canonical
+provisioning badge without truncating reconciliation explanation in the table.
+
+A single **View More** action opens a keyboard-accessible native KAORI dialog,
+uniquely identified by committed Namespace record ID (not Namespace name).
+The read-only detail workspace groups full Namespace/Tenant identity,
+ownership, Native/Capsule provider reconciliation authority, provisioning
+state, full profile/provenance and committed snapshot version. **CPU requests,
+CPU limits, memory requests, memory limits, Pod slots, and logical storage**
+use the Namespace's **frozen `allocation_quota_json`**, never the mutable
+reusable Resource Profile and never a fresh live provider query. These are
+ResourceQuota values, including adopted Native provider baseline limits;
+the optional **Container Defaults** disclosure separately reads committed
+LimitRange defaults. Missing dimensions are **Not declared**, never invented
+zero, and an absent CPU/memory request is not inferred from a declared limit.
+The optional native disclosure shows committed PVC min/max and Container
+LimitRange defaults when present;
+full provider reconciliation messages, last-reconciled evidence and
+Native-adopted / Capsule-provider-mirrored distinctions remain readable.
+
+After additional DevContainer visual feedback, the modal body follows one
+compact, left-aligned reading order: **Status / Ownership / Provider / Authority**
+in a single evidence strip; **Committed Allocation** as six consistently
+labelled frozen values in a two-column mobile / three-column wider layout;
+**Source Profile / Effective Snapshot** within that
+allocation section; then the full **Reconciliation** message as an understated
+left-accented text block. Optional PVC/LimitRange controls stay collapsed
+below the operational facts. Removing redundant nested cards and repeated
+descriptive copy reduces visual noise without changing evidence authority.
+
+Reconciliation text uses `whitespace-pre-line`, with the Jinja expression on
+the same source line as its paragraph. Earlier `whitespace-pre-wrap` preserved
+template indentation as visible leading spaces and made messages appear
+off-centre even though the dialog root was `text-left`. The change preserves
+intentional multiline evidence while collapsing HTML indentation. The status
+and the full provider message are **not** rewritten, truncated or inferred.
+
+The nested native dialog explicitly resets inherited table Action-cell
+`text-right` with `text-left` on modal root/body, consistent with the
+accepted #1053 alignment correction. Details offer no provider mutation,
+approval or automatic sync action. Authority, mixed Capsule ownership,
+adopted-but-observed provenance, and released history are not collapsed into
+a new inferred status. No schema, backend read model, quota arithmetic,
+HTMX endpoint, profile version, or provider behavior changes.
+
+DevContainer Visual QA must verify long and duplicate Namespace names,
+distinct record generations, managed versus adopted/observed/mirrored rows,
+Released/Failed/Ready states, incomplete quota evidence, keyboard/focus,
+mobile overflow, light/dark mode, and filter/pagination modal lifecycle.
+CI/CD and Full Admission remain HOLD until explicitly requested.
+
+### Resource Profile Registry and Manage workspace review (#1035, #775)
+
+The registry retains the approved KAORI five-row HTMX inventory table and the
+bounded fixed-column contract. The requested columns are balanced as
+**Profile 29% / Contract 21% / Allocation 26% / Usage 15% / Action 9%**;
+this reserves action width while preventing editable/state badges and governed
+quota evidence from colliding. The Contract column shows only the semantic
+Class and Enabled/Disabled labels; the editability and version remain plain
+supporting metadata rather than a third prominent badge.
+
+Allocation is a **two-column, four-dimension evidence grid** (CPU, memory, Pod,
+logical storage) with explicit labels and visible `Not Managed` values. It
+never truncates a compound quota string in a narrow cell, substitutes zero for
+missing authority, or changes the committed resource data. The Usage column
+shows Namespace and Capacity Decision counts plus any pending rollout warning.
+The full canonical profile name and description remain in the Manage detail
+workspace, not in the compact registry.
+
+The Resource Profile **Manage dialog is a configuration workflow**, not an
+overflowing dump of forms. Its reading sequence is:
+1. concise header distinguishing editable Custom versus immutable built-in
+   preset semantics, with safe close behavior;
+2. full committed profile identity and complete multi-line description;
+3. compact class/version/dependency evidence strip;
+4. primary configuration (Identity & State for Custom and Basic Resources for
+   both classes); then keyboard-accessible native disclosure controls for
+   Storage Guardrails, Object Limits and Container Defaults;
+5. existing Advanced Controls form grouped by its established sub-sections;
+6. separate Tenant-scoped Attached Namespace Rollout with explicit target
+   selector, provider eligibility, and expandable per-Namespace admission/read-back
+   explanation;
+7. shared sticky-safe action footer preserving Save New Version / Save Changes,
+   Close, and governed Delete eligibility.
+
+Custom Description is a full-width multi-line form control (`profile_description`)
+without modifying the POST field contract. Built-in preset name and description
+remain committed hidden form values, not editable visual form fields. Optional
+disclosures remain normal HTML form descendants so existing submitted control
+ownership masks and provider/rollout gates remain authoritative. Rollout is a
+separate POST from Save New Version and never silently mutates existing Namespace
+snapshots. No new JS, design tokens, data model, admission arithmetic or provider
+write path is introduced.
+
+### Resource Profile Manage: concise evidence and governance copy (#1035)
+
+Following DevContainer review, the Manage header shows an explicit existing
+semantic **Editable** or **Versioned Controls** label beside the title. Profile
+lineage is a shared metadata label (for example, **Independent Custom ·
+Operator-managed values**), not a free-floating explanatory sentence. The
+scattered four-value strip is grouped as **Contract** (Class, Version) and
+**Usage** (Namespace References, Capacity Decisions), with responsive
+two-column groups and no new card taxonomy.
+
+The historically stored governance-cutover description remains authoritative
+but is summarized in the identity display as **"Adopted baseline profile; no
+provider value changes requested."** The canonical full description remains
+available in the existing Custom edit field and is not mutated by rendering.
+
+Two other operational notes are compressed without changing their scope:
+**"Each Namespace is admitted, applied, and verified separately. Blocked
+Namespaces retain their prior committed version."** and **"Existing Namespace
+allocations stay unchanged; edits affect future allocations until explicitly
+applied."** These messages do not imply that saving a profile silently changes
+Namespace snapshots, or that a blocked rollout replaces a committed version.
+
+Local DevContainer Visual QA must cover the registry at desktop/mobile widths,
+unmanaged quota dimensions, long adopted profile names, Custom editing and
+preset governance disclosures, long descriptions, keyboard/focus, dark/light,
+and Native/Capsule rollout eligibility. This candidate is **not** CI/CD or
+Full Admission approval; maintain the existing HOLD.
+
+**Adopted Native Cutover presentation (#1669):** Retain the original
+provider-observed authority, explicit supported/blocked selectors and
+`cutover_namespace_allocation_route`. The read-only preflight now uses the
+approved Allocation Change layout: two quiet **Observed Baseline / Proposed
+Governed Contract** panels with frozen-versus-versioned ResourceQuota
+Requests/Limits, Pods, logical storage and per-PVC bounds, followed by three
+prioritized **Change Highlights** and the total count of other committed
+dimensions. This presentation never creates governance ownership or writes
+Kubernetes resources by itself; the original capacity, UID/resourceVersion,
+ownership and read-back checks remain mandatory before **KAORI Managed**.
+Preset definitions stay locked, Custom profiles reusable, and the explicit
+adopted baseline remains an option.
+
+## Managed adoption and legacy allocation governance cutover
+
+#777 supersedes evidence-only onboarding for new managed adoptions. The explicit human **Adopt & Manage** submission is the governance boundary: live state is re-read, capacity/authority checks run, equivalent provider values are written only through the admitted authority, and read-back must succeed before KAORI commits managed allocation control.
+
+Existing Adopted / Observed records created under the earlier #768 contract remain valid historical state. #769's explicit Allocation Governance Cutover remains the compatibility path for those records:
+
+```text
+Namespace lifecycle ownership: Adopted
+Allocation control: Adopted / Observed → KAORI Managed
+```
+
+Neither managed adoption nor legacy cutover relabels an adopted Namespace as KAORI-created or transfers Namespace deletion/lifecycle ownership. They authorize KAORI to govern only the admitted allocation controls.
+
+For the Native Kubernetes managed-takeover/cutover path, KAORI:
+
+1. reads fresh provider allocation plus UID/resourceVersion evidence;
+2. materializes or selects the intended Resource Profile while preserving observed lineage;
+3. runs the existing #654 capacity admission;
+4. rejects stale or ambiguous provider evidence before the first write;
+5. verifies authoritative ResourceQuota / LimitRange ownership;
+6. writes only the admitted allocation resources, preserving equivalent effective values during adoption;
+7. reads back the effective allocation;
+8. marks `allocation_control_state=kaori_managed` only when provider read-back semantically matches the committed contract.
+
+Multiple legacy sources, unsupported LimitRange constraints, foreign controller ownership, stale UID/resourceVersion evidence, or ambiguous authority remain **Control Unavailable** and fail managed adoption/cutover closed.
+
+After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
+
+**Dual-plane Kubernetes capacity governance (#1681):** KAORI keeps
+**Request Commitment** as the exclusive Kubernetes scheduling-capacity
+admission basis (CPU/memory requests, Pods, logical storage) while calculating
+an independent **Limit Exposure** view from frozen `limits.cpu` and
+`limits.memory` in the same canonical active Namespace and authoritative
+Capsule shared quota sources. Shared Capsule ceilings count once per Tenant;
+ambiguous shared authority and undeclared/missing limits remain **Unknown**,
+never zero. Neither ResourceQuota limits nor Tenant profile ceilings represent
+actual node utilization, guaranteed burst capacity, or physical memory
+reservation. Live utilization continues through provider Analytics.
+
+An operator-configured per-cluster Limit Exposure policy stores:
+`limit_exposure_mode` (`observe` default or `enforce` explicitly selected),
+`cpu_limit_ratio` (**1.50× default**, range 1–4), and
+`memory_limit_ratio` (**1.00× default**, range 1–2). Thresholds multiply the
+*governed tenant budget after reserve, unmanaged and safety headroom*, not
+raw physical node capacity. Observe is read-only planning evidence and never
+changes existing admission. Enforce adds a fail-closed check for positive
+request changes or newly increased CPU/memory limits using fresh
+`analytics.capacity` and a provable post-change limit projection.
+Enforce blocks exceeded or unknown thresholds while preserving the original
+Request Commitment refusal if that gate already rejected. Native managed
+replacement removes the exact target before adding Proposed, while Capsule
+Tenant vs Namespace scopes use their original authoritative quota scaling.
+The committed decision audit records the policy mode and any enforced
+Limit Exposure assessment separately from Request Admission.
+
+The `20261013_limit_exposure` Alembic migration is source-only during
+review; runtime consumption must await explicit approved schema admission
+and local test/UAT. Existing policies receive Observe/1.50/1.00 server
+defaults. Operator rollout sequence is migration gate, evidence validation,
+Observe calibration, Human Acceptance and *optional* explicit Enforce
+selection; never silently enable Enforce on existing Tenants.
+
+**Atomic bounded Native allocation replacement (#1676):** An existing
+**KAORI Managed Native** Namespace with a previously adopted unbounded
+`requests.cpu`, `requests.memory`, or Pods commitment may select a bounded
+Resource Profile directly through the existing Allocation Change action,
+including when logical storage increases. This is an *admission-only*
+exception to the old cluster-wide unknown baseline calculation, not a
+provider or ownership shortcut. The original frozen Current contract remains
+unknown/unbounded in evidence; neither `ResourceQuota` Limits nor live
+utilization are substituted for Requests.
+
+The preflight reads the same canonical active Namespace scope as #654, and
+requires **exactly one matching active target record by ID and Namespace
+identity** in the selected cluster. It rejects duplicate active Namespace
+generations and target Tenant identities participating in Capsule shared or
+ambiguous quota authority. For the projected **post-replacement** capacity,
+KAORI aggregates all *other* active Namespace commitments and all authoritative
+shared Tenant commitments, preserving every unrelated unknown source and
+ambiguity, then adds the **selected versioned Proposed request vector exactly
+once**. Admission requires an existing policy, fresh usable committed
+`analytics.capacity` evidence, bounded all governed projected dimensions,
+no other ambiguous/unbounded allocation, and adequate CPU/Memory/Pod and
+logical storage budgets with the usual reserve and safety headroom. Unknown,
+stale, over-budget or unbounded Proposed projections are blocked *before*
+provider reconciliation. No unknown Current value is ever assumed to be zero.
+
+The committed `TenantCapacityDecision` retains original
+`allocation.committed_before` and `allocation.current` (including their
+Unknown fields) and records `allocation.atomic_replacement` with
+`target_namespace_id`, `other_committed`, `projection`, and the bounded
+post-change `allocation.projected_committed`. This mode is limited to
+positive changes in **managed Native Namespace** allocations, not to create,
+initial adoption, observed cutover, Capsule GRQ or Tenant CR. The existing
+provider authority/UID/resourceVersion checks, mutation ordering, read-back
+and last-verified committed contract remain fully mandatory. UAT must exercise
+Platform Small after the adopted baseline and negative cases for other
+unknown allocations, missing/duplicate target, shared authority, stale
+capacity, and storage-budget shortfall before human acceptance; CI/CD and
+promotion remain HOLD in review.
+
+**Native optional LimitRange recovery (#1163):** A managed Resource Profile with
+no Container Defaults and no Storage Guardrails has no active LimitRange.
+Provisioning intentionally omits/deletes it. On verified allocation reconcile,
+`managed_resource_names.limit_range` is recorded only when the resource is
+actually part of the new effective contract; prior history remains immutable.
+For older records carrying a stale name, Native Allocation Change may treat
+the LimitRange as intentionally absent **only** when (a) the committed frozen
+`allocation_limit_defaults_json` and `allocation_storage_policy_json`
+are both explicitly present and empty, (b) the live provider observation
+reports neither an effective LimitRange nor any LimitRange source, and (c)
+its effective hash equals the committed `effective_hash`. Missing hash,
+provider drift, unknown/foreign LimitRange, or a frozen policy requiring
+Container/PVC bounds remains **fail-closed**; this is not a blanket ignore
+of missing resources, and ResourceQuota/UID/RV/authority checks are unchanged.
+A pre-mutation verification refusal records `allocation_reconcile_failure`
+with `provider_mutation_may_have_started=false`, without incorrectly marking
+the Namespace as failed or replacing its last-successful reconcile timestamp.
+Post-mutation failure still sets the existing failure status. Validate the
+exact active Tenant generation/Namespace UID and committed/live evidence in
+DevContainer before any provider UAT write; source integration alone never
+reconfigures Kubernetes.
+
+**ResourceQuota and Advanced Control provenance (#1577 / #1590):**
+The approved contract includes CPU/Memory Requests and Limits, Pods,
+logical storage, per-PVC bounds, Object Limits, Container Defaults and
+Advanced Controls evaluation. CPU/memory requests remain committed capacity
+inputs; ResourceQuota limits are enforcement ceilings. Current quota and
+LimitRange values use only frozen Namespace allocation JSON and Proposed
+values use the selected versioned Resource Profile, never live provider
+reads or mutable current-profile values.
+
+Current Advanced Control evaluation displays as **Recorded** only when the
+source Resource Profile ID and version match the committed Namespace.
+Proposed **Supported** or **Unavailable** is capability preflight only.
+Missing or mismatched evidence is **Not recorded**. Neither evaluation
+establishes external **Applied** or **Verified** state without authoritative
+executor/read-back evidence (#1591). The #1590 disclosure, #1619 card layout and #1632 Contract Diff tabset
+are superseded by the #1645 calm dual comparison below; their approved
+data provenance, evidence boundaries and governance gates remain.
+
+**Allocation Change calm dual comparison (#1645, supersedes #1632 presentation):**
+Operator Visual UAT rejected the previous 16-row Full Contract default and
+repetitious box-per-metric cards. Restore **Current Contract | Proposed
+Contract** as the primary two-column comparison using semantic stat labels,
+restrained dividers and PVC bounds instead of nested cards. Current always
+reads frozen Namespace allocation JSON; Proposed always reads the selected,
+versioned Resource Profile, except for the explicit `adopted_baseline`
+selection that reads the current frozen contract. All six ResourceQuota
+values and PVC min/max remain visible together, including on narrow screens.
+
+**Section heading consistency (#1664):** Allocation Change uses the
+existing KAORI Violet semantic 9x9 icon surface on the page's peer
+**Change Target**, **Managed Contract Comparison**, **Technical Details**
+and **Governance Gates** headings. The nested **Change Highlights**
+subsection uses a smaller 8x8 accent, keeping the heading hierarchy
+clear. Icons are decorative and `aria-hidden`; heading text and
+description remain authoritative. This refines appearance only,
+retaining the two primary contract panels, read-only advanced
+comparison and governed action flow without extra metric cards.
+
+A single **Change Highlights** strip shows at most three material changes,
+prioritizing CPU Limit, Memory Limit and Total Storage, while the count includes
+all **16** ResourceQuota, PVC, Object Limit and LimitRange Default dimensions.
+No repeated eight-card change dashboard, and no implication that any direction
+means admission approval. If there are no changes, the counter reads `No changes`.
+Missing and unknown quantities are not treated as zero: absent governed quotas
+and PVC bounds are `Unbounded`; object limits and defaults are `Not declared`.
+
+**Technical Details** keeps one three-category read-only workspace
+(`Object Limits / Container Defaults / Advanced Controls`) instead of
+accordion tiles. The #1662 layout refinement corrects the narrow,
+centered technical table observed at desktop UAT: the workspace now uses
+available horizontal space and a compact **vertical category rail** beside
+one short Current/Proposed table; it stacks naturally on narrow screens.
+Selected category uses the existing KAORI Violet soft surface and border,
+without extra nested cards. The aligned three-column table has readable
+row spacing, subtle dividers and distinct **Current · Frozen** /
+**Proposed · Profile** headings. Proposed text gains restrained violet
+emphasis only where the committed and selected values differ, never implying
+admission, execution or provider read-back. All category tabs retain native
+button/tab-panel ARIA, now with vertical orientation and Up/Down alongside
+Left/Right/Home/End keyboard navigation. The same frozen evidence, empty
+state and light/dark tokens remain authoritative. Advanced Control
+states remain `Recorded` capability evaluation or `Supported`/
+`Unavailable` preflight, with no implied execution or verified read-back.
+Its no-controls state is a brief informative line. Current/proposed
+selection refreshes all visible values, change highlights and controls,
+without provider mutation or fresh provider reads.
+
+The earlier #1590 and #1619 layouts and #1632 Contract Diff tabset are
+historical designs; their approved evidence provenance and security rules
+remain. Backend admission, authoritative reconciliation and provider
+read-back remain separate governed actions, and executor audit #1591
+continues independently. The original three governance gates and submitted
+form route/permission controls are unchanged.
+
+**Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
+offers only `kaori_managed` Native Namespace allocations belonging to a
+`ready` Tenant and a non-terminal Namespace generation. Adopted / Observed
+Cutover retains its existing capability-gated Native/Capsule read-only
+eligibility explanation, but likewise excludes terminal Namespace generations
+and non-Ready parent Tenants. `released` and `deprovisioned` Namespace
+records are **historical evidence**, not actionable allocation targets;
+previously Released/Decommissioned Tenant generations never re-enter selectors
+even if a stale Namespace remains `ready`. The full Namespace registry and
+verified Release/Re-adopt provenance deliberately retain these original records
+and frozen snapshots. Identical display names are **not** deduplicated: each
+legitimate active Namespace remains keyed by its immutable record ID. Both
+Allocation Change and Cutover POSTs reject terminal record IDs before any
+provider operation, including stale forms. This restores #991/#1049 Release
+governance semantics without deleting history or changing quota/admission rules.
+
+Capsule remains authoritative and fail-closed. KAORI never substitutes Native ResourceQuota writes for Capsule-owned allocation. Admitted Capsule shared-allocation controls use the existing capability-gated provider executor; Capsule-generated per-Namespace Container/PVC policy stays `provider_mirrored_policy` until an approved Capsule source-write contract exists.
+
+Provider mutation or read-back failure never marks the allocation KAORI Managed. Failure evidence records the attempted contract and provider outcome so later sync/drift reconciliation can reason from committed evidence without pretending the transaction succeeded.
+
+## Managed allocation drift and bidirectional reconciliation
+
+Issue #770 owns out-of-band allocation drift after an allocation contract has become **KAORI Managed**. This is intentionally separate from Namespace provider-absence drift: the Namespace may still exist and be healthy while its ResourceQuota or Container LimitRange differs from committed KAORI intent.
+
+Tenant sync remains observation-only:
+
+```text
+KAORI Managed allocation
+→ live provider observation
+→ compare desired vs observed dimensions
+→ commit allocation_drift evidence
+→ Drifted
+```
+
+The drift evidence retains both sides of the decision:
+
+- the last committed KAORI quota/LimitRange intent and profile/version lineage;
+- the live provider quota/LimitRange snapshot and effective hash;
+- provider allocation source resources, including UID/resourceVersion evidence;
+- dimension-level differences;
+- ownership/authority findings and explicit blocked reasons.
+
+Sync never changes the provider and never changes KAORI desired intent merely because a difference is observed.
+
+### Reapply KAORI Intent
+
+**Reapply KAORI Intent** keeps the committed desired contract. Before mutation KAORI:
+
+1. re-reads the provider and requires the live hash to still match the committed drift observation;
+2. verifies allocation ownership/authority;
+3. evaluates capacity using the **current live provider allocation as the current state** and the committed KAORI allocation as the proposed state;
+4. performs the authoritative provider reconciliation;
+5. reads back the provider allocation;
+6. clears drift only after the effective provider state matches the committed KAORI contract.
+
+The provider is read again at mutation time so a change occurring after capacity preflight still fails closed.
+
+### Accept Provider State
+
+**Accept Provider State** treats the currently observed provider allocation as proposed new KAORI intent. KAORI re-reads the provider, rejects stale drift evidence, validates supported dimensions and ownership, runs capacity/policy admission, and then commits the observed allocation as the new desired/effective snapshot.
+
+Acceptance performs **no provider write merely to accept values that are already live**. The resulting evidence records `provenance=accepted_provider_state`, preserves allocation history, updates desired/effective hashes, and clears the drift evidence only after governance validation succeeds.
+
+Both actions require a committed `Drifted` Namespace state and a Tenant lifecycle state of `Ready`. Teardown/decommission states remain blocked.
+
+### Capsule shared allocation authority
+
+#771 extends the same human-controlled lifecycle to the admitted Capsule `GlobalResourceQuota` path without converting shared quota into per-Namespace quota.
+
+**Capsule allocation authority guidance (#1172, DevContainer review):** In
+Capsule Shared Allocation Governance, `Control Unavailable` means that a
+Tenant whose committed authority **is** `capsule_global_resource_quota` does
+not pass GRQ source/capability/version/identity gates. Other committed
+authorities are instead shown as **Not applicable here** in a neutral
+read-only guidance area, without implying an unhealthy Capsule Tenant:
+`capsule_tenant_resource_quotas` directs the operator to the existing
+Capsule Tenant Quota Governance section (which independently validates
+eligibility), while `none_observed`, `native_namespaced`, and ambiguous
+authority require review of existing Tenant Sync/provider observation.
+Observed GRQ source count is displayed from committed evidence. A missing
+GRQ source is not by itself evidence that the required `v1beta2` API is
+unserved; only a detected source with an unsupported served version receives
+that specific error. No UI recommendation creates a GlobalResourceQuota or
+authorizes provider mutation. Example operator evidence 2026-10-11 on
+`docker-desktop`: zero GRQ objects, CRD `v1beta2 served=true`,
+`kaori-demo` with `Tenant.spec.resourceQuotas.scope=Tenant`, and
+lowercase provider Tenant `singa` with no declared quota scope in the
+reported output. This is **operator evidence**, not automatic confirmation
+that KAORI's currently committed baseline is fresh; a Tenant Sync/review
+may be needed before labels reflect new observations.
+
+**KAORI-created Capsule Tenant without an initial quota (#1178):** The
+`create_tenant` flow uses the user-visible display name (for example,
+`Singa`) and a lowercase provider slug/reference (for example, `singa`).
+`create_capsule_tenant` initially provisions the authoritative Capsule Tenant
+CR with an owner identity but does not automatically write
+`Tenant.spec.resourceQuotas` or create a GlobalResourceQuota. Capsule may
+report the Tenant Active without a Tenant quota. When a **complete committed
+allocation observation** explicitly confirms neither a Tenant quota nor any
+GlobalResourceQuota source and its authority is `none_observed`, the Capsule
+Shared panel displays **No Tenant Quota Configured** as a *read-only
+operator posture*. If the baseline is absent or incomplete it retains an
+unknown/needs-sync explanation, never pretending an unverified resource is
+absent. Namespace-level constraints and other authorities retain their
+separate posture. Existing observed-authority cutover (#773) is not an
+initial-quota provisioning operation; implementing initial Capsule Tenant
+quota configuration requires a separately approved authority/admission,
+provider UID/resourceVersion/dry-run, read-back and committed evidence
+workstream. No quota is created by this status refinement.
+
+```text
+Adopted Capsule Tenant
+→ observed GlobalResourceQuota + capability evidence
+→ explicit shared-allocation cutover
+→ Tenant-level KAORI Managed allocation intent
+→ Tenant Sync observes GlobalResourceQuota
+→ Drifted when live quota differs
+→ {Reapply KAORI Intent | Accept Provider State}
+```
+
+The canonical shared contract is stored as a Tenant-level `TenantAdvancedCapabilityIntent` with `allocation_governance_scope=tenant_shared`. Capacity governance counts that shared quota exactly once for the Tenant and excludes its correlated Namespace allocation snapshots from commitment arithmetic while shared authority is active. This prevents a 4 CPU / 8 GiB Tenant quota from being counted once per Namespace.
+
+Cutover preserves the existing GlobalResourceQuota selectors and provider object identity, verifies UID/resourceVersion before mutation, changes only the governed quota contract, reuses the #124 capability-gated CustomObjects executor, and requires provider read-back before committing **KAORI Managed**.
+
+Tenant Sync remains observation-only. GlobalResourceQuota resourceVersion changes are valid drift evidence rather than an observation error; UID replacement, capability degradation, ambiguous ownership, or unsupported authority still fail closed. **Reapply KAORI Intent** performs fresh-provider and shared-capacity checks before Capsule mutation. **Accept Provider State** performs the same governance checks but makes no redundant provider write and records whether the accepted values are customized relative to the retained Resource Profile lineage.
+
+#771 does not admit `Tenant.spec.resourceQuotas`; #773 is the separate bounded authority for that legacy Capsule compatibility path. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
+
+**Capsule Allocation Governance UI parity (#1670):** The
+`GlobalResourceQuota` and `Tenant.spec.resourceQuotas` cutover paths
+use the approved Allocation Change visual grammar: an explicit target/profile
+selection, side-by-side **Observed Current / Proposed Governed** quota
+contracts, six headline quota dimensions (CPU/Memory Requests and Limits,
+Pods, logical storage) and a compact factual **Change Highlights** count.
+The Tenant CR workspace continues to present *two separate* governed forms:
+Adopted → KAORI Managed and Managed Allocation Change. The read-only table
+only compares provider-observed or committed authoritative quota values
+with selected Resource Profile intent; absence appears **Unbounded**, not
+zero or permission to write. The summary counts changed display dimensions
+and is not an admission/eligibility result. To preserve Current/Proposed
+vertical alignment (#1673), both sides of both Tenant CR comparisons use
+matching identity and secondary quota-summary slots ahead of the six-field
+ResourceQuota grid. The proposed managed-change summary is derived from the
+selected versioned profile; blank selection shows the same dash placeholder
+as Current. A minimum header height is a presentation aid only, never a
+data constraint or evidence substitute. The Native adopted-cutover footer
+uses shorter fail-closed text without changing admission or read-back.
+
+**Complete Capsule Tenant CR quota comparison (#2980; DevContainer UAT):**
+The six headline dimensions are *not* the entire authoritative quota contract.
+The Capsule Tenant CR adopted-cutover and managed-change comparisons now both
+reuse the canonical `_resource_profile_coverage_comparison.html::capsule_sections`
+and `components/view_more_content.html` disclosures for all ten ResourceQuota
+keys, separated into Basic Resources, Storage Guardrails and Object Limits;
+the same mapping applies to GlobalResourceQuota cutover. The underlying quota authority supports all **ten**
+ResourceQuota dimensions. A Managed toggle left unset is **Unbounded**,
+not zero; selection changes refresh both the headline grid and the
+technical rows without another provider read.
+
+**Change Highlights** compares all ten quota keys, never hardcodes six,
+reports a total count and at most three concise current → proposed deltas
+with a `+N more` indication. Only safe, understood Kubernetes numeric
+quantity forms are compared across equivalent units; unknown strings remain
+conservatively different, and bounded/unbounded transitions always remain
+visible. This is read-only preflight, not a capacity-admission result;
+backend approval, provider authority, ownership mask, API resourceVersion,
+mutation and verified read-back contracts are unchanged. No PVC LimitRange
+min/max or Container Defaults are claimed as Capsule Tenant quota-managed
+through this disclosure. Desktop/mobile, keyboard, light/dark and values
+removed by Managed toggles require human Visual QA before acceptance.
+
+These surfaces are **visually consistent, not functionally interchangeable**:
+GRQ ownership, applicable/non-applicable authority mismatch, source count
+and served API evidence remain visible under #771/#1172; Tenant CR scope,
+schema admission and external Namespace LimitRange constraints stay
+independent under #773. Each existing POST route, CSRF, eligibility gates,
+capacity admission, resourceVersion checks, authoritative Capsule write,
+read-back and audit contract remains unchanged. Neither form can substitute
+Native ResourceQuota mutation for Capsule authority.
+
+### Capsule Tenant resource-quota authority
+
+#773 admits an unambiguous Capsule `Tenant.spec.resourceQuotas` contract into the same canonical allocation lifecycle without merging it with GlobalResourceQuota authority.
+
+The path is capability-gated. KAORI requires a healthy Capsule authority, a supported served Tenant CR API version, and live CRD schema evidence that `spec.resourceQuotas` exists. A no-op server-side dry-run is used only on explicit human mutation/reconciliation actions to prove the admission path before the real write; normal Tenant Sync remains read-only.
+
+`resourceQuotas.scope` retains Capsule semantics:
+
+- `Tenant` is one shared allocation contract for capacity accounting and is counted once for the Tenant;
+- `Namespace` is a per-Namespace template and capacity accounting multiplies the governed request vector by the currently correlated Namespace count.
+
+KAORI never silently changes scope during normal allocation changes. A manual scope change becomes drift and requires an explicit **Reapply KAORI Intent** or **Accept Provider State** decision.
+
+For adopted legacy Tenants, the observed ordered `items` structure and hard-key ownership are preserved. Governed Resource Profile values update the supported `hard` dimensions in place. Non-hard quota semantics such as `scopes` / `scopeSelector`, unsupported quota keys, ambiguous duplicated dimensions, stale Tenant UID/resourceVersion evidence, or competing allocation authorities fail closed.
+
+Namespace-side constraints that are not the selected allocation authority remain external evidence. A Capsule-generated `LimitRange` with `type=PersistentVolumeClaim` is parsed as a known **PVC Storage Constraint** rather than an opaque unsupported type: KAORI preserves the Namespace, LimitRange provider identity, UID/resourceVersion, and supported `storage` min/max/default evidence when present. This mapping is observational only and does not merge PVC size policy into `Tenant.spec.resourceQuotas`, ResourceQuota PVC count, or total `requests.storage` authority. Cutover and later Tenant-quota changes never delete or rewrite that external LimitRange.
+
+The managed lifecycle is:
+
+```text
+Discovered
+→ Adopted / Observed
+→ explicit Tenant quota governance cutover
+→ KAORI Managed
+→ normal governed allocation changes through Tenant.spec.resourceQuotas
+→ Tenant Sync observes provider state
+→ Drifted on out-of-band change
+→ {Reapply KAORI Intent | Accept Provider State}
+```
+
+Cutover and normal KAORI-managed changes re-read the Tenant CR, reject stale UID/resourceVersion evidence, run #654 capacity admission, patch only `spec.resourceQuotas`, and require provider read-back before committing effective state.
+
+Tenant Sync performs no provider write. Drift evidence retains the last KAORI desired quota/scope, the current provider quota/scope, dimension-level differences, provider UID/resourceVersion, and external constraints.
+
+**Reapply KAORI Intent** uses the fresh live provider quota as the current capacity state and the committed KAORI contract as the proposed state, then patches the authoritative Tenant CR and verifies read-back.
+
+**Accept Provider State** treats the fresh live Tenant quota as proposed new intent, validates authority/scope/capacity, performs no redundant provider write, commits the live contract with `provenance=accepted_provider_state`, and returns allocation control to **KAORI Managed**.
+
+Capsule now recommends newer Rules-based quota capabilities for new designs; KAORI treats `Tenant.spec.resourceQuotas` as a legacy compatibility authority for estates that already use it. #773 does not auto-migrate a legacy Tenant to another Capsule quota model because the external provider remains authoritative for that transition.
+
+## Tenant Operations presentation: provider authority and zero-result registries (#959, #960)
+
+**Provider Authority** answers which external engine owns each Tenant
+and its effective reconciliation/mutation contract. It is a *reference*
+for deciding whether an operator can act on a Native Kubernetes or
+Capsule-owned resource; it is not itself drift, a newly discovered
+problem or an instruction to mutate provider state. The canonical
+Tenant Registry already exposes committed provider and reconciliation
+authority. Per the existing #960 first-level Operations tab design,
+Operational Reconcile keeps the complete paginated authority history as
+an **optional collapsed native disclosure**, rather than a third
+always-visible operational queue.
+
+Following DevContainer feedback, the disclosure now clearly identifies
+itself as **Provider Authority Reference** and explains its reference-only
+role. When expanded, the existing authority registry uses an embedded
+presentation without a duplicated block header/card border, includes
+a text link to canonical **Tenant Registry**, and groups provider state,
+provider key and reconciliation authority in one compact column.
+Cluster/environment, lifecycle, full filters, HTMX, pagination and the
+distinct Native/Capsule control boundary remain unchanged. In Access
+Reconciliation, a Tenant slug is omitted only when it case-insensitively
+duplicates its displayed Tenant name; distinct slugs remain visible.
+
+The #959 empty-result contract remains authoritative across Runs &
+Evidence, both Capsule allocation-drift registries, Namespace/Allocation
+Drift, Access Reconciliation and Provider Authority. A zero-row
+operational table uses the existing KAORI shared empty-state component
+without empty column headers or unnecessary minimum-width scrollbar;
+the canonical footer **must still render** `Showing 0–0 of 0`,
+Rows 5, page 1, and disabled navigation. A nonempty result keeps
+the existing bounded-width columns and responsive horizontal overflow.
+No new shared design-system component, provider request, evidence
+recomputation, automatic recovery or permission change is introduced.
+
+Local DevContainer Visual QA must cover zero vs nonzero records, HTMX
+filter/search and page size, Native/Capsule authority, native disclosure
+keyboard/focus, distinct and repeated Tenant slug, tablet/mobile sizing
+and Violet light/dark modes. CI/CD admission, staging/UAT deployment and
+main promotion remain HOLD until explicitly requested.
+
+## Effective allocation evidence
+
+A managed namespace records:
+
+- source Resource Profile identifier;
+- source Resource Profile version;
+- committed quota snapshot;
+- committed Container LimitRange snapshot;
+- whether the selected profile is Custom;
+- desired/effective hashes and provider read-back evidence.
+
+For a built-in profile, namespace provisioning snapshots only the profile's managed dimensions, rehydrating every selected key from the canonical preset value so stored/operator input cannot mutate a fixed preset. Per-namespace inline numeric overrides are not accepted.
+
+For a Custom profile, namespace provisioning snapshots the committed Custom profile values. If the Custom profile was based on a built-in preset, the Resource Profile also retains the base preset class/version lineage.
+
+Later Resource Profile or built-in preset changes do not implicitly mutate namespace allocation intent. Existing namespace allocations change only through an explicit governed mutation that shows current versus proposed values, passes validation and #654 capacity preflight, then reconciles provider state.
+
+## Provisioning safety
+
+Namespace names use the Kubernetes DNS-label contract. Native reconciliation always manages the Namespace. It materializes `kaori-tenant-quota` and/or `kaori-tenant-limits` only when the committed allocation contains corresponding limits; an explicitly unbounded contract removes KAORI-owned quota/limit objects rather than inventing zero values.
+
+KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existing resources that declare another manager are not silently overwritten. Provider errors and contract mismatches leave explicit failed or drifted provisioning evidence rather than a false Ready state.
+
+The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
+
+
+## Resource Profile control categories
+
+Resource Profile class and control category are separate concepts.
+
+- **Class** chooses the sizing baseline: Small, Medium, Large, Extra Large, or Custom.
+- **Category** groups the provider controls that the profile owns.
+
+The canonical category order is:
+
+1. **Compute & Workload** — CPU requests/limits, memory requests/limits, Pods.
+2. **Storage Guardrails** — PVC count, total `requests.storage`, per-PVC min/max, optional PVC default request/limit.
+3. **Object Limits** — Services, ConfigMaps, Secrets.
+4. **Container Defaults** — Container default request/limit CPU and memory.
+5. **Advanced Controls** — expandable policy/provider-specific controls.
+
+This prevents a second profile taxonomy such as Basic/Advanced classes. A Small profile can enable advanced controls; a Custom profile can use only basic categories. The profile class remains sizing lineage while Managed state remains per control.
+
+### Bidirectional Managed contract
+
+A control is presented as **Managed** only when KAORI has an admitted observation and reconciliation path for the authoritative provider.
+
+```text
+Provider observation
+→ adopted committed baseline
+→ explicit governance takeover
+→ KAORI desired state
+→ authoritative provider reconcile
+→ provider read-back
+→ committed effective evidence
+→ drift observation
+→ Reapply KAORI Intent OR Accept Provider State
+```
+
+Adoption itself is always read-only. Supported provider values are captured only into the committed observed Namespace baseline. During an explicit governance cutover, the operator can choose **Use current provider baseline**; KAORI then materializes a Custom Resource Profile from that snapshot inside the same governed transaction. Therefore an unchanged takeover starts with desired values equivalent to the live provider without turning adoption itself into KAORI-authored desired intent or manufacturing drift.
+
+For Native Kubernetes allocation governance, ResourceQuota, Container LimitRange defaults, and admitted PersistentVolumeClaim LimitRange storage fields share the same lifecycle. Manual provider changes after takeover are dimension-level drift.
+
+For Capsule, Capsule remains the reconciliation authority. A namespaced PVC LimitRange observed underneath a Capsule Tenant is retained in the provider-equivalent baseline/evidence, but it is not presented as Capsule Managed unless Capsule exposes an admitted write/read-back authority for that dimension. KAORI never bypasses Capsule with a Native write merely to make the profile appear fully managed.
+
+### Storage Guardrails
+
+Storage policy is persisted separately from ResourceQuota and Container defaults:
+
+```text
+TenantResourceProfile.storage_policy_json
+TenantNamespace.allocation_storage_policy_json
+```
+
+Supported fields map to `LimitRange[type=PersistentVolumeClaim]`:
+
+| Profile value | Kubernetes field |
+| --- | --- |
+| Min PVC Size | `min.storage` |
+| Max PVC Size | `max.storage` |
+
+Validation requires positive Kubernetes quantities and `min <= max`. KAORI does not model PVC `default` / `defaultRequest` as managed storage controls because Kubernetes documents PersistentVolumeClaim LimitRange governance as minimum/maximum storage request bounds; noncanonical provider fields fail closed as external evidence.
+
+Native reconciliation materializes Container and PersistentVolumeClaim items in the canonical KAORI LimitRange, then reads the provider back before marking the operation successful. Effective hashes and drift comparison include storage policy.
+
+During Native adoption, PVC `min.storage` and `max.storage` are normalized into `storage_policy`; unsupported resources, PVC defaults, or max-limit/request-ratio remain external constraints and prevent an unsafe takeover. During Capsule adoption, supported values are still captured in the Namespace baseline but remain provider-owned evidence when Capsule has no admitted storage-policy mutation authority.
+
+
+
+## Profile control categories
+
+The operator-facing profile hierarchy is intentionally ordered from basic to advanced:
+
+1. **Basic Resources** — CPU requests/limits, memory requests/limits, and Pods.
+2. **Storage Guardrails** — PVC count, total storage quota, and per-PVC min/max request bounds.
+3. **Object Limits** — Services, ConfigMaps, and Secrets.
+4. **Container Defaults** — Container LimitRange defaults for CPU and memory.
+5. **Advanced Controls** — exposure, hostname, managed TLS/registry, and provider-specific capability values.
+
+Each Managed dimension is part of the committed profile contract. Storage Guardrails are first-class desired state rather than observational annotations.
+
+### Built-in storage baseline
+
+Built-in preset version 2 makes per-PVC bounds explicit and Managed by default:
+
+| Profile | PVC count | Total storage | Min PVC | Max PVC |
+| --- | ---: | ---: | ---: | ---: |
+| Small | 5 | 50Gi | 1Gi | 10Gi |
+| Medium | 10 | 100Gi | 1Gi | 10Gi |
+| Large | 20 | 200Gi | 1Gi | 10Gi |
+| Extra Large | 40 | 400Gi | 1Gi | 10Gi |
+
+The fixed 10Gi per-PVC ceiling matches the existing quota ratio: each preset scales PVC count and cumulative storage together while keeping one canonical per-claim bound. Version 1 profile records remain historical snapshots; new built-in profiles use version 2.
+
+### Bidirectional managed state
+
+For Native Kubernetes, adopted ResourceQuota, Container LimitRange, and PVC LimitRange values are imported into an auto-materialized Custom profile, written back with equivalent effective values through the admitted Native path, and read back before KAORI marks control Managed. Later drift is resolved explicitly in either direction:
+
+- **Reapply KAORI Intent** restores the committed profile values to Kubernetes and verifies read-back.
+- **Accept Provider State** promotes the current provider values into committed KAORI intent and updates an auto-imported profile/version when applicable.
+
+For Capsule, writable quota authority uses the Capsule reconciliation path. Controller-generated Namespace Container/PVC policy is not patched through Native APIs; it is maintained as **provider-mirrored policy** and refreshed during Tenant Sync so changes do not create false drift.
+
+## Advanced profile controls
+
+Resource Profiles persist **advanced control intent and its non-secret configuration values** in addition to allocation and Container LimitRange dimensions. This is an operator-editable reusable contract, not a status/TODO matrix and not an issue-reference UI.
+
+The expandable Advanced Controls editor uses values that map to the already approved canonical KAORI contracts. The UI exposes the same scope/effect guidance through contextual Info Tips instead of issue references:
+
+| Control | Scope | Effect when enabled | Persisted profile values |
+| --- | --- | --- | --- |
+| Ingress | Ingress exposure governance on attached namespaces | evaluates canonical exposure policy; Required mode additionally requires admission enforcement | enforcement mode (required or preflight-only) |
+| Service Exposure | ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure | selected allow/deny policy becomes reusable desired exposure intent and must pass provider capability checks | policy profile plus explicit exposure allow/deny decisions |
+| Hostname Reservation | exact/wildcard/regex hostname ownership and collision protection | hostname ownership/collision checks must pass before exposure mutation | match mode plus normalized hostname pattern |
+| Managed TLS | workload TLS delivery | requests the canonical TLS delivery path without storing secret/private-key material | platform/namespace-compatibility mode, resource name, and non-secret source reference |
+| Managed Registry | private image-registry credential delivery | requests image-pull Secret or external credential-provider delivery without storing credential values | image-pull/external-provider mode, resource name, and non-secret source reference |
+| Capsule Namespace Controls | Capsule Tenant namespace naming/options | writes forceTenantPrefix/namespaceOptions through Capsule authority; unavailable on Native | forceTenantPrefix intent plus namespaceOptions JSON |
+| Capsule Resource Rules | Capsule registry/PriorityClass/StorageClass/rules policy | reconciles admitted Capsule Tenant resource-rule fields when capability is available | container registry, PriorityClass, StorageClass lists, and Capsule rules JSON |
+| Capsule Resource Pools | Capsule ResourcePool/ResourcePoolClaim association | reconciles selected pool/claim resource and desired spec through Capsule authority | ResourcePool/ResourcePoolClaim kind, resource name, and desired spec JSON |
+| Capsule Replication | TenantResource/GlobalTenantResource replication | reconciles selected replication resource through Capsule authority; Native does not emulate it | TenantResource/GlobalTenantResource kind, resource name, and desired spec JSON |
+| Capsule Tenant Cordon | Capsule Tenant cordon/deletion protection | reconciles cordoned/preventDeletion flags; at least one protection must remain enabled | cordon and deletion-protection booleans |
+
+Secret/private-key/registry credential material is never persisted in Resource Profile JSON. The profile stores only non-secret configuration and source references.
+
+Detailed reconciliation authority still stays in the canonical domain implementations:
+
+- exposure/hostname values align with the existing Tenant exposure-policy and domain-reservation contracts;
+- TLS/registry values align with the existing Tenant managed-resource modes;
+- Capsule values align with the admitted Tenant.spec fields or advanced resource kinds already enforced by the Capsule advanced provider path.
+
+The Resource Profile does not become a second provider model. It supplies reusable desired values to the existing canonical domains and keeps provider-specific execution capability-gated.
+
+### Attachment evaluation
+
+Advanced controls are evaluated when the Resource Profile is attached to a Tenant placement.
+
+```text
+profile control enabled + committed non-secret values
+→ inspect Tenant provider authority
+→ inspect committed provider capability evidence
+→ enabled on placement OR unavailable
+```
+
+The Namespace Provisioning attachment preview shows the selected profile controls against the selected Tenant Environment. A requested control is:
+
+- **Enabled** when the selected authoritative provider reports every required capability as available;
+- **Unavailable** when the provider does not implement that control, is degraded, or required capability evidence is unavailable;
+- **Off** when the Resource Profile did not enable the control.
+
+The server re-evaluates this contract before Native Namespace provisioning. A requested but unavailable advanced control blocks the provider mutation before Namespace/ResourceQuota/LimitRange reconciliation starts. Successful provisioning records both the evaluated state and the persisted configuration snapshot in provisioning evidence.
+
+Configuration validation is server-side. Invalid hostname patterns, unsupported managed-resource modes, malformed JSON, missing required resource names/specs, or a no-op Capsule cordon contract are rejected before commit.
+
+KAORI never silently drops an enabled advanced control and never substitutes Native behavior for Capsule-only controls.
+
+### Profile revision and rollout
+
+Resource Profile identity is stable while its contract can advance by version.
+
+- **Small, Medium, Large, Extra Large** keep canonical numeric sizing values fixed. Operators may revise which dimensions are Managed and may revise Advanced Controls. A contract change increments the same profile identity to the next version instead of creating another profile.
+- **Custom** profiles may revise numeric values, Managed dimensions, storage guardrails, Container defaults, and Advanced Controls. Contract changes likewise increment the profile version.
+- Existing Namespace records remain pinned to their committed `resource_profile_version` and allocation snapshot. Editing a profile never mutates attached provider resources implicitly.
+- The Resource Profile Registry exposes committed pending-rollout state and an explicit **Attached Namespace Rollout** action scoped to one Tenant. Pending means a mismatch in **profile version, ResourceQuota, Container LimitRange, or storage policy**; `0 version-outdated` alone does not imply no work.
+- The rollout selector shows **Already Current** only when every active attached Native Namespace matches the current profile version **and all three committed allocation families**. When this eligible Tenant is selected, Rollout is disabled to avoid a redundant POST; missing selection or unavailable/unsupported target also leaves the button disabled. Switching to a Tenant with any committed mismatch re-enables Rollout (subject to `tenant.manage` and profile readiness).
+- Current-state display is based exclusively on **committed KAORI snapshots**; it does not prove live Kubernetes/provider drift is absent. Drift detection and provider-state acceptance remain separate governed workflows. The server re-evaluates permissions, provider/tenant eligibility, and exact snapshot equality on POST; the UI status is advisory, not mutation authority.
+- Rollout reconciles every active Native Namespace using that profile independently. Each Namespace must pass capacity admission, provider mutation, and read-back. A blocked Namespace remains on its previous committed version.
+- Capsule attachments continue through Capsule-specific admitted governance paths; the Native rollout action never bypasses Capsule authority.
+
+Example:
+
+```text
+Small v2
+Tenant A: NS1, NS2, NS3, NS4
+
+operator disables Managed:
+- CPU Requests
+- CPU Limits
+
+Small v3
+→ profile identity remains Small
+→ NS1..NS4 remain pinned to v2
+→ Rollout Small v3 to Tenant A
+→ each Namespace reconciles independently
+→ successful Namespace snapshots become v3
+→ blocked Namespace remains v2 with explicit evidence
+```
+
+This avoids profile sprawl such as `Small-2` while preserving historical reproducibility and rollback evidence.
+
+## Bidirectional managed adoption
+
+Discovery remains read-only until the operator submits **Adopt & Manage**. The adoption mutation then uses an observe → import → equivalent write → read-back sequence:
+
+1. observe the live provider contract and its authority;
+2. import supported values into committed KAORI profile/control state;
+3. write the same effective values through the admitted provider path;
+4. require provider read-back equality;
+5. mark the supported control surface Managed only after verification.
+
+This means adoption does not intentionally change effective limits, but it does establish KAORI governance ownership. Unsupported, ambiguous, externally owned, stale, or capability-unavailable controls fail closed instead of entering a partially managed state.
+
+### Native Kubernetes
+
+For an adopted Native Namespace, the imported baseline includes:
+
+- Namespace identity and KAORI ownership labels;
+- ResourceQuota dimensions;
+- Container LimitRange defaults;
+- PVC storage policy from `LimitRange[type=PersistentVolumeClaim]`;
+- provider source UID/resourceVersion and reconciliation evidence.
+
+PVC storage policy is first-class desired state:
+
+| Resource Profile field | Kubernetes authority |
+| --- | --- |
+| PVCs | `ResourceQuota.hard.persistentvolumeclaims` |
+| Total Storage | `ResourceQuota.hard.requests.storage` |
+| Min PVC Size | `LimitRange[type=PersistentVolumeClaim].min.storage` |
+| Max PVC Size | `LimitRange[type=PersistentVolumeClaim].max.storage` |
+
+An adopted provider value such as PVC min/max is therefore imported into `storage_policy_json`, written back unchanged during takeover, and verified before the Namespace allocation becomes `kaori_managed`.
+
+### Capsule mixed authority
+
+Capsule remains the authoritative execution path for Tenant/shared quota. KAORI never replaces Capsule quota with a Native namespaced ResourceQuota.
+
+Where correlated Namespaces expose Capsule-generated Container/PVC LimitRange policy, KAORI does **not** take direct write ownership of the generated object unless Capsule exposes an admitted source-control contract for that field. The committed state records the authority split explicitly:
+
+```text
+Tenant/shared quota     → Capsule authority + KAORI managed intent
+Generated LimitRange    → Capsule provider authority + KAORI committed mirror
+KAORI                   → normalization + profile mirror + evidence + safe drift governance
+```
+
+A Capsule-generated PVC LimitRange is no longer an unstructured external constraint after adoption. Supported min/max values are imported into an auto-generated profile as `provider_mirrored_policy`. Tenant Sync refreshes that committed mirror when Capsule changes the generated policy, so provider-owned PVC changes do not create false KAORI drift.
+
+True two-way write control is enabled only when the authoritative provider exposes an admitted mutation path. KAORI does not patch a Capsule controller-owned generated LimitRange merely to claim ownership.
+
+### Two-way drift governance
+
+Once a control is Managed, sync/observation remains read-only and records drift. Explicit operator actions provide both directions:
+
+- **Reapply KAORI Intent** — write committed KAORI values back through the admitted provider authority and require read-back.
+- **Accept Provider State** — perform no redundant provider write; import the fresh provider values as the new committed KAORI intent.
+
+For auto-imported Native adoption profiles, Accept Provider State also advances the profile version and updates its committed quota/Container/PVC policy values. For Capsule-generated Namespace policy, provider mirroring performs the same profile-version advancement automatically during sync because Capsule remains the write authority. This prevents the profile from retaining stale PVC min/max values without creating artificial drift.
+
+Adoption origin remains retained as audit evidence even when operational ownership becomes Managed.
+
+## Capsule drift registry UI — complete KAORI operational table (#2931)
+
+The DevContainer screenshot after the earlier #2925 three-column quota-only change
+was **rejected** by human UI review on 2026-10-23. It stacked Tenant, authority,
+provider, scope and evidence disclosure in one tall cell, placed two mutation
+actions beside one short status row, and did not bring Capsule Shared Allocation
+Drift into the canonical table family. The initial 1450px-wide shared table
+remained difficult to use. The former three-column contract is superseded here.
+
+Both **Capsule Tenant Quota Drift** and **Capsule Shared Allocation Drift**
+under the approved Tenant Operations **Allocation Drift** first-level tab
+(#960) now adopt the shared KAORI operational table standard:
+- canonical block header/loading state and **filtered result count**;
+- independent committed-data **Tenant + Search** filters, `Clear Filters`,
+  HTMX owning-section refresh, scoped query parameters and stable pagination;
+- one compact five-column result row: **Tenant**, **Provider / Authority**,
+  **Status**, **Allocation Difference**, **Details**;
+- only a concise first changed dimension and `+N more differences` in the row;
+- **View More** opens the existing native KAORI modal pattern, displaying
+  all committed differences, authority, identity, exact UID and
+  resourceVersion, observed timestamp, limitations and explicit human
+  reconciliation decision explanations;
+- the original two distinct permission/CSRF-governed endpoints for Reapply
+  KAORI Intent and Accept Provider State remain in the modal's action footer,
+  with their exact server-side capability, stale-evidence and read-back gates.
+  The registry and modal GET do not execute either operation.
+
+The table no longer forces a 1450px minimum; a bounded 840px minimum allows
+**table-only** horizontal scrolling on mobile, without page-level overflow.
+Shared `table_ui` text/action primitives, statuses, canonical 5-row
+pagination (options 5/10/25/50), compact zero-data state and existing
+`registry_ui.footer` remain authoritative per
+`docs/design/components/TABLE_AND_LABEL.md` and
+`docs/design/components/PAGINATION.md`. Neither the old filter-free table
+nor the rejected three-column design should be used as a future reference.
+
+Filtering is strictly over already committed KAORI Tenant/advanced-intent
+evidence and is applied **before pagination**. Search is bounded to 160
+characters and scoped to Tenant/resource identities, not to external live
+provider queries. These filters do not change authority, allocation values,
+provider writes, drift detector behavior, or persisted governance decisions.
+They preserve Capsule Tenant CR versus GlobalResourceQuota distinction.
+
+DevContainer UAT must verify 0, 1 and 5+ drift rows, independently scoped
+filter/search/clear and numeric pagination, 1024/1280 desktop and
+360/390 mobile, light/dark, keyboard modal focus/close, every committed
+dimension and long provider IDs, no mutation on GET, and the original
+fail-closed blocked actions. User-visible and governance-sensitive changes
+remain **human acceptance pending**. Runtime pytest, formatter, visual QA,
+official Developer Check, Full Admission and promotion beyond the temporary
+holding branch remain gated separately.
+
+### Allocation Drift contextual bridge and modal density (#2931 DevContainer feedback)
+
+The approved primary `Allocation Drift` Operations tab shows two distinct
+Capsule registries. Between them, a compact read-only **Capsule Allocation Authority**
+comparison replaces the human-rejected flat three-text-column **Allocation
+Scope Guide**. The bridge reuses the existing KAORI table block and balanced
+Violet-soft peer-card treatments; two equal responsive visual lanes make the
+authoritative effect explicit:
+
+- **Tenant Resource Quotas:** `Tenant CR → Namespace ResourceQuota`;
+  Capsule reconciles the generated namespaced constraints.
+- **Shared Allocation:** `GlobalResourceQuota → Shared Tenant allocation`;
+  Capsule separately owns Tenant-wide shared limits.
+
+The comparison is a source/target authority diagram, **not** a procedural
+timeline or a new component family. Its concise header states that Tenant Sync
+only observes drift; Reapply or Accept remains an explicit decision. It is a
+semantic distinction between two real quota scopes, not a new drift queue,
+source-of-truth record, metrics widget or navigation. At desktop widths it uses
+two equal peers; on mobile it stacks the peers with normal page flow and no
+forced horizontal scroll. It preserves `data-capsule-allocation-scope-guide`
+and the existing accessibility heading and links to the adjacent registries.
+
+The two existing `View More` native evidence dialogs use a wider bounded
+`max-w-5xl` desktop workspace (previously `max-w-3xl`) and progressive
+1/2/3-column evidence-summary and stacked-to-two-column decision layouts.
+Fixed modal header/footer, individually scrollable body, same full provider
+identity/UID/resourceVersion and all quota deltas, native keyboard/focus
+contract, light/dark tokens and unchanged guarded CSRF POST actions are retained.
+At mobile widths the viewport margins remain controlling.
+
+Visual acceptance remains pending for 1024/1280+ desktops, 360/390 mobile,
+light/dark, long timestamps and verbose decision descriptions, plus 0/1
+populated registries and keyboard review. This extension changes
+**presentation only**: no new provider requests, mutation path, filter
+semantics, data model or background sync behavior; Full Admission remains
+HOLD until explicitly authorized.
+
+### Capsule Drift title guides and reconciliation choices (#2931 UAT follow-up)
+
+Both primary Allocation Drift registries — Capsule Tenant Quota Drift and
+Capsule Shared Allocation Drift — expose a single title-adjacent **Guide**
+via the approved `components/info_tip.html::render(..., variant='guide')`
+and `table_ui.inventory_block_header(..., title_extra=title_info)`. The
+registry section opts into `table_ui.block_classes(allow_overflow=true)`
+while retaining a dedicated horizontally scrollable table. The Guide describes
+the authority boundary and read-only observation versus explicitly governed
+recovery; it does not hide status, safety errors, required controls or row
+evidence. This is the canonical shared hover/focus/click/touch popover with
+viewport clamping, **not** the legacy custom tooltip.
+
+Inside each existing native `View More` modal, the Reconciliation Decision
+explanation is now presented as two low-elevation peer choice cards:
+**Reapply Intent** (`Provider Write`) writes the committed KAORI quota through
+the admitted Capsule authority after provider/capacity verification;
+**Accept Provider** (`Commit Only`) commits verified provider quota as KAORI
+intent without writing the provider. The choices are explanation-only;
+the original explicit, separately CSRF-guarded POST actions remain in the
+modal footer, behind the unchanged permissions, capability and provider
+read-back gates. Badge geometry reuses the canonical table metadata label;
+icons and surfaces reuse existing KAORI Violet/light/dark tokens. Card layout
+is two columns at supported desktop widths and stacked on narrow screens.
+
+No new component family, provider request, policy, mutation, route, migration
+or operational state was introduced. Focused Tenant Operations contract tests
+assert both complete Jinja templates parse, the Guide placement, choice
+presentation and unchanged guarded actions. DevContainer Visual QA must cover
+Guide hover/keyboard/touch, overlay position and dismissal, modal keyboard
+interaction, desktop/mobile and light/dark, including Control Unavailable
+and multi-dimension drift. Human UAT and official admission remain separate.
+
+
+### Native Resource Profile coverage disclosures (#2985)
+
+In `Namespace Provisioning → Allocation Change` and `Adopted Native
+Governance Cutover`, the **complete Native provider profile** is rendered
+through one reusable, read-only `_resource_profile_coverage_comparison.html`
+macro. Both forms preserve their six headline quota metrics and compare
+the same `Current (frozen)` and `Proposed (versioned profile)` objects
+through the existing `data-tenant-allocation-*` hooks.
+
+The secondary workspace uses the approved
+`components/view_more_content.html` accessible expandable pattern instead
+of the earlier technical vertical-tab controller:
+
+- Basic Resources: CPU requests/limits, memory requests/limits, Pods.
+- Storage Guardrails: PVC count, total storage requests, per-PVC min/max.
+- Object Limits: Services, ConfigMaps, Secrets.
+- Container Defaults: the four native LimitRange default request/limit keys.
+- Advanced Controls: provider capability preflight versus recorded
+  evaluation, **not** verified provider execution. An enabled control
+  must pass the existing attachment validation before mutation.
+
+Absence of a quota or storage bound is `Unbounded` (never zero).
+Unrecorded advanced state stays `Not recorded`. Operators cannot submit
+any action through the disclosure itself; the original CSRF form,
+`tenant.manage`, capacity admission, authoritative provider write,
+read-back and committed evidence gates remain independent. CSS uses KAORI
+light/dark, responsive native summary/details. Browser accessibility and
+actual live provider UAT remain required for human acceptance.
+
+
+### Capsule quota attachment fail-closed coverage (#2986)
+
+The authoritative Capsule quota mutation paths **only** govern supported
+ResourceQuota hard dimensions. `Tenant.spec.resourceQuotas` and
+`GlobalResourceQuota.spec.quota.hard` can each carry the ten supported
+ResourceQuota fields; the generated Namespace ResourceQuota copies under GRQ
+are **not** independent commitment budgets. Native `LimitRange` Container
+Defaults and per-PVC min/max storage guardrails are outside either quota
+authority. Merely selecting a Resource Profile which requests them must never
+silently report them as managed.
+
+The same five-category expandable vocabulary from Native Allocation Change is
+used for Capsule Tenant CR and GRQ: Basic Resources, Storage Guardrails,
+Object Limits, Container Defaults and Advanced Controls, and read-only Per-PVC Policy rows inside the Storage Guardrails disclosure. All Current/Proposed quota
+fields are bound to committed/provider evidence and selected versioned
+Resource Profile through the existing read-only JS preview. The unsupported
+groups display the actual proposed values and `Not governed` provider
+effect; the Client UI disables the apply action when a profile contains
+managed LimitRange defaults or per-PVC storage policy and explains which
+category is incompatible.
+
+**The server enforces the same condition** by
+`_validate_resource_profile_base_controls` before Capsule Tenant cutover,
+Managed Allocation Change, and GRQ cutover read/patch calls.
+`_validate_resource_profile_attachment_controls` separately verifies all
+requested advanced provider capabilities, fail-closed at mutation time; it
+is not permission to assert that unrelated advanced resources were written
+as part of a quota update. The full ten-dimension change highlights never
+count an unrendered GRQ field. These fail-closed gates intentionally mean that
+legacy profiles containing Native-only defaults or per-PVC policies must be
+cloned/revised with those Managed dimensions disabled before a new Capsule
+quota governance action. Previously completed provider governance and
+accepted allocation history are not rewritten. No Native fallback.
+
+Do not infer real Native LimitRange observations from Namespace quota
+evidence: those are separately owned and unavailable in this Capsule
+quota-only preview. Runtime Jinja and JS execution, responsive dark/light,
+keyboard/touch accessibility and actual Capsule negative/positive admission
+UAT remain mandatory before human acceptance. This workstream holds official
+CI/CD and production promotion.
+
+### Capsule committed advanced capability preflight (#2986 follow-up)
+
+Quota comparison **Advanced Controls** uses recorded provider capability status,
+not just a selected Resource Profile's boolean intent. The Namespace
+Provisioning read-only registry context evaluates the selected versioned
+profile using the existing `evaluate_resource_profile_advanced_controls`
+provider matrix and Capsule capability states in committed Tenant evidence.
+The result is scoped by Tenant ID and Profile ID and serialized once to
+`tenant-capsule-advanced-profile-preflight`; normal form rendering makes no
+additional live Capsule request. Current result states are explicit:
+`Available · Capability preflight` when requested and admitted,
+`Unavailable · <reason>` when requested but unsupported, and
+`Not requested` when disabled. A missing committed evaluation for a
+requested control is **Unavailable** (fail-closed). These are capability
+preflight results, not proof that a quota write also executed advanced
+resources or successful provider read-back.
+
+The same client guard disables submit if any requested advanced control is
+unavailable, if Native-only Container Defaults/per-PVC policy is configured,
+or if server-rendered RBAC/provider controls already disable it. Server
+`_validate_resource_profile_attachment_controls` and base control gates
+remain independent and authoritative, protecting direct POST actions even if
+client-side validation is bypassed. Provider capability evidence can be
+stale; formal mutation rechecks it at the server boundary. The UI must never
+label mere profile configuration as successful provider enforcement.
+
+
+### Namespace Provisioning primary allocation workflow tabs (#2998)
+
+During DevContainer UAT, the former top-level `Allocation Change` tab was
+split into three mutually exclusive primary content views using the existing
+`components/content_tabs.html::render_links` server/HTMX contract:
+
+- **Native Allocation** (`?view=allocation`): managed Native Namespace
+  Resource Profile comparison and admitted allocation mutation. The URL key
+  intentionally stays `allocation` so prior bookmarks remain valid.
+- **Native Cutover** (`?view=native-cutover`): legacy Adopted/Observed Native
+  Namespace allocation governance takeover only. Cutover is not equivalent to
+  changing an already-managed Native Namespace.
+- **Capsule Governance** (`?view=capsule-governance`): Capsule-owned
+  Tenant CR quota governance (adopted cutover and managed change) and
+  GlobalResourceQuota shared allocation, with their distinct provider-specific
+  authority and existing capability gates.
+
+These three sit alongside `Provision Namespace` and `Capacity Decisions`
+in the same five-item primary navigation. One selected workflow is rendered
+at a time, **not** an always-present three-workflow stack under collapsible
+outer containers. Individual Resource Profile comparison groups continue to
+use the previously approved expandable sections. The existing horizontally
+scrollable compact Content Tabs styling, HTMX URL synchronization, and
+loading treatment are reused without custom JavaScript.
+
+The GET controller admits the new view keys, preserves the legacy
+`?view=allocation` key, and keeps an unknown view on the existing
+`provision` fallback. Native allocation, Native cutover, Capsule Tenant CR
+cutover/managed change, and Capsule GRQ cutover POSTs redirect to their own
+workflow after **both success and handled failure**. Provisioning still
+returns to `Provision Namespace` by default. No new provider mutation,
+authorization, persistent model or schema is introduced.
+
+Treat this as user-visible workflow navigation change: run source contracts
+and visual/keyboard/responsive/light-dark DevContainer QA plus human
+acceptance before entering official admission. The temporary holding
+`kaori/review/staging-uat` is **not** `kaori/staging`; official CI/CD
+and promotion remain HOLD.
+
+
+### Native Technical Coverage density refinement (#3000)
+
+Native Allocation and Native Cutover continue to call the **same** canonical
+`native_sections` renderer and to preserve all 16 base Resource Profile
+dimension hooks plus advanced placement preflight. Its header now presents a
+compact **five-category coverage strip** (5 Basic, 4 Storage, 3 Object
+Limits, 4 Container Defaults, Advanced capability-gated), followed by the
+existing accessible expandables in a compact style. The shared
+`view_more_content.render` component gained optional `dense=false` so
+other consumers keep their approved defaults. Native Cutover also uses a
+paired observed-baseline → proposed-managed journey to distinguish cutover
+from a managed profile change; the backend takeover, capacity admission and
+read-back authority remain unchanged.
+
+Counts describe **defined profile dimensions**, not the number of actively
+managed dimensions or admission success; individual current/proposed values
+still come from committed evidence and the selected profile. The Technical
+Details preview remains read-only. Browser mobile, desktop, keyboard and
+light/dark UAT is required before acceptance.
+
+
+### Capsule Governance authority-scoped sub-navigation (#3001)
+
+The top-level **Capsule Governance** tab now owns a second, deliberately
+bounded `content_tabs.render_links` navigation with three URL-backed,
+mutually exclusive subviews:
+
+- `?view=capsule-governance&capsule_tab=overview` (default) — two
+  scope cards explaining `Tenant.spec.resourceQuotas` and
+  `GlobalResourceQuota`, with committed candidate/managed record counts
+  grounded in the existing provisioning context and authority-specific
+  HTMX links. The overview is **read-only**, not a live provider mutation
+  surface and not a fabricated readiness summary.
+- `capsule_tab=tenant-quota` — Capsule Tenant CR adopted-cutover and
+  managed-change workflow only.
+- `capsule_tab=shared-allocation` — Capsule GlobalResourceQuota
+  shared-allocation workflow only; Namespace-generated ResourceQuota
+  copies remain provider effects, not independently countable budgets.
+
+Invalid subview keys fall back to Overview. A normal `view=capsule-governance`
+link preserves the root tab and opens the overview. Original POST CSRF,
+tenant.manage authorization, committed Resource Profile comparison,
+capability fail-closed, provider admission and read-back remain unchanged.
+Tenant CR writes redirect back to `tenant-quota`; GRQ cutover redirects
+back to `shared-allocation`, including handled failure outcomes.
+Navigation reuses the shared HTMX `namespace-provisioning-workspace`
+replacement, history push and keyboard-friendly content-links pattern.
+The source is committed KAORI state; no live provider calls are added to
+ordinary navigation.
+
+This user-visible information architecture change requires desktop/mobile,
+light/dark and keyboard Visual QA plus human UAT, separately from official
+CI/CD admission. No change to real Kubernetes authority is implied.
+
+
+### Namespace provisioning Quota & Default Details mini-cards (#3002)
+
+The **Provision Namespace** form retains its existing read-only quota/default
+preview based exclusively on the selected versioned Resource Profile.
+The `_namespace_form.html` detail disclosure now presents four evenly
+spaced group mini-cards rather than cells with decorative empty fillers:
+Compute Limits (2), Storage Policy (3), Object Limits (3) and Container
+Defaults (4). Each group uses a responsive definition-list layout with
+three columns for three-value groups at supported widths and ordinary
+two-column group layouts elsewhere. Exactly the existing twelve
+`data-tenant-namespace-resource-field` hooks remain bound to the
+namespace form's selection controller.
+
+When a Resource Profile is selected, a missing dimension is displayed as
+**Not managed** rather than an unexplained dash. Before selection, the
+existing initial placeholder remains. Values are informational and do
+not imply provider support: placement advanced-capability checks, Capsule
+authority exclusion, namespace creation admission and read-back remain
+independent. No input/CSRF/backend mutation change is introduced.
+
+Browser mobile/light-dark/keyboard QA and human acceptance are required;
+official CI/CD and promotion remain HOLD in DevContainer review.

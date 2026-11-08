@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import redirect, render_template, request, url_for
+from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -86,6 +86,36 @@ def active_records_response(*, case_id: str | None = None) -> ResponseReturnValu
         args.pop('case', None)
     payload = get_alert_intelligence_payload(args)
     return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
+
+
+def modal_case_htmx_request() -> bool:
+    return request.headers.get('HX-Request') == 'true' and str(
+        request.headers.get('HX-Target') or ''
+    ).strip().startswith('alert-case-modal-content-')
+
+
+def modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseReturnValue:
+    args = request.form.copy()
+    args['case'] = case_id
+    requested_tab = str(tab or request.form.get('tab') or 'active').strip().lower()
+    args['tab'] = 'resolved' if requested_tab == 'resolved' else 'active'
+    payload = get_alert_intelligence_payload(args)
+    if payload.get('selected_case') is None:
+        return ('Alert case unavailable.', 404)
+    template = (
+        'intelligence/partials/_alert_ops_resolved_case_modal.html'
+        if payload.get('tab') == 'resolved'
+        else 'intelligence/partials/_alert_ops_case_workspace.html'
+    )
+    response = make_response(
+        render_template(
+            template,
+            payload=payload,
+            modal_refresh=True,
+        )
+    )
+    response.headers['HX-Trigger'] = 'alertCaseChanged'
+    return response
 
 
 def redirect_to_workspace(*, tab: str, case_id: str | None = None) -> ResponseReturnValue:

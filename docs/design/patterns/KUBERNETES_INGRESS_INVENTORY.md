@@ -79,3 +79,26 @@ A resolved reference confirms only Secret existence in the committed namespace s
 ## Export
 
 XLSX and CSV export use only canonical JSON and route evidence. Publication counts remain blank when publication evidence was not reported.
+
+
+## Table presentation — developer review (#1017)
+
+The Ingress inventory retains the canonical fixed-layout table, table actions, committed
+publication semantics and shared status label. The DevContainer review balances the
+six columns by content length: **Ingress 24%, Scope 22%, Publication 25%,
+TLS References 10%, Routing 9%, and Details 10%** (total 100%, with the
+existing `min-w-[72rem]` and horizontal overflow boundary). Ingress identity,
+cluster/namespace scope, and declared-host evidence get the most space.
+
+**Published / Address Pending / Not Reported** belong exclusively to the
+**Publication** column. Put the status badge immediately after the declared
+hostname in a compact, wrapping primary line; do not distribute host and badge
+to opposing cell edges. A long hostname can truncate (full value retained in
+the `title` attribute) while the badge remains inspectable or wraps naturally.
+The declared-host summary and controller address remain in a wrapping secondary
+line with full values available on hover and in View Details.
+This is display-only: **Published** remains controller-reported address evidence,
+not a reachability or DNS claim. When an address is absent the compact value is
+**Not Reported**, avoiding an unsupported reachability conclusion. Long values retain
+a full `title` attribute and resource detail remains available through the existing
+View Details control. Light/dark and responsive visual acceptance remain pending.

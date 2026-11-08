@@ -9,13 +9,21 @@ def _read(name: str) -> str:
 
 
 def test_all_policy_workspaces_use_visual_policy_shell():
+    shared = (DEFINITIONS.parent / '_schedule_policy.html').read_text(encoding='utf-8')
+    assert 'macro header(' in shared
+    assert 'macro footer(' in shared
+    for label in ('Policy &amp; Configuration', 'bg-kaori-soft', 'Schedule Status', 'Save Policy'):
+        assert label in shared
+
     for name in ('inventory_sync.html', 'tls_certificate_sync.html', '_materialization_job.html'):
         source = _read(name)
-        assert 'Policy & Configuration' in source
-        assert 'bg-kaori-soft' in source
-        assert 'Schedule Status' in source
+        assert 'components/operational_section_card.html' in source
+        assert 'operational_section.shell_classes()' in source
+        assert 'platform_operations/jobs/configuration/_schedule_policy.html' in source
+        assert 'schedule_policy.header(' in source
+        assert 'schedule_policy.footer(' in source
         assert 'Policy Timeline' in source
-        assert 'Save Policy' in source
+        assert 'policy_form.hidden_tag()' in source
 
 
 def test_policy_layout_does_not_restore_small_card_wall():

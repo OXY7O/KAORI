@@ -160,8 +160,7 @@ Implement `storage/model.py` with an immutable dataclass containing `payload`, `
 Required constructor:
 
 ```python
-def build_storage_input_state(payload: Mapping[str, Any]) -> StorageInputState:
-    ...
+def build_storage_input_state(payload: Mapping[str, Any]) -> StorageInputState: ...
 ```
 
 - [ ] **Step 2: Move record/capacity behavior into `storage/records.py`**
@@ -184,8 +183,7 @@ class StorageRecordState:
     expansion_available: bool
 
 
-def build_storage_record_state(state: StorageInputState) -> StorageRecordState:
-    ...
+def build_storage_record_state(state: StorageInputState) -> StorageRecordState: ...
 ```
 
 Move the exact existing behavior for capacity calculation, filesystem records, risk counting, PV/PVC summaries and records, binding coverage, and expansion-evidence detection. Keep `allow_expansion` / `expansion_supported` as the only positive expansion signals.
@@ -250,8 +248,7 @@ def build_storage_trend_state(
     payload: Mapping[str, Any],
     *,
     current_percent: float,
-) -> dict[str, Any]:
-    ...
+) -> dict[str, Any]: ...
 ```
 
 When forecast evidence is absent, preserve `available is False` and `chart_svg == ''`.
@@ -268,8 +265,7 @@ def build_storage_action_state(
     *,
     records: StorageRecordState,
     trend: Mapping[str, Any],
-) -> StorageActionState:
-    ...
+) -> StorageActionState: ...
 ```
 
 - [ ] **Step 3: Delegate trend/action derivation from the facade**
@@ -394,8 +390,7 @@ def build_storage_analysis_presentation(
     *,
     context: ReportDocumentContext,
     classification: str,
-) -> dict[str, Any]:
-    ...
+) -> dict[str, Any]: ...
 ```
 
 - [ ] **Step 1: Re-run repository caller search before changing the signature**

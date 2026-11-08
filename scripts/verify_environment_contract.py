@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -31,6 +32,11 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
+# The root Compose default has POSTGRES_PASSWORD for non-DevContainer uses.
+# In the DevContainer this value comes exclusively from the host-only
+# postgres-bootstrap.env and MUST NOT be documented or active in the
+# application .env template forwarded to Flask/Celery/Beat.
+DEVCONTAINER_BOOTSTRAP_SECRET_KEYS = {'POSTGRES_PASSWORD'}
 
 RC_REQUIRED_KEYS = {
     'KAORI_IMAGE',
@@ -72,6 +78,14 @@ RUNTIME_ENV_ENTRYPOINTS = (
     'scripts/wait_for_db.py',
 )
 TEST_ONLY_ENV_SOURCE = 'app/config/testing.py'
+# This source-qualified secret must never enter general app/web/Beat env files.
+# The approved worker config is delivered only to its trusted worker runtime.
+WORKER_ONLY_SECRET_AUTHORITIES = {
+    'KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX': (
+        'app/intelligence/alert_signals/vault_jobs.py',
+        'app/secrets_pki/TELEMETRY_BINDING.md',
+    ),
+}
 
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
@@ -118,7 +132,6 @@ SENSITIVE_KEYS = {
     'SECRET_KEY',
     'INTEGRATION_CREDENTIAL_KEY',
     'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS',
-    'POSTGRES_PASSWORD',
     'REDIS_PASSWORD',
     'DATABASE_URL',
     'REDIS_URL',
@@ -139,6 +152,10 @@ SENSITIVE_KEYS = {
 DEPLOYMENT_KEYS = {
     'KAORI_APP_ENV_FILE',
     'KAORI_SECRETS_ENV_FILE',
+    'KAORI_POSTGRES_ADMIN_ENV_FILE',
+    'KAORI_POSTGRES_MIGRATION_ENV_FILE',
+    'KAORI_BUNDLED_FRESH_BOOTSTRAP',
+    'KAORI_BUNDLED_SCHEMA_CUTOVER',
     'KAORI_ACTIVE_RELEASE_ENV_FILE',
     'POSTGRES_DB',
     'POSTGRES_USER',
@@ -180,6 +197,24 @@ def runtime_python_sources() -> tuple[str, ...]:
     return app_sources + entrypoints
 
 
+def verify_worker_only_secrets(
+    *,
+    runtime_sources: tuple[str, ...],
+    shared_documented_keys: set[str],
+) -> set[str]:
+    """Admit only a documented worker-only env reader, never shared runtime secrets."""
+    for key, (owner, documentation) in WORKER_ONLY_SECRET_AUTHORITIES.items():
+        if key in shared_documented_keys:
+            raise AssertionError(f'Worker-only secret must not be listed in shared environment templates: {key}')
+        authority = read(documentation)
+        if key not in authority or 'Worker-only secret:' not in authority or 'trusted worker runtime' not in authority:
+            raise AssertionError(f'{key}: worker-only secret authority is missing or unqualified')
+        readers = sorted(path for path in runtime_sources if key in accessed_env_keys(path))
+        if readers != [owner]:
+            raise AssertionError(f'{key}: only {owner} may read this worker-only secret; found {readers}')
+    return set(WORKER_ONLY_SECRET_AUTHORITIES)
+
+
 def compose_env_keys(*relatives: str) -> set[str]:
     keys: set[str] = set()
     for relative in relatives:
@@ -207,7 +242,15 @@ def verify() -> None:
         assert_no_duplicates(relative)
 
     development_keys = documented_env_keys('.env.example')
-    missing_development = sorted((common_keys | development_compose_keys) - development_keys)
+    leaking_bootstrap = sorted(DEVCONTAINER_BOOTSTRAP_SECRET_KEYS & development_keys)
+    if leaking_bootstrap:
+        raise AssertionError(
+            'PostgreSQL bootstrap-only secrets must not appear in application .env.example: '
+            + ', '.join(leaking_bootstrap)
+        )
+    missing_development = sorted(
+        ((common_keys | development_compose_keys) - DEVCONTAINER_BOOTSTRAP_SECRET_KEYS) - development_keys
+    )
     if missing_development:
         raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))
 
@@ -236,8 +279,15 @@ def verify() -> None:
     if non_test_overrides:
         raise AssertionError('Testing config must use TEST_* overrides only: ' + ', '.join(non_test_overrides))
 
-    runtime_keys = accessed_env_keys(*runtime_python_sources())
-    documented_runtime_inventory = development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS
+    runtime_sources = runtime_python_sources()
+    runtime_keys = accessed_env_keys(*runtime_sources)
+    worker_only_secrets = verify_worker_only_secrets(
+        runtime_sources=runtime_sources,
+        shared_documented_keys=development_keys | persistent_union | rc_keys,
+    )
+    documented_runtime_inventory = (
+        development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS | worker_only_secrets
+    )
     undocumented_runtime = sorted(runtime_keys - documented_runtime_inventory)
     if undocumented_runtime:
         raise AssertionError('Runtime reads undocumented environment keys: ' + ', '.join(undocumented_runtime))
@@ -264,6 +314,17 @@ def verify() -> None:
     leaked_sensitive = sorted(SENSITIVE_KEYS & (app_keys | deploy_keys))
     if leaked_sensitive:
         raise AssertionError('Sensitive keys leaked outside secrets.env.example: ' + ', '.join(leaked_sensitive))
+    # Server-only PostgreSQL credentials are independent of app.env/secrets.env.
+    # Legacy co-location would leak superuser or DDL authority to all workers.
+    admin_keys = documented_env_keys('deploy/env/postgres-admin.env.example')
+    migration_keys = documented_env_keys('deploy/env/postgres-migrate.env.example')
+    if admin_keys != {'POSTGRES_PASSWORD'} or migration_keys != {'KAORI_DB_MIGRATION_URL'}:
+        raise AssertionError('Server-only PostgreSQL credential examples have drifted')
+    if (admin_keys | migration_keys) & persistent_union:
+        raise AssertionError('PostgreSQL privileged credentials must not appear in runtime env files')
+    if 'DATABASE_URL=postgresql://kaori_runtime:' not in read(SECRETS_TEMPLATE):
+        raise AssertionError('Bundled production runtime must use restricted PostgreSQL role')
+
     missing_deployment = sorted(DEPLOYMENT_KEYS - deploy_keys)
     if missing_deployment:
         raise AssertionError('deploy.env.example is missing adapter keys: ' + ', '.join(missing_deployment))
@@ -313,6 +374,57 @@ def verify() -> None:
     ):
         if token not in operational:
             raise AssertionError(f'{APP_TEMPLATE} is missing required operational setting {token[:-1]}')
+
+    # Runtime-mode drift guard: a local standalone RC is neither a Dev
+    # Container nor a shortcut around the split governed-server overlay.
+    local_standalone = read('example/kaori/compose.yml')
+    dev_compose = read('compose.yml')
+    devcontainer_compose = read('.devcontainer/compose.devcontainer.yml')
+    for path, source, marker in (
+        ('compose.yml', dev_compose, '127.0.0.1:${POSTGRES_PORT:-5432}:5432'),
+        ('compose.yml', dev_compose, '127.0.0.1:${REDIS_PORT:-6379}:6379'),
+        ('.devcontainer/compose.devcontainer.yml', devcontainer_compose, '127.0.0.1:5000:5000'),
+        ('example/kaori/compose.yml', local_standalone, '127.0.0.1:${KAORI_PORT:-5000}:5000'),
+        ('example/kaori/compose.yml', local_standalone, '--queues=inventory,registry-security,'),
+    ):
+        if marker not in source:
+            raise AssertionError(f'{path} is missing local-mode runtime safeguard: {marker}')
+
+    tasks = json.loads(read('.vscode/tasks.json'))['tasks']
+    watcher = [task for task in tasks if task.get('label') == 'KAORI: Watch Tailwind CSS']
+    if (
+        len(watcher) != 1
+        or watcher[0].get('command') != 'npm run watch-css'
+        or 'runOn' in watcher[0].get('runOptions', {})
+        or watcher[0].get('runOptions', {}).get('instanceLimit') != 1
+        or watcher[0].get('isBackground') is not True
+    ):
+        raise AssertionError('Dev Container Tailwind watcher must be manually started after frontend bootstrap')
+
+    for document in (
+        'docs/RUNNING.md',
+        'docs/DEPLOYMENT.md',
+        'docs/deployment/RELEASE_GOVERNANCE.md',
+    ):
+        source = read(document)
+        for stale in (
+            'cp .env.production.example .env.production',
+            '/etc/kaori/.env.production',
+            'docker compose -f compose.production.yml up -d',
+        ):
+            if stale in source:
+                raise AssertionError(f'{document} still instructs obsolete production deployment: {stale}')
+
+    runtime_guide = read('docs/RUNNING.md')
+    for mode_marker in (
+        'Mode 1',
+        'Mode 2',
+        'Mode 3',
+        'deploy/server/compose.server.yml',
+        'example/kaori/compose.yml',
+    ):
+        if mode_marker not in runtime_guide:
+            raise AssertionError(f'docs/RUNNING.md does not describe the supported {mode_marker} runtime')
 
     print(
         'PASS — KAORI Environment Contract · '

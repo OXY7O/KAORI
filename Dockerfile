@@ -41,6 +41,9 @@ ENTRYPOINT ["kaori-entrypoint"]
 
 FROM base AS development
 
+# Browser tests use the same non-user-specific Playwright cache as CI.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Development utilities intentionally follow Bookworm repository patch levels.
 # hadolint ignore=DL3008
 RUN apt-get update \
@@ -57,6 +60,12 @@ RUN apt-get update \
 COPY requirements/base.txt requirements/dev.txt /tmp/requirements/
 RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt
+
+# Pin the browser to the locked Playwright Python version and install its
+# shared libraries before switching to the non-root VS Code user.
+RUN python -m playwright install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
     && echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
@@ -124,6 +133,8 @@ COPY --chown=kaori:kaori run.py celery_worker.py gunicorn.conf.py /app/
 COPY --chown=kaori:kaori \
     scripts/wait_for_db.py \
     scripts/validate_production_env.py \
+    scripts/server_database_boundary.py \
+    scripts/server_migrate_db.sh \
     /app/scripts/
 COPY --from=frontend-build --chown=kaori:kaori \
     /build/app/static/css/output.css \

@@ -1,0 +1,383 @@
+from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
+from werkzeug.datastructures import MultiDict
+
+from app.intelligence.alert_intelligence import routing, service
+from app.intelligence.alert_intelligence.notifications import _dispatch_resolved
+
+
+class _Column:
+    def __eq__(self, _value: object) -> bool:
+        return True
+
+    def is_(self, _value: object) -> bool:
+        return True
+
+    def asc(self) -> '_Column':
+        return self
+
+
+class _ProvidersQuery:
+    def __init__(self, rows: list[SimpleNamespace]) -> None:
+        self.rows = rows
+
+    def filter(self, *_criteria: object) -> '_ProvidersQuery':
+        return self
+
+    def order_by(self, *_columns: object) -> '_ProvidersQuery':
+        return self
+
+    def all(self) -> list[SimpleNamespace]:
+        return self.rows
+
+
+def test_registry_provider_choices_exclude_inactive_disabled_and_blocked(monkeypatch) -> None:
+    rows = [
+        SimpleNamespace(
+            id=7,
+            name='Harbor A',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=8,
+            name='Harbor B',
+            environment='UAT',
+            enabled=False,
+            lifecycle_status='active',
+            readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=9,
+            name='Harbor C',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='retired',
+            readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=10,
+            name='Harbor D',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='blocked',
+        ),
+    ]
+    column = _Column()
+    fake_model = SimpleNamespace(
+        query=_ProvidersQuery(rows),
+        integration_type=column,
+        enabled=column,
+        lifecycle_status=column,
+        name=column,
+        id=column,
+    )
+    monkeypatch.setattr(service, 'IntegrationInstance', fake_model)
+
+    assert service._selected_domain(MultiDict([('domain', 'registry')]), clusters=[], systems=[]) == 'registry'
+    options = service._asset_options('registry', clusters=[], systems=[])
+    assert [option['value'] for option in options] == ['all', '7']
+    assert options[1]['label'] == 'Harbor A'
+    assert options[1]['environment'] == 'UAT'
+
+    assert service._selected_asset_key(MultiDict([('asset', '7')]), options, domain='registry') == '7'
+    assert (
+        service._selected_asset_key(MultiDict([('asset', '8')]), options, domain='registry')
+        == service._INVALID_REGISTRY_SCOPE
+    )
+    assert (
+        service._selected_asset_key(MultiDict([('asset', 'unknown')]), options, domain='registry')
+        == service._INVALID_REGISTRY_SCOPE
+    )
+    assert service._selected_asset_key(MultiDict(), options, domain='registry') == 'all'
+    assert service._selected_asset_key(MultiDict([('asset', 'stale')]), options, domain='kubernetes') == 'all'
+
+
+def test_case_selection_is_constrained_to_active_domain_and_asset_scope() -> None:
+    own = SimpleNamespace(public_id='CASE-REG-7')
+    other_domain_or_provider = 'CASE-K8S-8'
+    assert service._selected_case('CASE-REG-7', [own]) is own
+    assert service._selected_case(other_domain_or_provider, [own]) is None
+    assert service._selected_case(None, [own]) is None
+
+
+def test_registry_routing_and_resolved_delivery_remain_fail_closed() -> None:
+    case = SimpleNamespace(
+        domain='registry',
+        source_type='recommendation',
+        source_state='firing',
+        routing_state='enabled',
+        severity='critical',
+    )
+    assert routing.matching_routing_policies(case) == []
+    assert routing.firing_routes(case) == []
+    assert routing.policy_allows_resolved(case, 1) is False
+
+    case.source_state = 'resolved'
+    assert _dispatch_resolved(case) == {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 1}
+
+
+def test_registry_routing_policy_cannot_be_enabled_implicitly() -> None:
+    policy = routing.RoutingPolicyConfig(
+        name='Unapproved Registry Route',
+        enabled=True,
+        domains=['registry', 'kubernetes'],
+        severities=['critical'],
+        source_types=['recommendation'],
+        channel_ids=[1],
+        repeat_interval_minutes=15,
+        acknowledgement_timeout_minutes=30,
+        send_resolved=True,
+        matchers={},
+    )
+    with pytest.raises(ValueError, match='Registry AlertCases require a dedicated domain routing policy'):
+        routing.upsert_routing_policy(policy_id=None, config=policy, actor_user_id=1)
+
+
+def test_registry_invalid_deep_link_skips_case_and_delivery_scope_queries(monkeypatch) -> None:
+    column = _Column()
+    no_rows = _ProvidersQuery([])
+    empty_model = SimpleNamespace(query=no_rows, name=column)
+    provider_model = SimpleNamespace(
+        query=no_rows,
+        integration_type=column,
+        enabled=column,
+        lifecycle_status=column,
+        name=column,
+        id=column,
+    )
+    monkeypatch.setattr(service, 'Cluster', empty_model)
+    monkeypatch.setattr(service, 'ObjectStorageSystem', empty_model)
+    monkeypatch.setattr(service, 'IntegrationInstance', provider_model)
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError('Invalid provider scope must not query AlertCases or deliveries.')
+
+    monkeypatch.setattr(service, '_case_rows', unexpected)
+    monkeypatch.setattr(service, '_active_silence_rows', unexpected)
+    monkeypatch.setattr(service, '_delivery_failure_count', unexpected)
+    monkeypatch.setattr(service, 'routing_policy_rows', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_options', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_summary', lambda: {'eligible': 0})
+    monkeypatch.setattr(service, 'built_in_templates', lambda: [])
+    monkeypatch.setattr(service, '_owner_options', lambda: [])
+
+    result = service.get_alert_intelligence_payload(
+        MultiDict([('domain', 'registry'), ('asset', '9999'), ('tab', 'active')])
+    )
+    assert result['domain'] == 'registry'
+    assert result['scope_invalid'] is True
+    assert result['selected_asset_key'] == service._INVALID_REGISTRY_SCOPE
+    assert result['snapshot']['available'] is False
+    assert result['summary']['active'] == 0
+    assert result['active_cases'] == []
+    assert result['selected_case'] is None
+
+
+def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monkeypatch) -> None:
+    column = _Column()
+    no_rows = _ProvidersQuery([])
+    monkeypatch.setattr(service, 'Cluster', SimpleNamespace(query=no_rows, name=column))
+    monkeypatch.setattr(service, 'ObjectStorageSystem', SimpleNamespace(query=no_rows, name=column))
+    provider = SimpleNamespace(
+        id=7,
+        name='Harbor A',
+        environment='UAT',
+        enabled=True,
+        lifecycle_status='active',
+        readiness_status='ready',
+    )
+    model = SimpleNamespace(
+        query=_ProvidersQuery([provider]),
+        integration_type=column,
+        enabled=column,
+        lifecycle_status=column,
+        name=column,
+        id=column,
+    )
+    monkeypatch.setattr(service, 'IntegrationInstance', model)
+
+    def case_record(identifier: str, state: str, workflow: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            public_id=identifier,
+            source_state=state,
+            workflow_state=workflow,
+            source_type='recommendation',
+            severity='warning',
+            source_resolved_at=None,
+            closure_reason='resolved',
+            postmortem_status='complete',
+        )
+
+    scoped_cases = [
+        case_record('REG-7-UNKNOWN', 'unknown', 'open'),
+        case_record('REG-7-RESOLVED', 'resolved', 'closed'),
+    ]
+    observed = []
+
+    def scoped_query(*, domain: str, asset_key: str):
+        observed.append((domain, asset_key))
+        return scoped_cases
+
+    monkeypatch.setattr(service, '_case_rows', scoped_query)
+    monkeypatch.setattr(
+        service,
+        '_snapshot_context',
+        lambda **_kwargs: {'available': True, 'serving_last_good': False, 'label': 'Test'},
+    )
+    monkeypatch.setattr(service, '_serialize_case', lambda case: {'public_id': case.public_id})
+    monkeypatch.setattr(service, '_serialize_case_detail', lambda case: {'public_id': case.public_id})
+    monkeypatch.setattr(service, '_active_silence_rows', lambda **_kwargs: [])
+    monkeypatch.setattr(service, '_delivery_failure_count', lambda **_kwargs: 0)
+    monkeypatch.setattr(service, 'routing_policy_rows', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_options', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_summary', lambda: {'eligible': 0})
+    monkeypatch.setattr(service, 'built_in_templates', lambda: [])
+    monkeypatch.setattr(service, '_owner_options', lambda: [])
+
+    args = MultiDict(
+        [
+            ('domain', 'registry'),
+            ('asset', '7'),
+            ('tab', 'active'),
+            ('case', 'REG-7-UNKNOWN'),
+        ]
+    )
+    payload = service.get_alert_intelligence_payload(args)
+    assert payload['scope_invalid'] is False
+    assert payload['summary']['active'] == 1
+    assert payload['summary']['source_unknown'] == 1
+    assert payload['summary']['resolved_total'] == 1
+    assert payload['selected_case'] == {'public_id': 'REG-7-UNKNOWN'}
+    assert observed == [('registry', '7')]
+
+    args['case'] = 'CASE-OTHER-DOMAIN'
+    assert service.get_alert_intelligence_payload(args)['selected_case'] is None
+
+
+def test_case_lifecycle_notifications_keep_scope_for_all_domains() -> None:
+    from app.intelligence.alert_intelligence.lifecycle import _case_workspace_url
+
+    for domain, asset in (('registry', '7'), ('object_storage', '12'), ('kubernetes', 'cluster-1')):
+        case = SimpleNamespace(domain=domain, asset_key=asset, public_id='CASE-7')
+        for tab in ('active', 'resolved'):
+            path = _case_workspace_url(case, tab=tab)
+            assert urlsplit(path).path == '/intelligence/alert-intelligence'
+            assert parse_qs(urlsplit(path).query) == {
+                'tab': [tab],
+                'domain': [domain],
+                'asset': [asset],
+                'case': ['CASE-7'],
+            }
+
+
+def _registry_route_case(*, asset_key: str = '7', severity: str = 'critical') -> SimpleNamespace:
+    return SimpleNamespace(
+        domain='registry',
+        asset_key=asset_key,
+        asset_type='registry_integration',
+        source_type='recommendation',
+        source_state='firing',
+        routing_state='enabled',
+        severity=severity,
+        labels_json={'environment': 'uat'},
+    )
+
+
+def _registry_notification_stub(*, enabled: bool = True) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=11,
+        enabled=enabled,
+        configured=True,
+        test_status='success',
+        domains=['registry'],
+        event_types=['alert_ops.firing', 'alert_ops.resolved'],
+    )
+
+
+def test_registry_routing_requires_live_canonical_provider(monkeypatch) -> None:
+    from app.models.integration import IntegrationInstance
+
+    provider = SimpleNamespace(
+        integration_type='registry',
+        enabled=True,
+        lifecycle_status='active',
+        readiness_status='ready',
+    )
+
+    def get_provider(model, identifier):
+        assert model is IntegrationInstance
+        assert identifier == 7
+        return provider
+
+    monkeypatch.setattr(routing, 'db', SimpleNamespace(session=SimpleNamespace(get=get_provider)))
+    case = _registry_route_case()
+    assert routing.registry_case_route_eligible(case)
+    for mutation in (
+        {'enabled': False},
+        {'enabled': True, 'lifecycle_status': 'retired'},
+        {'lifecycle_status': 'active', 'readiness_status': 'blocked'},
+        {'readiness_status': 'validation_failed'},
+        {'readiness_status': 'validation_required'},
+        {'readiness_status': None},
+        {'integration_type': 'kubernetes'},
+    ):
+        saved = vars(provider).copy()
+        vars(provider).update(mutation)
+        assert not routing.registry_case_route_eligible(case)
+        vars(provider).update(saved)
+    assert not routing.registry_case_route_eligible(_registry_route_case(asset_key='../../7'))
+    assert not routing.registry_case_route_eligible(_registry_route_case(asset_key='9' * 19))
+
+
+def test_registry_route_never_falls_back_to_broadcast_without_matching_policy(monkeypatch) -> None:
+    case = _registry_route_case()
+    monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)
+    monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [])
+    assert routing.firing_routes(case) == []
+    assert not routing.policy_allows_resolved(case, 11)
+    case.source_state = 'unknown'
+    assert routing.firing_routes(case) == []
+
+
+def test_registry_route_requires_validated_scoped_channel_and_matching_rule(monkeypatch) -> None:
+    from app.models.notification_channel import NotificationChannel
+
+    case = _registry_route_case()
+    channel = _registry_notification_stub()
+    monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)
+
+    def get_channel(model, identifier):
+        assert model is NotificationChannel
+        assert identifier == 11
+        return channel
+
+    monkeypatch.setattr(routing, 'db', SimpleNamespace(session=SimpleNamespace(get=get_channel)))
+    policy = SimpleNamespace(
+        id=3,
+        enabled=True,
+        domains_json=['registry'],
+        severities_json=['critical'],
+        source_types_json=['recommendation'],
+        matchers_json={'environment': 'uat'},
+        channel_ids_json=[11],
+        repeat_interval_minutes=15,
+        send_resolved=True,
+    )
+    monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [policy])
+    routes = routing.firing_routes(case)
+    assert len(routes) == 1
+    assert routes[0].channel_id == 11
+    assert routes[0].policy_id == 3
+    assert routing.policy_allows_resolved(case, 11)
+    channel.enabled = False
+    assert routing.firing_routes(case) == []
+    channel.enabled = True
+    channel.domains = ['artifact_registry']
+    assert routing.firing_routes(case) == []
+    assert routing.policy_allows_resolved(case, 99) is False

@@ -1,17 +1,13 @@
 {% import "components/table.html" as table_ui %}
-<form id="users-filter-form"
-      method="get"
-      action="{{ url_for('users.index') }}"
-      class="{{ table_ui.filter_layout_classes() }}"
-      hx-get="{{ url_for('users.index') }}"
-      hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
-      hx-target="#users-page-content"
-      hx-swap="outerHTML settle:150ms"
-      hx-push-url="true"
-      hx-indicator="#users-refresh-indicator"
-      hx-sync="#users-filter-form:replace">
-    <input type="hidden" name="page" value="1">
-    <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+{% import "components/table_registry.html" as registry_ui %}
+{% call registry_ui.filter_form(
+    'users.index',
+    'user-directory',
+    'users-refresh-indicator',
+    filters.per_page,
+    form_id='users-filter-form',
+    aria_label='User Directory filters'
+    ) %}
     <label class="min-w-0">
         <span class="{{ table_ui.filter_label_classes() }}">Search User</span>
         {{ table_ui.search_field('search', filters.search, 'Username, display name, or email', 'users-search') }}
@@ -51,4 +47,4 @@
             {% endfor %}
         </select>
     </label>
-</form>
+{% endcall %}

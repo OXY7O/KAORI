@@ -48,7 +48,8 @@ def test_runtime_audit_keeps_report_storage_outage_degraded_not_successful() -> 
 def test_runtime_audit_has_responsive_database_unavailable_evidence() -> None:
     browser_test = read('tests/ui/test_runtime_state_responsiveness.py')
 
-    assert "'database_unavailable': 'PostgreSQL Unavailable'" in browser_test
+    assert "'database_unavailable': 'Database Unavailable'" in browser_test
+    assert "get_by_label('Initialization readiness')" in browser_test
     assert 'assert response.status == 503' in browser_test
     assert "heading', name='Database Setup Required'" in browser_test
     assert "layout['scrollWidth'] <= layout['clientWidth'] + 1" in browser_test
@@ -164,8 +165,14 @@ def test_runtime_audit_records_retry_transition_semantics(monkeypatch) -> None:
         error_message=None,
     )
 
+    locked_tasks: list[str] = []
+
+    def locked_job(task_id: str):
+        locked_tasks.append(task_id)
+        return job
+
     monkeypatch.setattr(job_service, '_now', lambda: fixed_now)
-    monkeypatch.setattr(job_service, 'get_job_by_task_id', lambda _task_id: job)
+    monkeypatch.setattr(job_service, '_lock_job_by_task_id', locked_job)
     monkeypatch.setattr(job_service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
 
     result = job_service.mark_job_retrying(
@@ -182,4 +189,5 @@ def test_runtime_audit_records_retry_transition_semantics(monkeypatch) -> None:
     assert job.error_message == 'provider timeout'
     assert job.payload_json['_progress']['stage'] == 'Retrying'
     assert job.payload_json['_progress']['updated_at'] == fixed_now.isoformat()
+    assert locked_tasks == ['task-retry']
     assert commits == [True]

@@ -162,11 +162,55 @@ def main() -> int:
         '<caption class="sr-only">',
         'scope="col"',
         'node.condition_summary',
+        "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')",
         "technical_value.render(node.internal_ip or 'Not Reported')",
         "pagination_ui.resource_name('Nodes', pagination.total_items)",
     ):
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
+    column_percent = {
+        'Node': 26,
+        'Cluster': 22,
+        'Readiness': 11,
+        'Role': 10,
+        'Capacity': 12,
+        'Network': 9,
+        'Details': 10,
+    }
+    require(
+        sum(column_percent.values()) == 100
+        and all(
+            f'w-[{width}%]' in table_content.split(f'>{name}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for name, width in column_percent.items()
+        )
+        and "table_ui.table_classes('min-w-[74rem] !table-fixed')" in table_content
+        and 'overflow-x-auto overscroll-x-contain' in table_content
+        and "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')" in table_content,
+        'Node/Cluster width must be prioritized with the approved proportional table layout.',
+        errors,
+    )
+
+    require(
+        "'identity_supporting': _node_os_family(node)" in backend
+        and "node.operating_system or labels.get('kubernetes.io/os')" in backend,
+        'Node identity must display OS family from committed fields, not full OS image.',
+        errors,
+    )
+    require(
+        "detail.inspector_row('OS Image', node.os_image, nowrap=true)" in detail
+        and "detail.inspector_row('Operating System', node.operating_system_display)" in detail,
+        'Full OS image and reported OS family must remain in Node Details.',
+        errors,
+    )
+
+    require(
+        "title_extra=info_tip.render('k8s-inventory-nodes-title'" in table_card
+        and "'Node Readiness:" in table_card
+        and "'Node Capacity:" in table_card
+        and 'info_tip.render(' not in table_content,
+        'Node contextual help must be beside the Node Inventory title, not in headers.',
+        errors,
+    )
     shared_detail = read('app/templates/components/details/_detail_content.html')
     require(
         'macro inspector_section(' in shared_detail, 'Node detail must expose the inspector section primitive.', errors
@@ -204,6 +248,7 @@ def main() -> int:
         'Kubernetes Node Inventory Standard',
         'missing values are not converted to zero',
         'Node | Cluster | Readiness | Role | Capacity | Network | Details',
+        'OS family',
     ):
         require(token in standard, f'Node Inventory documentation is missing: {token}', errors)
     require(

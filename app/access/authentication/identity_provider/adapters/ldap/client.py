@@ -131,7 +131,11 @@ class LdapDirectoryClient:
         )
 
     def _open_and_secure(self, connection: Connection) -> None:
-        if not connection.open():
+        # ldap3.Connection.open() returns None after a successful socket open.
+        # Use its actual connection state, not the return value, to avoid
+        # rejecting valid LDAPS connections before the bind is attempted.
+        connection.open()
+        if connection.closed:
             raise ExternalProviderError('LDAP connection could not be opened.')
         if self.transport.start_tls and not connection.start_tls():
             raise ExternalProviderError('LDAP StartTLS negotiation failed.')

@@ -1,0 +1,27 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/section_intro.html" as section_intro %}
+<section id="artifact-registry-analytics-summary"
+         data-analytics-lazy-section="true"
+         data-analytics-load-state="loaded"
+         aria-labelledby="artifact-registry-analytics-summary-heading">
+    {{ section_intro.render('Registry Analytical Posture',
+        'Cross-domain evidence from committed inventory, metrics, runtime, security, governance, and alerts.',
+        'artifact-registry-analytics-summary-heading',
+        extra_classes='mb-3') }}
+    {% set analytical_metrics = [] %}
+    {% set analytical_statuses = [] %}
+    {% for card in analytics.summary_cards %}
+        {% set _ = analytical_metrics.append((card.icon, card.label, card.value, card.detail, card.tone)) %}
+        {% set _ = analytical_statuses.append('Review' if card.tone == 'warning' else ('Unavailable' if card.tone == 'unknown' else 'Ready')) %}
+    {% endfor %}
+    {% call section_card.render(
+        'Analytical Evidence Summary',
+        'Committed cross-domain inventory, runtime, security, governance, and alert indicators.',
+        'chart-no-axes-combined',
+        body_classes='p-0',
+        aria_label='Registry analytical posture summary'
+        ) %}
+        {{ posture_grid.render(analytical_metrics, columns=4, status_labels=analytical_statuses) }}
+    {% endcall %}
+</section>

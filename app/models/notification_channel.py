@@ -31,7 +31,9 @@ class NotificationChannel(db.Model):
             "last_delivery_status IN ('never', 'success', 'failed')",
             name='ck_notification_channels_delivery_status',
         ),
+        CheckConstraint("lifecycle_state IN ('active', 'retired')", name='ck_notification_channels_lifecycle_state'),
         Index('ix_notification_channels_provider_enabled', 'provider_key', 'enabled'),
+        Index('ix_notification_channels_lifecycle_enabled', 'lifecycle_state', 'enabled'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -39,6 +41,14 @@ class NotificationChannel(db.Model):
     name: Mapped[str] = mapped_column(db.String(160), nullable=False)
     provider_key: Mapped[str] = mapped_column(db.String(40), nullable=False)
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
+    lifecycle_state: Mapped[str] = mapped_column(
+        db.String(16), nullable=False, default='active', server_default='active'
+    )
+    retired_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    retired_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    retirement_reason: Mapped[str | None] = mapped_column(db.String(500), nullable=True)
     credential_payload: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     destination: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     provider_config: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False, default=dict)
@@ -70,6 +80,7 @@ class NotificationChannel(db.Model):
 
     created_by: Mapped[User | None] = relationship('User', foreign_keys=[created_by_user_id])
     updated_by: Mapped[User | None] = relationship('User', foreign_keys=[updated_by_user_id])
+    retired_by: Mapped[User | None] = relationship('User', foreign_keys=[retired_by_user_id])
     deliveries: Mapped[list[NotificationDelivery]] = relationship(
         'NotificationDelivery',
         back_populates='channel',
@@ -83,6 +94,8 @@ class NotificationChannel(db.Model):
 
     @property
     def display_status(self) -> str:
+        if self.lifecycle_state == 'retired':
+            return 'Retired'
         if not self.enabled:
             return 'Disabled'
         if not self.configured:
@@ -109,6 +122,7 @@ class NotificationDelivery(db.Model):
         ),
         UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_event'),
         Index('ix_notification_deliveries_status_created', 'status', 'created_at'),
+        Index('ix_notification_deliveries_status_next_retry', 'status', 'next_retry_at'),
         Index('ix_notification_deliveries_domain_asset', 'domain', 'asset_key'),
     )
 
@@ -128,6 +142,7 @@ class NotificationDelivery(db.Model):
     attempt_count: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(db.String(1000), nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -139,3 +154,29 @@ class NotificationDelivery(db.Model):
     )
 
     channel: Mapped[NotificationChannel] = relationship('NotificationChannel', back_populates='deliveries')
+
+
+class NotificationDeliveryIdentity(db.Model):
+    """Inert durable event/channel reservation identity for future archive safety.
+
+    Schema-only first slice of #2868. The existing delivery journal is still
+    authoritative. Do not read this ledger for dispatch, backfill, delete or
+    cleanup until the migration/cutover contracts receive explicit admission.
+    """
+
+    __tablename__ = 'notification_delivery_identities'
+    __table_args__ = (
+        UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_identity_event'),
+        UniqueConstraint('source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    channel_id: Mapped[int] = mapped_column(
+        db.ForeignKey('notification_channels.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
+    )
+    event_key: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    # Historical source reference, deliberately not an FK to removable hot data.
+    source_delivery_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)

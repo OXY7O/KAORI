@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provide one reusable, maximized detail workspace for complex Kubernetes Inventory resources without expanding or reflowing the owning table.
+Provide one reusable, maximized detail workspace for complex Kubernetes Inventory resources and Inventory Overview cluster evidence, without expanding or reflowing the owning table.
 
 ## Shared owner
 
@@ -13,6 +13,7 @@ app/static/js/detail_rows.js
 
 ## Reference pages
 
+- Kubernetes Inventory Overview — Cluster Details
 - Node Inventory
 - Namespace Inventory
 - Workload Inventory
@@ -22,7 +23,7 @@ app/static/js/detail_rows.js
 - Storage Inventory
 - Configuration Inventory
 
-Inventory Overview continues to use the Side Drawer. Kubernetes Topology continues to use the Adaptive Explorer Inspector.
+Kubernetes Inventory Overview cluster details use the shared Full Workspace Modal and Unified Resource Sheet V10, as defined in `docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md`. Kubernetes Topology continues to use the Adaptive Explorer Inspector.
 
 ## Geometry
 
@@ -34,6 +35,12 @@ Inventory Overview continues to use the Side Drawer. Kubernetes Topology continu
 - fixed header and footer;
 - independently scrollable detail body with hidden horizontal page overflow;
 
+## Human-reviewed dense-data reference — 2026-10-24
+
+Kubernetes Inventory **Node Details** (`/inventory/nodes`, `desktop-worker`) and **Overview Cluster Details** (`/inventory/`) are the accepted KAORI reference for long, information-dense read-only Inventory views. Compose the existing header, four-metric summary band, Unified Resource Sheet V10 section rails, long technical values, operational callouts, and persistent footer; let **only the modal body scroll vertically** instead of introducing nested scroll regions or page-local geometry.
+
+The operator reviewed top/bottom Node detail screenshots and confirmed the shared **Close / Escape** behavior in Dev Container UAT. This is scoped human evidence, not a claim that focus trapping, Back/Forward deep-link recovery, all viewport/theme variants, or every consumer were machine-tested. Reuse this modal when the content warrants a full workspace; smaller details may follow another already-approved KAORI Detail Style.
+
 ## Header and summary ownership
 
 Fetched details retain resource-specific server rendering. The modal extracts:
@@ -43,6 +50,22 @@ Fetched details retain resource-specific server rendering. The modal extracts:
 - remaining evidence into the scrollable body.
 
 Page templates must not recreate modal geometry or loading states.
+
+## Row-action appearance
+
+The shared `resource_detail_modal.detail_button(...)` launcher is a normal
+**table-row utility action**. Its classes come directly from
+`components/table_primitives.html::action_classes()`, matching the compact
+neutral `View More` button in Artifact Registry Security. Icon (14px) precedes
+the text label without a separate elevated/boxed icon tile. A page may pass
+`class_name` for layout only, not to introduce its own geometry, colors,
+shadows or interaction states.
+
+This is an additive visual alignment: `data-resource-detail-toggle`, the
+detail identity and URL attributes, accessibility semantics, focus management
+and the existing JS-controlled modal/drawer host remain authoritative.
+Changing the launcher must not change the loaded evidence or route permissions.
+
 
 ## URL contract
 

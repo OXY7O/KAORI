@@ -8,12 +8,11 @@ from kubernetes.client import BatchV1Api, DiscoveryV1Api
 from sqlalchemy import select
 
 from app.extensions.db import db
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
     KubernetesDiscovery,
     list_cluster_resource,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
 from app.kubernetes.inventory.persistence import (
     save_cluster_info,
     save_configuration_inventory,
@@ -245,10 +244,9 @@ def sync_inventory(
     _report_progress(progress_callback, 2, 'Preparing Cluster', 'Locking the committed inventory boundary.')
     try:
         _lock_cluster_inventory_sync(cluster.id)
-        with weak_tls_context(enabled=bool(connection.allow_weak_tls)):
-            current_stage[0] = 'API discovery'
-            inventory = _discover_inventory(connection, progress_callback)
-            _persist_inventory_resources(cluster, collected_at, inventory, progress_callback, current_stage)
+        current_stage[0] = 'API discovery'
+        inventory = _discover_inventory(connection, progress_callback)
+        _persist_inventory_resources(cluster, collected_at, inventory, progress_callback, current_stage)
 
         current_stage[0] = 'commit'
         _report_progress(

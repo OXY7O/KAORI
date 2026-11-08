@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests.ui.visual_audit import (
@@ -12,6 +13,7 @@ from tests.ui.visual_audit import (
     VisualAuditFinding,
     assert_document_fits_viewport,
     assert_hero_description_contract,
+    assert_locator_within_document_width,
     assert_primary_actions_visible,
     assert_visual_baseline,
     record_visual_audit_finding,
@@ -39,7 +41,7 @@ def _browser_evidence(page: Page, scenario: str, viewport_name: str) -> Iterator
 
 
 def _login(page: Page, kaori_authenticated_base_url: str) -> None:
-    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
+    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='domcontentloaded')
     assert response is not None
     assert response.ok
 
@@ -53,9 +55,32 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     submit = page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first
     expect(submit).to_be_visible()
     submit.click()
-    page.wait_for_load_state('networkidle')
+    # Assert authenticated navigation and rendered app shell rather than idle network.
+    expect(page).not_to_have_url(re.compile(r'/auth/login(?:[/?#]|$)'))
+    # The sidebar is intentionally hidden on tablet/mobile until navigation opens.
+    # Require the authenticated Welcome workspace to be rendered at every viewport.
+    expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
     expect(page.locator('body')).to_be_visible()
     assert '/auth/login' not in page.url
+
+
+def _load_persisted_visual_theme(page: Page, visual_theme: str) -> None:
+    """Render a deterministic final theme through the application pre-paint bootstrap."""
+    assert visual_theme in {'light', 'dark'}
+    page.evaluate("(theme) => window.localStorage.setItem('theme', theme)", visual_theme)
+
+    response = page.reload(wait_until='networkidle')
+    assert response is not None
+    assert response.ok
+    expect(page.locator('body')).to_be_visible()
+    expect(page.locator('#theme-toggle')).to_be_visible()
+    page.evaluate('() => document.fonts.ready')
+    page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
+
+    html = page.locator('html')
+    class_tokens = (html.get_attribute('class') or '').split()
+    assert ('dark' in class_tokens) == (visual_theme == 'dark')
+    assert page.evaluate("() => window.localStorage.getItem('theme')") == visual_theme
 
 
 def _open_notification_center(page: Page, kaori_authenticated_base_url: str) -> None:
@@ -151,18 +176,10 @@ def test_welcome_visual_qa_light_and_dark(
     viewport_name, _ = kaori_viewport
 
     _login(page, kaori_authenticated_base_url)
-    html = page.locator('html')
-    toggle = page.locator('#theme-toggle')
-    expect(toggle).to_be_visible()
 
     for visual_theme in ('light', 'dark'):
         with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
-            is_dark = 'dark' in (html.get_attribute('class') or '').split()
-            if (visual_theme == 'dark') != is_dark:
-                toggle.click()
-
-            class_tokens = (html.get_attribute('class') or '').split()
-            assert ('dark' in class_tokens) == (visual_theme == 'dark')
+            _load_persisted_visual_theme(page, visual_theme)
 
             evidence_name = f'welcome-{visual_theme}-{viewport_name}.png'
             try:
@@ -200,6 +217,275 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=evidence_name,
                     )
                 )
+
+
+def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Exercise current Welcome content and catalog interaction across every canonical viewport."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'welcome-catalog-content-search', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
+        tenant_card = page.get_by_role('link', name='Open Tenant Management Workspace')
+        access_card = page.get_by_role('link', name='Open Access Workspace')
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_visible()
+        expect(tenant_card).to_contain_text('Governed Tenancy')
+        expect(tenant_card).to_contain_text(re.compile(r'namespace provisioning', re.I))
+        expect(access_card).to_contain_text(re.compile(r'identity providers', re.I))
+        expect(access_card).to_contain_text('directory-projected external identities')
+
+        assert_document_fits_viewport(page)
+        cards = page.locator('[data-workspace-card]')
+        assert cards.count() >= 2
+        for index in range(cards.count()):
+            card = cards.nth(index)
+            if card.is_visible():
+                assert_locator_within_document_width(page, card, label=f'Welcome workspace card #{index + 1}')
+
+        search = page.locator('[data-workspace-search]')
+        expect(search).to_be_visible()
+        page.keyboard.press('/')
+        expect(search).to_be_focused()
+        search.fill('tenant')
+
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_hidden()
+        expect(page.locator('[data-workspace-result-count]')).to_have_text('1 Workspace')
+        assert_document_fits_viewport(page)
+
+        page.keyboard.press('Escape')
+        expect(search).to_have_value('')
+        expect(search).not_to_be_focused()
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_visible()
+        assert_document_fits_viewport(page)
+
+        # UAT-WEL-004: unmatched search must show empty state and recover.
+        original_count = cards.count()
+        search.fill('kaori-no-such-workspace-uat')
+        expect(page.locator('[data-workspace-result-count]')).to_have_text('0 Workspaces')
+        expect(page.locator('[data-workspace-empty]')).to_be_visible()
+        expect(page.locator('[data-workspace-card]:visible')).to_have_count(0)
+        expect(page.locator('[data-workspace-group]:visible')).to_have_count(0)
+        assert_document_fits_viewport(page)
+
+        search.press('Escape')
+        expect(search).to_have_value('')
+        expect(search).not_to_be_focused()
+        expect(page.locator('[data-workspace-empty]')).to_be_hidden()
+        expect(page.locator('[data-workspace-card]:visible')).to_have_count(original_count)
+        expect(page.locator('[data-workspace-result-count]')).to_have_text(f'{original_count} Workspaces')
+        assert_document_fits_viewport(page)
+
+
+def test_welcome_authorized_workspace_card_navigation_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-WEL-006: clicking an authorized card navigates to the owning route."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'welcome-card-navigation', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None and response.ok
+
+        settings_card = page.get_by_role('link', name='Open Settings Workspace')
+        expect(settings_card).to_be_visible()
+        assert_document_fits_viewport(page)
+        settings_card.click()
+        expect(page).to_have_url(re.compile(r'/settings/account/?$'))
+        expect(page.get_by_role('heading', name='Account', exact=True)).to_be_visible()
+        assert_document_fits_viewport(page)
+
+
+def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Validate two-level sidebar disclosure and page-owned level-three navigation."""
+    page = configured_page
+    viewport_name, (width, _) = kaori_viewport
+
+    with _browser_evidence(page, 'sidebar-v21-two-level-workspace', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+
+        sidebar = page.locator('#app-sidebar')
+        expect(sidebar).to_be_visible()
+
+        section_labels = sidebar.locator('[data-kaori-sidebar-section] .sidebar-section-label').all_inner_texts()
+        assert section_labels == ['MAIN', 'INFRASTRUCTURE', 'ASSURANCE', 'INSIGHTS', 'PLATFORM', 'ADMINISTRATION']
+
+        expect(sidebar.locator('[data-kaori-sidebar-workspace="welcome"]')).to_be_visible()
+        for key in (
+            'kubernetes',
+            'object_storage',
+            'intelligence',
+            'reports',
+            'operations_center',
+            'integrations',
+            'access',
+            'settings',
+        ):
+            expect(sidebar.locator(f'[data-kaori-sidebar-workspace="{key}"]')).to_be_visible()
+
+        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
+        kubernetes_trigger = kubernetes.locator('[data-kaori-sidebar-workspace-trigger="kubernetes"]')
+
+        if width >= 1024:
+            collapse = page.get_by_role('button', name='Collapse navigation')
+            expect(collapse).to_be_visible()
+            expanded_box = sidebar.bounding_box()
+            assert expanded_box is not None
+
+            collapse.click()
+            expect(page.get_by_role('button', name='Expand navigation')).to_be_visible()
+            collapsed_box = sidebar.bounding_box()
+            assert collapsed_box is not None
+            assert collapsed_box['width'] < expanded_box['width']
+
+            kubernetes_trigger.click()
+            expect(page.get_by_role('button', name='Collapse navigation')).to_be_visible()
+
+        if not kubernetes.evaluate('element => element.open'):
+            kubernetes_trigger.click()
+
+        capability_region = kubernetes.locator('[data-kaori-sidebar-capabilities="kubernetes"]')
+        expect(capability_region).to_be_visible()
+        for label in ('Overview', 'Inventory', 'Operations', 'Governance', 'Tenant', 'Analytics'):
+            expect(capability_region.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        capability_region.get_by_role('link', name='Inventory', exact=True).click()
+        page.wait_for_load_state('networkidle')
+
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        inventory_views = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
+        expect(inventory_views).to_be_visible()
+        expect(inventory_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')).to_be_visible()
+        expect(inventory_views.locator('[data-kaori-tab-variant="content-tabs"]')).to_have_count(0)
+        for label in (
+            'Overview',
+            'Topology',
+            'Nodes',
+            'Namespaces',
+            'Workloads',
+            'Pods',
+            'Services',
+            'Ingresses',
+            'Storage',
+            'Configuration',
+        ):
+            expect(inventory_views.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+            sidebar = page.locator('#app-sidebar')
+            expect(sidebar).to_be_visible()
+
+        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
+        expect(kubernetes).to_have_attribute('open', '')
+        expect(kubernetes.locator('[data-kaori-sidebar-capability="inventory"]')).to_have_attribute(
+            'aria-current', 'page'
+        )
+
+        if width < 1024:
+            page.locator('[data-mobile-navigation-close]').click()
+
+        assert_document_fits_viewport(page)
+        assert_locator_within_document_width(
+            page,
+            inventory_views,
+            label='Kubernetes Inventory level-three navigation',
+        )
+
+        response = page.goto(f'{kaori_authenticated_base_url}/analytics/', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+        if page.locator('[data-kaori-blocked-state]').count() > 0:
+            analytics_blocked_views = page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')
+            expect(analytics_blocked_views).to_be_visible()
+            expect(
+                analytics_blocked_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
+            ).to_be_visible()
+
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/analytics/capacity?time_range=7d',
+            wait_until='networkidle',
+        )
+        assert response is not None
+        assert response.ok
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+
+        analytics_views = page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')
+        expect(analytics_views).to_be_visible()
+        expect(analytics_views.get_by_role('link', name='Capacity', exact=True)).to_have_attribute(
+            'aria-current',
+            'page',
+        )
+        forecast_href = analytics_views.get_by_role('link', name='Forecast', exact=True).get_attribute('href')
+        assert forecast_href is not None
+        assert 'time_range=7d' in forecast_href
+
+        response = page.goto(f'{kaori_authenticated_base_url}/intelligence/', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        expect(page.locator('[data-kaori-capability-navigation]')).to_have_count(0)
+
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+        sidebar = page.locator('#app-sidebar')
+        intelligence = sidebar.locator('[data-kaori-sidebar-workspace="intelligence"]')
+        expect(intelligence).to_have_attribute('open', '')
+        intelligence_children = intelligence.locator('[data-kaori-sidebar-capabilities="intelligence"]')
+        for label in ('Overview', 'Recommendations', 'Alert Intelligence', 'Rule Catalog', 'Automation Control'):
+            expect(intelligence_children.get_by_role('link', name=label, exact=True)).to_be_visible()
+        expect(intelligence.locator('[data-kaori-sidebar-capability="overview"]')).to_have_attribute(
+            'aria-current', 'page'
+        )
+
+        if width < 1024:
+            page.locator('[data-mobile-navigation-close]').click()
+
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/storage/object-storage/',
+            wait_until='networkidle',
+        )
+        assert response is not None
+        assert response.ok
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        object_views = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
+        expect(object_views).to_be_visible()
+        expect(object_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')).to_be_visible()
+        for label in ('Overview', 'Systems', 'Buckets & Containers'):
+            expect(object_views.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        assert_document_fits_viewport(page)
+        assert_locator_within_document_width(
+            page,
+            object_views,
+            label='Object Storage Inventory level-three navigation',
+        )
 
 
 def test_deterministic_visual_surface_catalog_light_and_dark(
@@ -266,6 +552,58 @@ def test_deterministic_visual_surface_catalog_light_and_dark(
                             evidence=evidence_name,
                         )
                     )
+
+
+def test_reduced_motion_keeps_shared_loading_and_overlay_state_without_animation(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Keep shared loading and overlay state visible without non-essential motion."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    if viewport_name != 'laptop':
+        return
+
+    page.emulate_media(reduced_motion='reduce')
+
+    with _browser_evidence(page, 'reduced-motion-shared-feedback', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        _open_notification_center(page, kaori_authenticated_base_url)
+
+        assert page.evaluate("() => window.matchMedia('(prefers-reduced-motion: reduce)').matches")
+
+        segment = page.locator('#notification-center-loading .kaori-loading-bar-segment')
+        expect(segment).to_be_attached()
+        segment_motion = segment.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                return {
+                    animationName: style.animationName,
+                    transform: style.transform,
+                };
+            }"""
+        )
+        assert segment_motion['animationName'] == 'none'
+        assert segment_motion['transform'] == 'none'
+
+        trigger = page.get_by_role('button', name='Open notification deck')
+        expect(trigger).to_be_visible()
+        trigger.click()
+        deck = page.locator('#notification-deck')
+        expect(deck).to_be_visible()
+        deck_motion = deck.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                return {
+                    transitionDuration: style.transitionDuration,
+                    transform: style.transform,
+                };
+            }"""
+        )
+        assert deck_motion['transitionDuration'] == '0s'
+        assert deck_motion['transform'] == 'none'
 
 
 def test_notification_deck_escape_restores_trigger_focus(
@@ -393,3 +731,252 @@ def test_representative_filter_pagination_and_form_controls(
             search_control.press_sequentially('browser')
         expect(page.locator('#notification-center-search')).to_be_visible()
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
+
+
+def _assert_query_tab_strip_has_no_vertical_overflow(page: Page, *, expect_horizontal_scroll: bool) -> None:
+    tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
+    expect(tablist).to_be_visible()
+    geometry = tablist.evaluate(
+        '(element) => ({'
+        'clientHeight: element.clientHeight, '
+        'scrollHeight: element.scrollHeight, '
+        'clientWidth: element.clientWidth, '
+        'scrollWidth: element.scrollWidth'
+        '})'
+    )
+    assert geometry['scrollHeight'] <= geometry['clientHeight'], geometry
+    if expect_horizontal_scroll:
+        assert geometry['scrollWidth'] > geometry['clientWidth'], geometry
+
+
+def test_settings_account_profile_activity_credentials_visual_qa(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Read-only Account visual evidence across the KAORI canonical viewport/theme matrix."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    _login(page, kaori_authenticated_base_url)
+
+    account_path = '/settings/account'
+    response = page.goto(f'{kaori_authenticated_base_url}{account_path}?tab=profile', wait_until='networkidle')
+    assert response is not None and response.ok
+
+    workspaces = {
+        'profile': '[data-account-profile-workspace="full-width"]',
+        'activity': '[data-authentication-activity-layout="full-width"]',
+        'credentials': '[data-credential-workspace-layout="natural-columns"]',
+    }
+    for theme in ('light', 'dark'):
+        _load_persisted_visual_theme(page, theme)
+        for tab, selector in workspaces.items():
+            scenario = f'settings-account-{tab}-{theme}'
+            with _browser_evidence(page, scenario, viewport_name):
+                # Full GET first, then real shared HTMX navigation for the two other tabs.
+                if tab == 'profile':
+                    response = page.goto(
+                        f'{kaori_authenticated_base_url}{account_path}?tab=profile',
+                        wait_until='networkidle',
+                    )
+                    assert response is not None and response.ok
+                else:
+                    page.locator(f'#account-authentication-page a[href*="tab={tab}"]').first.click()
+                    expect(page).to_have_url(re.compile(rf'/settings/account[?]tab={tab}(?:&|$)'))
+                expect(page.locator('#account-authentication-page')).to_be_visible()
+                workspace = page.locator(selector)
+                expect(workspace).to_be_visible()
+                expect(page.locator('#account-settings-loading')).to_have_attribute('role', 'status')
+                expect(page.locator('#account-settings-loading')).to_have_attribute('aria-live', 'polite')
+                assert page.locator('#account-settings-loading').get_attribute('class')
+                assert 'sr-only' in (page.locator('#account-settings-loading').get_attribute('class') or '')
+
+                if tab == 'activity':
+                    expect(page.get_by_role('heading', name='No Authentication Activity Recorded')).to_be_visible()
+                    expect(page.locator('[data-authentication-summary="compact-strip"]')).to_be_visible()
+                elif tab == 'credentials':
+                    expect(page.locator('input[name="current_password"]')).to_have_count(1)
+                    expect(page.locator('input[name="new_password"]')).to_have_count(1)
+                    # Do not submit or modify real credentials from a visual suite.
+                else:
+                    expect(page.get_by_role('heading', name='Account Profile & Access')).to_be_visible()
+
+                _assert_query_tab_strip_has_no_vertical_overflow(
+                    page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}
+                )
+                assert_document_fits_viewport(page)
+                assert_primary_actions_visible(page)
+                assert_locator_within_document_width(page, workspace, label=f'Account {tab}')
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='PASS',
+                        surface='Settings Account',
+                        viewport=viewport_name,
+                        theme=theme,
+                        component=tab,
+                        invariant='Responsive layout, shared tabs, accessible pending status',
+                        evidence=f'{scenario}-{viewport_name}.png',
+                    )
+                )
+
+
+def test_settings_general_query_tabs_keep_vertical_scroll_closed(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Shared General tab strip has no phantom y-scrollbar while mobile x-scroll remains."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    _login(page, kaori_authenticated_base_url)
+    route = f'{kaori_authenticated_base_url}/settings/general?tab=time-locale'
+
+    response = page.goto(route, wait_until='networkidle')
+    assert response is not None and response.ok
+    for theme in ('light', 'dark'):
+        _load_persisted_visual_theme(page, theme)
+        response = page.goto(route, wait_until='networkidle')
+        assert response is not None and response.ok
+        with _browser_evidence(page, f'settings-general-query-tabs-{theme}', viewport_name):
+            for tab in ('time-locale', 'regional-format'):
+                if tab == 'regional-format':
+                    page.locator('#general-settings-page a[href*="tab=regional-format"]').first.click()
+                    expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
+
+                current_tab = page.locator(f'[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab={tab}"]')
+                expect(current_tab).to_have_attribute('aria-selected', 'true')
+                _assert_query_tab_strip_has_no_vertical_overflow(
+                    page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}
+                )
+
+            assert_document_fits_viewport(page)
+
+
+def test_settings_general_keyboard_tab_and_enter_navigation(
+    configured_page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Confirm standard tab focus progression and Enter activation in General."""
+    page = configured_page
+    _login(page, kaori_authenticated_base_url)
+    response = page.goto(
+        f'{kaori_authenticated_base_url}/settings/general?tab=time-locale',
+        wait_until='networkidle',
+    )
+    assert response is not None and response.ok
+    tablist = page.locator('[data-kaori-tab-variant="query-backed-htmx"] [role="tablist"]')
+    time_tab = tablist.locator('a[href*="tab=time-locale"]').first
+    regional_tab = tablist.locator('a[href*="tab=regional-format"]').first
+    expect(time_tab).to_have_attribute('aria-selected', 'true')
+
+    time_tab.focus()
+    expect(time_tab).to_be_focused()
+    page.keyboard.press('Tab')
+    expect(regional_tab).to_be_focused()
+    page.keyboard.press('Enter')
+    expect(page).to_have_url(re.compile(r'/settings/general[?]tab=regional-format(?:&|$)'))
+    expect(
+        page.locator('[data-kaori-tab-variant="query-backed-htmx"] a[href*="tab=regional-format"]')
+    ).to_have_attribute('aria-selected', 'true')
+    expect(page.get_by_role('heading', name='Regional Format')).to_be_visible()
+
+
+def test_settings_compatibility_registry_without_javascript_uses_get_fallback(
+    configured_page: Page,
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Verify native GET, noscript submit and Reset without HTMX or JS."""
+    page = configured_page
+    _login(page, kaori_authenticated_base_url)
+
+    browser = page.context.browser
+    assert browser is not None
+    # Reuse test-owned authenticated cookie state; do not mutate real accounts.
+    no_js_context = browser.new_context(
+        java_script_enabled=False,
+        storage_state=page.context.storage_state(),
+        viewport={'width': 1280, 'height': 800},
+    )
+    try:
+        no_js_page = no_js_context.new_page()
+        url = f'{kaori_authenticated_base_url}/settings/general?tab=compatibility-versions'
+        initial = no_js_page.goto(url, wait_until='domcontentloaded')
+        assert initial is not None and initial.ok
+        registry = no_js_page.locator('#compatibility-registry')
+        expect(registry).to_be_visible()
+        search = registry.locator('input[name="compatibility_search"]')
+        expect(search).to_be_visible()
+        expect(registry.get_by_role('button', name='Apply Filters')).to_be_visible()
+
+        search.fill('Prometheus')
+        registry.get_by_role('button', name='Apply Filters').click()
+        expect(no_js_page).to_have_url(re.compile(r'compatibility_search=Prometheus(?:&|$)'))
+        expect(no_js_page.locator('#compatibility-registry-results')).to_contain_text('Prometheus')
+        expect(no_js_page.locator('#compatibility-registry-results')).not_to_contain_text('MinIO')
+
+        no_js_page.locator('#compatibility-registry a[href*="tab=compatibility-versions"]').first.click()
+        expect(no_js_page).to_have_url(re.compile(r'/settings/general[?]tab=compatibility-versions(?:&|$)'))
+        expect(no_js_page.locator('#compatibility-registry-results')).to_contain_text('MinIO')
+        expect(search).to_have_value('')
+    finally:
+        no_js_context.close()
+
+
+def test_integration_runtime_cross_page_navigation_keeps_outer_shell_in_viewport(
+    page: Page, kaori_authenticated_base_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A domain-to-runtime link must not scroll the clipped app shell itself."""
+    from app.integrations import overview_workspace
+
+    # Browser geometry fixture has no Integration tables; keep the real page
+    # and navigation, but isolate its committed SQL portfolio/runtime reads.
+    empty_counts = dict.fromkeys(
+        (
+            'total',
+            'configured',
+            'ready',
+            'readiness_review',
+            'validation_required',
+            'not_configured',
+            'attention',
+            'blocked',
+        ),
+        0,
+    )
+    monkeypatch.setattr(overview_workspace, 'overview_portfolio_counts', lambda: ({}, empty_counts))
+    monkeypatch.setattr(overview_workspace, 'runtime_fleet', lambda: None)
+    page.set_viewport_size({'width': 1440, 'height': 900})
+    _login(page, kaori_authenticated_base_url)
+
+    for width, height in ((1440, 900), (390, 844)):
+        page.set_viewport_size({'width': width, 'height': height})
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/integrations/source-control',
+            wait_until='domcontentloaded',
+        )
+        assert response is not None and response.ok
+        link = page.get_by_role('link', name='Runtime Overview')
+        expect(link).to_have_attribute('href', re.compile(r'/integrations/\?tab=runtime$'))
+        link.click()
+        expect(page).to_have_url(re.compile(r'/integrations/\?tab=runtime$'))
+        expect(page.locator('[data-integration-overview-workspace="runtime"]')).to_be_visible()
+
+        # KAORI locks html/body and scrolls only the dedicated main viewport.
+        # Fragment navigation must never shift the entire fixed-height shell.
+        geometry = page.evaluate(
+            """() => {
+                const shell = document.querySelector('body > div[x-data]');
+                const rect = shell.getBoundingClientRect();
+                return {
+                    scrollY: window.scrollY,
+                    rootScroll: document.scrollingElement.scrollTop,
+                    shellTop: rect.top,
+                    shellBottom: rect.bottom,
+                    viewportHeight: window.innerHeight,
+                };
+            }"""
+        )
+        assert geometry['scrollY'] == 0, geometry
+        assert geometry['rootScroll'] == 0, geometry
+        assert abs(geometry['shellTop']) <= 1, geometry
+        assert abs(geometry['shellBottom'] - geometry['viewportHeight']) <= 1, geometry

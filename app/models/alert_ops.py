@@ -88,7 +88,7 @@ class AlertCase(db.Model):
     source_state: Mapped[str] = mapped_column(db.String(24), nullable=False, default='firing', index=True)
     source_state_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
     source_state_changed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    routing_state: Mapped[str] = mapped_column(db.String(24), nullable=False, default='enabled', index=True)
+    routing_state: Mapped[str] = mapped_column(db.String(24), nullable=False, default='enabled')
     routing_override_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True, index=True)
     routing_override_note: Mapped[str | None] = mapped_column(db.Text, nullable=True)
     routing_override_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)

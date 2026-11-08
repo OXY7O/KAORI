@@ -4,6 +4,18 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.report_coverage import (
+    REPORT_COVERAGE_DOMAINS as REPORT_COVERAGE_DOMAINS,
+)
+from app.definitions.report_coverage import (
+    ReportCoverageDomainSpec as ReportCoverageDomainSpec,
+)
+from app.definitions.report_coverage import (
+    ReportCoverageItemSpec as ReportCoverageItemSpec,
+)
+from app.definitions.report_coverage import (
+    _load_report_coverage_catalog as _load_report_coverage_catalog,
+)
 from app.definitions.validation import (
     require_bool,
     require_list,
@@ -27,24 +39,6 @@ class OutputFormatSpec:
     label: str
     extension: str
     mimetype: str
-
-
-@dataclass(frozen=True, slots=True)
-class ReportCoverageItemSpec:
-    name: str
-    description: str
-    icon: str
-
-
-@dataclass(frozen=True, slots=True)
-class ReportCoverageDomainSpec:
-    key: str
-    label: str
-    description: str
-    icon: str
-    status: str
-    tone: str
-    items: tuple[ReportCoverageItemSpec, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,51 +113,7 @@ def _load_report_catalog() -> tuple[dict[str, OutputFormatSpec], tuple[ReportTyp
     return formats, tuple(reports)
 
 
-def _load_report_coverage_catalog() -> tuple[ReportCoverageDomainSpec, ...]:
-    document = load_definition_document('reports/coverage.yaml', expected_kind='report_coverage_catalog')
-    raw_domains = [
-        require_mapping(item, f'domains[{index}]')
-        for index, item in enumerate(require_list(document.get('domains'), 'domains'))
-    ]
-    unique_by(raw_domains, 'key', 'domains')
-    domains: list[ReportCoverageDomainSpec] = []
-    for index, raw_domain in enumerate(raw_domains):
-        path = f'domains[{index}]'
-        raw_items = [
-            require_mapping(item, f'{path}.items[{item_index}]')
-            for item_index, item in enumerate(require_list(raw_domain.get('items'), f'{path}.items'))
-        ]
-        unique_by(raw_items, 'name', f'{path}.items')
-        items = tuple(
-            ReportCoverageItemSpec(
-                name=require_str(item, 'name', f'{path}.items[{item_index}]'),
-                description=require_str(item, 'description', f'{path}.items[{item_index}]'),
-                icon=require_str(item, 'icon', f'{path}.items[{item_index}]'),
-            )
-            for item_index, item in enumerate(raw_items)
-        )
-        status = require_str(raw_domain, 'status', path)
-        tone = require_str(raw_domain, 'tone', path)
-        if status not in {'Published', 'Evidence Ready', 'Planned', 'Reserved'}:
-            raise DefinitionError(f'{path}.status is unsupported: {status!r}.')
-        if tone not in {'normal', 'info', 'unknown'}:
-            raise DefinitionError(f'{path}.tone is unsupported: {tone!r}.')
-        domains.append(
-            ReportCoverageDomainSpec(
-                key=require_str(raw_domain, 'key', path),
-                label=require_str(raw_domain, 'label', path),
-                description=require_str(raw_domain, 'description', path),
-                icon=require_str(raw_domain, 'icon', path),
-                status=status,
-                tone=tone,
-                items=items,
-            )
-        )
-    return tuple(domains)
-
-
 OUTPUT_FORMAT_SPECS, REPORT_TYPE_SPECS = _load_report_catalog()
-REPORT_COVERAGE_DOMAINS = _load_report_coverage_catalog()
 # Backward-compatible alias for callers that still use the pre-v1.2 name.
 PLANNED_REPORT_COVERAGE_DOMAINS = REPORT_COVERAGE_DOMAINS
 
@@ -248,6 +198,11 @@ def validate_report_contract(
             raise ReportContractError('The selected report requires an Object Storage System scope.')
         if not normalized_scope_id:
             raise ReportContractError('A selected Object Storage system is required for this report.')
+    elif spec.scope_asset_type == 'registry_integration':
+        if normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
+            raise ReportContractError('The selected report requires an Artifact Registry integration scope.')
+        if not normalized_scope_id:
+            raise ReportContractError('A selected Artifact Registry integration is required for this report.')
     elif normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
         raise ReportContractError(f'{spec.label} requires {spec.scope_asset_type} scope.')
 
@@ -272,6 +227,16 @@ def require_object_storage_system(report: Any) -> str:
     scope_id = str(getattr(report, 'scope_asset_id', '') or '').strip()
     if not scope_id:
         raise ReportContractError('A selected Object Storage system is required for this report.')
+    return scope_id
+
+
+def require_artifact_registry_instance(report: Any) -> str:
+    spec = get_report_type_spec(str(getattr(report, 'report_type', '') or ''))
+    if spec.scope_asset_type != 'registry_integration':
+        raise ReportContractError(f'{spec.label} is not scoped to Artifact Registry.')
+    scope_id = str(getattr(report, 'scope_asset_id', '') or '').strip()
+    if not scope_id:
+        raise ReportContractError('A selected Artifact Registry integration is required for this report.')
     return scope_id
 
 

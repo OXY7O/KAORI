@@ -230,8 +230,7 @@ def operational_context(
     elif restart_count > 0:
         title, description, icon, tone = (
             'Review Restart Activity',
-            'The committed snapshot reports container restarts. Review current runtime reasons '
-            'before concluding the issue is active.',
+            'Container restarts recorded in the snapshot; check runtime before treating them as active.',
             'rotate-ccw',
             'warning',
         )

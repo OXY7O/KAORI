@@ -35,8 +35,15 @@ def test_shared_analytics_surfaces_delegate_to_inventory_components() -> None:
     assert 'table_ui.block_header_classes()' in surfaces
     assert 'table_ui.block_icon_classes()' in surfaces
     assert 'components/table_primitives.html' in workspace
-    assert 'table_ui.filter_label_classes()' in workspace
-    assert 'table_ui.filter_select_classes()' in workspace
+    # Workspace delegates selectors to the canonical shared readiness adapter,
+    # whose primitives retain accessible inventory label and select geometry.
+    readiness = read('app/templates/analytics/components/_controls_readiness.html')
+    assert 'analytics/components/_controls_readiness.html' in workspace
+    assert 'shared_readiness.control_label_classes()' in workspace
+    assert 'shared_readiness.control_select_classes()' in workspace
+    assert 'components/table_primitives.html' in readiness
+    assert 'table_ui.filter_label_classes()' in readiness
+    assert 'table_ui.filter_select_classes()' in readiness
 
 
 def test_analytics_record_collections_use_inventory_table_grammar() -> None:

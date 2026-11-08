@@ -260,7 +260,7 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'data-generate-scope-tip="true"' in source
     assert 'Scope Contract' in source
     assert (
-        'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.'
+        'Kubernetes reports use one cluster; Object Storage reports use one system; Artifact Registry reports use one Registry integration.'
         in source
     )
     assert 'All Namespaces' in runtime
@@ -413,3 +413,90 @@ def test_generate_report_readiness_badges_use_shared_semantic_border_authority()
     assert 'border-status-warning-border' not in readiness
     assert 'function setReadinessItemTone' in runtime
     assert 'function syncOverallReadiness' in runtime
+
+
+def test_generate_report_readiness_uses_live_scope_selection_instead_of_bootstrap_counts() -> None:
+    runtime = read(RUNTIME)
+    service = read(SERVICE)
+
+    assert 'function scopeSelectionIsReady()' in runtime
+    assert 'return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)' in runtime
+    assert 'if (reportType && reportType.requires_cluster === false)' in runtime
+    assert 'return Boolean(clusterSelect && clusterSelect.value)' in runtime
+    assert 'return hasRegisteredClusters && Boolean(clusterSelect.value)' not in runtime
+    assert (
+        'hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)'
+        not in runtime
+    )
+    assert "if not bool(report_context.get('requires_cluster', True)):" in service
+
+
+def test_generate_report_final_submit_is_backend_authoritative() -> None:
+    runtime = read(RUNTIME)
+
+    assert 'generateButton.disabled = false' in runtime
+    assert 'create_report_request()/validate_form_state() is authoritative' in runtime
+    assert 'if (!overallRequestReady) {\n                event.preventDefault()' not in runtime
+
+
+def test_generate_report_review_recomputes_live_readiness_state() -> None:
+    runtime = read(RUNTIME)
+
+    show_step = runtime[runtime.index('function showWizardStep') : runtime.index('function validateWizardStep')]
+    assert 'if (nextStep === 5) {' in show_step
+    assert show_step.index('syncClusterGuard()') < show_step.index('currentWizardStep = nextStep')
+    assert 'if (currentWizardStep === 5) {' not in show_step
+    assert "clusterSelect.addEventListener('input', syncClusterSelection)" in runtime
+    assert "clusterSelect.addEventListener('change', syncClusterSelection)" in runtime
+
+    update_section = runtime[
+        runtime.index('function updateSelectedSectionFromCheckbox') : runtime.index('function syncSectionCount')
+    ]
+    assert 'syncClusterGuard()' in update_section
+
+
+def test_generate_report_runtime_updates_lucide_svg_classes_safely() -> None:
+    runtime = read(RUNTIME)
+
+    # Lucide replaces <i> nodes with <svg>; Firefox exposes SVGElement.className
+    # as an SVGAnimatedString, so direct assignment throws a getter-only error.
+    assert 'statusIcon.className =' not in runtime
+    assert 'readinessOverallIcon.className =' not in runtime
+    assert 'readinessSummaryIcon.className =' not in runtime
+    assert 'previewEligibilityIcon.className =' not in runtime
+    assert "statusIcon.setAttribute(\n                    'class'," in runtime
+    assert "readinessSummaryIcon.setAttribute(\n                    'class'," in runtime
+
+
+def test_wizard_footer_actions_compose_shared_button_variants_and_keep_js_visibility() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    runtime = read(RUNTIME)
+    Environment().parse(template)
+    assert '{% import "components/action_button.html" as action_button %}' in template
+    footer = template.split('<footer class="flex flex-col gap-3 border-t', 1)[1].split('</footer>', 1)[0]
+    assert "action_button.classes('secondary')" in footer
+    assert footer.count("action_button.classes('secondary')") == 2
+    assert footer.count("action_button.classes('primary')") == 2
+    assert 'class="hidden {{ action_button.classes(' in footer
+    for marker in (
+        'wizard-back-button',
+        'wizard-next-button',
+        'generate-report-button',
+        'data-operation-submit',
+        'data-loading-label="Queueing report..."',
+        'initial_request_ready',
+        'disabled',
+    ):
+        assert marker in footer
+    for token in (
+        "wizardBackButton.classList.toggle('hidden'",
+        "wizardBackButton.classList.toggle('inline-flex'",
+        "wizardNextButton.classList.toggle('hidden'",
+        "wizardNextButton.classList.toggle('inline-flex'",
+        "generateButton.classList.toggle('hidden'",
+        "generateButton.classList.toggle('inline-flex'",
+    ):
+        assert token in runtime
+    assert 'min-h-9 items-center justify-center' not in footer

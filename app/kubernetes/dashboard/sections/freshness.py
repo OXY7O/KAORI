@@ -7,6 +7,14 @@ from app.kubernetes.dashboard.schema import FreshnessItem, ReportingSnapshot
 from app.kubernetes.dashboard.utils import human_time
 
 
+def _fleet_coverage(ready: int, total: int) -> tuple[str, str, str]:
+    if total and ready == total:
+        return 'Ready', 'normal', f'{ready} / {total} clusters'
+    if ready:
+        return 'Partial', 'warning', f'{ready} / {total} clusters'
+    return 'Required', 'unknown', f'0 / {total} clusters'
+
+
 def build_data_freshness(
     *,
     latest_inventory_sync: datetime | None,
@@ -14,6 +22,9 @@ def build_data_freshness(
     has_alertmanager_data: bool,
     reporting_snapshot: ReportingSnapshot,
     selected_cluster: Any | None,
+    fleet_cluster_count: int = 0,
+    fleet_metrics_count: int = 0,
+    fleet_alerts_count: int = 0,
 ) -> list[FreshnessItem]:
     selected_cluster_mode = selected_cluster is not None
 
@@ -24,7 +35,7 @@ def build_data_freshness(
             'Committed analytics available' if has_metrics_source_data else 'No committed analytics snapshot'
         )
         metrics_source_description = (
-            'Metrics Source-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
+            'Metrics-backed cluster usage and forecasts from committed snapshots.'
             if has_metrics_source_data
             else (
                 'Run or validate analytics materialization for the selected cluster before using '
@@ -34,29 +45,25 @@ def build_data_freshness(
 
         alert_status = 'Ready' if has_alertmanager_data else 'Unavailable'
         alert_tone = 'normal' if has_alertmanager_data else 'unknown'
-        alert_value = 'Committed alert snapshot available' if has_alertmanager_data else 'No committed alert snapshot'
+        alert_value = 'Committed alert available' if has_alertmanager_data else 'No committed alert snapshot'
         alert_description = (
             'Alertmanager or Metrics Source alert data is available for the selected cluster.'
             if has_alertmanager_data
             else 'Validate the alert source and refresh the selected cluster before relying on alert signals.'
         )
     else:
-        metrics_source_status = 'Per Cluster'
-        metrics_source_tone = 'info'
-        metrics_source_value = 'Resolved from committed cluster snapshots'
+        metrics_source_status, metrics_source_tone, metrics_source_value = _fleet_coverage(
+            fleet_metrics_count, fleet_cluster_count
+        )
         metrics_source_description = (
-            'All Clusters mode summarizes committed capacity snapshots by cluster. '
-            'Select one cluster for detailed analytics.'
+            'All Clusters shows committed capacity by cluster. Select a cluster for detailed analytics.'
         )
 
-        alert_status = 'Per Cluster'
-        alert_tone = 'info'
-        alert_value = 'Resolved from committed cluster snapshots'
-        alert_description = (
-            'All Clusters mode summarizes committed alert snapshots by cluster. Select one cluster for source details.'
-        )
+        alert_status, alert_tone, alert_value = _fleet_coverage(fleet_alerts_count, fleet_cluster_count)
+        alert_description = 'All Clusters shows committed alerts by cluster. Select a cluster for source details.'
 
-    has_reports = reporting_snapshot.generated_reports > 0
+    has_artifacts = reporting_snapshot.artifact_records > 0
+    has_requests = reporting_snapshot.generated_reports > 0
 
     return [
         FreshnessItem(
@@ -69,9 +76,7 @@ def build_data_freshness(
                 else 'No committed inventory snapshot'
             ),
             icon='database-zap',
-            description=(
-                'Latest synchronized Kubernetes object counts used by the dashboard and Inventory workspaces.'
-            ),
+            description=('Latest Kubernetes object counts from committed inventory.'),
         ),
         FreshnessItem(
             label='Metrics Snapshot',
@@ -91,14 +96,15 @@ def build_data_freshness(
         ),
         FreshnessItem(
             label='Report Artifacts',
-            status='Available' if has_reports else 'Not Generated',
-            tone='normal' if has_reports else 'unknown',
+            status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated'),
+            tone='info' if has_artifacts else ('warning' if has_requests else 'unknown'),
             value=(
-                f'{reporting_snapshot.generated_reports} generated reports'
-                if has_reports
-                else 'No generated report artifacts'
+                f'{reporting_snapshot.artifact_records} retained artifact record'
+                f'{"s" if reporting_snapshot.artifact_records != 1 else ""}'
+                if has_artifacts
+                else ('No ready artifact records' if has_requests else 'No report records')
             ),
             icon='file-text',
-            description=('Generated reports are retained artifacts, separate from current Kubernetes health.'),
+            description='Committed artifact references; storage accessibility is not verified here.',
         ),
     ]

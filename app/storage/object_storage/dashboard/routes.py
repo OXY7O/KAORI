@@ -3,6 +3,11 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 
 from app.access.rbac.decorators import permission_required
+from app.dashboards.common.operational import (
+    is_htmx_request,
+    normalize_dashboard_page_size,
+    normalize_operational_tab,
+)
 from app.storage.object_storage.dashboard.service import get_dashboard_overview, get_dashboard_section
 
 object_storage_dashboard_bp = Blueprint(
@@ -11,8 +16,6 @@ object_storage_dashboard_bp = Blueprint(
     url_prefix='/dashboards/object-storage',
 )
 
-DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}
-SYSTEM_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
 SECTION_TEMPLATES = {
     'kpi_cards': 'storage/object_storage/dashboard/partials/_kpi_cards.html',
     'overview': 'storage/object_storage/dashboard/partials/_overview.html',
@@ -23,19 +26,6 @@ SECTION_TEMPLATES = {
 }
 
 
-def _active_tab() -> str:
-    value = str(request.args.get('tab') or 'overview').strip().lower()
-    return value if value in DASHBOARD_TABS else 'overview'
-
-
-def _system_health_per_page() -> int:
-    try:
-        value = int(request.args.get('system_health_per_page', '5'))
-    except (TypeError, ValueError):
-        return 5
-    return value if value in SYSTEM_HEALTH_PAGE_SIZES else 5
-
-
 @object_storage_dashboard_bp.get('/')
 @object_storage_dashboard_bp.get('')
 @permission_required('dashboard.view')
@@ -43,12 +33,12 @@ def index():
     dashboard = get_dashboard_overview(
         selected_system_id=request.args.get('system_id') or None,
         system_health_page=request.args.get('system_health_page', '1'),
-        system_health_per_page=_system_health_per_page(),
-        active_tab=_active_tab(),
+        system_health_per_page=normalize_dashboard_page_size(request.args.get('system_health_per_page')),
+        active_tab=normalize_operational_tab(request.args.get('tab')),
     )
     template = (
         'storage/object_storage/dashboard/partials/_content.html'
-        if request.headers.get('HX-Request')
+        if is_htmx_request(request.headers)
         else 'storage/object_storage/dashboard/index.html'
     )
     return render_template(template, dashboard=dashboard)
@@ -64,6 +54,6 @@ def section(section: str):
         section,
         selected_system_id=request.args.get('system_id') or None,
         system_health_page=request.args.get('system_health_page', '1'),
-        system_health_per_page=_system_health_per_page(),
+        system_health_per_page=normalize_dashboard_page_size(request.args.get('system_health_per_page')),
     )
     return render_template(template, dashboard=dashboard)

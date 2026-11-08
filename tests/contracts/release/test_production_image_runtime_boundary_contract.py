@@ -22,7 +22,7 @@ def test_production_stage_uses_explicit_runtime_allowlist() -> None:
         'COPY --chown=kaori:kaori app /app/app',
         'COPY --chown=kaori:kaori migrations /app/migrations',
         'COPY --chown=kaori:kaori run.py celery_worker.py gunicorn.conf.py /app/',
-        'COPY --chown=kaori:kaori \\\n    scripts/wait_for_db.py \\\n    scripts/validate_production_env.py \\\n    /app/scripts/',
+        'COPY --chown=kaori:kaori \\\n    scripts/wait_for_db.py \\\n    scripts/validate_production_env.py \\\n    scripts/server_database_boundary.py \\\n    scripts/server_migrate_db.sh \\\n    /app/scripts/',
     )
 
     for expected in expected_copy_contracts:

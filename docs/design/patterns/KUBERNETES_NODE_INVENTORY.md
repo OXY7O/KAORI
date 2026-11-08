@@ -108,14 +108,18 @@ Rules:
 
 - default page size is 5; available sizes are 5/10/25/50;
 - header cells use `scope="col"`;
+- the seven existing headers use proportional widths, prioritizing Node **26%** and Cluster **22%** while retaining Readiness **11%**, Role **10%**, Capacity **12%**, Network **9%** and Details **10%**; the established `table-auto` primitive can accommodate intrinsic minimum widths;
+- maintain a **74rem** table minimum width inside the existing horizontal scroll region, never overlap name, status or action cells on smaller viewports; long Node and Cluster identities keep the shared `title` attributes and may truncate visually when space is constrained;
+- Cluster identity uses the existing shared `cluster_identity` macro with a `min-w-0 w-full` container so the full environment/name remains inspectable without forcing a wider column;
 - a screen-reader caption describes the current scope;
-- Node identity uses the shared title-cell presentation;
+- Node identity uses the shared title-cell presentation. Its supporting line shows only the **OS family** (for example, `Linux`, `Windows`, or another reported platform) from committed `operating_system`, with a `kubernetes.io/os` label fallback. Missing OS family remains `Not Reported`; do not guess from distro/image text.
+- Full OS distribution/image/version, architecture, kernel, and container runtime stay in **View Details → Runtime & Platform**, not in the compact table subtitle.
 - Role is metadata, not status;
-- Readiness uses a semantic status indicator;
+- Readiness uses a semantic status indicator; the Node Inventory **table title** contains one shared pointer/keyboard/touch Info Tip describing Readiness and Capacity, while column headers remain plain text.
 - active conditions are summarized under readiness without adding a wide extra column;
 - capacity groups CPU, memory, and ephemeral storage;
 - Network shows the canonical internal address and address scope;
-- complete evidence is available through the Details action;
+- complete evidence is available through the Details action; contextual help beside the table title is short and factual, never a replacement for full detail evidence;
 - long technical values wrap in the detail workspace, not in additional table columns.
 
 ## Node condition semantics
@@ -151,6 +155,8 @@ Detail rules:
 - use `data-kaori-detail-density="unified-resource-sheet"` and `data-kaori-inventory-detail="v10"`;
 - use one unified resource sheet with natural-height horizontal evidence bands; do not use fixed card heights;
 - do not duplicate card badge values as the first row;
+- section descriptions are concise (identity/snapshot; IP/hostname/scope; CPU/memory/storage; OS/runtime/versions; scheduling/conditions), with the committed data boundary retained;
+- System UUID, Internal IP, and External IP are read-only technical values without Node-detail copy buttons; other Inventory resources retain their approved copy controls;
 - Connectivity owns network fields only; Scheduled Pods remains in the summary;
 - taints use neutral technical-value surfaces, not a collection of Violet metadata pills;
 - labels use `technical_metadata_collection.html` in embedded resource-sheet mode, one key/value pair per row, with no nested scroll region;

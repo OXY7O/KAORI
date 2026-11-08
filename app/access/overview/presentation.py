@@ -5,8 +5,8 @@ from typing import Any
 from flask_login import current_user
 
 from app.access.activity_audit.service import get_activity_audit_summary
-from app.access.permissions.service import build_permission_registry_snapshot
-from app.access.roles.presentation import build_roles_index_context
+from app.access.permissions.service import build_permission_registry_summary
+from app.access.roles.presentation import build_roles_overview_summary
 from app.access.users.access_summary import build_identity_provider_summary, build_user_access_summary
 
 
@@ -31,6 +31,20 @@ def _workspace_grid_classes(workspace_count: int, index: int) -> str:
     return 'xl:col-span-2'
 
 
+def _aggregate_access_posture(tones: list[str]) -> tuple[str, str]:
+    """Respect KAORI severity precedence without treating optional/unknown scope as healthy."""
+
+    if 'critical' in tones:
+        return 'Critical Review', 'critical'
+    if 'warning' in tones:
+        return 'Review Required', 'warning'
+    if 'info' in tones:
+        return 'Informational', 'info'
+    if not tones or 'unknown' in tones:
+        return 'Limited Evidence', 'unknown'
+    return 'Current', 'normal'
+
+
 def _user_supporting_text(summary: dict[str, Any]) -> str:
     if not summary['active']:
         return 'No active user account is available; review account lifecycle before relying on Access controls.'
@@ -41,10 +55,11 @@ def _user_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["access_review"]} account admission issue(s) require review across RBAC, '
             'external identity, or emergency-access state.'
         )
-    return (
-        f'{summary["total"]} registered account(s) with {summary["active_super_admins"]} active Local Database '
-        'break-glass super admin(s).'
-    )
+    total = summary['total']
+    admin_count = summary['active_super_admins']
+    account_suffix = '' if total == 1 else 's'
+    admin_suffix = '' if admin_count == 1 else 's'
+    return f'{total} account{account_suffix} · {admin_count} active Local DB break-glass admin{admin_suffix}.'
 
 
 def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
@@ -71,7 +86,7 @@ def _role_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["inactive_assigned_users"]} user assignment(s) point to inactive roles '
             'and therefore fail closed.'
         )
-    return 'Protected defaults match the source-controlled baseline; custom role delegation remains ceiling-bound.'
+    return 'Protected defaults aligned; delegation capped.'
 
 
 def _permission_supporting_text(summary: dict[str, Any]) -> str:
@@ -88,8 +103,14 @@ def _permission_supporting_text(summary: dict[str, Any]) -> str:
 
 def _activity_supporting_text(summary: dict[str, Any]) -> str:
     if summary['attention_24h']:
-        return f'{summary["attention_24h"]} warning/error event(s) were recorded in the last 24 hours.'
-    return 'No warning/error administrative evidence was recorded in the last 24 hours.'
+        return (
+            f'{summary["attention_24h"]} warning/error event(s) in the Notification-backed Activity Register '
+            'during the last 24 hours.'
+        )
+    return (
+        'No warning/error events in the Notification-backed Activity Register during the last 24 hours; '
+        'other administrative evidence sources remain separate.'
+    )
 
 
 def build_access_overview() -> dict[str, Any]:
@@ -127,7 +148,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Identity Lifecycle',
-                'description': 'User Management owns account state, role assignment, and break-glass authority.',
+                'description': 'Users owns state, roles and break-glass authority.',
                 'status_label': users['posture_label'],
                 'status_tone': users['posture_tone'],
             }
@@ -157,17 +178,15 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authentication Sources',
-                'description': (
-                    'Identity Providers owns external source configuration, admission policy, and projection.'
-                ),
+                'description': ('Identity Providers governs external sign-in and admission.'),
                 'status_label': providers['posture_label'],
                 'status_tone': providers['posture_tone'],
             }
         )
 
     if _can('roles.view'):
-        role_summary = build_roles_index_context(can_manage_roles=False)['summary']
-        permission_summary = build_permission_registry_snapshot()['summary']
+        role_summary = build_roles_overview_summary()
+        permission_summary = build_permission_registry_summary()
         workspaces.extend(
             [
                 {
@@ -212,9 +231,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authorization Policy',
-                'description': (
-                    'Roles assign code-owned permissions; inactive roles fail closed and registry drift is explicit.'
-                ),
+                'description': ('Roles enforce code permissions; inactive roles deny access.'),
                 'status_label': 'Review Required' if authorization_review else 'Current',
                 'status_tone': 'warning' if authorization_review else 'normal',
             }
@@ -226,7 +243,9 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'key': 'activity-audit',
                 'label': 'Activity Audit',
-                'description': 'System-wide administrative and authentication evidence.',
+                'description': (
+                    'Notification-backed administrative and authentication activity; other sources remain separate.'
+                ),
                 'icon': 'history',
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
@@ -244,29 +263,24 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Audit Evidence',
-                'description': (
-                    'Activity Audit owns retained administrative and authentication evidence and actor semantics.'
-                ),
+                'description': ('Audit actor snapshots; other sources stay gated.'),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
             }
         )
 
     workspace_count = len(workspaces)
-    warning_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'warning')
     critical_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'critical')
+    warning_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'warning')
     unknown_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'unknown')
     attention_workspace_count = warning_workspace_count + critical_workspace_count
 
     for index, workspace in enumerate(workspaces):
         workspace['grid_classes'] = _workspace_grid_classes(workspace_count, index)
 
-    if critical_workspace_count:
-        overall_status_label, overall_status_tone = 'Critical Review', 'critical'
-    elif warning_workspace_count:
-        overall_status_label, overall_status_tone = 'Review Required', 'warning'
-    else:
-        overall_status_label, overall_status_tone = 'Current', 'normal'
+    overall_status_label, overall_status_tone = _aggregate_access_posture(
+        [workspace['status_tone'] for workspace in workspaces]
+    )
 
     return {
         'workspace_count': workspace_count,

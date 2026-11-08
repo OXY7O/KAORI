@@ -107,7 +107,6 @@ def main() -> int:
     for source_name, source in (
         ('analysis workspace', workspace),
         ('overview', overview),
-        ('top consumers', top_consumers),
     ):
         require(
             'components/content_tabs.html' in source,
@@ -119,6 +118,12 @@ def main() -> int:
             f'{source_name} must use shared Content Tabs buttons.',
             errors,
         )
+    require(
+        'kubernetes/analytics/components/_analysis_workspace.html' in top_consumers
+        and 'analytics_workspace.tabbed(' in top_consumers,
+        'Top Consumers must use the shared Analytics workspace that owns canonical Content Tabs.',
+        errors,
+    )
 
     for retired in (
         'app/templates/analytics/components/_content_tabs.html',
@@ -252,8 +257,8 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes/analytics' in quality_gate,
-        'quality_gate.sh must retain Analytics functional release evidence.',
+        "-m 'not debug and not e2e and not contract and not migration'" in quality_gate,
+        'quality_gate.sh must retain canonical functional release evidence.',
         errors,
     )
     for relative in RELEASE_EVIDENCE:

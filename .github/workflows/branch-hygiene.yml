@@ -1,4 +1,4 @@
-name: KAORI Branch Hygiene
+name: Branch Hygiene
 
 on:
   push:
@@ -19,14 +19,14 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
-      - name: Check Out Staging Authority
+      - name: Checkout Staging
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: kaori/staging
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Retire Fully Merged Temporary Branches
+      - name: Retire Merged Branches
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -38,7 +38,10 @@ jobs:
 
           protected_branch() {
             case "$1" in
-              main|kaori/staging|kaori/rc-request|kaori/uat-request)
+              # Staging admission source remains the base of open issue-scoped
+              # review PRs. Deleting it on staging push would orphan/close them;
+              # retire only after governed UAT and dependent PR disposition.
+              main|kaori/staging|kaori/rc-request|kaori/uat-request|kaori/review/staging-uat)
                 return 0
                 ;;
               kaori/tenant-*|kaori/*tenant*|tenant/*)

@@ -7,6 +7,7 @@ from dataclasses import replace
 from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.http import is_htmx_request
 from app.integrations.observability.alert_source.providers.alertmanager.application.forms import (
@@ -50,7 +51,7 @@ def new_instance_response() -> ResponseReturnValue:
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
         if not form.name and initial_cluster is not None:
-            form = replace(form, name=f'{initial_cluster.name} Alertmanager', deployment_type='cluster_managed')
+            form = replace(form, name=f'{initial_cluster.name} Alertmanager')
         draft_form = form
 
         submitted_proof = str(request.form.get('connection_test_proof') or '').strip()
@@ -134,7 +135,7 @@ def new_instance_response() -> ResponseReturnValue:
                         },
                         queue_feedback=not is_htmx,
                     )
-                except Exception as exc:
+                except SQLAlchemyError as exc:
                     logger.exception('Alertmanager instance creation failed.')
                     operation_feedback = record_instance_activity(
                         user_id=int(current_user.id),

@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Artifact Registry Overview{% endblock title %}
+{% block dashboard_content %}
+    <div id="artifact-registry-dashboard-content" class="space-y-5">
+        {% include "artifact_registry/partials/_overview_content.html" %}
+    </div>
+{% endblock dashboard_content %}

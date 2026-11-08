@@ -14,15 +14,19 @@ Local Database authentication remains enabled as the independent break-glass rec
 
 Use the same activation sequence for every provider:
 
-1. Create the provider while **Enabled** is off.
+1. Begin Add Provider with **Enabled** off.
 2. Complete only the fields displayed for the selected provider type.
 3. Provide the referenced secret environment variable to every KAORI web application instance.
-4. Save the provider.
-5. Run **Validate** from **Identity Providers**.
-6. Resolve connection, callback, secret, or admission-policy errors.
-7. Enable the provider.
-8. Test with a non-administrative identity.
-9. Confirm login/logout events appear in **Activity Audit Log**.
+4. Run **Test Connection** against the unsaved form. **Save Provider** remains disabled until it passes.
+5. A successful test produces an actor-bound, signed, short-lived proof for that exact configuration. Changing any form field revokes the local proof and disables Save; re-test before saving.
+6. Save the provider while disabled, then run **Validate** from **Identity Providers** when additional validation is required. Test Connection is reachability/adapter evidence, **not** committed operational readiness.
+7. Resolve connection, callback, secret, or admission-policy errors.
+8. Enable the provider after the expected authentication flow is confirmed.
+9. Test with a non-administrative identity; confirm login/logout events in **Activity Audit Log**.
+10. To **disable** a provider, retain Local Database break-glass access, then toggle off **Enable provider authentication** and save. KAORI invalidates session generations for externally owned accounts linked to that provider in the same database transaction. Previously signed-in browsers are denied on their **next** request; in-flight responses cannot be recalled. Disabling the provider does not change external directory users.
+11. In **Access → Activity Audit**, review the provider update outcome and **linked-account revocation count**. The count is distinct KAORI user projections, not the number of open sessions. Re-enabling permits a **fresh** login but does not resurrect any old browser/remember cookie. Other provider users and Local Database recovery accounts must remain unaffected.
+
+The 10-minute connection proof is verified again server-side on Create; missing, changed, expired or cross-user proof is rejected without saving. Edit Provider intentionally remains saveable without a fresh registration proof so an administrator can disable or repair a broken integration, matching the canonical Integrations edit exception.
 
 Provider records store secret **environment-variable names**, never secret values.
 
@@ -57,7 +61,7 @@ KAORI does not store the LDAP user's password.
 - Use TCP 636 for LDAPS or TCP 389 for StartTLS.
 - Install the issuing CA certificate in the KAORI container trust store when the LDAP certificate is private or internally issued.
 - The certificate hostname must match the hostname configured in **LDAP Server URI**.
-- Plain LDAP is intended only for isolated development testing.
+- The administrative UI offers encrypted LDAPS and StartTLS only. Plain LDAP is not selectable or accepted by the Identity Provider form, including in development.
 
 KAORI validates server certificates for LDAPS and StartTLS. StartTLS is negotiated before the bind credentials are sent.
 
@@ -76,7 +80,7 @@ It does not need account creation, password reset, group modification, or direct
 | KAORI field                        | Required value                                            | Active Directory example                             | Generic LDAP example                         |
 | ---------------------------------- | --------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------- |
 | LDAP Server URI                    | LDAP endpoint and optional port                           | `ldaps://dc01.example.com:636`                       | `ldaps://ldap.example.com:636`               |
-| TLS Mode                           | `LDAPS`, `StartTLS`, or development-only plain            | `LDAPS`                                              | `StartTLS`                                   |
+| TLS Mode                           | `LDAPS` or `StartTLS`            | `LDAPS`                                              | `StartTLS`                                   |
 | Base DN                            | Root of the searchable user subtree                       | `OU=Users,DC=example,DC=com`                         | `ou=people,dc=example,dc=com`                |
 | Bind DN                            | Read-only service account identity                        | `CN=svc-kaori,OU=Service Accounts,DC=example,DC=com` | `uid=svc-kaori,ou=service,dc=example,dc=com` |
 | Bind Password Environment Variable | Environment-variable name containing the service password | `KAORI_LDAP_BIND_PASSWORD`                           | `KAORI_LDAP_BIND_PASSWORD`                   |
@@ -114,6 +118,8 @@ KAORI_LDAP_BIND_PASSWORD=replace-with-directory-service-password
 
 In Docker Compose, make the variable available to the web application container. Production deployments should source it from the deployment secret mechanism rather than committing it to the repository.
 
+For VS Code Dev Container UAT using the supported F5 Flask Debug profiles, `.vscode/launch.json` explicitly reads `${workspaceFolder}/.env`. After writing/updating the ignored `.env` file (using masked local input), stop and start the **Flask debugger process** to load the new secret. Merely editing `.env` or running a standalone `ldap3` script does **not** update an already-running application process environment. Do not rebuild the Dev Container solely for this; its temporary `/etc/hosts` and CA trust setup may be lost. For Compose-launched non-debug processes, environment is loaded at container creation and requires a separately controlled service recreate (without volume deletion) or an approved equivalent mechanism.
+
 The value entered in the KAORI provider form is only:
 
 ```text
@@ -122,10 +128,10 @@ KAORI_LDAP_BIND_PASSWORD
 
 ## Validation and provisioning
 
-1. Save the LDAP provider while disabled.
-2. Ensure the bind secret is present in the running KAORI container.
-3. Run **Validate**. This opens the configured connection, negotiates TLS when selected, and performs the service bind.
-4. Enable the provider.
+1. Ensure the bind secret is present in the running KAORI web process.
+2. On **Add Provider**, leave Enabled off and run **Test Connection** before Save; a successful test unlocks Save only for the tested configuration for up to 10 minutes. Failed tests and subsequent field changes keep Save disabled; server-side proof checks prevent bypass.
+3. Save the LDAP provider while disabled; on an existing provider, use **Validate** to recheck service bind. The test result uses canonical Operational Toast. Failed tests appear in Notification Deck and both outcomes have audit evidence; no password values are persisted in provider fields.
+4. Enable the provider after validation.
 5. Open **LDAP Directory Provisioning**.
 6. Search by username, email, or display name.
 7. Select the identity, choose a non-administrative or explicitly approved role, and provision the user.
@@ -135,7 +141,8 @@ KAORI_LDAP_BIND_PASSWORD
 
 | Symptom                                    | Check                                                                                                                                                  |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Provider validation reports missing secret | Confirm the exact environment-variable name and restart the KAORI container after adding it.                                                           |
+| Provider validation reports missing secret | Confirm the exact environment-variable name is loaded into the **running KAORI web process**. For VS Code F5, restart Flask Debug (not the Dev Container) after editing the ignored `.env` file. |
+| `LDAP connection could not be opened.` | Check the current KAORI adapter version first: older builds treated the `None` return from `ldap3.Connection.open()` as a failure even when `connection.closed` was `False` (#2917). On an updated build, verify actual container routing, DNS, CA trust and server logs; do not disable TLS verification. |
 | TLS validation fails                       | Confirm container CA trust, certificate chain, certificate hostname, port, and selected TLS mode.                                                      |
 | Service bind fails                         | Confirm Bind DN syntax, password, account state, and directory authentication policy.                                                                  |
 | Search returns no users                    | Confirm Base DN, search filter, mapped attributes, and service-account read permissions.                                                               |

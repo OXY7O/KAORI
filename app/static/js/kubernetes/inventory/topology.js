@@ -54,6 +54,10 @@ const startTopologyWorkspace = () => {
     const $ = (id) => document.getElementById(id)
     const canvas = $('topology-canvas')
     const canvasShell = $('topology-canvas-shell')
+    const viewportHint = $('topology-viewport-hint')
+    const viewportHintTitle = $('topology-viewport-hint-title')
+    const viewportHintCount = $('topology-viewport-hint-count')
+    const viewportHintDescription = $('topology-viewport-hint-description')
     const boundaryLayer = $('topology-namespace-boundaries')
     const clusterSelect = $('topology-cluster')
     const namespaceSelect = $('topology-namespace')
@@ -104,6 +108,8 @@ const startTopologyWorkspace = () => {
     const relationshipTypes = ['contains', 'owns', 'scheduled_on', 'selects', 'routes_to', 'uses', 'mounts', 'binds']
 
     let cy = null
+    let readableFocusActive = false
+    let graphViewportInitialized = false
     let currentPayload = config.initial_graph || { nodes: [], edges: [], summary: {}, type_counts: {} }
     let fetchController = null
     let searchTimer = null
@@ -358,7 +364,8 @@ const startTopologyWorkspace = () => {
         else if (cy)
             window.requestAnimationFrame(() => {
                 cy.resize()
-                fitGraphToCanvas()
+                if (!graphViewportInitialized) fitGraphToCanvas({ preferReadable: true })
+                else scheduleBoundaryUpdate()
             })
         if (updateUrl) updateUrl()
     }
@@ -471,7 +478,7 @@ const startTopologyWorkspace = () => {
                     color: labelText,
                     'font-family': 'Inter, sans-serif',
                     'font-size': 10,
-                    'font-weight': 600,
+                    'font-weight': 400,
                     height: 44,
                     label: workspaceState.nodeLabels ? 'data(display_label)' : '',
                     'line-height': 1.2,
@@ -511,7 +518,7 @@ const startTopologyWorkspace = () => {
             },
             {
                 selector: 'node[type = "cluster"]',
-                style: { 'font-size': 11, 'font-weight': 700, height: 52, 'text-max-width': 240, width: 96 },
+                style: { 'font-size': 11, 'font-weight': 400, height: 52, 'text-max-width': 240, width: 96 },
             },
             { selector: 'node[type = "namespace"]', style: { height: 48, 'text-max-width': 230, width: 88 } },
             {
@@ -520,7 +527,7 @@ const startTopologyWorkspace = () => {
                     'curve-style': 'bezier',
                     'font-family': 'Inter, sans-serif',
                     'font-size': 9,
-                    'font-weight': 600,
+                    'font-weight': 500,
                     label: '',
                     'line-color': (edge) => edgeColor(edge.data('relationship')),
                     'line-opacity': 0.68,
@@ -528,13 +535,17 @@ const startTopologyWorkspace = () => {
                     'overlay-opacity': 0,
                     'target-arrow-color': (edge) => edgeColor(edge.data('relationship')),
                     'target-arrow-shape': 'triangle',
-                    'arrow-scale': 0.78,
+                    'arrow-scale': 0.66,
                     color: labelText,
                     'text-background-color': labelBackground,
                     'text-background-opacity': 0.96,
                     'text-background-padding': 4,
-                    'text-rotation': 'autorotate',
-                    width: 1.5,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': cssToken('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.7,
+                    'text-rotation': 'none',
+                    width: 1.6,
                 },
             },
             {
@@ -542,16 +553,40 @@ const startTopologyWorkspace = () => {
                 style: {
                     'curve-style': 'taxi',
                     'line-style': 'dashed',
-                    'line-opacity': 0.28,
+                    'line-opacity': 0.34,
                     'target-arrow-shape': 'none',
                     'taxi-direction': 'downward',
                     'taxi-turn': 24,
                     width: 1,
                 },
             },
+            {
+                selector: 'edge[relationship = "owns"]',
+                style: { 'line-opacity': 0.74, 'arrow-scale': 0.66, width: 1.7 },
+            },
+            {
+                selector: 'edge[relationship = "scheduled_on"]',
+                style: { 'line-opacity': 0.58, 'arrow-scale': 0.58, width: 1.35 },
+            },
             { selector: 'edge.edge-label-visible', style: { label: 'data(label)' } },
+            {
+                selector: 'edge[relationship = "contains"].edge-label-visible',
+                style: { 'text-margin-y': 24 },
+            },
+            {
+                selector: 'edge.edge-hovered',
+                style: {
+                    'line-color': brandPrimary,
+                    'target-arrow-color': brandPrimary,
+                    'line-opacity': 1,
+                    width: 2.2,
+                    'z-index': 1150,
+                },
+            },
             { selector: '.dimmed', style: { opacity: 0.1, 'text-opacity': 0.06 } },
             { selector: '.focused', style: { opacity: 1, 'text-opacity': 1, 'z-index': 999 } },
+            { selector: 'edge.focused', style: { 'line-opacity': 1, width: 2.2 } },
+            { selector: 'edge.focused[relationship = "contains"]', style: { 'line-opacity': 0.6, width: 1.3 } },
             {
                 selector: '.path-active',
                 style: {
@@ -590,7 +625,7 @@ const startTopologyWorkspace = () => {
                 animate: 'end',
                 animationDuration: 420,
                 animationEasing: 'ease-out-cubic',
-                fit: true,
+                fit: false,
                 nodeDimensionsIncludeLabels: true,
                 padding: 80,
                 idealEdgeLength: 210,
@@ -606,17 +641,18 @@ const startTopologyWorkspace = () => {
                 randomize: true,
             }
         }
+        const visibleCount = cy ? cy.nodes(':visible').length : 0
         return {
             name: 'breadthfirst',
             animate: false,
             circle: false,
             directed: true,
-            fit: true,
+            fit: false,
             grid: true,
             maximal: false,
             nodeDimensionsIncludeLabels: true,
-            padding: 64,
-            spacingFactor: 1.88,
+            padding: visibleCount <= 8 ? 72 : 64,
+            spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.13 : 1.24,
         }
     }
 
@@ -669,7 +705,39 @@ const startTopologyWorkspace = () => {
         return visibleNodes.union(visibleEdges)
     }
 
-    const fitGraphToCanvas = () => {
+    // An all-node overview cannot keep every label legible in a dense graph.
+    // Start dense scopes at a readable focal viewport; Fit explicitly restores the overview.
+    const READABLE_ZOOM = 0.82
+    const DENSE_ZOOM_THRESHOLD = 0.72
+    const DENSE_NODE_THRESHOLD = 12
+
+    const updateViewportHint = (nodeCount) => {
+        if (!viewportHint || !viewportHintTitle || !viewportHintCount || !viewportHintDescription) return
+        const compactOverview = nodeCount > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD
+        viewportHint.hidden = !readableFocusActive && !compactOverview
+        if (viewportHint.hidden) return
+        viewportHintTitle.textContent = readableFocusActive ? 'Focused view' : 'Full graph overview'
+        viewportHintCount.textContent = `${nodeCount} resources`
+        viewportHintDescription.textContent = readableFocusActive
+            ? 'Pan to explore · Fit for overview.'
+            : 'Zoom for labels · Use Resource List.'
+    }
+
+    const readableFocusNode = (visibleNodes) => {
+        const selected = selectedNodeId ? visibleNodes.filter((node) => node.id() === selectedNodeId) : null
+        if (selected?.length) return selected
+        const scopedNamespace = !namespaceSelect.disabled ? namespaceSelect.value : ''
+        if (scopedNamespace) {
+            const namespace = visibleNodes.filter(
+                (node) => node.data('type') === 'namespace' && node.data('namespace') === scopedNamespace
+            )
+            if (namespace.length) return namespace.first()
+        }
+        const cluster = visibleNodes.filter((node) => node.data('type') === 'cluster')
+        return cluster.length ? cluster.first() : visibleNodes.first()
+    }
+
+    const fitGraphToCanvas = ({ preferReadable = false } = {}) => {
         if (!cy) return
         const visible = visibleGraphElements()
         if (!visible || !visible.nodes().length) return
@@ -677,9 +745,19 @@ const startTopologyWorkspace = () => {
         cy.resize()
         const rect = canvas.getBoundingClientRect()
         const shortest = Math.min(rect.width || 0, rect.height || 0)
+        if (rect.width < 120 || rect.height < 120) return
         const padding = Math.max(48, Math.min(88, Math.round(shortest * 0.08)))
-        cy.fit(visible, padding)
-        cy.center(visible)
+        const bounds = visible.boundingBox({ includeLabels: true, includeOverlays: false })
+        cy.fit(bounds, padding)
+        graphViewportInitialized = true
+        readableFocusActive = false
+        if (preferReadable && visible.nodes().length > DENSE_NODE_THRESHOLD && cy.zoom() < DENSE_ZOOM_THRESHOLD) {
+            cy.zoom(READABLE_ZOOM)
+            cy.center(readableFocusNode(visible.nodes()))
+            readableFocusActive = true
+        }
+        updateViewportHint(visible.nodes().length)
+        scheduleBoundaryUpdate()
     }
 
     const setRuntimeStatus = (message = '') => {
@@ -870,11 +948,9 @@ const startTopologyWorkspace = () => {
         if (!cy) return
         cy.edges().removeClass('edge-label-visible')
         if (workspaceState.edgeLabels) cy.edges(':visible').addClass('edge-label-visible')
-        cy.edges('.path-active').addClass('edge-label-visible')
-        if (selectedNodeId && !pathHighlightActive) {
-            const node = cy.getElementById(selectedNodeId)
-            if (node?.length) node.connectedEdges(':visible').addClass('edge-label-visible')
-        }
+        cy.edges('.path-active:visible').addClass('edge-label-visible')
+        cy.edges(':selected:visible').addClass('edge-label-visible')
+        cy.edges('.edge-hovered:visible').addClass('edge-label-visible')
     }
 
     const applyVisibility = ({ relayout = false } = {}) => {
@@ -1037,6 +1113,48 @@ const startTopologyWorkspace = () => {
                 valueElement.title = String(displayValue || 'Not Reported')
             }
             container.appendChild(row)
+        })
+    }
+
+    const relationshipSummaryLabels = {
+        contains: ['Contains', 'Contained in'],
+        owns: ['Owns', 'Owned by'],
+        scheduled_on: ['Scheduled on', 'Hosts'],
+        selects: ['Selects', 'Selected by'],
+        routes_to: ['Routes to', 'Receives route from'],
+        uses: ['Uses configuration', 'Used by'],
+        mounts: ['Mounts claim', 'Mounted by'],
+        binds: ['Binds volume', 'Bound to claim'],
+    }
+
+    const renderRelationshipSummary = (view, node) => {
+        const panel = view.querySelector('[data-node-relationship-summary]')
+        const container = view.querySelector('[data-node-relationship-summary-items]')
+        const edges = node.connectedEdges(':visible')
+        panel?.classList.toggle('hidden', !edges.length)
+        container?.replaceChildren()
+        if (!edges.length || !container) return
+
+        const counts = new Map()
+        edges.forEach((edge) => {
+            const relationship = edge.data('relationship')
+            const outbound = edge.source().id() === node.id()
+            const key = relationship + (outbound ? ':out' : ':in')
+            const entry = counts.get(key) || { relationship, outbound, count: 0 }
+            entry.count += 1
+            counts.set(key, entry)
+        })
+        counts.forEach(({ relationship, outbound, count }) => {
+            const chip = cloneTemplate('topology-relationship-summary-item-template')
+            if (!chip) return
+            const labels = relationshipSummaryLabels[relationship] || [
+                titleCaseText(relationship),
+                titleCaseText(relationship),
+            ]
+            text(chip, '[data-summary-label]', `${labels[outbound ? 0 : 1]} · ${count}`)
+            const swatch = chip.querySelector('[data-summary-swatch]')
+            if (swatch) swatch.style.backgroundColor = edgeColor(relationship)
+            container.appendChild(chip)
         })
     }
 
@@ -1263,6 +1381,7 @@ const startTopologyWorkspace = () => {
             { label: 'Collected At', value: formatDateTime(data.collected_at) },
         ]
         renderValueRows(view.querySelector('[data-node-fields]'), fields)
+        renderRelationshipSummary(view, node)
 
         const minimap = view.querySelector('[data-node-minimap]')
         minimap?.classList.toggle('hidden', data.type !== 'cluster')
@@ -1298,6 +1417,7 @@ const startTopologyWorkspace = () => {
             button.addEventListener('click', () => activateTab(button.dataset.kaoriSegmentedTab))
         )
         bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.kaoriSegmentedTab))
+        view.querySelector('[data-open-relationships]')?.addEventListener('click', () => activateTab('relationships'))
         view.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
             if (pathHighlightActive) {
                 clearPathHighlight()
@@ -1510,15 +1630,13 @@ const startTopologyWorkspace = () => {
         cy.on('tap', (event) => {
             if (event.target === cy) clearSelection()
         })
-        cy.on('mouseover', 'edge', (event) => event.target.addClass('edge-label-visible'))
+        cy.on('mouseover', 'edge', (event) => {
+            event.target.addClass('edge-hovered edge-label-visible')
+        })
         cy.on('mouseout', 'edge', (event) => {
-            if (!workspaceState.edgeLabels && !event.target.selected() && !event.target.hasClass('path-active'))
-                event.target.removeClass('edge-label-visible')
+            event.target.removeClass('edge-hovered')
+            updateEdgeLabelClasses()
         })
-        cy.on('mouseover', 'node', (event) => {
-            if (!workspaceState.edgeLabels) event.target.connectedEdges(':visible').addClass('edge-label-visible')
-        })
-        cy.on('mouseout', 'node', () => updateEdgeLabelClasses())
         cy.on('pan zoom resize render position', () => {
             scheduleBoundaryUpdate()
         })
@@ -1535,9 +1653,9 @@ const startTopologyWorkspace = () => {
             window.requestAnimationFrame(() => {
                 ensureCanvasDimensions()
                 cy.resize()
-                fitGraphToCanvas()
+                fitGraphToCanvas({ preferReadable: true })
                 scheduleBoundaryUpdate()
-                window.setTimeout(fitGraphToCanvas, 140)
+                window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 140)
             })
         }
         cy.one('layoutstop', finalize)
@@ -1662,9 +1780,10 @@ const startTopologyWorkspace = () => {
             groups.get(key).nodes = groups.get(key).nodes.union(node)
         })
         groups.forEach(({ namespace, nodes }) => {
-            if (!nodes.length) return
+            const resourceCount = nodes.filter((node) => node.data('type') !== 'namespace').length
+            if (!resourceCount) return
             const box = nodes.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
-            const padding = 20
+            const padding = 16
             const boundary = document.createElement('div')
             boundary.className = 'absolute rounded-xl border border-dashed border-outline-focus bg-kaori-soft/40'
             boundary.style.left = `${box.x1 - padding}px`
@@ -1674,7 +1793,7 @@ const startTopologyWorkspace = () => {
             const label = document.createElement('span')
             label.className =
                 'absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary shadow-sm'
-            label.textContent = namespace
+            label.textContent = `${namespace} · ${resourceCount} ${resourceCount === 1 ? 'resource' : 'resources'}`
             boundary.appendChild(label)
             boundaryLayer.appendChild(boundary)
         })
@@ -1754,6 +1873,9 @@ const startTopologyWorkspace = () => {
 
     const createGraph = (payload) => {
         currentPayload = payload
+        graphViewportInitialized = false
+        readableFocusActive = false
+        if (viewportHint) viewportHint.hidden = true
         if (cy) cy.destroy()
         if (!topologyRenderer) {
             cy = null
@@ -1820,9 +1942,9 @@ const startTopologyWorkspace = () => {
                 window.requestAnimationFrame(() => {
                     ensureCanvasDimensions()
                     cy.resize()
-                    fitGraphToCanvas()
-                    window.setTimeout(fitGraphToCanvas, 120)
-                    window.setTimeout(fitGraphToCanvas, 320)
+                    fitGraphToCanvas({ preferReadable: true })
+                    window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 120)
+                    window.setTimeout(() => fitGraphToCanvas({ preferReadable: true }), 320)
                     scheduleBoundaryUpdate()
                     setRuntimeStatus()
                     showError()
@@ -2002,8 +2124,19 @@ const startTopologyWorkspace = () => {
 
     if (window.ResizeObserver && canvasShell) {
         const observer = new ResizeObserver(() => {
-            if (!cy) return
+            if (!cy || activeView !== 'graph') return
             cy.resize()
+            const visible = visibleGraphElements()
+            const rect = canvas.getBoundingClientRect()
+            if (visible?.nodes().length && rect.width >= 120 && rect.height >= 120) {
+                const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
+                const margin = 20
+                const clipped =
+                    box.x1 < margin || box.y1 < margin || box.x2 > rect.width - margin || box.y2 > rect.height - margin
+                if (!readableFocusActive && clipped) {
+                    window.requestAnimationFrame(fitGraphToCanvas)
+                }
+            }
             scheduleBoundaryUpdate()
             scheduleDrawerMiniMapUpdate()
         })

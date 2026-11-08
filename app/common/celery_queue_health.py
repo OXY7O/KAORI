@@ -7,6 +7,7 @@ from typing import Any
 from flask import current_app
 
 _TOPOLOGY_CACHE_LOCK = Lock()
+_TOPOLOGY_INSPECTION_LOCK = Lock()
 _TOPOLOGY_CACHE: tuple[float, dict[str, Any]] | None = None
 
 
@@ -20,7 +21,42 @@ def _copy_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_cached_celery_topology(*, cache_ttl_seconds: float = 8.0) -> dict[str, Any]:
+    """Read worker posture without issuing broker RPC from normal UI requests."""
+
+    with _TOPOLOGY_CACHE_LOCK:
+        cached = _TOPOLOGY_CACHE
+        if cached is not None and monotonic() - cached[0] < max(cache_ttl_seconds, 0.0):
+            return _copy_snapshot(cached[1])
+    # Unknown is not Offline: no live observation was made by this request.
+    return {
+        'status': 'unknown',
+        'worker_names': [],
+        'worker_queues': {},
+        'detail': 'No recent worker topology observation is available.',
+        'error_type': None,
+    }
+
+
 def inspect_celery_topology(
+    *,
+    timeout_seconds: float = 0.5,
+    cache_ttl_seconds: float = 8.0,
+) -> dict[str, Any]:
+    """Coalesce concurrent probes; never queue multiple broker RPCs per process."""
+
+    if not _TOPOLOGY_INSPECTION_LOCK.acquire(blocking=False):
+        return get_cached_celery_topology(cache_ttl_seconds=cache_ttl_seconds)
+    try:
+        return _inspect_celery_topology_once(
+            timeout_seconds=timeout_seconds,
+            cache_ttl_seconds=cache_ttl_seconds,
+        )
+    finally:
+        _TOPOLOGY_INSPECTION_LOCK.release()
+
+
+def _inspect_celery_topology_once(
     *,
     timeout_seconds: float = 0.5,
     cache_ttl_seconds: float = 8.0,

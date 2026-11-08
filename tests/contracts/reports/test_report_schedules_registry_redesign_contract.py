@@ -51,8 +51,9 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
     assert 'xl:grid-cols-6' not in template
     assert 'xl:grid-cols-5' not in template
 
-    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence' in service
-    assert 'paginate_sequence(' in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select' in service
+    assert 'paginate_sequence(' not in service
+    assert '_filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(' in service
     assert 'paginate_select(' in service
     assert "query_args.get('run_page', 1)" in service
     assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
@@ -61,6 +62,7 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
 def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    readiness = read(ROOT / 'app/reports/schedules/readiness.py')
 
     assert 'data-schedule-posture="automation-v2"' in template
     assert 'data-schedule-control-boundary="true"' in template
@@ -71,14 +73,15 @@ def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> 
     assert 'Artifact Storage Needs Review' in template
     assert "url_for('reports.storage')" in template
     assert "'automation_posture': get_automation_posture(storage_context, worker_context)" in service
-    assert 'def get_automation_posture(' in service
+    assert 'from app.reports.schedules.readiness import get_automation_posture' in service
+    assert 'def get_automation_posture(' in read(ROOT / 'app/reports/schedules/readiness.py')
     for label in [
         'Automation Ready',
         'Ready for Unattended Execution',
         'Artifact Execution Paused',
         'Dispatcher Needs Attention',
     ]:
-        assert label in service
+        assert label in readiness
 
 
 def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
@@ -120,6 +123,7 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
 def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
     presentation = read(PRESENTATION)
 
     for label in [
@@ -147,7 +151,7 @@ def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> N
     assert "'30d'" in service
     assert 'def _get_run_registry(' in service
     assert 'def _get_run_selected_filters(' in service
-    assert 'def _get_run_filter_options(' in service
+    assert 'def build_run_filter_options(' in support
     assert 'def format_run_duration(' in presentation
     assert '.limit(limit)' in service  # compact summary sampling remains separate from registry paging
     assert 'payload.recent_runs %}' not in template
@@ -188,7 +192,7 @@ def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:
 
 def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
     template = read(TEMPLATE)
-    service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
     registry = read(ROOT / 'app/reports/schedules/registry.py')
     presentation = read(PRESENTATION)
 
@@ -200,7 +204,7 @@ def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
     assert "legacy_cluster = str(query_args.get('cluster', '') or '').strip()" in registry
     assert "asset = f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{legacy_cluster}'" in registry
     assert "schedule['scope_asset_filter_key'] != asset" in registry
-    assert 'f\'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}\'' in service
+    assert 'f\'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}\'' in support
     assert "'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}'" in presentation
 
 
@@ -257,11 +261,13 @@ def test_schedule_create_modal_uses_cluster_bound_namespace_dropdown() -> None:
     assert 'data-schedule-namespace' in template
     assert '<input type="text"\n                               name="namespace"' not in template
     assert 'All Namespaces' in template
-    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster()" in service
+    # Only the selected cluster may trigger Namespace inventory reads.
+    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster(selected_cluster_id)" in service
     assert 'get_namespace_options_by_cluster as _get_namespace_options_by_cluster' in service
-    assert 'def get_namespace_options_by_cluster()' in support
-    assert 'return get_report_namespace_options_by_cluster()' in support
-    assert 'def get_report_namespace_options_by_cluster()' in scope
+    assert 'def get_namespace_options_by_cluster(cluster_id: str | None = None)' in support
+    assert 'return get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}' in support
+    assert 'def get_report_namespace_options_by_cluster(cluster_id: str | None = None)' in scope
+    assert 'query.filter(NamespaceInventory.cluster_id == cluster_id)' in scope
     assert 'NamespaceInventory.namespace' in scope
     assert 'filter_current_generation(' in scope
     assert 'scheduleNamespacesByCluster' in script
@@ -298,3 +304,68 @@ def test_schedule_detail_modal_uses_four_read_only_contract_blocks() -> None:
     ):
         assert label in template
     assert 'The canonical report definition reused by every scheduled execution.' not in template
+
+
+def test_schedule_form_submit_uses_shared_primary_button_without_changing_post() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    Environment().parse(template)
+    assert '{% import "components/action_button.html" as action_button %}' in template
+    schedule_form = template.split('{% macro schedule_form(', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert "action_button.classes('primary')" in schedule_form
+    assert 'class="inline-flex min-h-9' not in schedule_form
+    for token in (
+        'method="POST"',
+        'action="{{ form_action }}"',
+        'csrf_token',
+        'data-schedule-form',
+        'data-operation-submit',
+        'data-loading-label="{{ loading_label }}"',
+        '{{ submit_label }}',
+        'name="next"',
+    ):
+        assert token in schedule_form
+
+
+def test_schedule_run_now_and_delete_confirmation_use_canonical_action_states() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    shared = read(ROOT / 'app/templates/components/action_button.html')
+    Environment().parse(template)
+
+    run_form = template.split('action="{{ url_for(\'reports.run_schedule\', schedule_id=schedule.id) }}"', 1)[1].split(
+        '</form>', 1
+    )[0]
+    delete_form = template.split('action="{{ url_for(\'reports.delete_schedule\', schedule_id=schedule.id) }}"', 1)[
+        1
+    ].split('</form>', 1)[0]
+
+    for endpoint in ('reports.run_schedule', 'reports.delete_schedule'):
+        opener = template.split(f"{{{{ url_for('{endpoint}', schedule_id=schedule.id) }}}}", 1)[0]
+        assert 'method="POST"' in opener.rsplit('<form', 1)[1]
+    assert "action_button.classes('primary')" in run_form
+    assert "action_button.classes('critical')" in delete_form
+    for form in (run_form, delete_form):
+        assert 'class="inline-flex min-h-9' not in form
+        assert 'name="csrf_token"' in form
+        assert 'name="next"' in form
+        assert 'data-operation-submit' in form
+        assert 'data-operation-submit-label' in form
+
+    assert 'data-loading-label="Queueing Report..."' in run_form
+    assert 'not payload.run_actions_enabled' in run_form
+    assert 'disabled title="Artifact storage is unavailable."' in run_form
+    assert 'data-loading-label="Deleting Schedule..."' in delete_form
+    assert 'data-dialog-target="schedule-delete-{{ loop.index }}"' in template
+    assert 'Confirm Schedule Deletion' in template
+
+    # The existing macro owns focus, active and disabled behavior, not the page.
+    for state in (
+        'active:bg-kaori-primary-dark',
+        'active:opacity-80',
+        'focus-visible:ring-2',
+        'disabled:cursor-not-allowed',
+    ):
+        assert state in shared

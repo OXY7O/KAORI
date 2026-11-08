@@ -1,6 +1,9 @@
 ;(() => {
     const SELECTOR = '[data-detail-toggle]'
+    const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
     const inFlight = new Map()
+
+    const prefersReducedMotion = () => window.matchMedia?.(reducedMotionQuery)?.matches === true
 
     function refreshIcons() {
         if (window.lucide) window.lucide.createIcons()
@@ -301,10 +304,14 @@
 
             if (drawer) {
                 unlockBackground()
-                elements.dialog?.classList.add('translate-x-full')
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => elements.dialog?.classList.remove('translate-x-full'))
-                })
+                if (prefersReducedMotion()) {
+                    elements.dialog?.classList.remove('translate-x-full')
+                } else {
+                    elements.dialog?.classList.add('translate-x-full')
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => elements.dialog?.classList.remove('translate-x-full'))
+                    })
+                }
             } else {
                 lockBackground()
             }
@@ -312,6 +319,11 @@
         }
 
         if (drawer && elements.dialog) {
+            if (prefersReducedMotion()) {
+                hideHost(modalHost)
+                if (afterHidden) afterHidden()
+                return
+            }
             modalHost.classList.add('pointer-events-none')
             elements.dialog.classList.add('translate-x-full')
             closeTimer = window.setTimeout(() => {

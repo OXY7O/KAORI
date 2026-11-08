@@ -1,0 +1,239 @@
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATES = ROOT / 'app/templates'
+STORAGE = TEMPLATES / 'storage/object_storage/analytics'
+
+
+def _source(path: Path) -> str:
+    return path.read_text(encoding='utf-8')
+
+
+def test_object_storage_reuses_shared_analytics_tracker_across_six_pages() -> None:
+    page = _source(STORAGE / 'index.html')
+    tracker = _source(TEMPLATES / 'analytics/components/_section_load_tracker.html')
+    javascript = _source(ROOT / 'app/static/js/analytics/section_load_tracker.js')
+    routes = _source(ROOT / 'app/storage/object_storage/analytics/routes.py')
+
+    assert 'data-analytics-section-tracker-root' in page
+    assert 'data-analytics-load-title="Loading Analytics Section"' in page
+    assert "section_tracker.render('object-storage-analytics-load-tracker'" in page
+    assert "filename='js/analytics/section_load_tracker.js'" in page
+    assert page.count("filename='js/analytics/section_load_tracker.js'") == 1
+    assert 'data-analytics-section-load-tracker="true"' in tracker
+    assert 'data-analytics-load-progress' in tracker
+    assert 'data-analytics-load-counter' in tracker
+    assert 'Requested Sections' in javascript
+    assert 'const REQUESTED = new Set' in javascript
+    assert "setText(view, '[data-analytics-load-counter]', 'Applying Filter')" in javascript
+
+    for route in (
+        'object_storage_overview',
+        'object_storage_capacity',
+        'object_storage_performance',
+        'object_storage_forecast',
+        'object_storage_top_consumers',
+        'object_storage_alerts',
+    ):
+        assert f'def {route}()' in routes
+
+    # Server-rendered summary/panels are not fabricated as HTMX section requests.
+    assert 'data-analytics-lazy-section="true"' not in page
+    assert 'partials/_overview_analysis.html' in page
+    assert 'partials/_overview_workspace.html' in page
+    assert 'data-analytics-lazy-section="true"' not in _source(STORAGE / 'partials/_overview_workspace.html')
+
+
+def test_object_storage_three_real_htmx_record_fragments_are_counted() -> None:
+    filenames = {
+        '_bucket_table.html': 'object-storage-bucket-table-panel',
+        '_bucket_forecast_table.html': 'object-storage-bucket-forecast-table-panel',
+        '_alert_records.html': 'object-storage-alert-records',
+    }
+    for filename, target_id in filenames.items():
+        template = _source(STORAGE / 'partials' / filename)
+        assert f'id="{target_id}"' in template
+        assert 'data-analytics-lazy-section="true"' in template
+        assert 'data-analytics-load-state="idle"' in template
+        assert 'hx-get=' in template
+        assert f'hx-target="#{target_id}"' in template
+        assert 'hx-indicator=' in template
+
+    javascript = _source(ROOT / 'app/static/js/analytics/section_load_tracker.js')
+    assert 'currentSection(trackedSection(event))' in javascript
+    assert "setState(section, 'loading')" in javascript
+    assert "setState(section, 'loaded')" in javascript
+    assert "setState(section, 'failed')" in javascript
+    for error in ('htmx:responseError', 'htmx:sendError', 'htmx:timeout'):
+        assert error in javascript
+
+
+def test_object_storage_controls_use_shared_shell_with_preserved_domain_evidence() -> None:
+    controls = _source(STORAGE / 'partials/_controls.html')
+    shared = _source(TEMPLATES / 'analytics/components/_controls_readiness.html')
+
+    assert 'shared_readiness.frame(' in controls
+    assert "'Analytics Controls & Data Readiness'" in controls
+    assert "eyebrow='Analytics Overview' if page_key == 'overview'" in controls
+    assert "'object-storage-analytics-refresh-indicator'" in controls
+    assert 'loading_bar.render(indicator_id' in shared
+    assert 'data-analytics-refresh-request="true"' in controls
+    assert 'hx-get="{{ url_for(\'analytics.object_storage_\' ~ page_key) }}"' in controls
+    assert 'hx-target="#object-storage-analytics-page"' in controls
+    assert 'hx-push-url="true"' in controls
+    assert 'shared_readiness.selector(' in controls
+    assert 'shared_readiness.controls_grid()' in controls
+    assert 'shared_readiness.readiness_grid()' in controls
+    for field in ('system_id', 'time_range', 'history_window', 'source'):
+        assert f"'{field}'" in controls
+    for evidence in (
+        'Committed Inventory',
+        'Latest Analytics Data Snapshot',
+        'Metrics Contract At Collection',
+        'Forecast Worker Snapshot',
+        'Selected Alert Stream',
+        'Alertmanager Lifecycle',
+        'Metrics Snapshot Source',
+        'Operational Metrics Degraded',
+    ):
+        assert evidence in controls
+
+    assert '{% endcall %}' in controls
+    assert '<section class="{{ analysis_surface.snapshot_shell_classes() }}">' not in controls
+
+
+def test_shared_object_storage_templates_parse_and_worker_remains_domain_owned() -> None:
+    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)))
+    for name in (
+        'storage/object_storage/analytics/index.html',
+        'storage/object_storage/analytics/partials/_controls.html',
+        'storage/object_storage/analytics/partials/_bucket_table.html',
+        'storage/object_storage/analytics/partials/_bucket_forecast_table.html',
+        'storage/object_storage/analytics/partials/_alert_records.html',
+        'analytics/components/_controls_readiness.html',
+        'analytics/components/_section_load_tracker.html',
+    ):
+        environment.parse(_source(TEMPLATES / name))
+
+    # Render the actual shared shell rather than testing its text alone.
+    example = environment.from_string(
+        '{% import "analytics/components/_controls_readiness.html" as controls %}'
+        '{% call controls.frame("Analytics Controls & Data Readiness", '
+        '"Committed data only", "sliders-horizontal", "example-loading", '
+        'eyebrow="Analytics Overview") %}'
+        '<span id="example-body">Source data</span>'
+        '{% endcall %}'
+    ).render()
+    assert 'Analytics Controls & Data Readiness' in example
+    assert 'id="example-loading"' in example
+    assert 'id="example-body"' in example
+    assert 'data-analytics-controls-readiness' in example
+
+    service = _source(ROOT / 'app/storage/object_storage/analytics/service.py')
+    job_adapter = _source(ROOT / 'app/storage/object_storage/analytics/job_adapter.py')
+    assert 'read_analytics_snapshot(' in service
+    assert 'enqueue_canonical_job(' in job_adapter
+    assert 'analytics-batch' in job_adapter
+    assert 'MetricsConsumer' not in _source(STORAGE / 'index.html')
+
+
+def test_object_storage_controls_render_independently_in_all_six_views() -> None:
+    """Catch missing macro imports that Jinja parsing alone cannot detect."""
+    from jinja2 import StrictUndefined
+
+    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined)
+
+    def _user_datetime(value: object, fallback: str = 'Unavailable') -> str:
+        return str(value) if value else fallback
+
+    def _url_for(endpoint: str) -> str:
+        return '/analytics/' + endpoint
+
+    environment.filters['user_datetime'] = _user_datetime
+    environment.globals['url_for'] = _url_for
+
+    context = {
+        'page': {'title': 'Object Storage Analytics'},
+        'systems': [{'id': 1, 'name': 'MinIO Test'}],
+        'system': {'id': 1},
+        'allowed_time_ranges': [{'value': '24h', 'label': 'Last 24 Hours'}],
+        'forecast_history_windows': [{'value': '7d', 'label': 'Last 7 Days'}],
+        'selected_time_range': '24h',
+        'selected_alert_source': 'auto',
+        'selected_forecast_history_window': '7d',
+        'inventory_observed_at': None,
+        'query_diagnostics': [],
+        'dependency_blocker': None,
+        'analytics_materialization': {
+            'tone': 'warning',
+            'label': 'Not Materialized',
+            'generated_at': None,
+            'expires_at': None,
+            'last_attempt_at': None,
+            'stale': False,
+            'refresh_dispatched': False,
+            'dispatch_error': None,
+        },
+        'metrics_readiness': {
+            'tone': 'warning',
+            'label': 'Unverified',
+            'profile_label': 'Harbor / MinIO profile',
+        },
+        'metrics_source': {
+            'tone': 'warning',
+            'label': 'Unverified',
+            'provider_label': 'Prometheus',
+            'instance_name': None,
+        },
+        'forecast_materialization': {
+            'tone': 'warning',
+            'label': 'Not Materialized',
+            'method': 'Not Available',
+        },
+        'alert_source': {
+            'tone': 'warning',
+            'label': 'Unavailable',
+            'resolved_label': 'No Source',
+            'instance_name': None,
+            'fallback_reason': None,
+            'connected': False,
+            'detail': 'Source is not configured',
+        },
+        'alertmanager': {
+            'tone': 'warning',
+            'label': 'Unavailable',
+            'profile': 'Not Configured',
+            'instance_name': None,
+        },
+    }
+    for page_key in ('overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'):
+        html = environment.get_template('storage/object_storage/analytics/partials/_controls.html').render(
+            page_key=page_key, **context
+        )
+
+        assert 'Analytics Controls & Data Readiness' in html
+        assert 'data-analytics-controls-readiness' in html
+        assert 'object-storage-analytics-refresh-indicator' in html
+        assert 'MinIO Test' in html
+        assert html.count('data-analytics-source-status') == 1
+        assert html.count('data-analytics-snapshot-status') == 1
+        assert 'Latest Analytics Data Snapshot' in html
+        assert 'Refresh Due' in html
+        assert 'Worker Attempt' in html
+        if page_key == 'alerts':
+            assert 'Alert Source Status' in html
+            assert 'Selected Alert Stream' in html
+            assert 'Alertmanager Lifecycle' in html
+            assert 'Metrics Snapshot Source' in html
+            assert 'name="source"' in html
+        elif page_key == 'forecast':
+            assert 'Metrics Source Status' in html
+            assert 'Forecast Worker Snapshot' in html
+            assert 'name="history_window"' in html
+        else:
+            assert 'Metrics Source Status' in html
+            assert 'Committed Inventory' in html
+            assert 'Metrics Contract At Collection' in html
+            assert 'name="time_range"' in html

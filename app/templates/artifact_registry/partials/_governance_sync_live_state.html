@@ -1,0 +1,33 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set governance_sync_state = governance_sync_state if governance_sync_state is defined else governance.sync_state %}
+<div id="artifact-registry-governance-sync-live-state"
+     class="min-w-0"
+     {% if governance_sync_state.is_active and governance_sync_state.active_job_public_id %} hx-get="{{ url_for('artifact_registry.governance_sync_status', public_id=governance_sync_state.active_job_public_id) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#artifact-registry-governance-sync-poll-indicator" hx-sync="this:replace" {% endif %}>
+    <span id="artifact-registry-governance-sync-poll-indicator"
+          class="htmx-indicator hidden"
+          aria-hidden="true"></span>
+    <div class="flex min-w-0 items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="{{ governance_sync_state.icon|default('scale') }}"
+               class="h-4 w-4 {% if governance_sync_state.is_active %}animate-spin{% endif %}"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+                <h3 id="artifact-registry-governance-operations-heading"
+                    class="text-sm font-semibold text-content-primary">Governance Evidence Operations</h3>
+                {{ table_label.status_label(governance_sync_state.label, governance_sync_state.tone, none, 'detail') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ governance_sync_state.helper }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Read-only · provider retention, immutability, and replication remain externally authoritative.</p>
+            {% if governance_sync_state.active_job %}
+                <div class="mt-3">
+                    {{ progress_bar.job_progress(governance_sync_state.active_job,
+                                        label='Artifact Registry governance synchronization progress',
+                                        compact=true) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

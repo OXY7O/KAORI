@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/action_button.html" as action_button %}
 <form method="POST"
@@ -22,7 +23,18 @@
                     <i data-lucide="map-pinned" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-bold text-content-primary">Time Zone</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-bold text-content-primary">Time Zone</h2>
+                        {{ info_tip.render('general-timezone-title-guide',
+                                                'Time Zone',
+                                                'Choose automatic browser detection or a fixed IANA timezone for this account.',
+                                                items=[
+                                                'This preference changes displayed timestamps, not stored UTC or operational schedules.',
+                                                'Automatic follows the browser; manual keeps the selected timezone until changed.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
                         Choose automatic browser detection for mobility or pin a fixed IANA timezone for a stable operational context.
                     </p>
@@ -149,7 +161,7 @@
                             Presentation Scope
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            Inventory, Analytics, Activity Audit, Governance, Operations, and report timestamps use this preference when rendered.
+                            KAORI workspaces and reports display timestamps in your selected timezone.
                         </p>
                     </div>
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:px-5">
@@ -158,7 +170,7 @@
                             Canonical Data
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            Operational timestamps stay canonical in UTC. Job and report schedules keep their own explicit execution timezone.
+                            UTC records and explicit job/report scheduling timezones stay unchanged.
                         </p>
                     </div>
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:pl-5">
@@ -167,7 +179,7 @@
                             External Systems
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            Kubernetes, Metrics Source, Alertmanager, databases, and connected providers are never reconfigured by this preference.
+                            Kubernetes, monitoring, databases, and provider settings stay unchanged.
                         </p>
                     </div>
                 </div>
@@ -198,4 +210,29 @@
             </button>
         </footer>
     </section>
+    {# Inert canonical toast templates; instantiated only on an explicit Detect Again click. #}
+    <template data-timezone-detection-toast="success">
+        {% with
+            status='success',
+            title='Browser Time Zone Detected',
+            message='Browser time zone detected. No preference was saved.',
+            feedback_id='settings-browser-timezone-detection',
+            activity_audit_saved=false,
+            notification_deck_visible=false
+            %}
+            {% include "components/operational_toast.html" %}
+        {% endwith %}
+    </template>
+    <template data-timezone-detection-toast="error">
+        {% with
+            status='error',
+            title='Browser Time Zone Detection Failed',
+            message='Unable to detect browser time zone. No preference was saved.',
+            feedback_id='settings-browser-timezone-detection',
+            activity_audit_saved=false,
+            notification_deck_visible=false
+            %}
+            {% include "components/operational_toast.html" %}
+        {% endwith %}
+    </template>
 </form>

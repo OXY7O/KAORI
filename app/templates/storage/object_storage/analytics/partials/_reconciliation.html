@@ -1,36 +1,58 @@
-<section class="{{ analysis_surface.snapshot_shell_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="between-horizontal-start" class="h-5 w-5"></i></span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Inventory &amp; Operational Reconciliation</h2>
-                <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Compare point-in-time Inventory with current operational evidence. Drift is a review signal, not an automatic data-quality failure, because observation times differ.
-                </p>
+{% set embedded_reconciliation = reconciliation_embedded|default(false) %}
+<section class="{{ 'min-w-0' if embedded_reconciliation else analysis_surface.snapshot_shell_classes() }}"
+         data-object-storage-reconciliation>
+    {% if not embedded_reconciliation %}
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true">
+                    <i data-lucide="between-horizontal-start" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">Inventory &amp; Operational Reconciliation</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">
+                        Compare point-in-time Inventory with current operational evidence. Drift is a review signal, not an automatic data-quality failure, because observation times differ.
+                    </p>
+                </div>
             </div>
+        </header>
+    {% else %}
+        <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+             data-object-storage-reconciliation-context>
+            <p class="text-xs font-semibold text-content-primary">Committed Snapshot Comparison</p>
+            <p class="text-xs leading-5 text-content-muted">Observation times differ; drift is a review signal.</p>
         </div>
-    </header>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+    {% endif %}
+    <div class="{{ 'rounded-lg border border-outline-subtle ' if embedded_reconciliation else '' }}overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[720px]') }}"
+               data-object-storage-reconciliation-table>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Measure</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Operational</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Inventory</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Delta</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Variance</th>
-                    <th class="{{ table_ui.header_cell_classes(true) }}">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Measure</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Operational</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Inventory</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Drift</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Assessment</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
                 {% for item in metrics.reconciliation %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">{{ item.label }}</td>
-                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.operational_display }}</td>
+                        <th scope="row"
+                            class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">
+                            {{ item.label }}
+                        </th>
+                        <td class="{{ table_ui.cell_classes() }} font-semibold tabular-nums text-content-primary">
+                            {{ item.operational_display }}
+                        </td>
                         <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.inventory_display }}</td>
-                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.delta_display }}</td>
-                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.delta_percent_display }}</td>
-                        <td class="{{ table_ui.cell_classes(true) }}">{{ table_label.status_label(item.status, item.tone) }}</td>
+                        <td class="{{ table_ui.cell_classes() }} tabular-nums">
+                            <span class="block font-semibold text-content-primary">{{ item.delta_display }}</span>
+                            <span class="block text-xs text-content-muted">{{ item.delta_percent_display }} variance</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(true) }}">
+                            {{ table_label.status_label(item.status, item.tone, size='compact') }}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

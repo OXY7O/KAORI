@@ -25,22 +25,46 @@ def _scope_with_selected():
 
 def test_dashboard_shell_never_reads_analytics_snapshots(monkeypatch) -> None:
     monkeypatch.setattr(service, '_scope', lambda _selected: _scope_with_selected())
-    monkeypatch.setattr(service, '_inventory_snapshot', lambda _selected: InventorySnapshot())
     monkeypatch.setattr(service, '_latest_inventory_sync', lambda _selected: None)
-    monkeypatch.setattr(service, 'build_reporting_snapshot', lambda **_kwargs: SimpleNamespace())
 
     def unexpected_snapshot_read(*_args, **_kwargs):
-        raise AssertionError('The dashboard shell must not read analytics snapshots.')
+        raise AssertionError('The dashboard shell must not read section evidence.')
 
     monkeypatch.setattr(service, '_capacity_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_alerts_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_top_consumers_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_forecast_signal', unexpected_snapshot_read)
+    monkeypatch.setattr(service, '_inventory_snapshot', unexpected_snapshot_read)
+    monkeypatch.setattr(service, 'build_reporting_snapshot', unexpected_snapshot_read)
 
     dashboard = service.get_dashboard_overview(selected_cluster_id='cluster-1')
 
     assert dashboard.selected_cluster_id == 'cluster-1'
     assert dashboard.inventory_snapshot.pods == 0
+    assert dashboard.reporting_snapshot.generated_reports == 0
+
+
+def test_inventory_and_reporting_sections_are_independently_bounded(monkeypatch) -> None:
+    monkeypatch.setattr(service, '_scope', lambda _selected: _scope_with_selected())
+    inventory = InventorySnapshot(pods=17)
+    reporting = SimpleNamespace(generated_reports=4)
+    monkeypatch.setattr(service, '_inventory_snapshot', lambda _selected: inventory)
+    monkeypatch.setattr(service, 'build_reporting_snapshot', lambda **_kwargs: reporting)
+
+    def unexpected_read(*_args, **_kwargs):
+        raise AssertionError('Unrelated dashboard section evidence must not be read.')
+
+    monkeypatch.setattr(service, '_capacity_signal', unexpected_read)
+    monkeypatch.setattr(service, '_alerts_signal', unexpected_read)
+    monkeypatch.setattr(service, '_top_consumers_signal', unexpected_read)
+    monkeypatch.setattr(service, '_forecast_signal', unexpected_read)
+    monkeypatch.setattr(service, 'build_recommendations', unexpected_read)
+
+    inventory_dashboard = service.get_dashboard_section('inventory_summary', selected_cluster_id='cluster-1')
+    reporting_dashboard = service.get_dashboard_section('reporting_summary', selected_cluster_id='cluster-1')
+
+    assert inventory_dashboard.inventory_snapshot.pods == 17
+    assert reporting_dashboard.reporting_snapshot.generated_reports == 4
 
 
 def test_capacity_section_reads_only_committed_capacity_snapshot(monkeypatch) -> None:
@@ -78,6 +102,7 @@ def test_cluster_health_reads_capacity_and_alert_snapshots_only(monkeypatch) -> 
         summary='Review capacity pressure.',
         target='cluster-1',
         first_seen_at=None,
+        source_state='active',
     )
     monkeypatch.setattr(service, '_alert_cases_by_asset', lambda _cluster_ids: {'cluster-1': [alert_case]})
 
@@ -372,8 +397,8 @@ def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) 
     expected = [f'cluster-{index}' for index in range(5, 10)]
     assert capacity_reads == expected
     assert alert_case_reads == [expected]
-    assert dashboard.cluster_health_pagination.page == 2
-    assert dashboard.cluster_health_pagination.per_page == 5
+    assert dashboard.cluster_health_pagination['page'] == 2
+    assert dashboard.cluster_health_pagination['per_page'] == 5
 
 
 def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
@@ -441,7 +466,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.highest_projected_label == 'Memory'
     assert snapshot.highest_projected_percent == 92.0
     assert snapshot.has_historical_series is True
-    assert snapshot.insight == 'Memory has the highest 60-day projection at 92%.'
+    assert snapshot.insight == '60-day forecast peak: Memory 92%; review worker headroom.'
 
 
 def test_dashboard_kpi_display_copy_uses_title_case() -> None:
@@ -533,3 +558,41 @@ def test_top_consumer_display_labels_use_title_case() -> None:
     assert labels == ['Usage Only', 'No Limit', 'Warning Usage', 'Critical Usage']
     assert snapshot.insight_title == 'Consumer Insights'
     assert 'Dominant Namespace: platform' in snapshot.insight_items
+
+
+def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeypatch) -> None:
+    from app.kubernetes.dashboard.schema import DashboardOverview
+
+    ids = ('cluster-1', 'cluster-2', 'cluster-3')
+    dashboard = DashboardOverview(clusters=[SimpleNamespace(id=item) for item in ids])
+    calls: list[tuple[str, set[str]]] = []
+
+    def fake_read_snapshots(*, dataset_key, parameters_by_cluster):
+        calls.append((dataset_key, set(parameters_by_cluster)))
+        assert set(parameters_by_cluster) == set(ids)
+        return {
+            cluster_id: SimpleNamespace(
+                available=cluster_id
+                in ({'cluster-1', 'cluster-2'} if dataset_key == service.CAPACITY_DATASET_KEY else {'cluster-1'})
+            )
+            for cluster_id in parameters_by_cluster
+        }
+
+    monkeypatch.setattr(service, 'read_snapshots', fake_read_snapshots)
+    monkeypatch.setattr(service, '_latest_inventory_sync', lambda *_args: None)
+    monkeypatch.setattr(service, 'count_records', lambda *_args: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_reports', lambda _cluster_id: 0)
+    monkeypatch.setattr(service, 'count_kubernetes_artifact_records', lambda _cluster_id: 0)
+    monkeypatch.setattr(
+        service,
+        'read_dashboard_snapshot',
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError('Do not perform N per-cluster snapshot reads')),
+    )
+
+    service._populate_data_freshness(dashboard, selected_cluster_id=None, selected=None)
+
+    assert [dataset for dataset, _ in calls] == [service.CAPACITY_DATASET_KEY, service.DASHBOARD_ALERTS_DATASET_KEY]
+    assert dashboard.data_freshness[1].value == '2 / 3 clusters'
+    assert dashboard.data_freshness[1].status == 'Partial'
+    assert dashboard.data_freshness[2].value == '1 / 3 clusters'
+    assert dashboard.data_freshness[2].status == 'Partial'

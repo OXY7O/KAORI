@@ -52,6 +52,22 @@ Canonical composition:
 </div>
 ```
 
+## Cross-domain Access Denied recovery surface
+
+The **Access Denied (403)** screen reuses Analytics' **presentation primitives** but is **not** an Analytics interpretation table. The final recovery composition under issue #2962 is an intentional exception to the generic `interpretation_grid_classes()` pattern.
+
+- Use **one** `guidance_card_classes()` outer surface, without nested cards or a separate header/footer strip.
+- Inside, compose two **unequal** responsive areas with a subtle single divider: reason and active role on the left; administrator escalation and next steps on the right. Use `bg-surface-hover` (neutral) for the reason area and `bg-surface-card` for the help area. The responsive split stacks naturally on phones.
+- Use the existing `role_icon_classes(..., size='large')` for visual anchors. Denial headline is `text-xl` / `sm:text-2xl`, and explanation / steps are `text-sm leading-6`, not compressed `text-xs` interpretation copy. Do not present denial as a Critical infrastructure incident or tint the entire outer surface.
+- The reason must distinguish an **absent/inactive role** from a **general permission denial**, using server-provided `role_unavailable` and `role_label`. Do not guess the specific missing permission, resource policy, or whether the directory is unavailable.
+- The escalation destination is **KAORI Access Administrator** or internal IT helpdesk; administrators review roles and permissions in **Access → Users**. The denied Viewer should not receive an action link to restricted administration pages.
+- Ask the user to share only KAORI username, page URL and required action. Explicitly warn never to share a password or bind credential.
+- The optional `View My Account` action goes to `settings.account` and **does not submit a request**. Do not invent a mailto, helpdesk ticket form, email address or configured support URL unless it exists in KAORI and is verified.
+
+The screen owns its human-readable cause, call to action and permissions context. The Analytics macros own only shared surface and icon appearance; **server-side RBAC and Activity Audit stay authoritative**. Keep one semantic `h2` for the reason and an `h3` for the help destination. Use the existing `action_button.classes('secondary')` for non-mutating account navigation.
+
+Do not introduce a new generic guidance component for this 403-specific recovery layout. If the same pattern becomes a recurring family, first inspect approved shared design examples and extract a component through normal KAORI governance.
+
 ## Role selection
 
 ### Insight

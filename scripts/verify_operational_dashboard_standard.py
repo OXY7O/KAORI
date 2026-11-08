@@ -7,19 +7,91 @@ ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard'
 CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
 HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
+ONBOARDING_BANNER = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_onboarding_banner.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+ALERT_SUMMARY = DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
+ALERT_GUIDANCE = DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+REPORTING_SUMMARY = DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
+ALERTS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'alerts.py'
+REPORTING_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'reporting.py'
+RECOMMENDATIONS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'recommendations.py'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
 OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
 OBJECT_SIGNAL_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+OBJECT_KPI_CARDS = OBJECT_DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
+OBJECT_ALERT_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+OBJECT_REPORTING_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
+OBJECT_DASHBOARD_SERVICE = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'service.py'
+ARTIFACT_OVERVIEW = ROOT / 'app' / 'templates' / 'artifact_registry' / 'overview.html'
+ARTIFACT_CONTENT = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_content.html'
+ARTIFACT_HERO = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_hero.html'
+ARTIFACT_SIGNAL_OVERVIEW = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
+)
+ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
+ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
+ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
+ARTIFACT_FORECAST = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_forecast_risk.html'
+ARTIFACT_CAPACITY_SNAPSHOT = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity_snapshot.html'
+)
+ARTIFACT_CONSUMERS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_top_consumers.html'
+ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
+ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
+ARTIFACT_PROVIDER_HEALTH = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_provider_health.html'
+)
+ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
+ARTIFACT_ROUTE_SCOPE = ROOT / 'app' / 'artifact_registry' / 'route_scope.py'
+ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
+ARTIFACT_PRESENTATION_COMMON = ROOT / 'app' / 'artifact_registry' / 'presentation_common.py'
+ARTIFACT_PRESENTATION_OVERVIEW = ROOT / 'app' / 'artifact_registry' / 'presentation_overview.py'
+OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
+DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
+COMMON_OPERATIONAL_TABS = ROOT / 'app' / 'common' / 'operational_tabs.py'
+COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
+DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
+REPORTING_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'reporting_dashboard_workspace.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
+SIGNAL_OVERVIEW_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_signal_overview.html'
+EVIDENCE_TILE = ROOT / 'app' / 'templates' / 'components' / 'operational_evidence_tile.html'
+ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_summary.html'
+ALERT_RESPONSE_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_response.html'
+RECOMMENDATION_CARDS = ROOT / 'app' / 'templates' / 'components' / 'operational_recommendation_cards.html'
+DASHBOARD_EMPTY_STATE = ROOT / 'app' / 'templates' / 'components' / 'states' / '_empty_state.html'
+DASHBOARD_LOADING = ROOT / 'app' / 'templates' / 'components' / 'operational_section_loading.html'
+DASHBOARDS_README = ROOT / 'app' / 'dashboards' / 'README.md'
+LEGACY_KUBERNETES_SECTION_LOADING = DASHBOARD_DIR / 'partials' / '_section_loading.html'
+KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
+KUBERNETES_FORECAST = DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
+OBJECT_CAPACITY = OBJECT_DASHBOARD_DIR / 'partials' / '_capacity.html'
+OBJECT_FORECAST = OBJECT_DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
+KUBERNETES_OVERVIEW = DASHBOARD_DIR / 'partials' / '_overview.html'
+KUBERNETES_CAPACITY_TAB = DASHBOARD_DIR / 'partials' / '_capacity.html'
+KUBERNETES_SIGNALS_TAB = DASHBOARD_DIR / 'partials' / '_signals.html'
+KUBERNETES_REPORTING_TAB = DASHBOARD_DIR / 'partials' / '_reporting.html'
+KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
+KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
+OBJECT_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_overview.html'
+ARTIFACT_ALERT_SUMMARY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alerts_summary.html'
+ARTIFACT_ALERT_GUIDANCE = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alert_response_guidance.html'
+)
+ARTIFACT_RECOMMENDATIONS = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_recommended_actions.html'
+)
+TENANT_SETUP_WORKSPACE = (
+    ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials' / '_tenant_setup_workspace.html'
+)
 KPI_CARDS = DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
 TOP_CONSUMERS = DASHBOARD_DIR / 'partials' / '_top_consumers.html'
+CLUSTER_HEALTH_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'cluster_health.py'
 ROUTES = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'routes.py'
 SERVICE = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'service.py'
 README = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'README.md'
@@ -52,10 +124,7 @@ SECTION_PARTIALS = (
     '_top_consumers.html',
     '_alerts_summary.html',
     '_recommended_actions.html',
-    '_reporting_summary.html',
     '_alert_response_guidance.html',
-    '_reporting_guidance.html',
-    '_section_loading.html',
 )
 
 STALE_COPY = (
@@ -151,7 +220,10 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
             'page_hero.operational_dashboard(',
             "dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal'",
             "'Committed Snapshots'",
-            'Kubernetes Operations Dashboard',
+            'Kubernetes Operations',
+            "'Dashboard'",
+            "'Open Cluster Integrations'",
+            "url_for('integrations.kubernetes')",
         ),
         'Kubernetes dashboard Hero profile consumer',
     )
@@ -160,7 +232,9 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
         (
             'page_hero.operational_dashboard(',
             "'Committed Snapshots'",
-            'Object Storage Operations Dashboard',
+            'Object Storage Operations',
+            "'Dashboard'",
+            "'Open Object Storage Integrations'",
         ),
         'Object Storage dashboard Hero profile consumer',
     )
@@ -178,21 +252,533 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
                 raise AssertionError(f'{owner}: Hero profile consumer must not assemble {primitive} locally')
 
 
+def _verify_artifact_registry_dashboard(
+    overview: str,
+    content: str,
+    hero: str,
+    signal_overview: str,
+    kpi_cards: str,
+    reporting: str,
+    capacity: str,
+    signals: str,
+    operations: str,
+    provider_health: str,
+    routes: str,
+    presentation: str,
+) -> None:
+    _require(
+        overview,
+        (
+            'artifact_registry/partials/_overview_content.html',
+            'artifact-registry-dashboard-content',
+        ),
+        'Artifact Registry dashboard page shell',
+    )
+    _require(
+        hero,
+        (
+            'page_hero.operational_dashboard(',
+            'Artifact Registry Operations',
+            "'Overview'",
+            "'Committed Snapshots'",
+            "'Open Registry Integrations'",
+            "url_for('integrations.registry')",
+        ),
+        'Artifact Registry operational dashboard Hero consumer',
+    )
+    for primitive in (
+        'page_hero.shell_classes()',
+        'page_hero.layout_classes()',
+        'page_hero.content_classes()',
+        'page_hero.context_panel_classes()',
+    ):
+        if primitive in hero:
+            raise AssertionError(
+                f'Artifact Registry dashboard: Hero profile consumer must not assemble {primitive} locally'
+            )
+
+    _require(
+        content,
+        (
+            'components/operational_dashboard_workspace.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
+            'artifact_registry/partials/_overview_signal_overview.html',
+            'artifact_registry/components/_setup_blocker.html',
+        ),
+        'Artifact Registry dashboard family composition',
+    )
+    _require(
+        content,
+        (
+            'for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs',
+            "url_for('artifact_registry.overview_section', section=tab_key)",
+            'hx-trigger="revealed"',
+            'Preparing committed Artifact Registry dashboard evidence.',
+        ),
+        'Artifact Registry lazy canonical dashboard panels',
+    )
+
+    _require(
+        signal_overview,
+        (
+            'components/operational_signal_overview.html',
+            'signal_overview.render(',
+            "section='kpi_cards'",
+            'hx-trigger="load"',
+            'provider_id',
+            'hx-push-url="true"',
+            'hx-include="#artifact-registry-dashboard-active-tab"',
+            'All Registry Providers',
+        ),
+        'Artifact Registry scope and signal overview',
+    )
+    _require(
+        signal_overview,
+        (
+            'Select a Registry Provider for Detailed Signals',
+            "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'",
+            '    scope_status,',
+            '    scope_tone,',
+        ),
+        'Registry unselected scope matches canonical dashboard warning status',
+    )
+    _require(
+        signal_overview,
+        (
+            'overview.last_updated',
+            "'Updated ' ~ overview.last_updated",
+        ),
+        'Registry relative committed inventory Updated label',
+    )
+    if 'latest_committed_at|user_datetime' in signal_overview:
+        raise AssertionError('Registry Signal Overview must use relative, not absolute, Updated time')
+    _require(
+        kpi_cards,
+        (
+            'components/operational_metric_card.html',
+            'operational_metric_card.render(',
+            'for kpi in overview.kpis',
+            'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4',
+            'source_label=overview.kpi_source_label',
+            "scope_label='Active Scope'",
+            'data-kaori-artifact-registry-operational-kpis',
+        ),
+        'Artifact Registry independent Operational Signal KPI cards',
+    )
+    for forbidden in ("body_classes='p-0'", 'grouped=true'):
+        if forbidden in signal_overview:
+            raise AssertionError(f'Artifact Registry Signal Overview retains grouped-KPI exception: {forbidden}')
+    if 'resource_posture_grid.html' in kpi_cards:
+        raise AssertionError('Registry Operational Signal KPIs must use independent dashboard metric cards')
+    _require(
+        signal_overview,
+        ('section_loading.kpis(item_count=4,',),
+        'Artifact Registry canonical independent KPI loading skeleton',
+    )
+    _require(
+        operations,
+        (
+            'artifact_registry/partials/_overview_provider_health.html',
+            'Inventory Snapshot',
+            'Data Freshness',
+        ),
+        'Artifact Registry Operations Overview parity',
+    )
+    for retired_action in (
+        "current_user.has_permission('artifact_registry.sync')",
+        "url_for('artifact_registry.sync_inventory')",
+        'Sync Inventory',
+    ):
+        if retired_action in operations:
+            raise AssertionError(
+                f'Artifact Registry Operational Dashboard retains dashboard-local sync action: {retired_action}'
+            )
+    _require(
+        provider_health,
+        (
+            'Registry Provider Health Summary',
+            'Security Signals',
+            'Snapshot Sources',
+            'components/pagination.html',
+            "loading_bar_id='artifact-registry-provider-health-loading'",
+            'hx-indicator="#artifact-registry-provider-health-loading"',
+            'Inventory',
+            'Metrics Source',
+            'Security Evidence',
+        ),
+        'Artifact Registry provider health register',
+    )
+    _require(
+        capacity,
+        (
+            'components/peer_content_grid.html',
+            'artifact_registry/partials/_overview_capacity_snapshot.html',
+            'artifact_registry/partials/_overview_forecast_risk.html',
+            'artifact_registry/partials/_overview_top_consumers.html',
+        ),
+        'Artifact Registry capacity peer dashboard grammar',
+    )
+    registry_capacity_snapshot = _read(ARTIFACT_CAPACITY_SNAPSHOT)
+    _require(
+        registry_capacity_snapshot,
+        (
+            'Data Scope:</span> committed inventory for footprint',
+            'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary',
+            'grid gap-3 lg:grid-cols-3',
+            'progress_bar.bar(item.progress_percent,',
+            'item.progress_label',
+            'percentage not applicable',
+            'Refresh evidence; verify headroom',
+            'Registry project quota balance chart',
+            'overview.capacity.metrics[1].progress_percent',
+            'overview.capacity.metrics[2].progress_percent',
+            'progress_bar.bar(quota_used_percent,',
+            'progress_bar.bar(quota_free_percent,',
+            'Quota balance unavailable',
+        ),
+        'Registry Capacity Snapshot K8s visual grammar and evidence-qualified progress',
+    )
+    if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
+        raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
+    _require(
+        presentation,
+        (
+            "'progress_label': 'Used'",
+            "'progress_label': 'Free'",
+            "'label': 'Quota Left'",
+            'Project quota forecasts remain outside warning thresholds, with sufficient headroom.',
+            "'progress_label': 'Inventory'",
+            '100 - quota_utilization if quota_utilization is not None else None',
+            'Registry growth uses committed inventory changes and Metrics Source quota evidence.',
+        ),
+        'Registry committed quota progress semantics and compact evidence microcopy',
+    )
+    registry_consumers = _read(ARTIFACT_CONSUMERS)
+    _require(
+        registry_consumers,
+        (
+            'macro consumer_panel(',
+            'grid gap-5 lg:grid-cols-2',
+            "consumer_panel('Storage Usage'",
+            "consumer_panel('Nearest Quota'",
+            'overview.quota_watch',
+            'items[:3]',
+            'progress_bar.bar(',
+            'item.utilization_percent is not none',
+            'Consumer Insights',
+            'overview.consumer_insights.high_utilization_count',
+            'No Numerical Quota Horizon',
+        ),
+        'Registry Top Consumers independently ranked K8s-style peer panels',
+    )
+    if 'xl:grid-cols-5' in registry_consumers:
+        raise AssertionError('Registry Top Consumers still uses obsolete standalone card grid')
+    registry_forecast = _read(ARTIFACT_FORECAST)
+    _require(
+        registry_forecast,
+        (
+            'grid gap-3 sm:grid-cols-3',
+            'overview.forecast.size_growth_per_day',
+            'overview.forecast.artifact_growth_per_day',
+            'overview.forecast.nearest_quota_days',
+            'Artifact change per day.',
+            'Committed analytics snapshots',
+            'Projects with quota ETA',
+            'Quota ETA with positive growth.',
+            'Forecast Basis',
+            'Registry Analytics',
+            'No historical daily series is available for a trend chart.',
+            'Daily Utilization Trend Not Available',
+            'overview.forecast.analytics_count',
+            'overview.consumer_insights.horizon_count',
+            'Forecast Conclusion',
+            'overview.capacity.risk_detail',
+            'overview.forecast.detail',
+            "action_label='Review Forecast'",
+        ),
+        'Registry snapshot-delta forecast and conclusion use peer dashboard grammar',
+    )
+    _require(
+        presentation,
+        (
+            '_registry_quota_watch(project_forecasts)',
+            '_registry_consumer_insights(project_forecasts)',
+            "'quota_watch': quota_watch",
+            "'consumer_insights': consumer_insights",
+        ),
+        'Registry committed project quota evidence includes independent numeric horizon ranking',
+    )
+    for forbidden in ('operational_metric_card.render(', 'forecast_projection_chart'):
+        if forbidden in registry_forecast:
+            raise AssertionError(f'Registry Forecast must not invent KPI repetition or chart series: {forbidden}')
+    _require(
+        capacity,
+        (
+            '{% if not overview.selected_provider %}',
+            'components/states/_blocked_state.html',
+            'Select Registry Provider',
+            '{% else %}',
+        ),
+        'Artifact Registry selected-provider Capacity prerequisite',
+    )
+    if capacity.index('components/states/_blocked_state.html') >= capacity.index('{% else %}'):
+        raise AssertionError('Registry Capacity scope blocker must precede selected-provider content')
+    if capacity.count('components/states/_blocked_state.html') != 1:
+        raise AssertionError('Registry Capacity must render exactly one scope blocker')
+    _require(
+        signals,
+        (
+            'components/peer_content_grid.html',
+            '{% if not overview.selected_provider %}',
+            'components/states/_blocked_state.html',
+            'Select Registry Provider',
+            'artifact_registry/partials/_overview_alerts_summary.html',
+            'artifact_registry/partials/_overview_alert_response_guidance.html',
+            'artifact_registry/partials/_overview_recommended_actions.html',
+        ),
+        'Artifact Registry signals peer dashboard grammar',
+    )
+    _require(
+        reporting,
+        (
+            'components/reporting_dashboard_workspace.html',
+            'reporting_workspace.summary(',
+            'reporting_workspace.guidance(',
+        ),
+        'Artifact Registry reporting dashboard handoff',
+    )
+    if reporting.index('reporting_workspace.summary(') >= reporting.index('reporting_workspace.guidance('):
+        raise AssertionError('Artifact Registry reporting must present summary before governed guidance')
+    route_scope = _read(ARTIFACT_ROUTE_SCOPE)
+    _require(
+        route_scope,
+        (
+            'def _overview_provider_id() -> int | None:',
+            "request.args.get('provider_id')",
+            'if raw is None or not raw.strip():',
+            'except (TypeError, ValueError):',
+            'if provider_id < 1:',
+            'abort(404)',
+        ),
+        'Artifact Registry fail-closed provider scope helper',
+    )
+    _require(
+        routes,
+        (
+            "@permission_required('artifact_registry.view')",
+            'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id',
+            'provider_id=_overview_provider_id(),',
+            "request.args.get('tab', 'overview', type=str)",
+            "'overview': 'artifact_registry/partials/_overview_operations.html'",
+            "'capacity': 'artifact_registry/partials/_overview_capacity.html'",
+            "'signals': 'artifact_registry/partials/_overview_signals.html'",
+            "'reporting': 'artifact_registry/partials/_overview_reporting.html'",
+            'artifact_registry/partials/_overview_content.html',
+        ),
+        'Artifact Registry dashboard route boundary',
+    )
+    if routes.count('provider_id=_overview_provider_id(),') < 2:
+        raise AssertionError('Registry overview and section must share fail-closed provider scope validation')
+    _require(
+        presentation,
+        (
+            'def _overview_scope_context(',
+            'def _overview_kpi_values(',
+            'def _overview_operations_projection(',
+            'def _overview_capacity_projection(',
+            'def build_overview_section(',
+            "if section == 'kpi_cards':",
+            "if section == 'provider_health':",
+            "if section == 'overview':",
+            "if section == 'capacity':",
+            "if section == 'signals':",
+            "if section == 'reporting':",
+            'RegistryProject.integration_instance_id == selected_provider.id',
+            'registry_metrics_readiness(provider)',
+            "'scope_label': scope_label",
+            "'capacity': capacity",
+            "'alerts': _registry_alerts(selected_provider)",
+            "'recommended_actions': _registry_recommended_actions(selected_provider)",
+            "'reporting': _registry_reporting(selected_provider)",
+            "'label': 'Inventory Snapshot'",
+            "'label': 'Metrics Source'",
+            "'label': 'Security Snapshot'",
+            "'label': 'Analytics Snapshot'",
+            "'kpis': [",
+            'func.count(RegistryArtifact.id)',
+            'func.sum(RegistryArtifact.size_bytes)',
+        ),
+        'Artifact Registry committed bounded dashboard projection',
+    )
+    _require(
+        presentation,
+        (
+            "'label': 'Metrics Source'",
+            "'value': f'{metrics_ready_count} / {provider_count} providers'",
+            'Validated Metrics Source binding readiness; not a committed metrics snapshot.',
+            'Validated Registry Metrics Source bindings; not committed metrics snapshots.',
+        ),
+        'Registry Metrics Source validation is not a numeric committed snapshot',
+    )
+    if "'label': 'Metrics Snapshot'" in presentation:
+        raise AssertionError('Registry Data Freshness must not present binding readiness as Metrics Snapshot')
+    _require(
+        presentation,
+        (
+            'def _overview_inventory_kpi_evidence(',
+            'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)',
+            'RegistryProject.integration_instance_id.in_(committed_provider_ids)',
+            "'kpi_source_label': source_label",
+            "if committed_count else 'Not Collected'",
+            "'Partial Inventory (",
+            '_overview_inventory_evidence(committed_provider_ids)',
+        ),
+        'Registry active-provider committed KPI evidence and source coverage',
+    )
+    _require(
+        presentation,
+        (
+            "'last_updated': _human_time(latest)",
+            'has_committed_inventory=bool(committed_provider_ids)',
+        ),
+        'Registry Fast Shell relative freshness and bounded Inventory Snapshot evidence',
+    )
+    inventory_items = presentation.split('def _overview_inventory_items(', 1)[1].split(
+        'def _security_freshness_status(', 1
+    )[0]
+    _require(
+        inventory_items,
+        (
+            'has_committed_inventory: bool',
+            'if not has_committed_inventory:',
+            "item['value'] = 'Not Collected'",
+        ),
+        'Registry Inventory Snapshot runtime regression guard',
+    )
+    if 'committed_count' in inventory_items:
+        raise AssertionError('Registry Inventory Snapshot cannot reference KPI-local committed_count')
+    capacity_section = presentation.split("if section == 'capacity':", 1)[1].split("if section == 'signals':", 1)[0]
+    _require(
+        capacity_section,
+        (
+            'if selected_provider is None:',
+            'return context',
+            'return _overview_capacity_projection(',
+        ),
+        'Registry Capacity lazy section selected-provider guard',
+    )
+    if capacity_section.index('return context') >= capacity_section.index('return _overview_capacity_projection('):
+        raise AssertionError('Registry Capacity must bypass evidence projection when no provider is selected')
+    capacity_projection = presentation.split('def _overview_capacity_projection(', 1)[1].split(
+        'def build_overview(', 1
+    )[0]
+    _require(
+        capacity_projection,
+        (
+            'selected_provider: IntegrationInstance,',
+            'RegistryProject.integration_instance_id == selected_provider.id',
+        ),
+        'Registry selected-provider Capacity query boundary',
+    )
+    shell_projection = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
+    for forbidden in (
+        'RegistryProject.query',
+        'RegistryRepository.query',
+        'RegistryArtifact.query',
+        'RegistryTag.query',
+        '_registry_capacity_views(',
+        '_registry_alerts(',
+        '_registry_recommended_actions(',
+        '_registry_reporting(',
+    ):
+        if forbidden in shell_projection:
+            raise AssertionError(f'Artifact Registry Fast Shell contains unrelated projection work: {forbidden}')
+    for token in (
+        'HarborClient(',
+        'requests.get',
+        'httpx.get',
+    ):
+        if token in routes or token in presentation:
+            raise AssertionError(f'Artifact Registry dashboard web boundary contains live provider access: {token}')
+
+
 def verify() -> None:
     content = _read(CONTENT)
     hero = _read(HERO)
+    onboarding_banner = _read(ONBOARDING_BANNER)
     signal_overview = _read(SIGNAL_OVERVIEW)
+    alert_summary = _read(ALERT_SUMMARY)
+    alert_guidance = _read(ALERT_GUIDANCE)
     reporting_guidance = _read(REPORTING_GUIDANCE)
+    reporting_summary = _read(REPORTING_SUMMARY)
+    alerts_builder = _read(ALERTS_BUILDER)
+    reporting_builder = _read(REPORTING_BUILDER)
+    recommendations_builder = _read(RECOMMENDATIONS_BUILDER)
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
     object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
+    object_kpi_cards = _read(OBJECT_KPI_CARDS)
+    object_alert_summary = _read(OBJECT_ALERT_SUMMARY)
     object_alert_guidance = _read(OBJECT_ALERT_GUIDANCE)
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
+    object_reporting_summary = _read(OBJECT_REPORTING_SUMMARY)
+    object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
+    object_system_health = _read(OBJECT_DASHBOARD_DIR / 'partials' / '_system_health.html')
+    artifact_overview = _read(ARTIFACT_OVERVIEW)
+    artifact_content = _read(ARTIFACT_CONTENT)
+    artifact_hero = _read(ARTIFACT_HERO)
+    artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
+    artifact_kpi_cards = _read(ARTIFACT_KPI_CARDS)
+    artifact_reporting = _read(ARTIFACT_REPORTING)
+    artifact_capacity = _read(ARTIFACT_CAPACITY)
+    artifact_signals = _read(ARTIFACT_SIGNALS)
+    artifact_operations = _read(ARTIFACT_OPERATIONS)
+    artifact_provider_health = _read(ARTIFACT_PROVIDER_HEALTH)
+    artifact_routes = _read(ARTIFACT_ROUTES)
+    artifact_presentation = '\n'.join(
+        (
+            _read(ARTIFACT_PRESENTATION),
+            _read(ARTIFACT_PRESENTATION_COMMON),
+            _read(ARTIFACT_PRESENTATION_OVERVIEW),
+        )
+    )
+    object_routes = _read(OBJECT_ROUTES)
+    dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
+    common_operational_tabs = _read(COMMON_OPERATIONAL_TABS)
+    common_pagination = _read(COMMON_PAGINATION)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
+    dashboard_workspace = _read(DASHBOARD_WORKSPACE)
+    reporting_workspace = _read(REPORTING_WORKSPACE)
     metric_card = _read(METRIC_CARD)
+    signal_overview_workspace = _read(SIGNAL_OVERVIEW_WORKSPACE)
+    evidence_tile = _read(EVIDENCE_TILE)
+    alert_summary_workspace = _read(ALERT_SUMMARY_WORKSPACE)
+    alert_response_workspace = _read(ALERT_RESPONSE_WORKSPACE)
+    recommendation_cards = _read(RECOMMENDATION_CARDS)
+    dashboard_empty_state = _read(DASHBOARD_EMPTY_STATE)
+    dashboard_loading = _read(DASHBOARD_LOADING)
+    dashboards_readme = _read(DASHBOARDS_README)
+    kubernetes_capacity = _read(KUBERNETES_CAPACITY)
+    kubernetes_forecast = _read(KUBERNETES_FORECAST)
+    object_capacity = _read(OBJECT_CAPACITY)
+    object_forecast = _read(OBJECT_FORECAST)
+    kubernetes_overview = _read(KUBERNETES_OVERVIEW)
+    kubernetes_capacity_tab = _read(KUBERNETES_CAPACITY_TAB)
+    kubernetes_signals_tab = _read(KUBERNETES_SIGNALS_TAB)
+    kubernetes_reporting_tab = _read(KUBERNETES_REPORTING_TAB)
+    kubernetes_inventory = _read(KUBERNETES_INVENTORY)
+    kubernetes_freshness = _read(KUBERNETES_FRESHNESS)
+    object_overview = _read(OBJECT_OVERVIEW)
+    artifact_alert_summary = _read(ARTIFACT_ALERT_SUMMARY)
+    artifact_alert_guidance = _read(ARTIFACT_ALERT_GUIDANCE)
+    artifact_recommendations = _read(ARTIFACT_RECOMMENDATIONS)
+    tenant_setup_workspace = _read(TENANT_SETUP_WORKSPACE)
     kpi_cards = _read(KPI_CARDS)
     top_consumers = _read(TOP_CONSUMERS)
+    cluster_health_builder = _read(CLUSTER_HEALTH_BUILDER)
     routes = _read(ROUTES)
     service = _read(SERVICE)
     readme = _read(README)
@@ -214,43 +800,259 @@ def verify() -> None:
     e2e_test = _read(E2E_TEST)
 
     _verify_dashboard_hero_profile(hero, object_hero, page_hero)
+    _verify_artifact_registry_dashboard(
+        artifact_overview,
+        artifact_content,
+        artifact_hero,
+        artifact_signal_overview,
+        artifact_kpi_cards,
+        artifact_reporting,
+        artifact_capacity,
+        artifact_signals,
+        artifact_operations,
+        artifact_provider_health,
+        artifact_routes,
+        artifact_presentation,
+    )
+    _require(
+        object_dashboard_service,
+        (
+            "'alerts_connected': alerts_connected",
+            "'alerts_fallback': alerts_fallback",
+            "'alert_source_label': alert_source_label",
+            '_alert_view(payload)',
+            "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))",
+            "alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))",
+        ),
+        'Object Storage committed alert source health projection',
+    )
+    _require(
+        object_system_health,
+        (
+            'row.inventory_ready',
+            'row.snapshot_ready',
+            'row.alerts_connected',
+            'row.alerts_fallback',
+            'row.alert_source_label',
+            'bg-status-normal',
+            'bg-status-warning',
+            'bg-status-unknown',
+        ),
+        'Object Storage Snapshot Sources row/view evidence parity',
+    )
+    _require(
+        cluster_health_builder,
+        (
+            "alerts_status = 'Snapshot'",
+            'alerts_status=alerts_status',
+        ),
+        'Kubernetes Snapshot Sources alert schema ownership',
+    )
+    _require(
+        artifact_presentation,
+        (
+            "'inventory_ready': inventory_ready",
+            "'metrics_ready': metrics.get('status') == 'ready'",
+            "'security_ready': security_ready",
+        ),
+        'Artifact Registry Snapshot Sources schema ownership',
+    )
+    _require(
+        content,
+        ('{% include "components/cluster/_onboarding_banner.html" %}',),
+        'Kubernetes dashboard shared onboarding consumer',
+    )
+    for local_override in (
+        'cluster_onboarding_steps =',
+        'cluster_onboarding_action_url =',
+        'cluster_onboarding_action_label =',
+        'cluster_onboarding_action_icon =',
+    ):
+        if local_override in content:
+            raise AssertionError(
+                f'Kubernetes dashboard shared onboarding consumer: local semantic override is prohibited: {local_override}'
+            )
+
+    _require(
+        onboarding_banner,
+        (
+            'provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
+            "provider_prerequisite_action_url = url_for('integrations.kubernetes')",
+            'provider_prerequisite_action_label = "Open Cluster Integrations"',
+            'provider_prerequisite_action_icon = "plug-zap"',
+            'provider_prerequisite_permission = "clusters.manage"',
+        ),
+        'shared Kubernetes onboarding contract',
+    )
+    for stale_action in (
+        "url_for('cluster.add_cluster')",
+        'blocked_state_action_label = "Add Cluster"',
+        '["Add Cluster", "Configure Integrations", "Run Sync"]',
+    ):
+        if stale_action in onboarding_banner:
+            raise AssertionError(
+                f'shared Kubernetes onboarding contract: stale direct-create onboarding remains: {stale_action}'
+            )
 
     _require(
         content,
         (
-            'import "components/workspace_tabs.html" as workspace_tabs',
-            'import "components/peer_content_grid.html" as peer_content_grid',
-            "('overview', 'Operations Overview', 'activity')",
-            "('capacity', 'Capacity & Demand', 'gauge')",
-            "('signals', 'Signals & Actions', 'bell-ring')",
-            "('reporting', 'Reporting', 'file-text')",
-            'workspace_tabs.render(',
-            'moveTab(currentTab, direction, prefix)',
-            "url.searchParams.set('tab', tab)",
-            "window.history.replaceState({}, '', url)",
-            'peer_content_grid.layout_classes()',
+            'components/operational_dashboard_workspace.html',
+            'components/operational_section_loading.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
+            'dashboard_workspace.standard_tabs',
+            "url_for('kubernetes_dashboard.section', section=tab_key)",
+            'section_loading.section(',
             'hx-trigger="revealed"',
+            'class="mt-5 space-y-5"',
         ),
         'dashboard composition',
     )
-    if content.count('peer_content_grid.layout_classes()') != 4:
-        raise AssertionError('dashboard composition: expected four canonical peer-content grids')
+    if content.count('dashboard_workspace.panel(') != 1:
+        raise AssertionError('dashboard composition: expected one loop-owned canonical framework panel')
+    for owner, source, requirements in (
+        (
+            'Kubernetes Operations Overview',
+            kubernetes_overview,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_cluster_health.html',
+                'kubernetes/dashboard/partials/_inventory_summary.html',
+                'kubernetes/dashboard/partials/_data_freshness.html',
+            ),
+        ),
+        (
+            'Kubernetes Capacity & Demand',
+            kubernetes_capacity_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_capacity_snapshot.html',
+                'kubernetes/dashboard/partials/_forecast_risk.html',
+                'kubernetes/dashboard/partials/_top_consumers.html',
+            ),
+        ),
+        (
+            'Kubernetes Signals & Actions',
+            kubernetes_signals_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_alerts_summary.html',
+                'kubernetes/dashboard/partials/_alert_response_guidance.html',
+                'kubernetes/dashboard/partials/_recommended_actions.html',
+            ),
+        ),
+        (
+            'Kubernetes Reporting',
+            kubernetes_reporting_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_reporting_summary.html',
+                'kubernetes/dashboard/partials/_reporting_guidance.html',
+            ),
+        ),
+    ):
+        _require(source, requirements, owner)
 
     _require(
         object_content,
         (
             'storage/object_storage/dashboard/partials/_hero.html',
-            "('overview', 'Operations Overview', 'activity')",
-            "('capacity', 'Capacity & Demand', 'gauge')",
-            "('signals', 'Signals & Actions', 'bell-ring')",
-            "('reporting', 'Reporting', 'file-text')",
-            'workspace_tabs.render(',
-            'moveTab(currentTab, direction, prefix)',
-            "url.searchParams.set('tab', tab)",
+            'components/operational_dashboard_workspace.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
+            'dashboard_workspace.standard_tabs',
             'hx-trigger="revealed"',
             'class="mt-5 space-y-5"',
         ),
         'Object Storage dashboard family composition',
+    )
+
+    _require(
+        dashboard_loading,
+        (
+            'components/operational_section_card.html',
+            "table_label.status_indicator_label('Preparing', 'pending')",
+            '{% macro section(',
+            '{% macro kpis(',
+            'aria-busy="true"',
+            'h-14 animate-pulse rounded-lg bg-surface-hover',
+            'h-28 animate-pulse rounded-lg bg-surface-hover',
+        ),
+        'shared Operational Dashboard loading presentation',
+    )
+    for owner, section_source, signal_source in (
+        ('Kubernetes dashboard', content, signal_overview),
+        ('Object Storage dashboard', object_content, object_signal_overview),
+        ('Artifact Registry dashboard', artifact_content, artifact_signal_overview),
+    ):
+        _require(
+            section_source,
+            (
+                'components/operational_section_loading.html',
+                'section_loading.section(',
+                'hx-trigger="revealed"',
+                'hx-target="this"',
+                'hx-swap="outerHTML"',
+            ),
+            f'{owner} bounded section loading',
+        )
+        _require(
+            signal_source,
+            (
+                'components/operational_section_loading.html',
+                'section_loading.kpis(',
+                'hx-trigger="load"',
+                'hx-target="this"',
+                'hx-swap="outerHTML"',
+            ),
+            f'{owner} KPI loading',
+        )
+        if '<div class="grid gap-3 sm:grid-cols-3" aria-busy="true">' in section_source:
+            raise AssertionError(f'{owner}: duplicates canonical section loading skeleton')
+        if 'for _ in range(4)' in signal_source:
+            raise AssertionError(f'{owner}: duplicates canonical KPI loading skeleton')
+    if 'item_count=8' not in signal_overview:
+        raise AssertionError('Kubernetes dashboard KPI loader must represent eight indicators')
+    for owner, signal_source in (
+        ('Object Storage dashboard', object_signal_overview),
+        ('Artifact Registry dashboard', artifact_signal_overview),
+    ):
+        if 'item_count=4' not in signal_source:
+            raise AssertionError(f'{owner}: KPI loader must represent four indicators')
+    if LEGACY_KUBERNETES_SECTION_LOADING.exists():
+        raise AssertionError('Kubernetes dashboard retains retired page-local _section_loading.html')
+    _require(
+        dashboards_readme,
+        (
+            'operational_section_loading.html',
+            'section_loading.kpis(...)',
+            'section_loading.section(...)',
+            'hx-trigger="load"',
+            'hx-trigger="revealed"',
+            'Projection granularity stays domain-owned',
+        ),
+        'Operational Dashboard technical loading contract',
+    )
+
+    _require(
+        dashboard_workspace,
+        (
+            'data-kaori-dashboard-framework="operational-v1"',
+            "('overview', 'Operations Overview', 'activity')",
+            "('capacity', 'Capacity & Demand', 'gauge')",
+            "('signals', 'Signals & Actions', 'bell-ring')",
+            "('reporting', 'Reporting', 'file-text')",
+            'workspace_tabs.render(standard_tabs',
+            'moveTab(currentTab, direction, prefix)',
+            "url.searchParams.set('tab', tab)",
+            "window.history.replaceState({}, '', url)",
+            'role="tabpanel"',
+            'x-bind:hidden=',
+        ),
+        'shared operational dashboard workspace',
     )
 
     _require(
@@ -280,45 +1082,451 @@ def verify() -> None:
     _require(
         object_signal_overview,
         (
-            'Operational Signal Overview',
-            'System Signals Available',
+            '4 Indicators',
+            'System Selected · Review Evidence',
             'Select a System for Detailed Signals',
             'hx-push-url="true"',
         ),
         'Object Storage dashboard scope and signal wording',
     )
     _require(
-        reporting_guidance,
-        (
-            'approved output',
-            'stored artifact',
-            'Reporting Control',
-            'Controlled Reporting Flow',
-            'Reporting Tip',
-        ),
-        'Kubernetes format-neutral reporting guidance',
+        tenant_setup_workspace,
+        ('Tenant Governance Flow', 'components/numbered_governance_steps.html'),
+        'Tenant Governance Flow shared numbered sequence',
     )
     _require(
-        object_reporting_guidance,
-        ('Reporting Control', 'Controlled Reporting Flow', 'Reporting Tip'),
-        'Object Storage reporting control',
+        alert_response_workspace,
+        (
+            'components/numbered_governance_steps.html',
+            'components/operational_callout.html',
+            'Controlled Response Flow',
+            'numbered_steps.render(steps, flow_aria_label)',
+        ),
+        'shared alert response workspace',
     )
+    for owner, source in (
+        ('Kubernetes alert response guidance', alert_guidance),
+        ('Object Storage alert response guidance', object_alert_guidance),
+        ('Artifact Registry alert response guidance', artifact_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/operational_alert_response.html',
+                'alert_response_steps',
+                "'Validate'",
+                "'Triage'",
+                "'Investigate'",
+                "'Respond'",
+                "'Verify'",
+                "'Record'",
+            ),
+            owner,
+        )
+        if 'components/operational_flow_steps.html' in source:
+            raise AssertionError(f'{owner}: alert response must not own a local operational-flow variant')
+
+    for owner, source in (
+        ('Kubernetes reporting guidance', reporting_guidance),
+        ('Object Storage reporting guidance', object_reporting_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/reporting_dashboard_workspace.html',
+                'reporting_workspace.guidance(',
+            ),
+            owner,
+        )
+
+    _require(
+        reporting_workspace,
+        (
+            'reporting_steps',
+            'Reporting Workflow',
+            'Scope Bound',
+            'Evidence Backed',
+            'Review First',
+            'Governed Flow',
+            'Execution Mode',
+            "'Validate'",
+            "'Select'",
+            "'Create'",
+            "'Generate'",
+            "'Schedule'",
+            "'Retain'",
+            'Reporting Tip',
+            'reporting.latest_reports[:4]',
+        ),
+        'shared reporting dashboard workspace',
+    )
+    # Keep the approved six-step workflow and evidence boundary, not retired copy.
+    expected_alert_steps = ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record')
+    for owner, source in (
+        ('Kubernetes alert response guidance', alert_guidance),
+        ('Object Storage alert response guidance', object_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/operational_alert_response.html',
+                'alert_response_steps',
+                'alert_response.render(',
+                'committed snapshot',
+                'alert-source evidence',
+                'owner',
+                'safety guardrails',
+                'follow-up evidence',
+                *(f"'{step}'" for step in expected_alert_steps),
+            ),
+            f'{owner} controlled alert workflow',
+        )
+        step_positions = [source.index(f"'{step}'") for step in expected_alert_steps]
+        if step_positions != sorted(step_positions):
+            raise AssertionError(f'{owner}: controlled response steps must retain canonical order')
+    _require(
+        alert_summary_workspace,
+        (
+            'macro render(',
+            'rows[:5]',
+            'data-kaori-alert-insight="stacked"',
+            'data-kaori-alert-insight-metrics="dedicated-row"',
+            'Open Alert Intelligence',
+            'alert.title',
+            'alert.description',
+            'alert.severity',
+            'alert.state',
+            'alert.age',
+        ),
+        'shared Alerts Summary workspace',
+    )
+    for retired in (
+        'row_title_key',
+        'row_description_key',
+        'row_severity_key',
+        'row_state_key',
+        'row_age_key',
+        'row_age_datetime',
+    ):
+        if retired in alert_summary_workspace:
+            raise AssertionError(f'shared Alerts Summary retains domain adapter API: {retired}')
+    # The shared renderer, not the domain-specific subtitle, enforces the five-case cap.
+    for owner, source, row_token, description in (
+        (
+            'Kubernetes Alerts Summary',
+            alert_summary,
+            'rows=dashboard.alerts_snapshot.items',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Object Storage Alerts Summary',
+            object_alert_summary,
+            'rows=dashboard.alerts.rows',
+            'Active KAORI AlertCase posture and up to five recent cases.',
+        ),
+        (
+            'Artifact Registry Alerts Summary',
+            artifact_alert_summary,
+            'rows=overview.alerts.rows',
+            'Active Registry AlertCases and recent cases.',
+        ),
+    ):
+        _require(
+            source,
+            (
+                'components/operational_alert_summary.html',
+                'alert_summary.render(',
+                f"description='{description}'",
+                "empty_label='No Active Cases'",
+                "empty_title='No Active Alert Cases'",
+                'No active recommendation-origin AlertCases',
+                'Intelligence findings are separate.',
+                row_token,
+            ),
+            owner,
+        )
+    signals_projection = artifact_presentation.split("if section == 'signals':", 1)[1].split(
+        "if section == 'reporting':", 1
+    )[0]
+    if (
+        'if selected_provider is None:' not in signals_projection
+        or signals_projection.index('return context') >= signals_projection.index('_registry_alerts(selected_provider)')
+        or signals_projection.index('return context')
+        >= signals_projection.index('_registry_recommended_actions(selected_provider)')
+    ):
+        raise AssertionError('Registry unselected Signals must not evaluate cross-provider Intelligence findings')
+    _require(
+        alerts_builder,
+        ('for item in raw_items[:5]',),
+        'Kubernetes Alerts Summary snapshot builder',
+    )
+    _require(
+        service,
+        ('for case in cases[:5]',),
+        'Kubernetes Alert Intelligence dashboard preview',
+    )
+    _require(
+        object_dashboard_service,
+        ("for case in posture['cases'][:5]",),
+        'Object Storage Alerts Summary snapshot builder',
+    )
+    for owner, source in (
+        ('shared Alerts Summary template', alert_summary_workspace),
+        ('Kubernetes Alerts Summary builder', alerts_builder),
+        ('Kubernetes dashboard service', service),
+        ('Object Storage Alerts Summary builder', object_dashboard_service),
+    ):
+        if '[:3]' in source and 'alert' in owner.lower():
+            raise AssertionError(f'{owner}: stale three-record alert preview cap remains')
+
+    _require(
+        reporting_summary,
+        ('reporting_workspace.summary(',),
+        'Kubernetes Recent Report Activity consumer',
+    )
+    _require(
+        reporting_builder,
+        (
+            'def _kubernetes_report_query(',
+            "Report.report_domain == 'kubernetes'",
+            'Report.cluster_id == selected_cluster_id',
+            '_kubernetes_report_query(selected_cluster_id)',
+            '.order_by(Report.created_at.desc(), Report.id.desc())',
+            '.limit(4)',
+        ),
+        'Kubernetes domain-scoped, stable, four-record Recent Report Activity builder',
+    )
+    if 'query_all(Report' in reporting_builder:
+        raise AssertionError('Kubernetes Report preview must retain the domain-scoped reporting query')
+    _require(
+        object_reporting_summary,
+        ('reporting_workspace.summary(',),
+        'Object Storage Recent Report Activity consumer',
+    )
+    _require(
+        reporting_workspace,
+        ('reporting.latest_reports[:4]',),
+        'shared Recent Report Activity preview',
+    )
+    _require(
+        object_dashboard_service,
+        ('recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()',),
+        'Object Storage Recent Report Activity builder',
+    )
+    for owner, source in (
+        ('Kubernetes Reporting Summary', reporting_summary),
+        ('Kubernetes Reporting builder', reporting_builder),
+        ('Object Storage Reporting Summary', object_reporting_summary),
+    ):
+        if 'three latest generated' in source or 'limit=3' in source or '[:3]' in source:
+            raise AssertionError(f'{owner}: stale three-record report preview cap remains')
     _require(
         object_alert_guidance,
         (
-            'Developing capacity, request-path, or availability risk. Investigate before escalation.',
+            'Emerging capacity or availability risk.',
             'Low-risk operational signal. Validate relevance, recurrence, and scope.',
         ),
         'Object Storage compact alert guidance',
     )
-    if reporting_guidance.index('Reporting Control') >= reporting_guidance.index('Controlled Reporting Flow'):
-        raise AssertionError('Kubernetes reporting guidance must place Reporting Control before the controlled flow')
-    if object_reporting_guidance.index('Reporting Control') >= object_reporting_guidance.index(
-        'Controlled Reporting Flow'
-    ):
+    _require(
+        signal_overview_workspace,
+        (
+            'Operational Signal Overview',
+            'Active Scope',
+            'selector_html|safe',
+            '{% set signal_content = caller() %}',
+            'signal_content|safe',
+        ),
+        'shared Operational Signal Overview',
+    )
+    caller_capture = signal_overview_workspace.find('{% set signal_content = caller() %}')
+    section_call = signal_overview_workspace.find('{% call operational_section_card.render(')
+    if caller_capture < 0 or section_call < 0 or caller_capture >= section_call:
         raise AssertionError(
-            'Object Storage reporting guidance must place Reporting Control before the controlled flow'
+            'shared Operational Signal Overview must capture the outer caller before entering the nested section-card call'
         )
+    if signal_overview_workspace.count('caller()') != 1:
+        raise AssertionError(
+            'shared Operational Signal Overview must not invoke caller() inside the nested section-card call scope'
+        )
+    for owner, source in (
+        ('Kubernetes Operational Signal Overview', signal_overview),
+        ('Object Storage Operational Signal Overview', object_signal_overview),
+        ('Artifact Registry Operational Signal Overview', artifact_signal_overview),
+    ):
+        _require(
+            source,
+            ('components/operational_signal_overview.html', 'signal_overview.render('),
+            owner,
+        )
+    _require(
+        evidence_tile,
+        ('macro snapshot(', 'macro freshness(', 'components/table_label.html'),
+        'shared Operational Dashboard evidence tiles',
+    )
+    for owner, source in (
+        ('Kubernetes Inventory Snapshot', kubernetes_inventory),
+        ('Kubernetes Data Freshness', kubernetes_freshness),
+        ('Object Storage Operations Overview', object_overview),
+        ('Artifact Registry Operations Overview', artifact_operations),
+    ):
+        _require(source, ('components/operational_evidence_tile.html', 'evidence_tile.'), owner)
+    for owner, source in (
+        ('Kubernetes Data Freshness', kubernetes_freshness),
+        ('Object Storage Data Freshness', object_overview),
+        ('Artifact Registry Data Freshness', artifact_operations),
+    ):
+        _require(
+            source,
+            (
+                "'Data Freshness'",
+                "body_classes='grid gap-3 p-5 sm:grid-cols-2'",
+                'evidence_tile.freshness(',
+            ),
+            f'{owner} shared four-card presentation',
+        )
+    _require(
+        freshness,
+        (
+            'All Clusters shows committed capacity by cluster.',
+            'All Clusters shows committed alerts by cluster.',
+            'def _fleet_coverage(',
+            'Latest Kubernetes object counts from committed inventory.',
+            'Metrics-backed cluster usage and forecasts from committed snapshots.',
+        ),
+        'Kubernetes refreshed Data Freshness copy',
+    )
+    _require(
+        freshness,
+        (
+            'def _fleet_coverage(',
+            'fleet_cluster_count: int = 0',
+            'fleet_metrics_count: int = 0',
+            'fleet_alerts_count: int = 0',
+        ),
+        'Kubernetes committed fleet evidence coverage',
+    )
+    if "'Per Cluster'" in freshness:
+        raise AssertionError('Kubernetes fleet freshness must report evidence readiness, not a scope hint')
+    _require(
+        service,
+        (
+            'read_snapshots(',
+            'fleet_metrics_count = sum(result.available',
+            'fleet_alerts_count = sum(result.available',
+        ),
+        'Kubernetes bounded committed fleet snapshot source',
+    )
+    _require(
+        object_dashboard_service,
+        ('Committed 24h alerts; Alertmanager primary, Metrics Source fallback.',),
+        'Object Storage refreshed Alert Evidence Fleet copy',
+    )
+    _require(
+        object_dashboard_service,
+        (
+            'inventory_ready = len(observed)',
+            "'value': f'{inventory_ready} / {system_count} systems'",
+            "'Partial' if inventory_ready else 'Not Collected'",
+            "alert_fallback = alert_connected and bool(stream.get('fallback_used'))",
+            "'status': 'Fallback' if alert_fallback",
+            "'tone': 'warning' if alert_fallback",
+        ),
+        'Object Storage truthful fleet and selected alert evidence',
+    )
+    _require(
+        dashboard_empty_state,
+        (
+            "state_variant == 'panel'",
+            'border border-dashed border-outline-default',
+            'data-kaori-empty-state',
+        ),
+        'shared Operational Dashboard dashed panel empty state',
+    )
+    for owner, source in (
+        ('Kubernetes Capacity Snapshot empty evidence', kubernetes_capacity),
+        ('Kubernetes Forecast empty evidence', kubernetes_forecast),
+        ('Object Storage Capacity Snapshot empty evidence', object_capacity),
+        ('Object Storage Forecast empty evidence', object_forecast),
+        ('Kubernetes Alert Response empty evidence', alert_guidance),
+        ('Object Storage Alert Response empty evidence', object_alert_guidance),
+        ('Artifact Registry Alert Response empty evidence', artifact_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/states/_empty_state.html',
+                'empty_state_variant = "panel"',
+            ),
+            owner,
+        )
+
+    _require(
+        alert_summary_workspace,
+        (
+            '{% elif not source_available %}',
+            '{% elif total_alerts == 0 %}',
+            'components/states/_empty_state.html',
+            'empty_state_variant = "panel"',
+            'empty_state_min_height = "min-h-[220px]"',
+        ),
+        'shared Alerts Summary dashed empty evidence',
+    )
+    unavailable_alert_branch = alert_summary_workspace.split('{% elif not source_available %}', 1)[1].split(
+        '{% elif total_alerts == 0 %}', 1
+    )[0]
+    if 'components/states/_blocked_state.html' in unavailable_alert_branch:
+        raise AssertionError('shared Alerts Summary source-unavailable evidence must use dashed empty-state panel')
+
+    _require(
+        recommendation_cards,
+        (
+            'macro render(',
+            "'Recommended Actions'",
+            "intelligence.recommendations', q=action.rule_key, detail=action.rule_key",
+            "intelligence.recommendations')",
+            'normalized_priority',
+            'No Active Recommendations',
+        ),
+        'shared Operational Dashboard recommendation cards',
+    )
+    if 'action.href' in recommendation_cards:
+        raise AssertionError('shared recommendation renderer must own the canonical Intelligence destination')
+    _require(
+        recommendations_builder,
+        (
+            'title=',
+            'description=',
+            'category=',
+            'severity=',
+            'icon=',
+            'priority=',
+            'source=',
+            'rule_key=',
+        ),
+        'Kubernetes recommendation projection',
+    )
+    if 'href=' in recommendations_builder or 'href: str' in schema or 'recommendation_href' in utils:
+        raise AssertionError('Kubernetes recommendation projection retains a domain-local destination')
+    for owner, source in (
+        ('Object Storage alert projection', object_dashboard_service),
+        ('Artifact Registry alert projection', artifact_presentation),
+    ):
+        _require(source, ("'title':", "'description':", "'severity':", "'state':", "'age':"), owner)
+    for owner, source in (
+        ('Kubernetes Recommended Actions', _read(DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),
+        ('Object Storage Recommended Actions', _read(OBJECT_DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),
+        ('Artifact Registry Recommended Actions', artifact_recommendations),
+    ):
+        _require(
+            source,
+            ('components/operational_recommendation_cards.html', 'recommendation_cards.render('),
+            owner,
+        )
+    if "operational_callout.render('Capacity Action Flow'" in kubernetes_capacity:
+        raise AssertionError('Kubernetes Capacity retains redundant Capacity Action Flow callout')
+    if reporting_workspace.index('Review First') >= reporting_workspace.index('Governed Flow'):
+        raise AssertionError('shared reporting workspace must present review guardrails before the governed flow')
 
     for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
         dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html')))
@@ -340,6 +1548,26 @@ def verify() -> None:
         ),
         'operational metric card',
     )
+    for owner, source in (
+        ('Kubernetes Operational Signal KPI cards', kpi_cards),
+        ('Object Storage Operational Signal KPI cards', object_kpi_cards),
+        ('Artifact Registry Operational Signal KPI cards', artifact_kpi_cards),
+    ):
+        _require(source, ("scope_label='Active Scope'",), owner)
+    for owner, source in (
+        ('Kubernetes Operational Signal KPI cards', kpi_cards),
+        ('Object Storage Operational Signal KPI cards', object_kpi_cards),
+        ('Artifact Registry Operational Signal KPI cards', artifact_signal_overview),
+    ):
+        for retired_scope in (
+            'scope_label=overview.scope_label',
+            "scope_label='Selected System'",
+            "scope_label='Fleet'",
+            'scope_label=scope_label',
+        ):
+            if retired_scope in source:
+                raise AssertionError(f'{owner}: dynamic KPI scope badge remains: {retired_scope}')
+
     if 'scope_tone' in metric_card or "tone='violet'" in metric_card:
         raise AssertionError('operational metric card still exposes unused presentation arguments')
     if 'semantic_tones' in kpi_cards or 'scope_tone' in kpi_cards:
@@ -357,37 +1585,164 @@ def verify() -> None:
     if 'from Prometheus' in top_consumers:
         raise AssertionError('dashboard top-consumer presentation must use committed-snapshot wording')
 
+    shared_section_owner = {
+        '_signal_overview.html': 'components/operational_signal_overview.html',
+        '_alerts_summary.html': 'components/operational_alert_summary.html',
+        '_recommended_actions.html': 'components/operational_recommendation_cards.html',
+        '_alert_response_guidance.html': 'components/operational_alert_response.html',
+    }
     for name in SECTION_PARTIALS:
         source = _read(DASHBOARD_DIR / 'partials' / name)
-        _require(
-            source,
-            ('components/operational_section_card.html', 'operational_section_card.render('),
-            f'dashboard section {name}',
-        )
+        if name in shared_section_owner:
+            _require(source, (shared_section_owner[name],), f'dashboard section {name}')
+        else:
+            _require(
+                source,
+                ('components/operational_section_card.html', 'operational_section_card.render('),
+                f'dashboard section {name}',
+            )
 
     _verify_route_authorization_order(routes)
+    # Tab selection is one neutral contract; keep the Dashboard facade's
+    # historical public names while forbidding a second local tab definition.
+    _require(
+        common_operational_tabs,
+        (
+            'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (',
+            "'overview'",
+            "'capacity'",
+            "'signals'",
+            "'reporting'",
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB = OPERATIONAL_DASHBOARD_TABS[0]',
+            'def normalize_operational_tab(',
+        ),
+        'shared Operational Dashboard application contract',
+    )
+    _require(
+        dashboard_application_contract,
+        (
+            'from app.common.operational_tabs import (',
+            'DEFAULT_OPERATIONAL_DASHBOARD_TAB as DEFAULT_OPERATIONAL_DASHBOARD_TAB',
+            'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS',
+            'normalize_operational_tab as normalize_operational_tab',
+            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
+            'normalize_dashboard_page_size',
+            'is_htmx_request',
+        ),
+        'Dashboard application contract re-exports and pagination',
+    )
+    if 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in dashboard_application_contract:
+        raise AssertionError('Dashboard application contract must not duplicate shared tab definitions')
+    _require(
+        common_pagination,
+        (
+            'DEFAULT_PER_PAGE = 5',
+            'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)',
+            'def normalize_per_page(',
+        ),
+        'canonical pagination contract',
+    )
+    for owner, source in (
+        ('Kubernetes dashboard routes', routes),
+        ('Object Storage dashboard routes', object_routes),
+        ('Artifact Registry dashboard routes', artifact_routes),
+    ):
+        _require(
+            source,
+            (
+                'normalize_operational_tab',
+                'normalize_dashboard_page_size',
+            ),
+            owner,
+        )
+        for stale in (
+            "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
+            '_PAGE_SIZES = {5, 10, 25, 50}',
+            'def _active_tab(',
+            'def _cluster_health_per_page(',
+            '_cluster_health_per_page()',
+            'def _system_health_per_page(',
+            '_system_health_per_page()',
+            'def _provider_health_per_page(',
+            '_provider_health_per_page()',
+        ):
+            if stale in source:
+                raise AssertionError(f'{owner}: local dashboard application contract remains: {stale}')
+    for owner, source in (
+        ('Kubernetes dashboard routes', routes),
+        ('Object Storage dashboard routes', object_routes),
+    ):
+        _require(source, ('is_htmx_request(request.headers)',), f'{owner} shared HTMX request contract')
     _require(
         routes,
         (
             "@permission_required('dashboard.view')",
-            "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
-            'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}',
             'SECTION_TEMPLATES = {',
+            "'overview': 'kubernetes/dashboard/partials/_overview.html'",
+            "'capacity': 'kubernetes/dashboard/partials/_capacity.html'",
+            "'signals': 'kubernetes/dashboard/partials/_signals.html'",
+            "'reporting': 'kubernetes/dashboard/partials/_reporting.html'",
             'if has_registered_clusters() is False:',
+            "cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page'))",
         ),
-        'dashboard route boundary',
+        'Kubernetes dashboard route boundary',
+    )
+    _require(
+        object_routes,
+        ("system_health_per_page=normalize_dashboard_page_size(request.args.get('system_health_per_page'))",),
+        'Object Storage dashboard section pagination contract',
+    )
+    _require(
+        artifact_routes,
+        ("provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page'))",),
+        'Artifact Registry dashboard section pagination contract',
+    )
+    _require(
+        artifact_presentation,
+        ('normalize_operational_tab(active_tab)',),
+        'Artifact Registry dashboard tab normalization',
     )
     _require(
         service,
         (
             'database-only dashboard shell',
-            'committed worker snapshots only',
+            'Build one bounded dashboard projection from committed KAORI state.',
+            "if section == 'overview':",
+            "if section == 'capacity':",
+            "if section == 'signals':",
+            "if section == 'reporting':",
+            'def _populate_cluster_health(',
+            'def _populate_data_freshness(',
+            'def _populate_capacity(',
+            'def _populate_signals(',
             'read_dashboard_snapshot(',
             'query_for_clusters(',
             'paginate_sequence(',
         ),
         'dashboard service boundary',
     )
+    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split('def _populate_capacity(', 1)[0]
+    for broad_builder in (
+        '_capacity_signal(',
+        '_alerts_signal(',
+        '_top_consumers_signal(',
+        '_forecast_signal(',
+        'build_reporting_snapshot(',
+    ):
+        if broad_builder in freshness_projection:
+            raise AssertionError(f'Kubernetes Data Freshness rebuilds unrelated presentation evidence: {broad_builder}')
+    _require(
+        service,
+        ('from app.common.pagination import paginate_sequence',),
+        'Kubernetes canonical pagination consumer',
+    )
+    for stale in (
+        'def _normalize_page_number(',
+        'def paginate_sequence(',
+        'ClusterHealthPagination',
+    ):
+        if stale in cluster_health_builder or stale in schema:
+            raise AssertionError(f'Kubernetes Cluster Health retains local pagination mechanics: {stale}')
     for token in (
         'kubernetes.client',
         'prometheus_api_client',
@@ -415,9 +1770,9 @@ def verify() -> None:
         readme,
         (
             'read-only operational projection over committed KAORI data',
-            'OPERATIONAL_DASHBOARD.md` v1.5',
+            'OPERATIONAL_DASHBOARD.md` v1.7',
             'page_hero.operational_dashboard(...)',
-            'Arrow Left/Right, Home, and End keyboard navigation',
+            'keyboard navigation',
             'artifact-format neutral',
             'Web requests must not query Kubernetes, Metrics Source, or Alertmanager directly',
         ),
@@ -426,24 +1781,51 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.5',
+            '# KAORI Operational Dashboard Pattern v1.7',
             'Operational Dashboard Hero Profile',
             'page_hero.operational_dashboard(...)',
             'Active Scope',
+            'Operational Signal KPI cards use the fixed context badge **Active Scope**',
+            'job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards',
             'Data Authority',
             'Committed Snapshots',
             'Dashboard family consistency',
             'Identity → Scope → Indicators → Peer analysis → Interpretation → Action',
             'Web requests read committed database rows and worker snapshots only',
             'Layered release evidence',
+            'Registry/Harbor',
+            'Artifact Registry Overview',
+            'Source Control/GitHub',
+            'app/dashboards/common/operational.py',
+            'app/common/operational_tabs.py',
+            'app/common/pagination.py',
+            'components/operational_dashboard_workspace.html',
+            'components/operational_signal_overview.html',
+            'components/operational_evidence_tile.html',
+            'components/operational_alert_summary.html',
+            'components/operational_alert_response.html',
+            'components/operational_recommendation_cards.html',
+            'components/operational_section_loading.html',
+            'components/reporting_dashboard_workspace.html',
+            'components/numbered_governance_steps.html',
+            'Section-local missing, unavailable, not-materialized, no-findings, or no-active-signal evidence in **Capacity & Demand** and **Signals & Actions** uses',
+            'Arrow Left/Right wrap; Home selects first; End selects last;',
+            'Fast Shell & Bounded Section Loading',
+            '1 HTTP request → 1 bounded presentation projection',
+            'All dashboard loading placeholders use `components/operational_section_loading.html`',
+            'Projection granularity remains domain-owned',
+            'Section requests must not call a full-dashboard builder',
+            'Do not materialize full ORM collections',
         ),
         'operational dashboard standard',
     )
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dashboard standard verifier')
-    if 'tests/kubernetes/dashboard' not in quality_gate:
-        raise AssertionError('scripts/quality_gate.sh does not explicitly execute Dashboard functional tests')
+    if "-m 'not debug and not e2e and not contract and not migration'" not in quality_gate:
+        raise AssertionError(
+            'scripts/quality_gate.sh does not execute the canonical Dashboard functional release suite'
+        )
     if "'tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
         raise AssertionError('Dashboard behavioral characterization is not protected by feature coverage')
     for requirement in (
@@ -488,6 +1870,7 @@ def verify() -> None:
             'test_authorized_clusterless_section_renders_onboarding_without_data_read',
             'test_unknown_section_returns_404_before_cluster_probe',
             'test_authorized_section_reads_dashboard_only_after_cluster_readiness',
+            'test_authorized_operations_overview_uses_one_canonical_tab_projection',
             'test_dashboard_tab_selection_is_bounded_to_canonical_tabs',
             'test_cluster_health_page_size_rejects_unbounded_values',
             'test_dashboard_index_requires_permission_before_building_context',
@@ -505,8 +1888,9 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, format-neutral reporting guidance, behavioral release evidence, documentation, '
-        'and quality-gate enforcement match v1.5.'
+        'shared style ownership, Kubernetes/Object Storage references plus Artifact Registry conformance, '
+        'shared application/presentation/reporting contracts, five-record alert previews, four-record report previews, '
+        'behavioral release evidence, documentation, and quality-gate enforcement match v1.7.'
     )
 
 

@@ -68,7 +68,7 @@ def test_mark_job_succeeded_persists_json_safe_result_summary(monkeypatch) -> No
     )
     commits: list[bool] = []
 
-    monkeypatch.setattr(service, 'get_job_by_task_id', lambda _task_id: job)
+    monkeypatch.setattr(service, '_lock_job_by_task_id', lambda _task_id: job)
     monkeypatch.setattr(service, '_append_automatic_terminal_audit', lambda _job: None)
     monkeypatch.setattr(service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
 

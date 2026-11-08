@@ -6,7 +6,7 @@
        value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
-        {{ form_field.label_row("Cluster") }}
+        <span class="text-xs font-semibold text-content-primary">Cluster</span>
         <select id="configmap-cluster"
                 name="cluster_id"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -20,10 +20,9 @@
                 </option>
             {% endfor %}
         </select>
-        {{ form_field.help("Registered cluster for the target namespace.") }}
     </label>
     <label class="block min-w-0" for="configmap-namespace">
-        {{ form_field.label_row("Namespace") }}
+        <span class="text-xs font-semibold text-content-primary">Namespace</span>
         <select id="configmap-namespace"
                 name="namespace"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -49,11 +48,13 @@
         {% if selected_cluster_id and not selection_error and not namespaces %}
             {{ form_field.help("No live namespace is available for the selected cluster.") }}
         {% elif namespaces and not selection_error %}
-            {{ form_field.help("Loaded from the selected Kubernetes API.") }}
         {% endif %}
     </label>
     <label class="block min-w-0" for="configmap-name">
-        {{ form_field.label_row('ConfigMap', 'Live', 'normal', 'radio') }}
+        <span class="flex min-h-6 items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-content-primary">ConfigMap</span>
+            {{ table_label.status_label('Live', 'normal', 'radio') }}
+        </span>
         <select id="configmap-name"
                 name="configmap_name"
                 hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}"
@@ -79,7 +80,6 @@
         {% if selected_namespace and not configmaps and not selection_error %}
             {{ form_field.help("No ConfigMap currently exists in this live namespace.") }}
         {% elif configmaps and not selection_error %}
-            {{ form_field.help("Loaded from the selected live namespace.") }}
         {% endif %}
     </label>
 </div>

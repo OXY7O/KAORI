@@ -29,6 +29,7 @@ EXPECTED_MENU_TEMPLATES = {
     'platform_operations_menu.html',
     'reports_menu.html',
     'settings_menu.html',
+    'tenant_menu.html',
 }
 
 LEGACY_CLUSTER_TEMPLATES = (
@@ -49,6 +50,15 @@ def _read(relative: str) -> str:
     return path.read_text(encoding='utf-8')
 
 
+def _contract_test_modules(path: Path) -> list[Path]:
+    """Count executable source evidence, not merely a placeholder directory."""
+    if path.is_file():
+        return [path] if path.name.startswith('test_') and path.suffix == '.py' else []
+    if path.is_dir():
+        return sorted(path.rglob('test_*.py'))
+    return []
+
+
 def _literal_url_for_endpoints(source: str) -> set[str]:
     return {match for match in re.findall(r"url_for\(\s*['\"]([^'\"]+)['\"]", source) if match != 'static'}
 
@@ -65,8 +75,43 @@ def _intelligence_link_endpoints(source: str) -> set[str]:
     return set(re.findall(r"\(\s*['\"]([^'\"]+)['\"]\s*,", match.group(1)))
 
 
-def _navigation_source_endpoints(relative: str) -> set[str]:
+def _workspace_catalog_endpoints(source: str, workspace_key: str) -> set[str]:
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != 'WorkspaceDefinition':
+            continue
+
+        key_node = next((item.value for item in node.keywords if item.arg == 'key'), None)
+        if not isinstance(key_node, ast.Constant) or key_node.value != workspace_key:
+            continue
+
+        capabilities_node = next((item.value for item in node.keywords if item.arg == 'capabilities'), None)
+        if not isinstance(capabilities_node, (ast.Tuple, ast.List)):
+            raise AssertionError(f'{workspace_key}: WorkspaceDefinition capabilities must be a literal sequence')
+
+        endpoints: set[str] = set()
+        for capability in capabilities_node.elts:
+            if not isinstance(capability, ast.Call):
+                continue
+            if not isinstance(capability.func, ast.Name) or capability.func.id != 'WorkspaceCapabilityDefinition':
+                continue
+            endpoint_node = capability.args[3] if len(capability.args) > 3 else None
+            if endpoint_node is None:
+                endpoint_node = next((item.value for item in capability.keywords if item.arg == 'endpoint'), None)
+            if isinstance(endpoint_node, ast.Constant) and isinstance(endpoint_node.value, str):
+                endpoints.add(endpoint_node.value)
+        return endpoints
+
+    raise AssertionError(f'{workspace_key}: WorkspaceDefinition was not found in the navigation catalog')
+
+
+def _navigation_source_endpoints(relative: str, *, workspace_key: str) -> set[str]:
     source = _read(relative)
+    if relative.endswith('workspace_navigation_catalog.py'):
+        return _workspace_catalog_endpoints(source, workspace_key)
+
     endpoints = _literal_url_for_endpoints(source)
     if relative.endswith('intelligence_menu.html'):
         endpoints.update(_intelligence_link_endpoints(source))
@@ -92,6 +137,7 @@ def _registered_blueprint_vars() -> set[str]:
 
 def verify() -> None:
     errors: list[str] = []
+    contract_modules_by_surface: dict[str, set[Path]] = {}
     navigation_count = len(navigation_endpoints())
     blueprint_count = len(blueprint_vars())
 
@@ -113,16 +159,24 @@ def verify() -> None:
             if not (ROOT / verifier).exists():
                 errors.append(f'{surface.title}: missing verifier {verifier}')
 
+        contract_modules_by_surface[surface.title] = set()
         for contract_path in surface.contract_paths:
-            if not (ROOT / contract_path).exists():
+            evidence_path = ROOT / contract_path
+            if not evidence_path.exists():
                 errors.append(f'{surface.title}: missing release evidence {contract_path}')
+                continue
+            modules = _contract_test_modules(evidence_path)
+            if not modules:
+                errors.append(f'{surface.title}: release evidence has no test modules: {contract_path}')
+                continue
+            contract_modules_by_surface[surface.title].update(modules)
 
         if surface.navigation_source is None:
             if surface.navigation_endpoints:
                 errors.append(f'{surface.title}: non-navigation surface unexpectedly declares sidebar endpoints')
             continue
 
-        actual = _navigation_source_endpoints(surface.navigation_source)
+        actual = _navigation_source_endpoints(surface.navigation_source, workspace_key=surface.key)
         expected = set(surface.navigation_endpoints)
         if actual != expected:
             missing = sorted(expected - actual)
@@ -201,6 +255,14 @@ def verify() -> None:
         raise SystemExit(1)
 
     print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
+    print('  EVIDENCE REGISTERED ONLY — not a test execution result or UAT acceptance')
+    for surface in SURFACES:
+        verifiers = ', '.join(Path(path).name for path in surface.verifiers) or 'none (contract tests only)'
+        print(
+            f'  REGISTERED — {surface.title} [{surface.lock_state}]: '
+            f'{len(contract_modules_by_surface[surface.title])} contract test module(s); '
+            f'static verifier(s): {verifiers}'
+        )
 
 
 if __name__ == '__main__':

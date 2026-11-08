@@ -185,3 +185,54 @@ def test_ready_request_preserves_canonical_snapshot_parameters(monkeypatch) -> N
     assert resolved.dependency_blocker is None
     assert resolved.source_warning is None
     assert resolved.dispatched is False
+
+
+def test_pending_generation_never_queues_second_job_on_page_refresh(monkeypatch) -> None:
+    _configure_request(
+        monkeypatch,
+        result=SnapshotResult(None, None, 'pending', False),
+    )
+    monkeypatch.setattr(
+        materialization_requests,
+        '_dependency_state',
+        lambda **_kwargs: (None, None),
+    )
+
+    def unexpected_dispatch(**_kwargs):
+        raise AssertionError('pending materialization is already owned by a worker')
+
+    monkeypatch.setattr(materialization_requests, 'dispatch_registered_job', unexpected_dispatch)
+    resolved = materialization_requests.resolve_materialized_request(
+        dataset_key='analytics.forecast',
+        job_key='analytics.forecast.materialize',
+        parameters={'history_window': '30d'},
+    )
+    assert resolved.result.state == 'pending'
+    assert resolved.dispatched is False
+
+
+def test_failed_generation_can_be_queued_for_explicit_page_retry(monkeypatch) -> None:
+    _configure_request(
+        monkeypatch,
+        result=SnapshotResult(None, None, 'failed', False),
+    )
+    monkeypatch.setattr(
+        materialization_requests,
+        '_dependency_state',
+        lambda **_kwargs: (None, None),
+    )
+    captured = []
+
+    def dispatch(**kwargs):
+        captured.append(kwargs)
+        return SimpleNamespace(accepted=True, message='Queued')
+
+    monkeypatch.setattr(materialization_requests, 'dispatch_registered_job', dispatch)
+    resolved = materialization_requests.resolve_materialized_request(
+        dataset_key='analytics.forecast',
+        job_key='analytics.forecast.materialize',
+        parameters={'history_window': '30d'},
+    )
+    assert resolved.dispatched is True
+    assert len(captured) == 1
+    assert captured[0]['parameters']['snapshot_parameters']['cluster_id'] == 'cluster-b'

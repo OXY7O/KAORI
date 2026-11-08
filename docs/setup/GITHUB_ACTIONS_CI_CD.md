@@ -12,6 +12,39 @@ This document describes the current KAORI Continuous Integration, Continuous Del
 
 Executable authority remains in the repository workflows, deployment tooling, and existing verifiers. Documentation never substitutes for exact-source evidence.
 
+### Dependency update intake — Dependabot (#4219)
+
+The repository-owned `.github/dependabot.yml` defines bounded weekly version-update *proposals* for the existing pip requirements, root npm lockfile and pinned GitHub Actions. It targets `kaori/staging`, limits open update PRs per ecosystem, and groups minor/patch version proposals to reduce review noise. GitHub processes scheduled updates from the **default-branch** configuration; a file committed only on a staging work branch is **not proof of an active schedule**. Dependency Graph, alerts, security updates and secret-scanning settings require separate GitHub-admin verification under #4215.
+
+Dependabot generates `dependabot/*` branches, which intentionally do **not** satisfy the existing `kaori/*-<issue>-*` trusted work-branch contract. Treat bot PRs as advisory intake: assess vulnerability severity, provenance, compatibility and license changes; open/link a governed Issue and adopt the reviewed dependency change on an issue-linked KAORI work branch before Developer Check, Ready Full Admission, staging UAT and eventual promotion. Do not relabel an automatically skipped trusted job as a PASS, directly merge the bot PR into `main`, grant bot updates deployment secrets or configure automerge.
+
+
+## Operator-facing gate evidence (issue #3941)
+
+**Generated Violet CSS on isolated Static workers (#4363).** The compiled `app/static/css/output.css` is an ignored build output (#4355), not a Git-owned source file. The canonical `bash scripts/quality_gate.sh --static` now executes existing locked `npm ci --no-audit --no-fund` and `npm run build-css` setup before the Dark Mode Standard verifier reads the compiled asset. Missing dependencies, broken CSS generation and token drift fail closed; the independent Frontend and Functional gates retain their own build checks.
+
+**Developer Check is changed-path selected; Full Admission is comprehensive.** A green `Python & Governance` lane reports the actual commands selected by the canonical planner, not a count of all Python functions, test cases or release domains. GitHub Actions **Step Summary** records the command, outcome, elapsed time and the selected route; **the expanded running step log** additionally streams the selected command and verifier stdout, with a 60-second heartbeat for long-running Developer Check commands. an unselected check is **NOT RUN**, never implied PASS. Frontend and focused pytest selectors are reported separately; pytest result counts come from actual executed pytest/JUnit, not static file registration.
+
+In Full Admission, **Static & Governance** publishes every actually executed Foundation, Domain and Engineering verifier as one job summary, with the original command, result, duration and its raw diagnostic-log filename. In the expanded **Run Static & Governance** step, the running verifier name is shown during the existing minute heartbeat, with the exact invoked command at verifier start and a bounded excerpt of standardized PASS lines after success. The full raw log is **not** printed into the live console and remains in the artifact. In expanded **Run Functional Tests**, captured pytest results surface at completion, with a heartbeat during long-running suites; no partial test counts are treated as final. This extra live verbosity is explicitly enabled only by the official CI workflow; ordinary release CLI behavior stays unchanged. Successful static logs are uploaded as a short-retention `full-admission-static-verifiers-*` artifact; failures continue to upload the original Static Diagnostics artifact. The existing Release Surface Coverage registry supplies **REGISTERED** ownership counts for 18 release surfaces; that inventory is neither the count of pytest cases nor a substitute for their execution status. Contract & Migration Safety uses its existing JUnit `contract-migration.xml` and remains independently executable.
+
+The comprehensive gate matrix also reports the actual selected Security, Functional Tests, Frontend and Runtime/DAST step outcomes. In expanded steps, Runtime/DAST visibly reports dependency startup, migration, bounded readiness-probe progress, Reports worker checks and the live ZAP baseline. The staging Fast Smoke lane also reports selected pytest execution and its long-running heartbeat. The CI Admission job exposes selected full-versus-reused lineage, actual JUnit taxonomy extraction and generated source-tree evidence before its final aggregate/commit-status decision. A successful Security gate (including npm dependency audit) publishes its existing JSON scan evidence (no new scan, only retained artifacts); failures can stop before later scanners, so a partially executed script never claims the full tool chain PASS. Functional and E2E counts belong to collected JUnit and the admission taxonomy. Image build, vulnerability scan and runtime/DAST each retain their separate outcome. A **skipped, cancelled, reused or incomplete** gate is never silently counted as fresh PASS.
+
+**Naming policy.** Keep established physical script identities (`verify_*_final_lock.py`, `verify_pre_release_type_safety.py`, contract-test module paths and JUnit names) until all import sites, workflow consumers, baseline authorities, issue history and release-evidence contracts can be migrated together. Operator-facing summaries use meaningful capability/check labels *and expose the exact executable name* rather than performing speculative bulk renames. Preserve the existing quiet, short-PASS general release CLI; the expanded human-readable reports belong to GitHub Actions CI, where operators need evidence discovery.
+
+### Verifier purpose and capability evidence
+
+Full Admission Static & Governance reports each **executed** verifier with a concise purpose/scope, its canonical executable command, outcome, duration, and retained raw diagnostic log. The expanded CI step shows that scope at verifier start. This is presentation-only: it never changes verifier selection, order, exit status, security checks or admission evidence lineage. The general release CLI retains PASS-short/FAIL-detailed output.
+
+**Source Control / GitHub:** The canonical `Integrations` release surface owns `integrations.source_control`, `source_control_bp`, `github_source_bp` and `github_uat_bp`. Integration provider/navigation/final-lock verifiers protect common integration architecture and UI. They do **not** individually attest GitHub webhook signature handling, installation-scoped repository inventory, background synchronization, scoped authorization or UAT readiness. Such behavior is evaluated by actual executed functional/security/contract tests and eventually hosted UAT, with separate results and evidence. A registry `REGISTERED` line only establishes ownership. A green static lock alone is never GitHub functional acceptance.
+
+When a new domain/provider is added, update the existing taxonomy, release-surface registry, contract tests and documentation together. Add purpose text to the existing presentation mapping only where the generic verifier label is ambiguous. Do not create duplicate static gates, infer universal test coverage from the explicit permanent test-file baseline, or rename physical `verify_*` scripts without migrating their consumers and historical contracts.
+
+## Release Candidate expanded-step execution evidence
+
+The RC Runtime & DAST step uses a per-run/per-attempt isolated Docker Compose project, consistent with Full Admission, and the exact CI toolchain image. Failed Reports worker probes preserve the final Celery inspection output, worker process logs and Compose container status under `tmp/ci-artifacts/runtime`; the RC workflow uploads these as a short-retention diagnostic artifact on Runtime & DAST failure. Logs are retained for inspection rather than printed indiscriminately into the public console. These diagnostics do **not** relax the Reports worker queue/task checks, production image scan, migration, DAST, or the fail-closed requirement for an immutable RC.
+
+After successful exact staging Full Admission, the existing `Release Candidate` workflow shows live, operator-readable phase start and actual completion within each expanded job step: accepted staging SHA and quality run, production image build, Trivy HIGH/CRITICAL scan, isolated runtime/DAST validation, immutable Git tag reservation, registry push/pull and digest capture, OCI metadata verification, SPDX/SLSA attestations, and GitHub prerelease publication. The native GitHub step conclusion remains the authoritative success/failure signal, not printed preview labels. Never infer UAT host deployment or human acceptance from RC publication; keep immutable artifact and attestation evidence as the verifiable source of truth. Console status messages contain only approved release identities and phase labels, not registry secrets or OIDC tokens.
+
 ## Delivery model
 
 KAORI uses an issue branch for each work item. The governed lifecycle is:
@@ -21,13 +54,19 @@ Issue
   ↓
 issue branch
   ↓
-Draft/Ready PR → kaori/staging
+Draft PR → kaori/staging
   ↓
-Developer Check on exact PR head
+Developer Check on exact Draft head
+  ↓
+Pre-Ready PASS → Ready/frozen candidate
+  ↓
+Developer Check on exact Ready head
+  ↓
+Full Admission once on exact frozen head
   ↓
 merge commit to kaori/staging
   ↓
-Full Admission on exact staging SHA
+exact evidence reuse + Fast Smoke
   ↓
 immutable RC + digest-bound supply-chain evidence
   ↓
@@ -42,22 +81,111 @@ same immutable digest, no application rebuild
 
 The long-lived integration branches are `kaori/staging` and `main`. Work branches are short-lived and issue-scoped.
 
+**Main promotion required-check skip safety (#4304; scoped staging candidate).** A GitHub required status may be satisfied by a skipped job, so a job-level `Resolve Profile` rejection must not silently skip the existing `CI Admission` status. The #4304 `quality.yml` candidate keeps the established `CI Admission` job name, runs the hosted aggregate with `always()`, and makes its first step **fail before checkout** when the profile is not successful. For PRs to `main`, that same step additionally requires a Ready, same-repository `kaori/staging` source. A non-successful profile, fork or wrong source then yields an explicit failed aggregate instead of a successful skipped required status. The existing five-gate matrix, exact-SHA evidence, staging Developer Check and UAT remain mandatory. This is **not yet live on protected `main`**: the fix is in a governed staging-target PR under #4304 and requires normal issue-scoped admission/staging/UAT/human acceptance. The `main`-only GitHub required check for `CI Admission` must be configured and negative-tested **only after** the accepted source is deployed to `main`; source documentation is not evidence of administrative ruleset enforcement.
+
+**Temporary DevContainer review workbench (#2227).** The existing `kaori/review/staging-uat` branch holds separately issue-owned exploratory UAT work; it does not add a third integration, CI-admission or release authority. Official `.github/workflows/developer-check.yml` only handles PRs targeting `kaori/staging`; a review-target merge, browser screenshot or source audit does not imply any mandatory security/Full Admission gate PASS. Synchronize accepted `kaori/staging` commits **into** the review branch with non-force, expected-head fast-forward when it is an ancestor, or an explicitly reviewed merge if it diverges. Never bulk-promote the holding branch into staging: return individually accepted changes through normal staging-target issue PRs and exact-head gates. DevContainer UAT only covers the actual recorded environment/provider scenarios; see `docs/engineering/KAORI_DELIVERY_WORKFLOW.md` and #2227 for evidence boundaries.
+
+For the **dated operator-accepted source admission** under #1710, the initial 2026-10-26 DevContainer snapshot was `1a9a708f044e06d584f1882e83877812dcfbac88`. On 2026-11-01 the maintainer expressly reconfirmed acceptance of the now-reconciled **exact committed** review workbench source `79ee563edd6ac304da183c417edd11d3dcc32c75` (#4161, followed by issue-scoped merged review PRs #4162, #4163, #4164, #4165, #4167 and #4169). Issue-linked Draft PR #3399 now carries that SHA via a non-forced ancestor fast-forward into the existing separate staging-target admission branch; the 15 PR heads still open against the review workbench remain excluded. This is a narrowly dated approval of **one exact candidate** through existing Developer Check → Pre-Ready → frozen Ready Full Admission → staging → immutable RC → hosted UAT controls, **not** a standing permission to promote later review commits. Every remediation invalidates old exact-head evidence; server UAT, migration/backup, security and independent human acceptance remain required. The controlling interpretation and source boundary are documented in `docs/engineering/KAORI_DELIVERY_WORKFLOW.md` (#3404, #3407).
+
 ## Continuous Integration
 
 ### Work branch
 
-A `kaori/*` work branch uses the path-aware **Developer Check** workflow. It validates the exact PR head without running the comprehensive staging admission pipeline on every work-branch commit.
+A `kaori/*` work branch uses the path-aware **Developer Check** workflow for Draft development and independent exact-head verification on Ready. Draft validation remains targeted; it produces a bounded route-identity artifact but this artifact is **not PASS evidence on its own**. If the Ready event has the same trusted live PR, head/base SHA, source tree, canonical plan, authority fingerprint and toolchain key, a completed successful Draft workflow and every required GitHub job conclusion must be verified before the Ready aggregate can reuse those results. Evidence is valid for at most two hours. Missing/failed/stale/changed evidence, API unavailability, or suspicious job state falls back to ordinary fresh Ready lanes. Regardless of reuse, Ready Full Admission runs **only after** exact-head Developer Check aggregate PASS, with its complete Security, Functional, Static, Frontend, Runtime/DAST and CI Admission coverage. A separate lightweight **Ready Admission Guard** fails the workflow unless both the exact-head Developer Check aggregate and the mandatory Full Admission job actually finish SUCCESS; a skipped Full Admission is never accepted as a green Ready run.
 
-A work branch is eligible for merge to `kaori/staging` only when:
+Developer Check resolves changed paths once and computes a canonical toolchain identity from the existing `.github/ci/Dockerfile` and locked requirements. Under the reviewed hosted-runner integration (#4279, #4283, #4285), **Python & Governance** and **Frontend & Focused Validation** use ephemeral `ubuntu-24.04`. Each hosted worker builds its own canonical image and fails closed unless its calculated tag matches the trusted `Prepare Toolchain` output; Docker images are never assumed to transfer between workers. The trusted source route, lightweight aggregate/Ready guard and `Prepare Toolchain` now run on hosted Ubuntu under #4238/#4278/#4290; the nonpublishing Full Admission profile/matrix/Fast Smoke use hosted Ubuntu under #4292, while privileged RC/registry/SSH deployment lanes remain restricted and separately governed.
+
+The two Developer Check lanes remain **sequential through `needs`**, not because they share a host: Python & Governance completes first, and Frontend & Focused Validation runs only when Python succeeds or is legitimately skipped by path-aware routing. Ruff, Code Health, Pyright, migration/type-safety, DjLint, locked frontend checks and exact-selection pytest are unchanged. The focused job still starts isolated PostgreSQL/Redis services with the canonical Docker Compose project, runs the same pytest/browser cases and cleans the project after completion. Failed, cancelled, incomplete, or unselected checks are never implied PASS.
+
+The hosted Python lane has a 45-minute ceiling and hosted focused lane a 75-minute ceiling to allow cold toolchain builds without shortening test coverage. Their job names, aggregate check, exact source SHA binding, and fail-closed branch policy remain unchanged. Both lanes have standalone Developer Check evidence at their issue-linked heads, but the **combined candidate requires its own exact-head Developer Check** and separate Full Admission/UAT/human acceptance; admission evidence is not inherited from independent PRs.
+
+**GitHub-hosted BuildKit cache (#4294).** The canonical toolchain Dockerfile and its unchanged four-file SHA key remain the definition of **what** is built. Each hosted Python/Focused, comprehensive admission matrix, and Fast Smoke worker first verifies its expected image key, then uses SHA-pinned `docker/setup-buildx-action` and `docker/build-push-action` to build the canonical toolchain with `context: .`, `push: false`, and `load: true`. BuildKit's GitHub Actions cache backend (`type=gha`, scope `kaori-ci-toolchain-v1`, `mode=max`) can reuse matching Docker layers instead of downloading/reinstalling the large CI toolchain on every fresh worker. This does not cache the executed pytest/DAST/Trivy results, nor make any passing admission status reusable by itself.
+
+**Cache security and fallback.** GitHub scopes cache reads and writes by branch/PR merge ref. Only source-trusted, issue-linked PRs reach these CI steps after the hosted precheckout guard, and no privileged registry/SSH workflow restores their cache. Cache entries are **untrusted accelerators**, not signed evidence: source SHA/tree checks, Dockerfile/requirements-based image identity, every required gate, and immutable `KAORI CI / Admission` continue to determine PASS. Do not place credentials, tokens, scan output or environment state in cached layers; do not override `cache-mode` for untrusted workflow triggers. A missing/evicted cache causes a normal cold Docker build. Cache export errors are tolerated (`ignore-error=true`, five-minute export timeout), never converted into admission PASS; Docker build, local `docker image inspect`, and all selected checks still fail normally. Track BuildKit `CACHED` layers, upload/restore duration, cache storage/eviction, and end-to-end runner cost before increasing matrix concurrency.
+
+**Official pinned tool release recovery (#4337, #4339).** GitHub-hosted cold builds can encounter repeated HTTP 504 errors on the primary `github.com/<provider>/<tool>/releases/download` transport, including the existing actionlint, Gitleaks, Hadolint and Trivy binaries and their release checksum manifests. After each direct download's original bounded retries, the canonical CI Dockerfile can retrieve **the same, version-pinned official GitHub release asset** from the public GitHub REST release-assets API with `Accept: application/octet-stream` (fixed provider asset IDs per release and architecture). This is **not** a third-party mirror, a tool version upgrade or a new trust authority. All four existing provider-supplied SHA256 manifest verifications (`sha256sum -c -`), pinned versions, `pipefail` and mandatory lint/quality/security/DAST gates remain unchanged. If both official transports fail, an API response is JSON rather than an actual binary, or any checksum mismatches, the Docker build/CI admission must fail closed. The fallback affects artifact retrieval only, not the immutable toolchain key, cached test evidence or deployment permissions; any tool version upgrade requires separately reviewing the corresponding REST asset IDs and checksum provenance.
+
+**Hosted recipe-only toolchain preflight (#4290):** `Prepare Toolchain` calculates the deterministic twenty-character SHA key from the unchanged Dockerfile and requirements, publishes `kaori-ci-toolchain:<key>` and **does not** build a Docker image. Both Python/Governance and Frontend/Focused build their own matching images on separate ephemeral GitHub-hosted workers and fail closed on identity mismatch. This eliminates the unused third Docker build and the last self-hosted Developer Check job without altering selected test gates. The separate #4292 Full Admission candidate also computes a recipe-only profile identity and builds a worker-local canonical image per comprehensive gate/Fast Smoke. Privileged release workflows remain unchanged.
+
+**Hosted lightweight control plane (#4238):** `Route Checks`, `Developer Check` aggregate, and `Ready Admission Guard` use standard ephemeral `ubuntu-24.04` instead of `platform-ci`. The trusted route checks a same-repository, issue-linked branch **before** checkout. The required `Developer Check` aggregate uses `always()` and refuses any failed, skipped or cancelled route rather than silently producing a successful skipped required status. Heavy GitHub-hosted validation still depends on a successful trusted route, while privileged release/SSH and the unconverted admission toolchain remain restricted; this is not an approval of public forks for trusted execution.
+
+**Required-check trust boundary (#4278):** A skipped job can be considered successful under branch protection, so the first hosted route step exits non-zero for untrusted source and the required aggregate fails closed on `needs.route.result != success`. The synthetic fork/source-origin and denied-route contract cases run with existing pytest. Ruleset enforcement, a real fork negative check, and exact-source Full Admission remain separate acceptance evidence. Neither route nor status contexts are renamed.
+
+For unusually broad affected-capability Draft candidates, `Frontend & Focused Validation` has a **75-minute job ceiling** (not a target duration). A previous 20-minute ceiling cancelled [#40621151289](https://github.com/OXY7O/KAORI/actions/runs/40621151289) at 96% of selected pytest cases, leaving no complete failure summary. Keep the unchanged path-aware suite, pinned toolchain, isolated PostgreSQL/Redis test project and fail-closed aggregate; a failed or cancelled lane **never** grants Ready or Full Admission. Bounded changes still finish as soon as their selected tests complete. Any future ceiling reduction must follow measured coverage-preserving feedback optimization, not deletion of slow test families.
+
+When selected focused pytest requires backend services, Developer Check uses the existing `.github/ci/compose.yml` PostgreSQL/Redis dependencies in a unique per-run Compose project. Tests execute inside the canonical `ci` service, and teardown removes only that isolated project's ephemeral volumes. This is the established mitigation for missing CI databases; it never shares development or UAT data. Previous shared-host contention investigation #2058 showed simultaneous Pyright and database-backed pytest processes receiving SIGKILL/exit 137 in run #38387513834; concurrency is a suspected factor, not a proven kernel OOM cause without host logs.
+
+A work branch is eligible to become a Ready/frozen candidate only when:
 
 - it is based on or synchronized with the current staging authority;
-- Developer Check is green on the exact current head;
+- Developer Check is green on the exact current Draft head;
 - required review discussion is resolved;
 - the PR targets `kaori/staging`.
 
-### Staging admission
+Marking the PR Ready freezes that exact head and reruns Developer Check. Only a successful exact-head Developer Check starts governed Full Admission. A failed/cancelled Developer Check leaves Full Admission skipped. A changed head invalidates the frozen-candidate evidence and must pass Developer Check again before admission.
 
-After merge to `kaori/staging`, `.github/workflows/quality.yml` runs **Full Admission** on the exact resulting staging SHA.
+### Final-candidate and staging admission
+
+**Hosted nonpublishing Full Admission (#4292) and parallelism (#4306).** `Resolve Profile` runs on ephemeral `ubuntu-24.04`, computes the canonical toolchain image name but does not build a cross-runner image. `scripts/ci_admission.py` route, evidence lookup, and lineage checks execute directly with system Python and retain exact SHA/tree, token scope and fail-closed fallback. Each of the five comprehensive matrix gates and Fast Smoke independently verifies the same four-file SHA identity and builds the canonical Docker image locally on its fresh hosted worker before the *unchanged* Docker/Compose/Trivy/ZAP/pytest commands. `CI Admission` remains a distinct hosted exact-source status authority. The first hosted migration deliberately preserved `max-parallel: 1` for a serial baseline; the separate #4306 increment allows all five gates to run concurrently on independent hosted workers (`max-parallel: 5`, `fail-fast: true`) **only after the serial baseline is admitted**. Full runtime/DAST, security and browser validation still must PASS on a frozen source before any staging/UAT or human acceptance claim. Registry publication and SSH deployment are not part of this migration.
+
+**Hosted CI Admission evidence (#4279).** The `CI Admission` aggregate/status job uses ephemeral `ubuntu-24.04` and the existing standard-library `scripts/ci_admission.py` commands directly, without referencing a Docker image held on another runner. It preserves the exact tested source SHA, JUnit taxonomy, immutable evidence and `KAORI CI / Admission` commit status. Under the #4292 candidate, the canonical `Resolve Profile`, five comprehensive Full Admission gates, and `Integration Smoke` are migrated to standard hosted Ubuntu; each full gate/smoke worker builds its own canonical image after verifying the profile recipe key, while profile route/evidence/lineage uses native standard-library Python. A Draft Developer Check PASS **does not execute** this admission job or grant release authority; Full Admission on an accepted frozen candidate is still required.
+
+When the PR is marked Ready, `.github/workflows/developer-check.yml` first validates the exact frozen head. Its downstream reusable `Full Admission` job calls `.github/workflows/quality.yml` only after Developer Check PASS; feature PRs do not independently trigger Full Admission. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 5` (#4306), each on an independent hosted Ubuntu worker. Functional Tests, Static & Governance, Security, Frontend and Runtime & DAST have no cross-gate execution dependency, so they can overlap; actual start times and the longest gate determine critical-path latency. On a failed matrix child GitHub cancels unfinished siblings, whose results may be `cancelled` rather than `success`; such runs never satisfy CI Admission or publish reusable PASS evidence. Per-gate artifacts are retained where produced and cancellation cleanup remains in place. The former ~8-GB shared builder OOM/exit-137 constraint (#2219/#2226) still governs **self-hosted** work, not the isolated hosted matrix. A cache hit cannot grant admission: each job verifies the canonical toolchain identity and performs its own security/functional/runtime checks. Any cache throttling, hosted capacity issue, failed required check or evidence gap keeps the admission fail-closed. Roll back concurrency to `max-parallel: 1` through a reviewed issue-linked change if the five-way hosted run is unreliable. A fresh complete Full Admission, CI Admission and Ready Guard (when applicable) must PASS on the exact candidate before staging promotion; failed/partial reruns are not acceptance.
+
+### Shared-builder cross-workflow capacity evidence (#2231, #2238)
+
+The historical `max-parallel: 1` ceiling protected only the five children of one Full Admission matrix on a memory-constrained shared self-hosted builder; it was never a host-wide semaphore. Under #4306 the nonpublishing matrix uses five **separate ephemeral GitHub-hosted** workers and must prove concurrent execution and full gate/evidence success on an accepted candidate, without changing the privileged `kaori-ci` / `platform-ci` self-hosted runner capacity policy. Other workflows can still run and consume GitHub Actions quota; concurrent BuildKit cache exports are nonauthoritative accelerators and must not alter exact-SHA toolchain or gate decisions. A single GitHub `concurrency.group` is not a safe FIFO mutex: newer pending runs can replace earlier pending work.
+
+Before a runner-label, service, or physical-capacity change, the authorized runner operator records the following **read-only** snapshots during an idle period and each intentionally scheduled test window, with UTC timestamps and relevant exact run/job URLs. Do not paste tokens, environment variables, registration credentials, or private runner configuration into issues:
+
+```bash
+date -u +%Y-%m-%dT%H:%M:%SZ
+hostname; nproc; uptime; free -h
+grep -E "^(MemTotal|MemAvailable|SwapTotal|SwapFree):" /proc/meminfo
+docker info --format "Docker CPUs={{.NCPU}} memory_bytes={{.MemTotal}}"
+docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}"
+systemctl list-units --all --type=service --no-pager "actions.runner*"
+cat /sys/fs/cgroup/memory.events 2>/dev/null || true
+```
+
+The host-wide `/sys/fs/cgroup/memory.events` file may not represent individual container or runner-service events; record the actual cgroup path and before/after counters when available. `docker stats --no-stream` and `free -h` are **point-in-time**, not peak RSS; use existing host/container telemetry or the relevant cgroup `memory.peak` for peak evidence where accessible. Record unavailable measurements as gaps rather than inventing headroom.
+
+Use GitHub **Settings → Actions → Runners** to reconcile each registration/label with its physical host and service identity; confirm the selected `runs-on` labels in both `.github/workflows/developer-check.yml` and `.github/workflows/quality.yml`. Count **physical heavy slots**, not runner names. Keep `platform-ci` and `kaori-ci` boundaries distinct. Capture per-job queue wait (`started_at - created_at`), runtime (`completed_at - started_at`), end-to-end duration, memory peak/OOM deltas, and any exit 137 or cancelled result.
+
+Only after operator approval and available headroom, run a controlled two-PR test on distinct candidate heads: first a single Draft/Ready heavy job, then two independently queued heavy flows. Verify no overlap on the physical 8-GB host, **both complete** rather than a pending candidate being replaced, no false PASS or missing mandatory gate, and full cleanup/evidence. Separate same-PR supersession behavior from cross-PR queue safety. Stop and keep the conservative serial policy when OOM events, unknown runner mapping, unbounded queue eviction, or insufficient memory evidence occurs.
+
+**Preferred durable options:** route all memory-heavy jobs through one specifically eligible runner registration on the 8-GB host (with other registrations restricted to truly lightweight workloads), or provide separate physical hosts/adequate RAM before increasing parallelism. This is an option assessment, **not an authorization to relabel, deregister, or restart runners**. Any host workflow must have operator-reviewed maintenance, rollback to the last accepted runner label/service mapping, and a recovery path if the single eligible runner is offline. Update the existing release/runner contracts when routing is actually changed; prove exact-head Developer Check, all five Full Admission gates, CI Admission, staging Fast Smoke, and operational UAT before considering #2219/#2231 complete.
+
+**Approved constrained-host capacity (2026-10-17, #2231): exactly ONE active `kaori-ci` runner on the ~7.8 GiB RAM / no-swap builder.** Two independent heavy self-hosted workflows previously overlapped and both exited 137; the historical two-active-lane guidance (#665/#673) remains superseded **for that physical host**. The old `quality.yml` five-gate `max-parallel: 1` was the historical mitigation; after approved #4292/#4306 hosted migration the five nonpublishing matrix gates no longer consume that shared host, and privileged runner work remains separately capacity-governed. Preserve Draft/Ready, Security, DAST, CI Admission and immutable evidence. Do not use a broad GitHub `concurrency.group` because pending runs can be replaced.
+
+The operator verified this exact on-host installation/unit mapping. Recheck each installation's `.service` file, process tree and GitHub Actions runner **names/labels/online status** before any future maintenance:
+
+| Runner installation | Exact systemd unit | Approved state |
+| --- | --- | --- |
+| `/opt/actions-runner` | `actions.runner.OXY7O.runner-contabo.service` | active/enabled; only `kaori-ci` heavy slot |
+| `/opt/actions-runner-02` | `actions.runner.OXY7O.runner-contabo-02.service` | inactive/disabled spare |
+| `/opt/actions-runner-03` | `actions.runner.OXY7O.runner-contabo-03.service` | inactive/disabled spare |
+| `/opt/actions-workflow` | `actions.runner.OXY7O.platform-contabo.service` | active/enabled; independent `platform-ci` |
+
+**Actual incident and root cause:** former spare `-02` unit had `KillMode=process`. `systemctl disable --now` showed inactive while a Node `RunnerService.js` supervisor and `Runner.Listener` persisted within its cgroup. SIGTERM of the listener alone made the Node supervisor automatically respawn a fresh listener 5 seconds later; that unexpected second slot accepted all five gates from an otherwise successful Full Admission. This is why **service inactive/disabled alone is insufficient** to prove physical isolation.
+
+The approved host-only maintenance sequence is: **first confirm no GitHub job running/queued on the affected runner and no busy Worker**, identify exact `-02` unit/cgroup, disable the two spares, and terminate only the stopped spare's residual cgroup, never all runner processes or Docker:
+
+```bash
+SECOND=actions.runner.OXY7O.runner-contabo-02.service
+THIRD=actions.runner.OXY7O.runner-contabo-03.service
+systemctl status "$SECOND" --no-pager
+pgrep -af 'RunnerService.js|Runner.Listener|runsvc.sh' || true
+sudo systemctl disable --now "$SECOND" "$THIRD"
+# Only after confirming no active work and -02's remaining service cgroup:
+sudo systemctl kill --signal=SIGTERM --kill-whom=all "$SECOND"
+```
+
+The operator applied drop-ins under `/etc/systemd/system/{exact-spare-unit}.d/10-kaori-cgroup-stop.conf` with `[Service]` / `KillMode=control-group`, then `systemctl daemon-reload`. Both spares must show `KillMode=control-group`, `ActiveState=inactive`, `UnitFileState=disabled`; process inventory after 10+ seconds must show **only** one listener/supervisor from `/opt/actions-runner` and one from `/opt/actions-workflow`. Do **not** change the live main or `platform-ci` units. Keep the drop-ins and existing two spare units for controlled recovery, without deregistering or deleting anything.
+
+**Rollback/recovery:** if the single primary runner fails, drain running work and stop/disable it *before* enabling exactly one verified spare, then switch back only after draining the spare. Never restore two simultaneous physical `kaori-ci` slots without new measured host capacity or separate hosts and operator acceptance. Validate two different mandatory candidate workflows queue and finish without OOM or silently dropped jobs; verify Full Admission, CI Admission, staging Fast Smoke, observed queue time and human infrastructure UAT before closing #2231/#2219. One successful Full Admission by itself does not prove longitudinal no-OOM stability.
+
+After merge to `kaori/staging`, the workflow verifies exact source-tree/authority evidence and transition lineage. Evidence discovery accepts both valid run parents: direct `quality.yml` runs and sequenced `developer-check.yml` caller runs that contain the reusable Full Admission artifact. The evidence payload itself must still identify the governed `quality.yml` authority and pass the existing tree, authority-fingerprint, profile-version, and lineage checks. The normal staging path reuses the admitted evidence and runs fresh Fast Smoke; staging falls back to a fresh Full Admission only when reuse cannot be proven.
 
 Full Admission owns the integrated evidence set:
 
@@ -68,11 +196,13 @@ Full Admission owns the integrated evidence set:
 - Runtime & DAST;
 - CI Admission.
 
-A green work-branch run does not replace staging Full Admission.
+Test execution ownership is intentionally non-overlapping: Static & Governance owns Contract/Migration pytest execution and emits `contract-migration.xml`; Functional Tests owns the remaining non-debug/non-E2E/non-contract/non-migration release suite plus explicit E2E. CI Admission downloads both JUnit artifacts and renders one complete KAORI taxonomy summary before publishing reusable Full Admission evidence.
+
+A green Developer Check does not replace Full Admission. A green Full Admission on the exact frozen Ready head is the comprehensive authority that staging normally reuses.
 
 ## Continuous Delivery
 
-Continuous Delivery starts only from an admitted staging SHA.
+Continuous Delivery starts only from a staging SHA whose exact admitted lineage has passed CI Admission, normally through frozen-candidate evidence reuse plus fresh Fast Smoke.
 
 The release-candidate workflow:
 
@@ -104,6 +234,20 @@ Before remote deployment it verifies:
 The server deployment then validates production configuration, infrastructure health, pre-migration backup state, database migration, worker/Beat readiness, immutable application identity, and internal `:5000` readiness.
 
 Public edge publication is a separate infrastructure responsibility and is not required for KAORI application deployment success.
+
+
+### Exact-candidate UAT handover
+
+After a governed UAT deploy, retain the handover in the owning GitHub issue, official workflow runs, release metadata, and committed server release state. Do **not** create a second mutable release register. The operator records:
+
+1. **Candidate identity:** intentional RC tag, accepted source SHA, immutable OCI digest, GitHub Release and RC evidence run. Separate source-branch HEAD from the actually deployed candidate.
+2. **Machine evidence:** exact-SHA Ready Full Admission (all mandatory lanes and guards), staging push Fast Smoke/CI Admission, RC publication and attestations, and terminal UAT `Release Evidence` and `Deploy Staging` outcomes. Reference the pre-migration backup and migration, internal runtime, queues/Beat and access evidence; report a missing or failed required step as **BLOCKED**, not PASS.
+3. **Independent public publication:** record `Reconcile Public Publication` separately, with DNS, HTTP-to-HTTPS, trusted TLS, public readiness and certificate renewal evidence. Internal deployment may succeed before edge reconciliation is finished.
+4. **Human acceptance:** link executed scenario IDs, UAT environment, browser/light-dark/responsive/keyboard and protected paths, negative/permission cases, provider read-back, findings and retests to existing Visual QA/UAT issue authority. Mark unexecuted checks **NOT RUN** and unmet prerequisites **BLOCKED**. The human reviewer alone accepts residual risk or the candidate; CI SUCCESS is not Human Acceptance.
+
+**Later staging commits do not rewrite UAT history.** If `kaori/staging` advances beyond the last deployed RC SHA, including a documentation/CI-only merge, retain the RC tag, SHA, digest and actual UAT receipt as the observed deployment identity. Compare the later change to the accepted scope; do not claim the newer staging SHA is deployed, silently reuse an old UAT acceptance for a different source, or automatically dispatch another deployment. Any subsequently chosen deployment or promotion must follow existing exact-SHA admission, new intentional immutable RC, governed UAT evidence and human acceptance.
+
+For the **2026-10-20** [#1710 technical receipt](https://github.com/OXY7O/KAORI/issues/1710), the UAT release was [v0.3.0-rc.11](https://github.com/OXY7O/KAORI/releases/tag/v0.3.0-rc.11) at `8b5b365f6d41724d146743fa329800d955ee9740`, proven by [Staging Deploy #39351114282](https://github.com/OXY7O/KAORI/actions/runs/39351114282). The later CI-governance-only staging merge [PR #2577](https://github.com/OXY7O/KAORI/pull/2577), at `9f98ed45af621d00e432ea08449d514c1068ac29`, is **not** that UAT deployment identity. The disposable-UAT restore-rehearsal exception [#2206](https://github.com/OXY7O/KAORI/issues/2206) remains **not a restore PASS**; the database-role cutover [#1439](https://github.com/OXY7O/KAORI/issues/1439) remains separate.
 
 ## Continuous Deployment boundary
 
@@ -182,7 +326,7 @@ Use **roll-forward** when restoring previous data/state would be unsafe, includi
 - prior release lineage or reviewed backup cannot be proven;
 - a corrective patch is safer than state restoration.
 
-Roll-forward requires a new governed issue-branch change, fresh Developer Check, merge to staging, fresh Full Admission, a new immutable RC, deployment verification, and the same human acceptance boundary.
+Roll-forward requires a new governed issue-branch change, fresh Draft Developer Check, a new frozen Ready candidate, exact-head Developer Check PASS, Full Admission for that candidate, staging evidence reuse/Fast Smoke, a new immutable RC, deployment verification, and the same human acceptance boundary.
 
 Historical tags, digests, and evidence must remain immutable.
 
@@ -211,7 +355,7 @@ Do not perform an image-only rollback as a compromise.
 
 ## CI security and toolchain
 
-KAORI uses repository-owned, pinned CI tooling on self-hosted Linux runners.
+KAORI uses repository-owned, pinned CI tooling. The proposed hosted-first CI lanes use standard ephemeral Ubuntu workers, while restricted runner groups remain authoritative for privileged release and deployment.
 
 Current security baseline includes:
 
@@ -286,3 +430,14 @@ python scripts/verify_final_release.py --all --runtime
 ```
 
 Do not create a parallel pipeline to bypass these authorities.
+
+
+## Community fork checks — untrusted source boundary (#4214)
+
+Public contributors can open Pull Requests targeting `kaori/staging` from forks. These are **feedback-only external submissions**, not issue-authorized trusted work branches and not staging admission. The new `.github/workflows/community-fork-check.yml` intentionally runs only for a **different source repository** and only on a GitHub-hosted ephemeral `ubuntu-24.04` runner with a read-only token. It checks exact fork head identity, whitespace, Python compilation and npm/Prettier formatting after a lockfile install with npm lifecycle scripts disabled. It does not run privileged Docker, migrations, local provider integration tests, runtime/DAST, publish, deploy or Full Admission. Those checks remain **NOT RUN**, never implied PASS, for fork submissions.
+
+The existing `Developer Check` hosted route rejects fork-sourced PR heads and gates every descendant job on a trusted route. Its Ready Full Admission is also restricted to same-repository issue-linked branches. The standalone `quality.yml` pull request gate permits only the approved same-repository promotion lineage to `main`. Do **not** use `pull_request_target` to check out or run external code, grant secrets to a fork workflow, or make a fork check a substitute for the existing exact-head accepted engineering gate.
+
+Maintainer adoption: triage the proposed contribution, require a canonical governing Issue, review the diff and rights/publication constraints, then transfer/apply an accepted change into a maintainer-owned `kaori/*-<issue>-*` branch created from current `kaori/staging`. Use the ordinary Draft → Ready Developer Check → Full Admission → staging/UAT → Human Acceptance → promotion flow. External contributors cannot directly satisfy trusted admission or production release authorization.
+
+Branch protection/ruleset required-check contexts must distinguish `Untrusted Fork Validation` from `Developer Check` and `Ready Admission Guard` so skipped trusted jobs are not mistaken for a pass and ordinary trusted branches are not blocked by a fork-only required check. The first-time contributor workflow approval and public repository Actions policies remain GitHub-admin decisions, not a source-code enablement claim.

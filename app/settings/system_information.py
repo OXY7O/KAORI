@@ -12,23 +12,17 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
         'title': 'Provider-Neutral Integration Lifecycle',
         'icon': 'unplug',
-        'description': (
-            'Kubernetes, Prometheus, Thanos Query, Alertmanager, and MinIO now follow clearer provider, compatibility, capability, validation, binding, and consumer-readiness ownership boundaries.'
-        ),
+        'description': ('Kubernetes, metrics, alerts and MinIO have clear ownership.'),
     },
     {
         'title': 'Operations & Data Lifecycle Control Plane',
         'icon': 'workflow',
-        'description': (
-            'Jobs, execution evidence, Data Lifecycle, notifications, object-storage analytics, and controlled automation surfaces converge on shared operational feedback and worker-owned execution contracts.'
-        ),
+        'description': ('Shared evidence for jobs, delivery, and analytics.'),
     },
     {
         'title': 'Release Reliability & Identity Hardening',
         'icon': 'shield-check',
-        'description': (
-            'Release metadata, final gates, Access and Identity Provider boundaries, runtime imports, type safety, and regression contracts are tightened for a reproducible 2.3.0 deployment baseline.'
-        ),
+        'description': ('Release tracing, identity, runtime safety and testing.'),
     },
 )
 
@@ -50,11 +44,11 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'icon': 'boxes',
         'description': 'Inventory, governed mutations, advanced administration, and recovery-aware synchronization.',
         'features': (
-            'Cluster registration, validation, runtime readiness, and automatic or manual inventory synchronization',
-            'Nodes, namespaces, workloads, Pods, Services, Ingresses, storage, configuration, and topology inventory',
+            'Cluster registration, readiness, and automatic/manual inventory sync',
+            'Node, Namespace, workload, Pod, Service, Ingress, storage, config, and topology inventory',
             'Validated ConfigMap and Secret create, update, replacement, and delete workflows',
             'Protected one-time Secret Reveal under Platform Operations → Kubernetes Administration',
-            'TLS certificate inventory, governance, bulk rotation, and worker-based automatic synchronization',
+            'TLS inventory, governance, bulk rotation, and worker sync.',
         ),
     },
     {
@@ -62,9 +56,9 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'icon': 'brain-circuit',
         'description': 'Worker-materialized operational analytics built from committed infrastructure snapshots.',
         'features': (
-            'Kubernetes Operations Dashboard with inventory, capacity, forecast, consumer, alert, and reporting summaries',
+            'Kubernetes dashboard: inventory, capacity, forecast, consumers, alerts, reports',
             'Resource utilization, capacity, storage, workload, forecast, top-consumer, and alert analytics',
-            'Internal content tabs that keep analytics pages compact without removing canonical navigation',
+            'Compact analytics tabs preserve canonical navigation.',
             'Forecast and growth-risk visualization with historical and projected utilization',
             'Recommendation, alert intelligence, anomaly, and operational response guidance',
         ),
@@ -75,7 +69,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'description': 'Versioned adapters, live capability evidence, and recovery monitoring for infrastructure providers.',
         'features': (
             'Kubernetes, Prometheus, Thanos Query, Alertmanager, and MinIO compatibility profiles',
-            'Provider-neutral Metrics Source registration with Prometheus and Thanos Query adapters plus asset-scoped consumer bindings',
+            'Prometheus/Thanos Metrics Source registration with asset-scoped bindings',
             'Runtime observations, readiness validation, and capability evidence collection',
             'Automatic runtime monitoring with targeted recovery refresh after connectivity returns',
             'User-friendly source failure presentation without exposing raw endpoints or exceptions',
@@ -130,18 +124,15 @@ def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
         'minimum_label': first.minimum_release,
         'recommended_label': profiles[-1].maximum_release,
         'qualified_versions': '; '.join(item.supported_range_label for item in profiles),
-        'upstream_lifecycle': 'Community repository archived; qualified release evidence remains explicit.',
+        'upstream_lifecycle': 'Community archived; qualified release evidence retained.',
         'support_label': 'Extended · Upstream Archived',
         'support_tone': 'warning',
         'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
         'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
         'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
-        'capability_summary': (
-            'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.'
-        ),
+        'capability_summary': ('S3 reachability, bucket discovery, and optional object-storage governance.'),
         'validation_basis': (
-            'Live S3 capability evidence decides readiness. MinIO release qualification is supporting evidence; '
-            'an unqualified release is degraded rather than blocked by version alone.'
+            'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.'
         ),
         'profiles': tuple(
             {

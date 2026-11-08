@@ -51,7 +51,10 @@ def test_overview_reuses_same_metrics_source_card_and_snapshot_card() -> None:
     workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
 
     assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in source
-    assert 'analytics_workspace.snapshot_card(' in source
+    # Snapshot readiness belongs to the shared controls adapter while the
+    # Metrics Source card continues to use the canonical workspace presenter.
+    assert '{% import "analytics/components/_controls_readiness.html" as shared_readiness %}' in source
+    assert 'shared_readiness.snapshot_card(' in source
     assert 'metrics_source_status_panel.render(status)' in workspace
     assert 'payload.last_analyzed_at' not in source
 

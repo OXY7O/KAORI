@@ -1,0 +1,205 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_registry.html" as registry_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="github-runtime-jobs"
+         class="{{ 'min-w-0' if runtime_table_embedded|default(false) else table_ui.block_classes(allow_overflow=true) }}"
+         data-kaori-github-runtime-jobs
+         data-kaori-server-filtered-registry
+         data-kaori-runtime-registry-view="jobs"
+         data-kaori-full-table-registry="jobs">
+    {% set header_actions %}
+        {% if job_status or job_search or job_queue %}
+            {{ registry_ui.clear_filters_action(url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs', job_per_page=job_pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('github_source_uat.runtime_jobs', installation_id=installation.id, job_page=1, job_per_page=job_pagination.per_page),
+            target='#github-runtime-jobs',
+            indicator='#github-runtime-jobs-loading',
+            select='#github-runtime-jobs',
+            sync='closest section:replace',
+            marker='github-runtime-jobs') }}
+        {% endif %}
+    {% endset %}
+    {% set header_guide %}
+        {{ info_tip.render('github-runtime-jobs-guide', 'Recent Jobs',
+                'Committed JobExecution history is distinct from GitHub-owned live operations and repository synchronization.',
+                [
+                'Execution history belongs to this canonical installation.',
+                'A succeeded worker job is not permission or inventory authority.',
+                'Use Full Validation and repository sync for separate evidence.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('history', 'Recent Jobs',
+        'Committed JobExecution history and worker outcomes for this installation.',
+        'github-runtime-jobs-loading', 'Refreshing Recent Jobs', none,
+        header_actions=header_actions, title_extra=header_guide,
+        result_count=job_pagination.total_items) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form method="get"
+              aria-label="Recent Jobs filters"
+              action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs') }}"
+              hx-get="{{ url_for('github_source_uat.runtime_jobs', installation_id=installation.id) }}"
+              hx-target="#github-runtime-jobs"
+              hx-select="#github-runtime-jobs"
+              hx-swap="outerHTML"
+              hx-trigger="change, input changed delay:400ms, submit"
+              hx-sync="closest section:replace"
+              hx-indicator="#github-runtime-jobs-loading"
+              data-kaori-canonical-registry-filter="github-runtime-jobs"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="job_page" value="1">
+            <input type="hidden"
+                   name="job_per_page"
+                   value="{{ job_pagination.per_page }}">
+            <input type="hidden" name="tab" value="runtime">
+            <input type="hidden" name="runtime_view" value="jobs">
+            <div>
+                <label for="github-runtime-jobs-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Operation</label>
+                <input id="github-runtime-jobs-search"
+                       type="search"
+                       name="job_search"
+                       value="{{ job_search }}"
+                       maxlength="80"
+                       autocomplete="off"
+                       placeholder="Operation or Job ID"
+                       class="{{ table_ui.filter_input_classes() }}">
+            </div>
+            <div>
+                <label for="github-runtime-jobs-queue"
+                       class="{{ table_ui.filter_label_classes() }}">Queue</label>
+                <select id="github-runtime-jobs-queue"
+                        name="job_queue"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Queues</option>
+                    {% for option in job_queue_options %}
+                        <option value="{{ option }}" {% if option == job_queue %}selected{% endif %}>{{ option|replace('_', ' ') |title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="github-runtime-jobs-status"
+                       class="{{ table_ui.filter_label_classes() }}">Job Status</label>
+                <select id="github-runtime-jobs-status"
+                        name="job_status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('', 'All Statuses'), ('queued', 'Queued'), ('running', 'Running'), ('retrying', 'Retrying'), ('cancel_requested', 'Cancel Requested'), ('succeeded', 'Succeeded'), ('partially_succeeded', 'Partially Succeeded'), ('failed', 'Failed'), ('canceled', 'Canceled'), ('expired', 'Expired')] %}
+                        <option value="{{ value }}" {% if job_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <noscript>
+                <div class="flex items-end">
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Filter Results</button>
+                </div>
+            </noscript>
+        </form>
+    </div>
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Recent Jobs for the selected GitHub installation.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[37%]">Operation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Created</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Queue</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Status</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for job in jobs %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(job.operation|replace('_', ' ') |title, 'Job #' ~ job.id, 'history') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {% if job.created_at %}
+                                <time datetime="{{ job.created_at.isoformat() }}"
+                                      title="{{ job.created_at.isoformat() }}"
+                                      class="block whitespace-nowrap">
+                                    <span class="block font-medium text-content-primary">{{ job.created_at.strftime("%d %b %Y") }}</span>
+                                    <span class="block text-xs tabular-nums text-content-muted">{{ job.created_at.strftime("%H:%M:%S") }} UTC</span>
+                                </time>
+                            {% else %}
+                                <span class="text-content-muted">Not observed</span>
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <code class="break-words text-xs font-medium text-content-secondary"
+                                  title="{{ job.queue_name or 'Not assigned' }}">{{ job.queue_name or 'Not assigned' }}</code>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(job.status, display='indicator') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="p-0">
+                            {% set empty_state_icon = "history" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_title = 'No Matching Runtime Jobs' if job_status or job_search or job_queue else 'No Runtime Jobs Observed' %}
+                            {% set empty_state_description = 'Choose another job status to inspect committed execution history.' if job_status or job_search or job_queue else 'Admitted GitHub jobs appear here after execution evidence is committed.' %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-canonical-registry-footer="github-runtime-jobs">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <span>Showing {{ job_pagination.start_item }}–{{ job_pagination.end_item }} of {{ job_pagination.total_items }} Jobs</span>
+            <form method="get"
+                  action="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs') }}"
+                  hx-get="{{ url_for('github_source_uat.runtime_jobs', installation_id=installation.id) }}"
+                  hx-target="#github-runtime-jobs"
+                  hx-swap="outerHTML"
+                  hx-indicator="#github-runtime-jobs-loading"
+                  class="{{ pagination_ui.rows_group_classes() }}"
+                  data-kaori-page-size-control="github-runtime-jobs">
+                <input type="hidden" name="job_page" value="1">
+                <input type="hidden" name="job_status" value="{{ job_status }}">
+                <input type="hidden" name="job_search" value="{{ job_search }}">
+                <input type="hidden" name="job_queue" value="{{ job_queue }}">
+                <label for="github-runtime-job-size">Rows</label>
+                <select id="github-runtime-job-size"
+                        name="job_per_page"
+                        data-kaori-auto-submit
+                        aria-label="Recent Jobs rows per page"
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for value in job_pagination.allowed_per_page %}
+                        <option value="{{ value }}"
+                                {% if value == job_pagination.per_page %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="GitHub Jobs pagination">
+            {% for direction, page, allowed in [('Previous', job_pagination.prev_page, job_pagination.has_prev), ('Next', job_pagination.next_page, job_pagination.has_next)] %}
+                {% if allowed %}
+                    <a href="{{ url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs', job_page=page, job_per_page=job_pagination.per_page, job_status=job_status, job_search=job_search, job_queue=job_queue) }}"
+                       hx-get="{{ url_for('github_source_uat.runtime_jobs', installation_id=installation.id, job_page=page, job_per_page=job_pagination.per_page, job_status=job_status, job_search=job_search, job_queue=job_queue) }}"
+                       hx-target="#github-runtime-jobs"
+                       hx-swap="outerHTML"
+                       hx-indicator="#github-runtime-jobs-loading"
+                       class="{{ pagination_ui.navigation_classes(false) }}">{{ direction }}</a>
+                {% else %}
+                    <span aria-disabled="true"
+                          class="{{ pagination_ui.navigation_classes(true) }}">{{ direction }}</span>
+                {% endif %}
+            {% endfor %}
+            {{ pagination_ui.numeric_pages(job_pagination.page,
+                        job_pagination.total_pages,
+                        page_param='job_page',
+                        hx_target='#github-runtime-jobs',
+                        hx_indicator='#github-runtime-jobs-loading',
+                        endpoint='github_source_uat.runtime_jobs',
+                        query_params={'tab': 'runtime', 'runtime_view': 'jobs', 'job_per_page': job_pagination.per_page, 'job_status': job_status, 'job_search': job_search, 'job_queue': job_queue},
+                        hx_swap='outerHTML',
+                        href_endpoint='github_source_uat.detail') }}
+        </nav>
+    </footer>
+</section>

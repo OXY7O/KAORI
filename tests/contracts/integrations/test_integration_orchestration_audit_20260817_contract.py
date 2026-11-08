@@ -87,6 +87,15 @@ def test_domain_instance_loading_does_not_preload_unused_binding_relationship() 
 
     assert 'IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))' in loader
     assert 'selectinload(IntegrationInstance.bindings)' not in loader
-    assert 'detail_url_for_record' in read('app/integrations/registry.py')
+    assert 'detail_url_for_record' in read('app/integrations/kernel/registry.py')
     assert '_resolve_provider_detail_urls(provider_registry_rows)' in service
     assert '_resolve_binding_detail_urls(binding_registry_rows)' in service
+
+
+def test_orchestration_domain_exposes_parent_context_guidance() -> None:
+    workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+
+    assert 'Orchestration Authority Boundary' in workspace
+    assert 'Cluster providers remain authoritative for native control-plane state and execution.' in workspace
+    assert 'Kubernetes API operations execute against the provider control plane' in workspace
+    assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in workspace

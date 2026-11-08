@@ -2,8 +2,8 @@
 <section id="permission-workspace"
          class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     {% set workspace_tabs = [
-            ('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry'), summary.canonical_permissions),
-            ('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'), roles|length)
+            ('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry')),
+            ('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'))
         ] %}
     {{ framed_tabs.render_navigation(workspace_tabs,
         active_view,

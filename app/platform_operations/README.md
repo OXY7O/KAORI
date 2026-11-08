@@ -18,6 +18,10 @@ Overview projections must stay lightweight: database-backed summaries are allowe
 
 Overview status aggregation must not convert setup/unknown domain posture into `Ready`. Critical and warning states take precedence, then configuration review, active execution, and finally ready. Operating Boundaries are permission-scoped and must render from the same visible workspace projection rather than advertising inaccessible control planes.
 
+Overview must reuse the Kubernetes Administration domain-owned `administration_status_label` and `administration_status_tone` rather than deriving security readiness from cluster counts. The Jobs card combines bounded execution attention with **read-only committed JobPolicy dispatch attention** from Jobs Configuration; the two counts remain separate in the three-metric display (execution / policy), including `evidence_failed` without a queued execution. Do not create/ensure job policies during Overview GET.
+
+Data Lifecycle's three-metric card shows **Policies Enabled**, **Active Archives / Jobs**, and **Failed · 24H**. The middle metric renders independent archive and canonical lifecycle execution counts (`archives / jobs`), not their sum: one lifecycle job can be reflected by an archive and must not be counted as two unique work items. Active lifecycle jobs remain visible even before an archive artifact exists.
+
 ## Data Lifecycle
 
 Data Lifecycle is the cross-domain operational control plane for retention policy, verified archive storage, safe cleanup, and archive evidence. It does not own worker execution state: manual and scheduled lifecycle work is recorded through canonical `JobExecution` and remains inspectable under Jobs & Executions. The legacy Settings route is redirect-only compatibility.

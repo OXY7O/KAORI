@@ -89,6 +89,10 @@ This prevents a local username collision from silently authenticating against LD
 
 ## Browser SSO Flow
 
+The login surface exposes a conditional Browser SSO action region below the primary Local Database sign-in action. No runtime-ready SSO provider means no divider or reserved blank space. One provider uses a full-width action; Google + GitHub use a balanced two-column row from `sm` while remaining stacked on narrower viewports. Provider display names/icons remain definition/record-driven and every action carries only the sanitized internal `next` target.
+
+Authentication responsiveness follows the canonical KAORI viewport matrix (1440×900, 1280×800, 1024×768, 768×1024, 390×844, and 360×800). Laptop and compact-laptop retain the split brand/form composition; tablet and phone recompose to a form-first surface with the brand panel removed from layout. No page-level horizontal overflow is permitted, and phone layouts may extend vertically rather than clipping sign-in or SSO actions.
+
 1. `/auth/sso/<provider>/start` resolves an enabled provider from the identity-provider registry.
 2. The browser strategy is selected by provider identity and adapter key.
 3. KAORI stores only the state fingerprint, provider ID, nonce when required, and start timestamp in the session.
@@ -129,6 +133,23 @@ Executable bootstrap and recovery instructions must use `components/terminal_com
 - Authentication Audit schema `authentication.v2` separates a resolved target account from an authenticated actor; failed attempts never claim the target user's email, display name, or role as actor identity.
 - Authentication request evidence stores `request.path`, never callback query strings, so OAuth authorization codes are excluded from the audit record.
 - Production proxy trust remains centralized in `ProxyFix`; authentication reads `request.remote_addr` only.
+
+## Transient Database Failure Contract
+
+A database pool timeout or transient SQLAlchemy error during Flask-Login user
+resolution is **not** evidence of account/session revocation. The user loader
+must fail closed (no authenticated identity for that request) without clearing
+an existing signed session or its remember-cookie state. The unauthorized
+handler returns HTTP 503 with `Cache-Control: no-store` and a short retry hint
+rather than issuing a second readiness query and login redirect while the
+pool is unavailable.
+
+On the next request, KAORI again validates authoritative user existence,
+session generation, account state, provider ownership, and role admission.
+Verified missing users, invalid identifiers, revoked generations, or failed
+admission **still invalidate the session and remember cookie**. The database
+failure marker lasts for one Flask request only; it never grants access and
+must not be treated as a successful authentication or authorization result.
 
 ## Readiness Contract
 

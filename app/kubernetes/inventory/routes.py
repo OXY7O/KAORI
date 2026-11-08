@@ -6,6 +6,7 @@ from typing import Any, cast
 from flask import (
     Blueprint,
     abort,
+    g,
     jsonify,
     redirect,
     render_template,
@@ -15,7 +16,6 @@ from flask import (
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
-from app.common.pagination import paginate_sequence
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 from app.kubernetes.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.kubernetes.inventory.overview import (
@@ -106,8 +106,22 @@ inventory_bp = Blueprint(
 @inventory_bp.context_processor
 def inject_inventory_freshness_context() -> dict[str, Any]:
     """Expose one consistent snapshot timestamp across every Inventory page."""
-    cluster_id = request.args.get('cluster_id', '', type=str)
-    return {'inventory_freshness': get_inventory_freshness_context(cluster_id=cluster_id)}
+    # Table-only HTMX and detail modal templates do not use the Snapshot Context Bar.
+    # Do not rerun fleet freshness queries during these bounded fragment requests.
+    if request.endpoint == 'inventory.overview' and request.headers.get('HX-Request') == 'true':
+        return {}
+    if request.endpoint and request.endpoint.endswith('_details'):
+        return {}
+    if request.headers.get('HX-Request') == 'true' and (
+        request.args.get('partial_mode') == 'table_content'
+        or request.headers.get('HX-Target', '').endswith('-table-content')
+    ):
+        return {}
+    raw_cluster_id = request.args.get('cluster_id', '', type=str)
+    effective_cluster_id = getattr(g, 'inventory_effective_cluster_id', None)
+    if effective_cluster_id is None:
+        _, effective_cluster_id = _inventory_cluster_scope(raw_cluster_id)
+    return {'inventory_freshness': get_inventory_freshness_context(cluster_id=effective_cluster_id)}
 
 
 def _clusterless_inventory_htmx_guard[ViewT: Callable[..., Any]](view: ViewT) -> ViewT:
@@ -208,9 +222,9 @@ def _inventory_template(resource: str) -> str:
 def _inventory_cluster_scope(cluster_id: str) -> tuple[list[Any], str]:
     clusters = get_inventory_clusters()
     valid_cluster_ids = {str(cluster.id) for cluster in clusters}
-    if cluster_id and cluster_id not in valid_cluster_ids:
-        return clusters, ''
-    return clusters, cluster_id
+    effective_cluster_id = cluster_id if cluster_id in valid_cluster_ids else ''
+    g.inventory_effective_cluster_id = effective_cluster_id
+    return clusters, effective_cluster_id
 
 
 def _inventory_scope_label(clusters: list[Any], cluster_id: str) -> str:
@@ -224,19 +238,7 @@ def overview():
     cluster_page = request.args.get('cluster_page', 1, type=int)
     cluster_per_page = request.args.get('cluster_per_page', 5, type=int)
 
-    overview = get_inventory_overview()
-
-    paginated_clusters, resources_pagination = paginate_sequence(
-        overview.get(
-            'clusters',
-            [],
-        ),
-        page=cluster_page,
-        per_page=cluster_per_page,
-    )
-
-    overview['clusters'] = paginated_clusters
-    overview['resources_pagination'] = resources_pagination
+    overview = get_inventory_overview(cluster_page=cluster_page, cluster_per_page=cluster_per_page)
 
     if request.headers.get('HX-Request') == 'true':
         return render_template(
@@ -274,6 +276,7 @@ def topology():
         depth=request.args.get('depth', '1', type=str),
     )
 
+    g.inventory_effective_cluster_id = context['filters']['cluster_id']
     return render_template(
         'kubernetes/inventory/topology/index.html',
         **context,
@@ -598,13 +601,9 @@ def pods():
 @permission_required('inventory.view')
 @_clusterless_inventory_htmx_guard
 def pod_details(pod_id: int):
-    pod = get_pod_detail(
-        pod_id,
-    )
-
+    pod = get_pod_detail(pod_id)
     if pod is None:
         abort(404)
-
     return render_template(
         'kubernetes/inventory/pods/partials/_pod_detail_content.html',
         pod=pod,

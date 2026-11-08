@@ -29,6 +29,7 @@ def test_risk_exception_is_definition_driven_and_visible_only_for_enabled_rules(
         'kubernetes.tls_secret.expired',
         'kubernetes.tls_secret.expiring_soon',
         'object_storage.bucket.encryption_not_configured',
+        'registry.security.critical_runtime_vulnerability',
     }
     assert 'risk_exception' not in catalog['kubernetes.tls_secret.invalid']
     assert 'risk_exception' not in catalog['kubernetes.workload.latest_image_tag']
@@ -52,6 +53,7 @@ def test_requested_exception_policies_are_iac_owned_in_rules_yaml() -> None:
         'kubernetes.tls_secret.expired',
         'kubernetes.tls_secret.expiring_soon',
         'object_storage.bucket.encryption_not_configured',
+        'registry.security.critical_runtime_vulnerability',
     ):
         policy = catalog[key]['risk_exception']
         assert policy['enabled'] is True
@@ -84,8 +86,8 @@ def test_namespace_request_and_memory_limit_rules_have_concrete_inventory_findin
     collector = read('app/kubernetes/inventory/collectors/workloads.py')
     catalog = rules()
 
-    assert '_build_namespace_quota_findings(rules)' in service
-    assert '_build_workload_resource_governance_findings(rules)' in service
+    assert "collect('Kubernetes Namespace', _build_namespace_quota_findings)" in service
+    assert "collect('Kubernetes Workload Governance', _build_workload_resource_governance_findings)" in service
     assert "('kubernetes.workload.missing_cpu_requests', 'requests', 'cpu', 'CPU request')" in service
     assert "('kubernetes.workload.missing_memory_requests', 'requests', 'memory', 'memory request')" in service
     assert "('kubernetes.workload.missing_memory_limits', 'limits', 'memory', 'memory limit')" in service

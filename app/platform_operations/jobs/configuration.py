@@ -12,7 +12,12 @@ from app.platform_operations.jobs.policies.presentation import present_interval
 from app.platform_operations.jobs.policies.service import ensure_registered_job_policies
 from app.platform_operations.jobs.registry import list_job_definitions
 
-_ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded'}
+_ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded', 'evidence_failed'}
+
+
+def build_job_configuration_attention_summary() -> int:
+    """Count persisted policy dispatch attention without creating missing policies."""
+    return JobPolicy.query.filter(JobPolicy.last_dispatch_status.in_(_ATTENTION_DISPATCH_STATUSES)).count()
 
 
 def _policy_status(policy: JobPolicy) -> dict[str, str]:
@@ -20,6 +25,8 @@ def _policy_status(policy: JobPolicy) -> dict[str, str]:
         return {'label': 'Disabled', 'tone': 'disabled', 'icon': 'circle-pause'}
     if policy.last_dispatch_status == 'failed':
         return {'label': 'Last Dispatch Failed', 'tone': 'critical', 'icon': 'circle-x'}
+    if policy.last_dispatch_status == 'evidence_failed':
+        return {'label': 'Dispatch Evidence Incomplete', 'tone': 'warning', 'icon': 'shield-alert'}
     if policy.last_dispatch_status == 'blocked':
         return {'label': 'Last Dispatch Blocked', 'tone': 'warning', 'icon': 'shield-alert'}
     return {'label': 'Enabled', 'tone': 'normal', 'icon': 'circle-check'}
@@ -61,6 +68,14 @@ def _execution_presentation(definition: JobDefinition, selected_context: dict[st
             'manual_action_icon': 'database-zap',
             'execution_scope_label': 'All Eligible Clusters',
             'execution_scope_detail': f'{selected_context.get("eligible_cluster_count", 0)} eligible cluster bindings',
+        },
+        'secrets_pki.vault_alerts.observe': {
+            'manual_action_label': 'Observe Vault Alerts',
+            'manual_action_icon': 'bell-ring',
+            'execution_scope_label': 'Qualified Vault Alert Sources',
+            'execution_scope_detail': (
+                f'{selected_context.get("eligible_target_count", 0)} eligible Alert Source bindings'
+            ),
         },
         'object_storage.inventory.sync': {
             'manual_action_label': 'Sync Object Storage Inventory',
@@ -153,13 +168,17 @@ def _selected_job_context(definition: JobDefinition, policy: JobPolicy) -> dict[
     )
     selected_context['dispatch_attention'] = (
         {
-            'label': 'Last Dispatch Failed',
-            'tone': 'critical',
+            'label': (
+                'Dispatch Evidence Incomplete'
+                if policy.last_dispatch_status == 'evidence_failed'
+                else 'Last Dispatch Failed'
+            ),
+            'tone': 'warning' if policy.last_dispatch_status == 'evidence_failed' else 'critical',
             'message': (
-                policy.last_dispatch_message or 'The last scheduler dispatch failed before execution could start.'
+                policy.last_dispatch_message or 'Review the canonical JobExecution before starting another run.'
             ),
         }
-        if policy.last_dispatch_status == 'failed'
+        if policy.last_dispatch_status in {'failed', 'evidence_failed'}
         else None
     )
     return selected_context

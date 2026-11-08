@@ -239,3 +239,40 @@ def get_report_storage_verification_presentation(backend_name: str | None = None
             else 'No successful verification recorded'
         ),
     }
+
+
+def get_report_storage_integrity_scan_presentation(backend_name: str) -> dict[str, Any]:
+    """Retrieve last committed scan and in-flight canonical job without provider calls."""
+    fingerprint = get_storage_config_fingerprint(backend_name)
+    statement = (
+        select(JobExecution)
+        .where(
+            JobExecution.job_type == 'report_storage',
+            JobExecution.operation == 'scan_integrity',
+            JobExecution.scope_type == 'report_storage_backend',
+            JobExecution.scope_key == backend_name,
+        )
+        .order_by(JobExecution.created_at.desc())
+        .limit(20)
+    )
+    jobs = [
+        job
+        for job in db.session.scalars(statement).all()
+        if (job.payload_json or {}).get('config_fingerprint') == fingerprint
+    ]
+    latest = jobs[0] if jobs else None
+    completed = next(
+        (job for job in jobs if job.status == 'succeeded' and isinstance(job.result_summary_json, dict)),
+        None,
+    )
+    return {
+        'is_active': bool(latest and latest.is_active),
+        'status': latest.status if latest is not None else 'not_scanned',
+        'job_public_id': latest.public_id if latest is not None else None,
+        'last_result': (
+            dict(completed.result_summary_json)
+            if completed is not None and isinstance(completed.result_summary_json, dict)
+            else None
+        ),
+        'result_is_current': latest is not None and latest is completed,
+    }

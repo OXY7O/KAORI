@@ -71,7 +71,10 @@ The final Operational Context section explains the data boundary and gives one s
 - labelled title and description;
 - explicit close labels;
 - Escape support;
-- background overlay is independently closable.
+- background overlay is independently closable;
+- opening captures the logical trigger and moves keyboard focus into the drawer;
+- Tab and Shift+Tab remain contained inside the open drawer;
+- every close path restores focus to the captured trigger when it remains connected and visible.
 
 ## Usage Boundary
 

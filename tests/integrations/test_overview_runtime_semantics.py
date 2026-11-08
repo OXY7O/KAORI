@@ -1,6 +1,11 @@
 from types import SimpleNamespace
 
-from app.integrations.overview_extensions import build_overview_stats
+from app.integrations.overview_extensions import (
+    SPECIALIZED_OVERVIEW_TYPES,
+    build_overview_stats,
+    build_provider_portfolio_counts,
+    portfolio_posture,
+)
 from app.integrations.service import (
     _capability_attention_display,
     _coverage_stats,
@@ -105,3 +110,109 @@ def test_coverage_stats_separate_available_and_planned_domains() -> None:
         'ready_targets': 3,
         'attention_targets': 3,
     }
+
+
+def test_portfolio_posture_preserves_single_target_degraded_state() -> None:
+    state, label = portfolio_posture(
+        {
+            'total': 1,
+            'configured': 1,
+            'ready': 0,
+            'degraded': 1,
+            'blocked': 0,
+            'validation_required': 0,
+            'disabled': 0,
+            'not_configured': 0,
+        }
+    )
+
+    assert state == 'degraded'
+    assert label == 'Degraded'
+
+
+def test_portfolio_posture_uses_needs_review_for_mixed_readiness() -> None:
+    state, label = portfolio_posture(
+        {
+            'total': 2,
+            'configured': 2,
+            'ready': 1,
+            'degraded': 1,
+            'blocked': 0,
+            'validation_required': 0,
+            'disabled': 0,
+            'not_configured': 0,
+        }
+    )
+
+    assert state == 'attention'
+    assert label == 'Needs Review'
+
+
+def test_generic_overview_aggregation_includes_object_storage_canonical_instances() -> None:
+    assert SPECIALIZED_OVERVIEW_TYPES == frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})
+    assert 'object_storage' not in SPECIALIZED_OVERVIEW_TYPES
+    assert 'registry' not in SPECIALIZED_OVERVIEW_TYPES
+
+    result = build_overview_stats(
+        kubernetes_connections=[],
+        metrics_sources=[],
+        alertmanager_instances=[],
+        extension_instances=[
+            SimpleNamespace(
+                integration_type='object_storage',
+                enabled=True,
+                readiness_status='ready',
+            ),
+            SimpleNamespace(
+                integration_type='registry',
+                enabled=True,
+                readiness_status='degraded',
+            ),
+        ],
+    )
+
+    assert result == {
+        'total': 2,
+        'configured': 2,
+        'ready': 1,
+        'validation_required': 1,
+        'readiness_review': 1,
+        'not_configured': 0,
+        'attention': 1,
+        'blocked': 0,
+    }
+
+
+def test_provider_portfolio_counts_projects_generic_object_storage_readiness() -> None:
+    counts = build_provider_portfolio_counts(
+        kubernetes_connections=[],
+        metrics_sources=[],
+        alertmanager_instances=[],
+        extension_instances=[
+            SimpleNamespace(
+                integration_type='object_storage',
+                enabled=True,
+                readiness_status='ready',
+            ),
+            SimpleNamespace(
+                integration_type='registry',
+                enabled=True,
+                readiness_status='degraded',
+            ),
+        ],
+    )
+
+    assert counts['object_storage'] == {
+        'configured': 1,
+        'ready': 1,
+        'degraded': 0,
+        'blocked': 0,
+        'validation_required': 0,
+        'disabled': 0,
+        'not_configured': 0,
+        'total': 1,
+        'attention': 0,
+    }
+    assert counts['registry']['configured'] == 1
+    assert counts['registry']['degraded'] == 1
+    assert counts['registry']['ready'] == 0

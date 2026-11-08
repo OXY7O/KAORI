@@ -109,6 +109,33 @@ report_types:
   - governance_findings
   - operational_recommendations
   period_mode: range
+- value: tenant_governance
+  label: Tenant Governance Report
+  description: Governed Tenant inventory, allocation, access, credential, provider, policy, Intelligence, and audit evidence.
+  icon: building-2
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - tenant_inventory
+  - namespace_inventory
+  - allocation_posture
+  - access_posture
+  - credential_posture
+  - managed_resource_posture
+  - provider_posture
+  - governance_findings
+  - activity_evidence
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: snapshot
+  domain: kubernetes
+  source_kind: tenant_management
+  scope_asset_type: kubernetes_cluster
 - value: resource_forecast
   label: Resource Forecast Report
   description: Forecast CPU, memory, storage, and pod growth using historical metrics.
@@ -355,3 +382,46 @@ report_types:
   domain: object_storage
   source_kind: object_storage
   scope_asset_type: object_storage_system
+- value: artifact_registry_inventory
+  label: Artifact Registry Inventory Report
+  description: Provider-neutral committed Registry projects, repositories, artifacts, tags, scan posture, signing, SBOM, and evidence timestamps.
+  icon: package-search
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - artifact_registry_inventory_assets
+  - artifact_registry_inventory_metadata
+  - artifact_registry_inventory_field_dictionary
+  period_mode: snapshot
+  requires_cluster: false
+  domain: artifact_registry
+  source_kind: artifact_registry
+  scope_asset_type: registry_integration
+- value: artifact_registry_analysis
+  label: Artifact Registry Analysis Report
+  description: Committed Registry capacity, growth, security, runtime correlation, governance, alerts, and KAORI Intelligence recommendations for one Registry integration.
+  icon: chart-no-axes-combined
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - artifact_registry_capacity_usage
+  - artifact_registry_security_posture
+  - artifact_registry_runtime_usage
+  - artifact_registry_governance_posture
+  - artifact_registry_alerts_actions
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: range
+  requires_cluster: false
+  domain: artifact_registry
+  source_kind: artifact_registry
+  scope_asset_type: registry_integration
+

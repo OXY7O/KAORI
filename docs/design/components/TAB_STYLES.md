@@ -14,6 +14,24 @@ Each approved style has:
 
 A new style is justified only when the content relationship or interaction model is materially different. Color, radius, spacing, or icon changes alone do not justify another style.
 
+## Selection Decision Matrix
+
+The page-level selection authority is `../patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md`. Use this registry for detailed tab-family contracts; use the page registry to decide whether tabs are semantically appropriate at all.
+
+| Question | Select |
+|---|---|
+| Are there two or three mutually exclusive local views inside one component, visualization, drawer, or inspector? | **Tab Style 3 — Compact Segmented Tabs** |
+| Are there peer server-rendered routes that define the current capability workspace? | **Tab Style 1 — Integrated Workspace Tabs** |
+| Are there several closely related content states/sections inside one established route/page? | **Tab Style 4 — Content Tabs** |
+| Are these peer operational domains inside an explicit framed parent workspace? | **Tab Style 2 — Framed Workspace Tabs** |
+| Are these peer sections that define one workspace and attach through a simple divider? | **Tab Style 1 — Integrated Workspace Tabs** |
+| Are four measured-resource metric cards a selector for one ranked evidence view? | **Tab Style 5 — Resource Lens Tabs** |
+| Are technical detail categories selected in a vertical navigation rail beside a read-only comparison? | **Tab Style 6 — Vertical Technical Category Tabs** |
+| Does none of the above apply? | **No tabs**; prefer sections, routes, cards, or a detail surface |
+
+Selection is semantic, not aesthetic. A fifth style is not created to change color, radius, spacing, icon placement, or provider branding.
+
+
 ## Tab Style 1 — Integrated Workspace Tabs
 
 | Property | Contract |
@@ -26,9 +44,9 @@ A new style is justified only when the content relationship or interaction model
 | State | Stored in the URL and preserved through HTMX scope changes |
 | Layout | Horizontal tabs with narrow-screen overflow |
 
-Use Tab Style 1 for operational dashboards and other peer workspace domains where the tab bar is part of the workspace hierarchy.
+Use Tab Style 1 for operational dashboards and other peer workspace domains where the tab bar is part of the workspace hierarchy. Under Sidebar v2.1, route-level level-3 peers inside one capability also use this style so navigation stays flat and attached rather than floating.
 
-For server-rendered peer workspaces that need URL persistence, use the canonical URL-backed workspace contract. Do not duplicate tab styling or introduce a second page-local state owner.
+For server-rendered peer workspaces that need URL persistence, use `render_navigation()` as the canonical URL-backed workspace contract. Do not duplicate tab styling or introduce a second page-local state owner.
 
 ## Tab Style 2 — Framed Workspace Tabs
 
@@ -72,11 +90,39 @@ Compact toolbar tabsets stay content-width by default. Bounded inspectors may us
 | State | Consumer-owned buttons or server/URL-owned links; one owner per tabset |
 | Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
 
-Use Tab Style 4 for compact intra-workspace content navigation. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+Use Tab Style 4 for compact intra-route/intra-page content navigation. It is not the route-level level-3 navigator under Sidebar v2.1. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+
+## Tab Style 5 — Resource Lens Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `resource-lens` |
+| Component | `components/resource_lens_tabs.html` |
+| Reference | Kubernetes Analytics Top Consumers metric-rich CPU/Memory/Pods/PVC lens |
+| Content relationship | Four measured-resource selections controlling one ranked-evidence view |
+| Surface | Metric-card grid, not an additional Content Tabs or route navigator |
+| State | Existing Analytics tabset/tabpanel controller, with roving keyboard focus |
+| Layout | Responsive 1/2/4-column cards; approved accessible labels and focus behavior |
+
+This registered style is intentionally distinct from three-option Compact Segmented Tabs and from route navigation. Preserve the already approved resource-card UI and shared tablist geometry; see `RESOURCE_LENS_TABS.md` for authority and interaction requirements.
+
+## Tab Style 6 — Vertical Technical Category Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `technical-category-vertical` |
+| Component | `components/technical_category_tabs.html` |
+| Reference | Tenant Allocation Change technical-details selector |
+| Content relationship | Object Limits, Container Defaults and Advanced Controls under one governed read-only comparison |
+| Surface | Vertical technical side navigation with adjacent evidence panel |
+| State | Existing per-form controller preserves selected/focused tab and corresponding panel |
+| Layout | Responsive stacked/split configuration detail layout; explicitly vertical ARIA |
+
+This is not interchangeable with horizontal route tabs or a compact segmented control. The approved user-facing layout is retained, but accessible navigation geometry is owned by the shared macro; see `TECHNICAL_CATEGORY_TABS.md`.
 
 ## Future Styles
 
-Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. A vertical navigation model for a dense configuration workspace may justify another style when a real page requires it.
+Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. Only genuinely new information architectures justify additional styles; Tab Style 6 governs the already approved vertical technical detail navigation.
 
 Never name implementation files `tab_style_3.html` or similar. File and component names remain semantic; the numeric label is a review shorthand.
 

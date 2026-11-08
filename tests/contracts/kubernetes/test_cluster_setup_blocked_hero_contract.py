@@ -11,13 +11,12 @@ def _read(relative: str) -> str:
 
 def test_shared_cluster_blocked_hero_preserves_dashboard_semantics() -> None:
     shared = _read('app/templates/components/cluster/_hero_blocked_context.html')
+    provider = _read('app/templates/components/provider_prerequisite/_hero_context.html')
 
-    assert 'page_hero.blocked_context_body(' in shared
-    assert "'Connected Clusters'" in shared
-    assert "'Workspace State'" in shared
-    assert "'Blocked'" in shared
+    assert 'components/provider_prerequisite/_hero_context.html' in shared
     assert "cluster_blocked_state_label|default('Workspace State')" in shared
-    assert 'blocked_info' in shared
+    assert "cluster_blocked_cluster_label|default('Connected Clusters')" in shared
+    assert 'page_hero.blocked_context_body(' in provider
     assert 'page_hero.context_panel_metrics_classes()' not in shared
 
 
@@ -38,6 +37,60 @@ def test_dashboard_owns_blocked_state_through_canonical_profile_while_other_work
         assert 'components/cluster/_hero_blocked_context.html' in source, relative
         assert readiness_label in source, relative
         assert 'Cluster Setup Required' in source, relative
+
+
+def test_shared_zero_cluster_onboarding_uses_one_canonical_integration_flow() -> None:
+    onboarding = _read('app/templates/components/cluster/_onboarding_banner.html')
+    dashboard = _read('app/templates/kubernetes/dashboard/partials/_content.html')
+    operations = _read('app/templates/kubernetes/operations/cluster_required.html')
+
+    assert 'provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
+    assert "provider_prerequisite_action_url = url_for('integrations.kubernetes')" in onboarding
+    assert 'provider_prerequisite_action_label = "Open Cluster Integrations"' in onboarding
+    assert 'provider_prerequisite_action_icon = "plug-zap"' in onboarding
+    assert 'components/provider_prerequisite/_setup_blocker.html' in onboarding
+    assert "url_for('cluster.add_cluster')" not in onboarding
+
+    for consumer in (dashboard, operations):
+        assert 'components/cluster/_onboarding_banner.html' in consumer
+        assert 'cluster_onboarding_steps =' not in consumer
+        assert 'cluster_onboarding_action_url =' not in consumer
+        assert 'cluster_onboarding_action_label =' not in consumer
+        assert 'cluster_onboarding_action_icon =' not in consumer
+
+
+def test_tenant_zero_cluster_state_is_terminal_but_registered_committed_state_remains_readable() -> None:
+    tenant_base = _read('app/templates/kubernetes/tenant/base.html')
+
+    assert '{% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}' in tenant_base
+    assert '{% block page_capability_navigation %}' not in tenant_base
+
+    zero_cluster_branch = tenant_base.split('{% if registered_cluster_count == 0 %}', 1)[1].split(
+        '{% else %}',
+        1,
+    )[0]
+    registered_branch = tenant_base.split('{% if registered_cluster_count == 0 %}', 1)[1].split(
+        '{% else %}',
+        1,
+    )[1]
+
+    assert 'components/cluster/_onboarding_banner.html' in zero_cluster_branch
+    assert 'block tenant_content' not in zero_cluster_branch
+    assert '_collection_snapshot_context.html' not in zero_cluster_branch
+    assert '_live_connection_loader.html' not in zero_cluster_branch
+
+    assert 'block tenant_content' in registered_branch
+    assert '_collection_snapshot_context.html' in registered_branch
+    # Registered Tenant pages show committed evidence without a live provider
+    # probe on ordinary page load. The dedicated check remains explicitly gated.
+    assert '_live_connection_loader.html' not in registered_branch
+    connectivity = _read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
+    routes = _read('app/kubernetes/tenant/routes.py')
+    assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in connectivity
+    assert 'Check Live Connectivity' in connectivity
+    assert 'Page load makes no provider request' in connectivity
+    assert "@tenant_bp.get('/live-provider-connectivity')" in routes
+    assert 'native_available' not in registered_branch
 
 
 def test_every_inventory_hero_uses_the_shared_blocked_context() -> None:
@@ -88,7 +141,7 @@ def test_dashboard_blocked_hero_is_fully_owned_by_canonical_profile() -> None:
     assert 'context_header_status(' in component
 
 
-def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
+def test_inventory_blocked_hero_metadata_keeps_normal_roles() -> None:
     resources = (
         'overview',
         'nodes',
@@ -104,9 +157,9 @@ def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidenc
     for resource in resources:
         source = _read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
         metadata = source.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
-        assert 'cluster_onboarding.is_blocked' in metadata, resource
-        assert 'Committed Inventory' in metadata, resource
-        assert 'Cluster Setup Required' in metadata, resource
+        assert 'cluster_onboarding.is_blocked' not in metadata, resource
+        assert 'Committed Inventory' not in metadata, resource
+        assert 'Cluster Setup Required' not in metadata, resource
 
 
 def test_tls_governance_cluster_setup_precedes_schema_readiness() -> None:
@@ -144,13 +197,18 @@ def test_setup_blockers_preserve_page_identity_from_kubernetes_to_object_storage
     object_storage_buckets = _read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
     object_storage_analytics = _read('app/templates/storage/object_storage/analytics/partials/_hero.html')
 
-    assert 'Kubernetes Operations Dashboard' in dashboard
+    assert "page_hero.operational_dashboard('Kubernetes Operations'" in dashboard
+    assert "'Dashboard'," in dashboard
     assert '{{ materialization_title }}' in k8s_analytics
-    assert 'Kubernetes Governance Workspace' in governance
-    assert 'TLS Certificate Governance' in tls_governance
+    assert "page_hero.intro('layout-dashboard', 'Kubernetes Governance', 'shield-check')" in governance
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in governance
+    assert "page_hero.intro('key-round', 'Kubernetes Governance', 'shield-check')" in tls_governance
+    assert '<h1 class="{{ page_hero.title_classes() }}">TLS Certificates</h1>' in tls_governance
     assert '{{ requested_page_title }}' in operations
-    assert 'Object Storage Overview' in object_storage_overview
-    assert 'Object Storage Systems' in object_storage_systems
+    assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'database')" in object_storage_overview
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in object_storage_overview
+    assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'server')" in object_storage_systems
+    assert '<h1 class="{{ page_hero.title_classes() }}">Systems</h1>' in object_storage_systems
     assert 'Buckets &amp; Containers' in object_storage_buckets
     assert '{{ page.title }}' in object_storage_analytics
 

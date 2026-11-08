@@ -83,7 +83,8 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     routes = read('app/storage/object_storage/analytics/routes.py')
     access = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
     defaults = read('app/access/rbac/defaults.py')
-    sidebar = read('app/templates/components/navigation/sidebar.html')
+    navigation = read('app/common/workspace_navigation.py')
+    navigation_catalog = read('app/common/workspace_navigation_catalog.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
 
@@ -93,7 +94,9 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     assert routes.count("@permission_required('object_storage_analytics.view')") == 10
     assert object_storage_permission['module'] == 'storage_analytics'
     assert "load_definition_document('access/rbac/access.yaml'" in defaults
-    assert "has_permission('object_storage_analytics.view')" in sidebar
+    assert "key='object_storage'" in navigation_catalog
+    assert "('object_storage_analytics.view',)" in navigation_catalog
+    assert '_visible_capabilities(workspace, user)' in navigation
     assert '{% if can_object_storage_analytics %}' in menu
     assert '{% if can_kubernetes_analytics %}' in menu
     assert "'analytics.view'" in migration
@@ -271,7 +274,8 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and anomaly signals are separate' in alerts_summary
     assert 'Provider Alert Records' in alert_records
-    assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
+    assert 'Alertmanager supplies lifecycle details, while Metrics Source supplies rule states.' in alert_records
+    assert 'Metrics Source ALERTS fallback preserves upstream alert-rule state' in alert_source_evidence
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
@@ -279,7 +283,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'row.usage_source' in bucket_table
     assert 'Bucket Capacity Records' in bucket_table
     assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table
-    assert 'Inventory is an explicit field-level fallback where supported.' in bucket_table
+    assert 'Inventory fallback is per field and only where supported.' in bucket_table
 
 
 def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:
@@ -297,7 +301,7 @@ def test_object_storage_performance_chart_keeps_request_and_error_series_separat
     assert "label: 'Error Rate'" in javascript
 
 
-def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviation() -> None:
+def test_kubernetes_navigation_uses_canonical_labels_without_k8s_abbreviation() -> None:
     menu_paths = (
         'app/templates/components/navigation/analytics_menu.html',
         'app/templates/components/navigation/inventory_menu.html',
@@ -308,11 +312,19 @@ def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviatio
     combined = '\n'.join(read(path) for path in menu_paths)
 
     assert 'K8s' not in combined
-    assert 'Kubernetes Analytics' in combined
-    assert 'Kubernetes Inventory' in combined
-    assert 'Kubernetes Governance' in combined
-    assert 'Kubernetes Operations' in combined
-    assert 'Kubernetes Administration' in combined
+    assert '>Kubernetes</span>' in combined
+    assert 'Kubernetes Analytics' not in combined
+    assert '>Inventory</span>' in combined
+    assert '>Governance</span>' in combined
+    assert '>Operations</span>' in combined
+    assert 'Kubernetes Admin' in combined
+    for legacy_label in (
+        'Kubernetes Inventory',
+        'Kubernetes Governance',
+        'Kubernetes Operations',
+        'Kubernetes Administration',
+    ):
+        assert legacy_label not in combined
 
 
 def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() -> None:
@@ -349,9 +361,10 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'object-storage-analytics-refresh-indicator' in controls
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
     assert 'components/dependencies/_blocker.html' in blocker
-    assert 'Object Storage → Metrics → Analytics Snapshot' in blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
     assert 'Alert Evidence' not in blocker
-    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-4"') == 1
     assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'Missing dependency:' in shared_blocker
@@ -404,7 +417,8 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     layout = read('app/templates/layouts/app.html')
 
-    assert "'Analytics Overview'" in pages
+    assert "'Overview'" in pages
+    assert "'Analytics Overview'" not in pages
     assert 'partials/_hero_posture.html' in hero
     assert 'partials/_hero_blocked_posture.html' in hero
     assert "'Operational Posture'" in hero_posture
@@ -423,18 +437,20 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert 'data-analytics-preserve-tab' in read(
         'app/templates/storage/object_storage/analytics/partials/_controls.html'
     )
-    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
+    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Alerts'):
         assert f"'{label}'" in workspace
+    assert "('evidence', 'Data & Evidence', 'list-checks')" in workspace
     for partial in (
         '_overview_capacity_snapshot.html',
         '_overview_performance_snapshot.html',
         '_overview_consumer_snapshot.html',
         '_overview_forecast_snapshot.html',
-        '_reconciliation.html',
         '_metrics_readiness.html',
-        '_evidence_boundary.html',
+        '_overview_evidence_context.html',
     ):
         assert partial in workspace
+    context = read('app/templates/storage/object_storage/analytics/partials/_overview_evidence_context.html')
+    assert '_reconciliation.html' in context
 
     assert 'Consumer Concentration Snapshot' in read(
         'app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html'
@@ -464,8 +480,10 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     table_service = read('app/storage/object_storage/analytics/bucket_table.py')
     javascript = read('app/static/js/storage/object_storage/analytics.js')
 
-    assert "'Object Storage Capacity & Usage'" in pages
-    assert "'Object Storage Performance'" in pages
+    assert "'Capacity & Usage'" in pages
+    assert "'Performance'" in pages
+    assert "'Object Storage Capacity & Usage'" not in pages
+    assert "'Object Storage Performance'" not in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture
@@ -478,9 +496,9 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     assert 'partials/_performance_workspace.html' in index
     assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity_workspace
     assert 'data-analytics-tabset-id="object-storage-performance-content"' in performance_workspace
-    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Evidence'):
+    for label in ('Summary', 'Usage Trend', 'Quota & Buckets'):
         assert f"'{label}'" in capacity_workspace
-    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
+    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity'):
         assert f"'{label}'" in performance_workspace
 
     assert 'data-analytics-preserve-tab' in controls
@@ -506,20 +524,20 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert 'partials/_alerts_workspace.html' in index
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
-    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence'):
+    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method'):
         assert f"'{label}'" in forecast_workspace
     assert 'Linear baseline · planning signal only' in forecast_methodology
     assert "'Forecast Posture'" in hero_posture
     assert "'Forecast Outlook'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-top-consumers-content"' in consumer_workspace
-    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Evidence'):
+    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records'):
         assert f"'{label}'" in consumer_workspace
     assert "'Consumer Posture'" in hero_posture
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations', 'Evidence'):
+    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations'):
         assert f"'{label}'" in alerts_workspace
     assert "'Alert Posture'" in hero_posture
     assert "'Active Alert State'" in hero_posture
@@ -643,7 +661,8 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'Alertmanager Lifecycle' in controls
     assert 'Metrics Snapshot Source' in controls
-    assert 'Analytics Worker Snapshot' in controls
+    assert 'Latest Analytics Data Snapshot' in controls
+    assert 'shared_readiness.snapshot_card(' in controls
     assert 'Metrics Only' in records
     assert 'Silenced' in records
     assert 'Inhibited' in records
@@ -651,3 +670,13 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert 'Metrics Source Fallback' in evidence
     assert "validation_profile = 'object-storage-alerts-v1'" in migration
     assert "validation_status = 'validation_required'" in migration
+
+
+def test_object_storage_analytics_snapshot_blocker_targets_current_jobs_workspace() -> None:
+    dependencies = read('app/storage/object_storage/analytics/dependencies.py')
+    jobs_routes = read('app/platform_operations/jobs/routes.py')
+
+    assert "'action_endpoint': 'jobs.configuration'" in dependencies
+    assert "'action_endpoint': 'jobs.overview'" not in dependencies
+    assert 'def configuration() -> ResponseReturnValue:' in jobs_routes
+    assert "@bp.get('/configuration')" in jobs_routes

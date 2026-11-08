@@ -1,10 +1,21 @@
+{% import "components/section_intro.html" as section_intro %}
 <div id="nodes-page-workspace" class="space-y-6">
     {% include "kubernetes/inventory/nodes/partials/_hero.html" %}
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
-        {% include "kubernetes/inventory/nodes/partials/_summary_cards.html" %}
-        {% include "kubernetes/inventory/nodes/partials/_table_card.html" %}
+        <section class="space-y-4" aria-labelledby="nodes-posture-heading">
+            {{ section_intro.render('Operational Posture',
+                        'Review current node capacity, scheduling, and operational evidence.',
+                        'nodes-posture-heading') }}
+            {% include "kubernetes/inventory/nodes/partials/_summary_cards.html" %}
+        </section>
+        <section class="space-y-4" aria-labelledby="nodes-records-heading">
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed node records for the active inventory scope.',
+                        'nodes-records-heading') }}
+            {% include "kubernetes/inventory/nodes/partials/_table_card.html" %}
+        </section>
     {% endif %}
 </div>

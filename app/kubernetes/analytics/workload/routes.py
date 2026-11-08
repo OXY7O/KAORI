@@ -25,7 +25,7 @@ from app.kubernetes.analytics.workload.presentation import present_workload_mate
 
 _PAGE = {
     'dataset_key': 'analytics.workload',
-    'title': 'Workload Analysis',
+    'title': 'Workloads',
     'description': 'Review workloads while workers prepare quota and runtime evidence.',
     'icon': 'boxes',
     'page_id': 'workload-page',

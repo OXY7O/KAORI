@@ -10,4 +10,4 @@ def test_overview_posture_header_does_not_duplicate_status_value() -> None:
     assert '{{ posture.value }}' not in template
     assert template.count("'Actionable'") == 1
     assert template.count("'Active Alerts'") == 1
-    assert 'Manage Clusters' in template
+    assert 'Open Cluster Integrations' in template

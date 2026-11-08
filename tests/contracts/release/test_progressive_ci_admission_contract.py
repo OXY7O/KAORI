@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 POLICY = ROOT / 'scripts/ci_admission_policy.py'
@@ -37,7 +42,7 @@ def load_policy() -> ModuleType:
 
 def test_delivery_governance_authorizes_tree_fingerprint_reuse_without_weakening_uat() -> None:
     source = read(DELIVERY)
-    assert '**Governance Version:** 2.0' in source
+    assert '**Governance Version:** 2.2' in source
     assert 'Full Admission' in source
     assert 'exact evidence reuse' in source.lower()
     assert 'authority fingerprint' in source.lower()
@@ -66,7 +71,7 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
         assert display_name in policy_source
 
     first_profile = source.index('validation-profile:')
-    first_expensive = source.index('static-quality:')
+    first_expensive = source.index('full-admission-gates:')
     assert first_profile < first_expensive
 
 
@@ -85,6 +90,23 @@ def test_admission_publishes_non_authoritative_exact_sha_commit_status() -> None
     assert 'state=failure' in admission
 
 
+def test_full_admission_evidence_records_quality_workflow_authority() -> None:
+    workflow = read(WORKFLOW)
+
+    assert '--workflow-ref "$GITHUB_REPOSITORY/.github/workflows/quality.yml@$KAORI_SOURCE_SHA"' in workflow
+    assert '--workflow-ref "$GITHUB_WORKFLOW_REF"' not in workflow
+
+
+def test_staging_evidence_lookup_accepts_direct_and_sequenced_admission_parents() -> None:
+    workflow = read(WORKFLOW)
+    policy_source = read(POLICY)
+
+    assert '--workflow quality.yml' in workflow
+    assert '--workflow developer-check.yml' in workflow
+    assert "evidence.add_argument('--workflow', action='append')" in policy_source
+    assert 'workflows = (workflow,) if isinstance(workflow, str) else tuple(workflow)' in policy_source
+
+
 def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
     source = read(WORKFLOW)
     assert '  push:' in source
@@ -92,6 +114,267 @@ def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
     assert '      - main' in source
     assert '      - "release/**"' in source
     assert '      - "kaori/**"' not in source
+
+
+def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission() -> None:
+    quality = read(WORKFLOW)
+    developer = read(DEVELOPER_WORKFLOW)
+    pull_request_block = quality.split('pull_request:', 1)[1].split('permissions:', 1)[0]
+
+    assert '      - kaori/staging' not in pull_request_block
+    assert '      - main' in pull_request_block
+    assert 'ready_for_review' in pull_request_block
+
+    assert 'uses: ./.github/workflows/quality.yml' in developer
+    assert "needs.developer-check.result == 'success'" in developer
+    assert 'github.event.pull_request.draft == false' in developer
+    # Draft artifact steps are permitted, but the Route Checks job itself
+    # must still execute for both Draft and Ready exact-head validation.
+    route_header = developer.split('\n  route:', 1)[1].split('\n    steps:', 1)[0]
+    assert 'github.event.pull_request.draft == true' not in route_header
+    assert 'github.event.pull_request.draft == false' not in route_header
+    assert '    if:' not in route_header
+    assert 'runs-on: ubuntu-24.04' in route_header
+    route_body = developer.split('\n  route:', 1)[1].split('\n  toolchain:', 1)[0]
+    assert 'Reject untrusted pull request before checkout' in route_body
+    assert 'HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}' in route_body
+    assert 'HEAD_REF: ${{ github.event.pull_request.head.ref }}' in route_body
+    assert 'BLOCK: external fork is not authorized' in route_body
+    aggregate = developer.split('\n  developer-check:', 1)[1].split('\n  full-admission:', 1)[0]
+    assert 'if: ${{ always() }}' in aggregate
+    assert 'ROUTE_RESULT: ${{ needs.route.result }}' in aggregate
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in aggregate
+
+    # Reusable Full Admission still receives the caller PR context and therefore
+    # retains the existing feature-PR routing guard inside the called workflow.
+    assert "github.base_ref == 'kaori/staging'" in quality
+    assert "startsWith(github.head_ref, 'kaori/')" in quality
+    assert "github.head_ref != 'kaori/staging'" in quality
+
+
+def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    assert 'runs-on: ubuntu-24.04' in admission
+    assert admission.count('python3 scripts/ci_admission.py ') == 3
+    assert 'docker run' not in admission
+    assert 'CI_TOOLCHAIN_IMAGE:' not in admission
+    assert 'statuses: write' in admission
+    assert 'name: CI Admission' in admission
+    assert 'runs-on: ubuntu-24.04' in profile
+    assert 'runs-on: ubuntu-24.04' in matrix
+    assert 'Resolve CI Toolchain' in profile
+    assert 'CI_TOOLCHAIN_IMAGE=' in matrix
+
+
+def test_hosted_toolchain_preflight_produces_only_deterministic_image_identity() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Prepare Toolchain' in toolchain
+    assert 'runs-on: ubuntu-24.04' in toolchain
+    assert 'name: Resolve CI Toolchain' in toolchain
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in toolchain
+    assert 'persist-credentials: false' in toolchain
+    assert 'sha256sum | cut -c1-20' in toolchain
+    assert 'image="kaori-ci-toolchain:$key"' in toolchain
+    assert 'docker image inspect' not in toolchain
+    assert 'docker build' not in toolchain
+    assert 'image: ${{ steps.toolchain.outputs.image }}' in toolchain
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+
+
+def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Python & Governance' in python_job
+    assert 'runs-on: ubuntu-24.04' in python_job
+    assert 'timeout-minutes: 45' in python_job
+    assert 'needs: [route, toolchain]' in python_job
+    assert "needs.route.result == 'success'" in python_job
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in python_job
+    assert 'persist-credentials: false' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in python_job
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'Run Python & Governance Checks' in python_job
+    assert "run_toolchain 'Pyright'" in python_job
+    assert "run_toolchain 'Ruff Check'" in python_job
+    assert "run_toolchain 'Code Health'" in python_job
+    assert 'runs-on: ubuntu-24.04' in toolchain
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+
+
+def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Frontend & Focused Validation' in focused
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'timeout-minutes: 75' in focused
+    assert 'needs: [route, toolchain, python-check]' in focused
+    assert "needs.python-check.result == 'success'" in focused
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in focused
+    assert 'persist-credentials: false' in focused
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+    assert 'TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'docker compose --file .github/ci/compose.yml up --detach --wait postgres redis' in focused
+    assert 'docker compose --file .github/ci/compose.yml run --rm --no-deps ci' in focused
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in focused
+    assert "run_toolchain 'DjLint Full Templates'" in focused
+    assert "run_toolchain 'Frontend Dependencies'" in focused
+    assert 'pytest -q --tb=short $paths' in focused
+    assert 'runs-on: ubuntu-24.04' in toolchain
+
+
+def test_hosted_admission_profile_matrix_and_smoke_preserve_exact_source_authority() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    smoke = workflow.split('\n  integration-smoke:', 1)[1].split('\n  admission:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    for block in (profile, matrix, smoke, admission):
+        assert 'runs-on: ubuntu-24.04' in block
+    assert 'docker run' not in profile
+    assert 'docker build' not in profile
+    assert 'python3 scripts/ci_admission.py route' in profile
+    assert 'python3 scripts/ci_admission.py find-evidence' in profile
+    assert 'python3 scripts/ci_admission.py verify-lineage' in profile
+    assert 'toolchain_image: ${{ steps.toolchain.outputs.image }}' in profile
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in profile
+    for block in (matrix, smoke):
+        assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in block
+        assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in block
+        assert 'docker image inspect "$EXPECTED_IMAGE" >/dev/null' in block
+        assert 'file: .github/ci/Dockerfile' in block
+        assert 'push: false' in block
+        assert 'load: true' in block
+        assert 'cache-from: type=gha,scope=kaori-ci-toolchain-v1' in block
+        assert 'needs.validation-profile.outputs.toolchain_image' in block
+    assert 'max-parallel: 5' in matrix
+    assert 'strategy:' in matrix and 'fail-fast: true' in matrix
+    assert 'Run Security Gate' in matrix
+    assert 'Run Functional Tests' in matrix
+    assert 'Run Static & Governance' in matrix
+    assert 'Validate Runtime & DAST' in matrix
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in smoke
+    assert 'statuses: write' in admission
+    assert 'KAORI CI / Admission' in admission
+
+
+def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+
+    assert 'needs: validation-profile' in matrix
+    assert 'strategy:' in matrix
+    assert 'fail-fast: true' in matrix
+    # All five comprehensive checks may run on independent ephemeral hosted
+    # workers; do not mistake a cancelled sibling for admitted coverage.
+    assert 'runs-on: ubuntu-24.04' in matrix
+    assert 'max-parallel: 5' in matrix
+    assert 'max-parallel: 1' not in matrix
+    assert matrix.count('\n          - gate: ') == 5
+    for gate in (
+        'gate: static',
+        'gate: security',
+        'gate: functional',
+        'gate: frontend',
+        'gate: runtime',
+    ):
+        assert gate in matrix
+
+    assert 'static-quality:' not in source
+    assert 'static-security:' not in source
+    assert 'functional-tests:' not in source
+    assert '\n  frontend:' not in source
+    assert 'production-runtime:' not in source
+
+
+def test_matrix_cancellation_keeps_resource_cleanup_and_fail_closed_admission() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    assert "if: ${{ always() && matrix.gate == 'functional' }}" in matrix
+    assert "if: ${{ always() && matrix.gate == 'runtime' }}" in matrix
+    assert 'docker rm -f "$GATE_CONTAINER"' in matrix
+    assert 'full-admission-gates' in admission
+    assert 'FULL_GATES: ${{ needs.full-admission-gates.result }}' in admission
+    assert '[[ "$FULL_GATES" == "success" ]]' in admission
+    assert 'selected Full Admission matrix failed or was cancelled' in admission
+
+
+def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    assert 'Upload Static JUnit Evidence' in matrix
+    assert 'Upload Functional JUnit Evidence' in matrix
+    assert 'contract-migration.xml' in matrix
+    assert 'release-suite.xml' in matrix
+    assert 'e2e.xml' in matrix
+
+    assert 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1' in admission
+    assert 'Download Static JUnit Evidence' in admission
+    assert 'Download Functional JUnit Evidence' in admission
+    assert 'Write Full Test Taxonomy Summary' in admission
+    assert 'id: full_test_evidence' in admission
+    assert "steps.full_test_evidence.outcome == 'success'" in admission
+    assert 'TEST_EVIDENCE: ${{ steps.full_test_evidence.outcome }}' in admission
+    assert 'TEST_EVIDENCE_OUTCOME: ${{ steps.full_test_evidence.outcome }}' in admission
+    assert 'Full test taxonomy evidence — $TEST_EVIDENCE' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
+
+
+def test_full_admission_junit_handoff_survives_failed_job_reruns() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    static_name = 'full-admission-junit-static-${{ github.run_id }}'
+    functional_name = 'full-admission-junit-functional-${{ github.run_id }}'
+
+    assert f'name: {static_name}' in matrix
+    assert f'name: {functional_name}' in matrix
+    assert f'name: {static_name}' in admission
+    assert f'name: {functional_name}' in admission
+    assert 'full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}' not in source
+    assert 'full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}' not in source
+    assert matrix.count('overwrite: true') >= 2
+    assert '--run-attempt "$GITHUB_RUN_ATTEMPT"' in admission
+
+
+def test_successful_matrix_preserves_per_gate_evidence_vocabulary() -> None:
+    source = read(WORKFLOW)
+    admission = source.split('\n  admission:', 1)[1]
+
+    for option in (
+        '--static-quality "${{ needs.full-admission-gates.result }}"',
+        '--static-security "${{ needs.full-admission-gates.result }}"',
+        '--functional-tests "${{ needs.full-admission-gates.result }}"',
+        '--frontend "${{ needs.full-admission-gates.result }}"',
+        '--production-runtime "${{ needs.full-admission-gates.result }}"',
+    ):
+        assert option in admission
 
 
 def test_profile_version_and_compatibility_wrapper_use_current_authority() -> None:
@@ -487,3 +770,82 @@ def test_artifact_redirect_rejects_https_downgrade() -> None:
         assert 'https' in str(exc).lower()
     else:
         raise AssertionError('Artifact redirect downgrade must fail closed.')
+
+
+def test_main_promotion_required_ci_admission_fails_closed_before_checkout() -> None:
+    """Run the existing required aggregate's pre-checkout source guard with safe identities."""
+    workflow = yaml.safe_load(read(WORKFLOW))
+    admission = workflow['jobs']['admission']
+
+    assert admission['name'] == 'CI Admission'
+    assert admission['if'] == '${{ always() }}'
+    assert admission['runs-on'] == 'ubuntu-24.04'
+    assert 'validation-profile' in admission['needs']
+
+    guard, checkout = admission['steps'][:2]
+    assert guard['name'] == 'Enforce Trusted Admission Route Before Checkout'
+    assert checkout['name'] == 'Checkout Source'
+    assert checkout['with']['persist-credentials'] is False
+
+    expected_env = {
+        'PROFILE_RESULT': '${{ needs.validation-profile.result }}',
+        'EVENT_NAME': '${{ github.event_name }}',
+        'BASE_REF': '${{ github.base_ref }}',
+        'HEAD_REF': '${{ github.head_ref }}',
+        'HEAD_REPO': '${{ github.event.pull_request.head.repo.full_name }}',
+        'IS_DRAFT': '${{ github.event.pull_request.draft }}',
+    }
+    for name, value in expected_env.items():
+        assert guard['env'][name] == value
+
+    for profile, event, base, head, source, draft, allowed in (
+        ('success', 'pull_request', 'main', 'kaori/staging', 'OXY7O/KAORI', 'false', True),
+        ('success', 'pull_request', 'main', 'kaori/staging', 'external/KAORI-fork', 'false', False),
+        (
+            'success',
+            'pull_request',
+            'main',
+            'kaori/task-4304-main-promotion-required-check-fail-closed',
+            'OXY7O/KAORI',
+            'false',
+            False,
+        ),
+        ('success', 'pull_request', 'main', 'kaori/staging', 'OXY7O/KAORI', 'true', False),
+        ('success', 'pull_request', 'main', 'kaori/staging', '', 'false', False),
+        ('failure', 'pull_request', 'main', 'kaori/staging', 'OXY7O/KAORI', 'false', False),
+        ('skipped', 'pull_request', 'main', 'kaori/staging', 'OXY7O/KAORI', 'false', False),
+        ('cancelled', 'pull_request', 'main', 'kaori/staging', 'OXY7O/KAORI', 'false', False),
+        (
+            'success',
+            'pull_request',
+            'kaori/staging',
+            'kaori/task-4304-main-promotion-required-check-fail-closed',
+            'OXY7O/KAORI',
+            'false',
+            True,
+        ),
+        ('success', 'push', '', '', '', '', True),
+    ):
+        environment = {
+            **os.environ,
+            'GITHUB_REPOSITORY': 'OXY7O/KAORI',
+            'PROFILE_RESULT': profile,
+            'EVENT_NAME': event,
+            'BASE_REF': base,
+            'HEAD_REF': head,
+            'HEAD_REPO': source,
+            'IS_DRAFT': draft,
+        }
+        result = subprocess.run(
+            ['bash', '-c', guard['run']],
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (result.returncode == 0) is allowed, (profile, event, base, head, source, draft, result.stderr)
+
+    # A rejected route cannot checkout untrusted code or start privileged validation:
+    # profile-gated downstream work remains conditional on a successful route.
+    assert "needs.validation-profile.outputs.execution == 'full'" in workflow['jobs']['full-admission-gates']['if']

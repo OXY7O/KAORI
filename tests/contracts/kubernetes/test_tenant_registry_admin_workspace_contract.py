@@ -1,0 +1,2185 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def tenant_routes_source() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/routes.py',
+            'app/kubernetes/tenant/route_common.py',
+            'app/kubernetes/tenant/routes_access.py',
+            'app/kubernetes/tenant/routes_credentials.py',
+        )
+    )
+
+
+def tenant_service_source() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/service.py',
+            'app/kubernetes/tenant/service_contracts.py',
+            'app/kubernetes/tenant/registry_context.py',
+            'app/kubernetes/tenant/resource_profile_controls.py',
+        )
+    )
+
+
+def tenant_discovery_source() -> str:
+    return (
+        read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+    )
+
+
+def allocation_observation_source() -> str:
+    return (
+        read('app/kubernetes/tenant/allocation_observation.py')
+        + '\n'
+        + read('app/kubernetes/tenant/capsule_allocation_observation.py')
+    )
+
+
+def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    routes = tenant_routes_source()
+
+    assert "'Multi-Cluster Posture'" in page
+    assert "'Tenant Estate'" in page
+    assert 'tenant_summary_metrics' in page
+    assert "'Governed Administration'" in page
+    assert page.index("'Multi-Cluster Posture'") < page.index("'Governed Administration'")
+    assert page.index("'Governed Administration'") < page.index('partials/_tenant_admin_workspace.html')
+
+    assert 'components/content_tabs.html' in admin
+    assert 'content_tabs.render_links' in admin
+    assert "('registry', 'Tenant Registry'" in admin
+    assert "('tenant-setup', 'Tenant Setup'" in admin
+    assert "('memberships', 'Memberships'" in admin
+    assert "('access-grants', 'Access Grants'" in admin
+    assert "('credentials', 'Credentials'" in admin
+    assert "('namespace-access', 'Namespace Access'" in admin
+    assert "hx_target='#tenant-admin-workspace'" in admin
+    assert "hx_select='#tenant-admin-workspace'" in admin
+    assert "hx_push_url='true'" in admin
+    assert "hx_sync='this:replace'" in admin
+
+    assert "'registry'," in routes
+    assert "normalized = str(value or 'registry')" in routes
+
+
+def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    service = tenant_service_source()
+
+    assert 'components/table.html' in registry
+    assert 'components/table_registry.html' in registry
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'tenant-registry-loading' in registry
+    assert "table_ui.table_classes('min-w-[1040px] !table-fixed')" in registry
+    assert 'tenant-registry-cluster' in registry
+    assert 'tenant-registry-environment' in registry
+    assert 'tenant-registry-lifecycle' in registry
+    assert 'tenant-registry-search' in registry
+    assert "resource_label='Tenants'" in registry
+    assert "'tenant.tenants'" in registry
+    assert 'No Tenants Found' in registry
+
+    assert 'def get_tenant_registry_context(' in service
+    assert 'search: str' in service
+    assert 'cluster_id: str' in service
+    assert 'environment: str' in service
+    assert 'lifecycle_status: str' in service
+    assert 'func.lower(Tenant.name).like(pattern)' in service
+    assert 'func.lower(Tenant.slug).like(pattern)' in service
+    assert 'TenantEnvironment.environment == normalized_environment' in service
+
+
+def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+
+    assert 'components/numbered_governance_steps.html' in setup
+    assert 'Tenant Governance Flow' in setup
+    for label in ('Create Tenant', 'Provision Namespace', 'Add Membership', 'Apply Access Grant', 'Issue Credential'):
+        assert label in setup
+    assert 'Important Boundaries' in setup
+    for icon in ('shield-check', 'boxes', 'users-round', 'key-round'):
+        assert f'data-lucide="{icon}"' in setup
+    assert 'Cross-Tenant references are blocked.' in setup
+    assert 'bg-status-warning-soft' in setup
+    assert 'xl:items-stretch' in setup
+    assert 'xl:grid-rows-[auto_1fr]' in setup
+    assert 'context_guidance_card.html' not in setup
+    assert 'open_by_default' not in setup
+    assert 'Tenant Lifecycle Contract' in setup
+    assert '1 · Lock Identity' in setup
+    assert '2 · Revoke Access' in setup
+    assert '3 · Remove Namespaces' in setup
+    assert '4 · Decommission' in setup
+    assert 'Change strategy:' in setup
+
+    tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    assert 'components/info_tip.html' in tenant_form
+    assert 'tenant-setup-form-tip' in tenant_form
+    assert 'flex h-full flex-col overflow-visible' in tenant_form
+    assert 'Create the Tenant boundary first; namespace and access follow.' in tenant_form
+    assert 'rounded-b-xl border-t border-outline-subtle bg-surface-hover' in tenant_form
+    assert 'Optional. KAORI derives a lowercase slug' not in tenant_form
+
+
+def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    read_model = read('app/kubernetes/tenant/admin_workspace.py')
+
+    assert 'Membership Model' in workspace
+    assert 'components/numbered_governance_steps.html' in workspace
+    assert "layout='compact-grid'" in workspace
+    assert 'xl:grid-cols-3' in workspace
+    for label in ('Add User Membership', 'Create Tenant Group', 'Add Group Membership'):
+        assert label in workspace
+    assert '_membership_registry.html' in workspace
+    assert '_group_registry.html' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'membership-user-tip' in workspace
+    assert 'membership-group-tip' in workspace
+    assert 'membership-attach-group-tip' in workspace
+    assert workspace.count('hx-target="#tenant-admin-workspace"') >= 3
+    assert workspace.count('hx-select="#tenant-admin-workspace"') >= 3
+    assert workspace.count('hx-disabled-elt="find button"') >= 3
+    assert 'bg-status-warning-soft' in workspace
+    assert 'Scope Safety' in workspace
+
+    for table in (memberships, groups):
+        assert 'components/table.html' in table
+        assert 'components/table_registry.html' in table
+        assert 'registry_ui.filter_form' in table
+        assert 'registry_ui.footer' in table
+
+    assert 'components/info_tip.html' in memberships
+    assert 'tenant-membership-lifecycle-tip' in memberships
+    assert 'title_extra=title_info' in memberships
+    assert "button_text='Membership Guide'" not in memberships
+    assert 'tenant-group-lifecycle-tip' in groups
+    assert 'title_extra=title_info' in groups
+    assert "button_text='Group Guide'" not in groups
+
+    assert 'def get_membership_registry_context(' in read_model
+    assert 'def get_group_registry_context(' in read_model
+    assert 'paginate_query(' in read_model
+
+
+def test_membership_registries_use_settings_query_tabs_without_desktop_overflow() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
+
+    assert 'components/workspace_tabs.html' in workspace
+    assert 'workspace_tabs.render_query_tabs(membership_registry_tabs' in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert "hx_sync='#tenant-admin-workspace:replace'" in workspace
+    assert 'components/content_tabs.html' not in workspace
+    assert "('memberships', 'Membership Registry'" in workspace
+    assert "('groups', 'Tenant Group Registry'" in workspace
+    assert "membership_view='groups'" in workspace
+    assert "membership_view='memberships'" in workspace
+    assert "active_membership_view == 'groups'" in workspace
+    assert "hx_target='#tenant-admin-workspace'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert 'hx-push-url="true"' in settings_tabs
+    assert workspace.count('partials/_membership_registry.html') == 1
+    assert workspace.count('partials/_group_registry.html') == 1
+    assert 'name="membership_view" value="groups"' in workspace
+
+    assert 'def _membership_registry_view() -> str:' in routes
+    assert "request.values.get('membership_view') == 'groups'" in routes
+    assert "'active_membership_view': _membership_registry_view()" in routes
+    assert "response.headers['HX-Replace-Url']" in routes
+
+    for registry, selected in ((membership, 'memberships'), (groups, 'groups')):
+        assert "'membership_view': '" + selected + "'" in registry
+        assert 'name="membership_view" value="' + selected + '"' in registry
+        assert 'registry_ui.filter_form' in registry
+        assert 'registry_ui.footer' in registry
+        assert 'registry_ui.clear_filters_link' in registry
+
+    assert "table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0')" in groups
+    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
+    assert 'min-w-[1250px]' not in groups
+    assert 'min-w-[1100px]' not in membership
+    assert 'title="{{ group.subject_name }}"' in groups
+    assert 'overflow-x-auto' in groups
+    assert 'name="membership_view" value="groups"' in groups
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in setup
+    assert "'capsule-initial-owner-guide-tip'" in setup
+
+
+def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    read_model = read('app/kubernetes/tenant/admin_workspace.py')
+
+    assert 'id="access-grant-form"' in workspace
+    assert 'xl:col-span-5' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]' in workspace
+    assert 'Access Grant Flow' in workspace
+    assert 'Access scope guide' in workspace
+    assert 'Namespace Scope' in workspace
+    assert 'Environment Scope' in workspace
+    assert 'Tenant Scope' in workspace
+    assert 'Membership fixes the Tenant boundary.' not in workspace
+    assert 'Targets are filtered automatically.' not in workspace
+    assert 'Effective RBAC remains provider-verified.' not in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
+    assert 'Namespace scope needs one target.' in workspace
+    assert 'grant_footer_classes' in workspace
+    assert 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3' in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
+    assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
+    assert (
+        'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
+    )
+    assert 'Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.' in workspace
+    assert 'Access Boundaries' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'access-grant-form-tip' in workspace
+    assert 'access-membership-tip' not in workspace
+    assert 'access-profile-tip' not in workspace
+    assert 'access-scope-tip' not in workspace
+    for field_id in ('access-grant-membership', 'access-grant-profile', 'access-grant-scope'):
+        assert f'for="{field_id}"' in workspace
+        assert f'id="{field_id}"' in workspace
+    assert 'Prepare approved ClusterRoles.' in workspace
+    assert workspace.count("variant='guide'") == 1
+    assert 'flex flex-wrap items-center justify-between' in workspace
+    assert 'data-access-membership' in workspace
+    assert 'data-access-context-scope' in workspace
+    assert 'data-access-environment-field' in workspace
+    assert 'data-access-namespace-field' in workspace
+    assert 'data-tenant-id="{{ membership.tenant_id }}"' in workspace
+    assert 'data-tenant-id="{{ environment.tenant_id }}"' in workspace
+    assert 'data-tenant-id="{{ namespace.environment.tenant_id }}"' in workspace
+    assert 'hx-target="#tenant-admin-workspace"' in workspace
+    assert '_access_inventory_workspace.html' in workspace
+    assert "'Access Grant Registry'" in registry
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'Inspect' in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    assert 'View Details' in registry
+    assert 'Reconcile' in detail
+    assert 'Revoke' in detail
+    assert 'def get_access_grant_registry_context(' in read_model
+
+
+def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_hover() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'components/info_tip.html' not in registry
+    assert 'access-grant-reconciliation-' not in registry
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_access_grant_row_detail.html' in registry
+    assert 'access-grant-more-actions-' not in registry
+    assert 'aria-label="Selected Access Grant"' in detail
+    assert 'Retry provider-side reconciliation for this committed grant.' in detail
+    assert 'Remove this grant while keeping the Membership intact.' in detail
+    assert 'aria-label="Governed grant actions"' in detail
+    assert 'Grant Context' in detail
+    assert 'sm:grid-cols-2 lg:grid-cols-4' in detail
+    assert 'lg:grid-cols-2' in detail
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.8fr)]' not in detail
+    assert 'tenant.reconcile_access_grant_route' in detail
+    assert 'tenant.revoke_access_grant_route' in detail
+    assert 'No membership or RBAC mutation' in capsule
+    assert 'does not import IdP users' in capsule
+    assert '<label for="access-grant-membership"' in form
+
+
+def test_access_inventory_uses_settings_query_tabs_and_provider_isolated_evidence() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_access_inventory_workspace.html')
+    grant = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    native = read('app/templates/kubernetes/tenant/partials/_native_namespace_rbac_inventory.html')
+    routes = read('app/kubernetes/tenant/route_common.py')
+    settings_tabs = read('app/templates/components/workspace_tabs.html')
+
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+
+    assert '_access_inventory_workspace.html' in grant
+    assert '_access_grant_registry.html' not in grant
+    assert 'workspace_tabs.render_query_tabs(access_inventory_tabs' in workspace
+    assert 'Access Registry &amp; Inventory' not in workspace
+    assert 'tenant-access-inventory-title' not in workspace
+    assert 'aria-label="Tenant Access Registry and Inventory"' in workspace
+    assert 'class="min-w-0 p-4 sm:p-5"' in workspace
+    assert "access_inventory_view='grants'" in workspace
+    assert "active_access_inventory_view == 'grants'" in workspace
+    assert '_access_grant_registry.html' in workspace
+    assert 'name="access_inventory_view" value="grants"' in registry
+    assert "'access_inventory_view': 'grants'" in registry
+    detail = read('app/templates/kubernetes/tenant/partials/_access_grant_row_detail.html')
+    assert "query_params={'section': 'access-grants', 'access_inventory_view': 'grants'}" in registry
+    # Registry owns Inspect/filter state; Reconcile and Revoke live in expanded evidence.
+    assert registry.count('name="access_inventory_view" value="grants"') == 2
+    assert detail.count('name="access_inventory_view" value="grants"') == 2
+    assert "'grants', 'capsule', 'native'" in routes
+    assert "access_inventory_view='capsule'" in workspace
+    assert "access_inventory_view='native'" in workspace
+    assert "active_access_inventory_view == 'native'" in workspace
+    assert 'hx-select="#tenant-admin-workspace"' in workspace
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in settings_tabs
+    assert workspace.count('_access_grant_registry.html') == 1
+    assert workspace.count('_external_capsule_access_inventory.html') == 1
+    assert workspace.count('_native_namespace_rbac_inventory.html') == 1
+    assert 'hx-push-url="true"' in settings_tabs
+
+    assert 'def _access_inventory_view() -> str:' in routes
+    assert "'active_access_inventory_view': active_view" in routes
+    assert 'active_view = _access_inventory_view()' in routes
+    assert "request.values.get('access_inventory_view')" in routes
+    assert "'HX-Replace-Url'" in routes
+
+    for panel, provider in ((capsule, 'capsule'), (native, 'native')):
+        assert f'name="access_inventory_view" value="{provider}"' in panel
+        assert 'name="csrf_token"' in panel
+        assert 'Latest Inspection' in panel
+        assert 'Not inspected' in panel
+        assert 'Provider Authority' in panel
+        assert 'Inspection Target' in panel
+        assert 'Inspection Evidence' in panel
+        assert '_provider_access_evidence_rows.html' in panel
+        assert 'table_label.result_count(access_evidence_pagination.total_items)' in panel
+        assert 'read-only' in panel.lower()
+        assert 'bg-surface-hover px-5 py-4' in panel
+
+    assert "selectattr('metadata_json.provider', 'equalto', 'capsule')" in capsule
+    assert "selectattr('metadata_json.provider', 'equalto', 'native_kubernetes')" in native
+    assert 'recent_capsule_access_remediation' not in capsule
+    assert 'recent_native_access_remediation' not in native
+    assert '_provider_access_remediation_detail.html' in read(
+        'app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html'
+    )
+    rows = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_rows.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_provider_access_evidence_detail.html')
+    assert 'No committed external-access inspection yet.' in rows
+    assert 'No committed Native RBAC observation yet.' in rows
+    assert 'observe_capsule_external_access_route' in capsule
+    assert 'observe_native_external_access_route' in native
+    assert 'components/action_button.html' in native
+    assert 'components/table_label.html' in native
+    assert 'name="tenant_id"' in capsule
+    assert 'name="tenant_id"' in native
+    assert 'Review Profile Match' in detail
+    assert 'Analyze Access Drift' in detail
+    assert 'Analyze Native Access Drift' in detail
+
+
+def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    read_model = read('app/kubernetes/tenant/admin_workspace.py')
+
+    assert 'xl:grid-cols-2 xl:items-stretch' in workspace
+    assert workspace.count('flex h-full flex-col') >= 2
+    assert 'Human Access Credential' in workspace
+    assert 'Workload Deployment Credential' in workspace
+    assert 'Delivery Contract' not in workspace
+    assert 'human-credential-tip' in workspace
+    assert 'deployer-credential-tip' in workspace
+    assert '_credential_registry.html' in workspace
+    assert 'Access Account Reference' in workspace
+    assert 'Individual access linked to an approved user grant.' in workspace
+    assert 'automated application deployment' in workspace
+    assert 'JumpServer Reference' not in workspace
+    assert 'GitHub Actions and Helm delivery' not in workspace
+    # UI copy is generalized; the authoritative submitted credential contracts are not.
+    assert 'name="jumpserver_reference"' in workspace
+    assert 'name="purpose" value="github-actions-helm"' in workspace
+    assert 'name="access_grant_id"' in workspace
+    assert 'name="tenant_namespace_id"' in workspace
+    assert 'name="owner_user_id"' in workspace
+    assert 'name="application_name"' in workspace
+    assert 'Generate Human Access Token' in registry
+    assert 'Generate Deployment Kubeconfig' in registry
+    credential_detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
+    assert 'Access Gateway' in credential_detail
+    assert 'Pipeline Kubeconfig' in credential_detail
+    assert 'delivery_label' in credential_detail
+    assert 'Manually place the generated token into the approved access account' in registry
+    assert 'JumpServer' not in registry
+    assert 'JumpServer' not in workspace
+    assert 'for secure deployment pipeline delivery' in registry
+    assert 'Reveal JumpServer Token' not in registry
+    assert 'Generate CI/CD Kubeconfig' not in registry
+
+    detail = read('app/templates/kubernetes/tenant/partials/_credential_row_detail.html')
+    assert "'Credential Lifecycle'" in registry
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'components/info_tip.html' in workspace
+    assert 'human-credential-tip' in workspace
+    assert 'deployer-credential-tip' in workspace
+    assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
+    assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
+    assert 'min-w-[1180px]' not in registry
+    assert 'table_ui.action_grid_classes(2)' not in registry
+    assert 'detail_row.toggle_button(' in registry
+    assert 'detail_row.static_detail_row(' in registry
+    assert '_credential_row_detail.html' in registry
+    assert 'credential-more-actions-' not in registry
+    assert 'Revoke Credential' in detail
+    assert 'Invalidate access' in detail
+    assert 'Suspend Credential' in detail
+    assert 'Renew' in detail
+    assert 'No actions' in detail
+    assert 'Read-only' in detail
+    assert "credential.status == 'revoked'" in detail
+    assert "credential.status == 'suspended'" in detail
+    assert "credential.reconciliation_status == 'ready'" in detail or registry
+    assert 'data-kaori-dialog-open' in detail
+    assert 'data-kaori-native-dialog' not in detail
+    for route in (
+        'renew_credential_route',
+        'resume_credential_route',
+        'suspend_credential_route',
+        'revoke_credential_route',
+    ):
+        assert route in detail
+    assert 'name="csrf_token"' in detail
+    assert 'components/one_time_secret.html' in registry
+    assert 'data-credential-material-open' in detail
+    assert 'Generate' in detail
+    assert 'Generate Kubeconfig' in registry
+    assert 'data-credential-material-namespace' in registry
+    assert 'data-credential-material-ttl' in registry
+    assert 'credential_delivery_targets' in read_model
+    assert 'credential_delivery_policies' in read_model
+    assert 'credential_material_ttl_choices' in read_model
+    assert 'def get_credential_registry_context(' in read_model
+
+
+def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_namespace_access_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_namespace_access_detail.html')
+    read_model = read('app/kubernetes/tenant/admin_workspace.py')
+
+    assert 'Effective Namespace Access' in workspace
+    assert 'Security Boundary' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'namespace-access-tip' in workspace
+    assert 'Derived Evidence' in workspace
+    assert 'Credential Context' in workspace
+    assert '_namespace_access_registry.html' in workspace
+    assert "'Namespace Access Registry'" in registry
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert '_namespace_access_detail.html' in registry
+    assert 'approved_access_methods' in detail
+    assert 'credential.token' not in registry + detail
+    assert 'credential.kubeconfig' not in registry + detail
+    assert 'private_key' not in registry + detail
+    assert 'def get_namespace_access_registry_context(' in read_model
+    assert 'paginate_sequence(' in read_model
+
+
+def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() -> None:
+    tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    credentials = read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
+    namespace_access = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+
+    for title, tip_id, source in (
+        ('Add Tenant', 'tenant-setup-form-tip', tenant_form),
+        ('Add User Membership', 'membership-user-tip', memberships),
+        ('Create Tenant Group', 'membership-group-tip', memberships),
+        ('Add Group Membership', 'membership-attach-group-tip', memberships),
+        ('Apply Access Grant', 'access-grant-form-tip', grants),
+        ('Human Access Credential', 'human-credential-tip', credentials),
+        ('Workload Deployment Credential', 'deployer-credential-tip', credentials),
+        ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
+    ):
+        title_index = source.index(title)
+        tip_index = source.index(tip_id)
+        assert abs(title_index - tip_index) < 1200, (title, tip_id)
+
+    assert 'flex h-full flex-col overflow-visible' in tenant_form
+    assert memberships.count('flex h-full flex-col overflow-visible') >= 3
+    assert 'flex h-full flex-col overflow-visible' in grants
+    assert credentials.count('flex h-full flex-col overflow-visible') >= 2
+    assert 'overflow-visible rounded-xl' in namespace_access
+
+    # Capsule ownership has one section-owned Guide; distinct field helpers remain.
+    assert "'capsule-initial-owner-guide-tip'" in tenant_form
+    assert 'capsule-owner-kind-tip' not in tenant_form
+    assert 'capsule-owner-subject-tip' not in tenant_form
+    assert 'access-profile-tip' not in grants
+    assert 'access-scope-tip' not in grants
+    assert 'access-membership-tip' not in grants
+    assert "'access-grant-form-tip'" in grants
+
+
+def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> None:
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    group_registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    credential_registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+
+    assert 'id="add-user-membership-form"' in memberships
+    assert 'id="create-tenant-group-form"' in memberships
+    assert 'id="add-group-membership-form"' in memberships
+
+    assert "'#add-user-membership-form'" in membership_registry
+    assert "'#create-tenant-group-form'" in group_registry
+    grant_shortcut = read('app/static/js/tenant_access_grant_form.js')
+    assert 'data-access-grant-form-shortcut' in grant_registry
+    assert 'aria-controls="access-grant-form"' in grant_registry
+    assert "target?.closest('[data-access-grant-form-shortcut]')" in grant_shortcut
+    assert "document.getElementById('access-grant-form')" in grant_shortcut
+    assert 'navigateToGrantForm()' in grant_shortcut
+    assert 'membership.focus({ preventScroll: true })' in grant_shortcut
+    assert "'#credential-issuance'" in credential_registry
+
+    for template in (membership_registry, group_registry, grant_registry, credential_registry):
+        assert "~ '#" not in template
+
+
+def test_tenant_workspace_mutations_preserve_nested_scroll_and_do_not_push_history() -> None:
+    partials = (
+        'app/templates/kubernetes/tenant/partials/_tenant_form.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_membership_registry.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_access_grant_registry.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_credential_registry.html',
+    )
+
+    for path in partials:
+        template = read(path)
+        if 'hx-post=' not in template:
+            continue
+        assert 'hx-target="#tenant-admin-workspace"' in template
+        assert 'hx-select="#tenant-admin-workspace"' in template
+        assert 'outerHTML show:none focus-scroll:false' in template
+        assert 'hx-push-url=' not in template
+
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    assert "hx_swap='outerHTML show:none focus-scroll:false'" in admin
+
+
+def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+
+    assert "'Governance Scope'" in overview
+    assert "'Tenant Estate'" in overview
+    assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
+
+
+def test_overview_operational_attention_has_section_intro_above_card() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+    assert 'components/section_intro.html' in overview
+    assert 'aria-labelledby="tenant-operational-oversight-heading"' in overview
+    assert "section_intro.render('Operational Oversight'," in overview
+    assert 'Prioritized Tenant conditions and recent committed activity requiring operational review.' in overview
+    assert "'tenant-operational-oversight-heading')" in overview
+    assert overview.index("section_intro.render('Operational Oversight',") < overview.index(
+        "'Operational Attention & Activity'"
+    )
+    assert overview.index("'Multi-Cluster Posture'") < overview.index("'Operational Oversight'")
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "'Tenant Estate by Cluster'" not in overview  # Owning card stays in the shared partial.
+
+
+def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'xl:grid-cols-12' in workspace
+    assert 'xl:col-span-5' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]' in workspace
+    assert 'Access Grant Flow' in workspace
+    assert 'Access Boundaries' in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Provider Authority' in workspace
+    assert 'Secret Boundary' in workspace
+    assert 'Select a Membership to resolve Tenant and scope.' in workspace
+
+
+def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
+    routes = tenant_routes_source()
+    service = tenant_service_source()
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    decommission = read('app/kubernetes/tenant/decommission_service.py')
+
+    assert 'def update_tenant_metadata_route(' not in routes
+    assert 'def update_tenant_metadata_committed(' not in service
+    assert 'def decommission_tenant_route(' in routes
+    assert 'request_tenant_decommission_committed' in routes
+    assert 'execute_tenant_decommission' in decommission
+    assert 'tenant.lifecycle_status = TenantLifecycleStatus.DECOMMISSIONING.value' in decommission
+    assert 'Update Tenant Metadata' not in setup
+    assert 'Tenant Lifecycle Contract' in setup
+    assert 'Tenant identity is intentionally immutable after creation.' in setup
+    assert 'governed namespace deprovisioning must complete' in setup.lower()
+    assert 'Immutable' in registry
+    assert 'square-pen' not in registry
+    assert 'Decommission' in detail
+    assert 'destructive_confirmation_modal.html' in detail
+    assert 'data-destructive-modal-open' in detail
+    assert 'Freeze Mutations' in detail
+    assert 'Remove Namespaces' in detail
+    assert 'Verify & Retain' in detail
+    assert "presentation='steps'" in detail
+    assert 'Governed teardown. Provider verification is required.' in detail
+    assert 'Block new Tenant changes.' in detail
+    assert 'Disable credentials and grants.' in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
+    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in detail
+
+    assert 'g.tenant_operational_feedback = feedback' in routes
+    assert 'toast_oob=True' in routes
+    assert 'components/operational_toast.html' in routes
+    assert 'queue_feedback=(not is_htmx)' in routes
+
+    assert 'Tenant identity is immutable after creation' in readme
+    assert '#735' in readme
+    assert 'database-only lifecycle flag' in readme
+
+
+def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
+    estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
+
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in estate
+    assert 'table_ui.cluster_identity_with_status(' in estate
+    assert 'row.provider_status|title' in estate
+    assert 'row.provider_tone' in estate
+    for width in ('w-[29%]', 'w-[11%]', 'w-[13%]', 'w-[16%]', 'w-[17%]', 'w-[14%]'):
+        assert width in estate
+    assert estate.count('align-middle') >= 6
+    assert '>Actions</th>' in estate
+    assert 'header_cell_classes(action=true)' in estate
+    assert 'Open Capacity' in estate
+    assert 'table_ui.action_classes()' in estate
+    assert 'whitespace-nowrap' in estate
+    assert 'chart-no-axes-combined' in estate
+    assert 'Governed Tenants' in estate
+    assert 'Managed Namespaces' in estate
+
+
+def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'Create Namespace' in workspace
+    assert "url_for('tenant.namespace_provisioning')" in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Access Boundaries' in workspace
+    assert 'bg-status-info-soft' not in workspace
+
+
+def test_access_grant_and_boundaries_have_one_aligned_responsive_footer_contract() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'grant_footer_classes = "grid min-h-[4.5rem]' in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
+    assert workspace.count('<footer class="{{ grant_footer_classes }}">') == 2
+    assert 'Effective access requires successful provider reconciliation.' in workspace
+    assert 'Environment/Tenant may stay Pending until namespaces exist.' in workspace
+    assert "action_button.classes('primary') }} justify-self-end" in workspace
+    assert "action_button.classes('secondary') }} justify-self-end" in workspace
+    assert 'flex justify-end rounded-b-xl' not in workspace
+    assert 'bg-surface-hover px-4 py-3' not in workspace
+
+
+def test_namespace_access_security_boundary_matches_peer_surface() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+
+    assert 'Security Boundary' in workspace
+    assert workspace.count('class="flex gap-3 bg-surface-card p-4"') >= 3
+    assert 'text-content-muted' in workspace
+    assert 'bg-status-info-soft' not in workspace
+
+
+def test_operational_attention_card_preserves_bounded_responsive_alignment() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+
+    # #3144 approved one section card with two accessible, independent areas.
+    assert overview.count("'Operational Attention & Activity'") == 1
+    assert overview.count("body_classes='p-0'") >= 2
+    assert 'grid min-w-0 xl:grid-cols-12' in overview
+    assert 'flex min-w-0 flex-col xl:col-span-7' in overview
+    assert 'xl:col-span-5 xl:border-l xl:border-t-0' in overview
+    assert 'aria-labelledby="tenant-attention-list-title"' in overview
+    assert 'aria-labelledby="tenant-recent-activity-title"' in overview
+
+    # Bounded committed previews never claim fleet-wide totals.
+    assert "selectattr('tone', 'equalto', 'critical')" in overview
+    assert "selectattr('tone', 'equalto', 'warning')" in overview
+    assert "' Critical shown'" in overview
+    assert "' Warnings shown'" in overview
+    assert "' Recent events shown'" in overview
+    assert 'Showing {{ tenant_attention_rows|length }} prioritized condition' in overview
+    assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in overview
+    assert "action_href=url_for('intelligence.recommendations')" in overview
+    assert "url_for('tenant.operations', tab='activity')" in overview
+
+
+def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> None:
+    component = read('app/templates/components/info_tip.html')
+    docs = read('docs/design/components/INFO_TIP.md')
+    controller = read('app/static/js/info_tips.js')
+
+    assert (
+        "macro render(id, title, text='', items=None, placement='left', button_text=None, "
+        "button_classes=None, variant='icon', trigger_icon='info')" in component
+    )
+    assert "variant == 'guide' and not button_text" in component
+    assert 'data-kaori-info-tip-variant' in component
+    assert 'data-kaori-info-tip' in component
+    assert 'data-kaori-info-tip-trigger' in component
+    assert 'data-kaori-info-tip-preview' in component
+    assert 'role="tooltip"' in component
+    assert 'aria-expanded="false"' in component
+    assert 'data-kaori-native-dialog' not in component
+    assert 'data-kaori-dialog-open' not in component
+    assert 'sm:group-hover:block' not in component
+    assert 'fixed inset-x-4 bottom-4' not in component
+    assert 'button_classes if button_classes else action_button.classes' in component
+    assert 'focus-visible:ring-2' in component
+    assert 'h-6 w-6' in component
+    assert 'data-lucide="{{ trigger_icon }}"' in component
+    assert "trigger_icon='info'" in component
+    assert "variant == 'action' and button_text" in component
+    assert 'circle-help' not in component
+    assert 'never a question-mark icon' in component
+
+    assert 'portal.appendChild(preview)' in controller
+    assert "event.key === 'Escape'" in controller
+    assert "document.addEventListener('htmx:beforeSwap'" in controller
+
+    assert 'one non-modal anchored popover' in docs
+    assert '**desktop hover**' in docs
+    assert '**click/touch**' in docs
+    assert 'temporarily portals the popover' in docs
+    assert 'does not trap focus' in docs
+    assert 'Do **not** hide validation errors' in docs
+
+
+def test_tenant_administration_retires_monolithic_uat_partials() -> None:
+    assert not (ROOT / 'app/templates/kubernetes/tenant/partials/_members_access.html').exists()
+    assert not (ROOT / 'app/templates/kubernetes/tenant/partials/_credential_management.html').exists()
+
+    for path in (
+        'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html',
+    ):
+        assert 'Functional UAT Surface' not in read(path)
+
+
+def test_tenant_mutations_return_to_the_relevant_administration_section() -> None:
+    routes = tenant_routes_source()
+
+    assert "_tenant_section_redirect('tenant-setup')" in routes
+    assert routes.count("_tenant_section_redirect('memberships')") >= 4
+    assert routes.count("_tenant_section_redirect('access-grants')") >= 4
+    assert routes.count("_tenant_section_redirect('credentials')") >= 6
+    assert "return redirect(url_for('tenant.tenants'))" not in routes
+
+
+def test_overview_attention_and_activity_rows_keep_independent_evidence_and_empty_states() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+    workspace = read('app/kubernetes/tenant/workspace.py')
+
+    assert overview.count('min-h-[7rem]') == 2
+    assert 'Committed governance finding' in overview
+    assert 'Recent Tenant Activity' in overview
+    assert 'Needs Attention' in overview
+    assert 'No active attention items' in overview
+    assert 'No recent Tenant activity' in overview
+    assert 'item.status, item.tone' in overview
+    assert '{{ item.detail }}' in overview
+    assert '{{ item.time }}' in overview
+    assert 'def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3)' in workspace
+    assert 'def _tenant_recent_activity(*, limit: int = 3)' in workspace
+    assert 'h-[calc(100%+1rem)]' not in overview
+    assert '<ol class="flex-1 divide-y divide-outline-subtle">' in overview
+
+
+def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed() -> None:
+    decommission = read('app/kubernetes/tenant/decommission_service.py')
+    provisioning = read('app/kubernetes/tenant/provisioning.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    adapter = read('app/kubernetes/tenant/job_adapter.py')
+    config = read('app/config/default.py')
+    models = read('app/models/tenant.py')
+    migration = read('migrations/versions/20260928_tenant_decommission.py')
+
+    ordered_markers = [
+        "stage = 'credentials'",
+        "stage = 'access_grants'",
+        "stage = 'memberships'",
+        "stage = 'managed_resources'",
+        "stage = 'namespaces'",
+        "stage = 'policy_cleanup'",
+        "stage = 'provider_verification'",
+        "stage = 'finalize'",
+    ]
+    offsets = [decommission.index(marker) for marker in ordered_markers]
+    assert offsets == sorted(offsets)
+
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+
+    assert 'delete_capsule_tenant_verified' in decommission
+    assert "tenant.provider_state == 'capsule'" in decommission
+    assert "tenant.reconciliation_authority == 'capsule'" in decommission
+    assert "provider_evidence.get('created_by_kaori')" in decommission
+    assert 'Baseline Capsule teardown requires zero active Tenant namespace records' in decommission
+    assert 'Baseline Capsule teardown requires active Access Grants and credentials to be cleared' in decommission
+    assert 'Baseline Capsule teardown requires Tenant-managed provider resources to be cleared first.' in decommission
+    assert "tenant.provider_key != 'native_kubernetes'" in provisioning
+
+    assert 'def delete_capsule_tenant_verified(' in capsule
+    assert 'labels.get(_MANAGED_BY_KEY) != _MANAGED_BY_VALUE' in capsule
+    assert 'labels.get(_TENANT_ID_KEY) != kaori_tenant_id' in capsule
+    assert '_TENANT_GENERATION_KEY' in capsule
+    assert 'expected_uid and current_uid and current_uid != expected_uid' in capsule
+    assert "V1DeleteOptions(propagation_policy='Foreground')" in capsule
+    assert 'for _ in range(10)' in capsule
+    assert "'provider_verified_absent': True" in capsule
+    assert "tenant.reconciliation_authority != 'native_kubernetes'" in provisioning
+    assert 'api.delete_namespace(name=record.namespace)' in provisioning
+    assert '_namespace_delete_observation' in provisioning
+    assert 'Finalizers:' in provisioning
+    teardown_start = provisioning.index('def deprovision_native_namespace(')
+    teardown_end = provisioning.index('def deprovision_native_namespace_committed(')
+    teardown = provisioning[teardown_start:teardown_end]
+    assert 'api.delete_namespace(name=record.namespace)' in teardown
+    assert 'finalizers = []' not in teardown
+    assert 'patch_namespace' not in teardown
+
+    assert "name='app.kubernetes.tenant.tasks.decommission_tenant'" in tasks
+    assert 'dispatch_tenant_decommission' in adapter
+    assert 'require_registered_worker=True' in adapter
+    assert 'workload_class=WORKLOAD_RUNTIME' in adapter
+    assert 'INTEGRATION_RUNTIME_CELERY_QUEUE' in adapter
+    assert "'app.kubernetes.tenant.tasks.decommission_tenant'" in config
+
+    assert "DEPROVISIONING = 'deprovisioning'" in models
+    assert "DEPROVISIONED = 'deprovisioned'" in models
+    assert 'generation: Mapped[int]' in models
+    assert 'uq_tenants_cluster_slug_generation' in migration
+
+
+def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
+    registry_context = read('app/kubernetes/tenant/registry_context.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+
+    assert 'namespace_history_count_map' in registry_context
+    assert 'TenantNamespace.provisioning_status.notin_(' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in registry_context
+    assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
+    assert 'historical Namespace record' in detail
+    assert 'row.namespace_count' in registry
+    assert 'row.namespace_history_count - row.namespace_count' in detail
+
+
+def test_destructive_modal_supports_structured_impact_summary() -> None:
+    component = read('app/templates/components/destructive_confirmation_modal.html')
+
+    assert 'impact_items=none' in component
+    assert 'warning=none' in component
+    assert "presentation='default'" in component
+    assert "'max-w-6xl' if presentation == 'steps'" in component
+    assert 'max-h-[calc(100dvh-2rem)]' in component
+    assert 'xl:grid-cols-4' in component
+    assert "'%02d'|format(loop.index)" in component
+    assert 'Commit Boundary' in component
+    assert 'Fail-Closed' in component
+    assert 'What will happen' in component
+    assert 'data-destructive-modal-title' in component
+    assert 'data-destructive-detail' in component
+    assert 'data-destructive-action-label' in component
+
+
+def test_resource_profile_editability_allocation_change_and_capacity_decisions_follow_kaori_ux() -> None:
+    profile_form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    profile_js = read('app/static/js/tenant_resource_profile_presets.js')
+    namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
+    allocation = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    decisions = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
+
+    assert 'KAORI Preset · Fixed' in profile_form
+    assert 'Fixed · Read Only' in profile_form
+    assert 'components/table_label.html' in profile_form
+    assert "table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole')" in profile_form
+    assert 'data-tenant-profile-mode-fixed-label' in profile_form
+    assert 'data-locked="true"' in profile_form
+    assert 'data-[locked=true]:cursor-not-allowed' in profile_form
+    assert 'data-[locked=true]:border-dashed' in profile_form
+    assert "modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'" in profile_js
+    assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in profile_js
+
+    assert 'namespace-provisioning-contract-tip' in namespace_form
+    assert '<h2 class="text-base font-semibold text-content-primary">Provision Namespace</h2>' in namespace_form
+    assert 'KAORI will not overwrite a Namespace owned by another controller.' not in namespace_form
+    assert "table_label.special_label('Profile Snapshot', 'maintenance', 'lock-keyhole')" in namespace_form
+    assert 'Read-only profile snapshot that will be frozen on successful provisioning.' in namespace_form
+    assert 'Effective Allocation Preview' in namespace_form
+    assert 'Advanced Controls Preview' in namespace_form
+    assert 'Compute Limits' in namespace_form
+    assert 'Storage Policy' in namespace_form
+    assert 'Object Limits' in namespace_form
+    assert 'Container Defaults' in namespace_form
+    assert 'pvc_min_storage' in namespace_form
+    assert 'pvc_max_storage' in namespace_form
+    assert 'aria-label="Effective allocation summary"' in namespace_form
+
+    assert 'Allocation Change' in allocation
+    assert 'Change Target' in allocation
+    assert 'Managed Contract Comparison' in allocation
+    assert 'Capacity admission evaluates CPU, memory, Pod, and logical storage commitments.' in allocation
+    assert 'Per-PVC Policy' in allocation
+    assert 'Governance Gates' in allocation
+    assert 'Capacity Admission' in allocation
+    assert 'Provider Reconcile' in allocation
+    assert 'Read-back & Commit' in allocation
+    # Approved comparison renders Current/Proposed values through a shared
+    # loop + typed metric attributes, not twelve duplicated static IDs.
+    assert "('current', 'Current Contract', 'Active · Frozen evidence')" in allocation
+    assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in allocation
+    for attribute in (
+        'data-tenant-allocation-metric-side="{{ side }}"',
+        'data-tenant-allocation-metric-source="{{ source }}"',
+        'data-tenant-allocation-metric-key="{{ key }}"',
+    ):
+        assert attribute in allocation
+    for metric in (
+        'requests.cpu',
+        'limits.cpu',
+        'requests.memory',
+        'limits.memory',
+        'pods',
+        'requests.storage',
+    ):
+        assert metric in allocation
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in allocation
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in allocation
+    assert "form.querySelectorAll('[data-tenant-allocation-metric-side]')" in profile_js
+    assert "cell.dataset.tenantAllocationMetricSide === 'current' ? current : proposed" in profile_js
+    assert 'cell.dataset.tenantAllocationMetricSource' in profile_js
+    assert 'cell.dataset.tenantAllocationMetricKey' in profile_js
+    assert 'cell.textContent = selected ? displayValue(source, key, contractValue(selected, source, key))' in profile_js
+    assert 'components/table_registry.html' in decisions
+    assert 'table_ui.inventory_block_header' in decisions
+    assert 'registry_ui.filter_form' in decisions
+    assert 'registry_ui.footer' in decisions
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
+    assert 'overflow-x-auto' in decisions
+    assert 'header_cell_classes(action=true)' in decisions
+    assert 'min-w-[1180px]' not in decisions
+    assert '>Target</th>' in decisions
+    assert '>Contract</th>' in decisions
+    assert '>Admission</th>' in decisions
+    assert '>Recorded</th>' in decisions
+    assert 'row.created_at_label' in decisions
+    assert 'row.data_cutoff_label' in decisions
+    assert 'decision_page' in decisions
+    assert 'decision_per_page' in decisions
+    assert 'capacity_decision_pagination.allowed_per_page' in decisions
+    assert 'def get_capacity_decision_registry_context(' in service
+    assert 'outerjoin(' in service
+    assert 'present_user_datetime(decision_row.created_at' in service
+    assert 'paginate_query(' in service
+    assert 'get_capacity_decision_registry_context(' in routes
+    assert "request.args.get('decision_per_page', 5" in routes
+
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    assert 'data-tenant-native-cutover-workspace' in namespace_page
+    assert 'Adopted Native Governance Cutover' in read(
+        'app/templates/kubernetes/tenant/partials/_allocation_cutover.html'
+    )
+    assert 'data-tenant-capsule-allocation-workspace' in namespace_page
+    assert "'native-cutover', 'Native Cutover'" in namespace_page
+    assert "'capsule-governance', 'Capsule Governance'" in namespace_page
+    assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
+
+
+def test_tenant_routine_routes_use_bounded_context_composition() -> None:
+    routes = tenant_routes_source()
+    route_common = read('app/kubernetes/tenant/route_common.py')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    workspace = read('app/kubernetes/tenant/workspace.py')
+
+    assert 'def get_tenant_shell_context() -> dict[str, Any]:' in registry
+    assert 'def get_resource_profile_workspace_context() -> dict[str, Any]:' in registry
+    assert 'def get_namespace_provisioning_support_context() -> dict[str, Any]:' in registry
+    assert 'def _tenant_workspace_context(*, include_sync: bool = True)' in route_common
+    bounded_context = route_common.split('def _tenant_workspace_context', 1)[1].split(
+        '_TENANT_ADMIN_SECTIONS',
+        1,
+    )[0]
+    routine_context = bounded_context.split('def _tenant_admin_support_context', 1)[0]
+    assert 'get_tenant_context()' not in routine_context
+    assert 'get_tenant_access_context()' not in routine_context
+    assert 'get_tenant_workspace_context()' not in routine_context
+
+    assert 'context = _tenant_workspace_context(include_sync=False)' in routes
+    assert 'context.update(get_resource_profile_workspace_context())' in routes
+    assert 'context.update(get_namespace_provisioning_support_context())' in routes
+    assert 'context.update(get_tenant_operations_summary_context())' in routes
+    assert 'namespace_context = get_namespace_registry_context(' in routes
+    assert 'drift_context = get_namespace_registry_context(' in routes
+    assert 'provider_context = get_tenant_registry_context(' in routes
+    assert 'include_workflow_support=False' in routes
+    assert 'include_decommission_preflight=False' in routes
+    assert 'include_decommission_preflight: bool = True' in registry
+    assert 'include_workflow_support: bool = True' in registry
+    assert 'def get_operations_namespace_registry_context(' not in registry
+    assert 'def get_operations_tenant_registry_context(' not in registry
+    assert 'get_operations_namespace_registry_context' not in routes
+    assert 'get_operations_tenant_registry_context' not in routes
+
+    overview = workspace.split('def get_tenant_overview_context', 1)[1].split(
+        'def get_tenant_operations_summary_context',
+        1,
+    )[0]
+    assert overview.count('build_tenant_sync_state()') == 1
+    assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in overview
+    assert 'sync_state=sync_state' in overview
+    assert 'get_active_tenant_governance_findings()' in overview
+
+
+def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_connectivity() -> None:
+    routes = tenant_routes_source()
+    live_service = read('app/kubernetes/tenant/live_connection.py')
+    live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    live_loader = read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
+    committed_partial = read('app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html')
+    sync_workspace = read('app/templates/kubernetes/tenant/partials/_sync_workspace.html')
+    base = read('app/templates/kubernetes/tenant/base.html')
+    service = tenant_service_source()
+
+    assert 'version_api().get_code(_request_timeout=3)' in live_service
+    assert "@tenant_bp.get('/live-provider-connectivity')" in routes
+    assert "render_template(\n            'kubernetes/tenant/partials/_live_connection_snapshot.html'" in routes
+    assert 'context.update(get_live_tenant_connection_context())' not in routes
+
+    assert "title='Live Provider Connectivity'" in live_partial
+    assert 'Live probe; not committed inventory' in live_partial
+    assert 'Provider operations fail closed per target' in live_partial
+    assert 'tenant-live-provider-connectivity' in live_partial
+
+    assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
+    assert 'hx-trigger="load"' not in live_loader
+    assert 'Check Live Connectivity' in live_loader
+    assert 'Page load makes no provider request' in live_loader
+    assert 'Committed Tenant state is loaded. Check live reachability only when required.' in live_loader
+    assert "title='Live Provider Connectivity'" in live_loader
+    assert 'Refresh Live Connectivity' in live_partial
+
+    assert "title='Tenant Collection Snapshot'" in committed_partial
+    assert 'Committed Tenant snapshot evidence' in committed_partial
+    assert "latest_label='Last Successful'" in committed_partial
+    assert "scope_metric_label='Committed Scope'" in committed_partial
+    assert '_collection_snapshot_context.html' in sync_workspace
+
+    assert 'components/snapshot_context_bar.html' in committed_partial
+    assert 'snapshot_context.render' in committed_partial
+    assert "latest_label='Last Successful'" in committed_partial
+    assert "scope_metric_label='Committed Scope'" in committed_partial
+    assert "coverage_metric_label='Committed Coverage'" in committed_partial
+    assert "exceptions_metric_label='Snapshot Exceptions'" in committed_partial
+    assert 'tenant_collection_snapshot.source_label' in committed_partial
+    assert 'tenant_collection_snapshot.tone' in committed_partial
+
+    assert base.count('_collection_snapshot_context.html') == 1
+    assert '_collection_snapshot_compact.html' not in base
+    assert '_live_connection_loader.html' not in base
+    assert "tenant_page != 'overview'" in base
+    assert 'tenant.live_provider_connectivity' not in base
+    assert '{% block tenant_content %}' in base
+    assert (
+        '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}'
+        not in base
+    )
+    assert 'Provider Operations Restricted' in base
+    assert 'Review Cluster Integrations' in base
+    assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' not in base
+
+    assert 'registered_clusters = (' in service
+    assert 'for cluster in registered_clusters' in service
+    assert "'registered_clusters': registered_clusters" in service
+
+
+def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_preflight() -> None:
+    routes = tenant_routes_source()
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    service = tenant_discovery_source()
+    cutover = read('app/kubernetes/tenant/allocation_cutover.py')
+    template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    preflight_error = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight_error.html')
+    modal_js = read('app/static/js/tenant_adoption_modal.js')
+
+    assert "'discovery'" in routes
+    assert 'get_tenant_discovery_context' in routes
+    assert 'adopt_discovered_tenant_committed' in routes
+    assert "('discovery', 'Discovery', 'radar'" in admin
+    assert '_tenant_discovery.html' in admin
+
+    assert 'list_namespace(_request_timeout=5)' in service
+    assert 'list_cluster_custom_object(' in service
+    assert 'get_cluster_custom_object(' in service
+    assert "'capsule.clastix.io'" in service
+    assert "'native_kubernetes'" in service
+    assert "'Discovered'" in service
+    assert "'Managed'" in service
+    assert "'Blocked'" in service
+
+    # Registry enumeration stays read-only; provider mutation begins only after
+    # explicit human Adopt & Manage submission and live revalidation.
+    discovery_only = service.split('def adopt_discovered_tenant_committed', 1)[0]
+    for provider_mutation in (
+        'create_namespace(',
+        'patch_namespace(',
+        'delete_namespace(',
+        'create_cluster_custom_object(',
+        'patch_cluster_custom_object(',
+        'delete_cluster_custom_object(',
+    ):
+        assert provider_mutation not in discovery_only
+
+    assert 'reconcile_adopted_native_allocation(' in service
+    assert "'allocation_control_state': 'provider_mirrored_policy'" in service
+    assert 'reconcile_adopted_namespace_policy(' not in service
+    assert '_take_over_capsule_allocation(' in service
+    assert 'cutover_capsule_global_quota_allocation(' in service
+    assert 'cutover_capsule_tenant_resource_quota(' in service
+    capsule_takeover = service[service.index('def _finalize_capsule_takeover(') : service.index('def _adopt_capsule(')]
+    assert "'provider_mutation_performed': True" in capsule_takeover
+    assert 'TenantOwnershipStatus.ADOPTED.value' in service
+    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' not in cutover
+    assert 'record.ownership_status != TenantOwnershipStatus.ADOPTED.value' in cutover
+
+    assert 'Tenant Discovery' in template
+    assert 'Live Status' in template
+    assert 'KAORI Classification' in template
+    assert 'Governed Tenant' in template
+
+    discovery_context_source = service.split('def get_tenant_adoption_preflight_context', 1)[0]
+    assert 'observe_native_namespace_allocation(' not in discovery_context_source
+    assert 'observe_capsule_tenant_allocation(' not in discovery_context_source
+    assert 'discover_capsule(' not in discovery_context_source
+    assert 'def get_tenant_adoption_preflight_context' in service
+    assert "@tenant_bp.get('/discovery/preflight')" in routes
+    assert 'get_tenant_adoption_preflight_context' in routes
+
+    assert 'data-tenant-adoption-load' in template
+    assert 'tenant.tenant_adoption_preflight_route' in template
+    assert 'hx-target="#tenant-adoption-preflight-slot"' in template
+    assert 'id="tenant-adoption-preflight-slot"' in template
+    assert 'data-tenant-adoption-modal' not in template
+
+    assert 'Adoption Preflight' in preflight
+    assert 'Adoption Decision' in preflight
+    assert 'Adoption Impact' in preflight
+    assert 'KAORI records' in preflight
+    assert 'Provider remains authoritative' in preflight
+    assert 'After adoption' in preflight
+    assert 'Provider &amp; Live Context' in preflight
+    assert 'Allocation Overview' in preflight
+    assert 'lg:grid-cols-2' in preflight
+    assert 'lg:col-span-2' in preflight
+    assert 'lg:max-w-[62%]' in preflight
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]' not in preflight
+    assert 'Effective Allocation' in preflight
+    assert 'Live provider values' in preflight
+    assert 'max-w-5xl' in preflight
+    assert 'max-w-[1240px]' not in preflight
+    assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
+    assert (
+        'divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-card'
+        in preflight
+    )
+    assert '[grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]' in preflight
+    assert "table_label.metadata_label('Scope · ' ~" in preflight
+    assert "allocation.shared_scope|default('Provider', true)" in preflight
+    assert '"requests.cpu": "CPU Requests"' in preflight
+    assert '"limits.cpu": "CPU Limits"' in preflight
+    assert '"requests.memory": "Memory Requests"' in preflight
+    assert '"limits.memory": "Memory Limits"' in preflight
+    assert '"pods": "Pods"' in preflight
+    assert 'Namespace Coverage' in preflight
+    assert 'Proposed KAORI Mapping' in preflight
+    assert 'Adoption Result' in preflight
+    assert 'Governance Checks' in preflight
+    assert 'Technical Evidence' in preflight
+    assert 'Human confirmation.' in preflight
+
+    assert 'Adopt & Manage' in preflight
+    assert 'Managed after Adopt' in preflight
+    assert 'Adopt as <span class="font-semibold text-content-primary">Adopted / Managed</span>' in preflight
+    assert 'tenant_adoption_attachment_only' in preflight
+    assert 'Attach Namespace to an <strong class="text-content-primary">existing KAORI Tenant</strong>' in preflight
+    assert 'remains execution authority' in preflight
+    assert 'Current effective values become the initial committed KAORI contract.' in preflight
+    assert 'Managed cutover performs admitted provider writes and verifies equivalent read-back.' in preflight
+    assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
+    assert 'Adopt with governed provider cutover and equivalent allocation values.' in preflight
+    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
+    assert 'Adopt as Observed' not in preflight
+    assert 'Observed · Read Only' not in preflight
+    assert 'No provider mutation.' not in preflight
+    assert 'Next: review governance cutover.' not in preflight
+
+    assert 'components/info_tip.html' in template
+    assert 'components/status_detail_dialog.html' not in template
+    assert 'tenant-discovery-status-tip' in template
+    assert 'Discovery status' in template
+    assert 'Provider Missing' in template
+    assert "page_param='discovery_page'" in template
+    assert "per_page_param='discovery_per_page'" in template
+
+    assert 'Adoption Preflight Unavailable' in preflight_error
+    assert 'No KAORI or provider state was changed' in preflight_error
+
+    assert 'data-tenant-adoption-load' in modal_js
+    assert 'tenant-adoption-preflight-slot' in modal_js
+    assert 'htmx:afterSwap' in modal_js
+    assert 'data-tenant-adoption-close' in modal_js
+    assert 'htmx:afterRequest' in modal_js
+
+
+def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_generation() -> None:
+    models = read('app/models/tenant.py')
+    service = tenant_service_source()
+    migration = read('migrations/versions/20260928_tenant_namespace_generation.py')
+
+    assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
+    assert 'prior_generations' in service
+    assert 'TenantLifecycleStatus.DECOMMISSIONED.value' in service
+    assert 'generation = max(' in service
+
+    assert 'generation: Mapped[int]' in models
+    assert 'prior_namespace_generations' in service
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in service
+    assert 'record.generation = namespace_generation' in service
+    assert 'uq_tenant_namespaces_cluster_namespace_generation' in migration
+
+
+def test_same_tenant_slug_is_scoped_by_cluster() -> None:
+    models = read('app/models/tenant.py')
+    service = tenant_service_source()
+
+    assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
+    assert 'Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)' in service
+
+
+def test_tenant_estate_header_does_not_repeat_pagination_summary() -> None:
+    estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
+
+    assert 'Committed Tenant posture by cluster.' in estate
+    assert 'Compact Tenant posture from committed evidence.' not in estate
+
+
+def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
+    partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    service = read('app/kubernetes/tenant/live_connection.py')
+
+    assert 'Live probe; not committed inventory' in partial
+    assert 'Registered Kubernetes connections' in partial
+    assert 'Provider operations fail closed per target' in partial
+    assert 'Live API reachability' in service
+    assert 'Kubernetes unreachable. Mutations blocked.' in service
+    assert 'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.' not in service
+    assert "title='Tenant Collection Snapshot'" not in partial
+
+
+def test_tenant_status_actions_use_semantic_labels() -> None:
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+
+    assert "special_label('Already Managed', 'normal', 'shield-check')" in discovery
+    assert 'Review Adoption' in discovery
+    assert "special_label('Candidate', 'info', 'radar')" in discovery
+    assert "special_label('Blocked', 'critical', 'shield-alert')" in discovery
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'status_detail_dialog' not in discovery
+
+    assert "'Released · Provider Retained'" in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
+    assert 'tenant-registry-status-tip' in registry
+    assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
+    assert 'status_detail_dialog' not in registry
+    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in detail
+
+
+def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+
+    assert '<option value="native_kubernetes" selected>Native Kubernetes</option>' in form
+    assert '<option value="capsule">Capsule</option>' in form
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
+    assert 'Native and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenants use Discovery → Adoption.' in setup
+
+
+def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
+    sync = read('app/kubernetes/tenant/sync_service.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
+    operations = read('app/templates/kubernetes/tenant/operations.html')
+    drift_registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
+
+    assert 'def apply_missing_namespace_drift_from_inventory()' in sync
+    assert 'TenantNamespaceProvisioningStatus.READY.value' in sync
+    assert 'TenantNamespaceProvisioningStatus.DRIFTED.value' in sync
+    assert 'source_inventory_cutoff' in sync
+    assert 'cutoff < anchor' in sync
+    assert "observed_absent': True" in sync
+    assert "source': 'committed_kubernetes_inventory'" in sync
+    assert 'create_namespace(' not in sync
+    assert 'patch_namespace(' not in sync
+    assert 'delete_namespace(' not in sync
+
+    assert 'apply_missing_namespace_drift_from_inventory()' in tasks
+    assert "snapshot['drifted_namespace_count']" in tasks
+
+    assert 'def reconcile_managed_native_namespace_committed(*, namespace_id: int)' in service
+    assert 'record.ownership_status != TenantOwnershipStatus.MANAGED.value' in service
+    assert "tenant.reconciliation_authority != 'native_kubernetes'" in service
+    assert 'reconcile_native_namespace(record)' in service
+
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/reconcile')" in routes
+    assert 'reconcile_managed_native_namespace_committed(namespace_id=namespace_id)' in routes
+    assert "operation': 'reconcile_namespace'" in routes
+
+    assert '_operations_drift_registry.html' in operations
+    assert 'Namespace Provider Drift' in drift_registry
+    assert "special_label('Drifted', 'warning', 'triangle-alert')" in drift_registry
+    assert "url_for('tenant.reconcile_namespace_route', namespace_id=item.id)" in drift_registry
+    assert "special_label('Observe Only', 'unknown', 'eye')" in drift_registry
+    assert 'Reconcile' in drift_registry
+
+
+def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    service = tenant_service_source()
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+    provider_js = read('app/static/js/tenant_setup_provider.js')
+
+    assert 'name="provider_key"' in form
+    assert 'value="native_kubernetes"' in form
+    assert 'value="capsule"' in form
+    assert 'Capsule Initial Owner' in form
+    assert 'name="capsule_owner_kind"' in form
+    assert 'name="capsule_owner_subject"' in form
+    assert '<option value="capsule">Capsule</option>' in form
+    assert 'capability checked on submit' not in form
+    assert 'capsule-owner-kind-tip' not in form
+    assert 'capsule-owner-subject-tip' not in form
+    assert "'capsule-initial-owner-guide-tip'" in form
+    assert 'Owner Subject must match the identity recognized by Kubernetes authentication.' in form
+    assert 'User example — alice@example.com' in form
+    assert 'Group example — oidc:org:platform-team' in form
+    assert 'ServiceAccount example — system:serviceaccount:platform:deployer' in form
+    assert 'Required for Capsule provider ownership; separate from KAORI Memberships.' in form
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.</p>' not in form
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
+    assert 'Capsule capability and admission are validated when Add Tenant is submitted.' in form
+    assert 'tenant_setup_provider.js' in page
+
+    assert "_ALLOWED_TENANT_PROVIDERS = {'native_kubernetes', 'capsule'}" in service
+    assert 'create_capsule_tenant(' in service
+    assert "tenant.reconciliation_authority = 'capsule'" in service
+    assert 'compensate_capsule_tenant_create' in service
+
+    assert "dry_run='All'" in capsule
+    assert 'discover_capsule(' in capsule
+    assert 'CapsuleTenantProvider' in capsule
+    assert 'TenantProviderState.CAPSULE' in capsule
+    assert 'Use Tenant Discovery → Adoption' in capsule
+    assert "'created_by_kaori': True" in capsule
+    assert "'secret_material_persisted': False" in capsule
+
+    assert 'data-capsule-owner-fields' in provider_js
+    assert 'data-capsule-owner-control' in provider_js
+
+
+def test_live_discovery_surfaces_missing_managed_provider_objects() -> None:
+    service = tenant_discovery_source()
+    template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+
+    assert 'observed_native_names' in service
+    assert "provider_status': 'Missing'" in service
+    assert 'Committed KAORI ownership exists, but the Namespace is missing from the live provider.' in service
+    assert 'observed_capsule_names' in service
+    assert 'authoritative Capsule Tenant CR is missing' in service
+    assert "special_label('Provider Missing', 'critical', 'triangle-alert')" in template
+
+
+def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> None:
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    live = read('app/kubernetes/tenant/live_connection.py')
+
+    assert 'max-w-5xl' in preflight
+    assert 'lg:grid-cols-2' in preflight
+    assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
+    assert "description = 'Live Kubernetes API is reachable.'" in live
+
+
+def test_tenant_setup_uses_compact_cross_tenant_boundary_copy() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+
+    assert 'Cross-Tenant references are blocked.' in setup
+    assert 'Identity, scope, grants, and credentials stay within one Tenant.' in setup
+    assert 'Tenant ownership, namespace scope, identity, Access Grants, and credential delivery' not in setup
+
+
+def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_delete() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    tenants = read('app/templates/kubernetes/tenant/tenants.html')
+    membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+
+    assert '>Actions</th>' in registry
+    assert 'components/info_tip.html' in registry
+    assert 'tenant-group-lifecycle-tip' in registry
+    assert 'title_extra=title_info' in registry
+    assert "button_text='Group Guide'" not in registry
+    assert 'Use Edit for mistakes; Retire removes future use while preserving history.' in registry
+    assert 'data-tenant-group-edit-open' in registry
+    assert "url_for('tenant.retire_tenant_group_route', group_id=group.id)" in registry
+    assert "url_for('tenant.reactivate_tenant_group_route', group_id=group.id)" in registry
+    assert 'Edit Tenant Group' in registry
+    assert 'Retire Tenant Group' in registry
+    assert 'tenant_group_modal.js' in tenants
+    assert 'Delete Tenant Group' not in registry
+    assert 'hard-delete' not in membership_registry.lower()
+    assert 'Revoke/Reactivate' in membership_registry
+
+
+def test_access_grant_form_filters_targets_and_profiles_from_selected_membership() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+    scope_js = read('app/static/js/tenant_access_grant_form.js')
+    service = read('app/kubernetes/tenant/access_service.py')
+
+    assert 'data-principal-type="{{ membership.principal_type }}"' in workspace
+    assert 'data-provider-key="{{ membership.tenant.provider_key }}"' in workspace
+    assert 'data-access-provider-warning' in workspace
+    assert 'data-access-submit' in workspace
+    # Capsule grants are admitted only for explicit matching Capsule provider
+    # authority. Browser filtering is guidance; service revalidates on commit.
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert "providerKey === 'capsule' && providerState === 'capsule'" in scope_js
+    assert 'providerKey === reconciliationAuthority' in scope_js
+    assert 'tenant.provider_key != tenant.reconciliation_authority' in service
+    assert "'capsule'," in service
+    assert (
+        "data-principal-types=\"{{ 'service_account' if profile.key.value == 'deployer' else 'user,group' }}\""
+        in workspace
+    )
+    assert 'Filtered by Membership Tenant' in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Kubernetes RBAC remains authoritative for effective access after reconciliation.' in workspace
+    assert "'select Membership first'" in scope_js
+    assert 'tenant_access_grant_form.js' in page
+
+    assert 'filterTenantOptions' in scope_js
+    assert 'option.dataset.tenantId === tenantId' in scope_js
+    assert "scopeValue === 'environment'" in scope_js
+    assert "scopeValue === 'namespace'" in scope_js
+    assert 'environment.required = showEnvironment && Boolean(tenantId)' in scope_js
+    assert 'namespace.required = showNamespace && Boolean(tenantId)' in scope_js
+    assert 'namespaceCount === 0' in scope_js
+    assert "providerKey === 'native_kubernetes'" in scope_js
+    assert 'submit.disabled = !enabled' in scope_js
+    assert 'Provision a Namespace before applying Namespace-scoped access.' in scope_js
+    assert 'targetLabel = tenantName' in scope_js
+    assert "optionText(profile, 'No compatible profile')" in scope_js
+    assert 'normalizedPrincipalType' in scope_js
+    assert "window.addEventListener('pageshow'" in scope_js
+    assert 'htmx:afterSwap' in scope_js
+
+    # Browser filtering is operator guidance only; server-side Tenant boundary validation remains authoritative.
+    assert 'Environment scope cannot cross Tenant boundaries.' in service
+    assert 'Namespace scope cannot cross Tenant boundaries.' in service
+
+
+def test_baseline_capsule_decommission_is_authority_safe_and_residue_gated() -> None:
+    service = read('app/kubernetes/tenant/decommission_service.py')
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'tenant.ownership_status != TenantOwnershipStatus.MANAGED.value' in service
+    assert "provider_evidence.get('created_by_kaori')" in service
+    assert "tenant.provider_state != 'capsule'" in service
+    assert 'namespace_count' in service
+    assert 'access_grant_count or credential_count' in service
+    assert 'managed_resource_count' in service
+    assert 'delete_capsule_tenant_verified(' in service
+    assert "'provider_cleanup': provider_cleanup" in service
+
+    assert 'Capsule Tenant API is unavailable' in capsule
+    assert 'Capsule Tenant ownership label does not match committed KAORI Tenant identity.' in capsule
+    assert 'Capsule Tenant generation no longer matches committed KAORI intent.' in capsule
+    assert 'Capsule Tenant UID changed' in capsule
+    assert 'provider absence was not verified before timeout' in capsule
+
+    assert 'baseline Capsule teardown is admitted only' in readme
+    assert 'KAORI never falls back to Native deletion' in readme
+    assert 'Baseline Capsule decommission:' in readme
+
+
+def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    capacity_registry = read('app/templates/kubernetes/tenant/partials/_allocation_budget_registry.html')
+    table_standard = read('docs/design/components/TABLE_AND_LABEL.md')
+    status_dialog_standard = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
+
+    for template in (registry, discovery, capacity):
+        assert 'components/info_tip.html' in template
+        assert 'status_detail_dialog' not in template
+
+    assert 'tenant-registry-status-tip' in registry
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'allocation-budget-status-tip' in capacity_registry
+    assert 'Do not repeat generic' in table_standard
+    assert 'outside the table scroll container' in table_standard
+    assert 'do **not** use a repeated per-row Status Detail trigger' in status_dialog_standard
+
+
+def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    component = read('app/templates/components/numbered_governance_steps.html')
+
+    for template in (setup, memberships, grants):
+        assert 'components/numbered_governance_steps.html' in template
+        assert 'operational_flow_steps' not in template
+
+    assert '0{{ loop.index }}' in component
+    assert "layout='list'" in component
+    assert "layout == 'compact-grid'" in component
+    assert 'md:grid-cols-2' in component
+    assert 'grid-cols-[auto_auto_minmax(0,1fr)]' in component
+    assert "layout='compact-grid'" in memberships
+    assert "layout='compact-grid'" not in setup
+    assert "layout='compact-grid'" not in grants
+
+
+def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+
+    assert 'tenant-registry-status-tip' in registry
+    assert 'Lifecycle describes committed Tenant state' in registry
+    assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
+    assert 'Decommission blockers' in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
+    assert 'tenant-decommission-blocked-' not in registry
+    assert 'Current Snapshot' not in registry
+    assert 'Governed Flow' not in registry
+
+
+def test_tenant_discovery_statuses_use_shared_header_guidance() -> None:
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'Discovery is live and read-only' in discovery
+    assert 'Live Status — current provider observation.' in discovery
+    assert 'Discovered — candidate for governed Tenant Adoption or existing-Tenant Namespace Attachment.' in discovery
+    assert 'Provider Missing — KAORI ownership exists but the provider object is absent.' in discovery
+    assert 'status_detail_dialog' not in discovery
+    assert 'data-status-detail-trigger' not in discovery
+
+
+def test_tenant_status_rows_do_not_repeat_generic_details_buttons() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+
+    for template in (registry, discovery, capacity):
+        assert 'status_detail_dialog.trigger' not in template
+        assert 'data-status-detail-trigger' not in template
+
+
+def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+
+    assert 'Native and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenants use Discovery → Adoption.' in setup
+    assert 'compatible Capsule clusters support direct Tenant Setup creation' not in setup
+
+    assert 'Revoke disables grants. Reactivation does not restore old grants.' in memberships
+    assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
+
+
+def test_info_tip_uses_title_level_registry_guidance_and_viewport_portal() -> None:
+    component = read('app/templates/components/info_tip.html')
+    docs = read('docs/design/components/INFO_TIP.md')
+    table = read('app/templates/components/table.html')
+    table_primitives = read('app/templates/components/table_primitives.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+
+    assert 'button_text=None, button_classes=None' in component
+    assert 'data-kaori-info-tip' in component
+    assert 'data-kaori-info-tip-trigger' in component
+    assert 'data-kaori-info-tip-preview' in component
+    assert 'sm:group-hover:block' not in component
+    assert 'data-kaori-native-dialog' not in component
+    assert 'data-kaori-dialog-close' not in component
+    assert 'fixed inset-x-4 bottom-4' not in component
+
+    assert "title_extra=''" in table
+    assert '{% if title_extra %}{{ title_extra }}{% endif %}' in table
+    assert 'allow_overflow=false' in table_primitives
+    assert "'overflow-visible' if allow_overflow else 'overflow-hidden'" in table_primitives
+
+    for template in (registry, discovery, memberships, groups):
+        assert 'table_ui.block_classes(allow_overflow=true)' in template
+        assert 'title_extra=title_info' in template
+        assert "placement='right'" in template
+
+    for retired_text_action in ('Status Guide', 'Membership Guide', 'Group Guide'):
+        assert all(
+            f"button_text='{retired_text_action}'" not in template
+            for template in (registry, discovery, memberships, groups)
+        )
+
+    layout = read('app/templates/layouts/app.html')
+    positioning = read('app/static/js/info_tips.js')
+    assert "filename='js/info_tips.js'" in layout
+    assert 'portal.appendChild(preview)' in positioning
+    assert 'getBoundingClientRect()' in positioning
+    assert 'window.innerWidth' in positioning
+    assert 'window.innerHeight' in positioning
+    assert "document.addEventListener('htmx:beforeSwap'" in positioning
+
+    assert 'beside the registry title' in docs
+    assert 'temporarily portals the popover' in docs
+    assert 'one non-modal anchored popover' in docs
+    assert 'native <dialog> top layer' not in docs
+
+
+def test_credential_issuance_binds_transient_objects_to_tenant_before_validation() -> None:
+    human = read('app/kubernetes/tenant/credential_service.py')
+    deployer = read('app/kubernetes/tenant/deployer_credential_service.py')
+
+    human_tenant_fk = human.index('credential.tenant_id = grant.tenant_id')
+    human_tenant_relationship = human.index('credential.tenant = grant.tenant')
+    human_validation = human.index('validate_credential_contract(credential)', human_tenant_relationship)
+    assert human_tenant_fk < human_validation
+    assert human_tenant_relationship < human_validation
+
+    deployer_membership_fk = deployer.index('membership.tenant_id = tenant.id')
+    deployer_grant_fk = deployer.index('grant.tenant_id = tenant.id')
+    deployer_credential_fk = deployer.index('credential.tenant_id = tenant.id')
+    deployer_grant_validation = deployer.index('validate_active_grant(grant)', deployer_credential_fk)
+    deployer_credential_validation = deployer.index(
+        'validate_credential_contract(credential)', deployer_grant_validation
+    )
+
+    assert deployer_membership_fk < deployer_grant_validation
+    assert deployer_grant_fk < deployer_grant_validation
+    assert deployer_credential_fk < deployer_credential_validation
+    assert 'credential.tenant = tenant' in deployer
+
+
+def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inventory() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    material = read('app/templates/kubernetes/tenant/credential_material.html')
+    component = read('app/templates/components/one_time_secret.html')
+    routes = tenant_routes_source()
+    service = read('app/kubernetes/tenant/credential_service.py')
+    script = read('app/static/js/tenant_credential_material.js')
+    clipboard = read('app/static/js/clipboard.js')
+
+    assert 'generate_credential_material_route' in registry
+    assert 'data-kaori-sensitive-material' not in registry
+    assert 'material_value' not in registry
+    assert 'data-kaori-sensitive-material' in component
+    assert 'csrf_token_value' in component
+    assert 'value="{{ csrf_token_value }}"' in component
+    assert 'csrf_token()' not in component
+    assert 'csrf_token(),' in registry
+    assert 'Access Material' in material
+    assert 'One-time view — copy before leaving' in material
+    assert 'Human Access Token' in material
+    assert 'Namespace-Scoped Kubeconfig' in material
+    assert 'Encoded Kubeconfig (Base64)' in material
+    assert 'KAORI does not persist the token or kubeconfig' in material
+
+    assert "@tenant_bp.post('/credentials/<int:credential_id>/material')" in routes
+    assert "Cache-Control'] = 'no-store, no-cache, must-revalidate, private'" in routes
+    assert "Referrer-Policy'] = 'no-referrer'" in routes
+    assert "X-Robots-Tag'] = 'noindex, nofollow, noarchive'" in routes
+    assert 'generate_credential_material_committed(' in service
+
+    assert 'data-credential-material-namespace' in script
+    assert 'data-credential-material-ttl' in script
+    assert 'Kubernetes may return a shorter actual expiry.' in script
+    assert 'pagehide' in script
+    assert 'data-kaori-download-button' in clipboard
+
+
+def test_managed_adoption_preserves_observed_evidence_and_lifecycle_separation() -> None:
+    observer = allocation_observation_source()
+    adoption = tenant_discovery_source()
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'observe_native_namespace_allocation' in observer
+    assert 'observe_capsule_tenant_allocation' in observer
+    assert "'provenance': 'adopted_observed'" in observer
+    assert "'provider_mutation_performed': False" in observer
+    assert "control_state = 'observed' if not unsupported and not ambiguous else 'control_unavailable'" in observer
+    assert "'control_state': control_state" in observer
+    assert 'profile_lineage_for_observed_allocation' in observer
+    assert 'GlobalResourceQuota' in observer
+
+    assert 'def _take_over_native_allocation(' in adoption
+    assert 'reconcile_adopted_native_allocation(' in adoption
+    assert "'allocation_control_state': 'kaori_managed'" in adoption
+    assert "'provider_mutation_performed': True" in adoption
+    assert 'TenantOwnershipStatus.ADOPTED.value' in adoption
+    assert "'allocation_control_state': 'provider_mirrored_policy'" in adoption
+
+    assert "{% elif allocation_control == 'kaori_managed' %}" in namespace_registry
+    assert '{% set control_label = "KAORI Managed" %}' in namespace_registry
+    assert "{% elif adopted_observed and allocation_control != 'control_unavailable' %}" in namespace_registry
+    assert '{% set control_label = "Awaiting Takeover" %}' in namespace_registry
+    assert 'title="Control: {{ control_label }}"' in namespace_registry
+    assert 'table_label.status_label(item.ownership_status' in namespace_registry
+    assert 'namespace_allocation_options' in allocation_change
+    assert '{% for item in namespace_allocation_options %}' in allocation_change
+    assert '{% for item in namespace_options %}' not in allocation_change
+
+    assert '#777 managed adoption' in architecture
+    assert 'provider-equivalent managed takeover' in architecture
+    assert 'Existing Adopted / Observed records' in architecture
+    assert 'provider-equivalent managed takeover' in readme
+    assert 'Namespace lifecycle ownership stays Adopted' in readme
+
+
+def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_from_namespace_ownership() -> None:
+    cutover = read('app/kubernetes/tenant/allocation_cutover.py')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
+    page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+
+    assert 'def build_allocation_cutover_state' in cutover
+    assert 'def reconcile_adopted_native_allocation' in cutover
+    assert 'record.ownership_status != TenantOwnershipStatus.ADOPTED.value' in cutover
+    assert "'allocation_control_state': 'kaori_managed'" in cutover
+    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' not in cutover
+    assert 'resourceVersion changed since observation' in cutover
+    assert 'UID changed since observation' in cutover
+    assert 'Provider read-back does not match the proposed allocation' in cutover
+    assert 'KAORI will not bypass Capsule by writing Native quota directly.' in cutover
+    assert 'provider_mutation_may_have_started' in cutover
+
+    assert 'def cutover_adopted_namespace_allocation' in service
+    assert 'enforce_existing_namespace_allocation_preflight' in service
+    assert "operation='allocation_governance_cutover'" in service
+    assert "allocation_control_state(record) != 'kaori_managed'" in service
+    assert 'namespace_cutover_options' in service
+    assert 'namespace_cutover_state' in service
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    assert 'preferCurrentProfile' in script
+    assert 'current.profile_id' in script
+    assert "profileSelect.value = 'adopted_baseline'" in script
+    assert "profileSelect?.value === 'adopted_baseline'" in script
+    assert "pvc_min_storage: ['storage_policy', 'min']" in script
+    assert "pvc_max_storage: ['storage_policy', 'max']" in script
+    assert "const value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''" in script
+
+    assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
+    assert 'cutover_adopted_namespace_allocation_committed' in routes
+    assert 'kubernetes_tenant_allocation_cutover_completed' in routes
+    assert "'namespace_ownership_status': record.ownership_status" in routes
+
+    assert '_allocation_cutover.html' in page
+    assert 'Adopted Native Governance Cutover' in cutover_ui
+    assert 'KAORI Preset · Locked' in cutover_ui
+    assert 'Custom · Editable' in cutover_ui
+    assert 'Observed Provider Baseline' in cutover_ui
+    assert 'KAORI Managed' in cutover_ui
+    assert 'Cut Over Governance' in cutover_ui
+    assert 'Use current provider baseline · Custom' in cutover_ui
+    assert (
+        'Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.' in cutover_ui
+    )
+    # Provider baseline and proposed contract share the canonical typed metric
+    # renderer; both PVC bounds must remain visible on either side.
+    assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in cutover_ui
+    assert "('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')" in cutover_ui
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in cutover_ui
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in cutover_ui
+    assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
+    assert 'Control Unavailable' in cutover_ui
+    assert 'Proposed KAORI Managed Contract' in cutover_ui
+    assert 'Original Native ResourceQuota / LimitRange UID and resourceVersion' in cutover_ui
+    assert 'must match committed legacy observation.' in cutover_ui
+    assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
+
+    assert 'Managed Contract Comparison' in allocation_change
+    assert 'Select managed Namespace' in allocation_change
+    assert 'KAORI Managed' in namespace_registry
+
+
+def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconciled() -> None:
+    drift = read('app/kubernetes/tenant/allocation_drift.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = tenant_routes_source()
+    registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'def apply_managed_allocation_drift_observation' in drift
+    assert "'provider_mutation_performed': False" in drift
+    assert "'allocation_drift'" in drift
+    assert "'differences': differences" in drift
+    assert 'def reapply_kaori_allocation_intent' in drift
+    assert 'def accept_provider_allocation_state' in drift
+    assert 'enforce_observed_namespace_allocation_preflight' in drift
+    assert "current_quota_hard=dict(live.get('quota') or {})" in drift
+    assert 'proposed_quota_hard=record.allocation_quota_json or {}' in drift
+    assert "provenance': 'accepted_provider_state'" in drift
+    assert 'No admitted reconciliation adapter exists for the current provider authority.' in drift
+    assert 'committed Drifted Namespace state' in drift
+    assert 'unavailable during teardown' in drift
+
+    assert 'apply_managed_allocation_drift_observation()' in tasks
+    assert "snapshot['allocation_drift_count']" in tasks
+    assert 'def apply_provider_mirrored_policy_observation' in drift
+    assert 'provider_mirrored_policy' in drift
+    assert 'apply_provider_mirrored_policy_observation()' in tasks
+    assert "snapshot['provider_mirrored_policy_count']" in tasks
+    assert "snapshot['provider_mirrored_policy_updated_count']" in tasks
+
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/reapply')" in routes
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/accept-provider-state')" in routes
+    assert 'kubernetes_tenant_allocation_reapplied' in routes
+    assert 'kubernetes_tenant_allocation_provider_state_accepted' in routes
+
+    assert 'Namespace & Allocation Drift' in registry
+    assert 'Reapply KAORI Intent' in registry
+    assert 'Accept Provider State' in registry
+    assert 'Control Unavailable' in registry
+    assert 'difference.kaori_value' in registry
+    assert 'difference.provider_value' in registry
+    assert 'source.get("uid")' in registry
+    assert 'source.get("resource_version")' in registry
+
+    assert '## Managed allocation drift and bidirectional reconciliation' in architecture
+    assert 'current live provider allocation as the current state' in architecture
+    assert 'Acceptance performs **no provider write' in architecture
+    assert 'Native managed-allocation drift:' in readme
+    assert 'Bidirectional allocation recovery:' in readme
+    assert '**API**' in readme
+    assert '**APE**' in readme
+    assert 'Capsule Tenant quota bidirectional recovery:' in readme
+
+
+def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -> None:
+    adoption = tenant_discovery_source()
+    qualifier = read('app/kubernetes/tenant/capsule_tenant.py')
+    governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
+    advanced = read('app/kubernetes/tenant/capsule_advanced.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    allocation_state = read('app/kubernetes/tenant/capacity_allocation_state.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = tenant_routes_source()
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    operations_page = read('app/templates/kubernetes/tenant/operations.html')
+    drift_ui = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_drift.html')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    capsule_architecture = read('docs/architecture/kubernetes-tenant-capsule-advanced.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'qualify_capsule_tenant_adoption' in qualifier
+    assert "dry_run='All'" in qualifier
+    assert "'adoption_admission_dry_run_verified': admission_verified" in qualifier
+    assert 'capability_evidence' in adoption
+    assert "'capsule': capability_evidence" in adoption
+    assert "allocation['control_state'] = 'observed'" in adoption
+    assert 'shared_global_quota' in adoption
+
+    assert 'def build_capsule_shared_allocation_cutover_state' in governance
+    assert "baseline.get('allocation_authority') != 'capsule_global_resource_quota'" in governance
+    assert "_capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available'" in governance
+    assert (
+        'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.' in governance
+    )
+    assert "intent.resource_kind = 'global_resource_quota'" in governance
+    assert "'allocation_governance_scope': _SHARED_SCOPE" in governance
+    assert 'enforce_shared_tenant_allocation_preflight' in governance
+    assert 'reconcile_capsule_advanced_intent(intent, provider=provider)' in governance
+    assert "'provider_mutation_performed': False" in governance
+    assert "'provenance': 'accepted_provider_state'" in governance
+    assert "'allocation_customized': not _profile_matches_quota(profile, live_quota)" in governance
+
+    assert 'expected_provider_source' in advanced
+    assert 'Capsule provider resource UID changed' in advanced
+    assert 'Capsule provider resourceVersion changed' in advanced
+
+    assert 'def _canonical_shared_allocation_quota' in allocation_state
+    assert '_canonical_shared_allocation_quota,' in capacity
+    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in allocation_state
+    assert 'def enforce_shared_tenant_allocation_preflight' in capacity
+    assert "allocation_scope='tenant_shared'" in capacity
+    assert 'shared_quota_by_tenant=shared' in capacity
+
+    assert 'apply_managed_capsule_shared_allocation_drift_observation' in tasks
+    assert "snapshot['capsule_shared_allocation_drift_count']" in tasks
+
+    assert "@tenant_bp.post('/shared-allocation/cutover')" in routes
+    assert "@tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')" in routes
+    assert "@tenant_bp.post('/shared-allocation/<int:intent_id>/accept-provider-state')" in routes
+    assert 'CapsuleSharedAllocationStateConflictError' in routes
+
+    assert '_capsule_shared_allocation_cutover.html' in namespace_page
+    assert 'Capsule Shared Allocation Governance' in cutover_ui
+    assert 'GlobalResourceQuota' in cutover_ui
+    assert 'Cut Over Shared Governance' in cutover_ui
+    assert 'Control Unavailable' in cutover_ui
+
+    assert '_capsule_shared_allocation_drift.html' in operations_page
+    assert 'Capsule Shared Allocation Drift' in drift_ui
+    assert drift_ui.count('Reapply Intent') == 2
+    assert drift_ui.count('Accept Provider') == 2
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')"
+    ) in drift_ui
+    assert drift_ui.count('<form method="post"') == 2
+    assert drift_ui.count('name="csrf_token"') == 2
+    assert 'source.get("uid")' in drift_ui
+    assert 'source.get("resource_version")' in drift_ui
+    assert 'ops_capsule_shared_page' in routes
+    assert 'ops_capsule_shared_per_page' in routes
+
+    assert 'Capsule shared allocation authority' in architecture
+    assert 'allocation_governance_scope=tenant_shared' in architecture
+    assert 'counted once' in architecture
+    assert '#771 does not admit `Tenant.spec.resourceQuotas`; #773 is the separate bounded authority' in architecture
+    assert 'Canonical GlobalResourceQuota allocation bridge' in capsule_architecture
+    assert 'never copied into every correlated Namespace' in capsule_architecture
+    assert 'Capsule GlobalResourceQuota governance:' in readme
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
+
+
+def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
+    provider = read('app/kubernetes/tenant/capsule_provider.py')
+    quota_provider = read('app/kubernetes/tenant/capsule_tenant_quota_provider.py')
+    observer = allocation_observation_source()
+    adoption = tenant_discovery_source()
+    governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = tenant_routes_source()
+    discovery_ui = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    adoption_preflight_ui = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    operations_page = read('app/templates/kubernetes/tenant/operations.html')
+    drift_ui = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_drift.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert "('spec', 'resourceQuotas')" in provider
+    assert "'tenant_resource_quotas': _dependent_status(" in provider
+    assert 'def observe_capsule_tenant_resource_quota' in observer
+    assert "scope = str(resource_quotas.get('scope') or 'Tenant')" in observer
+    assert "'authority_unsupported_dimensions': authority['unsupported']" in observer
+    assert "'external_constraints': authority['external']" in observer
+
+    assert 'def _apply_capsule_allocation_capability_state' in adoption
+    assert "capability = 'tenant_resource_quotas'" in adoption
+    assert "allocation['control_state'] = 'observed'" in adoption
+
+    assert 'def build_capsule_tenant_quota_cutover_state' in governance
+    assert "baseline.get('allocation_authority') != _AUTHORITY" in governance
+    assert "_capsule_capability_state(tenant, _CAPABILITY) != 'available'" in governance
+    assert 'def cutover_capsule_tenant_resource_quota' in governance
+    assert 'def change_capsule_tenant_resource_quota' in governance
+    assert '_desired_resource_quotas(' in governance
+    assert '_patch_resource_quotas(' in governance
+    assert "dry_run='All'" in quota_provider
+    assert 'Capsule Tenant resourceVersion changed' in quota_provider
+    assert 'Capsule Tenant UID changed' in quota_provider
+    assert 'def apply_managed_capsule_tenant_quota_drift_observation' in governance
+    assert 'def reapply_capsule_tenant_quota_intent' in governance
+    assert 'def accept_capsule_tenant_provider_state' in governance
+    assert "'provider_mutation_performed': False" in governance
+    assert "provenance='accepted_provider_state'" in governance
+
+    assert 'def enforce_capsule_tenant_resource_quota_preflight' in capacity
+    assert "normalized_scope = str(scope or 'Tenant')" in capacity
+    assert "factor = 1 if normalized_scope == 'Tenant'" in capacity
+    assert "'tenant_namespace_template'" in capacity
+
+    assert 'apply_managed_capsule_tenant_quota_drift_observation()' in tasks
+    assert "snapshot['capsule_tenant_quota_drift_count']" in tasks
+
+    assert "@tenant_bp.post('/tenant-quota/cutover')" in routes
+    assert "@tenant_bp.post('/tenant-quota/change')" in routes
+    assert "@tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')" in routes
+    assert "@tenant_bp.post('/tenant-quota/<string:tenant_id>/accept-provider-state')" in routes
+    assert 'CapsuleTenantQuotaStateConflictError' in routes
+    assert 'ops_capsule_tenant_quota_page' in routes
+
+    assert 'data-tenant-adoption-load' in discovery_ui
+    assert 'Provider Constraints' in adoption_preflight_ui
+    assert "table_label.status_label('Observed', 'info')" in adoption_preflight_ui
+    assert "table_label.special_label('Managed on Adopt', 'normal', 'shield-check')" in adoption_preflight_ui
+    assert "table_label.special_label('Provider Mirrored', 'info', 'refresh-cw')" in adoption_preflight_ui
+    assert 'PVC Storage Constraint' in adoption_preflight_ui
+    assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
+    assert (
+        'generated Namespace constraints remain provider-mirrored unless Capsule exposes an admitted source control.'
+        in adoption_preflight_ui
+    )
+    assert 'authority_unsupported_dimensions' in adoption_preflight_ui
+    assert '_capsule_tenant_quota_cutover.html' in namespace_page
+    assert 'tenant-capsule-tenant-quota-state' in namespace_page
+    assert 'Capsule Tenant Quota Governance' in cutover_ui
+    assert 'Tenant.spec.resourceQuotas' in cutover_ui
+    assert 'Take Over Governance' in cutover_ui
+    assert 'Change Allocation' in cutover_ui
+    assert (
+        'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.'
+        in cutover_ui
+    )
+    assert 'Native cutover path must never bypass Capsule ownership.' in readme
+    assert 'No path may fall back to namespaced Native ResourceQuota mutation.' in readme
+    assert 'data-tenant-quota-allocation-form' in script
+    assert 'data-tenant-quota-managed-form' in script
+
+    assert '_capsule_tenant_quota_drift.html' in operations_page
+    assert 'Capsule Tenant Quota Drift' in drift_ui
+    assert drift_ui.count('Reapply Intent') == 2
+    assert drift_ui.count('Accept Provider') == 2
+    assert (
+        "may_reconcile = can_manage and state.get('reapply_supported') and state.get('accept_supported')"
+    ) in drift_ui
+    assert drift_ui.count('<form method="post"') == 2
+    assert drift_ui.count('name="csrf_token"') == 2
+    assert 'source.get("uid")' in drift_ui
+    assert 'source.get("resource_version")' in drift_ui
+
+    assert 'Capsule Tenant resource-quota authority' in architecture
+    assert 'Tenant Sync performs no provider write' in architecture
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
+    assert 'Capsule Tenant quota — **partner** evidence case:' in readme
+    assert 'Capsule Tenant quota bidirectional recovery:' in readme
+
+
+def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    modal = read('app/templates/components/destructive_confirmation_modal.html')
+
+    assert "presentation='steps'" in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
+
+    assert (
+        'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4'
+        in modal
+    )
+    assert 'li class="min-w-0 bg-surface-card p-4"' in modal
+    assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
+
+
+def test_credential_and_grant_expanded_mutations_use_canonical_workflow_actions() -> None:
+    action = read('app/templates/components/action_button.html')
+    assert "variant == 'critical'" in action
+    assert 'bg-status-critical' in action
+    for filename, routes in (
+        (
+            '_credential_row_detail.html',
+            (
+                'renew_credential_route',
+                'resume_credential_route',
+                'suspend_credential_route',
+                'revoke_credential_route',
+            ),
+        ),
+        ('_access_grant_row_detail.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
+    ):
+        detail = read(f'app/templates/kubernetes/tenant/partials/{filename}')
+        assert 'components/action_button.html' in detail
+        if filename == '_access_grant_row_detail.html':
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
+            assert "action_button.classes('secondary', full=true)" not in detail
+            assert "action_button.classes('critical', full=true)" not in detail
+            assert detail.count('class="ml-auto shrink-0"') == 2
+            assert 'lg:grid-cols-2' in detail
+        else:
+            assert "action_button.classes('secondary')" in detail
+            assert "action_button.classes('critical')" in detail
+        assert 'hx-target="#tenant-admin-workspace"' in detail
+        assert 'hx-disabled-elt="find button"' in detail
+        assert 'name="csrf_token"' in detail
+        assert 'data-kaori-native-dialog' not in detail
+        for route in routes:
+            assert route in detail
+    for registry in ('_credential_registry.html', '_access_grant_registry.html'):
+        source = read(f'app/templates/kubernetes/tenant/partials/{registry}')
+        assert 'detail_row.toggle_button(' in source
+        assert 'detail_row.static_detail_row(' in source
+        assert 'View Details' in source
+        assert 'data-dialog-target="credential-more-actions-' not in source

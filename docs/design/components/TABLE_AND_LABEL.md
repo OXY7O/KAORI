@@ -30,6 +30,12 @@ The shared component provides:
 
 Page templates still own endpoint selection, authorization, data, filters, sorting, HTMX state, and domain-specific content.
 
+### Human-reviewed reference for dense inventory tables — 2026-10-24
+
+**Kubernetes Node Inventory** (`/inventory/nodes`) is an accepted reference for the existing shared **table block**, not a new table variant. It composes `components/table.html` / `table_primitives.html`, shared heading + Info Tip + count badge + actions, content-aware filter controls, semantic status and metadata labels, compact neutral **View Details**, zero-result state, and the default **Rows 5** footer. The same grammar appears in Kubernetes Inventory Overview's bounded cluster comparison table.
+
+In operator UAT, **Role = Worker** together with an unmatched Search Nodes query yielded **0 Results**, with the existing empty state, **Clear Filters** and `Showing 0–0 of 0 Nodes` visible. This confirms the observed filtered-zero presentation, not complete filter combinations, all page sizes or absent-snapshot fallback. Reuse shared components and domain-bound committed data; do not copy Node-specific columns, capacity fields, provider semantics or page-local styling into other tables.
+
 ## 3. Table block header
 
 Use an icon, Title Case title, and a short description.
@@ -133,6 +139,8 @@ A compact icon + border treatment is an explicit exception for a special posture
 
 Labels remain brief, such as `Ready`, `Degraded`, `Pending`, `Not Observed`, or `Disabled`. Longer evidence belongs outside the label.
 
+For registries with a shared status vocabulary, keep each row to the semantic label and explain the vocabulary once with the shared `info_tip` **immediately beside the registry title** through the header `title_extra` slot (`variant='guide'`). Header action areas remain for operational controls, not help. Do not repeat generic `Details`/info controls beside every status label. This keeps status columns scannable and keeps tooltip content outside the table scroll container. A row-level detail action is reserved for genuinely row-specific operational evidence that cannot be represented by the shared status glossary.
+
 ## 10. Table actions
 
 Table actions are compact navigation or utility controls, not page-level mutation buttons.
@@ -153,6 +161,8 @@ Standard:
 Examples: `Open`, `View Details`, `Edit`, `Retry Sync`, `Run Now`, `Approve`, `Deny`, and `Archive`.
 
 All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior. Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
+
+Artifact Registry Security provides reviewed reference actions: `View More` inside vulnerability rows and `Open Runtime Usage` in the registry block header both use `table_ui.action_classes()`. The header action remains in the shared `inventory_block_header(..., header_actions=...)` group, while the row action retains its modal/navigation semantics. They reference the existing shared primitive; consumers must not copy their classes into page templates. In the same registry, conditional `Clear Filters` leads the header actions and the contextual `Guide` belongs beside the registry title through `title_extra`.
 
 CRUD actions may use semantic treatment when needed: `Create` normally belongs at block or page level; `Edit` may remain neutral or use the standard mutation treatment; `Delete` uses Critical styling. The geometry must remain consistent across all variants.
 
@@ -224,6 +234,14 @@ Pagination follows `docs/design/components/PAGINATION.md`:
 - shared numeric pagination component;
 - footer inside the table surface.
 
+The shared `app/static/js/pagination.js` redraws numeric links after both
+`htmx:afterSwap` and `htmx:afterSettle`. Re-rendering **must be idempotent**:
+preserve the original server-rendered href, HTMX endpoint, target and selection
+attributes when rebuilding links, even after the original child anchors have
+been replaced. Do not generate visible pagination links without a functional
+`href` or `hx-get`. Test repeated HTMX render cycles and a numeric page click,
+not just Jinja macro output or the initial DOM.
+
 ## 15. Responsive behavior
 
 Keep the resource title, primary status, and row action accessible. Lower-priority columns may be hidden at narrow widths. Horizontal scrolling is acceptable for operational tables when hiding data would remove necessary context, but filters and pagination must not create page-level horizontal overflow.
@@ -258,3 +276,43 @@ A table is compliant when:
 ## 18. Design judgment and exceptions
 
 The table standard is a consistency system, not a requirement to decorate every value. Designers and implementers must prioritize scanability, information density, and semantic meaning. When choosing between icon + text, label, or plain text, use the least visually heavy representation that still communicates the value correctly. Any exception must preserve the shared typography scale, alignment, spacing, interaction states, and accessibility contract.
+
+
+### Dense action groups
+
+When a registry row exposes several icon-only actions, do not rely on `flex-wrap` because the controls can fall into asymmetric layouts as column width changes. Use the shared `table_ui.action_grid_classes(2)` primitive for a compact two-column action block. Keep individual controls on `table_ui.action_classes()` so size, border, hover, focus, disabled, and destructive states remain canonical.
+
+## REVIEW(6) — Compact provider-card action exception (#2328)
+
+Provider-card Guide and Configure are **compact disclosure/configuration
+launchers**, not primary workflow completion buttons. They use the existing
+`table_primitives.action_classes(size='header')` semantic utility family:
+36px minimum height (matching the Channel Registry Add Channel launcher),
+soft Violet hover, visible focus, icon-first and readable labels. The
+existing default `action_classes()` continues to own 32px row utilities,
+and the global 40px `action_button.classes` primary/secondary contract is
+unchanged. This is a bounded compact utility exception, not a global
+relaxation of dark-mode primary-action contrast.
+
+## Shared operational action button variants (Channel Details UAT, #2860)
+
+The global 40px `components/action_button.html::classes(variant, full)`
+is the single owner of full-width drawer action geometry, spacing, focus,
+hover, disabled states and semantic treatment. It now supports reusable
+`soft` (low-emphasis operational Edit / Test, Violet token family),
+`warning` (cautionary Retire, semantic warning tokens) and
+`locked-info` (muted governance/dependency inspection, disabled-state
+*appearance* only), in addition to established `primary`, `secondary`
+and `critical`. This extends shared variants without changing existing
+default variants or introducing local CSS/JS. Use the same 40px/rounded-lg
+geometry for adjacent drawer actions and maintain sufficient text contrast
+in both themes.
+
+**Important:** `locked-info` is an *active informational launcher*. It
+must have an explicit accessible action label/target, focus ring and
+working click/keyboard activation to open dependency evidence. Never add
+`disabled` / `aria-disabled=true` when its governed explanation is
+available. Actual destructive Delete is always `critical` and gated by
+existing confirmation and server-side dependency checks. Do not apply
+these drawer variants to dense table row utilities: those remain owned
+by `table_ui.action_classes()`.

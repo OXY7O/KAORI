@@ -10,12 +10,11 @@
         {% else %}
             {% set source_label = "Inventory" %}
         {% endif %}
-        {% set scope_label = 'Fleet' if kpi.label == 'Clusters' else 'Active Scope' %}
         {{ operational_metric_card.render(label=kpi.label,
                 value=kpi.value,
                 description=kpi.description,
                 icon=kpi.icon,
                 source_label=source_label,
-                scope_label=scope_label) }}
+                scope_label='Active Scope') }}
     {% endfor %}
 </div>

@@ -190,3 +190,92 @@ if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen || navbar
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_canonical_side_drawer_owns_focus_containment_and_return() -> None:
+    drawer = read('app/templates/components/side_drawer.html')
+    layout = read('app/templates/layouts/app.html')
+    runtime = read('app/static/js/side_drawer.js')
+
+    assert 'x-data="kaoriSideDrawer"' in drawer
+    assert 'x-effect="syncOpen(Boolean({{ x_show }}), $refs.dialog)"' in drawer
+    assert 'x-ref="dialog"' in drawer
+    assert 'tabindex="-1"' in drawer
+    assert "filename='js/side_drawer.js'" in layout
+    assert layout.index("filename='js/side_drawer.js'") < layout.index("filename='vendor/alpine/alpine.min.js'")
+    assert "window.Alpine.data('kaoriSideDrawer'" in runtime
+    assert 'this.opener = this.currentFocusTarget()' in runtime
+    assert 'this.trapFocus(event, this.dialog)' in runtime
+    assert 'this.restoreFocus(returnTarget)' in runtime
+
+
+def test_application_shell_owns_scroll_target_top_boundary() -> None:
+    layout = read('app/templates/layouts/app.html')
+    standard = read('docs/design/components/NAVBAR.md')
+    responsive = read('docs/design/components/RESPONSIVE_AND_HTMX.md')
+
+    assert 'data-kaori-main-scroll' in layout
+    assert 'scroll-pt-5' in layout
+    assert 'lg:scroll-pt-6' in layout
+    assert '2xl:scroll-pt-7' in layout
+    assert 'Application-shell top boundary' in standard
+    assert 'Scroll and History Alignment' in responsive
+
+
+def test_operation_submit_loading_preserves_named_action_and_unnamed_behavior() -> None:
+    """Disabling a named submitter must not drop its action from form data."""
+    harness = r"""
+const listeners = {}
+global.window = {}
+global.document = {
+    body: { addEventListener() {} },
+    addEventListener(name, callback) { listeners[name] = callback },
+}
+require('./app/static/js/application_shell.js')
+
+const state = { action: null, added: 0, loading: false, label: '' }
+const form = {
+    addEventListener(name, callback, options) {
+        if (name !== 'formdata' || options?.once !== true) process.exit(10)
+        state.added += 1
+        state.formdata = callback
+    },
+}
+const button = {
+    name: 'action',
+    value: 'save',
+    form,
+    disabled: false,
+    dataset: { loadingLabel: 'Registering Connection...' },
+    matches(selector) { return selector === '[data-operation-submit]' },
+    classList: { add() { state.loading = true } },
+    querySelector(selector) {
+        if (selector === '[data-operation-submit-label]') {
+            return { set textContent(value) { state.label = value } }
+        }
+        if (selector === '[data-lucide]') return { classList: { add() {} } }
+        return null
+    },
+}
+listeners.submit({ submitter: button })
+if (!button.disabled || !state.loading || state.added !== 1) process.exit(11)
+if (state.label !== 'Registering Connection...') process.exit(12)
+state.formdata({ formData: { set(name, value) { state.action = [name, value] } } })
+if (JSON.stringify(state.action) !== JSON.stringify(['action', 'save'])) process.exit(13)
+
+const unnamed = { ...button, name: '', disabled: false }
+listeners.submit({ submitter: unnamed })
+if (!unnamed.disabled || state.added !== 1) process.exit(14)
+
+const unrelated = { ...button, matches() { return false }, disabled: false }
+listeners.submit({ submitter: unrelated })
+if (unrelated.disabled || state.added !== 1) process.exit(15)
+"""
+    result = subprocess.run(
+        ['node', '-e', harness],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

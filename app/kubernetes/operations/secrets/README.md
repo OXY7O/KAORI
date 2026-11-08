@@ -66,6 +66,8 @@ The application must never:
 Protected Reveal is the only plaintext-read workflow. It decodes one approved key, returns a no-store one-time response, clears in-memory buffers, and marks the request consumed.
 The one-time consumption path serializes the `SecretRevealRequest` row with a PostgreSQL `FOR UPDATE OF secret_reveal_requests` boundary while suppressing model-level joined eager relationships. This prevents nullable requester/approver/inventory joins from entering the locking SELECT and keeps the lock scoped to the request row that owns the one-time state transition.
 
+**Reveal Once audit durability:** The consumed request state and its payload-free Activity Audit event are staged in the same database transaction. The committed event uses the existing audit-only delivery policy (no Notification Deck item). If audit persistence or transaction commit fails, the request transition rolls back and no plaintext result is returned. The operator must retry only after reviewing the failure; normal authorization, live UID, policy and one-time locking checks still apply.
+
 ## Workflow contracts
 
 ### Create Secret
@@ -101,6 +103,106 @@ The one-time consumption path serializes the `SecretRevealRequest` row with a Po
 - Final reveal rechecks global readiness, namespace policy, Secret type, blocked keys, request ownership/status, expiry, and live key existence.
 - One active request is allowed per requester, cluster, namespace, Secret, and key.
 - Approval-required requests enforce separation of duties.
+
+**Lifecycle expiry and approver scale:** The requester registry is read-only: an expired Pending/Approved request is presented and filtered as Expired using its committed expiry timestamp without mutating a global set of request rows on GET. Approval and one-time reveal still recheck wall-clock expiry and fail closed; request creation never treats an expired record as active. Persisted historical statuses may retain their last transition until a separately governed lifecycle reconciliation occurs; effective status is authoritative for user-facing eligibility. Approver recipients are selected by current active user and active role/permission SQL eligibility, plus database-origin super-admin authority, before loading recipient identities; no full active-user permission sweep.
+
+**My Reveal Requests registry (read-only navigation):** The requester-facing history uses the
+canonical KAORI table with default five rows, shared pagination, and SQL-backed search,
+status and newest/oldest ordering. Search matches the current requester's Secret name,
+namespace, key name or ticket reference only; it does not query or display Secret values.
+Status filtering is limited to known reveal lifecycle values. The requester filter is
+applied before all other filters, and approver-only Pending Approvals remains a separate
+permissioned pagination window. HTMX registry navigation preserves a full-page `My Requests`
+URL and the active filter state in refresh/polling. The **Verify Session**
+action on an approved request focuses the Step-Up password field.
+When Step-Up is already visible, it does not scroll; otherwise it scrolls
+only the bounded KAORI main container to avoid blank workspace overscroll.
+The delegated action survives HTMX table replacement and retains a full-page `reveal_view=mine` + Step-Up anchor
+fallback; for external identity without a password field it focuses the guidance
+panel. The action is offered only with Reveal capability, and does not submit
+credentials or grant access itself. Once the session is verified, the Step-Up
+panel directs the user to an **Approved** row in **My Requests** and its
+**Reveal Once** action. The **Continue to Approved Requests** link delegates to
+the existing Secret Reveal workspace controller; it focuses the first visible
+approved-row action (or the My Requests registry header when there is none)
+and uses bounded main-container scroll instead of browser-native anchor
+scrolling, preventing the app-shell blank-strip/overscroll regression. The
+Reveal Once button uses the same canonical table-row action style as Verify
+Session and New Request, without changing its CSRF-protected POST or policy.
+The one-time Secret response is rendered in a
+separate `#reveal-value-output` region **inside My Requests**, above the
+request registry, never in New Request or in a toast. The result is focused
+after HTMX swaps and rendered without an automatic live announcement of the
+Secret payload. HTMX history is disabled for the result; provider output is
+`no-store`, cleared on timeout, document visibility/pagehide, replacement,
+or navigation away from the My Requests tab. Only the temporary response
+shows the value; the request table and audit remain payload-free.
+Approval, Step-Up, one-time reveal, request expiry and CSRF remain governed
+by their existing routes. Tab labels carry no count badges; table headers
+retain source-owned result counts.
+
+**Requester decision deep links:** The approved/denied notification links to the exact
+committed request in **My Requests** using `my_request_id`, never to a shared
+unfiltered registry or browser-native tall-card anchor. The SQL read is first
+scoped by `requester_user_id` and then exact request ID; this is navigation,
+not authorization. A shared contextual callout shows the current request
+state and the next eligible action (Verify Session or Reveal Once); a
+**Show All Requests** link restores the normal five-row registry. The linked
+ID survives Step-Up reauthentication through a bounded, navigation-only hidden
+field; no password or Secret content is put in the URL, client storage,
+notifications, or activity evidence. Filters intentionally return to the
+normal registry. Expired, denied, consumed or non-owned requests never receive
+a new reveal action from this link.
+
+**Assigned Work / Work Inbox:** Approval Required requests are visible to every
+currently eligible active reviewer through the existing Notification Deck
+Assigned Work view, as a read-only projection of committed
+`SecretRevealRequest` records. Eligibility requires current
+`kubernetes_secrets.approve_reveal` permission and excludes the requester;
+only unexpired Pending records are shown. One request is counted once per
+eligible viewer, independently of notifications; the request remains one
+committed authority even when multiple reviewers can see it. The Work Inbox
+links to the existing Approvals tab; the original CSRF-protected decision
+route determines the first valid approval/denial, and resolved/expired
+requests disappear automatically. No Secret payload is read or persisted
+by this projection. Notification fanout remains advisory and does not
+assign approval to a fixed recipient.
+
+**Requester actionable Work Inbox:** When another authorized user approves an
+`approval_required` Secret Reveal, the requester already receives a historical
+approval/denial notification. Separately, **Assigned Work** now projects each
+currently approved, unexpired, requester-owned request as **Ready to Reveal**,
+with expiry and optional approver identity plus an exact `my_request_id`
+deep-link to the existing My Requests Step-Up/Reveal Once flow. The
+`kubernetes_secrets.reveal` permission and active-account checks are evaluated
+on every read; the SQL predicate requires requester ownership and never reads
+provider Secret values. Its actionable counter is independent of notification
+unread state, and the work item disappears after reveal/expiry or role
+revocation. Historical notification and committed audit remain intact. No
+second approval or reveal action is implemented in Notification Deck.
+
+**Submit and approver navigation:** New Request submission uses the canonical
+server POST/redirect to My Requests and a navigation-only sessionStorage
+marker to reset the KAORI main-scroll viewport; no request form data or
+Secret material enters browser storage. Work Inbox already projects pending
+approval-required requests from committed SecretRevealRequest state for each
+currently active user with `kubernetes_secrets.approve_reveal`, excluding the
+requester. Notifications are sent separately to eligible approvers; inbox
+links open the filtered Approvals view without a native tall-card anchor.
+The Approve/Deny controls already use shared KAORI table row actions, preserve
+CSRF, and cannot authorize self-approval.
+
+**Pending Approvals registry (approver-only):** The separate Pending Approval
+workspace now uses the same KAORI table header, transient loader, source-backed
+filter, conditional Clear Filters, and five-row pagination. Search is capped at
+120 characters and matches only request metadata (Secret name, Namespace,
+key or ticket); queue order is oldest-first by default with an optional
+newest-first choice. My Requests state remains independent. Decision details
+expand only for a selected row, use the original CSRF-protected approval/denial
+POST and 500-character optional note, and never expose Secret values. Self
+approval remains blocked; background polling pauses while a decision editor
+is open to avoid discarding operator input.
+
 
 ### Delete Secret
 
@@ -296,3 +398,75 @@ If a Namespace is policy-enabled but the Protected Kubernetes Secret Reveal Clus
 - The 4/12 right context column owns `Info Flow` plus one compact safety/policy guide; it never owns the mutation action or Secret values.
 - Protected Reveal uses Form + Right Context only in the `New Request` tab. `My Requests` and `Approvals` remain full-width registries.
 - TLS rotation keeps its dedicated reviewed full-width composition.
+
+
+## Protected Reveal live object provenance (#1303)
+
+New requests commit only the Kubernetes Secret `metadata.uid` alongside
+cluster/namespace/name/key/type approval scope, never credential values or
+value digests. The requester must have a nonempty live UID. Approval under
+`approval_required` and final one-time reveal independently verify that
+the live Secret UID still matches the requested object, and type/key remain
+valid. A Secret deleted and recreated under an identical namespace/name is
+**not** covered by the old approval. Request rows predating the migration
+(with null UID) fail closed and must be submitted again. Kubernetes
+`resourceVersion` may legitimately change on the *same* UID; it is not
+frozen into the approval. Existing policy, session reauthentication and
+single-consume checks remain mandatory. Run the migration only after the
+explicit admission gate is lifted; adding the migration file does not
+execute it.
+
+
+## Concurrent decision admission (#1304)
+
+Each approval/denial locks only its SecretRevealRequest row on PostgreSQL
+and performs an atomic `pending`+unexpired compare-and-set before committing.
+The first committed decision is authoritative; a racing or replayed decision
+is rejected and cannot publish a second success notification. SQLite's
+`FOR UPDATE` support is limited; the conditional update is the safety boundary
+there. Approval still verifies live UID/type/key against the original request,
+while the separate one-time reveal lock remains unchanged. A browser success
+cannot substitute for the durable committed status.
+
+
+## Bounded live Secret selector pages (#1305)
+
+Secret operations must continue to identify targets through the live Kubernetes
+API. Namespace LIST/GET calls have a 10-second request timeout, and Secret
+LIST requests use Kubernetes `limit=100` and `continue` paging (max 100
+pages). Each page is scrubbed immediately after its metadata is consumed,
+even on an error. Repeated continuation tokens or excessive listings fail
+with an explicit selector error rather than silently returning an incomplete
+option set. No live Secret plaintext is committed to KAORI. This is a
+provider-request bound, not a replacement of live target discovery with
+Inventory evidence; throughput and authorization behavior still need
+DevContainer UAT and large-namespace benchmark.
+
+
+## Protected Reveal registry pagination (#1307)
+
+My Requests and Pending Approvals now call the canonical SQL
+`paginate_query`/pagination-window helpers with default 5 rows and
+approved 5/10/25/50 sizes. Independent query parameters, tab anchors,
+permission-gated Approvals, existing HTMX fragments, and the existing
+consumer-facing pagination aliases are preserved. Pages are clamped and
+empty windows use 0–0 count labels rather than a custom 3-row default.
+
+
+## Protected Reveal committed request read model (#3495)
+
+`reveal_read_model.py` owns **committed request and pending-approval metadata**
+projections: requester-scoped SQL filtering, effective expiry, permission-gated
+approval counts, readiness and canonical pagination (default 5). This read path
+must never load Secret values or invoke the Kubernetes provider.
+
+`reveal_service.py` retains create/approve/reveal mutations, live Secret
+revalidation, transaction locks, one-time consumption and audit evidence. Its
+existing public read-model names are re-exported for route compatibility.
+The contracts in `tests/contracts/kubernetes/operations/` validate both the
+read-model scope and guarded mutation-service authority.
+
+Run the existing Ruff, Pyright, relevant pytest/security contracts and Code
+Health checks on the **combined Dev Container workbench** before treating this
+refactor as accepted. A source-only merge into temporary review/UAT is not
+Full Admission, provider UAT or human acceptance.

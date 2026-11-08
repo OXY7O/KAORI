@@ -15,7 +15,7 @@ def get_cluster(cluster_id: str) -> Cluster | None:
 
 
 def get_integration_record(integration_type: str, integration_instance_id: int):
-    from app.integrations.registry import get_integration
+    from app.integrations.kernel.registry import get_integration
 
     module = get_integration(integration_type)
     return module.get_record_for_canonical(int(integration_instance_id))

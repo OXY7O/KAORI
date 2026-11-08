@@ -60,6 +60,15 @@ def main() -> int:
                 f'{key} is not an exact snapshot of the current bounded debt; '
                 'run `python scripts/verify_code_health.py --write-baseline` only after reviewing the code change'
             )
+            # Surface exact no-slack discrepancies without changing admission enforcement.
+            expected_entries = expected.get(key)
+            actual_entries = actual.get(key)
+            if isinstance(expected_entries, dict) and isinstance(actual_entries, dict):
+                for entry in sorted(expected_entries.keys() | actual_entries.keys()):
+                    wanted = expected_entries.get(entry)
+                    recorded = actual_entries.get(entry)
+                    if wanted != recorded:
+                        errors.append(f'  {entry}: source={wanted!r}, baseline={recorded!r}')
 
     if errors:
         for error in errors:

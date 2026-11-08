@@ -1,14 +1,14 @@
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.capabilities import (
-    CAPABILITY_KEYS,
-    COMPATIBILITY_PROFILES,
-)
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
     registry,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.capabilities import (
+    CAPABILITY_KEYS,
+    COMPATIBILITY_PROFILES,
 )
 from app.models.kubernetes import KubernetesConnection
 
@@ -47,6 +47,7 @@ provider_implementation = IntegrationImplementation(
     adapter_key='kubernetes_api',
     adapter=runtime_adapter,
     instance_loader=model_loader(KubernetesConnection),
+    record_model=KubernetesConnection,
     canonical_record_loader=canonical_model_loader(KubernetesConnection),
     module_path='app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
     detail_url_builder=_detail_url,

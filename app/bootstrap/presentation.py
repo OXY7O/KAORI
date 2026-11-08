@@ -8,6 +8,7 @@ from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 
 from app.common.navigation import build_navigation_breadcrumb
+from app.common.presentation import pretty_structured_json
 from app.common.timezone import (
     format_user_date,
     format_user_datetime,
@@ -18,7 +19,15 @@ from app.common.timezone import (
     normalize_timezone_mode,
     normalize_timezone_name,
 )
-from app.integrations.navigation import build_integration_navigation_context, integration_endpoint_owner
+from app.common.workspace_navigation import (
+    build_capability_navigation,
+    build_sidebar_navigation,
+)
+from app.integrations.navigation import (
+    build_integration_navigation_context,
+    integration_endpoint_owner,
+    provider_selector_domain,
+)
 from app.kubernetes.cluster.constants import get_environment_label
 from app.kubernetes.cluster.onboarding import build_cluster_onboarding_context
 from app.platform_operations.notifications.feedback import pop_operational_feedback
@@ -80,7 +89,15 @@ def register_presentation(app: Flask) -> None:
             if current_user.is_authenticated
             else 'manual'
         )
-        integration_navigation = build_integration_navigation_context(request.endpoint)
+        selector_domain = None
+        if request.endpoint == 'integrations.choose_integration_provider':
+            selector_domain = provider_selector_domain((request.view_args or {}).get('integration_type'))
+        elif request.endpoint == 'integrations.select_metrics_source_provider':
+            selector_domain = provider_selector_domain('metrics_source')
+        integration_navigation = build_integration_navigation_context(
+            request.endpoint,
+            selected_domain_key=selector_domain['key'] if selector_domain else None,
+        )
         integration_owner = integration_endpoint_owner(request.endpoint)
         return {
             'app_version': app.config['APP_VERSION'],
@@ -98,9 +115,19 @@ def register_presentation(app: Flask) -> None:
                 request.endpoint,
                 request.path,
                 integration_owner=integration_owner,
+                integration_selector_label=selector_domain['label'] if selector_domain else None,
             ),
+            'sidebar_navigation': build_sidebar_navigation(
+                request.endpoint,
+                current_user,
+                request.args,
+                active_capability_override=selector_domain['key'] if selector_domain else None,
+            ),
+            'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args),
             'integration_navigation': integration_navigation,
         }
+
+    app.add_template_filter(pretty_structured_json, 'pretty_structured_json')
 
     @app.template_filter('environment_name')
     def environment_name_filter(value: Any, empty: str = 'Not specified') -> str:

@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -209,3 +210,74 @@ def test_standalone_edge_runtime_reconciles_sites_without_docker_socket() -> Non
     assert 'certbot certonly' in certbot
     assert 'certbot renew' in certbot
     assert '/var/run/docker.sock' not in certbot
+
+
+def test_certbot_renewal_retries_only_transient_exclusive_lock() -> None:
+    verifier = _read(EDGE_VERIFY)
+
+    assert 'verify_renewal_with_lock_retry()' in verifier
+    assert 'Another instance of Certbot is already running.' in verifier
+    assert 'local max_attempts=12' in verifier
+    assert 'sleep 15' in verifier
+    assert "fail 'Certbot renewal dry-run failed; investigate ACME error'" in verifier
+    assert "fail 'Certbot renewal dry-run remains locked after bounded retries'" in verifier
+    assert 'verify_renewal_with_lock_retry' in verifier
+    assert "status '✅' 'Certbot renewal dry-run PASS'" in verifier
+
+    # Certificate/host verification must never succeed just because a lock
+    # was seen; the exact same renewal command must eventually return 0.
+    assert 'if "${compose[@]}" exec -T certbot certbot renew --dry-run' in verifier
+    assert 'cat "$output" >&2' in verifier
+    assert '|| true' not in verifier.split('verify_renewal_with_lock_retry()', 1)[1]
+
+
+def test_certbot_issuance_interval_is_not_renewal_interval() -> None:
+    source = _read(EDGE_CERTBOT_ENTRYPOINT)
+
+    assert 'issue_retry_interval="${EDGE_CERTBOT_ISSUE_RETRY_SECONDS:-30}"' in source
+    assert 'renew_interval="${EDGE_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}"' in source
+    assert 'sleep "$issue_retry_interval" &' in source
+    assert 'sleep "$renew_interval" &' not in source
+
+
+def _execute_redirect_awk(assignment: str, headers: str) -> str:
+    source = _read(EDGE_VERIFY)
+    statement = next(line for line in source.splitlines() if line.strip().startswith(f'{assignment}="$('))
+    expression = statement.split(" | awk '", 1)[1].rsplit("'", 1)[0]
+    result = subprocess.run(
+        ['awk', expression],
+        input=headers,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def test_shared_edge_redirect_awk_accepts_posix_http_headers() -> None:
+    samples = (
+        (
+            'HTTP/1.1 301 Moved Permanently\r\nLocation: https://app.kaori.cloud/health/ready\r\n\r\n',
+            '301',
+            'https://app.kaori.cloud/health/ready',
+        ),
+        (
+            'HTTP/2 308\r\nlocation: https://auto.kaori.cloud/healthz\r\n\r\n',
+            '308',
+            'https://auto.kaori.cloud/healthz',
+        ),
+        (
+            'HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\n\r\n',
+            '200',
+            '',
+        ),
+    )
+    for headers, code, location in samples:
+        assert _execute_redirect_awk('status_code', headers) == code
+        assert _execute_redirect_awk('location', headers) == location
+
+
+def test_shared_edge_redirect_keeps_strict_https_target_gate() -> None:
+    source = _read(EDGE_VERIFY)
+    assert 'if [[ "$status_code" == \'301\' || "$status_code" == \'308\' ]]' in source
+    assert '[[ "$location" == "https://$domain$health_path" ]]' in source

@@ -1,0 +1,68 @@
+{# Source-owned control rows shared by Overview and HTMX OOB updates. #}
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+{% for control in administration_controls %}
+    <article id="kubernetes-admin-control-{{ control.key }}"
+             class="min-w-0 px-5 py-5 sm:px-6">
+        <div class="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ control.icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h3 class="text-base font-semibold text-content-primary">{{ control.label }}</h3>
+                        {{ table_label.status_indicator_label(control.status_label, control.status_tone) }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ control.description }}</p>
+                </div>
+            </div>
+            <button type="button"
+                    @click="setTab('{{ control.workspace_tab }}')"
+                    class="{{ action_button.classes('primary') }} w-full shrink-0 sm:w-auto"
+                    aria-label="{{ control.action_label }} for {{ control.label }}">
+                {{ control.action_label }}
+                <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="mt-5 border-t border-outline-subtle pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="text-xs font-semibold text-content-primary">Configuration Evidence</h4>
+                {{ table_label.metadata_label('Committed KAORI State', icon='clipboard-check') }}
+            </div>
+            <dl class="mt-3 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+                {% for icon, label, value in control.metrics %}
+                    <div class="flex min-w-0 items-center justify-between gap-3 bg-surface-hover px-4 py-3">
+                        <dt class="flex min-w-0 items-center gap-2 text-xs font-medium leading-5 text-content-secondary">
+                            <i data-lucide="{{ icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <span>{{ label }}</span>
+                        </dt>
+                        <dd class="shrink-0 text-lg font-semibold tabular-nums text-content-primary">
+                            {{ value }}
+                        </dd>
+                    </div>
+                {% endfor %}
+            </dl>
+            <div class="mt-4 flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="text-xs font-semibold text-content-primary">Runtime Authorization</h4>
+                        {{ table_label.status_label('Checked at Execution', 'warning') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ control.status_detail }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ control.evidence_label }}</p>
+                </div>
+            </div>
+        </div>
+    </article>
+{% else %}
+    <div class="px-5 py-8 text-center sm:px-6">
+        <p class="text-sm font-semibold text-content-primary">No Administrative Control Available</p>
+        <p class="mt-1 text-xs leading-5 text-content-muted">Only implemented and authorized controls appear in this workspace.</p>
+    </div>
+{% endfor %}

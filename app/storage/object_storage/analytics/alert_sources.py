@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.binding_selectors import BindingSelectorError, apply_promql_scope, parse_matchers
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
     list_alerts_for_scope,
 )
@@ -254,7 +255,7 @@ def build_alert_posture(stream: dict[str, Any]) -> dict[str, Any]:
         detail = 'Active alerts are present without critical or warning severity evidence.'
     else:
         status, tone = 'No Active Alerts', 'normal'
-        detail = 'The selected alert source is operational and currently returns no active alerts for this Object Storage system.'
+        detail = 'The selected alert source is operational and currently reports no active alerts for this Object Storage system. This observed empty result is not proof of overall system health.'
     return {
         **counts,
         'status': status,
@@ -320,7 +321,31 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
             instance_name=selected.instance.name,
         )
 
-    rows = _deduplicate(_alertmanager_rows(result.get('alerts') or []))
+    raw_alerts = result.get('alerts')
+    if (
+        result.get('error')
+        or not isinstance(raw_alerts, list)
+        or any(
+            not isinstance(item, dict)
+            or not str(item.get('alert_name') or item.get('alertname') or '').strip()
+            or not isinstance(item.get('labels'), dict)
+            for item in raw_alerts
+        )
+    ):
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=True,
+                connected=False,
+                label='Alertmanager Evidence Incomplete',
+                tone='warning',
+                detail='Alertmanager returned missing or malformed alert records; zero alerts cannot be confirmed.',
+            ),
+            rows=[],
+            instance_name=selected.instance.name,
+        )
+    rows = _deduplicate(_alertmanager_rows(raw_alerts))
     return _source_view(
         selected_source=selected_source,
         resolved_source='alertmanager',
@@ -336,6 +361,35 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
     )
 
 
+def _scoped_metrics_alert_expression(consumer: MetricsConsumer) -> str:
+    """Require a unique positive asset binding, not merely a shared Metrics Source."""
+    binding = consumer.binding
+    matchers = parse_matchers(binding.selector_json)
+    exact = {matcher.label: matcher.value for matcher in matchers if matcher.operator == '='}
+    if not exact:
+        raise BindingSelectorError(
+            'The selected Object Storage metrics binding needs an exact asset label selector '
+            'before it can supply system-scoped alert evidence.'
+        )
+
+    peers = IntegrationBinding.query.filter(
+        IntegrationBinding.integration_instance_id == binding.integration_instance_id,
+        IntegrationBinding.asset_type == _OBJECT_STORAGE_SCOPE,
+        IntegrationBinding.enabled.is_(True),
+        IntegrationBinding.id != binding.id,
+    ).all()
+    for peer in peers:
+        peer_exact = {
+            matcher.label: matcher.value for matcher in parse_matchers(peer.selector_json) if matcher.operator == '='
+        }
+        if not any(key in peer_exact and peer_exact[key] != value for key, value in exact.items()):
+            raise BindingSelectorError(
+                'Metrics Source asset selectors overlap another Object Storage binding; '
+                'alerts cannot be uniquely attributed to this system.'
+            )
+    return apply_promql_scope(ACTIVE_ALERTS_EXPRESSION, binding.selector_json)
+
+
 def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -> dict[str, Any]:
     configured = _provider_bound(system.id, 'metrics_source')
     try:
@@ -344,7 +398,22 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
             scope_key=system.id,
             scope_name=system.name,
         )
-        payload = consumer.query(ACTIVE_ALERTS_EXPRESSION, retry_count=0)
+        expression = _scoped_metrics_alert_expression(consumer)
+        payload = consumer.query(expression, retry_count=0)
+    except BindingSelectorError as exc:
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=configured,
+                connected=False,
+                label='Metrics Alert Scope Unverified',
+                tone='warning',
+                detail=str(exc),
+            ),
+            rows=[],
+            instance_name=None,
+        )
     except MetricsSourceAuthenticationError as exc:
         return _source_view(
             selected_source=selected_source,
@@ -389,7 +458,22 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
         )
 
     provider = provider_definition(consumer.config.provider_key)
-    rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
+    try:
+        rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
+    except ValueError as exc:
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=configured,
+                connected=False,
+                label='Metrics Alert Evidence Incomplete',
+                tone='warning',
+                detail=str(exc),
+            ),
+            rows=[],
+            instance_name=consumer.config.name,
+        )
     return _source_view(
         selected_source=selected_source,
         resolved_source='metrics_source',
@@ -473,16 +557,23 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
 
 
 def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[dict[str, Any]]:
-    data = payload.get('data') if isinstance(payload, dict) else None
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        raise ValueError('Metrics Source did not return a successful Prometheus alert query envelope.')
+    data = payload.get('data')
     result = data.get('result') if isinstance(data, dict) else None
-    if not isinstance(result, list):
-        return []
+    if not isinstance(data, dict) or not isinstance(result, list) or data.get('resultType', 'vector') != 'vector':
+        raise ValueError('Metrics Source alert response is missing a complete instant-vector data.result array.')
     rows: list[dict[str, Any]] = []
     for item in result:
-        if not isinstance(item, dict):
-            continue
-        raw_labels = item.get('metric')
-        labels: dict[str, Any] = dict(raw_labels) if isinstance(raw_labels, dict) else {}
+        if not isinstance(item, dict) or not isinstance(item.get('metric'), dict):
+            raise ValueError('Metrics Source alert response contains malformed alert series.')
+        raw_labels = item['metric']
+        if not str(raw_labels.get('alertname') or '').strip() or not str(raw_labels.get('alertstate') or '').strip():
+            raise ValueError('Metrics Source alert response has a series without alertname or alertstate.')
+        sample = item.get('value')
+        if not isinstance(sample, (list, tuple)) or len(sample) < 2:
+            raise ValueError('Metrics Source alert response has an incomplete sample.')
+        labels: dict[str, Any] = dict(raw_labels)
         rows.append(
             {
                 'name': str(labels.get('alertname') or 'Unknown Alert'),

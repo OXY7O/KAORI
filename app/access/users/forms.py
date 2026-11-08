@@ -9,6 +9,7 @@ from app.access.authentication.password_policy import LOCAL_PASSWORD_MAX_LENGTH,
 
 class UserForm(FlaskForm):
     user_id = HiddenField()
+    user_version = HiddenField()
     username = StringField('Username', validators=[DataRequired(), Length(max=100)])
     email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
     display_name = StringField('Display Name', validators=[Optional(), Length(max=150)])

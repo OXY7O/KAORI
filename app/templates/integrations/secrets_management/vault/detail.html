@@ -1,0 +1,114 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/framed_workspace_tabs.html" as tabs %}
+{% import "integrations/components/_provider_detail_posture.html" as posture %}
+{% block title %}{{ instance.name }} · Vault Integration · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set readiness = instance.readiness_status or "validation_required" %}
+    {% set summary = instance.validation_summary or {} %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], 'configuration', 'vault-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("key-round", "Secrets & PKI Integration", "shield-check") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Vault connection, capabilities, and runtime evidence.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("shield-check", readiness|replace("_"," ") |title) }}
+                            {{ page_hero.meta_label("layers-3", ((instance.capabilities or []) |length|string) ~ " Capabilities") }}
+                            {{ page_hero.meta_label("key-round", instance.environment or "Unspecified") }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ posture.render("Vault connection posture", "Vault API Readiness",
+                                "Ready" if readiness == "ready" else ("Attention" if readiness in ["blocked", "degraded"] else "Configured") , "shield-check", "Vault API",
+                readiness|replace("_"," ")|title, "Produced by Full Validation", "layers-3",
+                "Validated Capabilities", (instance.capabilities or [])|length, "Observed provider APIs",
+                url_for('vault.index'), posture_key='vault') }}
+            </div>
+        </section>
+        <section aria-labelledby="vault-operational-evidence-title"
+                 class="{{ integration_ui.section_shell_classes() }}">
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <h2 id="vault-operational-evidence-title"
+                        class="text-base font-semibold text-content-primary">Operational Evidence</h2>
+                    <p class="text-sm leading-6 text-content-secondary">Open capability-owned Secrets &amp; PKI workspaces. Vault API readiness does not qualify KV v2, PKI, consumer correlation, Metrics Source, or Alert Source evidence.</p>
+                </div>
+                {% if can_view_secrets_pki %}
+                    <nav aria-label="Secrets and PKI operational workspaces"
+                         class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {% for entry in [
+                            (url_for('secrets_pki.overview'), 'Operational Overview', 'Capability readiness and source coverage'),
+                            (url_for('secrets_pki.inventory'), 'Inventory Evidence', 'Safe committed inventory aggregates'),
+                            (url_for('secrets_pki.lifecycle'), 'Lifecycle & Assurance', 'KV v2, PKI and consumer evidence')
+                            ] %}
+                            <a href="{{ entry[0] }}"
+                               class="group min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4 transition-colors hover:border-kaori-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kaori-primary">
+                                <span class="block text-sm font-semibold text-kaori-primary group-hover:underline">{{ entry[1] }}</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-secondary">{{ entry[2] }}</span>
+                            </a>
+                        {% endfor %}
+                        {% if can_view_cert_analytics %}
+                            <a href="{{ url_for('secrets_pki.certificate_analytics') }}"
+                               class="group min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4 transition-colors hover:border-kaori-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kaori-primary">
+                                <span class="block text-sm font-semibold text-kaori-primary group-hover:underline">Certificate Analytics</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-secondary">Current-generation public certificate expiry horizon</span>
+                            </a>
+                        {% endif %}
+                    </nav>
+                {% else %}
+                    <p role="status"
+                       class="rounded-lg border border-outline-subtle bg-surface-subtle p-4 text-sm text-content-secondary">The independent <code>secrets_pki.view</code> permission is required for operational evidence. Integration configuration access does not grant Secret visibility.</p>
+                {% endif %}
+                <p class="text-xs leading-5 text-content-muted">These routes show provider-neutral aggregates only. Per-Secret Registry, Detail, and scoped grants remain subject to independent authorization and acceptance.</p>
+            </div>
+        </section>
+        <section id="vault-detail-tabs"
+                 class="{{ integration_ui.section_shell_classes() }}">
+            {{ tabs.render([
+                        ('configuration', 'Configuration', 'settings-2', instance.environment or 'Unspecified') ,
+            ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+            ('runtime', 'Runtime & History', 'activity', 'Jobs & Evidence'),
+            ('inventory', 'Inventory & Lifecycle', 'database', 'Committed Evidence')
+            ], prefix='vault', aria_label='Vault Connection Domains') }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="vault-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="vault-tab-configuration"
+                     x-show="activeTab === 'configuration'"
+                     class="space-y-4">
+                    {% include "integrations/secrets_management/vault/partials/_detail_configuration.html" %}
+                </div>
+                <div id="vault-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="vault-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/secrets_management/vault/partials/_detail_validation.html" %}
+                </div>
+                <div id="vault-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="vault-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/secrets_management/vault/partials/_detail_runtime.html" %}
+                </div>
+                <div id="vault-panel-inventory"
+                     role="tabpanel"
+                     aria-labelledby="vault-tab-inventory"
+                     x-show="activeTab === 'inventory'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/secrets_management/vault/partials/_detail_inventory.html" %}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

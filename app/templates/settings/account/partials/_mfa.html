@@ -1,0 +1,428 @@
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+<section class="rounded-2xl border border-outline-default bg-surface-card"
+         aria-labelledby="account-mfa-heading"
+         data-account-mfa-workspace="personal-enrollment">
+    <header class="flex flex-col gap-4 border-b border-outline-default bg-surface-card px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="fingerprint" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 id="account-mfa-heading"
+                        class="text-base font-bold text-content-primary">Multi-Factor Authentication</h2>
+                    {{ info_tip.render('account-mfa-enrollment-guide',
+                                        'Personal authenticator enrollment',
+                                        'Your identity provider verifies primary credentials; KAORI governs the additional authenticator challenge.',
+                                        [
+                                        'Enroll and confirm a six-digit code before the factor becomes active.',
+                                        'Security policy determines when a verified factor is required for sign-in.',
+                                        'Recovery codes are single-use and visible only when issued.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
+                <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
+            </div>
+        </div>
+        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') , 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
+    </header>
+    <div class="space-y-6 p-5 xl:p-6">
+        <section aria-label="Account MFA security posture"
+                 data-account-mfa-posture="cards">
+            <div class="grid gap-3 md:grid-cols-3">
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Factor Status</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">
+                            {{ 'Authenticator Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') }}
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Verified TOTP enrollment for this account.</p>
+                    </div>
+                </article>
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="settings" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Security Policy</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">{{ mfa_state.policy_mode|replace('_', ' ') |title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Set by Access → Authentication Security.</p>
+                    </div>
+                </article>
+                <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ 'bg-kaori-soft text-kaori-primary' if mfa_state.enrolled else 'bg-status-warning-soft text-status-warning-text' }}"
+                          aria-hidden="true">
+                        <i data-lucide="key-round" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Recovery Codes</p>
+                        <p class="mt-1 text-base font-bold text-content-primary">
+                            {{ mfa_state.recovery_count ~ ' Remaining' if mfa_state.enrolled else 'Not Available' }}
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Each code can be used only once.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+        {% if mfa_recovery_codes %}
+            <section class="rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-5"
+                     aria-label="One-time recovery codes">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                          aria-hidden="true">
+                        <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-status-warning-text">Save These Recovery Codes Now</h3>
+                        <p class="mt-1 text-xs leading-5 text-status-warning-text">These one-time codes will not be shown again. Store them in a password manager, never in screenshots or tickets.</p>
+                    </div>
+                </div>
+                <ul class="mt-4 grid gap-2 sm:grid-cols-2">
+                    {% for code in mfa_recovery_codes %}
+                        <li class="rounded-lg border border-outline-default bg-surface-card p-3 font-mono text-sm text-content-primary">
+                            {{ code }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+        {% if not mfa_state.enrolled %}
+            <div class="space-y-4"
+                 data-account-mfa-enrollment-layout="guide-over-steps">
+                <aside class="rounded-xl border border-outline-default bg-surface-card"
+                       aria-labelledby="account-mfa-setup-guide"
+                       data-account-mfa-guide="single-panel">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                        <i data-lucide="list-checks"
+                           class="h-5 w-5 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <h3 id="account-mfa-setup-guide"
+                                class="text-sm font-bold text-content-primary">How to Activate MFA</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Four steps to protect your account.</p>
+                        </div>
+                    </header>
+                    <ol class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">1</span>
+                                <i data-lucide="key-round"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Generate a setup key</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm your password or sign in again.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">2</span>
+                                <i data-lucide="smartphone"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Add an authenticator app</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Scan QR or enter the setup key.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">3</span>
+                                <i data-lucide="shield-check"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Verify the six-digit code</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Submit a fresh code to enable your factor.</p>
+                            </div>
+                        </li>
+                        <li class="flex min-w-0 flex-col gap-3 rounded-lg bg-kaori-soft/40 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-kaori-primary text-sm font-bold text-white"
+                                      aria-hidden="true">4</span>
+                                <i data-lucide="key-round"
+                                   class="h-5 w-5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Save recovery codes</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Keep the one-time codes in a private, secure location.</p>
+                            </div>
+                        </li>
+                    </ol>
+                    <p class="mt-auto border-t border-outline-subtle px-5 py-4 text-xs leading-5 text-content-muted">
+                        <span class="font-semibold text-content-primary">Need help?</span>
+                        If setup fails, sign in again and confirm your current password.
+                    </p>
+                </aside>
+                <div class="grid gap-4 xl:grid-cols-2 xl:items-stretch"
+                     data-account-mfa-steps="paired">
+                    <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5"
+                             aria-labelledby="account-mfa-step-one">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-kaori-primary text-lg font-bold text-white"
+                                  aria-hidden="true">1</span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-kaori-primary">STEP 01</p>
+                                <h3 id="account-mfa-step-one"
+                                    class="mt-0.5 text-base font-bold text-content-primary">Generate Setup Key</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Generate a manual setup key; enrollment stays inactive until you confirm a code.</p>
+                            </div>
+                        </div>
+                        <form action="{{ url_for('settings.account', tab='mfa') }}"
+                              method="post"
+                              class="mt-5 space-y-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="mfa_action" value="begin">
+                            {% if can_change_password %}
+                                <div class="w-full">
+                                    <label for="mfa-current-password"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Current Password</label>
+                                    <input id="mfa-current-password"
+                                           type="password"
+                                           name="current_password"
+                                           required
+                                           autocomplete="current-password"
+                                           maxlength="1024"
+                                           placeholder="Confirm your current password"
+                                           class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                </div>
+                            {% else %}
+                                <p class="max-w-lg rounded-lg border border-outline-subtle bg-surface-hover p-3 text-xs leading-5 text-content-secondary">
+                                    Your external identity must have a fresh sign-in session before factor enrollment.
+                                </p>
+                            {% endif %}
+                            <button type="submit"
+                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Generate Setup Key
+                            </button>
+                        </form>
+                        {% if mfa_setup_secret %}
+                            <section class="mt-5 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4"
+                                     aria-labelledby="mfa-provisioning-title"
+                                     data-mfa-one-time-provisioning="true">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="key-round"
+                                       class="h-4 w-4 text-status-warning-text"
+                                       aria-hidden="true"></i>
+                                    <h4 id="mfa-provisioning-title"
+                                        class="text-sm font-bold text-status-warning-text">Authenticator Setup</h4>
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-status-warning-text">
+                                    This QR code and key are displayed for this response only. Keep them private.
+                                </p>
+                                <div class="mt-4 grid items-center gap-4 sm:grid-cols-2">
+                                    {% if mfa_setup_qr_src %}
+                                        <div class="flex flex-col items-center gap-2">
+                                            <p class="w-full text-xs font-semibold text-content-primary">Scan QR Code</p>
+                                            <div class="flex w-fit max-w-full items-center justify-center rounded-lg border border-outline-default bg-white p-3">
+                                                <img src="{{ mfa_setup_qr_src }}"
+                                                     alt="Scan this one-time QR code with an authenticator app"
+                                                     width="210"
+                                                     height="210"
+                                                     class="h-auto w-full max-w-52"
+                                                     decoding="sync">
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-primary">Manual Setup Key</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Use this key if your authenticator cannot scan QR codes.</p>
+                                        <code class="mt-3 block break-all rounded-lg border border-outline-default bg-surface-card p-3 font-mono text-sm font-semibold text-content-primary">{{ mfa_setup_secret }}</code>
+                                    </div>
+                                </div>
+                            </section>
+                        {% endif %}
+                    </section>
+                    <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5"
+                             aria-labelledby="account-mfa-step-two">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-kaori-primary text-lg font-bold text-white"
+                                  aria-hidden="true">2</span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-kaori-primary">STEP 02</p>
+                                <h3 id="account-mfa-step-two"
+                                    class="mt-0.5 text-base font-bold text-content-primary">Verify Your Authenticator</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm a fresh six-digit code to activate the factor.</p>
+                            </div>
+                        </div>
+                        <form action="{{ url_for('settings.account', tab='mfa') }}"
+                              method="post"
+                              class="mt-5 space-y-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="mfa_action" value="confirm">
+                            <div class="w-full">
+                                <label for="mfa-confirm-code"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Verification Code</label>
+                                <input id="mfa-confirm-code"
+                                       type="text"
+                                       name="verification_code"
+                                       required
+                                       autocomplete="one-time-code"
+                                       inputmode="numeric"
+                                       pattern="[0-9]{6}"
+                                       maxlength="6"
+                                       placeholder="••••••"
+                                       class="h-12 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-center font-mono text-lg tracking-widest text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            </div>
+                            <button type="submit"
+                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                Verify &amp; Enable MFA
+                            </button>
+                        </form>
+                    </section>
+                </div>
+            </div>
+        {% else %}
+            <div class="grid gap-4 xl:grid-cols-12 xl:items-stretch"
+                 data-account-mfa-recovery-layout="action-context">
+                <section class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-7"
+                         aria-labelledby="account-mfa-regenerate-title">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle pb-4">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="key-round" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 id="account-mfa-regenerate-title"
+                                class="text-sm font-bold text-content-primary">Regenerate Recovery Codes</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Replace all remaining recovery codes after verifying your identity.</p>
+                        </div>
+                    </header>
+                    <form action="{{ url_for('settings.account', tab='mfa') }}"
+                          method="post"
+                          class="mt-5 grid gap-3 lg:grid-cols-12 lg:items-end"
+                          data-account-mfa-regenerate-form="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="mfa_action" value="regenerate">
+                        {% if can_change_password %}
+                            <div class="min-w-0 lg:col-span-4">
+                                <label for="mfa-regen-password"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Current Password</label>
+                                <input id="mfa-regen-password"
+                                       type="password"
+                                       name="current_password"
+                                       required
+                                       autocomplete="current-password"
+                                       maxlength="1024"
+                                       placeholder="Confirm your current password"
+                                       class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0 {{ 'lg:col-span-4' if can_change_password else 'lg:col-span-8' }}">
+                            <label for="mfa-regen-code"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Authenticator or Recovery Code</label>
+                            <input id="mfa-regen-code"
+                                   type="text"
+                                   name="verification_code"
+                                   required
+                                   autocomplete="one-time-code"
+                                   maxlength="64"
+                                   placeholder="Enter authenticator or recovery code"
+                                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        </div>
+                        <div class="min-w-0 lg:col-span-4">
+                            <button type="submit"
+                                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="refresh-cw" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                <span>Regenerate Recovery Codes</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="mt-auto pt-5" data-account-mfa-recovery-steps="compact">
+                        <ol class="grid gap-3 rounded-xl bg-kaori-soft/40 p-4 sm:grid-cols-3">
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">1</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Verify your identity</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Verify with a valid code.</p>
+                                </div>
+                            </li>
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">2</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Generate new codes</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Replace all unused recovery codes.</p>
+                                </div>
+                            </li>
+                            <li class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-bold text-kaori-primary"
+                                      aria-hidden="true">3</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Save your new codes</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Store replacements in a safe location.</p>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+                </section>
+                <aside class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card xl:col-span-5"
+                       aria-labelledby="mfa-recovery-boundary"
+                       data-account-mfa-recovery-security="equal-height">
+                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 pb-4 pt-5">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 id="mfa-recovery-boundary"
+                                class="text-sm font-bold text-content-primary">Recovery Security</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Review safeguards before replacing your recovery codes.</p>
+                        </div>
+                    </header>
+                    <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-5">
+                        <div class="flex flex-1 items-center gap-3 py-4">
+                            <i data-lucide="key-round"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">
+                                {{ 'Password and authenticator/recovery code required.' if can_change_password else 'Fresh sign-in and authenticator/recovery code required.' }}
+                            </p>
+                        </div>
+                        <div class="flex flex-1 items-center gap-3 py-4">
+                            <i data-lucide="shield-alert"
+                               class="h-4 w-4 shrink-0 text-status-warning-text"
+                               aria-hidden="true"></i>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">Regeneration invalidates all unused recovery codes.</p>
+                        </div>
+                        <div class="flex flex-1 items-center gap-3 py-4">
+                            <i data-lucide="info"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <p class="min-w-0 text-xs leading-5 text-content-secondary">Save new codes now; KAORI cannot show them again.</p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        {% endif %}
+        <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-kaori-soft/40 p-4 text-xs leading-5 text-content-secondary"
+             role="note">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="info" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-content-primary">Security Information</p>
+                <p class="mt-1">MFA challenges follow the approved Access policy. Factor secrets are encrypted at rest; recovery codes are stored as non-reversible hashes.</p>
+            </div>
+        </div>
+    </div>
+</section>

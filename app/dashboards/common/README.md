@@ -1,3 +1,9 @@
-# Dashboard Common Boundary
+# Operational Dashboard Common Boundary
 
-Keep this package empty until at least two asset dashboards share the same stable, domain-neutral contract. Do not move Kubernetes-specific query or presentation logic here merely to reduce local file size.
+This package contains only domain-neutral application contracts that have been proven by at least two Operational Dashboard consumers.
+
+Current owner:
+
+- `operational.py` — canonical tab order/fallback, canonical pagination facade, and HTMX request detection.
+
+Keep permissions, readiness, routes, services, schemas, repositories, provider clients, and domain evidence in their owning capability. Do not add a generic dashboard route factory or service base class without a separately approved architecture change backed by multiple stable consumers.

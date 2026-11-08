@@ -12,6 +12,12 @@ Read the references in this order:
 6. `capability-framework.md`: canonical capability discovery and feature-readiness rules.
 7. `compatibility-framework.md`: version/profile mapping and limitation rules.
 8. `consumer-pattern.md`: asset-consumer boundary and simplified primary/secondary/fallback flow.
+9. `artifact-registry-domain.md`: provider-neutral Artifact Registry ownership, scalable sync topology, alert analytics, and large-estate collection rules.
+10. `artifact-registry-alert-analytics-contract.md`: Registry Alert Source reuse, materialized alert evidence, and fast Analytics delivery boundary.
+11. `analytics-materialization-extension-standard.md`: reusable cross-domain Analytics source, dataset, collector/worker, committed snapshot, and loading contract for future integrations.
+12. `notification-delivery-lifecycle-safety.md`: notification source-ledger dedup identity, archive/aggregate parity, safe compaction gates and failure-injection UAT.
+13. `audit-event-producer-security-retention-matrix.md`: partial verified AuditEvent writer inventory, privacy/permission boundaries, unapproved retention decisions and fail-closed export/cleanup conditions.
+14. `source-control-github-app-foundation.md`: GitHub.com App multi-organization identity, installation grants, security, committed evidence, and future GHES boundary (#559/#958).
 
 Domain-specific rules live beside complex code in `app/<domain>/README.md`. General architecture rules belong here, while product direction belongs in `docs/product`, to avoid duplicated and drifting documentation.
 

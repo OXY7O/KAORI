@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+import logging
+from typing import cast
+
+from celery.app.task import Task
+from celery.exceptions import CeleryError
+from flask import current_app
+from kombu.exceptions import OperationalError as KombuOperationalError
+
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.extensions.db import db
 from app.integrations.contracts import RuntimeState
+from app.integrations.runtime.notifications import is_health_degradation
 from app.models.runtime import IntegrationRuntimeObservation
 
 
@@ -12,6 +21,13 @@ def persist_runtime_state(
     trigger_type: str,
     integration_instance_id: int | None = None,
 ) -> IntegrationRuntimeObservation:
+    prior = (
+        IntegrationRuntimeObservation.query.filter_by(integration_instance_id=integration_instance_id)
+        .order_by(IntegrationRuntimeObservation.id.desc())
+        .first()
+        if integration_instance_id is not None
+        else None
+    )
     row = IntegrationRuntimeObservation()
     row.integration_instance_id = integration_instance_id
     row.integration_type = state.integration_type
@@ -48,6 +64,19 @@ def persist_runtime_state(
     db.session.add(row)
     db.session.flush()
     db.session.commit()
+    if integration_instance_id is not None and is_health_degradation(prior, row):
+        # Provider observation is already durable; a delivery outage must not roll it back.
+        try:
+            from app.integrations.runtime.notification_delivery_task import dispatch_integration_health_notification
+
+            cast(Task, dispatch_integration_health_notification).apply_async(
+                args=[row.id],
+                queue=str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime'),
+            )
+        except (CeleryError, KombuOperationalError, OSError, RuntimeError):
+            logging.getLogger(__name__).warning(
+                'Integration health notification enqueue unavailable for observation %s.', row.id
+            )
     return row
 
 

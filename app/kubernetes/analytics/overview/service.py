@@ -5,9 +5,10 @@ from datetime import UTC, datetime
 from typing import Any, SupportsFloat, SupportsIndex
 
 from flask import current_app, has_app_context
-from sqlalchemy import select
+from sqlalchemy import exc, select
 
 from app.common.analytics.coercion import as_dict as _as_dict
+from app.common.analytics.params import get_allowed_time_ranges
 from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
@@ -146,6 +147,7 @@ def get_analytics_overview(
     payload['selected_cluster'] = selected_cluster
     payload['selected_cluster_id'] = _get_cluster_id(selected_cluster)
     payload['selected_time_range'] = time_range or '24h'
+    payload['allowed_time_ranges'] = get_allowed_time_ranges()
     payload['last_analyzed_at'] = _utc_now_display()
 
     cluster_id = str(payload['selected_cluster_id'])
@@ -326,7 +328,7 @@ def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]
                 AnalyticsSnapshot.dataset_key.in_(tuple(OVERVIEW_SNAPSHOT_DATASETS)),
             )
         ).all()
-    except Exception:
+    except (exc.SQLAlchemyError, TypeError, ValueError):
         snapshots = []
 
     return present_snapshot_summary(
@@ -347,7 +349,7 @@ def _get_clusters_for_filter() -> list[dict[str, Any]]:
         ).all()
 
         return [_normalize_cluster(cluster) for cluster in clusters]
-    except Exception:
+    except (exc.SQLAlchemyError, AttributeError, TypeError, ValueError):
         return []
 
 
@@ -376,7 +378,7 @@ def _resolve_selected_cluster(
                 .distinct()
             ).all()
         }
-    except Exception:
+    except (exc.SQLAlchemyError, TypeError, ValueError):
         ready_cluster_ids = set()
 
     for cluster in clusters:
@@ -396,7 +398,7 @@ def _resolve_selected_cluster(
             )
             if resolution.selected is not None:
                 return cluster
-    except Exception:
+    except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError):
         pass
 
     return clusters[0]
@@ -778,7 +780,7 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         risk_count = 1
 
     risk_note = raw.get('risk_note') or (
-        f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
+        f'{risk_count} metric{"s" if risk_count != 1 else ""} may breach forecast warning thresholds.'
         if risk_count > 0
         else 'No forecast risk detected in the selected time range.'
     )
@@ -1495,7 +1497,7 @@ def _call_optional_snapshot(
 ) -> dict[str, Any] | None:
     try:
         module = __import__(module_path, fromlist=['*'])
-    except Exception:
+    except ImportError:
         _log_optional_snapshot_failure(
             module_path=module_path,
             function_name=None,
@@ -1513,13 +1515,13 @@ def _call_optional_snapshot(
         except TypeError:
             try:
                 result = func(kwargs.get('cluster_id'))
-            except Exception:
+            except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError, KeyError):
                 _log_optional_snapshot_failure(
                     module_path=module_path,
                     function_name=function_name,
                 )
                 continue
-        except Exception:
+        except (exc.SQLAlchemyError, RuntimeError, TypeError, ValueError, KeyError):
             _log_optional_snapshot_failure(
                 module_path=module_path,
                 function_name=function_name,

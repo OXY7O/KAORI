@@ -1,0 +1,170 @@
+{% import "components/table_label.html" as table_label %}
+{# Shared non-secret evidence detail for desktop row and narrow-screen card disclosures. #}
+<section class="min-w-0 bg-kaori-mist/40 p-3 sm:p-4"
+         data-tenant-namespace-access-detail>
+    <div class="min-w-0 overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="network" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Committed Namespace Access</h4>
+                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                        {{ access.get("namespace") or access.get('service_account_name') or 'Access Package' }}
+                    </p>
+                </div>
+            </div>
+            {% if access.get('error') %}
+                {{ table_label.status_label('Evidence Unavailable', 'warning') }}
+            {% else %}
+                {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
+            {% endif %}
+        </header>
+        {% if access.get('error') %}
+            <div class="flex min-w-0 items-start gap-3 px-4 py-5 sm:px-5">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft"
+                      aria-hidden="true">
+                    <i data-lucide="triangle-alert" class="h-4 w-4 text-status-warning"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Access evidence unavailable</p>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ access.get("error") }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">No effective access is asserted by this record.</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="min-w-0 space-y-3 bg-surface-elevated p-3 sm:p-4">
+                <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-label="Namespace access context">
+                    <div class="flex min-w-0 items-center gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                        <i data-lucide="layers-3"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h5 class="text-sm font-semibold text-content-primary">Access Context</h5>
+                    </div>
+                    <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Tenant / Environment</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                {{ access.get("tenant_name") }} · {{ access.get("environment") |title }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Cluster</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                {{ access.get("cluster_name") or 'Unavailable' }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Access Profile</dt>
+                            <dd class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+                                {{ table_label.metadata_label(access.get('access_profile') |replace('_', ' ')|title) }}
+                                {% if access.get('access_profile_version') %}
+                                    <span class="text-xs font-medium text-content-muted">v{{ access.get("access_profile_version") }}</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Identity</dt>
+                            <dd class="mt-1 break-all text-sm font-semibold text-content-primary">
+                                {{ access.get("service_account_name") or 'Unknown Identity' }}
+                            </dd>
+                            <dd class="mt-1 text-xs text-content-muted">
+                                {{ access.get("credential_type") |replace('_', ' ')|title }}
+                            </dd>
+                        </div>
+                    </dl>
+                    <dl class="grid min-w-0 gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Application</dt>
+                            <dd class="mt-1 break-words text-sm font-medium text-content-primary">
+                                {{ access.get("application_name") or 'Not specified' }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Purpose</dt>
+                            <dd class="mt-1 break-words text-sm font-medium text-content-primary">
+                                {{ access.get("purpose") or 'Not specified' }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Approved Access Methods</dt>
+                            <dd class="mt-1 flex min-w-0 flex-wrap gap-1.5">
+                                {% for method in access.get('approved_access_methods') or [] %}
+                                    {{ table_label.metadata_label(method|replace('_', ' ') |title, icon='check') }}
+                                {% else %}
+                                    <span class="text-xs text-content-muted">Not declared</span>
+                                {% endfor %}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-label="Credential lifecycle">
+                    <div class="flex min-w-0 items-center gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                        <i data-lucide="calendar-clock"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h5 class="text-sm font-semibold text-content-primary">Credential Lifecycle</h5>
+                    </div>
+                    <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-3">
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Renewal Review</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                {{ access.get("renewal_due_at") |user_datetime }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Valid Until</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                {{ access.get("valid_until") |user_datetime }}
+                            </dd>
+                        </div>
+                        <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                            <dt class="text-xs text-content-muted">Rotation Generation</dt>
+                            <dd class="mt-1">
+                                {{ table_label.metadata_label(access.get('rotation_generation') , icon='refresh-cw') }}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-label="Technical references">
+                    <div class="flex min-w-0 items-center gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                        <i data-lucide="fingerprint"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h5 class="text-sm font-semibold text-content-primary">Technical References</h5>
+                    </div>
+                    <dl class="grid min-w-0 gap-x-5 gap-y-3 px-3 py-3 text-xs sm:grid-cols-2 sm:px-4">
+                        <div class="min-w-0">
+                            <dt class="text-content-muted">Credential Reference</dt>
+                            <dd class="mt-1 break-all font-medium text-content-secondary">
+                                {{ access.get("credential_public_id") }}
+                            </dd>
+                        </div>
+                        {% if access.get('jumpserver_reference') %}
+                            <div class="min-w-0">
+                                <dt class="text-content-muted">Jumpserver Reference</dt>
+                                <dd class="mt-1 break-all font-medium text-content-secondary">
+                                    {{ access.get("jumpserver_reference") }}
+                                </dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                </section>
+            </div>
+            <div class="flex min-w-0 items-start gap-2 border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
+                <i data-lucide="shield-check"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-content-muted"
+                   aria-hidden="true"></i>
+                <p class="text-xs leading-5 text-content-muted">
+                    Derived from committed grants and credential lifecycle. Kubernetes remains authoritative for effective RBAC.
+                    No token, kubeconfig, private key, certificate, or Secret material is displayed.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</section>

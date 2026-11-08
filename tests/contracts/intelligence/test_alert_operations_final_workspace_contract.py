@@ -64,7 +64,9 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'bg-kaori-soft text-kaori-primary' in editor
     assert 'Matcher tip:' in editor
     assert 'Policy Checklist' in editor
-    assert 'bg-status-critical' in editor
+    assert '{% import "components/action_button.html" as action_button %}' in editor
+    assert "action_button.classes('critical')" in editor
+    assert "action_button.classes('primary')" in editor
     assert 'Delete Policy' in editor
     assert 'def routing_policy_details(policy_ref: str)' in routes
     assert 'def delete_routing_policy(policy_id: int)' in routes
@@ -99,8 +101,10 @@ def test_resolved_workspace_adds_posture_and_keeps_clear_next_to_archive_policy(
     assert 'table_registry.clear_filters_action' in template
     assert "loading_bar.render('alert-operations-history-loading'" in template
     assert "'resolved_total': len(history_cases)" in service
-    assert "'closed': sum(case.workflow_state == 'closed' for case in history_cases)" in service
-    assert "'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases)" in service
+    assert 'def _case_counts_from_query(query) -> dict[str, int]:' in service
+    assert "and_(historical, AlertCase.workflow_state == 'closed')" in service
+    assert "and_(historical, AlertCase.closure_reason == 'false_positive')" in service
+    assert 'paginate_query(' in service
     assert 'data-resource-detail-toggle' in template
     assert 'alert_intelligence.case_details' in template
     assert 'Close Review' not in template
@@ -134,6 +138,7 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     history = read('app/templates/intelligence/partials/_alert_ops_history.html')
     modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
     routes = read('app/intelligence/alert_intelligence/routes.py')
+    route_utils = read('app/intelligence/alert_intelligence/route_utils.py')
 
     assert 'data-resource-detail-toggle' in history
     assert "tab='resolved'" in history
@@ -147,8 +152,10 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in modal
     for required in ('Incident Timeline', 'Notification Delivery Ledger'):
         assert required in activity
-    assert "if payload.get('tab') == 'resolved'" in routes
-    assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in routes
+    assert 'modal_case_response as _modal_case_response' in routes
+    assert "if payload.get('tab') == 'resolved'" in route_utils
+    assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in route_utils
+    assert "if payload.get('selected_case') is None:" in route_utils
 
 
 def test_case_modal_uses_persistent_summary_host_and_shared_activity_streams() -> None:
@@ -191,11 +198,13 @@ def test_routing_registry_has_canonical_filters() -> None:
 
 def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
     routes = read('app/intelligence/alert_intelligence/routes.py')
+    route_utils = read('app/intelligence/alert_intelligence/route_utils.py')
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
     silences = read('app/templates/intelligence/partials/_alert_ops_silences.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
 
-    assert "response.headers['HX-Trigger'] = 'alertCaseChanged'" in routes
+    assert 'modal_case_response as _modal_case_response' in routes
+    assert "response.headers['HX-Trigger'] = 'alertCaseChanged'" in route_utils
     assert 'hx-trigger="alertCaseChanged from:body"' in active
     assert 'hx-trigger="alertCaseChanged from:body"' in silences
     assert 'hx-trigger="alertCaseChanged from:body"' in resolved
@@ -273,3 +282,20 @@ def test_alert_intelligence_modals_follow_recommendation_review_visual_language(
     assert 'data-kaori-routing-modal-layout="recommendation-inspired"' in routing
     assert 'data-kaori-detail-shell' in routing
     assert 'Governed Delivery' in routing
+
+
+def test_active_alert_table_names_eight_columns_and_preserves_source_state() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/intelligence/partials/_alert_ops_active_table.html')
+    Environment().parse(source)
+    assert source.count('<table ') == 1
+    assert source.count('<caption class="sr-only">') == 1
+    assert 'Active alert cases and operational review actions' in source
+    assert source.count('scope="col"') == 8
+    assert "table_ui.table_classes('min-w-[1080px]')" in source
+    assert 'record_pagination.render(' in source
+    assert 'resource-detail-modal' in source
+    assert "'source_state': payload.filters.source_state" in source
+    for heading in ('Alert', 'Severity', 'Source', 'Workflow', 'Owner', 'Age', 'Delivery', 'Action'):
+        assert f'>{heading}</th>' in source

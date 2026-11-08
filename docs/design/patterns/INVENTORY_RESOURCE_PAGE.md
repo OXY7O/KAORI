@@ -1,4 +1,4 @@
-# Inventory Resource Page Pattern v1.3
+# Inventory Resource Page Pattern v1.4
 
 **Status:** Locked reference pattern  
 **Scope:** Kubernetes Inventory Overview, Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, Storage, and Topology
@@ -15,8 +15,10 @@ All generation-scoped reads use the **latest committed inventory generation**. `
 Canonical Hero
 Cluster onboarding blocker when setup is incomplete
 Snapshot Context Bar when inventory scope is available
-Resource Posture
-Filter + Shared Inventory Table
+Operational Posture — shared Section Intro
+└── Resource Posture
+Inventory Records — shared Section Intro
+└── Filter + Shared Inventory Table
 Pagination 5 / 10 / 25 / 50
 Detail Style 2 — Full Workspace Modal
 ```
@@ -28,6 +30,36 @@ Inventory Overview uses the same Full Workspace Modal and Unified Resource Sheet
 Inventory Overview and the eight resource pages use the shared KAORI Hero implementation. The right-side header accessory is the approved **Status Badge Box** when operational/readiness state is shown. Do not create page-local hero geometry, icon boxes, badges, metric cards, or status treatments.
 
 The Hero owns resource identity and high-level posture. Exact collection timestamp, generation coverage, and snapshot exceptions belong to the Snapshot Context Bar rather than duplicated Hero metadata.
+
+
+Cluster-source actions use the canonical label **Open Cluster Integrations** and route to `integrations.kubernetes`. Do not alternate between `Manage Clusters`, `Open Cluster List`, and provider-specific wording on Inventory surfaces.
+
+## Section hierarchy contract
+
+Major Inventory workspaces use `components/section_intro.html` immediately above the owning card/table/visualization. The intro provides operator context without becoming another card.
+
+Resource pages use:
+
+```text
+Operational Posture
+└── <resource-specific posture card>
+
+Inventory Records
+└── <resource> Inventory table
+```
+
+This section hierarchy is also reused by Object Storage Systems, Object Storage Buckets & Containers, and Artifact Registry Projects, Repositories, and Artifacts. Domain evidence remains domain-owned; reuse applies to hierarchy and shared components rather than forcing identical metrics.
+
+Artifact Registry resource posture remains committed-inventory evidence only:
+- Projects summarize project identities, Registry-source participation, public visibility, and missing visibility evidence.
+- Repositories summarize repository identities, Registry-source participation, referenced artifact counts, and observed pull-count evidence.
+- Artifacts summarize digest-oriented identities, Registry-source participation, and tagged/untagged reference posture.
+
+Security scan, governance, and runtime-correlation interpretation stay in their owning workspaces and are not pulled into Inventory merely for visual parity.
+
+Inventory Overview uses `Inventory Assets` above the asset catalog and `Multi-Cluster Inventory` above the compact cluster table. Topology uses `Inventory Relationships` above the adaptive visualization workspace.
+
+The section title and child card title must not repeat the same phrase. Preserve the child's existing shared component ownership and HTMX target boundaries.
 
 ## Authorization and readiness request contract
 
@@ -53,14 +85,16 @@ A Blueprint-level `before_request` must not short-circuit protected Inventory pa
 
 When the Kubernetes onboarding blocker is active, the page renders the canonical Hero plus onboarding blocker only. **Inventory Data Snapshot, posture summaries, tables, and topology workspace stay hidden** because they would imply an available committed inventory scope when no cluster is registered.
 
-The Hero itself remains structurally stable while blocked. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html` with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
-While blocked, Hero metadata must not present zero-valued asset/resource counters as committed evidence; use `Committed Inventory` plus `Cluster Setup Required` until a valid cluster scope exists.
+The Hero itself remains structurally stable while blocked. Its eyebrow, H1, description, and metadata roles remain stable across Normal and Blocked states in accordance with the provider-prerequisite contract in #894. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html`, which delegates geometry to `components/provider_prerequisite/_hero_context.html`, with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
+
+Blocked readiness is additive context, not replacement metadata. Factual registration/scope/count roles may resolve to zero when no Kubernetes provider is registered, but those values must not be presented as provider readiness or as evidence of a successful inventory collection. Do not replace the normal metadata vocabulary with blocker-only labels such as `Committed Inventory`; the provider-prerequisite context owns `Cluster Setup Required` and the below-Hero onboarding blocker owns remediation.
 
 All resource template registry entries are rooted at `inventory/kubernetes/<resource>/...`. Route helpers must never fall back to the retired `inventory/<resource>/...` namespace; the canonical namespace is release-verified so full-page and HTMX rendering cannot drift apart.
 
 ## Table and pagination contract
 
 - Use shared `components/table.html` primitives and the Inventory block header.
+- When the server-projected filtered total exists, pass it as `result_count=pagination.total_items` to `inventory_block_header` and render the compact `list-filter` Violet **0 Results / 1 Result / N Results** metadata indicator immediately beside the table title and one existing Info Tip. The badge is informational, not an action or operational-health status. Missing totals render no badge. Counts must follow the current committed scope, active filters, and HTMX workspace refresh, not just the displayed page. This standard also applies to Object Storage and Artifact Registry Inventory via the same shared UI helper.
 - Default page size is **5**; allowed values are **5 / 10 / 25 / 50**.
 - Resource services use SQL pagination through `app.common.pagination.paginate_query`; routes must not materialize all rows and slice them in Python.
 - Namespaced resources use the shared Namespace identity macro.
@@ -69,19 +103,21 @@ All resource template registry entries are rooted at `inventory/kubernetes/<reso
 
 ## Detail and progressive-disclosure contract
 
-Inventory Overview plus Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives. Topology remains the deliberate exception because its adaptive explorer Inspector/Details drawers are part of the graph workspace itself.
+Inventory Overview plus Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives. Artifact Registry Projects, Repositories, and Artifacts reuse the same Full Workspace Modal progressive-disclosure contract for committed Registry Inventory detail. Topology remains the deliberate exception because its adaptive explorer Inspector/Details drawers are part of the graph workspace itself.
 
-Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes live.
+Repository detail may expose a bounded artifact preview; Artifact detail may expose bounded tag references. These remain Inventory evidence only. Vulnerability, signature, SBOM, runtime-correlation, and governance interpretation stay in their owning Artifact Registry workspaces.
+
+Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes or Registry providers live.
 
 ### Full Workspace Modal resource-header alignment
 
-The leading resource icon, title, metadata, and primary lifecycle/readiness/collection state form one identity group. Use the shared `detail.header_identity_row()` primitive so operational state such as `Ready`, `Not Ready`, lifecycle posture, backend readiness, and collection evidence sits beside the resource title and metadata instead of floating on a second line beneath the description. The description remains the supporting line below that grouped identity. The same grouped identity primitive is reused by other Full Workspace Modal surfaces such as Access administration, Object Storage Inventory, and TLS Governance so state never drifts onto a detached second line.
+**Approved Kubernetes Inventory Detail header (#2794, 2026-10-23):** reuse the shared `detail.workspace_header(description, icon, context_items=..., compact=true)` for three ordered rows: **(1)** leading icon plus compact resource name and the primary lifecycle/readiness/collection status through `detail.header_identity_row()`; **(2)** concise supporting description; **(3)** separate wrapping source-grounded context badges (cluster, namespace, environment, type, role, version and similar committed facts) through `detail.header_context_row` and `table_label.metadata_label`. Apply uniformly to Overview Cluster, Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration. The newly accepted three-row screenshot authority supersedes the earlier single title/metadata row **for Kubernetes Inventory only**. Other consumers retain the shared component's default appearance unless specifically reviewed. The existing four-column summary band, modal close/focus/scroll and read-only committed evidence boundaries are unchanged.
 
 ### Full Workspace Modal resource-sheet symmetry and utility actions
 
-The four-column summary strip is the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
+The four-column summary strip is a flush, full-width modal band immediately below the resource identity header; it must not use inset outer gutters, rounded card framing, or a detached outer border. The modal summary host owns the band boundary so scrolling evidence does not expose offset vertical framing. Its content remains the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
 
-Technical identifiers that operators frequently transfer into operational tooling may expose the shared icon-only copy control. Kubernetes UID/UID, System UUID, and concrete IP addresses are approved examples. The action must have an accessible name, use the global Clipboard behavior, and disappear for unavailable values.
+Inventory View Details technical values are **read-only and selectable**, including UID, System UUID and concrete IP addresses. Do not render copy buttons, copy icons or clipboard data hooks anywhere in the Kubernetes Inventory modal. The shared `inventory_technical_row`, `inspector_technical_row` and `inventory_fact_grid` renderers ignore legacy `copyable` hints for backward-compatible callers; technical values and explicit unavailable evidence remain visible. The global Clipboard component and copy interactions outside Inventory modals are not modified. Keep Namespace Identity, Access & Security, Object Composition and Resource Controls descriptions compact without adding replacement utility actions.
 
 Dense resource filters use the canonical `Search` field label with a concise domain-specific placeholder. Ingress DNS host actions may open only a concrete declared host using `http` or `https` derived from committed TLS declaration. Wildcard host declarations remain reference-only, and a direct-open action never implies DNS resolution, reachability, or service health.
 
@@ -110,6 +146,12 @@ Topology reads API Server identity from the canonical `Cluster.kubernetes_connec
 - Topology conditionally loads resource families according to scope/depth and applies its graph/cache/output safeguards. Cluster connection metadata is eager-loaded to avoid resolver/N+1 behavior.
 - Missing or unavailable committed evidence renders a neutral unavailable/unknown state; it does not trigger a live-provider fallback.
 - Synchronization is asynchronous and owns its own retry/failure feedback boundary. Read pages remain available against the last committed generation when collection is not running.
+
+## Inventory table contextual explanations (KAORI shared Info Tip)
+
+When an Inventory table contains terms whose meaning may not be clear at a glance, place exactly **one read-only `components/info_tip.html::render` control beside the table BLOCK TITLE** (e.g., `Node Inventory`, `Namespace Inventory`, or `Artifact Inventory`), not beside any table column heading or row value. Group concise column definitions in the existing Info Tip `items` list. The Namespace Inventory title guide includes **PSA Enforce = Pod Security Admission**, its policy levels and interpretation; the PSA row label remains plain text. The shared Info Tip already supports pointer hover, keyboard focus, click/touch and Escape, and portals its popover outside scrollable tables/HTMX fragments. No parallel JavaScript or page-local hover CSS is allowed.
+
+Apply this across Kubernetes Inventory Overview, Topology Resource List, Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration plus the Kubernetes TLS Certificate Registry; Object Storage Systems and Buckets & Containers; and Artifact Registry Projects, Repositories and Artifacts. Use existing table block `title_extra`, operational section `header_badge`, or an adjacent heading control for the Topology Resource List; keep header `<th>` and in-cell labels free of help icons. Preserve column count, keyboard focus, one unique tooltip ID per rendered table title, responsive Violet design tokens and default 5-row pagination. Explain the **meaning and evidence boundary** of reported values (for example PSA = Pod Security Admission, quota vs LimitRange, Service endpoints, PV/PVC binding, TLS secret references, Registry pull counts, bucket protection), not presumed health, compliance, or provider state. Missing values remain unknown, never a fabricated zero. Detailed data and source authority stay in the existing on-demand detail modal and committed Inventory snapshots.
 
 ## Accessibility, typography, and visual consistency
 
@@ -164,3 +206,13 @@ L7 End-to-End Smoke
 ```
 
 The final-lock verifier protects AuthZ ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, retired residual helpers/files, documentation ownership, and permanent test evidence.
+
+
+## Effective Cluster Scope (2026-10-11)
+
+Inventory views use one normalized effective Cluster ID for both the resource
+query and the Snapshot Context Bar. An invalid/stale `cluster_id` selects the
+fleet rather than displaying a false empty Snapshot scope. Topology uses the
+normalized graph filter scope for the shared snapshot. A fleet with one member
+remains labeled as fleet scope unless the operator explicitly selects that cluster.
+Page/HTMX interactions preserve existing authorization-before-blocker order.

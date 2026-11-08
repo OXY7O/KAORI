@@ -15,7 +15,7 @@ Live Mutation Evidence Boundary
 Operational Workflow Catalog
 ```
 
-The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification.
+The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification. The Hero context action uses the canonical **Open Cluster Integrations** label and links to the Kubernetes integration registry; the retired **Manage Clusters** wording must not return.
 
 ## Live Mutation Evidence Contract
 
@@ -81,6 +81,9 @@ Rules:
 - the primary form should be one canonical form card with internal sections rather than a stack of independent mutation cards; validation and the canonical action bar remain inside that primary card;
 - do not introduce a new page-local geometry when the shared Form + Right Context or another reviewed KAORI pattern already fits;
 - controls use 40 px geometry and 12 px labels;
+- routine guidance shared by multiple controls—source, naming, mutability, selection, merge/replace, blank-preserves, or other non-critical lifecycle semantics—uses one consolidated shared `components/info_tip.html` trigger in the owning form/card/section header; field-level Info Tips are reserved for genuinely unique field semantics that cannot be represented accurately by the parent guidance;
+- any Kubernetes Operations surface whose header owns an Info Tip permits visible overflow so the desktop hover preview can escape the card boundary intact; surfaces without a header Info Tip may retain clipped overflow where their geometry requires it;
+- unavailable/empty live-target state, validation failure, destructive confirmation, security boundary, authentication/step-up requirement, and stale/missing evidence remain persistently visible and must never be hidden in an Info Tip;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
 - target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
 - the canonical Hero may still own a right-side Context/Status/Action accessory; that Hero accessory is not a content right rail;
@@ -101,7 +104,7 @@ Authentication
 
 The canonical boundary is **AuthZ → cluster prerequisite → request validation → live provider**. The cluster prerequisite is implemented with `cluster_required()` inside the route permission boundary. A Blueprint `before_request` must not return cluster onboarding/readiness responses before authorization.
 
-For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create Kubernetes Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
+For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create ConfigMap`, `Create Secret`, `Replace Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
 
 
 ## ConfigMap entry editing
@@ -109,6 +112,11 @@ For full-page GET requests that fail the cluster prerequisite, Kubernetes Operat
 ConfigMap text and binary entries use Structured Entry Editor. Update keeps Merge and Replace explicit. Immutable ConfigMaps remain protected from update.
 
 ## Secret creation and replacement
+
+Workflow naming is intentionally task-specific:
+
+- **Update ConfigMap** owns editable current-state mutation with explicit Merge / Replace modes and effective diff preview.
+- **Replace Secret** owns submitted-key value replacement without reading or rendering current Secret values. Blank fields preserve existing values and key deletion is outside this workflow.
 
 Secret Type uses Operational Choice Card Group with the canonical responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
 
@@ -129,6 +137,8 @@ Deletion
 ```
 
 The modal is the final human confirmation. It does not replace the signed receipt, RBAC preflight, or resourceVersion precondition. ConfigMap and signed Secret delete receipts are stateless, bound to the KAORI user and exact live target plus resourceVersion, and expire after ten minutes.
+
+The right-rail **Deletion Safety Contract** remains available as reference guidance but is collapsed by default. Persistent destructive warnings, exact-name confirmation, validation evidence, and final confirmation remain visible in the owning workflow and are never hidden by the collapsed reference state.
 
 ## Protected Secret Reveal
 
@@ -204,3 +214,51 @@ See `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`.
 
 The Form + Right Context pattern stacks the guidance below the primary form below `xl`. This preserves the same semantic order used by existing Kubernetes, Metrics Source, and Alertmanager registration pages. Do not create a provider- or domain-specific breakpoint solely to keep the rail visible.
 
+
+
+## Kubernetes Operations overview (review candidate #1018)
+
+The `/kubernetes-operations/` landing page is a capability-first, permission-scoped navigation surface. It composes the existing page Hero, operational section card, workspace link card, and evidence-boundary components. ConfigMap and Secret workspaces retain their own authorization and cluster prerequisites; future capability families are added as permission-gated entries instead of duplicating a live inventory or mutation engine in this overview.
+
+The shared destructive confirmation modal retains the existing runtime, keyboard/focus trap, exact-target selection and final submit dispatch. The `kubernetes` presentation is limited to Secret and ConfigMap deletion and separates resource/scope, irreversible consequence, and bound preflight explanation. Final operations continue to enforce their server-side validation receipt, resourceVersion and RBAC contracts; the new presentation never exposes Secret values.
+
+This candidate is for `kaori/review/staging-uat` devcontainer visual and functional review; CI/CD admission, staging UAT and promotion require separate authorization.
+
+### Navigation discovery correction (#1018)
+
+The active Sidebar v2.2 menu and integrated Level-3 page tabs are projected from `app/common/workspace_navigation_catalog.py` through `app/common/workspace_navigation.py`, not from the deprecated `components/navigation/kubernetes_operations_menu.html` template. The Operations capability resolves to `kubernetes_operations.overview`; authorized users then select **Overview**, **ConfigMaps**, or **Secrets** in the canonical page-level workspace navigation. The overview is always in the same permission boundary as the operation families, including users with access to only one family. Workflow-specific views preserve the existing explicit permission checks and default to their own active tab; only `kubernetes_operations.overview` selects the Overview tab.
+
+
+### TLS coverage admission (#1306)
+
+The TLS rotation preview and final server mutation require a committed
+**Collected** Ingress-mapping state and complete SAN coverage of mapped
+Ingress hosts. Unavailable mappings show **Not Reported** and block the
+operation; known uncovered hosts also block it. A certificate/key pair
+valid by itself cannot authorize rotation. Bulk rotation checks every
+selected target **before** the first PATCH and aborts the entire batch
+without partial writes if any target is blocked. There is no silent
+override; exceptional rotation requires separately reviewed policy.
+The server repeats the check even if the UI validation trigger was bypassed.
+Before any Kubernetes PATCH, the server also verifies immutable Secret UID
+continuity between the committed TLS inventory and current live Kubernetes
+readback. Missing, malformed, or changed UID evidence blocks rotation and
+requires resynchronization; namespace/name and resourceVersion alone are not
+proof of object continuity. Live type/resourceVersion checks, dry-run, payload
+redaction, and provider-authoritative mutation remain mandatory.
+
+A Collected Ingress status alone does not qualify old coverage. Both the
+cluster's successful collection timestamp and the selected certificate row's
+collected_at must be inside the existing TLS Job Policy synchronization
+window plus its approved freshness grace. Missing, future, or stale timestamps
+and failed Secret/Ingress status block preview and final single/bulk admission.
+There is no implicit break-glass override. Bulk rotation also rereads and
+qualifies **every** selected live Secret UID/type/resourceVersion before its
+first PATCH; a single failed identity preflight rejects the entire batch.
+The approved resourceVersion precondition still protects each dry-run and
+final PATCH against a later concurrent change.
+
+
+Bulk TLS requests must resolve **every** unique selected certificate ID at
+preview and apply time. Missing, duplicated, or malformed identities fail the
+whole group; the provider is never called with an silently narrowed target set.

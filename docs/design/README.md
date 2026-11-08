@@ -3,9 +3,14 @@
 ## Start Here
 
 - `../standards/KAORI_ENGINEERING_STANDARD_V1.md` — mandatory final-recheck and engineering review index.
+- `DESIGN_SYSTEM.md` — compact authority index and compatibility entry point; it is not a separate design-system version.
 - `KAORI_STYLING_GUIDE.md` — practical implementation and page-review guide.
 - `KAORI_DESIGN_SYSTEM.md` — authoritative global visual and interaction contract.
 - `KAORI_VISUAL_QA.md` — governed multi-viewport visual QA, review rubric, baseline evidence, and human-UAT boundary.
+- `FOUNDATION_AND_CONTENT_DENSITY.md` — current Design System v2 foundation/content-density decision matrix.
+- `RESPONSIVE_ACCESSIBILITY_INTERACTION.md` — current Design System v2 responsive/accessibility/interaction decision matrix.
+- `REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md` — current Design System v2 production-reference and enforcement coverage map.
+- `audits/KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md` — current Design System v2 authority/gap inventory.
 
 The Styling Guide selects the correct reusable component. The Design System and component documents define the detailed visual contract. Domain specifications may define content and behavior but may not override shared component geometry or tokens.
 
@@ -27,6 +32,8 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/FRAMED_WORKSPACE_TABS.md`
 - `components/REUSABLE_COMPONENT_OWNERSHIP.md` — canonical semantic ownership and adapter-extension registry for shared KAORI presentation.
 - `components/SEGMENTED_TABS.md`
+- `components/RESOURCE_LENS_TABS.md`
+- `components/TECHNICAL_CATEGORY_TABS.md`
 - `components/VISUALIZATION_WORKSPACE.md`
 - `components/TOPOLOGY_PALETTE.md`
 - `components/OPERATIONAL_SECTION_CARD.md`
@@ -48,6 +55,8 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/ANALYTICS_ALERTS_ANOMALIES.md`
 - `components/ANALYTICS_METRICS_SOURCE_READINESS.md`
 - `components/SECTION_HEADER_ACTION.md`
+- `components/SECTION_INTRO.md` — shared plain heading hierarchy above major operational workspaces and registries.
+- `components/INFO_TIP.md` — compact hover/focus guidance bubble for dense forms and operational controls.
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`
 - `components/FORM_WITH_CONTEXT_RAIL.md`
@@ -57,6 +66,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/RELATED_PAGE_CARD.md`
 - `components/VIEW_MORE_CONTENT.md`
 - `components/SIDEBAR_NAVIGATION.md`
+- `components/DOMAIN_WORKSPACE_NAVIGATION.md` — canonical level-3 page workspace/detail navigation below the two-level sidebar.
 - `components/FORM_ACTION_BAR.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
@@ -77,6 +87,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `patterns/INVENTORY_AND_OPERATIONAL_PAGES.md`
 - `patterns/WELCOME_WORKSPACE_CATALOG.md`
 - `patterns/OPERATIONAL_DASHBOARD.md`
+- `patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md` — canonical page-archetype and tab/navigation decision registry.
 - `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/KUBERNETES_NODE_INVENTORY.md`

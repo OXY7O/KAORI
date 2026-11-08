@@ -4,15 +4,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 from kubernetes.client import V1Ingress, V1Secret
 
+from app.common.kubernetes_secrets import scrub_secret_payload
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
-    tls_policy_for_cluster,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
 from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     decode_secret_data,
@@ -33,9 +33,14 @@ from app.kubernetes.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_INVALID,
 )
+from app.kubernetes.governance.tls_certificates.controller_evidence import normalize_tls_controller_owner
 from app.models import Cluster
 
 TLSProgressCallback = Callable[[int, str], None]
+
+_TLS_PAGE_SIZE = 100
+_TLS_MAX_PAGES = 100
+_TLS_REQUEST_TIMEOUT_SECONDS = 10
 
 
 @dataclass(frozen=True)
@@ -65,8 +70,46 @@ def _response_items(response: Any) -> list[Any]:
     else:
         raw_items = getattr(response, 'items', None)
     if not isinstance(raw_items, list):
-        return []
+        raise ValueError('Kubernetes returned a malformed collection page without an items list.')
     return raw_items
+
+
+def _next_token(response: Any) -> str:
+    metadata = response.get('metadata') if isinstance(response, Mapping) else getattr(response, 'metadata', None)
+    if isinstance(metadata, Mapping):
+        return str(metadata.get('continue') or metadata.get('_continue') or '')
+    return str(getattr(metadata, '_continue', None) or '')
+
+
+def _collect_pages(
+    fetch_page: Callable[[str | None], Any],
+    consume_page: Callable[[list[Any]], None],
+    *,
+    kind: str,
+    scrub_secrets: bool = False,
+) -> None:
+    """A complete paged listing or an error; never commit an incomplete prefix."""
+    continuation: str | None = None
+    seen: set[str] = set()
+    for _ in range(_TLS_MAX_PAGES):
+        response = fetch_page(continuation)
+        items = _response_items(response)
+        try:
+            if len(items) > _TLS_PAGE_SIZE:
+                raise ValueError(f'Kubernetes returned an oversized {kind} collection page.')
+            consume_page(items)
+            next_token = _next_token(response)
+        finally:
+            if scrub_secrets:
+                for item in items:
+                    scrub_secret_payload(item)
+        if not next_token:
+            return
+        if next_token in seen:
+            raise ValueError(f'Kubernetes repeated a {kind} continuation token.')
+        seen.add(next_token)
+        continuation = next_token
+    raise ValueError(f'Kubernetes {kind} collection exceeded the safe page limit.')
 
 
 def _collection_failure(exc: Exception) -> tuple[str, str]:
@@ -129,27 +172,37 @@ def _ingress_tls_usage(ingress: V1Ingress) -> list[dict[str, Any]]:
 
 
 def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[str, Any]]:
-    with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-        client = build_kubernetes_client(cluster)
-        networking_api = client.networking_api()
-        response = networking_api.list_ingress_for_all_namespaces()
-
     usage_map: dict[tuple[str, str], dict[str, Any]] = {}
-    for ingress in _response_items(response):
-        for usage in _ingress_tls_usage(ingress):
-            key = _secret_key(usage.get('namespace'), usage.get('secret_name'))
-            if key is None:
-                continue
 
-            current = usage_map.setdefault(key, {'used_by': [], 'ingress_hosts': []})
-            current['used_by'].append(
-                {
-                    'namespace': usage['namespace'],
-                    'name': usage['ingress_name'],
-                    'hosts': usage['hosts'],
-                }
-            )
-            current['ingress_hosts'].extend(usage['hosts'])
+    def consume_page(ingresses: list[Any]) -> None:
+        for ingress in ingresses:
+            metadata = getattr(ingress, 'metadata', None)
+            if not metadata or not getattr(metadata, 'namespace', None) or not getattr(metadata, 'name', None):
+                raise ValueError('Kubernetes Ingress collection returned a resource without identity.')
+            for usage in _ingress_tls_usage(ingress):
+                key = _secret_key(usage.get('namespace'), usage.get('secret_name'))
+                if key is None:
+                    raise ValueError('Kubernetes Ingress TLS reference is missing its namespace or Secret identity.')
+                current = usage_map.setdefault(key, {'used_by': [], 'ingress_hosts': []})
+                current['used_by'].append(
+                    {
+                        'namespace': usage['namespace'],
+                        'name': usage['ingress_name'],
+                        'hosts': usage['hosts'],
+                    }
+                )
+                current['ingress_hosts'].extend(usage['hosts'])
+
+    networking_api = build_kubernetes_client(cluster).networking_api()
+    _collect_pages(
+        lambda token: networking_api.list_ingress_for_all_namespaces(
+            limit=_TLS_PAGE_SIZE,
+            _continue=token,
+            _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+        ),
+        consume_page,
+        kind='Ingress',
+    )
 
     for value in usage_map.values():
         value['ingress_hosts'] = sorted({host for host in value['ingress_hosts'] if host})
@@ -200,6 +253,23 @@ def _coverage_evidence(
     return state, len(declared_hosts), covered_count, uncovered
 
 
+def _qualified_secret_uid(secret: V1Secret) -> str | None:
+    """Retain only a canonical immutable Kubernetes object UID.
+
+    Absence/invalid UID downgrades provenance to unknown, while ordinary TLS
+    certificate collection remains available. Namespace/name cannot replace
+    this identity, and untrusted metadata strings are never displayed.
+    """
+    raw = getattr(getattr(secret, 'metadata', None), 'uid', None)
+    if not isinstance(raw, str) or len(raw) > 64:
+        return None
+    try:
+        parsed = str(UUID(raw))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return parsed if raw.lower() == parsed else None
+
+
 def parse_tls_secret(
     secret: V1Secret,
     usage_map: dict[tuple[str, str], dict[str, Any]],
@@ -217,6 +287,8 @@ def parse_tls_secret(
     payload: dict[str, Any] = {
         'namespace': namespace,
         'secret_name': name,
+        'secret_uid': _qualified_secret_uid(secret),
+        'controller_owner_refs': normalize_tls_controller_owner(metadata),
         'secret_type': secret.type,
         'common_name': None,
         'issuer': None,
@@ -302,11 +374,44 @@ def collect_tls_certificate_batch(
         ingress_status, ingress_detail = _collection_failure(exc)
 
     _report_progress(progress_callback, 28, f'Reading Kubernetes Secrets from {cluster.name}.')
+    records: list[dict[str, Any]] = []
+
+    def consume_page(items: list[Any]) -> None:
+        for secret in items:
+            if getattr(secret, 'type', None) != TLS_SECRET_TYPE:
+                continue
+            if not _has_secret_identity(secret):
+                raise ValueError('A Kubernetes TLS Secret is missing required identity metadata.')
+            records.append(
+                parse_tls_secret(
+                    secret,
+                    usage_map,
+                    ingress_mapping_status=ingress_status,
+                    validity_policy=validity_policy,
+                )
+            )
+        # Count only normalized metadata, never hold Secret objects across
+        # pages. All API objects are scrubbed before the next provider request.
+        index = len(records)
+        total_secrets = index
+        _report_progress(
+            progress_callback,
+            min(42 + index, 72),
+            f'Parsed {index} of {total_secrets} TLS Secrets from {cluster.name}.',
+        )
+
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            client = build_kubernetes_client(cluster)
-            core_api = client.core_api()
-            response = core_api.list_secret_for_all_namespaces()
+        core_api = build_kubernetes_client(cluster).core_api()
+        _collect_pages(
+            lambda token: core_api.list_secret_for_all_namespaces(
+                limit=_TLS_PAGE_SIZE,
+                _continue=token,
+                _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+            ),
+            consume_page,
+            kind='Secret',
+            scrub_secrets=True,
+        )
     except Exception as exc:
         secret_status, secret_detail = _collection_failure(exc)
         return TLSCollectionBatch(
@@ -320,37 +425,10 @@ def collect_tls_certificate_batch(
             error=secret_detail,
         )
 
-    tls_secrets = [
-        secret
-        for secret in _response_items(response)
-        if secret.type == TLS_SECRET_TYPE and _has_secret_identity(secret)
-    ]
-    _report_progress(
-        progress_callback,
-        42,
-        f'Found {len(tls_secrets)} TLS Secrets in {cluster.name}.',
-    )
-
-    records: list[dict[str, Any]] = []
-    total_secrets = len(tls_secrets)
-    if total_secrets == 0:
+    if not records:
         _report_progress(progress_callback, 72, f'No TLS Secrets require parsing in {cluster.name}.')
     else:
-        for index, secret in enumerate(tls_secrets, start=1):
-            records.append(
-                parse_tls_secret(
-                    secret,
-                    usage_map,
-                    ingress_mapping_status=ingress_status,
-                    validity_policy=validity_policy,
-                )
-            )
-            parse_percent = 42 + int((index / total_secrets) * 30)
-            _report_progress(
-                progress_callback,
-                parse_percent,
-                f'Parsed {index} of {total_secrets} TLS Secrets from {cluster.name}.',
-            )
+        _report_progress(progress_callback, 72, f'Parsed {len(records)} TLS Secrets from {cluster.name}.')
 
     return TLSCollectionBatch(
         records=records,

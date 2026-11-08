@@ -1,0 +1,208 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% set registry_id = "tenant-registry-card" %}
+{% set loading_id = "tenant-registry-loading" %}
+{% set query_params = {
+    'section': 'registry',
+    'search': tenant_registry_filters.search,
+    'cluster_id': tenant_registry_filters.cluster_id,
+    'environment': tenant_registry_filters.environment,
+    'lifecycle_status': tenant_registry_filters.lifecycle_status
+} %}
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
+    {% set header_actions %}
+        {% if tenant_registry_filters.search or tenant_registry_filters.cluster_id or tenant_registry_filters.environment or tenant_registry_filters.lifecycle_status %}
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        tenant_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'registry'}
+            ) }}
+        {% endif %}
+    {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-registry-status-tip',
+                'Tenant Registry status',
+                'Lifecycle describes committed Tenant state; Actions show whether teardown is currently admitted.',
+                [
+                'Ready — Tenant governance is active.',
+                'Decommission — authority-safe teardown is currently admitted.',
+                'Blocked — Tenant stays valid; teardown fails closed until blockers clear.',
+                'History Retained — decommission is complete and audit history remains.',
+                'Unavailable — no admitted lifecycle action is available.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('building-2',
+        'Tenant Registry',
+        'Committed Tenant ownership, placement, provider authority, and lifecycle state.',
+        loading_id,
+        'Refreshing Tenant Registry',
+        url_for('tenant.tenants', section='tenant-setup') ,
+    'Add Tenant',
+    header_actions=header_actions,
+    result_count=tenant_pagination.total_items,
+    title_extra=title_info
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            tenant_pagination.per_page
+            ) %}
+            <input type="hidden" name="section" value="registry">
+            <div>
+                <label for="tenant-registry-cluster"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="tenant-registry-cluster"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in tenant_cluster_options %}
+                        <option value="{{ cluster.id }}"
+                                {% if tenant_registry_filters.cluster_id == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="tenant-registry-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="tenant-registry-environment"
+                        name="environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for environment_name in tenant_environment_filter_options %}
+                        <option value="{{ environment_name }}"
+                                {% if tenant_registry_filters.environment == environment_name %}selected{% endif %}>{{ environment_name|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="tenant-registry-lifecycle"
+                       class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
+                <select id="tenant-registry-lifecycle"
+                        name="lifecycle_status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Lifecycle States</option>
+                    {% for lifecycle in tenant_lifecycle_filter_options %}
+                        <option value="{{ lifecycle }}"
+                                {% if tenant_registry_filters.lifecycle_status == lifecycle %}selected{% endif %}>{{ lifecycle|replace('_', ' ') |title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="tenant-registry-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Tenants</label>
+                {{ table_ui.search_field('search', tenant_registry_filters.search, 'Search tenant name or slug', id='tenant-registry-search') }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1040px] !table-fixed') }}">
+            <caption class="sr-only">Tenant Registry from committed KAORI Tenant state.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Cluster</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Namespaces</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provider Authority</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Lifecycle</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in tenant_rows %}
+                    {% set tenant = row.tenant %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            {{ table_ui.title_cell(tenant.name, tenant.slug, 'building-2') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            {% if row.cluster %}
+                                {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment) }}
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                                   title="Unavailable">Unavailable</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                                   title="Cluster reference {{ tenant.cluster_id }}">Cluster reference {{ tenant.cluster_id }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate">
+                                {% if row.environments %}
+                                    {{ row.environments|map("title") |join(' · ') }}
+                                {% else %}
+                                    Not Reported
+                                {% endif %}
+                            </p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}">{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                            <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
+                               title="{{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}{% if historical_namespace_count > 0 %} · {{ historical_namespace_count }} historical record{{ '' if historical_namespace_count == 1 else 's' }} retained{% endif %}">
+                                {{ row.namespace_count }} <span class="text-xs font-normal text-content-muted">active</span>
+                            </p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ tenant.provider_key|replace('_', ' ') |title }}">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ tenant.reconciliation_authority|replace('_', ' ') |title }}">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            <div class="space-y-1.5">
+                                {{ table_label.status_label(tenant.lifecycle_status|replace('_', ' ') |title,
+                                'normal' if tenant.lifecycle_status == 'ready' else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
+                                ) }}
+                                <span class="block min-w-0 max-w-full truncate text-xs text-content-muted"
+                                      title="{{ tenant.ownership_status|replace('_', ' ') |title }} · Gen {{ tenant.generation }} · Immutable">
+                                    {{ tenant.ownership_status|replace('_', ' ') |title }} · Gen {{ tenant.generation }} · Immutable
+                                </span>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                            <div class="flex justify-end">
+                                <a href="{{ url_for('tenant.tenant_detail', tenant_id=tenant.id, registry_page=tenant_pagination.page, registry_per_page=tenant_pagination.per_page, registry_search=tenant_registry_filters.search, registry_cluster_id=tenant_registry_filters.cluster_id, registry_environment=tenant_registry_filters.environment, registry_lifecycle_status=tenant_registry_filters.lifecycle_status) }}"
+                                   hx-boost="false"
+                                   aria-label="{{ 'Manage' if can_manage else 'View' }} {{ tenant.name }} details"
+                                   class="{{ table_ui.action_classes() }} shrink-0">
+                                    <i data-lucide="{{ 'settings-2' if can_manage else 'eye' }}"
+                                       class="h-3.5 w-3.5"
+                                       aria-hidden="true"></i>
+                                    {{ 'Manage' if can_manage else 'View' }}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = "building-2" %}
+                            {% set empty_state_title = "No Tenants Found" %}
+                            {% set empty_state_description = "Adjust filters or open Tenant Setup to create the first governed Tenant." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ registry_ui.footer('tenant.tenants',
+        registry_id,
+        loading_id,
+        tenant_pagination,
+        query_params,
+        tenant_pagination.allowed_per_page,
+        resource_label='Tenants',
+        rows_aria_label='Tenant rows per page',
+        control_name='tenant-registry') }}
+</section>

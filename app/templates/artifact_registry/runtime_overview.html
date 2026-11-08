@@ -1,0 +1,149 @@
+{% extends "layouts/app.html" %}
+{% block title %}Runtime Overview · Artifact Registry{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/page_hero.html" as page_hero %}
+    {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+    {% import "components/section_intro.html" as section_intro %}
+    {% import "components/operational_section_card.html" as section_card %}
+    {% import "components/resource_posture_grid.html" as posture_grid %}
+    {% import "components/inventory_asset_card.html" as destination_card %}
+    {% set usage_url = url_for('artifact_registry.runtime',
+            q=runtime.filters.search,
+            source_id=runtime.filters.source_id,
+            cluster_id=runtime.filters.cluster_id,
+            namespace=runtime.filters.namespace,
+            match_type=runtime.filters.match_type,
+            exposure=runtime.filters.exposure,
+        artifact_id=runtime.filters.artifact_id) %}
+    {% set topology_url = url_for('artifact_registry.runtime_topology',
+            q=runtime.filters.search,
+            source_id=runtime.filters.source_id,
+            cluster_id=runtime.filters.cluster_id,
+            namespace=runtime.filters.namespace,
+            match_type=runtime.filters.match_type,
+            exposure=runtime.filters.exposure,
+        artifact_id=runtime.filters.artifact_id) %}
+    <div id="artifact-registry-runtime-overview" class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('waypoints', 'Artifact Registry', 'git-compare-arrows') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Runtime Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Review committed Registry links, coverage, confidence, and risks.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('fingerprint', runtime.artifact_count ~ ' Correlated Artifacts') }}
+                            {{ page_hero.meta_label('link-2', runtime.total ~ ' Runtime Bindings') }}
+                            {{ page_hero.meta_label('shield-alert', runtime.security_exposed ~ ' Exposed Bindings') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Cross-Domain Correlation',
+                                'Committed Runtime Evidence',
+                                'Correlation Readiness',
+                                runtime.snapshot.status,
+                                runtime.snapshot.tone,
+                                [
+                                ('database', 'Registry Scope', runtime.scope.source_label, 'Committed Artifact Registry') ,
+                ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Kubernetes inventory')
+                ],
+                'Open Registry Integrations',
+                url_for('integrations.registry'),
+                action_icon='settings-2',
+                blocked=runtime.setup.is_blocked,
+                blocked_info=runtime.setup.description,
+                blocked_label='Correlation Prerequisites') }}
+            </div>
+        </section>
+        {% if runtime.setup.is_blocked %}
+            {% set blocked_state_icon = "waypoints" %}
+            {% set blocked_state_label = "Correlation Prerequisites" %}
+            {% set blocked_state_title = runtime.setup.title %}
+            {% set blocked_state_description = runtime.setup.description %}
+            {% set blocked_state_steps = runtime.setup.steps %}
+            {% set blocked_state_action_url = url_for(runtime.setup.action_endpoint) if runtime.setup.action_endpoint else none %}
+            {% set blocked_state_action_label = runtime.setup.action_label %}
+            {% set blocked_state_action_icon = runtime.setup.action_icon %}
+            {% set blocked_state_permission = runtime.setup.action_permission %}
+            {% set blocked_state_variant = "section" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
+            {{ snapshot_context_bar.render(source_label=runtime.snapshot.source_label,
+                        status=runtime.snapshot.status,
+                        tone=runtime.snapshot.tone,
+                        description=runtime.snapshot.description,
+                        latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
+                        scope_label=runtime.snapshot.scope_label,
+                        coverage_label=runtime.snapshot.coverage_label,
+                        exceptions_label=runtime.snapshot.exceptions_label,
+                        icon='waypoints',
+                        title='Correlation Snapshot',
+                        latest_supporting='Last successful Runtime Correlation.',
+                        scope_supporting='Committed Registry × Kubernetes.',
+                        coverage_supporting=runtime.snapshot.coverage_supporting,
+                        exceptions_supporting=runtime.snapshot.exceptions_supporting,
+                        coverage_tone=runtime.snapshot.coverage_tone,
+                        exceptions_tone=runtime.snapshot.exceptions_tone,
+                        metric_icon_palette='brand',
+                        latest_label='Last Correlated',
+                        scope_metric_label='Active Scope',
+                        coverage_metric_label='Runtime Coverage',
+                        exceptions_metric_label='Correlation Exceptions') }}
+            <section class="space-y-4"
+                     aria-labelledby="registry-runtime-overview-posture-heading">
+                {{ section_intro.render('Runtime Correlation Posture',
+                                'Summarize committed artifact reach, match confidence, and affected runtime bindings.',
+                                'registry-runtime-overview-posture-heading') }}
+                {% set runtime_metrics = [
+                                    ('package-search', 'Correlated Artifacts', runtime.artifact_count,
+                                    'Distinct committed artifact identities observed in the selected runtime scope.', 'info'),
+                                    ('fingerprint', 'Digest Matched', runtime.digest_matches,
+                                    'Bindings supported by immutable artifact digest identity.', 'info'),
+                                    ('tags', 'Tag Matched', runtime.tag_matches,
+                                    'Mutable tag references have lower match confidence.', 'warning' if runtime.tag_matches else 'info'),
+                                    ('shield-alert', 'Security Exposed', runtime.security_exposed,
+                                    'Runtime bindings associated with Critical or High artifact findings.',
+                                    'critical' if runtime.security_exposed else 'info')
+                                ] %}
+                {% call section_card.render(
+                    'Runtime Evidence Summary',
+                    'Committed correlation counts are not live runtime health checks or distinct CVE totals.',
+                    'waypoints',
+                    body_classes='p-0',
+                    aria_label='Runtime correlation evidence summary'
+                    ) %}
+                    {{ posture_grid.render(runtime_metrics, columns=4) }}
+                {% endcall %}
+            </section>
+            <section class="space-y-4"
+                     aria-labelledby="registry-runtime-overview-explore-heading">
+                {{ section_intro.render('Explore Runtime',
+                                'Review detailed Registry-to-Kubernetes bindings or trace their relationships in a bounded graph.',
+                                'registry-runtime-overview-explore-heading') }}
+                {% call section_card.render(
+                    'Runtime Explorer',
+                    'Select the detailed table or graph view. Both use the same committed Registry × Kubernetes evidence.',
+                    'git-fork',
+                    body_classes='p-5',
+                    aria_label='Runtime exploration destinations'
+                    ) %}
+                    <div class="grid gap-4 md:grid-cols-2">
+                        {{ destination_card.render('Runtime Usage',
+                                                runtime.total,
+                                                'Filter and inspect artifact-to-workload bindings, match confidence, and security evidence.',
+                                                usage_url,
+                                                'list',
+                                                action_label='Open Runtime Usage') }}
+                        {{ destination_card.render('Topology',
+                                                runtime.artifact_count,
+                                                'Visualize bounded artifact-to-Kubernetes dependency paths with evidence-backed inspector.',
+                                                topology_url,
+                                                'waypoints',
+                                                action_label='Open Topology') }}
+                    </div>
+                {% endcall %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

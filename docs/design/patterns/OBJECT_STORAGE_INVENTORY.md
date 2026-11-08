@@ -21,6 +21,36 @@ A registered system with no committed inventory is **not** setup-blocked. It is 
 
 Overview, Systems, and Buckets & Containers all place the canonical `Inventory Data Snapshot` immediately below the Hero in ready state. It reports committed source, freshness, active scope, system coverage, and snapshot exceptions using `components/snapshot_context_bar.html`.
 
+## Overview composition
+
+The ready-state Object Storage Inventory Overview uses the shared Inventory Overview reading order:
+
+```text
+Hero
+→ Inventory Data Snapshot
+→ Fleet Inventory Posture
+→ Object Storage Asset Catalog
+```
+
+`Fleet Inventory Posture` and `Inventory Assets` retain their shared plain `section_intro.html` heading/description hierarchy outside the content blocks. Following explicit human DevContainer review in #946, both content groups intentionally use **one** shared `operational_section_card.html` each rather than flat callouts or nested shells:
+
+- `Fleet Inventory Posture` → `Object Storage Fleet Evidence` → shared `resource_posture_grid.html` with **four** committed signals (quota assessment, protection attention, public exposure, optional usage evidence). Metric labels/values stay separate within the shared grid and preserve evidence-qualified tones. No collected assets produce `No Evidence`, not a fabricated normal/zero state.
+- `Inventory Assets` → `Object Storage Asset Catalog` → dynamic `2 Asset Types` badge plus two shared `inventory_asset_card.html` links (Systems and Buckets & Containers) in the responsive two-column grid.
+
+The four metrics remain domain-owned, not mechanically copied from Registry. Green clean-state protection or public exposure requires complete corresponding committed control evidence; partial or unknown evidence is explicitly qualified, never interpreted as compliance. There is **no additional outer section-card shell** around the two approved content cards. `docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md` and #946 are the review authority for this current composition.
+
+Systems and Buckets & Containers reuse the canonical Inventory Resource Page hierarchy:
+
+```text
+Inventory Data Snapshot
+Operational Posture — shared Section Intro
+└── System / Namespace posture block
+Inventory Records — shared Section Intro
+└── Shared Inventory table
+```
+
+The section title and supporting description sit outside the posture/table box. Existing `resource_posture_grid.html`, `operational_section_card.html`, and shared table primitives remain authoritative.
+
 ## Ownership
 
 - Integrations → Storage: registration, configuration, validation, runtime health.

@@ -1,9 +1,12 @@
+import os
+import subprocess
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
+PLANNER = ROOT / 'scripts/developer_check_plan.py'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 TELEGRAM = ROOT / '.github/workflows/telegram-github-actions.yml'
@@ -16,64 +19,161 @@ def read(path: Path) -> str:
 def test_work_branch_developer_check_is_separate_from_governed_admission() -> None:
     workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
 
-    assert workflow['name'] == 'KAORI Developer Check'
+    assert workflow['name'] == 'Developer Check'
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
-    assert set(jobs) == {'route', 'developer-check'}
+    assert set(jobs) == {
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+        'developer-check',
+        'full-admission',
+        'ready-admission-guard',
+    }
     assert jobs['route']['name'] == 'Route Checks'
-    assert jobs['route']['if'] == (
-        '${{ github.event.pull_request.head.repo.full_name == github.repository && '
-        "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
-        "github.event.pull_request.head.ref != 'kaori/staging' }}"
-    )
+    assert 'if' not in jobs['route']
+    assert jobs['route']['runs-on'] == 'ubuntu-24.04'
+    assert jobs['route']['steps'][0]['name'] == 'Reject untrusted pull request before checkout'
+    assert jobs['route']['steps'][0]['env']['HEAD_REPO'] == '${{ github.event.pull_request.head.repo.full_name }}'
+    assert jobs['route']['steps'][0]['env']['HEAD_REF'] == '${{ github.event.pull_request.head.ref }}'
+    assert jobs['toolchain']['name'] == 'Prepare Toolchain'
+    assert jobs['toolchain']['needs'] == 'route'
+    assert jobs['python-check']['name'] == 'Python & Governance'
+    assert jobs['validation-check']['name'] == 'Frontend & Focused Validation'
     assert jobs['developer-check']['name'] == 'Developer Check'
-    assert jobs['developer-check']['if'].startswith('${{ always()')
+    assert jobs['developer-check']['if'] == '${{ always() }}'
+    assert jobs['developer-check']['runs-on'] == 'ubuntu-24.04'
+    assert jobs['developer-check']['steps'][0]['env']['ROUTE_RESULT'] == '${{ needs.route.result }}'
+    assert set(jobs['python-check']['needs']) == {'route', 'toolchain'}
+    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain', 'python-check'}
+    assert set(jobs['developer-check']['needs']) == {
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+    }
+    assert jobs['full-admission']['name'] == 'Full Admission'
+    assert jobs['ready-admission-guard']['name'] == 'Ready Admission Guard'
+    assert set(jobs['ready-admission-guard']['needs']) == {'developer-check', 'full-admission'}
+    assert 'always()' in jobs['ready-admission-guard']['if']
+    assert 'github.event.pull_request.head.repo.full_name == github.repository' in jobs['ready-admission-guard']['if']
+    assert 'FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}' in read(DEVELOPER_WORKFLOW)
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert jobs['full-admission']['uses'] == './.github/workflows/quality.yml'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+    assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
     source = read(DEVELOPER_WORKFLOW)
     assert 'production-runtime' not in source
     assert 'run-runtime-validation.sh' not in source
     assert 'trivy image' not in source
-    assert 'Full Admission' not in source
+    assert 'scripts/quality_gate.sh --static' not in source
+    assert 'scripts/quality_gate.sh --tests' not in source
+    assert 'run-runtime-validation.sh' not in source
 
 
-def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
+def test_developer_check_normalizes_parent_child_test_paths() -> None:
+    source = read(PLANNER)
+
+    assert "if 'tests/contracts' in paths:" in source
+    assert "not path.startswith('tests/contracts/')" in source
+    assert 'return sorted(paths)' in source
+
+
+def test_developer_check_sequenced_lanes_fail_closed_into_one_aggregate() -> None:
     source = read(DEVELOPER_WORKFLOW)
 
     for token in (
-        '.github/*',
-        'requirements/*',
-        'scripts/ci_admission.py',
-        'scripts/ci_admission_policy.py',
-        'scripts/quality_gate.sh',
-        'scripts/verify_analytics_pdf_publication.py',
-        'scripts/verify_pre_release_type_safety.py',
-        'scripts/verify_code_health.py',
-        'scripts/verify_code_health_baseline_integrity.py',
-        'docs/architecture/code-health-debt-baseline.json',
-        'tests/contracts/release/*',
-        'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
-        'wide=true',
-        'reports=true',
-        'selected_tests',
-        'selected_tests[tests/contracts]=1',
-        'selected_tests[tests/migrations]=1',
-        'tests/reports',
-        'tests/contracts/reports',
-        'tests/contracts/analytics',
-        'tests/contracts/platform_operations',
-        'tests/kubernetes',
-        'tests/storage',
-        'tests/access',
+        'toolchain:',
+        'python-check:',
+        'validation-check:',
+        'name: Prepare Toolchain',
+        'name: Python & Governance',
+        'name: Frontend & Focused Validation',
+        'TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}',
+        'PYTHON_RESULT: ${{ needs.python-check.result }}',
+        'VALIDATION_RESULT: ${{ needs.validation-check.result }}',
+        'assert_lane \'Prepare Toolchain\' "$toolchain_required" "$TOOLCHAIN_RESULT"',
+        "assert_lane 'Python & Governance'",
+        "assert_lane 'Frontend & Focused Validation'",
     ):
         assert token in source
 
-    for redundant_pattern in (
-        '.github/*|.github/ci/*',
-        'app/templates/*|app/*/templates/*|app/*/templates/**/*',
-        'app/static/*|app/static/**/*',
-        'frontend/*|frontend/**/*',
-        'migrations/*|migrations/**/*',
+
+def test_focused_validation_short_circuits_on_governance_failure() -> None:
+    workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
+    jobs = workflow['jobs']
+    validation = jobs['validation-check']
+    condition = validation['if']
+
+    assert set(validation['needs']) == {'route', 'toolchain', 'python-check'}
+    assert '!cancelled()' in condition
+    assert "needs.route.result == 'success'" in condition
+    assert "needs.toolchain.result == 'success'" in condition
+    assert "needs.python-check.result == 'success'" in condition
+    assert "needs.python-check.result == 'skipped'" in condition
+    assert "needs.python-check.result == 'failure'" not in condition
+    assert "needs.python-check.result == 'cancelled'" not in condition
+    assert jobs['developer-check']['if'].startswith('${{ always()')
+    assert set(jobs['developer-check']['needs']) == {
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+    }
+    assert "assert_lane 'Python & Governance'" in read(DEVELOPER_WORKFLOW)
+    assert "assert_lane 'Frontend & Focused Validation'" in read(DEVELOPER_WORKFLOW)
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+
+
+def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> None:
+    workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
+    jobs = workflow['jobs']
+    source = read(DEVELOPER_WORKFLOW)
+
+    assert workflow['permissions']['contents'] == 'read'
+    assert workflow['permissions']['actions'] == 'read'
+    assert workflow['permissions']['statuses'] == 'write'
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+    assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
+    assert 'if' not in jobs['route']  # Fork/branch denial runs as a failing hosted step.
+    assert 'uses: ./.github/workflows/quality.yml' in source
+
+
+def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
+    workflow = read(DEVELOPER_WORKFLOW)
+    source = read(PLANNER)
+
+    assert 'python3 scripts/developer_check_plan.py' in workflow
+    for token in (
+        "'.github/'",
+        "'requirements/'",
+        "'scripts/ci_admission.py'",
+        "'scripts/ci_admission_policy.py'",
+        "'scripts/developer_check_plan.py'",
+        "'scripts/quality_gate.sh'",
+        "'scripts/verify_analytics_pdf_publication.py'",
+        "'scripts/verify_pre_release_type_safety.py'",
+        "'scripts/verify_code_health.py'",
+        "'scripts/verify_code_health_baseline_integrity.py'",
+        "'docs/architecture/code-health-debt-baseline.json'",
+        "'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'",
+        'plan.wide = True',
+        'plan.reports = True',
+        "plan.add_test_path('tests/contracts')",
+        "plan.add_test_path('tests/migrations')",
+        "plan.add_test_path('tests/reports')",
+        "'reports'",
+        "'analytics'",
+        "'platform_operations'",
+        "plan.add_test_path('tests/kubernetes')",
+        "plan.add_test_path('tests/kubernetes/tenant')",
+        "plan.add_test_path('tests/storage')",
+        "plan.add_test_path('tests/access')",
     ):
-        assert redundant_pattern not in source
+        assert token in source
 
 
 def test_developer_check_uses_existing_validation_commands() -> None:
@@ -104,8 +204,8 @@ def test_developer_check_output_is_progress_visible_and_actionable() -> None:
     for token in ('⏳', '✅', '📦', '⏱', '➡️'):
         assert token in source
     assert 'Developer Check PASS' in source
-    assert 'Work-branch validation stays targeted in both Draft and Ready states' in source
-    assert 'comprehensive validation begins only after merge to kaori/staging' in source
+    assert 'Draft validation is complete' in source
+    assert 'Ready exact-head Developer Check PASS; starting governed Full Admission.' in source
 
 
 def test_governed_ci_graph_uses_concise_job_names() -> None:
@@ -138,13 +238,13 @@ def test_governed_ci_graph_uses_concise_job_names() -> None:
 def test_telegram_workflow_name_is_concise_without_changing_trust_boundary() -> None:
     workflow = yaml.safe_load(read(TELEGRAM))
 
-    assert workflow['name'] == 'KAORI Telegram Notify'
+    assert workflow['name'] == 'Delivery Notifications'
     assert workflow['jobs']['notify']['name'] == 'Notify'
     source = read(TELEGRAM)
     assert 'pull_request:' not in source
     assert 'pull_request_target:' not in source
     assert 'workflow_run:' in source
-    assert '- KAORI CI' in source
+    assert '- Full Admission' in source
     assert '- completed' in source
     assert "github.event.workflow_run.event == 'push'" in source
     assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
@@ -166,3 +266,70 @@ def test_delivery_standard_codifies_pre_ready_and_batch_repair() -> None:
         'small issue',
     ):
         assert token in source
+
+
+def test_untrusted_source_is_rejected_before_checkout_on_hosted_runner() -> None:
+    """Execute the existing Route Checks trust gate with harmless PR identities."""
+    jobs = yaml.safe_load(read(DEVELOPER_WORKFLOW))['jobs']
+    route = jobs['route']
+    assert route['runs-on'] == 'ubuntu-24.04'
+    assert 'if' not in route
+    first, checkout = route['steps'][:2]
+    assert first['name'] == 'Reject untrusted pull request before checkout'
+    assert checkout['name'] == 'Checkout Work Branch'
+    assert 'actions/checkout@' in checkout['uses']
+    assert checkout['with']['persist-credentials'] is False
+
+    for head_repo, head_ref, accepted in (
+        ('OXY7O/KAORI', 'kaori/chore-4238-hosted-developer-check-light', True),
+        ('external/KAORI-fork', 'kaori/chore-4238-hosted-developer-check-light', False),
+        ('OXY7O/KAORI', 'main', False),
+        ('OXY7O/KAORI', 'kaori/staging', False),
+    ):
+        env = {
+            **os.environ,
+            'GITHUB_REPOSITORY': 'OXY7O/KAORI',
+            'HEAD_REPO': head_repo,
+            'HEAD_REF': head_ref,
+        }
+        process = subprocess.run(
+            ['bash', '-c', first['run']],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (process.returncode == 0) is accepted, (head_repo, head_ref, process.stderr)
+
+
+def test_required_developer_check_fails_for_non_success_route_result() -> None:
+    """A GitHub required check must FAIL instead of being conditionally skipped."""
+    jobs = yaml.safe_load(read(DEVELOPER_WORKFLOW))['jobs']
+    aggregate = jobs['developer-check']
+    assert aggregate['name'] == 'Developer Check'
+    assert aggregate['runs-on'] == 'ubuntu-24.04'
+    assert aggregate['if'] == '${{ always() }}'
+    script = aggregate['steps'][0]['run']
+    assert aggregate['steps'][0]['env']['ROUTE_RESULT'] == '${{ needs.route.result }}'
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in script
+    guard = script.split('python_required=false', 1)[0]
+    for route_result, accepted in (
+        ('success', True),
+        ('failure', False),
+        ('skipped', False),
+        ('cancelled', False),
+    ):
+        process = subprocess.run(
+            ['bash', '-c', guard],
+            env={**os.environ, 'ROUTE_RESULT': route_result},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (process.returncode == 0) is accepted, (route_result, process.stderr)
+
+    assert jobs['toolchain']['needs'] == 'route'
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']

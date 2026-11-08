@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
@@ -8,31 +7,41 @@ import pytest
 from app.kubernetes.operations.configmaps import runtime
 
 
-@contextmanager
-def _tls_context(*, enabled: bool):
-    yield enabled
-
-
-def test_configmap_runtime_wraps_registered_client_with_cluster_tls_policy(
+def test_configmap_runtime_delegates_client_creation_to_registered_provider(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """The provider adapter owns per-request TLS policy; ConfigMap never changes global TLS."""
     events: list[object] = []
     cluster = SimpleNamespace(id='cluster-a')
+    connection = object()
     api = object()
 
-    monkeypatch.setattr(runtime, 'tls_policy_for_cluster', lambda selected: ('verify', True))
-    monkeypatch.setattr(runtime, 'weak_tls_context', _tls_context)
+    def resolve(selected):
+        events.append(('resolve', selected.id))
+        return connection
 
-    def factory(selected):
-        events.append(('factory', selected.id))
-        return api
+    def registry(capability):
+        assert capability == 'container_orchestrator'
+
+        def execute(operation, resolved_connection):
+            events.append(('execute', operation, resolved_connection is connection))
+            return SimpleNamespace(core_api=lambda: api)
+
+        return SimpleNamespace(execute=execute)
+
+    monkeypatch.setattr(runtime, 'connection_for_cluster', resolve)
+    monkeypatch.setattr(runtime, 'get_integration', registry)
 
     def callback(selected_api):
         events.append(('callback', selected_api is api))
         return 'ok'
 
-    assert runtime._call(cluster, 'integration test', factory, callback) == 'ok'
-    assert events == [('factory', 'cluster-a'), ('callback', True)]
+    assert runtime.live_call(cluster, 'integration test', callback) == 'ok'
+    assert events == [
+        ('resolve', 'cluster-a'),
+        ('execute', 'client.build', True),
+        ('callback', True),
+    ]
 
 
 def test_secret_reveal_lock_query_targets_only_request_table() -> None:

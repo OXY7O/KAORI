@@ -15,6 +15,8 @@ SERVER_COMPOSE = ROOT / 'deploy' / 'server' / 'compose.server.yml'
 LEGACY_ENV_EXAMPLE = ROOT / '.env.production.example'
 APP_ENV_EXAMPLE = ROOT / 'deploy/env/app.env.example'
 SECRETS_ENV_EXAMPLE = ROOT / 'deploy/env/secrets.env.example'
+POSTGRES_ADMIN_ENV_EXAMPLE = ROOT / 'deploy/env/postgres-admin.env.example'
+POSTGRES_MIGRATE_ENV_EXAMPLE = ROOT / 'deploy/env/postgres-migrate.env.example'
 DEPLOY_ENV_EXAMPLE = ROOT / 'deploy/env/deploy.env.example'
 EDGE_ENV_EXAMPLE = EDGE_ROOT / 'edge.env.example'
 DEPLOY_SCRIPT = ROOT / 'deploy' / 'server' / 'deploy.sh'
@@ -180,6 +182,9 @@ def test_verifier_checks_every_public_site_and_host_boundary():
 def test_runtime_environment_contract_is_split_by_authority():
     app = _read(APP_ENV_EXAMPLE)
     secrets = _read(SECRETS_ENV_EXAMPLE)
+    admin = _read(POSTGRES_ADMIN_ENV_EXAMPLE)
+    migrator = _read(POSTGRES_MIGRATE_ENV_EXAMPLE)
+    server_compose = _read(SERVER_COMPOSE)
     deploy = _read(DEPLOY_ENV_EXAMPLE)
     edge = _read(EDGE_ENV_EXAMPLE)
     legacy = _read(LEGACY_ENV_EXAMPLE)
@@ -189,10 +194,31 @@ def test_runtime_environment_contract_is_split_by_authority():
     for forbidden in ('SECRET_KEY=', 'KAORI_NGINX_IMAGE=', 'KAORI_LETSENCRYPT_EMAIL='):
         assert forbidden not in app
 
-    for key in ('SECRET_KEY=', 'INTEGRATION_CREDENTIAL_KEY=', 'POSTGRES_PASSWORD=', 'REDIS_PASSWORD='):
+    for key in ('SECRET_KEY=', 'INTEGRATION_CREDENTIAL_KEY=', 'REDIS_PASSWORD='):
         assert key in secrets
-    for forbidden in ('KAORI_NGINX_IMAGE=', 'KAORI_PUBLIC_DOMAIN=', 'APP_VERSION='):
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in secrets
+    for forbidden in (
+        'POSTGRES_PASSWORD=',
+        'KAORI_DB_MIGRATION_URL=',
+        'KAORI_MIGRATOR_PASSWORD=',
+        'KAORI_NGINX_IMAGE=',
+        'KAORI_PUBLIC_DOMAIN=',
+        'APP_VERSION=',
+    ):
         assert forbidden not in secrets
+    # Administrator and migrator credentials are restricted to their respective
+    # one-shot container authorities, never the shared runtime environment.
+    assert 'POSTGRES_PASSWORD=' in admin
+    assert 'KAORI_DB_MIGRATION_URL=' not in admin
+    assert 'KAORI_DB_MIGRATION_URL=' in migrator
+    assert 'POSTGRES_PASSWORD=' not in migrator
+    for privileged_example in (admin, migrator):
+        assert 'SECRET_KEY=' not in privileged_example
+        assert 'REDIS_PASSWORD=' not in privileged_example
+    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' in _service_block(server_compose, 'postgres', 'redis')
+    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' in _service_block(server_compose, 'db-provision', 'db-verify')
+    assert 'KAORI_POSTGRES_MIGRATION_ENV_FILE' in _service_block(server_compose, 'migrate', 'db-provision')
+    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' not in _service_block(server_compose, 'web', 'worker')
 
     for key in ('KAORI_POSTGRES_IMAGE=', 'KAORI_REDIS_IMAGE='):
         assert key in deploy

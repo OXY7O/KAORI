@@ -137,8 +137,11 @@ def test_archive_purge_is_bounded_retryable_and_never_advertises_partial_objects
     assert "'failed_count': len(candidates) - purged_count" in service
     assert 'partial=purge_partial' in tasks
     assert "ARCHIVE_PURGE_BATCH_SIZE = _bounded_env_int('ARCHIVE_PURGE_BATCH_SIZE', 250, 25, 2500)" in config
-    assert 'Archive Purge Batch' in storage
-    assert 'Purge Failed' in storage
+    assert 'Purge Batch Limit' in storage
+    assert 'lifecycle.purge_batch_size' in storage
+    assert 'expired artifacts per admitted run; retry on failure.' in storage
+    assert "archive.status|replace('_',' ') |title" in history
+    assert "'critical' if archive.status in ['failed', 'purge_failed']" in history
     assert "archive.status in ['failed', 'purge_failed']" in history
 
 

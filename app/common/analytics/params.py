@@ -14,9 +14,9 @@ ALLOWED_TIME_RANGE_VALUES = [
 ]
 
 TIME_RANGE_LABELS = {
-    '1h': 'Last 1h',
-    '6h': 'Last 6h',
-    '12h': 'Last 12h',
+    '1h': 'Last 1 Hour',
+    '6h': 'Last 6 Hours',
+    '12h': 'Last 12 Hours',
     '24h': 'Last 24 Hours',
     '7d': 'Last 7 Days',
     '30d': 'Last 30 Days',

@@ -24,6 +24,7 @@ from app.access.roles.service import (
     create_custom_role,
     delete_custom_role,
     ensure_role_within_delegation_boundary,
+    ensure_role_within_management_boundary,
     get_role,
     lock_role_for_mutation,
     role_version_matches,
@@ -96,6 +97,21 @@ def create():
             _permission_error(form, str(exc))
         except RoleInputError as exc:
             form.name.errors = [*form.name.errors, str(exc)]
+        except (SQLAlchemyError, ValueError):
+            rollback_role_transaction()
+            current_app.logger.exception('Failed to create custom role %s.', form.name.data)
+            form.name.errors = [
+                *form.name.errors,
+                'The role could not be saved. The slug may already be in use; review and retry.',
+            ]
+            role_access_feedback(
+                actor=actor,
+                event_type='rbac_role_create_failed',
+                status='error',
+                title='Custom role creation failed',
+                message='No role changes were saved.',
+                detail='Review the role configuration and retry.',
+            )
         else:
             role_access_feedback(
                 actor=actor,
@@ -170,6 +186,21 @@ def clone(role_id: int):
             _permission_error(form, str(exc))
         except RoleInputError as exc:
             form.name.errors = [*form.name.errors, str(exc)]
+        except (SQLAlchemyError, ValueError):
+            rollback_role_transaction()
+            current_app.logger.exception('Failed to clone default role %s.', source_role.id)
+            form.name.errors = [
+                *form.name.errors,
+                'The cloned role could not be saved. The slug may already be in use; review and retry.',
+            ]
+            role_access_feedback(
+                actor=actor,
+                event_type='rbac_role_clone_failed',
+                status='error',
+                title='Role cloning failed',
+                message='No role changes were saved.',
+                detail='Review the cloned role configuration and retry.',
+            )
         else:
             role_access_feedback(
                 actor=actor,
@@ -260,7 +291,7 @@ def edit(role_id: int):
         )
         return redirect(url_for('access.roles.detail', role_id=role.id))
     try:
-        ensure_role_within_delegation_boundary(actor=actor, role=role)
+        ensure_role_within_management_boundary(actor=actor, role=role)
     except RoleDelegationError as exc:
         role_access_feedback(
             actor=actor,
@@ -392,7 +423,7 @@ def delete(role_id: int):
         )
         return redirect(url_for('access.roles.index'))
     try:
-        ensure_role_within_delegation_boundary(actor=actor, role=role)
+        ensure_role_within_management_boundary(actor=actor, role=role)
     except RoleDelegationError as exc:
         rollback_role_transaction()
         role_access_feedback(

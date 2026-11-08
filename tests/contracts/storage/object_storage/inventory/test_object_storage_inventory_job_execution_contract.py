@@ -77,7 +77,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert 'lightweight provider health probe without collecting inventory' in client.lower()
     assert 'Visible Buckets' not in validation
     assert 'Required Contracts' in validation
-    assert 'Inventory Sync owns committed assets' in validation
+    assert 'Inventory Sync owns assets' in validation
     assert 'without capability mutation or inventory discovery' in runtime
 
 
@@ -86,19 +86,27 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     storage_presentation = read('app/storage/object_storage/inventory/presentation.py')
 
-    assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation
+    assert "'bucket_count': ObjectStorageBucket.query.filter_by(" in minio_presentation
+    assert 'object_storage_system_id=instance.object_storage_system_id' in minio_presentation
+    assert ').count(),' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
     assert 'Object Storage Inventory Sync' in scope
-    assert 'Manage Inventory Jobs' in scope
-    assert "job_key='object_storage.inventory.sync'" in scope
+    assert 'Manage Inventory Jobs' not in scope
+    assert "job_key='object_storage.inventory.sync'" not in scope
+    assert 'Open Observability' in scope
     assert 'latest completed MinIO Full Validation' not in scope
     assert 'Run Object Storage Inventory Sync from Job Execution' in storage_presentation
     assert "'source_label': 'Committed Snapshot'" in storage_presentation
     bucket_detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
-    assert 'Object Storage Inventory Sync snapshot' in bucket_detail
-    assert 'Object Storage Inventory Sync from Job Execution' in bucket_table
+    assert "detail.inventory_section('Snapshot Context'" in bucket_detail
+    assert "detail.inventory_row('Last Collected', bucket.observed_at|user_datetime" in bucket_detail
+    assert "detail.inventory_row('Snapshot Source', bucket.source_label)" in bucket_detail
+    assert "detail.inventory_status_row('Snapshot State', bucket.snapshot_status_label" in bucket_detail
+    assert 'Committed logical usage' in bucket_detail
+    assert 'Object Storage Inventory Sync from Job Execution' in storage_presentation
+    assert 'inventory.empty_state.description' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 

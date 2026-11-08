@@ -90,3 +90,27 @@ def test_validity_policy_clamps_critical_window_to_renewal_window() -> None:
 
     assert policy.renewal_window_days == 10
     assert policy.critical_window_days == 10
+
+
+def test_expiry_window_remains_distinct_from_future_valid_from() -> None:
+    # The canonical status classifier intentionally describes expiry only.
+    # Activation is independent committed metadata displayed in TLS Detail.
+    now = datetime(2026, 10, 23, tzinfo=UTC)
+    future_not_before = now + timedelta(days=10)
+    not_after = now + timedelta(days=365)
+    days, status, risk = classify_certificate_validity(not_after, now=now)
+    assert future_not_before > now
+    assert days == 365
+    assert status == 'healthy'
+    assert risk == 'healthy'
+
+
+def test_registry_and_tls_detail_explain_expiry_only_policy() -> None:
+    registry = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_table.html').read_text()
+    detail = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html').read_text()
+    standard = (ROOT / 'docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md').read_text()
+    assert 'Expiry-window posture' in registry
+    assert 'check Valid From' in registry
+    assert 'Expiry-window posture only' in detail
+    assert 'record.not_before|user_datetime' in detail
+    assert 'not a claim that the certificate is presently active' in standard

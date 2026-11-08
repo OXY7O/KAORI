@@ -1,0 +1,11 @@
+{% set provider_prerequisite_icon = "package-search" %}
+{% set provider_prerequisite_label = "Setup Required" %}
+{% set provider_prerequisite_title = "Register Your First Registry Provider" %}
+{% set provider_prerequisite_description = "Register and validate a Registry provider before KAORI collects committed Artifact Registry evidence." %}
+{% set provider_prerequisite_steps = ["Open Registry Integrations", "Register Connection", "Run Full Validation", "Run Registry Inventory Sync"] %}
+{% set provider_prerequisite_action_url = url_for('integrations.registry') %}
+{% set provider_prerequisite_action_label = "Open Registry Integrations" %}
+{% set provider_prerequisite_action_icon = "package-search" %}
+{% set provider_prerequisite_permission = "integrations.manage" %}
+{% set provider_prerequisite_show_admin_required = true %}
+{% include "components/provider_prerequisite/_setup_blocker.html" %}

@@ -266,7 +266,8 @@ def main() -> int:
     for required in (
         "event_state='firing'",
         "event_state='resolved'",
-        "case.workflow_state == 'closed'",
+        "AlertCase.source_state == 'resolved'",
+        "AlertCase.workflow_state == 'closed'",
         '_successful_firing_channels',
     ):
         require(required in alert_notifications, f'Alert Operations notification lifecycle missing: {required}', errors)
@@ -280,6 +281,7 @@ def main() -> int:
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
+    catalog_hero = read('app/templates/intelligence/partials/_catalog_hero_posture.html')
     alert_page = read('app/templates/intelligence/alert_intelligence.html')
     automation_page = read('app/templates/intelligence/automation_control.html')
     recommendation_records = read('app/templates/intelligence/partials/_recommendation_records.html')
@@ -287,7 +289,6 @@ def main() -> int:
 
     for page, label in (
         (recommendations_page, 'Recommendations'),
-        (catalog_page, 'Rule Catalog'),
         (automation_page, 'Automation Control'),
     ):
         require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
@@ -296,6 +297,17 @@ def main() -> int:
             f'{label} must use shared Intelligence workspace',
             errors,
         )
+    require(
+        'intelligence/partials/_catalog_hero_posture.html' in catalog_page
+        and 'components/page_hero.html' in catalog_hero,
+        'Rule Catalog must use shared Hero ownership through its composed posture partial',
+        errors,
+    )
+    require(
+        'intelligence/components/_workspace.html' in catalog_page,
+        'Rule Catalog must use shared Intelligence workspace',
+        errors,
+    )
     require(
         'intelligence/partials/_alert_intelligence_page.html' in alert_page
         and 'components/page_hero.html' in alert_page_content,
@@ -317,7 +329,8 @@ def main() -> int:
             required in rule_presentation, f'Object Storage recommendation filter boundary missing: {required}', errors
         )
     require(
-        'build_object_storage_recommendation_findings(rules)' in intelligence_service,
+        "if any(key.startswith('object_storage.') for key in rules):" in intelligence_service
+        and "collect('Object Storage', build_object_storage_recommendation_findings)" in intelligence_service,
         'Object Storage recommendation evaluator boundary missing',
         errors,
     )
@@ -360,16 +373,16 @@ def main() -> int:
         errors,
     )
     require(
-        'payload.summary.domains' in catalog_page and 'Canonical Definitions' in catalog_page,
+        'payload.summary.domains' in catalog_hero and 'Canonical Definitions' in catalog_hero,
         'Rule Catalog Hero must use provider-neutral dynamic domain metadata',
         errors,
     )
     require(
-        'payload.summary.minio' not in catalog_page and 'MinIO-Covered Rules' not in catalog_page,
+        'payload.summary.minio' not in catalog_hero and 'MinIO-Covered Rules' not in catalog_hero,
         'Rule Catalog Hero must not expose provider-specific coverage as a global summary',
         errors,
     )
-    require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
+    require('3 Asset Domains' not in catalog_hero, 'Rule Catalog Hero must not hard-code stale domain count', errors)
 
     require('resource_detail_modal.host(' in recommendations_page, 'Recommendations modal host missing', errors)
     require(

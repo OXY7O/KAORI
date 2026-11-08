@@ -43,7 +43,8 @@ def test_execution_summary_and_queue_activity_use_aggregate_queries() -> None:
     assert "func.sum(case((active_condition, 1), else_=0)).label('active')" in presentation
     queue_body = presentation.split('def _queue_activity(', 1)[1].split('def _registry_query(', 1)[0]
     assert '.group_by(JobExecution.queue_name)' in queue_body
-    assert 'topology = inspect_celery_topology() if aggregates else None' in queue_body
+    assert 'topology = inspect_celery_topology() if queue_names else None' in queue_body
+    assert 'queue_names.update(definition.queue_name for definition in list_job_definitions())' in queue_body
     assert 'query = JobExecution.query.filter(JobExecution.queue_name == queue_name)' not in queue_body
 
 

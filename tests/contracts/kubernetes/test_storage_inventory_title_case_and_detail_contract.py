@@ -27,6 +27,8 @@ def test_storage_inventory_uses_canonical_resource_page_pattern() -> None:
     assert 'id="storage-page-workspace"' in workspace
     assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert 'Storage Lifecycle Posture' in summary
+    assert 'Lifecycle exceptions, unreported states, or missing storage evidence.' in summary
+    assert 'Lifecycle exceptions, unreported state, or missing storage collection evidence.' not in summary
     assert 'posture_grid.render(metrics, columns=3)' in summary
     assert 'hx-target="#storage-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
@@ -84,7 +86,7 @@ def test_storage_detail_uses_adaptive_stacks_and_factual_configuration() -> None
     assert 'related_collection.inventory_render(' in detail
     assert 'metadata_collection.render(' in detail
     assert 'Committed Snapshot Boundary' in detail
-    assert 'live filesystem usage, pressure, growth, performance, durability' in detail
+    assert 'Committed storage bindings; live usage, pressure, growth, durability, and I/O health unverified.' in detail
     for state in ('Configured', 'Terminating', 'Not Reported', 'Not Allowed', 'Not Applicable'):
         assert state in semantics
     assert "states['persistent_volume_claims'] != COLLECTED" in service

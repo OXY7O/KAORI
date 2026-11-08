@@ -78,6 +78,10 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - `app/integrations/observability/alert_source/providers/alertmanager/application/routes.py`
 
 
+## Local-only browser feedback
+
+User-triggered, non-persisted browser observations (such as **Settings → Time Zone → Detect Again**) may show this same Operational Toast without creating a server activity event, Notification Deck item, or fake audit receipt. The server renders inert instances of `components/operational_toast.html`; the client passes a cloned canonical toast element to `window.showOperationalToast(toast)`, which attaches it to the standard toast stack and invokes the existing lifecycle. Use `textContent` for browser-supplied message values. Automatic/background browser observation remains silent. An actual saved preference remains governed by the separate server-side `AUDIT_ONLY` event contract.
+
 ## Toast lifecycle
 
 - The payload contains a unique `feedback_id` and `auto_dismiss_ms`.
@@ -85,6 +89,7 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - Hover and keyboard focus pause the timer.
 - Self-dismissing toasts render a compact Violet countdown bar. `operational_toasts.js` owns the timer and animation; templates do not implement per-toast countdown JavaScript.
 - The countdown prefers Web Animations API and falls back to a forced-layout transform transition so HTMX/OOB-inserted toasts visibly progress before disappearing.
+- Under `prefers-reduced-motion: reduce`, the auto-dismiss timer and pause/resume semantics remain authoritative while enter/exit and countdown motion are suppressed. The toast remains fully readable and manually dismissible.
 - The global stack keeps at most four visible toasts and deduplicates the same feedback ID.
 - Both authenticated and authentication layouts load `operational_toasts.js`; domain layouts do not own close handlers.
 - Background progress remains in Activity Center unless a domain explicitly selects toast delivery for a user-initiated synchronous result.

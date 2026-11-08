@@ -2,6 +2,7 @@ import logging
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from flask import (
+    jsonify,
     redirect,
     render_template,
     request,
@@ -15,6 +16,7 @@ from app.access.authentication.session import safe_next_url
 from app.access.rbac.decorators import permission_required
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
+from app.reports.generate.service import get_generate_namespace_options
 from app.reports.schedules.job_adapter import run_schedule_now
 from app.reports.schedules.service import (
     create_report_schedule,
@@ -110,6 +112,12 @@ def schedules() -> ResponseReturnValue:
             retry_url=url_for('reports.schedules'),
         )
     return render_template('reports/schedules/index.html', payload=payload)
+
+
+@permission_required('reports.manage_schedules')
+def schedule_namespace_options() -> ResponseReturnValue:
+    cluster_id = str(request.args.get('cluster_id') or '').strip()
+    return jsonify({'cluster_id': cluster_id, 'namespaces': get_generate_namespace_options(cluster_id)})
 
 
 @permission_required('reports.manage_schedules')

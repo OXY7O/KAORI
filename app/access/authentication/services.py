@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sqlalchemy import func, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
@@ -14,6 +15,7 @@ from app.access.authentication.results import (
     AuthReason,
     AuthResult,
 )
+from app.access.authentication.session import AuthSessionError
 from app.extensions.db import db
 from app.models import User
 
@@ -25,10 +27,14 @@ def _finalize_result(result: AuthResult) -> AuthResult:
 def authenticate(username: str, password: str) -> AuthResult:
     registry = build_credential_provider_registry()
     local_result = registry.local.authenticate(username=username, password=password)
+    # A provisioned directory user has a KAORI User row but no local password.
+    # The Local Database probe must not claim that external identity; only
+    # Local Database identities retain authority over a failed local login.
+    local_user = local_result.user
     if (
         local_result.success
-        or local_result.user is not None
         or local_result.reason in {'user_inactive', 'database_unavailable'}
+        or (local_user is not None and local_user.auth_source == 'database')
     ):
         return _finalize_result(local_result)
 
@@ -48,17 +54,50 @@ def record_successful_authentication(
     *,
     source: str,
     client_ip: str | None,
-) -> None:
-    """Persist login evidence before the authenticated session is established."""
+) -> int:
+    """Atomically issue the one current login generation for this KAORI user.
 
-    user.last_login_at = datetime.now(UTC)
-    user.last_login_ip = client_ip
-    user.last_auth_source = source
+    PostgreSQL serializes concurrent UPDATEs on the same user row. RETURNING
+    captures *this login's* generation; re-reading the ORM object after commit
+    could instead capture a newer concurrent login and admit both browsers.
+    """
+    issued_at = datetime.now(UTC)
+    normalized_source = source.strip().lower()
     try:
+        issued_version = db.session.execute(
+            update(User)
+            .where(
+                User.id == user.id,
+                User.account_is_active.is_(True),
+                User.deleted_at.is_(None),
+                func.lower(User.auth_source) == normalized_source,
+            )
+            .values(
+                auth_session_version=func.coalesce(User.auth_session_version, 1) + 1,
+                last_login_at=issued_at,
+                last_login_ip=client_ip,
+                last_auth_source=source,
+            )
+            .returning(User.auth_session_version)
+        ).scalar_one_or_none()
+        if issued_version is None:
+            # The account can have changed since primary authentication.
+            db.session.rollback()
+            raise AuthSessionError('KAORI session admission was revoked before issuance.')
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
         raise
+    return int(issued_version)
+
+
+def load_pending_mfa_user(user_id: int) -> User | None:
+    """Load an MFA challenge principal without admitting a browser session.
+
+    The route independently verifies identity source and authentication
+    generation before any second-factor operation can complete.
+    """
+    return User.query.filter_by(id=user_id).first()
 
 
 def credential_failure_message(result: AuthResult) -> str:
@@ -83,5 +122,6 @@ __all__ = [
     'USER_INACTIVE_MESSAGE',
     'authenticate',
     'credential_failure_message',
+    'load_pending_mfa_user',
     'record_successful_authentication',
 ]

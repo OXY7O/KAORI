@@ -209,10 +209,28 @@ def main() -> int:
         if forbidden in binding_service:
             errors.append(f'Integration binding service still exposes a domain compatibility contract: {forbidden}')
 
+    # The authorized route remains the HTTP entry point; a shared web module
+    # owns the binding workflow under the existing domain-first package standard.
     integration_routes = _read('app/integrations/routes.py')
-    for required in ('create_source_binding(', 'SourceBindingSpec(', "asset_type='kubernetes_cluster'"):
+    for required in (
+        'from app.integrations.binding_web import binding_response as _binding_response',
+        "@permission_required('integrations.manage')\ndef bind_metrics_source()",
+        "@permission_required('integrations.manage')\ndef bind_alertmanager_source()",
+        "return _binding_response('metrics_source', scope_key=scope_key)",
+        "return _binding_response('alert_source', scope_key=scope_key)",
+    ):
         if required not in integration_routes:
-            errors.append(f'Kubernetes binding workflow is not using the canonical asset binding contract: {required}')
+            errors.append(f'Kubernetes binding route lacks authorized shared orchestration: {required}')
+
+    binding_web = _read('app/integrations/binding_web.py')
+    for required in (
+        'from app.integrations.binding_service import SourceBindingSpec, create_source_binding',
+        'created_binding = create_source_binding(',
+        'spec=SourceBindingSpec(',
+        "asset_type='kubernetes_cluster'",
+    ):
+        if required not in binding_web:
+            errors.append(f'Kubernetes binding web workflow lacks canonical asset binding: {required}')
 
     platform_menu = _read('app/templates/components/navigation/platform_operations_menu.html')
     if 'Operations Center' not in platform_menu:

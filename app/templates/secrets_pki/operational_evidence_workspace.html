@@ -1,0 +1,62 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "secrets_pki/_lifecycle_navigation.html" as lifecycle_navigation %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% import "components/table_primitives.html" as table_ui %}
+{% block title %}{{ title }} · Secrets &amp; PKI · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-{{ workspace }}" class="min-w-0 space-y-6">
+        {{ lifecycle_navigation.render(workspace) }}
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro(icon, 'Secrets & PKI', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database-zap', 'Committed KAORI Evidence') }}
+                            {{ page_hero.meta_label('shield-check', 'Read Only') }}
+                            {{ page_hero.meta_label('lock-keyhole', 'No Secret Material') }}
+                        </div>
+                    {% endcall %}
+                </div>
+            </div>
+        </section>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {% for metric in metrics %}
+                {{ metric_card.render(metric.label,
+                                metric.value if metric.value is not none else 'Not Qualified',
+                                metric.description,
+                                metric.icon,
+                                source_label='Committed Source Evidence') }}
+            {% endfor %}
+        </div>
+        {% call section_card.render('Evidence Qualifications',
+            'Each source family is independently authoritative; missing observations are unknown, not zero.',
+            'shield-check') %}
+            <div class="divide-y divide-outline-subtle">
+                {% for item in source_rows %}
+                    <div class="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:justify-between sm:gap-5">
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold text-content-primary">{{ item.label }}</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
+                        </div>
+                        <p class="shrink-0 text-xs font-semibold text-content-secondary"
+                           role="status">{{ item.status }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% call section_card.render('Operational Guardrails',
+            'This workspace does not verify a provider write, rotation cutover, Lease revocation or actual delivery.',
+            'lock-keyhole') %}
+            <p class="text-sm leading-6 text-content-secondary">
+                Vault remains authoritative for Lease, renewal, Secret engines, issuance and
+                revocation. KAORI shows only validated committed evidence. Incomplete source
+                coverage never indicates healthy zero, successful recovery or a proven
+                workload adoption. Privileged operations and notifications remain disabled.
+            </p>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

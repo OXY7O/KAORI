@@ -24,7 +24,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         key='welcome',
         title='Welcome',
         lock_state='LOCKED',
-        navigation_source='app/templates/components/navigation/sidebar.html',
+        navigation_source='app/common/workspace_navigation.py',
         navigation_endpoints=('welcome.index',),
         blueprint_vars=('welcome_bp',),
         verifiers=('scripts/verify_welcome_final_lock.py',),
@@ -83,11 +83,33 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         ),
     ),
     ReleaseSurface(
+        key='artifact_registry',
+        title='Artifact Registry',
+        lock_state='BASELINE LOCKED',
+        navigation_source='app/common/workspace_navigation_catalog.py',
+        navigation_endpoints=(
+            'artifact_registry.overview',
+            'artifact_registry.inventory',
+            'artifact_registry.security',
+            'artifact_registry.runtime_overview',
+            'artifact_registry.governance',
+            'artifact_registry.analytics',
+        ),
+        blueprint_vars=('artifact_registry_bp',),
+        verifiers=(),
+        contract_paths=('tests/contracts/artifact_registry',),
+        notes=(
+            'Provider-neutral committed Registry operations. Provider connection/readiness remains owned by '
+            'Integrations → Registry; Harbor is the first provider, not the operational product identity.'
+        ),
+    ),
+    ReleaseSurface(
         key='kubernetes_operations',
         title='Kubernetes Operations',
         lock_state='LOCKED',
         navigation_source='app/templates/components/navigation/kubernetes_operations_menu.html',
         navigation_endpoints=(
+            'kubernetes_operations.overview',
             'kubernetes_operations.configmap_management',
             'kubernetes_operations.secret_management',
         ),
@@ -104,6 +126,30 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         blueprint_vars=('governance_bp',),
         verifiers=('scripts/verify_governance_final_lock.py',),
         contract_paths=('tests/contracts/kubernetes/governance',),
+    ),
+    ReleaseSurface(
+        key='tenant',
+        title='Tenant',
+        lock_state='BASELINE LOCKED',
+        navigation_source='app/templates/components/navigation/tenant_menu.html',
+        navigation_endpoints=(
+            'tenant.index',
+            'tenant.tenants',
+            'tenant.resource_profiles',
+            'tenant.namespace_provisioning',
+            'tenant.operations',
+        ),
+        blueprint_vars=('tenant_bp',),
+        verifiers=(),
+        contract_paths=(
+            'tests/contracts/kubernetes/test_tenant_uat_ui_contract.py',
+            'tests/contracts/kubernetes/test_tenant_integrated_uat_contract.py',
+            'tests/contracts/kubernetes/test_tenant_navigation_ux_contract.py',
+        ),
+        notes=(
+            'Provider-neutral Kubernetes Tenant workspace. Native Kubernetes is the admitted baseline provider; '
+            'Overview, Tenants, Resource Profiles, Namespace Provisioning, and Operations are the approved Tenant submenu destinations; Native remains mandatory and Capsule UAT remains capability-conditional.'
+        ),
     ),
     ReleaseSurface(
         key='analytics',
@@ -185,6 +231,9 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'integrations.orchestration',
             'integrations.observability',
             'integrations.storage',
+            'integrations.registry',
+            'integrations.secrets_management',
+            'integrations.source_control',
             'notification_channels.index',
         ),
         blueprint_vars=(
@@ -194,6 +243,13 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'metrics_bp',
             'alertmanager_bp',
             'minio_bp',
+            'harbor_bp',
+            'github_source_bp',
+            'github_uat_bp',
+            'secrets_pki_bp',
+            'security_posture_bp',
+            'source_control_bp',
+            'vault_bp',
         ),
         verifiers=(
             'scripts/verify_integration_provider_foundation.py',

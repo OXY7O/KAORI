@@ -13,7 +13,6 @@
 {% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('unknown' if node.ready_condition == 'Unknown' or node.scheduling_display == 'Not Reported' else 'normal')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 {% set environment_display = node.cluster_environment|environment_name(empty='Not Specified') %}
-{% set status_dot_classes = 'bg-status-normal' if node_status_tone == 'normal' else ('bg-status-critical' if node_status_tone == 'critical' else 'bg-status-unknown') %}
 {% if node.taints|length == 1 %}
     {% set taint_count_label = "1 Taint" %}
 {% else %}
@@ -26,32 +25,16 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Identity, runtime, network, capacity, and scheduling evidence from the committed Node snapshot." %}
-        {% call detail.workspace_header(detail_description, 'server') %}
-            <div class="min-w-0">
-                {% call detail.header_identity_row() %}
-                    {{ detail.inventory_title(node.node_name) }}
-                {% endcall %}
-                <div class="mt-2 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-sm leading-5">
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Cluster</span>
-                        <span class="min-w-0 break-words font-medium text-content-primary [overflow-wrap:anywhere]">{{ node.cluster_name }}</span>
-                    </span>
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Role</span>
-                        <span class="font-medium text-content-primary">{{ node.role_display }}</span>
-                    </span>
-                    <span class="inline-flex min-w-0 items-center gap-2">
-                        <span class="text-content-muted">Environment</span>
-                        <span class="font-medium text-content-primary">{{ environment_display }}</span>
-                    </span>
-                    <span class="inline-flex items-center gap-2">
-                        <span class="text-content-muted">Status</span>
-                        <span class="h-1.5 w-1.5 rounded-full {{ status_dot_classes }}"
-                              aria-hidden="true"></span>
-                        <span class="font-medium text-content-primary">{{ node.status_display }}</span>
-                    </span>
-                </div>
-            </div>
+        {% call detail.workspace_header(detail_description, 'server',
+            context_items=[
+            {'label': node.cluster_name, 'icon': 'building-2'},
+            {'label': node.role_display, 'icon': 'server'},
+            {'label': environment_display, 'icon': 'layers-3'}
+            ], compact=true) %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(node.node_name, compact=true) }}
+                {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.inspector_summary_strip([
                 {'label': 'Readiness', 'value': node.status_display, 'supporting': 'Node condition', 'icon': 'shield-check', 'tone': node_status_tone},
@@ -66,10 +49,10 @@
             <div class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm"
                  data-kaori-node-resource-sheet
                  data-kaori-unified-resource-sheet>
-                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Canonical node identity, cluster placement, lifecycle age, and committed collection context.') %}
+                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Node identity and snapshot.', '', node.age) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2') }}
-                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2', copyable=true) }}
+                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Cluster', node.cluster_name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Environment', environment_display) }}
                         {{ detail.inspector_row('Role', node.role_display) }}
@@ -78,16 +61,16 @@
                     </dl>
                     {{ detail.inspector_hint(node.role_description, 'server') }}
                 {% endcall %}
-                {% call detail.inspector_section('Connectivity & Network', 'network', 'Node addressing, hostname, and network-scope evidence captured in the committed snapshot.', '', node.network_availability, 'status', network_tone) %}
+                {% call detail.inspector_section('Connectivity & Network', 'network', 'IPs, hostnames, network.', '', node.network_availability, 'status', network_tone) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
-                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true, copyable=true) }}
-                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true, copyable=true) }}
+                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true) }}
+                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true) }}
                         {{ detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Network Scope', node.network_scope, class_name='lg:col-span-2') }}
                     </dl>
                     {{ detail.inspector_hint('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
                 {% endcall %}
-                {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported compute, memory, and ephemeral storage capacity; missing evidence remains explicit.') %}
+                {% call detail.inspector_section('Node Capacity', 'gauge', 'CPU, memory, disk capacity.', '', node.cpu_display) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_row('CPU', node.cpu_display) }}
                         {{ detail.inspector_row('Memory', node.memory_display) }}
@@ -96,7 +79,7 @@
                     </dl>
                     {{ detail.inspector_hint('Missing capacity values remain explicit and are never converted to zero.', 'database') }}
                 {% endcall %}
-                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host OS, kernel, container runtime, and Kubernetes component versions defining the execution environment.') %}
+                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'OS, kernel, runtime versions.', '', node.kubelet_version) %}
                     <div class="grid min-w-0 gap-6 xl:grid-cols-2 xl:divide-x xl:divide-outline-subtle">
                         <div class="min-w-0 xl:pr-6">
                             <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
@@ -123,7 +106,7 @@
                         </div>
                     </div>
                 {% endcall %}
-                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement eligibility, readiness, pressure conditions, and taints that affect Node scheduling.', '', condition_posture, 'status', condition_tone) %}
+                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Readiness, pressure, taints.', '', condition_posture, 'status', condition_tone) %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_state_item('Scheduling', node.scheduling_display, scheduling_tone) }}
                         {{ detail.inspector_state_item('Readiness', node.ready_condition, readiness_tone) }}

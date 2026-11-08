@@ -85,6 +85,8 @@ class SecretRevealRequest(db.Model):
     namespace: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     secret_name: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     secret_type: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    # Null only for requests predating #1303. They fail closed on approval/reveal.
+    secret_uid: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     key_name: Mapped[str] = mapped_column(db.String(255), nullable=False)
     policy: Mapped[str] = mapped_column(db.String(32), nullable=False)
     reason: Mapped[str] = mapped_column(db.Text(), nullable=False)
@@ -121,3 +123,13 @@ class SecretRevealRequest(db.Model):
     approver = relationship('User', foreign_keys=[approver_user_id], lazy='joined')
     cluster = relationship('Cluster', lazy='joined')
     inventory = relationship('ConfigurationInventory', lazy='joined')
+
+    @property
+    def effective_status(self) -> str:
+        """Project wall-clock expiry without writing during a history GET."""
+        if self.status not in {'pending', 'approved'} or self.expires_at is None:
+            return self.status
+        deadline = self.expires_at
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=UTC)
+        return 'expired' if deadline <= datetime.now(UTC) else self.status

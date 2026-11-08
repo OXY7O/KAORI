@@ -231,5 +231,5 @@ def analytics_snapshot_blocker(
         'diagnostic_detail': detail,
         'icon': 'database-clock',
         'action_label': 'Open Analytics Job',
-        'action_endpoint': 'jobs.overview',
+        'action_endpoint': 'jobs.configuration',
     }

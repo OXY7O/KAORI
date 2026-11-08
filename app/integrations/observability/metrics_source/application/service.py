@@ -10,6 +10,7 @@ from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
 from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
+from app.integrations.kernel.registry import get_integration
 from app.integrations.lifecycle import (
     BindingPersistenceSpec,
     bind_instance,
@@ -25,7 +26,6 @@ from app.integrations.observability.metrics_source.capabilities import BINDING_C
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.observability.metrics_source.query_profiles import resolve_query_reference
-from app.integrations.registry import get_integration
 from app.models import Cluster, MetricsSource
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks

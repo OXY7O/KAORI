@@ -1,10 +1,22 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="cpu" class="h-5 w-5"></i></span>
                 <div>
-                    <h2 class="text-base font-semibold text-content-primary">Forecast Worker Refresh</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Forecast Worker Refresh</h2>
+                        {{ info_tip.render('object-storage-forecast-worker-refresh-guide',
+                                                'Forecast Worker Refresh Guide',
+                                                'Forecast status and timestamps describe worker-committed data, not live browser recalculation.',
+                                                items=[
+                                                'History Window is the configured worker refresh scope.',
+                                                'Last Generated is the latest usable worker-committed result.',
+                                                'Execution belongs to Operations Center Jobs & Executions; stale data is not silently healthy.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Forecast values are committed by the forecasting worker and are not calculated inside the browser request.</p>
                 </div>
             </div>

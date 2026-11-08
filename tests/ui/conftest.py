@@ -3,15 +3,18 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from threading import Thread
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from playwright.sync_api import Page
 from werkzeug.serving import make_server
 
 from app import create_app
+from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult
+from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login_manager
 from app.models import User
 
@@ -70,6 +73,91 @@ HIDDEN_CLUSTER_ONBOARDING = {
     'cluster_count': 0,
     'can_manage_clusters': True,
     'database_ready': True,
+}
+
+EMPTY_INVENTORY_FRESHNESS = {
+    'latest_collected_at': None,
+    'oldest_collected_at': None,
+    'cluster_count': 0,
+    'committed_count': 0,
+    'missing_count': 0,
+    'stale_count': 0,
+    'collection_exception_count': 0,
+    'collection_exceptions': [],
+    'freshness_window_hours': 24,
+    'scope_label': '0 Clusters',
+    'scope_supporting': 'No active scope',
+    'latest_supporting': 'No committed timestamp',
+    'status': 'Unknown',
+    'tone': 'unknown',
+    'description': 'No committed inventory snapshot is available for this isolated browser test.',
+    'source_label': 'Committed Inventory Snapshot',
+    'coverage_label': '0 / 0',
+    'coverage_supporting': 'No active scope',
+    'coverage_tone': 'unknown',
+    'exception_label': 'No Exceptions',
+    'exceptions_supporting': 'No issues detected',
+    'exceptions_tone': 'normal',
+}
+
+
+EMPTY_INVENTORY_OVERVIEW = {
+    'total_clusters': 0,
+    'total_nodes': 0,
+    'total_namespaces': 0,
+    'total_workloads': 0,
+    'total_pods': 0,
+    'total_services': 0,
+    'total_ingresses': 0,
+    'total_storage': 0,
+    'total_configuration': 0,
+    'inventory_total': 0,
+    'asset_catalog': [],
+    'active_signal_count': 0,
+    'clusters': [],
+    'resources_pagination': pagination_payload(build_pagination_window(total_items=0)),
+    'inventory_summary': {},
+    'health': {
+        'connected_clusters': 0,
+        'healthy_clusters': 0,
+        'never_synced': 0,
+        'stale_synced': 0,
+        'fresh_synced': 0,
+        'synced_clusters': 0,
+        'disconnected_clusters': 0,
+        'last_sync': None,
+    },
+    'posture': {
+        'status': 'Unknown',
+        'tone': 'unknown',
+    },
+}
+
+
+EMPTY_INTELLIGENCE_OVERVIEW = {
+    'posture': {
+        'label': 'No Active Evidence',
+        'tone': 'info',
+        'helper': 'No committed Intelligence evidence is loaded for this isolated browser test.',
+    },
+    'summary': {
+        'findings': 0,
+    },
+    'alerts': {
+        'active': 0,
+    },
+    'kpi_cards': [],
+    'posture_items': [],
+    'workspaces': [],
+}
+
+
+EMPTY_OBJECT_STORAGE_OVERVIEW = {
+    'setup': {
+        'is_blocked': True,
+        'registered_systems': 0,
+        'state': 'setup_required',
+    },
 }
 
 
@@ -152,6 +240,8 @@ def kaori_authenticated_base_url() -> Iterator[str]:
     app = create_app('testing')
     app.config['AUTH_LOGIN_RATE_LIMIT'] = '1000 per minute'
     auth_result = AuthResult(True, 'success', source='database', user=user)
+    # This browser-only fixture has no MFA persistence tables. Account GET still
+    # runs its real view and templates against deterministic unenrolled state.
 
     with (
         patch(
@@ -159,18 +249,36 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             return_value=readiness,
         ),
         patch('app.access.authentication.routes.enabled_sso_providers', return_value=[]),
+        patch.multiple(
+            'app.access.authentication.routes',
+            bot_policy_state=Mock(
+                return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
+            ),
+            mfa_decision=Mock(return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False)),
+        ),
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
         patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
         patch('app.access.authentication.routes._record_result', return_value=None),
-        patch.object(login_manager, '_user_callback', lambda _user_id: user),
-        patch(
-            'app.bootstrap.presentation.get_navigation_notification_context',
-            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        # Deterministic Account view: no live audit/history DB query.
+        patch.multiple(
+            'app.settings.routes',
+            recent_authentication_events=Mock(return_value=[]),
+            account_mfa_factor=Mock(return_value=None),
+            mfa_enrolled=Mock(return_value=False),
+            mfa_policy_mode=Mock(return_value='disabled'),
         ),
-        patch('app.bootstrap.presentation.pop_operational_feedback', return_value=None),
-        patch(
-            'app.bootstrap.presentation.build_cluster_onboarding_context',
-            return_value=HIDDEN_CLUSTER_ONBOARDING,
+        patch.object(login_manager, '_user_callback', lambda _user_id: user),
+        patch.multiple(
+            'app.bootstrap.presentation',
+            get_navigation_notification_context=Mock(return_value=EMPTY_NAVIGATION_NOTIFICATIONS),
+            pop_operational_feedback=Mock(return_value=None),
+            build_cluster_onboarding_context=Mock(return_value=HIDDEN_CLUSTER_ONBOARDING),
+        ),
+        # Real domain presentation, but isolated committed-state collection seams.
+        patch.multiple(
+            'app.integrations.domain_service',
+            _load_domain_instances=Mock(return_value=[]),
+            _load_related_bindings=Mock(return_value=[]),
         ),
         patch(
             'app.platform_operations.notifications.routes.get_navigation_notification_context',
@@ -179,6 +287,30 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.platform_operations.notifications.routes.get_notification_center_page_context',
             return_value=EMPTY_NOTIFICATION_CENTER,
+        ),
+        patch(
+            'app.kubernetes.inventory.routes.get_inventory_overview',
+            return_value=EMPTY_INVENTORY_OVERVIEW,
+        ),
+        patch(
+            'app.kubernetes.inventory.routes.get_inventory_clusters',
+            return_value=[],
+        ),
+        patch(
+            'app.kubernetes.inventory.routes.get_inventory_freshness_context',
+            return_value=EMPTY_INVENTORY_FRESHNESS,
+        ),
+        patch(
+            'app.kubernetes.analytics.materialization.requests._list_cluster_references',
+            return_value=[],
+        ),
+        patch(
+            'app.intelligence.routes.get_intelligence_overview_payload',
+            return_value=EMPTY_INTELLIGENCE_OVERVIEW,
+        ),
+        patch(
+            'app.storage.object_storage.inventory.routes.build_overview',
+            return_value=EMPTY_OBJECT_STORAGE_OVERVIEW,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)

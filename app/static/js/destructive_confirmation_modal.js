@@ -124,6 +124,8 @@
         if (!modal) return
         if (event.key === 'Escape') {
             event.preventDefault()
+            // Do not also dismiss a Details drawer behind this confirmation.
+            event.stopPropagation()
             closeModal(modal)
             return
         }

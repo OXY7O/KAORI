@@ -20,6 +20,8 @@ Filter changes replace the complete `services-page-workspace`, including Hero, S
 Service | Scope | Access Model | Port Mapping | Backend Registration | Details
 ```
 
+The fixed six-column table allocates **Service 27%, Scope 24%, Access Model 14%, Port Mapping 14%, Backend Registration 11%, and Details 10%**. The most space belongs to Service identity and cluster/namespace scope, where names are often long. Compact access, port, backend, and action columns retain the shared table semantics. Preserve `min-w-[72rem]`, bounded horizontal scrolling on narrow viewports, full identities through existing title attributes, and the View Details workspace.
+
 Age remains in detail and is not displayed in the compact table.
 
 ## Effective Service types

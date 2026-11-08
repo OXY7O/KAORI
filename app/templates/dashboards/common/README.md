@@ -1,3 +1,5 @@
-# Shared Dashboard Templates
+# Dashboard Template Boundary
 
-Only domain-neutral visual primitives used by at least two asset dashboards belong here. Data-bound Kubernetes, Server, or HCI sections must remain inside their own template directory.
+Canonical shared KAORI visual primitives live under `app/templates/components`, including the Operational Dashboard workspace, signal overview, evidence tiles, alert summary/response, recommendation cards, peer grids, and reporting workspace.
+
+Do not build a second dashboard-only component library here. This directory remains reserved only for a future template contract that is genuinely dashboard-specific but not product-wide and is proven by multiple consumers.

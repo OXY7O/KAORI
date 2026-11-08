@@ -136,7 +136,7 @@ def get_forecast_snapshot(
         'pod_trend_value': _get_forecast_trend_value(pod_item),
         'risk_count': risk_count,
         'risk_note': (
-            f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
+            f'{risk_count} metric{"s" if risk_count != 1 else ""} may breach forecast warning thresholds.'
             if risk_count > 0
             else (
                 'Forecast evidence is unavailable for the selected time range.'

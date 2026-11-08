@@ -10,10 +10,11 @@
     {{ destructive_confirmation.render('delete-user-modal',
         'Delete User?',
         'Selected User',
-        'Login access will be disabled while Activity Audit history remains retained. Restore returns the account to Inactive and requires an explicit activation decision.',
+        'Deletion disables login but retains Activity Audit. Restore returns the account to Inactive; activation remains separate.',
         '',
         action_label='Delete User',
-        notice='This is a reversible soft delete governed by User Management restore guardrails.',
-        scope_value='Account Lifecycle') }}
+        notice='Soft delete; restoration is governed.',
+        scope_value='Account Lifecycle',
+        access_chrome=true) }}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock dashboard_content %}

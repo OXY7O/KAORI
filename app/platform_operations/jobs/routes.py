@@ -259,6 +259,7 @@ def configuration() -> ResponseReturnValue:
 @bp.get('/configuration/<path:job_key>/status')
 @permission_required('jobs.view')
 def configuration_status(job_key: str) -> ResponseReturnValue:
+    _get_job_definition_or_404(job_key)
     context = _configuration_live_context(job_key)
     response = make_response(
         render_template('platform_operations/jobs/configuration/_live_status_response.html', **context)
@@ -271,6 +272,8 @@ def configuration_status(job_key: str) -> ResponseReturnValue:
 @permission_required('jobs.configure')
 def update_policy(job_key: str) -> ResponseReturnValue:
     definition = _get_job_definition_or_404(job_key)
+    if not current_user.has_permission(definition.configure_permission):
+        abort(403)
     form = JobPolicyForm()
     if not form.validate_on_submit():
         if _is_htmx():
@@ -368,8 +371,12 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
     job_keys: list[str] = []
     if current_user.has_permission('clusters.sync'):
         job_keys.append('kubernetes.inventory.sync')
+    if current_user.has_permission('tenant.manage'):
+        job_keys.append('kubernetes.tenant.sync')
     if current_user.has_permission('storage.sync'):
         job_keys.append('object_storage.inventory.sync')
+    if current_user.has_permission('artifact_registry.sync'):
+        job_keys.append('artifact_registry.inventory.sync')
     if not job_keys:
         abort(403)
 
@@ -474,10 +481,26 @@ def run_now(job_key: str) -> ResponseReturnValue:
 
     try:
         recover_stale_jobs()
+        # Only the Object Storage and Artifact Registry Inventory jobs accept a
+        # scoped confirmed-empty form. Domain dispatchers verify confirmation.
+        empty_parameters = None
+        if job_key == 'object_storage.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_system_id': request.form.get('confirm_empty_system_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
+        elif job_key == 'artifact_registry.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_instance_id': request.form.get('confirm_empty_instance_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
         outcome = dispatch_registered_job(
             job_key=job_key,
             trigger_type='manual',
             requested_by_user_id=int(current_user.id),
+            parameters=empty_parameters,
         )
     except JobWorkerUnavailable as exc:
         rollback_job_dispatch_transaction()

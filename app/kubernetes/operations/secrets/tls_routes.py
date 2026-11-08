@@ -31,8 +31,11 @@ from app.kubernetes.operations.secrets.tls_validation import validation_trigger
 
 
 def _parse_certificate_ids(values: list[str]) -> list[int]:
-    normalized_values = (value.strip() for value in values)
-    return [int(value) for value in normalized_values if value.isdigit()]
+    normalized_values = [value.strip() for value in values]
+    if any(not value.isdigit() for value in normalized_values):
+        return []
+    ids = [int(value) for value in normalized_values]
+    return ids if len(ids) == len(set(ids)) else []
 
 
 def _tls_workspace_redirect(location: str):
@@ -67,7 +70,7 @@ def _tls_csrf_guard(location: str):
 
 def _build_tls_rotation_preview_response(rendered_html: str, payload: dict[str, Any]):
     response = make_response(rendered_html)
-    trigger = validation_trigger(payload, form_id='tls-secret-rotate-form')
+    trigger = validation_trigger(payload, form_id='tls-secret-rotate-form', require_targets=True)
     if trigger is not None:
         response.headers['HX-Trigger'] = trigger
     return response
@@ -102,16 +105,21 @@ def _record_validation_activity(
     target_count = len(selected_ids)
     is_valid = bool(validation.is_valid and validation.parsed_certificate)
 
-    if target_count == 0:
+    if target_count == 0 or len(target_previews) != target_count:
         status = 'warning'
         title = 'TLS Certificate Validation Requires a Target'
-        message = 'Select at least one Kubernetes TLS Secret before validating the certificate pair.'
+        message = 'Select a complete, valid set of Kubernetes TLS Secrets before validating the certificate pair.'
         detail = None
     elif not is_valid:
         status = 'error'
         title = 'TLS Certificate Validation Failed'
         message = 'The uploaded certificate and private key could not be validated.'
         detail = ' '.join(validation.errors) if validation.errors else None
+    elif any(item.get('status') != 'ready' for item in target_previews):
+        status = 'warning'
+        title = 'TLS Certificate Validation Blocked by Coverage'
+        message = 'At least one target lacks confirmed Ingress mapping or complete SAN coverage.'
+        detail = '; '.join(item.get('message', '') for item in target_previews if item.get('status') != 'ready')
     elif uncovered_hosts:
         status = 'warning'
         title = 'TLS Certificate Validation Completed With Warnings'

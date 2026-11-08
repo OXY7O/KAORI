@@ -100,17 +100,43 @@ def main() -> int:
     ):
         require(token in operation_flow, f'Operations cluster prerequisite is missing: {token}', errors)
 
+    configmap_landing = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secret_landing = read('app/templates/kubernetes/operations/secrets/index.html')
+    configmap_delete_page = read('app/templates/kubernetes/operations/configmaps/delete.html')
+    secret_delete_page = read('app/templates/kubernetes/operations/secrets/delete.html')
+    for landing_name, landing_source in (
+        ('ConfigMap Management', configmap_landing),
+        ('Secret Management', secret_landing),
+    ):
+        require(
+            "'Open Cluster Integrations'," in landing_source
+            and "'Manage Clusters'," not in landing_source
+            and "url_for('integrations.kubernetes')" in landing_source,
+            f'{landing_name} Hero must use the canonical Open Cluster Integrations action.',
+            errors,
+        )
+    require(
+        "configmap_delete_guardrails, icon='shield-alert', open_by_default=false" in configmap_delete_page,
+        'ConfigMap Deletion Safety Contract must be collapsed by default.',
+        errors,
+    )
+    require(
+        "secret_delete_guardrails, icon='shield-alert', open_by_default=false" in secret_delete_page,
+        'Secret Deletion Safety Contract must be collapsed by default.',
+        errors,
+    )
+
     primary_identity_tokens = {
         'app/kubernetes/operations/configmaps/routes.py': (
             "page_title='ConfigMap Management'",
-            "page_title='Create Kubernetes ConfigMap'",
+            "page_title='Create ConfigMap'",
             "page_title='Update ConfigMap'",
             "page_title='Delete ConfigMap'",
         ),
         'app/kubernetes/operations/secrets/crud_routes.py': (
             "page_title='Secret Management'",
-            "page_title='Create Kubernetes Secret'",
-            "page_title='Replace Kubernetes Secret Data'",
+            "page_title='Create Secret'",
+            "page_title='Replace Secret'",
             "page_title='Delete Kubernetes Secret'",
         ),
         'app/kubernetes/operations/secrets/reveal_routes.py': ("page_title='Protected Kubernetes Secret Reveal'",),
@@ -231,8 +257,12 @@ def main() -> int:
     reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     reveal_tabs = read('app/templates/components/content_tabs.html')
     require(
-        'No eligible cluster. Review readiness or policy.' in reveal_page,
-        'Protected Reveal empty-cluster guidance must use the compact reviewed wording.',
+        'No eligible cluster. Review readiness or policy.' not in reveal_page
+        and "'No eligible protected cluster'" in reveal_page
+        and '{% if not global_reveal_enabled %}disabled{% endif %}' in reveal_page
+        and "info_title='Protected Reveal target guide'" in reveal_page
+        and '{% if selection_error %}' in reveal_page,
+        'Protected Reveal must retain safe empty/disabled state, live errors and the canonical Guide.',
         errors,
     )
     reveal_script = read('app/static/js/secret_reveal_workspace.js')
@@ -286,8 +316,13 @@ def main() -> int:
     require(
         'viewState' not in reveal_script
         and 'selectTab' not in reveal_script
-        and 'event.preventDefault' not in reveal_script,
-        'Protected Reveal polling script must not duplicate Integrated Workspace Tab navigation ownership.',
+        and 'activeTab' not in reveal_script
+        and 'const navigateToStepUp = (event) =>' in reveal_script
+        and 'const navigateToApprovedRequest = (event) =>' in reveal_script
+        and 'event.defaultPrevented' in reveal_script
+        and 'event.preventDefault()' in reveal_script
+        and "window.addEventListener('secret-reveal:tab-changed'" in reveal_script,
+        'Protected Reveal JS must delegate guarded Step-Up navigation and listen for tab changes without owning tabs.',
         errors,
     )
     require(
@@ -303,8 +338,13 @@ def main() -> int:
     ):
         require(token in reveal_routes, f'Protected Reveal route-state contract missing: {token}', errors)
     require(
-        'Reveal Session Step-Up' in reveal_step_up and 'approved request is ready to be consumed' in reveal_step_up,
-        'Protected Reveal step-up must remain in the approved-request consumption flow.',
+        'Reveal Session Step-Up' in reveal_step_up
+        and 'Verify only after approval.' in reveal_step_up
+        and 'Verify your session before consuming an approved request.' in reveal_step_up
+        and 'Required before one-time reveal.' in reveal_step_up
+        and '{% if step_up_active %}' in reveal_step_up
+        and "url_for('kubernetes_operations.reauthenticate_secret_reveal')" in reveal_step_up,
+        'Protected Reveal Step-Up must remain separate from request creation and precede approved one-time consumption.',
         errors,
     )
     require(
@@ -315,11 +355,16 @@ def main() -> int:
     )
     require(
         'components/form_field.html' in reveal_step_up
-        and 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in reveal_step_up
+        and 'components/action_button.html' in reveal_step_up
         and 'form_field.label_row(' in reveal_step_up
         and 'Current KAORI Password' in reveal_step_up
-        and 'class="{{ form_field.input_classes() }}"' in reveal_step_up,
-        'Protected Reveal step-up password and Verify Session action must share the canonical form-field baseline.',
+        and 'class="{{ form_field.input_classes() }}"' in reveal_step_up
+        and 'data-reveal-step-up-password' in reveal_step_up
+        and 'autocomplete="current-password"' in reveal_step_up
+        and 'name="csrf_token"' in reveal_step_up
+        and "action_button.classes('primary')" in reveal_step_up
+        and 'Verify Session' in reveal_step_up,
+        'Protected Reveal Step-Up must use shared password/action controls with CSRF and current-password semantics.',
         errors,
     )
     new_request_panel = reveal_page.split('data-secret-reveal-panel="new"', 1)[1].split(
@@ -366,14 +411,33 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes/operations' in quality_gate,
-        'quality_gate.sh must run Kubernetes Operations functional characterization explicitly.',
+        "-m 'not debug and not e2e and not contract and not migration'" in quality_gate,
+        'quality_gate.sh must retain canonical Kubernetes Operations functional release evidence.',
         errors,
     )
 
     form_field = read('app/templates/components/form_field.html')
+    info_tip = read('app/templates/components/info_tip.html')
     replace_page = read('app/templates/kubernetes/operations/secrets/replace.html')
     replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
+    operations_guidance_sources = {
+        relative: read(relative)
+        for relative in (
+            'app/templates/kubernetes/operations/configmaps/create.html',
+            'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
+            'app/templates/kubernetes/operations/configmaps/_workspace.html',
+            'app/templates/kubernetes/operations/configmaps/_editor.html',
+            'app/templates/kubernetes/operations/secrets/create.html',
+            'app/templates/kubernetes/operations/secrets/_namespace_field.html',
+            'app/templates/kubernetes/operations/secrets/replace.html',
+            'app/templates/kubernetes/operations/secrets/delete.html',
+            'app/templates/kubernetes/operations/secrets/reveal.html',
+            'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_replace_content_form.html',
+        )
+    }
     require(
         'min-h-6' in form_field
         and 'mt-2 box-border h-10 min-h-10 w-full' in form_field
@@ -381,6 +445,142 @@ def main() -> int:
         'Form Field Alignment contract drifted.',
         errors,
     )
+    require(
+        'data-kaori-info-tip-trigger' in info_tip
+        and 'aria-expanded="false"' in info_tip
+        and 'aria-controls="{{ id }}-tooltip"' in info_tip
+        and 'role="tooltip"' in info_tip
+        and 'data-kaori-info-tip-preview' in info_tip,
+        'Shared Info Tip component is unavailable.',
+        errors,
+    )
+    require(
+        'components/info_tip.html' in shared_ui and 'info_id=None' in shared_ui and 'info_items=None' in shared_ui,
+        'Kubernetes Operation UI must own section-level Info Tip composition.',
+        errors,
+    )
+    require(
+        "macro surface_shell_classes(extra_classes='', allow_overflow=false)" in shared_ui
+        and "'overflow-visible' if allow_overflow else 'overflow-hidden'" in shared_ui
+        and 'surface_shell_classes(allow_overflow=info_id and info_title)' in shared_ui,
+        'Kubernetes Operation surfaces with header Info Tips must permit visible overflow.',
+        errors,
+    )
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+    ):
+        require(
+            'surface_shell_classes(configmap_main_classes, true)' in read(relative),
+            f'{relative} must allow its header Info Tip to escape the card boundary.',
+            errors,
+        )
+    secret_create_surface = 'surface_shell_classes(form_context.main_classes(),true)'
+    compact_secret_create = ''.join(secret_create.split())
+    require(
+        secret_create_surface in compact_secret_create,
+        'Secret Create must allow its header Info Tip to escape the card boundary.',
+        errors,
+    )
+    require(
+        'surface_shell_classes(allow_overflow=true)' in read('app/templates/kubernetes/operations/secrets/reveal.html'),
+        'Protected Reveal must allow its header Info Tip to escape the card boundary.',
+        errors,
+    )
+    require(
+        '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm' in replace_content
+        and 'rounded-t-xl border-b' in replace_content,
+        'Secret Replace content guidance must remain visible outside its card while preserving rounded header geometry.',
+        errors,
+    )
+
+    header_guidance = {
+        'app/templates/kubernetes/operations/configmaps/create.html': 'configmap-create-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/update.html': 'configmap-update-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/delete.html': 'configmap-delete-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/create.html': 'secret-create-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/replace.html': 'secret-replace-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/delete.html': 'secret-delete-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/reveal.html': 'secret-reveal-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/_replace_content_form.html': 'secret-replace-content-guidance-tip',
+    }
+    for relative, guidance_id in header_guidance.items():
+        require(
+            guidance_id in read(relative),
+            f'{relative} must expose consolidated section-level Info Tip guidance.',
+            errors,
+        )
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
+        'app/templates/kubernetes/operations/configmaps/_workspace.html',
+        'app/templates/kubernetes/operations/configmaps/_editor.html',
+        'app/templates/kubernetes/operations/secrets/_namespace_field.html',
+        'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
+    ):
+        source = read(relative)
+        require(
+            'info_tip.render' not in source and 'components/info_tip.html' not in source,
+            f'{relative} must not scatter routine Info Tips across individual controls.',
+            errors,
+        )
+    joined_guidance = '\n'.join(operations_guidance_sources.values())
+    for retired_tip in (
+        'configmap-create-cluster-tip',
+        'configmap-create-namespace-tip',
+        'configmap-create-name-tip',
+        'configmap-target-cluster-tip',
+        'configmap-target-namespace-tip',
+        'configmap-target-object-tip',
+        'configmap-update-mode-tip',
+        'secret-create-cluster-tip',
+        'secret-create-namespace-tip',
+        'secret-create-name-tip',
+        'secret-create-mutability-tip',
+        'secret-replace-cluster-tip',
+        'secret-replace-target-namespace-tip',
+        'secret-replace-target-secret-tip',
+        'secret-delete-cluster-tip',
+        'secret-delete-target-namespace-tip',
+        'secret-delete-target-secret-tip',
+        'secret-reveal-cluster-tip',
+        'secret-reveal-target-namespace-tip',
+        'secret-reveal-target-secret-tip',
+        'secret-replace-basic-username-tip',
+    ):
+        require(
+            retired_tip not in joined_guidance,
+            f'Operations field-level Info Tip must remain retired: {retired_tip}',
+            errors,
+        )
+    for retired_helper in (
+        'form_field.help("Registered cluster for the target namespace.")',
+        'form_field.help("Loaded from the selected Kubernetes API.")',
+        'form_field.help("DNS-compatible resource name")',
+        'form_field.help("Control future updates")',
+        'Target identity and type come from live Kubernetes.</span>',
+        'Merge preserves unsubmitted keys. Replace removes keys omitted from this form.</p>',
+        'Leave blank to keep the current username.</span>',
+    ):
+        require(
+            retired_helper not in joined_guidance,
+            f'Operations routine field helper must move to Info Tip: {retired_helper}',
+            errors,
+        )
+    for persistent_state in (
+        'No live namespace is available for the selected cluster.',
+        'No ConfigMap currently exists in this live namespace.',
+        'No supported live Secret was found in this namespace.',
+        'No revealable live Opaque, Basic Auth, or Registry Secret was found.',
+    ):
+        require(
+            persistent_state in joined_guidance,
+            f'Operations required state must remain persistently visible: {persistent_state}',
+            errors,
+        )
+
     require(
         'replace-secret-apply-button' in replace_content and 'Replace Selected Data' in replace_content,
         'Secret Replace must render its apply action inside the HTMX-swapped content.',
@@ -399,8 +599,8 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
-        'task-appropriate ConfigMap/Secret mutation workspaces, reviewed Integration registration geometry, layered release evidence, '
-        'and canonical shared workflow ownership are aligned.'
+        'task-appropriate ConfigMap/Secret mutation workspaces, consolidated section-level Info Tip guidance, reviewed Integration registration geometry, '
+        'layered release evidence, and canonical shared workflow ownership are aligned.'
     )
     return 0
 

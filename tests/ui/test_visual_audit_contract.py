@@ -53,6 +53,7 @@ def test_visual_surface_inventory_records_determinism_disposition() -> None:
     by_endpoint = {item.endpoint: item for item in inventory}
     assert by_endpoint['welcome.index'].disposition == 'deterministic'
     assert by_endpoint['settings.general'].disposition == 'deterministic'
+    assert by_endpoint['settings.account'].disposition == 'deterministic'
     assert by_endpoint['notifications.center'].disposition == 'deterministic'
     assert all(item.disposition == 'parameterized' for item in inventory if '<' in item.rule)
 
@@ -115,6 +116,7 @@ def test_authenticated_visual_baseline_manifest_is_complete_and_reviewable() -> 
     source = VISUAL_AUDIT.read_text(encoding='utf-8')
     assert 'DETERMINISTIC_VISUAL_SURFACES' in source
     assert "'settings.general': ('Settings', '/settings/general')" in source
+    assert "'settings.account': ('Settings', '/settings/account')" in source
     assert "'notifications.center': ('Notification Center', '/notifications/?view=notifications')" in source
     assert 'KAORI_UPDATE_VISUAL_BASELINES' in source
     assert 'build_visual_thumbnail' in source

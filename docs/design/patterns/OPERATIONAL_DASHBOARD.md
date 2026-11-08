@@ -1,14 +1,17 @@
-# KAORI Operational Dashboard Pattern v1.5
+# KAORI Operational Dashboard Pattern v1.7
 
 **Status:** Locked reference pattern  
 **Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard  
-**Canonical pages:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
+**Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
+**Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
+**Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
+**Security Posture first-slice consumer (#2613):** `Security → Overview` at `app/templates/security_posture/overview.html` consumes the same Operational Dashboard Hero, Operational Signal Overview, independent metric cards and four-tab framework. Its limited Registry/Kubernetes source scope is explicit; without authorized committed Registry evidence, it renders the approved blocked Hero and a readiness section instead of fabricated KPIs.
 
 ## Purpose
 
 This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, operational indicators, peer workspace tabs, tables, charts, and visible action guidance without creating page-local styling systems.
 
-Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired references. Domain content may change nouns and evidence values; Hero grammar, Operational Signal Overview placement, workspace tabs, peer-grid composition, data boundaries, interaction, accessibility, wording discipline, and style ownership remain shared.
+Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired references. The shared `operational_dashboard_workspace.html` component owns workspace tabs, URL-backed active state, keyboard navigation, panel ARIA/visibility geometry, and the canonical four-tab information architecture. Domain implementations change data, nouns, evidence, actions, and section content only.
 
 ## Operational Dashboard Hero Profile
 
@@ -46,6 +49,8 @@ A blocked Operational Dashboard uses the same canonical right-side grammar in ev
 5. **Data Authority** as the second context metric;
 6. one concise information strip that states the next setup requirement.
 
+**Secrets & PKI Overview admission regression (#4130):** a Dashboard blocked on absent qualified Vault KV v2 inventory uses a short single-line Hero guidance strip, while the below-Hero setup steps and permission-aware Vault action use the existing section `_blocked_state.html`. A page-level missing prerequisite is not a section-local empty result. Preserve missing-evidence-is-not-zero and no Secret material disclosure.
+
 The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
 
 ## Canonical composition
@@ -75,16 +80,28 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 ## Visual contract
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
-- Use `components/operational_metric_card.html` for the KPI grid.
-- Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
-- Use `components/operational_section_card.html` for repeated section shells.
+- Kubernetes, Object Storage, and Artifact Registry render Operational Signal KPI indicators as **independent cards** through `components/operational_metric_card.html`, inside the existing `components/operational_signal_overview.html` scope/status/update/selector shell with canonical body padding and `gap-3` spacing. Registry uses four bounded committed-inventory indicators; the shared card preserves icon-left hierarchy, evidence-source footer, and fixed `Active Scope` badge. The grouped `components/resource_posture_grid.html` presentation remains appropriate for Registry Inventory, Security, Runtime Usage, Governance, and Analytics summaries, but **not** for the Operational Dashboard KPI slot. This supersedes the earlier Registry Overview grouped-KPI exception under #1087 after human design review.
+- Operational Signal KPI cards use the fixed context badge **Active Scope**. The selected cluster, system, or provider identity is rendered once in the shared scope row/selector and is not repeated as a dynamic KPI-card badge.
+- The shared Operational Signal scope row displays **Updated** as the relative age of the latest committed inventory snapshot (for example, `Updated 28m ago`), matching Kubernetes and Object Storage; when no committed snapshot exists, show `Not Collected`. Registry derives the display-ready relative age through existing `_human_time` in the Fast Shell rather than formatting an absolute `user_datetime` in its template. Inventory Snapshot tiles distinguish `Not Collected` from genuine committed numeric zero through explicit evidence readiness, never an undeclared KPI-local variable.
+- A domain at **All Scope** must not show an unconditional green `Ready` status as if detailed signals are available. Artifact Registry uses `Select a Registry Provider for Detailed Signals` with the existing warning-tone status badge, consistent with Kubernetes/Object Storage; a selected provider's inventory posture remains independent of metrics, analytics and alert-source readiness.
+- Artifact Registry fleet KPI counts are limited to **active Registry providers with committed inventory snapshots**. Zero is valid only after a committed inventory snapshot establishes the observed empty result. With no committed snapshot the value/source are `Not Collected`; with partial fleet snapshot coverage, counts include only committed eligible providers and the evidence footer discloses `Partial Inventory (x/y)`. Retained inventory from inactive providers must not inflate the all-scope KPI or inventory footprint. Inventory and scanned-artifact coverage numerators/denominators must use the same committed active-provider identity set to avoid misleading partial-fleet percentages. This is committed evidence qualification, not a live provider-readiness check.
+- Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
+- Use `components/operational_section_card.html` for repeated section shells and `components/operational_evidence_tile.html` for the repeated Inventory Snapshot / Data Freshness evidence-tile geometry.
 - Use `components/peer_content_grid.html` for equal-height peer content.
-- Use `components/operational_flow_steps.html` for visible action and response flows.
+- Use `components/operational_flow_steps.html` for capacity and other directional action flows where arrow-connected progression remains meaningful.
+- Use `components/operational_alert_summary.html` for the bounded AlertCase summary/insight presentation.
+- Use `components/operational_alert_response.html` for **Alert Interpretation & Response**; it delegates the six-step flow to `components/numbered_governance_steps.html` and accepts domain-specific response wording plus optional handoff content.
+- Use `components/operational_recommendation_cards.html` for central Intelligence recommendation cards.
+- Recommendation projections use `title`, `description`, `category`, `severity`, `priority`, `source`, `rule_key`, and `icon`; the shared renderer owns the canonical Intelligence detail destination and domain DTOs do not carry local `href` values.
+- The shared Recommended Actions renderer limits **title and description previews to two lines each** with an ellipsis for longer content, matching the compact peer-card visual standard. The full `action.title` remains the link text and native hover title; original recommendation description, priority/category/source evidence, canonical Intelligence detail handoff, and footer-aligned card geometry are not trimmed or rewritten at the source.
+- Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so dashboard consumers cannot drift.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
-- Use canonical table, label, empty-state, loading, and pagination components.
+- Use canonical table, label, empty-state, loading, and pagination components. Operational Dashboard loading placeholders are owned by `components/operational_section_loading.html`; dashboard domains do not duplicate pulse/skeleton geometry.
+- Section-local missing, unavailable, not-materialized, no-findings, or no-active-signal evidence in **Capacity & Demand** and **Signals & Actions** uses `components/states/_empty_state.html` with the dashed `panel` variant. Reserve `components/states/_blocked_state.html` for domain/page prerequisites such as missing setup or required scope. A selected scope with missing section evidence is never a blocked-state presentation. Alerts Summary and Alert Interpretation & Response use the same `min-h-[220px]` empty-panel geometry so peer cards remain visually balanced across Kubernetes, Object Storage, and Artifact Registry.
 - Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
+- Operational Dashboard content is a read-only committed-state projection. Navigation/handoff links are allowed, but job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards; those actions remain in their owning operational workflow.
 
 ## Information hierarchy
 
@@ -94,6 +111,31 @@ Identity → Scope → Indicators → Peer analysis → Interpretation → Actio
 
 The Hero establishes identity, evidence boundary, and readiness. Operational Signal Overview owns scope and high-level indicators. Tabs are peer perspectives of the same dashboard scope. Evidence precedes interpretation and action.
 
+### Controlled dashboard flow contract
+
+`Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`.
+The Operational Dashboard verifier protects the **ordered six-step sequence**, shared response component, committed alert-source validation, accountable ownership, safety guardrails, and follow-up evidence. Domain-specific explanatory copy may be shortened for UAT readability; the verifier must not lock obsolete sentence fragments that are no longer part of the approved content contract.
+
+`Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity remains on `components/operational_flow_steps.html` where directional action progression is the intended semantic.
+
+### Alerts Summary preview contract
+
+Every projected alert row uses one presentation shape: `title`, `description`, `severity`, `state`, and display-ready `age`. Shared templates do not accept domain field-name aliases or perform domain-specific datetime conversion.
+
+`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes, Object Storage, and Artifact Registry consume `components/operational_alert_summary.html`, which renders at most **five** projected recent AlertCase records while severity totals continue to represent the complete selected scope. Domain services remain responsible for bounded committed projections, and the full case set remains available through **Open Alert Intelligence**.
+
+The five-case bound is enforced by the shared renderer (`rows[:5]`) and domain projection, **not by the exact wording of its subtitle**. Verifier/contract checks may assert a particular approved domain description but must handle the shorter Artifact Registry `Active Registry AlertCases and recent cases.` alongside the existing Kubernetes/Object Storage wording; shortening the subtitle does not change the preview limit or Alert Intelligence ownership. This also prevents verifier drift when approved UI copy is refined during visual UAT.
+
+- **Zero-case evidence boundary (#1187):** `No Active Cases` means the selected asset has zero **open recommendation-origin AlertCases** in the KAORI lifecycle query. It does **not** imply the raw Alertmanager/Metrics Source is healthy, the provider has no operational incidents, the Registry scan is clean, or Intelligence Recommendations/Rule Catalog contain no findings. Distinguish unavailable case-query evidence from available-but-empty cases; keep the shared normal-tone dashed panel with source-qualified wording. A scope-required Registry Signals tab short-circuits before any cross-provider AlertCase or Recommendation evaluation. Registry Alert Intelligence handoff preserves canonical `domain=registry` with a selected active/enabled provider identity via #1186; invalid, disabled, or blocked provider scopes fail closed. Provider-native Registry alert ingestion/materialization remains #952, and Registry notification routing/delivery stay disabled pending separate governance approval.
+
+### Recent Report Activity preview contract
+
+`Recent Report Activity` is a bounded dashboard preview of generated report artifacts. Kubernetes and Object Storage query and render at most **four** latest generated report records. The Reports workspace remains authoritative for full report history, filtering, scheduling, and retained-artifact review; dashboard summaries must not add local pagination.
+
+The Kubernetes Reporting snapshot builder uses `_kubernetes_report_query(selected_cluster_id)` to enforce `report_domain='kubernetes'` before optional cluster filtering, then orders by `Report.created_at` and `Report.id` descending and limits to four. Verifier/contract checks must protect this **domain/scope, stable ordering, and maximum preview count** rather than the retired generic `query_all(Report, selected_cluster_id, limit=4)` call. Object Storage independently enforces its own domain-scoped `limit(4)` read.
+
+- **Kubernetes Report Artifacts evidence (#2782):** the Reporting Summary's report-request count is distinct from the Data Freshness artifact reference count. Only Kubernetes-domain `ready` or `archived` Report records with nonempty `file_path` qualify as *recorded artifact references*, not as proven reachable downloads. The tile uses neutral/informational `Recorded` (not `Available`); queued/failed/requested-only records show `Not Ready`, while no report records show `Not Generated`. Actual artifact accessibility remains authoritative in the Reports Storage/Generated workspaces; do not call storage or a provider at dashboard request time.
+
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.
@@ -101,9 +143,30 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 - Missing, pending, failed, stale, or expired snapshots are explicit.
 - All-scope modes may summarize inventory and committed evidence.
 - Detailed capacity, forecast, consumer, and alert signals may require a selected domain scope.
+- When Capacity & Demand or Signals & Actions requires a selected instance, show **one shared prerequisite blocker at tab level**, not multiple repeated section blockers or partially visible recommendations. Kubernetes, Object Storage and Artifact Registry require an explicit cluster/system/Registry provider for both detailed tabs. A Registry `All Registry Providers` scope must not trigger aggregate Capacity, Forecast or Top Consumers projections; keep valid fleet inventory and evidence coverage in Operations Overview and aggregate Reports instead. Scope selection does not imply data readiness; a selected instance with absent committed evidence remains a section-local dashed empty state.
+- Operations Overview and bounded Reporting summaries may remain available at All Scope when their source projections are truly aggregate. Reporting guardrail wording must reflect `All Clusters`, `All Systems`, or `All Registry Providers` rather than imply a selected instance when none is selected. A selected instance with absent committed evidence remains an empty-evidence state, never a missing-scope blocker.
+- Reporting projections qualify the report domain **before** applying selected-instance filters: Kubernetes `All Clusters` means Kubernetes-domain reports across clusters, not reports from every provider/capability. Recent records, report/template/schedule counts, and the Data Freshness report count must agree on that domain boundary. The four-record preview orders stable creation recency with an ID tie-break, not mutable record update time.
 - UI copy uses `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply request-time provider queries.
 - Reporting guidance remains format-neutral.
-- Reporting Control states selected scope, committed-evidence boundary, and review requirement before the controlled reporting flow.
+- Reporting guardrails state selected scope, committed-evidence authority, and review requirement before the governed reporting flow.
+
+## Application contract
+
+All Operational Dashboard consumers retain the stable request-level contract in
+`app/dashboards/common/operational.py`, which explicitly re-exports the single
+canonical tab definition and normalizer from `app/common/operational_tabs.py`.
+The latter is domain-neutral so a Secrets & PKI operational page never imports
+the Dashboard implementation (architecture #4150), while existing Dashboard
+consumers keep their historical public API and the locked four-tab behavior.
+
+- canonical tab order is `overview → capacity → signals → reporting`;
+- `app/common/operational_tabs.py` owns accepted tab keys/order and invalid-tab normalization exactly once; `app/dashboards/common/operational.py` re-exports them; `operational_dashboard_workspace.html` owns labels/icons and must mirror the same ordered keys;
+- invalid or missing tabs normalize to `overview`;
+- dashboard page-size normalization delegates to `app/common/pagination.py`, whose canonical options are `5 / 10 / 25 / 50` with default `5`;
+- page-size selectors render `pagination.allowed_per_page`; templates must not hardcode the numeric choices;
+- HTMX partial detection uses one shared predicate rather than domain-local header truthiness.
+
+The common module is intentionally narrow. Blueprints, permission decorators, readiness checks, scope parameters, section maps, service/schema composition, provider evidence, and mutation boundaries remain domain-owned. A universal route factory or service base class is not part of the Operational Dashboard standard.
 
 ## Request authorization contract
 
@@ -114,9 +177,28 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 
 ## Request and loading contract
 
-- First request renders shell, Hero, scope, inventory aggregate, reporting summary, and local placeholders.
+Operational Dashboards use **Fast Shell & Bounded Section Loading**. The invariant is:
+
+```text
+1 HTTP request → 1 bounded presentation projection
+```
+
+The dashboard web request is a projection layer over committed KAORI state. It is not an inventory scan, analytics engine, or request-time provider client.
+
+- The first request renders only the Fast Shell: Hero/readiness, scope selector options, selected scope, active tab, minimal freshness/context, required pagination metadata, and section/KPI placeholders.
+- All dashboard loading placeholders use `components/operational_section_loading.html`; page-local pulse/skeleton markup is prohibited for this family.
+- Operational Signal KPI content uses the shared KPI placeholder, loads with `hx-trigger="load"`, and replaces its own container through `hx-target="this"` + `hx-swap="outerHTML"`.
+- Bounded tab/section content uses the shared section placeholder, loads with `hx-trigger="revealed"`, and replaces its own container through `hx-target="this"` + `hx-swap="outerHTML"`.
 - Heavy sections load independently through HTMX.
 - Hidden tab sections load when revealed.
+- Projection granularity remains domain-owned. A new Operational Dashboard defaults to one bounded lazy projection per canonical tab; split a tab into finer bounded sub-projections only when measured latency, independent evidence sources, or failure isolation justifies the extra requests. This must not create a different loading presentation contract.
+- A lazy section request builds minimal scope context plus only the evidence required by that section.
+- Section requests must not call a full-dashboard builder or project unrelated tabs before returning the requested fragment.
+- Dashboard summaries prefer bounded database operations such as `COUNT`, `SUM`, `GROUP BY`, bounded `LIMIT`, canonical pagination, and latest committed/materialized snapshot reads.
+- Object Storage Dashboard Fast Shell reads only registered system identity, scope, status, and inventory observation metadata; it does **not** eager-load all bucket ORM relations. Per-tab Inventory Snapshot and KPI totals use the domain-owned committed SQL bucket-usage aggregate; System Health first applies canonical 5/10/25/50 pagination, then batches bucket counts and committed usage only for displayed systems. Selected and fleet evidence stay separate without provider queries. Analytics/forecast materialized evidence remains worker-owned (#1367).
+
+- Do not materialize full ORM collections when the rendered result only requires aggregate values.
+- Heavy forecast, correlation, vulnerability aggregation, analytics, and similar computation remains worker/materialization owned where applicable.
 - Loading and failures remain section-owned.
 - Do not add a global dashboard loading overlay.
 - One unavailable section must not prevent the rest of the dashboard from rendering.
@@ -147,16 +229,57 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 
 ## Dashboard family consistency
 
-- Kubernetes and Object Storage share the same Hero profile, four workspace tabs, outer `space-y-5` rhythm, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
-- Domain-specific wording changes nouns/evidence semantics only; it does not create a different visual grammar.
-- Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern and the shared Hero profile.
-- Reusable layout changes happen through shared components/canonical structure and family-level contract tests.
+- Kubernetes and Object Storage consume the same `components/operational_dashboard_workspace.html` framework and therefore share the four workspace tabs, active-tab state, URL synchronization, keyboard navigation, panel semantics, outer `space-y-5` rhythm, and section hierarchy.
+- Kubernetes, Object Storage, and Artifact Registry use one bounded lazy projection per canonical tab for initial tab loading. Interactive sub-resources such as Cluster Health pagination may retain narrower endpoints without changing the family loading contract.
+- **Kubernetes All Clusters Data Freshness** now reports committed capacity and alert dataset coverage as `Ready`, `Partial`, or `Required` with `x / y clusters`, rather than describing the evidence posture as `Per Cluster`. The existing `read_snapshots` batch reader performs two bounded dataset reads (capacity 24h, dashboard alerts) in the lazy Data Freshness section only; no request-time provider I/O. Selected-cluster source/evidence guards remain independent. Scope instructions belong in descriptions, not status badges.
+- Domain-specific templates own Hero values/readiness, Operational Signal semantics/KPI content, section data, and domain-specific copy/actions. Shared Signal Overview, evidence-tile, alert-summary, response-wrapper, recommendation-card, and reporting geometry remains component-owned.
+- Artifact Registry Overview is a conforming operational-domain consumer: it uses the same Hero profile, Operational Signal Overview, four workspace tabs, provider scope, committed-snapshot boundary, and shared section/peer-grid components while keeping detailed Inventory, Security, Runtime Usage, Governance, and Analytics in their owning workspaces.
+- Its Operations Overview follows the same reference composition: Registry Provider Health Summary → Inventory Snapshot / Data Freshness peer grid. Registry-specific evidence changes the nouns and source planes, not the layout grammar.
+- Object Storage Dashboard Data Freshness also renders **four committed evidence planes** at both fleet and selected-system scope: Inventory, Analytics, Forecast, and Alert Evidence. The All Systems projection uses `Inventory Fleet`, `Analytics Fleet`, `Forecast Fleet`, and `Alert Evidence Fleet` with explicit per-system coverage. It derives Forecast from the existing committed 30d forecast worker snapshots; Alerts from usable committed 24h analytics alert streams, with Alertmanager preferred and Metrics Source fallback identified. Scope-specific labels may differ, but absent/partial/fallback evidence must never be hidden or relabelled healthy just to fill the 2×2 grid. These are domain-owned presentation DTOs rendered by the **existing** shared `operational_evidence_tile.freshness` component; no dashboard request may query live providers.
+- Object Storage **Inventory Fleet** freshness uses observed committed inventory coverage (`Ready`/`Partial`/`Not Collected`, `x / y systems`), not a green `Available` badge on the first observed system. The latest committed observation age remains visible in the description. A selected system **Alert Evidence** uses `Available`/normal for usable primary Alertmanager, `Fallback`/warning for usable Metrics Source, and `Unavailable`/unknown for absent worker alert evidence, consistent with fleet and System Health; no live provider calls.
+- **Object Storage System Health decision semantics (#1366):** green Healthy requires connected/ready provider registration, observed committed inventory, usable non-stale *ready* Analytics evidence, no warning/critical recommendation-origin AlertCases, and available primary committed alert-source evidence. Retained pending/failed/stale data remains explicitly qualified last-known continuity, not clean Healthy; unknown alert source and Metrics Source fallback imply attention. Scope selection itself is not proof of signal health. Preserve critical provider/AlertCase precedence.
+- **System Health Snapshot Sources** must consume **defined** per-row evidence projection fields, not silently evaluate missing template keys as false. For Object Storage, `Alert Signals` is derived from the same usable committed 24h worker alert stream as selected-system/fleet Data Freshness; a connected Alertmanager stream is normal even with zero firing alerts, a usable Metrics Source fallback is **warning**, and absent/expired/invalid/unusable alert evidence is **unknown**. Do not infer provider connectivity from alert counts, hide fallback provenance, or call Alertmanager synchronously while rendering the dashboard. Kubernetes and Registry retain their domain-specific committed snapshot/metrics/security field mappings and the shared responsive System Health table grammar.
+- Artifact Registry keeps four Data Freshness identities stable across aggregate and provider scopes: `Inventory Snapshot`, `Metrics Source`, `Security Snapshot`, and `Analytics Snapshot`. **Metrics Source** explicitly denotes validated binding/technical readiness, not committed metrics time-series evidence: a selected provider shows bound-source validation, while fleet shows `x / y providers` with `Ready`/`Partial`/`Not Bound`. The three Snapshot cards continue to describe committed inventory, security, and analytics data; scope changes status/values, not evidence-plane identity.
+- Artifact Registry security summaries must distinguish absent scan evidence from a clean scan result; missing evidence is `N/A` / not collected, never an inferred zero-finding posture.
+- Artifact Registry **Capacity & Demand** uses the same semantic composition as the references: `Capacity Snapshot → Forecast & Growth Risk → Top Consumers`. Registry-specific evidence comes from committed inventory and Registry Analytics snapshots; unsupported quota or forecast evidence remains explicit rather than inferred.
+- Artifact Registry **Forecast & Growth Risk** uses the paired dashboards' compact forecast metric tiles, evidence/basis interpretation, and risk conclusion, **not** Operational Signal Overview KPI cards with repeated provider/source footers. Registry Analytics currently supplies committed snapshot-to-snapshot daily footprint/artifact growth deltas and project quota horizons, not a historical daily trend series. Preserve true `N/A`/unknown evidence and explain the missing trend; never fabricate historical points or a chart merely for visual symmetry. The selected-provider blocker, Registry Analytics handoff, and existing section-local dashed empty states remain unchanged.
+- **Registry Capacity & Demand visual parity (#1161):** preserve the paired dashboards' `Data Scope → compact capacity metrics → risk/action flow` sequence using the reference Kubernetes compact Violet scope strip. Forecast retains its three committed summary metrics, then a **shared dashed historical-series unavailable panel** with committed analytics/quota coverage facts, followed by the canonical Forecast Conclusion. This deliberately does **not** plot a historical/forward line: Registry workers currently commit adjacent-snapshot growth rates and project-specific numeric quota horizon, not a daily series or guaranteed 90-day projection. `Top Consumers` uses two equal-height ranked Top 3 panels (`Storage Usage` and `Nearest Quota`) plus a consumer-insights footer; the latter ranks **all** already-read committed project forecasts with numeric ETA, independently from highest usage. Draw quota utilization bars only with numeric committed percentages, clamp bar width to 0–100% while preserving the true textual value; absent percentage/ETA remains `N/A`, never a fabricated 0. Existing Registry Analytics handoff, selected-provider guard and section-local unavailable states remain.
+- **Capacity Snapshot compact metric grammar (#1166):** the reference Kubernetes Violet Data Scope strip (small info icon, soft surface, and inline label) plus three compact outlined metric cards (colored dot, label, right-aligned semantic percentage or evidence-unavailable label, bounded progress track, primary value and helper) is also used by Object Storage and Artifact Registry. Storage reports Used and Free as complementary fractions of committed usable capacity; the Usable Capacity card labels its boundary explicitly as Total, not Used. Missing utilization must not become false 0% on the bar. Registry keeps Artifact Footprint inventory-only without inventing a percentage, labels Quota Utilization as Used and the shortened Quota Left card as Free, and shows neutral tracks for absent quota evidence. The former separate Storage Capacity Utilization panel is retired as duplicate evidence; Risk, Flow, forecast and consumers remain intact.
+- **Capacity peer-footprint visualization (#1171, #1166, #1161):** the selected-instance Capacity Snapshot ends with an evidence-backed **visual** rather than duplicating the six-step action flow in text. Kubernetes renders three compact **Available Capacity** horizontal bars for CPU, Memory, and Pods from committed worker-node headroom percentages; Object Storage renders **Capacity Balance** Used/Free percentages derived from its existing committed usable-capacity utilization; Artifact Registry renders **Project Quota Balance** Used/Free percentages from the selected provider's committed quota evidence. Reuse `components/progress_bar.html` and existing dashboard cards/tokens, with explicit `N/A` or no-percentage states and **no fabricated history, provider calls, false-zero percentage, or mutation**. A progress bar represents a current percentage only, never a forecast. Render the visuals only inside the corresponding selected-scope/available-evidence branch; retain six-step action flow, risks, forecast, consumers, and handoffs. The top three Kubernetes Forecast summary cards retain one-line source-qualified helpers.
+- Artifact Registry **Signals & Actions** uses `Alerts Summary → Alert Interpretation & Response → Recommended Actions`. Active cases come from KAORI Alert Intelligence; recommendation cards come from central Intelligence and the Registry rule catalog. The dashboard does not define local recommendation rules.
+- Artifact Registry **Reporting** uses the shared `reporting_dashboard_workspace.summary(...) + guidance(...)` contract and canonical Reports state. Report definitions, generation, schedules, retained artifacts, storage, and audit remain owned by Reports.
+- A retained committed Registry inventory snapshot remains available even when the latest refresh attempt fails. Freshness is derived from `last_committed_at`; a stale retained snapshot is presented as stale/attention, never as `Not Collected`.
+- Future capability dashboards—including Registry/Harbor and Source Control/GitHub, plus Server/VM, HCI, network, backup, and other operational domains—must start by consuming `operational_dashboard_workspace.html`; copying Alpine tab state or local panel geometry is prohibited.
+- Reusable layout changes happen in shared components first, then all dashboard consumers inherit the change. Family-level contract tests and `scripts/verify_operational_dashboard_standard.py` protect this invariant.
+
+## New dashboard implementation contract
+
+A new operational dashboard is a **content implementation of the shared framework**, not a new page design.
+
+Required sequence:
+
+1. implement a domain-owned **Fast Shell** that reads only readiness/scope/active-tab/minimal context;
+2. render the domain Hero with `page_hero.operational_dashboard(...)`;
+3. render the domain onboarding/readiness blocker when required;
+4. enter `operational_dashboard_workspace.controller(...)`;
+5. render the domain Operational Signal Overview through `operational_signal_overview.render(...)` with bounded/lazy KPI content and `operational_section_loading.kpis(...)`;
+6. render `operational_dashboard_workspace.navigation(...)`;
+7. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through independently bounded lazy section endpoints, using `operational_section_loading.section(...)` for their placeholders;
+8. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry;
+9. prove that one section request does not build unrelated sections and that dashboard aggregates do not require unbounded ORM materialization.
+
+A future framework-level redesign updates the shared components and this standard once; individual dashboard domains should not fork the layout.
 
 ## Maintainability and performance contract
 
 - Dashboard web code owns no provider clients or request-time provider access.
 - Internal naming distinguishes selected database scope from actual live/provider state.
+- Fast Shell code must stay independent from heavy tab/section builders.
+- One section request must not build unrelated dashboard sections.
 - Heavy analytical evidence loads through bounded/lazy sections.
+- Aggregate KPI and summary paths use database aggregation or committed/materialized summary evidence instead of loading full domain collections when possible.
+- Performance characterization should record shell and section query count/response timing against representative inventory cardinality before setting numeric release budgets.
+- Caching is not the first correction for an unbounded query/projection boundary.
 - Empty snapshot messaging describes committed worker evidence rather than provider request results.
 
 ## Layered release evidence
@@ -175,3 +298,87 @@ A dashboard-family change must update, in the same work item:
 6. the latest alignment audit for material decisions.
 
 Run the operational dashboard verifier and its focused dashboard characterization/contract suites before UAT.
+
+## Artifact Registry Overview visual UAT — 26 October 2026 (#3373)
+
+The six screenshot findings are **presentation-only** adjustments to the conforming
+`Artifact Registry → Overview` Operational Dashboard. They do not change provider
+authority, alert-state evaluation, metrics, quota risk thresholds, committed
+snapshot availability, report ownership, or the shared dashboard structure.
+
+- Top Consumers shows a concise desktop Consumer Insights sentence while retaining
+  **dynamic** project counts, numeric quota-ETA coverage, missing-horizon/Unknown
+  semantics, and source metadata. No absent ETA becomes an exhaustion date.
+- Capacity Snapshot keeps long Artifact Footprint/Quota Utilization headings on a
+  single line, moving the **Inventory/Used/Free** metadata to its own subordinate
+  row rather than obscuring or truncating the source label; values and progress
+  tracks remain unchanged. Forecast tiles use shorter evidence-qualified helpers.
+- Forecast Conclusion has a compact descriptive sentence selected by the already
+  calculated **Critical/Medium/Low/Unknown** risk. Its `title` retains both full
+  original source explanations, including the committed Inventory/Metrics Source
+  evidence boundary; the visible text never creates a forecast or new classification.
+- Alert Summary and the standard six-step Alert Interpretation & Response flow
+  use concise domain-owned descriptions. Critical/Warning interpretation copy
+  targets **three readable lines** in the narrow desktop peer card, and the six
+  workflow steps target **one line** where width permits. No truncation of severity
+  or provider lifecycle evidence.
+- Reporting uses the shared `reporting_dashboard_workspace.guidance()` macro with
+  a **Registry-only** optional `generate_copy` input. Its default is unchanged
+  for Kubernetes/Object Storage and other consumers. Evidence Backed is
+  `Committed snapshots` within the explicit Registry provider scope; the Generate
+  action remains read-only output from committed Registry snapshots, rendered in
+  approximately two lines on the peer grid.
+- Native responsive wrapping remains supported below the desktop breakpoint:
+  never hide critical meanings with forced ellipsis or synthetic metrics.
+
+### Gherkin — visual acceptance (pending operator replay)
+
+```gherkin
+Feature: Artifact Registry Overview compact presentation
+
+  Scenario: Top Consumers retains quota evidence while showing concise text
+    Given I selected a Registry provider with committed quota analytics
+    When I open Overview and select Capacity & Demand
+    Then Consumer Insights shows committed project and quota-horizon counts
+    And its desktop helper occupies one readable line
+    And missing numerical quota ETAs are not treated as zero-day forecasts
+
+  Scenario: Capacity and Forecast descriptions preserve their evidence boundary
+    Given I selected a Registry provider with committed Inventory and Analytics
+    When I view Capacity Snapshot and Forecast & Growth Risk
+    Then Artifact Footprint and Quota Utilization headings occupy one desktop line
+    And their Inventory and Used labels remain visible
+    And Footprint Growth has a concise one-line evidence helper
+    And Forecast Conclusion remains a one-line description of the current risk
+    And the full committed source explanation remains available
+    And Unknown risk never becomes Healthy
+
+  Scenario: Alerts interpretation stays readable without losing response steps
+    Given KAORI Alert Intelligence contains active Registry AlertCases
+    When I open Alerts Summary and Alert Interpretation & Response
+    Then the Alerts Summary helper is one desktop line
+    And Validate, Triage, Investigate, Respond, Verify and Record remain in order
+    And each workflow step has concise one-line desktop guidance
+    And Critical and Warning guidance each fits within three readable desktop lines
+    And the descriptions retain severity and response ownership
+
+  Scenario: Reporting uses Registry-specific wording without changing shared Reports
+    Given a selected Registry provider has committed reporting scope
+    When I open Reporting Summary and Reporting Workflow
+    Then Evidence Backed displays a concise one-line committed-source label
+    And Generate guidance fits within two readable desktop lines
+    And report generation remains owned by the Reports workspace
+    And other consumers retain the shared default Generate text
+
+  Scenario: The Registry Overview remains accessible on responsive screens
+    Given I have a desktop viewport of 1440 by 900
+    When I review Registry Overview in light mode and dark mode
+    Then no adjusted guidance is clipped or overlaps another control
+    When I review the same sections on a mobile viewport
+    Then text may wrap naturally and the full semantics remain accessible
+    And no section triggers new live provider requests
+```
+
+Record screenshots, theme, browser, viewport, branch SHA, source state, and
+per-scenario PASS/FAIL. Source-level contract checks are not visual/browser
+execution evidence. Official admission and promotion remain HOLD.

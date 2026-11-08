@@ -22,6 +22,7 @@ ANALYTICS_TEMPLATES = {
     'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
     'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
     'reports/pdf/object_storage_analysis.html': 'object_storage_analysis.css',
+    'reports/pdf/tenant_governance.html': 'tenant_governance.css',
     'reports/pdf/analytics_unavailable.html': 'analytics_unavailable.css',
 }
 
@@ -362,7 +363,7 @@ def main() -> int:
     )
 
     reference_source = read(ROOT / 'app' / 'reports' / 'reference.py')
-    for code in ('AOV', 'RUT', 'CAP', 'STO', 'WLA', 'FCT', 'TPC', 'ALA'):
+    for code in ('AOV', 'RUT', 'CAP', 'STO', 'WLA', 'TNG', 'FCT', 'TPC', 'ALA'):
         require(f"'{code}'" in reference_source, f'Missing Analytics report type code: {code}', errors)
     require(
         "return f'KAORI-{family_code}-{type_code}-{date_code}-{fingerprint}'" in reference_source,

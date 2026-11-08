@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -12,8 +13,8 @@
 {% set required_ready = capability_summary.required_missing == 0 %}
 {% set capability_metrics = [
     {"icon": "list-checks", "tone": "normal", "label": "Validated Capabilities", "value": validated_count, "description": "Provider-owned Status, Alerts, and Silences API evidence."},
-    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Gaps", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts missing from provider evidence."},
-    {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validated independently after binding."}
+    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Gaps", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts are missing."},
+    {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validate after binding."}
 ] %}
 {% set capability_metadata = [
     "Profile · " ~ (instance.compatibility_profile or "alertmanager-core-v1")
@@ -21,7 +22,7 @@
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore Alertmanager API v2 access, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Validate consumer bindings for asset-specific alert evidence." %}
+    {% set next_action = "Validate consumer bindings to establish current asset-specific alert evidence." %}
 {% endif %}
 <section id="alertmanager-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
@@ -94,10 +95,13 @@
         {% include "integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html" %}
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
+{% endif %}
 {% include "components/operation_feedback_oob.html" %}
 {% if validation_scope_oob is defined and validation_scope_oob %}
     {% with scope_oob=true %}
         {% include "integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html" %}
     {% endwith %}
 {% endif %}
+{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available') |list|length) }}

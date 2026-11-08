@@ -29,7 +29,7 @@ def _browser_evidence(page: Page, scenario: str, viewport_name: str) -> Iterator
 
 
 def _login(page: Page, kaori_authenticated_base_url: str) -> None:
-    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
+    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='domcontentloaded')
     assert response is not None
     assert response.ok
 
@@ -43,7 +43,11 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     submit = page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first
     expect(submit).to_be_visible()
     submit.click()
-    page.wait_for_load_state('networkidle')
+    # Assert authenticated navigation and rendered app shell rather than idle network.
+    expect(page).not_to_have_url(re.compile(r'/auth/login(?:[/?#]|$)'))
+    # The sidebar is intentionally hidden on tablet/mobile until navigation opens.
+    # Require the authenticated Welcome workspace to be rendered at every viewport.
+    expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
     assert '/auth/login' not in page.url
 
 
@@ -280,3 +284,62 @@ def test_global_search_dynamic_feedback_is_programmatically_announced(
         expect(empty).to_have_attribute('role', 'status')
         expect(empty).to_have_attribute('aria-live', 'polite')
         expect(empty).to_have_attribute('aria-atomic', 'true')
+
+
+def test_side_drawer_controller_contains_and_restores_focus_across_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+) -> None:
+    """Canonical side-drawer controller traps focus and restores the logical opener."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'side-drawer-focus-contract', viewport_name):
+        page.set_content(
+            """
+            <div x-data="{ drawerOpen: false }">
+                <button id="drawer-trigger" @click="drawerOpen = true">Open Drawer</button>
+                <div
+                    x-cloak
+                    x-data="kaoriSideDrawer"
+                    x-show="drawerOpen"
+                    x-effect="syncOpen(Boolean(drawerOpen), $refs.dialog)"
+                >
+                    <button type="button" @click="drawerOpen = false">Backdrop</button>
+                    <section
+                        x-ref="dialog"
+                        tabindex="-1"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Canonical Side Drawer"
+                    >
+                        <button id="drawer-first">First Action</button>
+                        <button id="drawer-close" @click="drawerOpen = false">Close Drawer</button>
+                    </section>
+                </div>
+            </div>
+            """
+        )
+        page.add_script_tag(path='app/static/js/side_drawer.js')
+        page.add_script_tag(path='app/static/vendor/alpine/alpine.min.js')
+
+        trigger = page.locator('#drawer-trigger')
+        first = page.locator('#drawer-first')
+        close = page.locator('#drawer-close')
+        dialog = page.get_by_role('dialog', name='Canonical Side Drawer')
+
+        trigger.focus()
+        trigger.click()
+        expect(dialog).to_be_visible()
+        expect(first).to_be_focused()
+
+        close.focus()
+        page.keyboard.press('Tab')
+        expect(first).to_be_focused()
+
+        page.keyboard.press('Shift+Tab')
+        expect(close).to_be_focused()
+
+        close.click()
+        expect(dialog).to_be_hidden()
+        expect(trigger).to_be_focused()

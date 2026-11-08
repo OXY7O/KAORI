@@ -1,0 +1,122 @@
+{% import "analytics/components/_controls_readiness.html" as shared_readiness %}
+{% import "components/table_label.html" as table_label %}
+{% set readiness = analytics.data_readiness %}
+{% set page_endpoint = 'artifact_registry.analytics' if analytics.active_tab == 'overview' else 'artifact_registry.analytics_' ~ analytics.active_tab %}
+{% set worker_status %}
+    {% if readiness.is_active %}
+        {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
+    {% endif %}
+{% endset %}
+<div id="artifact-registry-analytics-controls-readiness">
+    {% call shared_readiness.frame(
+        'Analytics Controls & Data Readiness',
+        'Set the Registry and Time Range, then confirm Registry Source status and committed analytics datasets.',
+        'sliders-horizontal',
+        'artifact-registry-analytics-refresh-indicator',
+        eyebrow='Analytics Overview' if analytics.active_tab == 'overview' else analytics.page_title,
+        loading=readiness.is_active,
+        header_content=worker_status if readiness.is_active else ''
+        ) %}
+        <form id="artifact-registry-analytics-filter"
+              method="get"
+              data-analytics-refresh-request="true"
+              action="{{ url_for(page_endpoint) }}"
+              hx-get="{{ url_for(page_endpoint) }}"
+              hx-trigger="change delay:120ms"
+              hx-target="#artifact-registry-analytics-page"
+              hx-select="#artifact-registry-analytics-page"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-sync="#artifact-registry-analytics-page:replace"
+              hx-indicator="#artifact-registry-analytics-refresh-indicator"
+              data-analytics-preserve-tab>
+            {% if analytics.active_tab == 'alerts' %}
+                <input type="hidden"
+                       name="alert_q"
+                       value="{{ analytics.alert_filters.search }}">
+                <input type="hidden"
+                       name="alert_severity"
+                       value="{{ analytics.alert_filters.severity }}">
+                <input type="hidden"
+                       name="alert_state"
+                       value="{{ analytics.alert_filters.state }}">
+                <input type="hidden"
+                       name="alert_source"
+                       value="{{ analytics.alert_filters.source }}">
+                <input type="hidden" name="alert_page" value="1">
+                <input type="hidden"
+                       name="alert_per_page"
+                       value="{{ analytics.alert_filters.per_page }}">
+            {% endif %}
+            {% call shared_readiness.controls_grid() %}
+                {{ shared_readiness.selector('artifact-registry-analytics-provider',
+                                'provider_id',
+                                'Registry',
+                                analytics.provider_options,
+                                analytics.selected_provider_id,
+                                empty_label='All Registries') }}
+                {{ shared_readiness.selector('artifact-registry-analytics-window',
+                                'snapshot_window',
+                                'Time Range',
+                                analytics.time_range_options,
+                                analytics.snapshot_window,
+                                title='Select a measured Metrics Source history interval; unavailable source retention or range capability is reported explicitly.',
+                                legacy_value='current',
+                                legacy_label='Current (Instant)') }}
+            {% endcall %}
+        </form>
+        <div class="space-y-3">
+            {% call shared_readiness.readiness_grid() %}
+                {{ shared_readiness.source_card('Registry Source Status',
+                                'Registry providers eligible for committed analytics snapshots.',
+                                'Eligible' if readiness.eligible_count else 'Blocked',
+                                'normal' if readiness.eligible_count else 'warning',
+                                'Ready Providers',
+                                readiness.eligible_count ~ ' / ' ~ readiness.registered_count,
+                                'Snapshot Coverage',
+                                readiness.covered_count ~ ' / ' ~ readiness.eligible_count,
+                                icon=none) }}
+                {{ shared_readiness.snapshot_card('Latest Analytics Data Snapshot',
+                                'Committed worker datasets used by this page.',
+                                readiness.label,
+                                readiness.tone,
+                                readiness.latest_generated_at|user_datetime('Unavailable') if readiness.latest_generated_at else 'Unavailable',
+                'Registry Analytics',
+                readiness.latest_expiry_at|user_datetime('Not Scheduled') if readiness.latest_expiry_at else 'Not Scheduled',
+                readiness.last_attempt_label,
+                coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
+                ) }}
+            {% endcall %}
+            {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' or readiness.collection_warning %}
+                <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                    {% if readiness.current_count < readiness.eligible_count %}
+                        <div class="flex items-start gap-3 px-4 py-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning"
+                                  aria-hidden="true">
+                                <i data-lucide="history" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Committed Snapshot Needs Refresh</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ readiness.helper }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if readiness.execution_tone == 'critical' or readiness.collection_warning %}
+                        <div class="flex items-start gap-3 px-4 py-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-critical-soft text-status-critical"
+                                  aria-hidden="true">
+                                <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Latest Worker Attempt</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ readiness.collection_warning or readiness.execution_helper }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    {% endcall %}
+</div>

@@ -61,6 +61,18 @@ def _cluster_context() -> dict[str, object]:
     }
 
 
+def _clusterless_context() -> dict[str, object]:
+    return {
+        'show_banner': True,
+        'is_kubernetes_scope': True,
+        'is_blocked': True,
+        'has_clusters': False,
+        'cluster_count': 0,
+        'can_manage_clusters': False,
+        'database_ready': True,
+    }
+
+
 @pytest.fixture()
 def app(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
@@ -107,6 +119,7 @@ def test_authorized_clusterless_tls_htmx_read_returns_onboarding_before_page_que
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = _client_for_user(app, monkeypatch, GovernanceRouteUser({'tls_certificates.view'}))
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
     monkeypatch.setattr(tls_routes, 'has_registered_clusters', lambda: False)
 
     def unexpected_page_query(_args):

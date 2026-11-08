@@ -1,0 +1,617 @@
+# Tenant Capacity Governance
+
+Issue #654 owns provider-neutral Tenant Capacity Governance for Kubernetes Tenant Management v1.
+
+## Authority boundary
+
+- Kubernetes remains the execution platform.
+- ResourceQuota remains a namespace enforcement primitive; it is **not** presented as physical node reservation.
+- KAORI owns normalized allocation intent, committed allocation evidence, deterministic preflight, decision history, and auditability.
+- #113 owns Resource Profile and namespace allocation snapshots.
+- #654 owns Tenant Allocation Budget arithmetic and allocation allow/block decisions.
+- #125, #123, and Tenant reporting must consume committed #654 evidence rather than recomputing capacity independently.
+
+Normal operational preflight performs no live Prometheus or Kubernetes request.
+
+## Capacity evidence
+
+The baseline capacity source is the committed `analytics.capacity` materialization for the selected cluster with the canonical `24h` parameters.
+
+The required schedulable-capacity facts are:
+
+- Ready-worker allocatable CPU;
+- Ready-worker allocatable memory;
+- Ready-worker allocatable Pod slots;
+- snapshot identity;
+- snapshot state;
+- data cutoff.
+
+Persistent-storage physical/backend capacity is deliberately not inferred from this Capacity Analytics snapshot. The logical Tenant Storage Budget is explicit policy until dedicated Kubernetes Storage Analytics provides authoritative PV/PVC/backend correlation.
+
+A positive allocation change fails closed when the required snapshot is missing, invalid, expired, or stale. Refreshing Capacity Analytics is the operator action; #654 does not bypass materialization with a live Metrics Source query.
+
+## Tenant Capacity Policy
+
+One policy is committed per cluster.
+
+The Storage Budget (GiB) form is deliberately **empty by default**:
+an instructional placeholder is not a configured or persisted budget.
+Operators must type a positive GiB amount and save (for example, input
+`2048` commits `2048Gi`) to enable logical storage governance. Submitting
+the optional field empty leaves storage `Not Governed`; no implicit
+2048 GiB ceiling or physical-backend capacity should be inferred.
+Selecting a cluster should reload its committed numeric GiB amount.
+
+The policy records:
+
+- platform/system CPU reserve;
+- platform/system memory reserve;
+- platform/system Pod reserve;
+- operational safety headroom percentage;
+- known unmanaged CPU request commitment;
+- known unmanaged memory request commitment;
+- known unmanaged Pod commitment;
+- optional explicit Tenant Storage Budget.
+
+There is no implicit policy row. An operator must explicitly configure the policy before positive Tenant allocation can be admitted.
+
+Reserve and unmanaged values use Kubernetes quantity syntax and may explicitly be zero. Safety headroom is an integer percentage from 0 through 99.
+
+Unmanaged commitment is a governed request commitment outside KAORI Tenant Management. It is not current utilization and is not inferred from PVC quota, limits, or filesystem usage.
+
+## Limit Exposure policy and operator planning (#1681, #1685)
+
+Request Commitment is still the Kubernetes scheduling/admission budget. A
+separate **Limit Exposure** planning plane evaluates frozen CPU and memory
+`ResourceQuota.limits` across the same canonical active Native Namespace
+and shared Capsule quota authority as requests (shared Tenant exposure is
+counted once). It is not container usage, guaranteed burst, or physical
+reservation. Missing limits, ambiguous shared authority and stale capacity
+snapshot remain **Unknown**, never zero.
+
+A cluster's committed Capacity Policy contains:
+- **Exposure Mode:** `observe` (safe default), or `enforce` selected explicitly
+  by the operator;
+- **CPU Limit Ratio:** default `1.50`, allowed 1.00–4.00, supporting deliberate
+  controlled CPU overcommit;
+- **Memory Limit Ratio:** default `1.00`, allowed 1.00–2.00, conservative by
+  default because physical memory oversubscription can cause OOM;
+- **Exposure Threshold:** governed Tenant CPU/memory budget *after* platform
+  reserve, safety headroom and unmanaged commitments, multiplied by its
+  configured ratio.
+
+The **Capacity Policy** form rehydrates the selected cluster's committed mode
+and ratios via the existing policy JSON and HTMX workspace pattern. The
+**Tenant Allocation Overview** adds a compact, separate **CPU & Memory Limit
+Exposure** table showing committed limits, operator thresholds, ratio, state
+(Healthy, Near Capacity, Overcommitted, Unknown), and mode/capacity cutoff.
+These are read-only committed-state figures, not availability confirmations
+or a second calculation of Request headroom.
+
+In **Observe** mode, the Limit Exposure assessment is advisory and cannot
+change the original admission decision. In **Enforce**, positive Requests
+changes or increased/previously undeclared Limits require a fresh snapshot,
+a completely provable post-mutation Limits projection and limits within the
+operator's thresholds. This is an *additional fail-closed* admission gate:
+Request Commitment must still pass, and its original refusal takes precedence
+if both gates fail. Native managed replacement excludes exactly the target
+Namespace before adding Proposed; Capsule Tenant/Namespace scopes retain
+their own authoritative multiplication and shared-deduplication semantics.
+Policy/evidence and any Limit Exposure preflight results are committed into
+`TenantCapacityDecision` audit evidence. No new Kubernetes executor,
+provider override or live request is introduced.
+
+The `20261013_limit_exposure` migration is source-only until the operator
+explicitly approves schema admission. **No runtime use of the new model
+columns is supported before migration**. The phased rollout is migration,
+snapshot/data qualification, Observe review, local UAT and human acceptance,
+then an optional explicit operator change to Enforce. CI/CD, Full Admission,
+staging/main promotion and provider writes remain HOLD in review.
+
+## Allocation Budget
+
+For CPU, memory, and Pods:
+
+```text
+Tenant Allocation Budget
+= Ready-worker allocatable
+- platform/system reserve
+- safety headroom
+- known unmanaged commitment
+```
+
+Safety headroom is calculated from Ready-worker allocatable capacity for all three schedulable dimensions.
+
+Storage uses a different contract:
+
+```text
+Tenant Storage Budget
+= explicit operator-governed logical allocation ceiling
+```
+
+It is compared with aggregate committed `requests.storage` and is not presented as physical/backend free space.
+
+A negative derived CPU/memory/Pod result is clamped to zero.
+
+## Tenant committed allocation
+
+KAORI aggregates the frozen effective namespace allocation snapshots from #113:
+
+- `allocation_quota_json["requests.cpu"]`;
+- `allocation_quota_json["requests.memory"]`;
+- `allocation_quota_json["pods"]`;
+- `allocation_quota_json["requests.storage"]`.
+
+The aggregate represents governed Tenant request commitment. It does not claim that ResourceQuota reserves scheduler capacity.
+
+Existing namespace allocations remain committed even when provider state is drifted or failed because KAORI must not silently free capacity intent before an explicit governed allocation change.
+
+**Active capacity membership after verified Release (#1149):** the single-cluster
+and batched #654 committed-allocation readers and the Tenant Contributions modal
+use the same lifecycle filter. A Namespace with provisioning state `released`
+or `deprovisioned`, or linked to a Tenant with lifecycle `released` or
+`decommissioned`, contributes **zero active logical quota**. These historical
+generations and their frozen Resource Profile snapshots remain intact for
+lineage, evidence and audit; provider ResourceQuota/Namespace objects may still
+exist after governance Release and must never be interpreted as KAORI-owned
+capacity reservations. Native/Capsule Tenant-shared quota candidates apply
+the same terminal Tenant filter, including ambiguous shared quota. When an
+object is explicitly re-adopted as a new generation, **only its current
+committed generation** contributes allocation. Pending, ready, drifted,
+failed, degraded and in-progress deprovisioning remain committed until a
+governed terminal transition; lack of a linked `resource_profile_id` does
+not itself remove a frozen committed allocation. No provider read/write,
+capacity admission policy change, migration or historical evidence deletion
+occurs when constructing these read-only totals.
+
+An unbounded governed dimension remains explicit. KAORI does not coerce unbounded to zero. A positive allocation cannot be proven safe when CPU, memory, Pod, or configured storage-budget commitment is unbounded.
+
+## Capacity states
+
+State is evaluated from governed budget versus committed/projected Tenant request allocation:
+
+- **Healthy** — more than 40% request-budget headroom remains in both dimensions.
+- **Near Capacity** — at least one dimension has 40% or less headroom.
+- **Critical** — at least one dimension has 15% or less headroom.
+- **Exhausted** — at least one dimension has no remaining headroom without exceeding the budget.
+- **Overcommitted** — committed/projected allocation exceeds the budget.
+- **Unknown** — required capacity or commitment evidence is incomplete.
+
+A projection exactly equal to the budget may be admitted and is reported as Exhausted. A projection above the budget is blocked.
+
+## Preflight behavior
+
+New namespace allocation and future positive allocation edits must pass preflight before provider reconciliation.
+
+Preflight records:
+
+- source snapshot identity/state/data cutoff;
+- policy inputs;
+- current aggregate Tenant commitment;
+- current allocation;
+- proposed allocation;
+- projected commitment;
+- projected headroom;
+- shortfall;
+- allow/block decision;
+- resulting capacity state;
+- correlation evidence.
+
+Blocked preflight is committed as decision history but does not create a Tenant namespace intent and performs no ResourceQuota/LimitRange/provider mutation.
+
+An allowed decision is referenced by the committed Tenant namespace allocation.
+
+When cluster capacity contracts and existing commitments exceed the budget, state becomes Overcommitted without rewriting existing namespace allocations. Allocation reductions remain valid. Further positive allocation changes remain blocked until the deficit is corrected.
+
+## Existing namespace allocation changes
+
+A managed namespace changes allocation by selecting another committed Resource Profile version. Inline per-namespace quota overrides are not accepted.
+
+KAORI evaluates the frozen current namespace allocation against the proposed Resource Profile snapshot before mutating the namespace record or provider state.
+
+The operation is classified from governed CPU, memory, Pod, and configured storage commitment:
+
+- `increase` when at least one governed request dimension increases or becomes unbounded;
+- `decrease` when no governed dimension increases and at least one decreases or becomes bounded;
+- `no_change` when both governed request dimensions are unchanged.
+
+For an increase, current committed capacity evidence and policy must be sufficient to prove the projected allocation safe. Missing/stale capacity evidence, missing policy, unbounded aggregate commitment, or projected budget shortfall blocks the mutation and commits only the capacity-decision evidence.
+
+For a decrease or no-change operation, KAORI may proceed even while capacity evidence is Unknown because the change does not add CPU/memory request commitment. The decision remains `Unknown` when budget/headroom cannot be established, preserving the evidence limitation instead of guessing.
+
+An allowed change updates the namespace source Resource Profile identity/version and frozen allocation snapshot, links the allow decision, then reconciles ResourceQuota and LimitRange through the existing Native Kubernetes provider path. Reconciliation failure remains observable as failed/drift evidence; KAORI does not claim provider state matches desired intent until read-back verifies it.
+
+## Storage
+
+`requests.storage` is now a governed **logical allocation dimension** when the cluster policy has a Tenant Storage Budget.
+
+KAORI compares aggregate committed Tenant `requests.storage` with that explicit budget before provider reconciliation.
+
+The logical budget does not claim physical reservation or backend free space. It is an operator-defined admission ceiling that can be deliberately lower than physical capacity.
+
+Physical/usable storage capacity remains a separate evidence problem. Kubernetes Storage Analytics workstream #782 owns future correlation across StorageClass, PV, PVC, Tenant/Namespace, and authoritative storage-backend capacity. Until that evidence exists, KAORI must not derive physical storage headroom from node filesystem metrics, PV totals, or PVC quota.
+
+## Capacity Decisions registry and detail evidence (#775)
+
+The **Namespace Provisioning → Capacity Decisions** view uses the canonical
+KAORI inventory table, HTMX decision/search filters, five-row default
+pagination, empty/loading treatment and shared Violet design tokens.
+Human DevContainer feedback found long Namespace/profile names and repeated
+reconciliation text difficult to scan. The compact table now presents
+**Target (24%) / Contract (27%) / Admission (22%) / Recorded (17%) /
+Details (10%)**. Target and profile names are visually truncated in the
+table only, with full title values available on hover. Operation and pinned
+Resource Profile version remain visible. **Allow/Block** and canonical
+**capacity state** are distinct status labels; neither is inferred from the
+other. Recorded time and dataset cutoff retain the existing user's date/time
+presentation.
+
+Each row has a native **View More** dialog identified by the committed
+`TenantCapacityDecision.id`, not the Namespace (which can repeat across
+history). Modal content is read-only committed admission evidence:
+full Namespace and cluster context; the exact Allow/Block and capacity-state
+decision; the complete `evidence_json.reason` (when present); contract,
+version, operation and explicitly recorded allocation scope; recorded and
+cutoff times; the committed capacity source dataset/snapshot state;
+and expandable correlation/snapshot IDs for traceability. Legacy records
+without some evidence values show **Not recorded** rather than invented
+capacity claims. A blocked decision clearly does not authorize provider
+allocation mutation. No raw evidence JSON is dumped into the modal, and
+no runtime provider, Prometheus, snapshot refresh, mutation or admission
+re-evaluation is introduced.
+
+The modal root/header/body explicitly set `text-left` to prevent the
+registry's shared right-aligned Action cell from shifting modal prose, per
+existing #1053 UI correction. It inherits KAORI native dialog open/close,
+focus behavior, accessible heading/description, responsive scroll and
+light/dark tokens. The optional Traceability detail is a native
+keyboard-accessible disclosure. This presentation does not change #654
+admission arithmetic, committed decisions, provider authority or #113
+frozen Namespace effective allocation.
+
+### Capacity Decisions compact target and contract identities (#775 follow-up)
+
+Following another DevContainer screenshot review, the capacity-decision list
+uses the existing display-only Resource Profile Registry convention rather
+than showing internal provider adoption prefixes and full UUIDs verbatim.
+For scannability, an exact synthetic namespace target matching
+`@tenant:<tenant>:resource-quotas` displays as
+`<tenant> · Resource Quotas` (other Namespace/target identities are not
+reinterpreted). Profile display strips the leading `Adopted ` prefix, formats
+`Baseline · N` as `Baseline N`, and abbreviates a terminal UUID after
+` · ` to eight hex characters as in the existing Resource Profile Registry.
+Unknown long labels are bounded at 34/36 characters for Target/Contract.
+The second Contract line combines adopted origin, profile class/version and
+operation, rather than repeating a third line of visually competing prose.
+
+These transformations **never rewrite canonical Namespace or Resource Profile
+identity**; full original values are preserved in the table `title`
+attributes and the already approved read-only View More modal. Baseline 3
+and Baseline 4 remain distinguishable, as do imported allocation contracts
+with different UUID prefixes. Search, five-row pagination, committed evidence,
+admission decision and traceability are unchanged. No data model, provider
+behavior, inference engine or admission calculation is affected.
+
+DevContainer Visual QA should compare short/local names, distinct adopted
+baseline versions, UUID-suffixed imported profiles, long synthetic quota
+targets, mobile/dark mode and the full identity in View More. Human acceptance,
+CI/CD and deployment remain HOLD.
+
+### Capacity Decision View More visual hierarchy (#775 follow-up)
+
+Human DevContainer feedback found the initial native dialog too fragmented:
+a separate boxed Admission region competed with free-floating Contract and
+Evidence sections, while a second Traceability card dominated the bottom.
+The dialog now uses **one bounded surface** with subtle section dividers and
+a clear reading sequence: **Admission → Target & Contract → Committed
+Evidence → Traceability**. Admission decision and capacity state remain two
+independent canonical status labels; the full committed reason is displayed
+with no source-template indentation or truncation. The blocked-preflight
+provider-write boundary remains visible when applicable.
+
+The Contract section gives the **complete canonical Resource Profile name
+and pinned version a full-width first row**. Operation and Allocation Scope
+occupy the following two-column metadata row, so long adopted/UUID-backed
+profile identities no longer wrap prematurely in a narrow 2/4-width column.
+Names wrap only if they exceed the dialog's available full content width;
+none are truncated or modified in committed data. This follows human
+DevContainer feedback and preserves the same responsive two-column layout.
+Recorded/Cutoff and capacity dataset/snapshot state use a compact two-column
+definition list. Traceability is a quiet, default-closed native disclosure
+within the same surface; correlation and snapshot IDs retain selectable
+monospace values and are never hidden from keyboard users. No extra cards,
+new components, provider calls, data mutation or admission
+recalculation were introduced. The modal explicitly resets `text-left` from
+the registry Action cell, matching the #1053 alignment correction.
+
+The scope is confined to the existing `_capacity_decisions.html`, its
+contract tests, and this documentation. The review branch is the only
+integration destination before explicit gate authorization.
+
+Local DevContainer Developer Check and human Visual QA must verify mixed
+Allow/Block and Healthy/Unknown/Overcommitted cases; duplicate/long names,
+full reasons, nullable legacy evidence, screen width and dark mode,
+keyboard/focus and HTMX pagination. CI/CD, Full Admission, staging deployment
+and main promotion remain **HOLD** until explicitly authorized.
+
+### Admission Evidence native Close footer (#775 DevContainer UAT)
+
+DevContainer UAT for adopted Capsule `GlobalResourceQuota` shared allocation
+verified a committed `Allow / Healthy` admission decision, and requested a
+dedicated footer Close control on the **Namespace Provisioning → Capacity
+Decisions → View More → Admission Evidence** read-only modal. Reuse the
+existing KAORI native dialog button and `data-kaori-dialog-close` controller:
+a secondary Close action at the right side of a fixed, bordered footer;
+the existing header X remains available. The evidence body uses
+`min-h-0 flex-1 overflow-y-auto` so it alone scrolls for long reasons,
+profile identity and expanded Traceability. The footer remains reachable at
+narrow/short viewport heights without shifting the parent table.
+This action only closes the dialog, with no POST, capacity admission
+recalculation or provider mutation. Native keyboard Escape/focus-restoration,
+light/dark and reduced-motion behavior remain owned by shared dialog logic.
+
+Human Visual QA remains pending: allow/block and healthy/unknown cases,
+Traceability open/closed, short-height desktop and 360/390 mobile, focus and
+Escape, close from either header or footer, no unintended page-level scroll.
+Executable contract test, Jinja rendering, styling checks and official gates
+remain separate from this source-only review integration.
+
+## Tenant Allocation Overview (#1034)
+
+The read-only **Resource Profiles → Capacity Governance → Tenant Allocation Overview**
+adds a per-cluster visual projection above the existing Allocation Budget table.
+The operator selects a cluster in the overview; the routine page renders from
+the same committed #654 summaries (`build_capacity_governance_summaries`):
+budget, committed requests, headroom, capacity state, snapshot status and
+cutoff. Four horizontal accessible bars represent **CPU requests**, **memory
+requests**, **Pod slots** and the explicit **logical requests.storage ceiling**.
+Bar width is presentation only and never participates in the allow/block
+decision. Exact canonical numeric values remain visible alongside the bars;
+a deficit is labeled explicitly rather than concealing overcommit.
+
+Create-in-KAORI and provider-Adopt enter the **same effective committed
+Namespace allocation** ledger. The Tenant contribution view partitions that
+ledger by Tenant while using the existing #654 shared-quota selection and
+`_aggregate_committed_allocation` arithmetic per Tenant. Admitted Capsule
+Tenant-shared quotas are counted **once** rather than added once per child
+Namespace. Ambiguous shared authority, unbounded dimensions and missing/stale
+materialized Capacity Analytics evidence remain explicit Unknown/Not Governed,
+never fabricated as zero free capacity. Tenants with no committed namespaces or
+shared allocation are not counted as committed budget consumers. The Tenant
+breakdown is paginated using the canonical five-row default and allows
+Namespace identities to be expanded for correlation.
+
+**Boundary:** this is request-budget governance and an **admission planning
+read model**, not actual CPU/memory use, Pod runtime pressure, or physical
+storage reservation. Actual metrics and backend capacity remain in dedicated
+Kubernetes Analytics; the link to Capacity Analytics is permission-gated.
+The view performs no live provider/Prometheus call or adoption/provisioning
+mutation. Request Commitment remains the original admission arithmetic; the
+separate Limit Exposure read model uses committed ceilings, and its optional
+Enforce setting introduces a governed additional check as specified above. Cluster policy
+changes and Namespace allocation increases still require the same #654
+preflight and provider reconciliation/write-readback governance. Projected
+transaction impact for Create/Adopt is scoped separately under #125.
+
+### Allocation Budget registry and detail visual hierarchy (#1053)
+
+The existing Allocation Budget inventory remains a read-only, server-rendered
+committed-state projection under the canonical #654 capacity governance authority.
+It retains shared KAORI fixed-layout table, cluster search, status labels,
+native-detail dialog, and five-row HTMX pagination. Column proportions follow
+the evidence/decision workload: Cluster 28%, Evidence 39%, State 17%, Details 16%.
+
+**Snapshot freshness and computable budget are separate facts.** The Evidence
+column displays the actual committed `snapshot_state` label; current/fresh
+snapshots use a normal-status tone. A compute budget is called **available**
+only when the authoritative `item.budget` is present; when no policy
+exists, it states **Capacity policy required**, otherwise it states
+**Compute evidence required**. This avoids showing
+"Fresh / Compute evidence required" merely due to treating only the literal
+snapshot state `current` as a sufficient budget. Logical storage governance
+is reported independently when a storage policy exists, not inferred from
+physical or usable backend capacity.
+
+The **View More** dialog uses one resource-first comparison rather than
+three dense parallel cards. Its header has one left-aligned hierarchy: a shared
+40px Violet icon and **cluster title + authoritative capacity-state** badge
+inline, matching the human-approved **Manage Identity Providers** modal
+header reference. The next line is the environment and meaningful budget
+description, followed by compact **Allocation Budget** and **Request
+commitment** metadata labels. The top-right native Close is unchanged.
+This avoids the extra eyebrow/status stack that displaced the description
+in the previous DevContainer screenshot.
+
+Four resource rows—CPU Requests, Memory Requests, Pod Slots and Logical
+Storage—show authoritative Budget, Committed and Headroom display values in
+consistent columns. Each governed, positive-budget dimension additionally shows
+**committed %**, **remaining %** and a restrained Violet capacity bar, taken
+directly from the existing read-only `build_tenant_allocation_bars` presentation
+model (#1034). The route creates this model only for visible, already-committed
+#654 cluster rows; it neither recalculates admission nor reads providers.
+Percentages use the existing 0.1% rounded, 0–100 display-only bounds.
+Overcommitted dimensions retain the explicit committed **shortfall** alongside
+the full bar and 0% remaining. **Unknown, Not Governed and zero-budget**
+dimensions show no misleading percentage; instead they report that the
+percentage is unavailable along with the canonical reason.
+
+At desktop widths the common column header remains aligned with metric rows;
+narrower screens place the three labelled metric values beneath the resource
+name in one three-column grid, without horizontal scrolling. The governed
+Namespace count and logical-storage boundary now live in a separate
+**non-scrolling informational footer** after the scrollable comparison, beside
+a shared 32px **Close** utility. That footer wraps on narrow viewports and
+remains reachable without scrolling through a tall metric list; it supersedes
+the prior decision to omit the bottom Close action. The top-right header Close
+remains available as an alternate keyboard/pointer control.
+
+The dialog retains `data-kaori-native-dialog`, labelled heading/description,
+close control, existing access semantics, light/dark tokens and responsive
+scroll container. **The enclosing shared registry Action cell uses
+`text-right`**, and CSS text alignment is inherited by nested descendants.
+The modal explicitly resets `text-left` at the native-dialog root and
+reinforces it in header and body, while retaining the canonical right-aligned
+registry action button. This addresses the off-center eyebrow and description
+seen in repeated DevContainer screenshots; moving flex items alone cannot
+correct inherited `text-align`. Keep this regression covered by the existing
+resource-profile workspace contract test. This is presentation only—no provider
+read, new endpoint, schema, admission calculation or namespace mutation. Local DevContainer
+Visual QA must verify metric legibility at desktop/mobile sizes and status
+cases where snapshot freshness and compute availability differ. No CI/CD
+gate or deployment is authorized by this integrated review candidate.
+
+### Tenant Allocation Overview UX refinement (#1038)
+
+The cluster selector uses the existing HTMX partial-response pattern to refresh the
+selected overview immediately on change; the non-JavaScript form fallback remains
+available. The permission-guarded Capacity Analytics destination is a lightweight
+text link, with existing Violet focus/hover states, rather than an additional
+button in the compact overview header. No live provider or Prometheus query
+is added.
+
+The compact budget guidance is an accessible disclosure rather than an always-open
+paragraph: **CPU, memory and Pod request budget = Ready-worker allocatable −
+platform reserve − safety headroom − unmanaged commitment**. Logical
+`requests.storage` is a separately governed policy ceiling, not physical
+storage availability. `ResourceQuota` enforces Kubernetes quota and never
+constitutes a physical node-resource reservation.
+
+
+**Visual UAT guidance hierarchy (#2371, #2382, human correction):** The
+CPU/Memory Limit Exposure table retains committed limits, thresholds, mode and
+state badges. Exactly **one canonical Guide Info Tip sits beside the
+CPU & Memory Limit Exposure heading**, rather than in a separate footer. That
+single on-demand popover contains the exact committed `exposure.reason`, the
+mode-aware Observe/Enforce explanation, the continuing Request Commitment
+admission baseline and the governed ratio semantics. Neither Exposure assessment
+nor Governance boundary appears as a secondary visible help label or footer.
+For **Unknown, Near Capacity or Overcommitted**, the exact committed reason
+also remains persistently visible as a semantic warning/critical status line
+below the table; essential risk evidence must not be hover-only. Healthy
+state produces no guidance footer. Hover, focus, touch, Escape and viewport
+positioning reuse the shared Info Tip component/controller without page-specific
+JavaScript or any change to admission or provider evidence.
+The existing accessible **How allocation budgets work** disclosure
+separates one Violet-emphasized **request budget formula** (CPU/Memory/Pods)
+from distinct **logical storage policy** and **ResourceQuota boundary**
+explanations. Visual hierarchy uses existing semantic tokens and Lucide icons;
+the cluster selector, committed values, provider-read boundary and admission
+logic remain unchanged. Verify light/dark, compact-width wrapping, keyboard
+summary toggling, stale evidence reasons, and Observe/Enforce display in
+Dev Container before human acceptance; official CI/CD remains HOLD.
+
+**Tenant Contributions is detail on demand:** the overview shows the committed
+Tenant count and opens the canonical native KAORI dialog. After DevContainer
+visual feedback, this detail workspace uses **one visual hierarchy**: concise
+header aligned to the human-approved **Manage Identity Providers** modal reference:
+40px Violet icon at left, **Tenant Contributions** and its **Read-only** status
+inline, then the governed Namespace/Capsule deduplication description immediately
+below. The next compact context row holds **Committed scope** and the actual
+cluster/environment metadata labels plus the lightweight **Tenant Registry**
+navigation action, which wraps without horizontal overflow. The top-right
+header corner contains only the icon **Close**. Four summary metrics
+appear without any enclosing or per-metric cards, separated **only between
+columns** by full-height vertical rules that reach the summary strip edges
+(no stray right-edge divider or floating row-gap). The grid remains
+2-column mobile / 4-column desktop, followed by compact search and a
+responsive, vertically scrollable list of Tenant records.
+Each Tenant record has a single readable outline, without nested cards or shadows.
+This modal intentionally has **no Rows selector or pagination controls**:
+a compact read-only evidence footer stays visible beneath a separately framed
+scrolling viewport. The footer now keeps the read-only committed-evidence note
+on the left and exposes a shared-style **Close** action on the right, with
+compact padding to fit the 32px action height. Filtered matching versus total
+Tenant counts remain in the search status line, updated with the search inside
+the existing HTMX-swapped body; they are no longer duplicated in the footer.
+Each record groups Tenant name, ownership badge, stable ID, provider/authority,
+and a keyboard-accessible Namespace disclosure. Four governed requests use an
+unboxed two-column definition grid with one dividing rule at desktop widths.
+There are no table columns, nested metric tiles or horizontal table scrolling.
+
+The summary metrics come from the **unfiltered committed contribution ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
+incomplete / ambiguous records). Linked Namespace count is a count of
+Namespace identities and **not** a second summation of Capsule shared quota.
+Incomplete / ambiguous counts are evidence-quality indicators, never inferred
+admission verdicts.
+
+Summary metrics are computed once from the existing read-only per-Tenant #654
+partition before applying the search filter. The route exposes **all committed
+Tenant records matching the search**; it does not invoke the page-size/pagination
+helper for this detail dialog. Fifty Tenant records therefore remain in one
+native-height-bounded, keyboard-scrollable **inset bordered panel** with
+comfortable top/bottom and scrollbar-side padding, plus clear gaps between
+the existing unboxed-metric Tenant record cards. The header, summary,
+search and read-only evidence footer remain outside the scrolling list;
+the modal body alone is swapped
+during HTMX searches. Matching and total counts are distinct, and the unchanged
+canonical five-row pagination remains in other KAORI registry surfaces.
+The #1153 human visual-feedback iteration supersedes both the original
+borderless/divider-only records **and** the over-boxed interim treatment
+(four independent KPI cards plus four nested quota cards per Tenant). A single
+segmented summary container and a single bordered record per Tenant provide
+structure without visual noise; quotas and the expanded Namespace list remain
+unboxed. This stays within existing Violet surface, border, spacing, and
+native disclosure semantics. No new shared component or capacity metric is
+introduced.
+On narrower screens the summary uses two columns and the Tenant list stacks
+identity above its four allocation metrics without horizontal scrolling;
+the complete Tenant ID remains available via its `title` attribute.
+Cluster changes replace the entire selected overview and reset the
+modal search state.
+
+The contribution registry displays a stable Tenant ID alongside the Tenant
+name so same-named adopted and managed records remain distinguishable.
+The read-model search matches Tenant name/ID, Namespace, Environment, and
+allocation authority, but does **not** alter committed #654 aggregation.
+Near Capacity, Critical and Exhausted overview headers may identify the
+**lowest proportional governed headroom** from already computed presentation
+bars. This is display context only, not a separate capacity-state rule, admission
+approval, or replacement of canonical budget/shortfall evidence.
+
+The integrated review branch is a **DevContainer Visual QA candidate**.
+Source changes and tests may be authored before gate authorization, but no
+CI/CD Developer Check, Full Admission, staging deployment, or production
+promotion is implied. Confirm keyboard/focus behavior, the scrolling list with
+50 or more Tenants, responsive layout, HTMX search and cluster-change
+semantics with a human before acceptance.
+
+### Review / quality evidence
+
+- Verify positive, zero-budget, overcommitted, unknown/missing, unbounded and
+  logical-storage-unconfigured visuals alongside the existing detail modal.
+- Prove aggregate and per-Tenant values against #654 for Native and Capsule
+  shared allocations, including a shared Tenant with multiple Namespaces.
+- Check cluster selection, HTMX partial swap, scroll-only Tenant detail,
+  canonical pagination on other registry surfaces, expanded Namespace identities,
+  permission-scoped Analytics link, keyboard, accessible text, light/dark and
+  responsive layouts.
+- Human DevContainer visual acceptance is separate from Developer Check,
+  Full Admission and provider UAT. No admission/deployment gate is implied by
+  this read-only presentation.
+
+## UAT
+
+Staging UAT for #654 must demonstrate:
+
+1. explicit cluster capacity policy configuration;
+2. allowed bounded allocation within fresh committed capacity evidence;
+3. denied allocation with actionable CPU/memory/Pod/logical-storage shortfall evidence;
+4. no Namespace/ResourceQuota/LimitRange mutation after a denied preflight;
+5. Overcommitted state after simulated/real capacity contraction without rewriting existing Tenant allocations;
+6. recovery after capacity increases or Tenant commitment is reduced;
+7. persisted decision history with snapshot cutoff and policy/budget inputs.
+
+
+### Capacity Allocation Tabs and Full Budget Registry (2026-10-26 UAT)
+
+The current Resource Profiles → Capacity Governance workspace presents **Tenant Allocation Overview** and **Allocation Budget** as two query-backed tabs within one shared KAORI tab surface, matching the Membership Registry navigation standard.
+
+- The **Overview** tab keeps the committed per-cluster charts, explicit unknown/stale evidence, CPU/Memory Limit Exposure, explanations, and Tenant Contributions read-only inspection.
+- The **Allocation Budget** tab now uses a **compact canonical cluster registry** with one row per Ready cluster showing capacity state, evidence freshness, and committed Namespace count. Its `View Details` action opens the existing KAORI **static expandable row** (not a separate modal) containing CPU Requests, Memory Requests, Pod Slots, and Logical Storage cards with Budget, Committed, Headroom, and ratio/progress or unavailable evidence.
+- The **How allocation budgets work** explanation is a read-only native dialog triggered beside **View Contributions** in Tenant Allocation Overview; the old inline accordion is removed.
+- Filters are Search, Environment, Capacity State, Evidence, and Resource; the shared registry handles latest-request-wins HTMX filtering, conditional Clear Filters, page reset, rows-per-page, and pagination. Pagination counts **clusters**, while each displayed cluster expands into the selected resource rows.
+- The read-only percentage and headroom values continue to be produced by `build_tenant_allocation_bars` from the existing committed #654 evidence, never recalculated from formatted strings or observed workload utilization.
+- `Unknown` and `Not Governed` explicitly retain unavailable ratios; they are not zero budget or free headroom. Logical Storage remains a governed *admission ceiling*, not backend physical capacity.
+- The capacity policy form remains outside the inner tabs. Switching tabs does not perform a provider mutation or alter admission authority.
+
+This UX supersedes the older modal/table presentation described in the historical **Allocation Budget registry and detail visual hierarchy (#1053)** subsection above; that subsection remains for implementation history, not as the current UAT UI contract.

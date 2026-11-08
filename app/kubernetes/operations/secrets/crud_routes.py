@@ -118,7 +118,7 @@ def secret_namespace_options():
 @permission_required('kubernetes_secrets.create')
 @cluster_required(
     'Secret Management',
-    page_title='Create Kubernetes Secret',
+    page_title='Create Secret',
     page_description='Create one validated Secret without persisting sensitive values.',
 )
 def create_secret():
@@ -276,7 +276,7 @@ def replace_secret_content():
 @permission_required('kubernetes_secrets.replace')
 @cluster_required(
     'Secret Management',
-    page_title='Replace Kubernetes Secret Data',
+    page_title='Replace Secret',
     page_description='Replace selected Secret keys without reading current values.',
 )
 def replace_secret():

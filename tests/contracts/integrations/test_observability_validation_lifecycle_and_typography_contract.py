@@ -58,6 +58,7 @@ def test_integration_provider_families_share_primary_workspace_typography() -> N
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
     )
     minio_scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    harbor_scope = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
     kubernetes_connection = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
     )
@@ -74,6 +75,7 @@ def test_integration_provider_families_share_primary_workspace_typography() -> N
         metrics_scope,
         alert_scope,
         minio_scope,
+        harbor_scope,
         kubernetes_connection,
         kubernetes_inventory,
     ):
@@ -125,6 +127,7 @@ def test_all_integration_primary_workspaces_follow_one_typography_hierarchy() ->
         read('app/templates/integrations/observability/metrics_source/instance_form.html'),
         read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'),
         read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
+        read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html'),
     ]
     shared_header_consumers = [
         read(

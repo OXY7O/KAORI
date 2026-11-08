@@ -76,7 +76,8 @@ def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     assert 'components/framed_workspace_tabs.html' in content
     assert 'framed_workspace_tabs.render_navigation(' in content
     assert 'role="tablist"' not in content
-    assert 'border-outline-default bg-surface-hover px-4 pt-4' in framed_tabs
+    assert 'bg-surface-hover px-4 pt-4' in framed_tabs
+    assert 'gap-2 border-b border-outline-default' in framed_tabs
     assert 'components/progress_bar.html' in items
     assert 'progress_bar.job_progress(' in items
     assert 'progress_bar.determinate(' not in items

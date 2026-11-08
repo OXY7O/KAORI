@@ -33,3 +33,22 @@ def test_bucket_route_keeps_native_type_filter_for_bucket_and_container_inventor
     assert "native_type=request.args.get('native_type'" in buckets_block
     assert 'selected_native_type=filters.native_type' in buckets_block
     assert 'native_type: str' in bucket_filters
+
+
+def test_bucket_environment_filter_is_visible_preserved_and_clearable() -> None:
+    routes = read('app/storage/object_storage/inventory/routes.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    card = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
+    table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+
+    assert "environment=request.args.get('environment'" in routes
+    assert 'selected_environment=filters.environment' in routes
+    assert "and (not filters.environment or row['environment'] == filters.environment)" in presentation
+    assert 'name="environment"' in card
+    assert 'id="object-storage-buckets-environment"' in card
+    assert 'inventory.environments' in card
+    assert 'selected_environment == option.value' in card
+    assert 'selected_native_type or selected_environment or search' in card
+    assert 'name="environment" value="{{ selected_environment }}"' in table
+    assert "'environment': selected_environment" in table
+    assert 'environment=selected_environment' in table

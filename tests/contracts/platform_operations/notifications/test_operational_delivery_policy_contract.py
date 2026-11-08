@@ -68,12 +68,12 @@ def test_configmap_secret_and_tls_delivery_matrix_is_explicit() -> None:
     assert tls_tasks.index('deck_user_ids = _notify_requesters(') < tls_tasks.index('context.succeed(')
 
 
-def test_tls_uses_canonical_workspace_and_progress_toast() -> None:
+def test_tls_uses_canonical_workspace_and_terminal_delivery() -> None:
     workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
     progress = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html')
 
     assert 'id="tls-certificates-page-workspace"' in workspace
-    assert '_sync_progress_toast.html' in workspace
+    assert '_sync_progress_toast.html' not in workspace
     assert 'components/operational_progress_toast.html' in progress
     assert not (ROOT / 'app/kubernetes/governance/tls_certificates/toast.py').exists()
     assert not (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html').exists()

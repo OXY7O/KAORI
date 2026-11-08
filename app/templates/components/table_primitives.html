@@ -7,8 +7,8 @@
 
   It owns reusable table/card/filter geometry and visual classes only.
 #}
-{% macro block_classes() -%}
-    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{% macro block_classes(allow_overflow=false) -%}
+    {{ 'overflow-visible' if allow_overflow else 'overflow-hidden' }} rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}
 {% macro block_header_classes() -%}
     flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6
@@ -61,7 +61,7 @@
 {% macro cell_classes(action=false) -%}
     px-4 py-3 align-middle {{ 'text-right' if action else 'text-left' }}
 {%- endmacro %}
-{% macro title_cell(name, supporting_text='', icon='') -%}
+{% macro title_cell(name, supporting_text='', icon='', supporting_content=None) -%}
     <div class="flex min-w-0 items-center gap-2.5">
         {% if icon %}
             <span class="flex {{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }} shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
@@ -77,11 +77,17 @@
                 <p class="mt-0.5 truncate text-xs text-content-muted"
                    title="{{ supporting_text }}">{{ supporting_text }}</p>
             {% endif %}
+            {% if supporting_content %}
+                <div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">{{ supporting_content }}</div>
+            {% endif %}
         </div>
     </div>
 {%- endmacro %}
-{% macro action_classes(destructive=false) -%}
-    inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
+{% macro action_classes(destructive=false, size='row') -%}
+    inline-flex {{ 'min-h-9 px-3' if size == 'header' else 'min-h-8 px-2.5' }} items-center justify-center gap-1.5 rounded-md border text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
+{%- endmacro %}
+{% macro action_grid_classes(columns=2) -%}
+    ml-auto grid w-fit {{ 'grid-cols-1' if columns == 1 else 'grid-cols-2' }} gap-1.5
 {%- endmacro %}
 {% macro search_field(name, value, placeholder, id=None) -%}
     <div class="relative">

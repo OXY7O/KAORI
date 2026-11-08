@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import redirect, request, session, url_for
+from flask import g, redirect, request, session, url_for
 from flask_login import LoginManager
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -61,13 +61,24 @@ def load_user(user_id: str):
         invalidate_session()
         return None
     except SQLAlchemyError:
-        invalidate_session()
+        # Database unavailability is not proof of a revoked identity. Fail closed
+        # for this request but retain the signed session for a subsequent retry.
+        g.authentication_database_unavailable = True
         return None
 
 
 @login_manager.unauthorized_handler
 def handle_unauthorized():
     """Redirect unauthenticated requests with one context-appropriate message."""
+
+    # A failed user load has already established database unavailability. Do not
+    # issue a second pool checkout or redirect a signed-in user to the login form.
+    if getattr(g, 'authentication_database_unavailable', False):
+        return (
+            'Authentication is temporarily unavailable. Please retry.',
+            503,
+            {'Cache-Control': 'no-store, max-age=0', 'Retry-After': '5'},
+        )
 
     readiness = check_authentication_database_readiness()
     login_url = url_for('auth.login', next=request.full_path.rstrip('?'))

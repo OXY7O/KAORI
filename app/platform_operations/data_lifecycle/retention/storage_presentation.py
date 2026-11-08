@@ -61,7 +61,7 @@ def build_storage_context(
         if endpoint_probe['reachable']:
             status = 'reachable'
             status_label = 'Reachable'
-            status_tone = 'emerald'
+            status_tone = 'blue'
             detail = 'The configured S3-compatible endpoint is reachable from the KAORI web container.'
         else:
             status = 'unreachable'

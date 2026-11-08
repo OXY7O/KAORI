@@ -191,6 +191,9 @@ def main() -> int:
         ('INVENTORY_WORKER_CONCURRENCY', 1),
         ('INVENTORY_WORKER_PREFETCH_MULTIPLIER', 1),
         ('INVENTORY_MAX_TASKS_PER_CHILD', 1),
+        ('REGISTRY_SECURITY_WORKER_CONCURRENCY', 1),
+        ('REGISTRY_SECURITY_WORKER_PREFETCH_MULTIPLIER', 1),
+        ('REGISTRY_SECURITY_MAX_TASKS_PER_CHILD', 1),
         ('INTEGRATION_VALIDATION_LOCK_TTL_SECONDS', 300),
         ('INTEGRATION_VALIDATION_WORKER_CONCURRENCY', 1),
         ('INTEGRATION_VALIDATION_MAX_TASKS_PER_CHILD', 1),
@@ -229,6 +232,7 @@ def main() -> int:
         ('FORECASTING_CELERY_QUEUE', 'forecasting'),
         ('JOB_MAINTENANCE_CELERY_QUEUE', 'job maintenance'),
         ('RETENTION_CELERY_QUEUE', 'retention maintenance'),
+        ('REGISTRY_SECURITY_CELERY_QUEUE', 'Artifact Registry security'),
         ('REPORTS_CELERY_QUEUE', 'report jobs'),
         ('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'report storage health'),
         ('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver execution'),
@@ -284,7 +288,20 @@ def main() -> int:
             except ValueError:
                 errors.append(f'{name} must be a non-negative integer.')
 
-    if _value('ADMIN_PASSWORD'):
+    # Secrets may be supplied by different runtime adapters. When supplied,
+    # they must not be the documented examples or weak bootstrap placeholders.
+    for name in ('POSTGRES_PASSWORD', 'REDIS_PASSWORD'):
+        supplied = _value(name)
+        if supplied and _contains_placeholder(supplied):
+            errors.append(f'{name} still contains an example placeholder.')
+
+    admin_password = _value('ADMIN_PASSWORD')
+    if admin_password:
+        if len(admin_password) < 12 or _contains_placeholder(admin_password):
+            errors.append('ADMIN_PASSWORD must be at least 12 characters and not an example placeholder.')
+        admin_email = _value('ADMIN_EMAIL')
+        if not admin_email or _contains_placeholder(admin_email):
+            errors.append('ADMIN_EMAIL must identify a configured administrator when ADMIN_PASSWORD is supplied.')
         warnings.append('Remove ADMIN_PASSWORD after the first bootstrap-admin operation.')
 
     for warning in warnings:

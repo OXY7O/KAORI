@@ -97,7 +97,12 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
         'Review reporting readiness, artifacts, automation, and coverage.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
-    normalized.setdefault('report_engine_status', 'Ready')
+    # Legacy/partial payloads may lack worker evidence: fail closed, never imply Ready.
+    normalized.setdefault('report_engine_status', 'Unknown')
+    normalized.setdefault(
+        'reporting_posture',
+        {'label': 'Needs Review', 'tone': 'warning', 'reason': 'unverified'},
+    )
     normalized.setdefault('storage_status', 'Storage Review')
     normalized['summary_cards'] = _normalize_summary_cards(normalized.get('summary_cards'))
     normalized['reporting_operations'] = _normalize_reporting_operations(
@@ -240,13 +245,13 @@ def _normalize_artifact_statistics(raw: Any) -> list[dict[str, Any]]:
         {
             'label': 'Requests This Month',
             'value': '0',
-            'caption': 'Report requests created this calendar month',
+            'caption': 'Requests created this UTC calendar month',
             'icon': 'calendar-range',
         },
         {
             'label': 'Completion Rate',
             'value': '—',
-            'caption': 'Ready or archived among resolved requests',
+            'caption': 'All-time: ready or archived among resolved requests',
             'icon': 'badge-check',
         },
         {

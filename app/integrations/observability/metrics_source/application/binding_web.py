@@ -55,6 +55,7 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
         request.form.get('asset_key')
         or request.form.get('cluster_asset_key')
         or request.form.get('object_storage_asset_key')
+        or request.form.get('registry_instance_asset_key')
         or ''
     ).strip()
     asset_definition = get_consumer_asset_definition(asset_type)

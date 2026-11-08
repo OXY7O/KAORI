@@ -14,7 +14,12 @@ def test_tls_collection_uses_explicit_evidence_and_safe_identity() -> None:
 
     assert 'class TLSCollectionEvidence' in collector
     assert 'def _has_secret_identity(' in collector
-    assert 'if secret.type == TLS_SECRET_TYPE and _has_secret_identity(secret)' in collector
+    assert "if getattr(secret, 'type', None) != TLS_SECRET_TYPE:" in collector
+    assert 'if not _has_secret_identity(secret):' in collector
+    assert 'def _collect_pages(' in collector
+    assert 'scrub_secret_payload(item)' in collector
+    assert '_TLS_REQUEST_TIMEOUT_SECONDS = 10' in collector
+    assert '_TLS_MAX_PAGES = 100' in collector
     assert 'unique_consumers:' in collector
     assert 'Unexpected Kubernetes collection failure.' in collector
     assert "str(exc) or 'Kubernetes collection failed.'" not in collector
@@ -37,7 +42,7 @@ def test_tls_workspace_and_progress_are_canonical() -> None:
 
     assert 'id="tls-certificates-page-workspace"' in workspace
     assert "partial_mode='page_workspace'" in workspace
-    assert '_sync_progress_toast.html' in workspace
+    assert '_sync_progress_toast.html' not in workspace
     assert 'components/operational_progress_toast.html' in progress
     assert not (ROOT / 'app/kubernetes/governance/tls_certificates/toast.py').exists()
     assert not (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html').exists()

@@ -333,8 +333,7 @@ def _operational_context(
         return {
             'title': 'No Current Pod References',
             'description': (
-                'No Pod reference is represented in the current committed snapshot. Other consumers or future '
-                'workload templates may still reference this object.'
+                'No Pod references in this snapshot; other consumers or workload templates may still reference this object.'
             ),
             'tone': 'info',
             'icon': 'unlink',
@@ -351,7 +350,7 @@ def _operational_context(
     return {
         'title': 'Configuration Snapshot Ready for Review',
         'description': (
-            'Key-index metadata and current Pod references are available from the latest committed inventory snapshot.'
+            'Key-index metadata and current Pod references are available from the latest committed inventory snapshot, providing current configuration usage and relationship evidence.'
         ),
         'tone': 'normal',
         'icon': 'circle-check',

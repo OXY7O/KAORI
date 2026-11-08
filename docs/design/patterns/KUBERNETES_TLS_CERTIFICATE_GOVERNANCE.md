@@ -4,13 +4,45 @@
 
 TLS Certificate Governance is a read-oriented registry for certificate validity, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
 
+## Governance Overview landing contract
+
+Kubernetes Governance Overview is the **domain-first** landing page for Kubernetes governance as a whole. TLS Certificates is the first implemented child capability; it does not define the Hero, Hero context, primary posture, or information architecture of the Governance domain. Future implemented governance capabilities join the same catalog without redesigning Overview. Placeholder capability links are prohibited.
+
+`governance.view` authorizes the landing page. `tls_certificates.view` controls only whether the TLS Certificates child capability can be opened. Governance Overview does **not** load TLS certificate inventory, certificate counts, TLS snapshot posture, or other child-capability detail evidence solely to render the domain landing page.
+
+The ready-state Hero represents the generic Kubernetes governance boundary: Kubernetes is authoritative for live resource/enforcement state, KAORI owns normalized governance evidence and orchestration, and the canonical Hero action is **Open Cluster Integrations**. Overview itself remains read-only and issues no live Kubernetes request.
+
+Canonical Overview hierarchy:
+
+```text
+Hero — Kubernetes Governance / Overview
+Governance Scope
+└── Governance Capabilities
+    └── TLS Certificates                  # current implemented child capability
+Governance Model
+└── Governance Operating Model
+    ├── Provider Authority
+    ├── Policy & Guardrails
+    ├── Committed Evidence
+    └── Controlled Handoffs
+```
+
+Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
+
+The Overview Hero uses the compact KAORI description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model keeps policy copy compact: **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.**
+
+Governance Capabilities is a scalable equal-height catalog. The parent section owns no TLS-specific action. Each implemented capability contributes one self-contained card with identity, status, purpose, boundary, permission state, and its own action. The catalog uses an auto-fitting minimum-width grid so one capability fills the available row, multiple capabilities distribute evenly, and adding another implemented governance capability does not require changing the surrounding Overview composition. Unimplemented capabilities are never rendered as placeholders.
+
 ## Canonical structure
 
 ```text
 Compact Hero
 TLS Collection Snapshot
-Certificate Validity & Operations
-Compact Certificate Registry
+TLS Inventory Operations
+Certificate Posture — shared Section Intro
+└── Certificate Validity
+Certificate Inventory — shared Section Intro
+└── TLS Certificate Registry
 Detail Style 2 — Full Workspace Modal
 ```
 
@@ -48,7 +80,9 @@ TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS
 TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS
 ```
 
-Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still valid and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+Expiry uses the exact `not_after` timestamp. A certificate with less than 24 hours remaining is still inside the expiry window and belongs to the Critical Window; it is not Expired until `not_after <= now`.
+
+**Policy disposition for #1326 review:** the existing approved Valid / Renewal / Critical classification is **expiry-window posture**, not a claim that the certificate is presently active, trusted or accepted by clients. `not_before` is an independently displayed committed source fact (Valid From); a future value may prevent current TLS use even while expiry-window posture reports Valid. Existing status taxonomy and SQL/Python classifiers remain unchanged. The Registry Guide and TLS Detail explain this explicitly. A future change to classify Not Yet Valid must first receive separate taxonomy/policy approval and update both SQL and Python projection atomically.
 
 Validity labels:
 
@@ -77,6 +111,12 @@ Coverage is declaration evidence, not live endpoint reachability. Host values re
 
 Wildcard identities use single-label semantics. `*.example.com` covers `api.example.com`, but it does not cover `example.com` or `deep.api.example.com`. KAORI must not broaden wildcard coverage across multiple DNS labels.
 
+## Section hierarchy and cluster-source action
+
+TLS Governance reuses `components/section_intro.html` for the plain hierarchy above certificate posture and registry content. The component adds no card geometry or separate palette.
+
+Cluster-source navigation is labeled **Open Cluster Integrations** and routes to `integrations.kubernetes`, matching Kubernetes Inventory.
+
 ## Compact registry table
 
 ```text
@@ -89,6 +129,26 @@ Details
 ```
 
 The table directly opens the shared Full Workspace Modal. It does not render an intermediate expanded row. The dedicated detail route remains a direct-link and no-JavaScript fallback.
+
+### DevContainer table-width and evidence-copy refinement (#733)
+
+The six-column fixed registry prioritizes long technical identifiers and declared-host coverage:
+**Certificate 27%, Scope 22%, Validity 12%, Host Coverage 20%, Ingress Usage 9%, Details 10%**.
+Preserve existing responsive behavior without horizontal scroll: Host Coverage is shown at
+`lg` and above, and Ingress Usage at `xl` and above. Keep the shared details
+modal, full hover values, keyboard-accessible headings, filters, and pagination.
+
+Validity keeps the policy-derived status badge and factual expiry date; day text is
+compact (`74 days left` / `3 days expired`) without changing calculations.
+The `No Declared Hosts` badge is not repeated underneath when host declarations
+are factually absent. If coverage collection is unavailable, show `Not Reported`
+and `Coverage evidence unavailable`. If hosts exist, display the covered/declared
+ratio and only show uncovered-count support when nonzero.
+
+Ingress Usage shows the observed Ingress count, adding declared-host counts only when
+nonzero; unavailable Ingress mapping remains `Not Reported` plus `Ingress mapping
+unavailable`, never an invented zero. Full details and evidence distinctions remain
+accessible. Presentation changes do not infer live TLS reachability or trust.
 
 ## Full Workspace Modal
 
@@ -112,9 +172,22 @@ The modal uses permission-aware rotation actions. Governance never owns the muta
 
 The modal header follows the shared Full Workspace Modal alignment contract: lifecycle/status labels sit below the descriptive line and align with the title/description text column, never with the outer-left icon edge.
 
-## Certificate Validity & Operations workspace
+## TLS Inventory Operations and certificate posture
 
-TLS inventory synchronization and certificate posture are one operational workspace. `TLS Inventory Operations` is an internal toolbar/state row inside the `Certificate Validity & Operations` section, followed by the six validity/coverage posture metrics. It must not render as a separate sibling card above the posture grid.
+TLS inventory synchronization is a standalone operational surface immediately after the TLS Collection Snapshot. Its placement and interaction follow the same background-inventory pattern used by Kubernetes Tenant:
+
+```text
+Collection Snapshot
+→ Inventory Operations
+→ Evidence Posture
+→ Registry
+```
+
+`TLS Inventory Operations` owns Sync TLS, Configure Sync, Bulk Rotation handoff, worker progress, automatic policy state, last successful collection, and next scheduled execution. It must not be nested inside certificate validity metrics.
+
+Certificate validity remains a separate evidence block under the shared `Certificate Posture` section intro. `Certificate Inventory` is the outer section context for `TLS Certificate Registry`; the outer and inner titles intentionally express different hierarchy levels.
+
+Accepted background sync dispatch remains inline and does not create a queued/completion toast or unread Notification Deck item. Terminal worker evidence persists the Notification Deck result and triggers navigation refresh without a full-page reload.
 
 ## Single TLS rotation workspace
 
@@ -224,3 +297,97 @@ No page-local fourth Hero accessory type is permitted.
 ### L0–L7 release evidence
 
 The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.
+
+
+## TLS rotation target identity and freshness admission (#1306)
+
+An approved rotation must preserve the selected committed target identity:
+the Kubernetes TLS Secret UID collected with its namespace/name must match
+the live UID read before PATCH. Unknown or malformed UID evidence, or
+deletion/recreation at the same namespace/name, fails closed until TLS
+synchronization refreshes inventory. Live Secret type, resourceVersion,
+dry-run and Secret-value scrubbing remain mandatory.
+
+Ingress coverage admission requires both Secret and Ingress source status
+Collected. Both cluster collection-state collected_at and certificate-row
+collected_at must fall within the existing TLS sync job-policy interval plus
+its established freshness grace. This proves qualified recent committed
+evidence, not live Ingress reachability. Preview and server-side single/bulk
+apply use the same fail-closed policy; any blocked bulk target prevents every
+provider PATCH. No new UI state or break-glass override is introduced.
+
+## Bounded TLS inventory reconciliation (#1325)
+
+Worker-side collection is bounded and payload-scrubbed before reconciliation.
+A completed Secret scan reconciles existing TLS inventory in 100-identity ORM
+batches instead of loading all historical cluster rows into application memory.
+Each successfully collected record receives one committed scan-generation
+timestamp; stale records from **only that cluster** are pruned by a scoped SQL
+DELETE where their generation does not match. Collection-state and inventory
+changes share the same database transaction/commit, including successful
+zero-certificate scans. Duplicate Secret identities abort and roll back the
+reconciliation rather than silently replacing or pruning evidence. Fatal or
+incomplete Secret collection never enters reconciliation or prunes existing
+rows. Preserve immutable Secret UID/source provenance across updates.
+
+This reduces ORM materialization but is **not** a benchmark PASS. Verify
+bounded per-batch memory, PostgreSQL query plan/latency and transactional
+no-prune failure paths in Dev Container before official admission.
+
+## TLS sync JobExecution selection at fleet scale (#1327)
+
+For a selected cluster, PostgreSQL JSONB target containment filters
+canonical `JobExecution.payload_json.targets[].cluster_id` in SQL **before**
+limiting the job history, so 100+ unrelated cluster jobs cannot conceal
+that cluster's latest terminal outcome or its zero-certificate success.
+A job labelled `all_clusters` is not automatically proof that any one
+cluster was targeted; the recorded target list is authoritative.
+
+Active-job presentation uses one ordered, target-qualified SQL query rather
+than loading all fleet-active JobExecution ORM rows. Historical
+zero-certificate fallback queries only clusters missing both certificate-row
+and admitted collection-state evidence; one SQL-selected successful job is
+used per such cluster, with partially successful jobs rejected if the
+specific cluster appears in the failed-target evidence. Fleet summaries
+remain bounded and preserve source-specific failure exceptions.
+
+PostgreSQL JSONB predicates require DB-backed EXPLAIN, realistic history
+volume and Dev Container regression before official admission; no new job
+table/schema or provider-side lookup is introduced.
+
+## Provenance-safe TLS collection freshness (#1327)
+
+`TLSCertificateCollectionState.updated_at` means the latest collection attempt;
+`collected_at` advances only after a complete successful Secret collection.
+Failed attempts may update source status and error detail, but they do not
+refresh the committed certificate evidence clock or delete the old certificate
+snapshot. Ingress mapping remains an independently qualified evidence source.
+
+The TLS Operations `Last Successful` indicator is derived from committed
+certificate-row `collected_at` and collection-state `collected_at` **only
+when the Secret source is Collected**. If the prior successful collection
+contained zero TLS Secrets and a subsequent attempt failed, the bounded
+`JobExecution` history can supply a last-successful timestamp **only for
+that specific target cluster** when a successful or partially successful
+job explicitly lists the cluster and does not list it among failures.
+No fleet-level job success automatically qualifies a failed cluster. Never choose a newer failed attempt's
+`updated_at` or failed collection-state timestamp, nor treat a fleet job's
+partial success as success for each target cluster. A fleet scope is `Current`
+only if **every registered cluster** has a non-stale successful Secret snapshot
+and Collected Ingress mapping. Exceptions take precedence over Current; the
+underlying last-known-good timestamp remains visible and must not imply current
+mapping evidence. The legacy database column's meaning is clarified in-place;
+no new schema or UI taxonomy is introduced.
+
+
+## As-of-now committed certificate validity (#1326)
+
+The committed `not_after`, parse result, certificate identity, and collection
+timestamp remain source facts. Every read derives current validity against the
+same configured critical/renewal windows without writing ORM fields or asking
+Kubernetes. SQL CASE supplies a consistent filter, severity sort, summary and
+pagination classification. Python `classify_certificate_validity` supplies
+matching row/detail/rotation presentation and current days remaining.
+Persisted Invalid/Unknown statuses take precedence over timestamp inference.
+Exact expiry uses `not_after <= evaluated_at`; `collected_at` and posture
+`validity_evaluated_at` are separate so reassessment never implies new data.

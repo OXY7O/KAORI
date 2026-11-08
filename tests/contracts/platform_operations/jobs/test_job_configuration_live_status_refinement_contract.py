@@ -15,14 +15,20 @@ def test_job_configuration_statuses_use_dot_indicator_labels() -> None:
     assert 'rounded-full' in indicator
     assert 'data-lucide' not in indicator
 
+    catalog = _read('app/templates/platform_operations/jobs/configuration/_workspace.html')
+    shared = _read('app/templates/platform_operations/jobs/configuration/_schedule_policy.html')
+    assert 'table_label.status_indicator_label' in catalog
+    assert "table_label.status_indicator_label('Enabled' if policy.enabled else 'Disabled'" in shared
+
     for relative in (
-        'app/templates/platform_operations/jobs/configuration/_workspace.html',
         'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
         'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html',
         'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
     ):
         content = _read(relative)
-        assert 'table_label.status_indicator_label' in content
+        assert 'platform_operations/jobs/configuration/_schedule_policy.html' in content
+        assert 'schedule_policy.header(' in content
+        assert 'schedule_policy.footer(' in content
 
 
 def test_active_progress_is_determinate_without_restarting_animation() -> None:

@@ -450,6 +450,11 @@ class TopologyNodeBuilder:
         if self.selection.scope in {'all', 'compute'}:
             return True
         if self.selection.scope == 'networking':
+            if self.records.service_selectors is not None:
+                return any(
+                    selector_matches(selector, pod.labels or {})
+                    for selector in self.records.service_selectors.get((pod.cluster_id, pod.namespace), ())
+                )
             services = self.services_by_scope.get((pod.cluster_id, pod.namespace), [])
             return any(selector_matches(service.selector or {}, pod.labels or {}) for service in services)
         if self.selection.scope == 'configuration':

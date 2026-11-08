@@ -301,19 +301,33 @@ def build_rule_exception_view(
     findings: list[dict[str, Any]],
     *,
     now: datetime | None = None,
+    include_owner_options: bool = False,
 ) -> dict[str, Any]:
     current = _as_utc(now or datetime.now(UTC))
     normalized_rule = str(rule_key or '').strip()
     rule_findings = [
         finding for finding in findings if base_rule_key(str(finding.get('rule_key') or '')) == normalized_rule
     ]
-    rows = (
+    # Count all active exceptions, but only hydrate rows needed for visible findings.
+    active_query = RuleException.query.filter(
+        RuleException.rule_key == normalized_rule,
+        RuleException.revoked_at.is_(None),
+        RuleException.starts_at <= current,
+        RuleException.expires_at > current,
+    )
+    active_count = active_query.count()
+    expiring_count = active_query.filter(RuleException.expires_at <= current + _EXPIRING_WINDOW).count()
+    asset_keys = {finding_asset_key(finding) for finding in rule_findings}
+    asset_keys.discard('')
+    active_rows = active_query.filter(RuleException.asset_key.in_(asset_keys)).all() if asset_keys else []
+    active_ids = {row.id for row in active_rows}
+    # Read the newest twelve historical records in SQL rather than hydrating all history.
+    recent_rows = (
         RuleException.query.filter_by(rule_key=normalized_rule)
         .order_by(RuleException.created_at.desc(), RuleException.id.desc())
+        .limit(12)
         .all()
     )
-    active_rows = [row for row in rows if rule_exception_is_active(row, now=current)]
-    active_ids = {row.id for row in active_rows}
 
     assets: dict[str, dict[str, Any]] = {}
     for finding in rule_findings:
@@ -347,29 +361,31 @@ def build_rule_exception_view(
         asset['uncovered_count'] = asset['finding_count'] - asset['excepted_count']
         asset_rows.append(asset)
 
-    serialized = [_serialize_exception(row, rule_findings, now=current) for row in rows[:12]]
+    serialized = [_serialize_exception(row, rule_findings, now=current) for row in recent_rows]
     covered_keys = {
         str(finding.get('rule_key') or '')
         for finding in rule_findings
         if matching_rule_exception(finding, rows=active_rows, now=current) is not None
     }
-    expiring = sum(1 for row in active_rows if rule_exception_status(row, now=current)[0] == 'expiring')
     return {
-        'active_count': len(active_rows),
-        'expiring_count': expiring,
+        'active_count': active_count,
+        'expiring_count': expiring_count,
         'covered_findings': len(covered_keys),
         'uncovered_findings': max(len(rule_findings) - len(covered_keys), 0),
         'active_ids': active_ids,
         'exceptions': serialized,
         'assets': asset_rows,
         'owner_options': [
-            {
-                'id': user.id,
-                'label': user.display_label,
-            }
-            for user in User.query.order_by(User.username.asc(), User.id.asc()).all()
-            if user.is_active
-        ],
+            {'id': user.id, 'label': user.display_label}
+            for user in User.query.filter(
+                User.account_is_active.is_(True),
+                User.deleted_at.is_(None),
+            )
+            .order_by(User.username.asc(), User.id.asc())
+            .all()
+        ]
+        if include_owner_options and asset_rows
+        else [],
         'has_candidates': bool(asset_rows),
     }
 

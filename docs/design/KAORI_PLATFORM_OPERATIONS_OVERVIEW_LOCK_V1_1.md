@@ -1,10 +1,10 @@
 # KAORI Platform Operations Overview Final Lock v1.1
 
-v1.1 supersedes Overview v1 with a denser KAORI control-plane presentation while preserving its read-only, permission-aware, DB/lightweight composition contract.
+v1.1 supersedes Overview v1 with a denser KAORI control-plane presentation while preserving its read-only, permission-aware, DB/lightweight composition contract. The active identity wording is reconciled with Hero v1.9 / #749: domain context stays in the eyebrow and the H1 names the current destination without repeating that context.
 
 ## Locked presentation
 
-- Hero title: **Platform Overview**.
+- Hero identity: eyebrow **Operations Center** with H1 **Overview**, following the canonical Hero v1.9 non-redundant identity rule.
 - Hero boundary copy: **Read-only overview; changes stay in each workspace.**
 - Main section: **Workspace Posture**, with one compact control card per permitted workspace.
 - Three-workspace users receive a balanced three-column layout; one/two-workspace users receive matching adaptive columns without an intentional empty quadrant.

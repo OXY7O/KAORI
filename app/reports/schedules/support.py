@@ -10,9 +10,14 @@ from sqlalchemy import select
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
-from app.models.report import ReportSchedule
+from app.models.report import ReportSchedule, ReportScheduleRun
 from app.reports.catalog import REPORT_TYPE_OPTIONS
-from app.reports.scope import get_report_namespace_options_by_cluster
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    KUBERNETES_CLUSTER_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_report_namespace_options_by_cluster,
+)
 
 DEFAULT_TIMEZONE = 'Asia/Jakarta'
 
@@ -33,8 +38,8 @@ def get_cluster_options() -> list[dict[str, str]]:
     return [{'value': item.id, 'label': item.name} for item in clusters]
 
 
-def get_namespace_options_by_cluster() -> dict[str, list[str]]:
-    return get_report_namespace_options_by_cluster()
+def get_namespace_options_by_cluster(cluster_id: str | None = None) -> dict[str, list[str]]:
+    return get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}
 
 
 def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
@@ -42,6 +47,68 @@ def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
         return {}
     clusters = db.session.scalars(select(Cluster).where(Cluster.id.in_(cluster_ids))).all()
     return {item.id: item.name for item in clusters}
+
+
+def build_schedule_asset_filter_options(
+    schedules: list[dict[str, Any]],
+    cluster_options: list[dict[str, str]],
+    object_storage_system_options: list[dict[str, str]],
+    artifact_registry_options: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    asset_options: dict[str, str] = {
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
+    }
+    asset_options.update(
+        {
+            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
+            for item in object_storage_system_options
+        }
+    )
+    asset_options.update(
+        {
+            f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{item["value"]}': f'Artifact Registry · {item["label"]}'
+            for item in artifact_registry_options
+        }
+    )
+    for schedule in schedules:
+        key = str(schedule.get('scope_asset_filter_key') or '')
+        if key and key not in asset_options:
+            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
+    return [
+        {'value': '', 'label': 'All Infrastructure Assets'},
+        *[
+            {'value': value, 'label': label}
+            for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
+        ],
+    ]
+
+
+def build_run_filter_options(
+    schedules: list[dict[str, Any]],
+    run_period_options: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    return {
+        'schedules': [
+            {'value': '', 'label': 'All Schedules'},
+            *[
+                {'value': str(item['id']), 'label': str(item['name'])}
+                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
+            ],
+        ],
+        'triggers': [
+            {'value': '', 'label': 'All Triggers'},
+            {'value': 'scheduler', 'label': 'Scheduler'},
+            {'value': 'manual', 'label': 'Manual'},
+        ],
+        'statuses': [
+            {'value': '', 'label': 'All Results'},
+            {'value': 'queued', 'label': 'Queued'},
+            {'value': 'started', 'label': 'Started'},
+            {'value': 'success', 'label': 'Success'},
+            {'value': 'failed', 'label': 'Failed'},
+        ],
+        'periods': list(run_period_options),
+    }
 
 
 def get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
@@ -128,7 +195,8 @@ def get_delivery_channel_options() -> list[dict[str, Any]]:
     from app.reports.notifications import get_report_notification_channel_options
 
     by_channel: dict[int, dict[str, Any]] = {}
-    for domain in ('kubernetes', 'object_storage'):
+    supported_domains = sorted({str(item.get('domain') or 'kubernetes') for item in REPORT_TYPE_OPTIONS})
+    for domain in supported_domains:
         for option in get_report_notification_channel_options(domain=domain):
             channel_id = int(option['channel_id'])
             existing = by_channel.setdefault(
@@ -166,4 +234,14 @@ def build_schedule_evidence_snapshot(schedule: ReportSchedule) -> dict[str, Any]
         'day_of_week': schedule.day_of_week,
         'day_of_month': schedule.day_of_month,
         'timezone': schedule.timezone,
+        'notification_channel_ids': schedule.notification_channel_ids_as_list(),
     }
+
+
+def get_run_delivery_channel_ids(run: ReportScheduleRun, schedule: ReportSchedule | None) -> list[int]:
+    """Use accepted per-run delivery intent, not later changes to the schedule."""
+    snapshot = run.schedule_snapshot if isinstance(run.schedule_snapshot, dict) else {}
+    stored = snapshot.get('notification_channel_ids')
+    if isinstance(stored, list):
+        return list(dict.fromkeys(int(item) for item in stored if str(item).isdigit() and int(item) > 0))
+    return schedule.notification_channel_ids_as_list() if schedule is not None else []

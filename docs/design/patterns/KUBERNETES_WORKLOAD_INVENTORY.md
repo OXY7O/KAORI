@@ -77,6 +77,8 @@ The table contains six columns:
 5. Update Strategy
 6. Details
 
+The six columns use the existing Inventory proportional-width table pattern: **Workload 26%**, **Scope 23%**, **Operational State 14%**, **Managed Pods 12%**, **Update Strategy 15%**, and **Details 10%**. Workload and Scope share **49%** of the table width, prioritizing long controller names and Cluster/Namespace identities. Use a **78rem** minimum-width table with bounded horizontal scrolling and the existing `!table-fixed`/table-auto primitive. Shared title and namespaced-scope identity macros preserve full reported names through native `title` attributes when the compact table truncates visual text. Do not remove the status, replica, placement-constraint, or action evidence to achieve width.
+
 Age remains in detail. Container counts remain Pod-template detail evidence and must not replace Update Strategy in the compact row. Jobs and CronJobs display `Not Applicable` for update strategy with their execution model as supporting context.
 
 ## Pod-template and placement evidence

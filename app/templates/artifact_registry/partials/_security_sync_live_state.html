@@ -1,0 +1,33 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set security_sync_state = security_sync_state if security_sync_state is defined else security.sync_state %}
+<div id="artifact-registry-security-sync-live-state"
+     class="min-w-0"
+     {% if security_sync_state.is_active and security_sync_state.active_job_public_id %} hx-get="{{ url_for('artifact_registry.security_sync_status', public_id=security_sync_state.active_job_public_id) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#artifact-registry-security-sync-poll-indicator" hx-sync="this:replace" {% endif %}>
+    <span id="artifact-registry-security-sync-poll-indicator"
+          class="htmx-indicator hidden"
+          aria-hidden="true"></span>
+    <div class="flex min-w-0 items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="{{ security_sync_state.icon|default('shield-check') }}"
+               class="h-4 w-4 {% if security_sync_state.is_active %}animate-spin{% endif %}"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+                <h3 id="artifact-registry-security-operations-heading"
+                    class="text-sm font-semibold text-content-primary">Security Evidence Operations</h3>
+                {{ table_label.status_label(security_sync_state.label, security_sync_state.tone, none, 'detail') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ security_sync_state.helper }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Read-only · does not trigger provider scans.</p>
+            {% if security_sync_state.active_job %}
+                <div class="mt-3">
+                    {{ progress_bar.job_progress(security_sync_state.active_job,
+                                        label='Artifact Registry security synchronization progress',
+                                        compact=true) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

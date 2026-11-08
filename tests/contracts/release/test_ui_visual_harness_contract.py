@@ -61,17 +61,13 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     assert 'tests/ui/artifacts' in workflow_text
     assert 'tmp/ci-artifacts/test-output/ui-browser' in workflow_text
 
-    frontend_build = workflow_text.split('Build Authenticated Visual Test Assets', 1)[1].split(
-        'Capture Authenticated Visual Baseline Candidate', 1
-    )[0]
+    frontend_build = workflow_text.split('Build Visual Test Assets', 1)[1].split('Capture Authenticated Baseline', 1)[0]
     assert 'npm ci --no-audit --no-fund' in frontend_build
     assert 'npm run build-css' in frontend_build
-    assert workflow_text.index('Build Authenticated Visual Test Assets') < workflow_text.index(
-        'Capture Authenticated Visual Baseline Candidate'
-    )
+    assert workflow_text.index('Build Visual Test Assets') < workflow_text.index('Capture Authenticated Baseline')
 
-    authenticated_capture = workflow_text.split('Capture Authenticated Visual Baseline Candidate', 1)[1].split(
-        'Upload Baseline Review Evidence', 1
+    authenticated_capture = workflow_text.split('Capture Authenticated Baseline', 1)[1].split(
+        'Upload Baseline Evidence', 1
     )[0]
     assert '--output tests/ui/artifacts/authenticated' in authenticated_capture
     assert '--tracing' not in authenticated_capture

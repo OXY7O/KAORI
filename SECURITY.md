@@ -31,3 +31,20 @@ Never include real API tokens, SSH keys, passwords, private certificates, intern
 ## Scope
 
 This policy covers KAORI-owned source and delivery surfaces. Vulnerabilities in third-party dependencies or infrastructure should still be reported when they materially affect KAORI, but upstream remediation and third-party disclosure rules may also apply.
+
+## Private advisory triage and GitHub-native controls
+
+This is a maintainer procedure, **not** evidence that any GitHub repository setting is enabled. Record effective Settings and scan evidence under [#4215](https://github.com/OXY7O/KAORI/issues/4215) before marking a control operational.
+
+| Intake classification | Initial handling | Disclosure and release boundary |
+| --- | --- | --- |
+| Critical: confirmed active credential exposure or exploitable production impact | Privately escalate immediately; isolate affected access and coordinate credential rotation/revocation under separate operational authority | Keep identifiers and reproduction private; no public issue or automatic release |
+| High: exploitable vulnerability with material impact and credible preconditions | Privately assign remediation owner and scope affected source SHA, versions and dependencies | Governed security fix, regression test and required admission before release |
+| Medium/Low: bounded weakness, hardening or dependency finding | Deduplicate against existing advisory/issue and assess reachability, severity and compensating controls | Use sanitized engineering issue only when disclosure is safe; do not publish proof of exploit |
+| Unconfirmed / informational | Request sanitized evidence through private channel and document assessment outcome | No claim of confirmed exposure or successful scan |
+
+For each private report, maintain a restricted evidence record: intake timestamp, affected release/source SHA, severity rationale, owner, containment status, remediation issue/PR, actual scanner results, validation SHA, disclosure decision and reviewer acceptance. **Never** copy raw secret values, private advisories, exploit steps or private logs into public Issues, PRs, CI summaries or Slack.
+
+Before enabling or claiming a GitHub-native control, verify the effective repository/organization setting and an applicable test result for Dependency Graph, Dependabot alerts and security updates, secret scanning and push protection, CodeQL/code scanning, dependency review, and private vulnerability reporting. Existing CodeQL, Gitleaks, Trivy, SBOM/attestation and DAST workflows must be inventoried first to avoid duplicate scanning or conflicting required checks. Mark unavailable, unverified and skipped controls explicitly; a green unrelated CI job is not proof that a control is enabled.
+
+Security advisories and public community feedback remain separate intake channels. External contribution launch and license changes remain blocked by the independent rights and publication review [#4212](https://github.com/OXY7O/KAORI/issues/4212).

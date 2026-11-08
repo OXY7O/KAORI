@@ -2,7 +2,7 @@
 {% import "components/form_field.html" as form_field %}
 <div id="configmap-namespace-field">
     <label class="block min-w-0" for="namespace">
-        {{ form_field.label_row("Namespace") }}
+        <span class="text-xs font-semibold text-content-primary">Namespace</span>
         <select id="namespace"
                 name="namespace"
                 required
@@ -27,7 +27,6 @@
         {% if cluster_selected and not namespace_error and not namespaces %}
             {{ form_field.help("No live namespace is available for the selected cluster.") }}
         {% elif namespaces %}
-            {{ form_field.help("Loaded from the selected Kubernetes API.") }}
         {% endif %}
     </label>
 </div>

@@ -39,6 +39,8 @@
 
 .kaori-login-brand__description {
     font-size: 12px;
+    /* Branding copy is explicitly one line on the desktop-only brand panel. */
+    white-space: nowrap;
 }
 
 .kaori-login-brand__footer {
@@ -53,20 +55,18 @@
     position: relative;
     width: 100%;
     overflow: hidden;
-    border: 1px solid rgb(167 139 250 / 0.18);
+    border: 1px solid rgb(167 139 250 / 0.22);
     border-radius: 18px;
-    background: rgb(23 17 36 / 0.78);
+    background: #151027;
     box-shadow:
         0 22px 46px rgb(0 0 0 / 0.22),
         0 0 0 1px rgb(124 58 237 / 0.05) inset;
 }
 
-.kaori-operations-fabric::after {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    content: "";
-    background: linear-gradient(115deg, transparent 35%, rgb(167 139 250 / 0.055) 50%, transparent 65%);
+.kaori-operations-fabric img {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 .kaori-login-capability {

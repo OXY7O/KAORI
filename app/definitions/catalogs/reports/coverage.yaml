@@ -58,3 +58,28 @@ domains:
       - name: HCI VM Placement Report
         description: VM distribution, affinity, resilience, and placement risk from the connected HCI provider API.
         icon: waypoints
+  - key: secrets_pki
+    label: Secrets & PKI Reports
+    description: Planned only. No Vault Secret export or report execution without approved scope, committed data, and safety.
+    icon: key-round
+    status: Planned
+    tone: info
+    items:
+      - name: Secret Inventory & Ownership Report
+        description: Approved-source metadata coverage and qualified ownership only; no Secret paths or values without source-scoped read authorization.
+        icon: boxes
+      - name: Certificate Expiration & Issuance Report
+        description: Stored public certificate validity and observed PKI issuer coverage with explicit no-store and source-freshness limits.
+        icon: certificate
+      - name: Rotation Assurance Report
+        description: Policy-driven rotation progress and independently verified consumer cutover; version increments alone never prove completion.
+        icon: refresh-cw
+      - name: Lease & Expiry Evidence Report
+        description: Qualified known-Lease lifecycle and expiry windows without enumerating leases, dynamic credentials, or provider lease IDs.
+        icon: clock-3
+      - name: Consumer Dependency Coverage Report
+        description: Evidence-qualified service and workload dependencies, unknown links, and blast radius without path-only matches.
+        icon: waypoints
+      - name: Vault Operational Health Report
+        description: Committed provider health with eligible Metrics Source and Alert Source evidence, retention and HA qualifications.
+        icon: heart-pulse

@@ -68,3 +68,7 @@ A missing alert source does not erase usable metric-derived signals, and a metri
 ## Lock recommendation
 
 Object Storage Analytics can remain locked after runtime smoke testing in the KAORI devcontainer. No page redesign is required. The principal audit corrections were blocker standardization, committed-inventory prerequisite enforcement, fail-closed HTMX dependency notices, and Hero copy refinement.
+
+## October 2026 UAT presentation decision
+
+The August 2026 decisions above remain authoritative for committed state, provider neutrality, materialization and alert ownership. Object Storage Analytics **navigation** subsequently consolidated to one `Data & Evidence` tab in Overview, with contextual committed evidence status and direct links from five domain workspaces. Capacity reconciliation, Forecast Worker & Method and Alert Source & Lifecycle Details remain accessible in-domain. Design review #3235 and implementation #3260 are documented in `docs/design/patterns/OBJECT_STORAGE_ANALYTICS_EVIDENCE_NAVIGATION.md`. No source ownership change.

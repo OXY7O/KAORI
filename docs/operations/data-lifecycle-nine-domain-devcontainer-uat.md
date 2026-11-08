@@ -1,0 +1,603 @@
+# KAORI — Complete Data Lifecycle Nine-Domain DevContainer UAT
+
+**Authority:** Platform Operations Data Lifecycle audit #1569; end-to-end qualification #2907;
+cross-domain execution safety #2906; approved historical Data Lifecycle Final Lock v1–v1.3.
+**Environment:** `kaori/review/staging-uat` review holding only. Official CI/CD admission,
+`kaori/staging`, production, release and tags are **HOLD** until explicitly authorized.
+
+This is the **single all-domain UAT checklist**, extending the focused AuditEvent
+(`docs/operations/audit-event-data-lifecycle-devcontainer-uat.md`) and Notification
+Delivery (#2847/#2850) security/retention gates. On **2026-10-24 the operator
+explicitly accepted the Data Lifecycle page UI as a whole**: Retention
+Policies (nine domains), Archive History and Archive Storage, after the
+shared Jinja and visual/copy fixes through PR #2988. The exact **local**
+DevContainer SHA and executable browser/test evidence were not supplied,
+so this is a **human page/design acceptance**, not proof of comprehensive
+PostgreSQL/Celery/Archive Storage, checksum, cleanup or negative-security
+execution. No DL-E2E test status is changed to PASS by this statement.
+
+## 1. Current domain inventory and authority
+
+The test roster must equal `DOMAIN_FACTORIES` at the **exact tested commit**.
+The nine registered adapters have different data owners and admission rules.
+
+| Domain | Authoritative hot source | Synthetic eligibility / verification target | Current special gate |
+| --- | --- | --- | --- |
+| `operational_activity` | `notifications` | Old persisted audit-only + inbox-visible rows; unread protection and actor snapshot, not transient toast | Normal admitted lifecycle subject to persisted policy and synthetic cleanup authorization |
+| `job_execution` | `job_executions` | Terminal executions versus queued/running; result references remain source-owned | Bundle history is **not** per-job historical lookup; #1416 |
+| `runtime_observation` | `integration_runtime_observations` | Old committed normalized runtime samples from multiple provider families | No live provider request; common provider-neutral retention |
+| `analytics_snapshot` | `analytics_snapshots` | Old expired snapshot versus pending/still-serveable stale window | No cleanup while pending or still serveable |
+| `generated_report` | `reports` + supplemental PDF/XLSX/CSV | Ready/Archived/failed terminal report with object checksum; active generation excluded | Seeded paused; binary archive verified first; do not mutate production report files |
+| `alert_incident` | `alert_cases` with source-owned case evidence | Closed case versus active; case history/index preserved | No deletion of cross-domain `notification_deliveries` (#2850) |
+| `tenant_audit_evidence` | `tenant_audit_evidence` | Committed normalized tenant audit correlation | Raw Kubernetes API audit logs remain provider-authoritative |
+| `notification_delivery` | `notification_deliveries` | Old sent/skipped terminal rows versus queued/failed/retryable | **Manual Archive Only**, no hot cleanup, scheduled run or cold purge; #2847/#2850/#2868–#2870 |
+| `audit_event` | `audit_events` | Old/new synthetic source audit rows and minimal redacted projection | **Local DB Super Admin, manual Archive Only**, no export, scheduling, cleanup or purge; #2889/#2891/#2892 |
+
+Policy ages displayed from unpersisted defaults are proposals, not legally
+approved deletion or archival schedules. `archive_only` means hot records
+remain; it does **not** provide searchable per-record cold history or restore.
+
+## 2. Environment fingerprint and safety authorization
+
+Before testing, record the following in the UAT evidence ticket/worksheet:
+
+| Evidence field | Operator observation |
+| --- | --- |
+| Git branch and exact `git rev-parse HEAD` | NOT RECORDED |
+| `git status --short` | NOT RECORDED |
+| Current Alembic revisions and migration graph | NOT RECORDED |
+| PostgreSQL database name/host (redacted) and disposable approval | NOT RECORDED |
+| Archive Storage profile/backend and disposable object prefix | NOT RECORDED |
+| Maintenance queue/worker and Celery Beat posture | NOT RECORDED |
+| Test account, auth source, effective source permissions | NOT RECORDED |
+| Synthetic fixture identifier, row counts, source high-watermarks | NOT RECORDED |
+| Independent security owner and human UAT reviewer | NOT RECORDED |
+
+Stop before any policy mutation or archive if DB/storage are not positively
+identified as **approved disposable UAT** or if real personal records, production
+security events, credentials, or private provider data would be selected.
+Use existing repository test fixtures/seed paths; do **not** modify production
+timestamps or bypass retention cutoff to fabricate eligibility.
+Do not enable global scheduling or purge flags for this UAT.
+A user-visible policy toggle alone does not authorize cleanup.
+
+### Source and regression commands
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+git status --short
+
+python scripts/verify_data_lifecycle_final_lock.py
+python scripts/verify_migration_graph.py
+python -m ruff check app/platform_operations/data_lifecycle tests/contracts/platform_operations
+python -m pytest -q tests/contracts/platform_operations/test_data_lifecycle_*.py
+```
+
+The last `pytest` glob should be expanded by the operator shell; if the
+test runner cannot resolve imports, use the existing repository runner and
+record its exact command. The broader `pyright`, `djlint`,
+`prettier` and Visual QA gates apply where relevant and are not
+silently replaced by these focused checks.
+
+### Blocking DevContainer HTTP 500 recovery (#2967)
+
+**Finding: FAIL (code defect)** — at 2026-10-23 22:54 the operator's
+`GET /platform-operations/data-lifecycle/?tab=policies&domain=audit_event`
+returned HTTP 500 with `TemplateSyntaxError` at
+`partials/_domain_workspace.html:387`. The shared template's Notification
+Delivery conditional incorrectly closed with `{% endif %>` rather than
+`{% endif %}`. This is a Jinja source defect, not an archive storage,
+worker or database failure. All nine Retention Policies domain routes
+share the affected partial, so the already recorded **UI acceptance does
+not override this new regression**. Mark **BLOCKED / FAIL** until operator
+runs the exact fixed holding commit in DevContainer and confirms HTTP 200.
+
+Execute:
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+git status --short
+python -m pytest -q \
+  tests/contracts/platform_operations/test_data_lifecycle_jinja_syntax_contract.py \
+  tests/contracts/platform_operations/test_data_lifecycle_nine_domain_policy_design_contract.py
+```
+
+Open each domain using the existing Retention Policies navigator or
+request the full-page GET URL for the nine registered domain slugs;
+verify HTTP 200, correct selected policy and status, Preview and Save
+without side effects from navigation, plus HTMX domain switching.
+Then resume **Wave A: Archive History and Archive Storage read-only UAT**
+before any policy mutation, archive, Verify or negative-test fixtures.
+Do not classify any affected page PASS from source or Jinja syntax tests
+alone. Record exact SHA and server/browser HTTP results.
+
+### Archive History filter size and empty-state consistency (#2974)
+
+The History filter form now carries its selected `archive_per_page`
+value on every Domain, Status, Trigger, Mode, Storage or Search request.
+Changing a filter intentionally resets to **page 1** without resetting
+Rows 10/25/50 to default 5; Clear Filters/Refresh/Previous/Next already
+retain the page-size value. For no archive artifacts, the empty state
+correctly explains that executions create history, whereas read-only
+Preview does not.
+
+**Wave A browser check:** set Rows=25 (with enough synthetic archives,
+where available), select another Domain/Status, then search; confirm
+the selected page size stays 25, page resets to 1, URL/row count align,
+and Clear Filters retains 25. Also inspect empty-state wording with
+approved empty synthetic archive storage. A source contract is not
+evidence of passing real HTMX/browser pagination; record actual observed
+results and exact DevContainer SHA.
+
+### Archive History Verify browser fallback (#2972)
+
+The current UAT source audit found a functional progressive-enhancement
+defect: the Verify POST returned the History partial for ordinary non-HTMX
+requests. The handler now returns the targeted History fragment **only**
+when `HX-Request: true`; otherwise it returns the full Data Lifecycle
+page with the History tab selected. Preserve existing archive filters,
+current page, rows-per-page, CSRF, permission and toast/Activity Audit
+feedback. The change does not re-run verification, modify archive
+checksums or extend download permissions.
+
+**Wave A (read-only)**: confirm History GET, filter, paging and empty
+states without requesting Verify on operational artifacts. During
+**Wave C** with approved disposable archive artifacts, test Verify in
+both HTMX and ordinary form modes, check that the selected History tab,
+filter/search/page state and feedback remain correct, and that a denied
+AuditEvent/source authorization still returns 403. Source contracts in
+`tests/contracts/platform_operations/test_data_lifecycle_history_verify_browser_contract.py`
+are not substitutes for actual browser/worker/Archive Storage evidence.
+
+### Archive Storage evidence and responsive design UAT (#2977)
+
+After the read-only Archive History check, open `?tab=storage` and
+record the exact holding SHA. Confirm:
+
+- **Reachable** S3 endpoint with **Awaiting Evidence** uses info—not
+  green success—semantics in the header and Storage Interpretation.
+  The page must clearly say this proves transport only, not
+  write/read/checksum; no verification timestamp is invented.
+- **Verified** S3 archive evidence matching the configured storage
+  profile may show success only when the retained verified artifact
+  timestamp exists. For a local writable `Ready` directory without
+  checksums, status remains informational. Unavailable/incomplete
+  states must show warning and truthful provider error details.
+- A single segmented strip retains four unboxed metrics: Storage
+  Readiness, Worker Readiness, Last Verified and Archive Format.
+  Confirm independent maintenance worker and dispatcher evidence.
+- Two outlined primary panels remain balanced 6:6 on wide screens.
+  Execution details are unboxed text pairs separated by subtle rules,
+  not a nested grid of five bordered cards. Confirm no clipped
+  provider/location/bucket/endpoint or lost details on mobile.
+- Archive-First uses one unboxed ordered four-step flow. At XL widths,
+  thin vertical separators distinguish the four steps without restoring
+  boxed cards; first/last padding stays aligned to the section edges.
+  Mobile/tablet keep the responsive unboxed flow without vertical
+  dividers. The final cleanup step is **if admitted** and cannot bypass
+  independently approved source governance.
+- Purge Batch Limit copy stays concise and preserves the configured
+  batch limit and retry semantics. Check text wrapping at narrow widths.
+- Storage Interpretation is a single compact status line, not an
+  additional framed callout. Check light/dark contrast, semantic
+  evidence state, responsive wrapping and keyboard reading order.
+
+Record browser screenshot and **observed** storage/worker state.
+Source/Jinja contract checks are not proof of actual Archive Storage
+read/write/checksum or successful worker execution. Do not mark
+DL-E2E storage admission PASS until evidence is available.
+
+## 3. Common end-to-end workflow for **each** domain
+
+Use the existing three workspaces, not a second lifecycle UI.
+
+1. **Read / authorization:** Open **Platform Operations → Data Lifecycle →
+   Retention Policies**, inspect the registered domain, coverage, source
+   ownership and policy status. Verify nonauthorized role/tenant requests
+   cannot see source-private domain data or bypass direct URLs. Browse
+   Archive History separately; verify source-specific permissions.
+2. **Preview:** With the policy paused or missing, request read-only Preview.
+   Record selected-at UTC, cutoff UTC, maximum record ID, eligible count,
+   protected count and estimated size. Record that the policy table and
+   JobExecution count **did not change** from GET/Preview. Zero eligible
+   rows are an expected outcome, not automatically a FAIL.
+3. **Policy transaction:** Save a synthetic approved Archive Only policy.
+   Confirm correct persisted settings and that sidebar/hero/HTMX summary
+   update consistently. An invalid domain must return 400 and cannot
+   default to Activity Audit. Missing/disabled policy must refuse execution.
+4. **Manual archive:** Only for an authorized domain and disposable
+   synthetic eligible rows, invoke **Archive Only** manually. Confirm one
+   canonical maintenance JobExecution, selection boundary, immutable
+   archive UUID, JSONL.GZ + manifest, source row count, SHA-256/size
+   verification and Archive History status; re-read eligible hot rows and
+   confirm no deletion. For reports, verify supplemental binary checksum.
+5. **Integrity and failure:** In the disposable storage **only**, test
+   missing/corrupted object and partial write, retry, and re-verification.
+   A failed integrity check must revoke downloadability and never imply
+   cleanup was completed. Re-verifying a recovered archive must preserve
+   truthful cleanup-partial semantics.
+6. **Safety negatives:** Confirm hot cleanup is rejected for both paused
+   archive-only domains at UI, service, CLI, worker and adapter; scheduled
+   bypass and cold purge are rejected. For other admitted domains, test
+   cleanup only under independent disposable-data authorization, after
+   verified bundle and source-specific state/hold checks; never infer
+   destructive acceptance merely because source code has a cleanup method.
+7. **History, storage and UI:** Verify source-owned archive history,
+   Filters/Rows/pagination default 5, loading/error/empty states, immutable
+   storage locator after profile changes, light/dark, mobile, keyboard,
+   focus, toast and direct-route 403. A bundle listing is **not** an
+   archived individual-record reader.
+8. **Reset:** Re-disable manually enabled paused policies; compare
+   expected synthetic record/object counts. Record exact tests, failures,
+   blockers and human acceptance or rejection for each domain.
+
+### Retention Policies domain navigator Visual QA (#2915)
+
+After loading the current holding commit, exercise all **nine** domain rows
+in Retention Policies alongside DL-E2E-11, without changing actual policy
+or archive evidence:
+
+- Desktop at and above `xl`: 4:8 master/detail **equal-height columns**
+  under a variable right-hand policy height (compare Job Executions, Generated
+  Reports and shorter domains). No large blank space below the left panel.
+  Header, search and registered count stay at the top; only the domain list
+  fills and scrolls through the remaining height, with Execution Boundary
+  anchored at the bottom. The right policy panel is never height-locked and
+  the left domain list must not determine the grid row's intrinsic height.
+  For shorter policies, the sidebar retains a usable minimum height.
+  Scrolling the list must not unexpectedly scroll the outer document.
+- Select first/middle/last domain by pointer, keyboard Tab/Enter and in
+  scrolled state: active Violet highlight, `aria-current`, status, URL
+  `?tab=policies&domain=...`, and right-hand policy agree; no stale
+  selection after browser Back or Save Policy full HTMX refresh.
+  After browser Back/Forward, active row must be visible inside the domain
+  list while page scroll position and filter behavior remain predictable.
+- Search by visible label, source/description, and technical domain ID;
+  confirm matches, zero-match empty state, no unauthorized source disclosure,
+  and correct focus/scroll after clearing search.
+- Under `xl`: Choose Domain disclosure opens and closes accessibly with
+  `aria-expanded`; selecting a domain closes the picker, browser
+  navigation works without JavaScript, and no nested mobile scroll traps.
+- Light/dark, narrow width, long domain labels, wrapping status badges,
+  readable Hot/Archive metadata, visible keyboard focus, accessible
+  KAORI Info Tip, and Jobs & Executions link only for `jobs.view`.
+
+Record actual viewport/browser, screenshot, selected domain, filtered
+result and UAT PASS/FAIL against an **exact commit SHA**; source contracts
+alone cannot count as Visual QA acceptance.
+
+### Alert Incidents Policy coverage and visual rhythm (#2923)
+
+On **Alert Incidents Policy**, verify the nested policy border is thin
+and neutral/subtle rather than appearing as two adjacent Violet outlines.
+Lifecycle Coverage must contain exactly four source-owned cards arranged
+**2 × 2** on tablet/desktop (`sm`+): Closed Alert Cases, Incident
+Timeline, Notification Delivery and Postmortem Evidence. On mobile,
+preserve natural single-column stacking and legible text. Confirm no
+excess empty third-column space; adjacent metrics and Storage Boundary
+remain unchanged. Check light/dark and compare a domain with three
+coverage sources to ensure its existing responsive grid is preserved.
+
+Confirm Failure Recovery says "Cleanup stays blocked; transient failures
+retry once, then need manual retry." and that an online ready maintenance
+worker displays "Queue maintenance · Online and ready for lifecycle jobs."
+When queue readiness is false or unknown, **do not** show the readiness
+claim. Run this alongside DL-E2E-11 as a **visual-only** scenario; it
+does not authorize cleanup or change existing retention/retry behavior.
+
+### Alert Incidents operator actions, Info Tip and notification routing (#2929)
+
+Run only with approved disposable synthetic PostgreSQL and Archive Storage
+and a ready maintenance worker. Verify the exact tested holding SHA and
+capture evidence of each action's HTTP/HTMX response, toast status,
+Notification Deck visibility, Activity Audit event, canonical JobExecution
+and archive evidence. Do not trigger real production cleanup.
+
+| Action / case | Immediate feedback | Persistent evidence and behavior | UAT |
+| --- | --- | --- | --- |
+| Alert Incidents Policy Info Tip Guide | Accessible anchored Guide on pointer/keyboard/touch | Closed-only case scope, timeline/delivery/postmortem, archive verification, searchable index and journal ownership | NOT RUN |
+| Preview | Read-only selected-boundary inline content; no success toast | No JobExecution or Notification row; full page on ordinary GET, partial on HTMX | NOT RUN |
+| Save Policy success | Success operational toast | Updated policy + Activity Audit; no routine Notification Deck row | NOT RUN |
+| Save Policy invalid/failure | Error toast | Failed attempt Activity Audit and actionable Deck error if persistence succeeds; no policy partial commit | NOT RUN |
+| Archive Only accepted | Info operational toast immediately | One canonical maintenance JobExecution in Active Work; Activity Audit, no duplicate queued Deck Notification | NOT RUN |
+| Archive & Cleanup accepted on authorized synthetic domain | Info operational toast immediately | Same canonical job; cleanup only after verified archive and admissible source state | NOT RUN |
+| Paused policy / unsupported destructive mode / dispatch failure | Warning/error toast | Actionable Deck notification and Activity Audit; no unauthorized job or deletion | NOT RUN |
+| Archive verification success/failure | Success/error toast | Committed verification result/attempt, failed integrity stays blocked; failure is Deck-visible | NOT RUN |
+| Browser fallback and duplicate submit | Full workspace without HTMX; disabled submit during HTMX request | CSRF/RBAC preserved; no repeated queue mutation while one submission is pending | NOT RUN |
+
+At page level, the Incident Timeline copy reads "Case lifecycle evidence
+from initial detection through final closure." Failure Recovery reads
+"Cleanup blocked; transient failures retry once, then need manual retry."
+Toast, Notification Deck and Activity Audit are *distinct* delivery surfaces;
+their presence must match this table rather than appearing all at once for
+every successful action. Verify keyboard and light/dark behavior of the
+shared KAORI Guide. Keep DL-E2E-03, -05, -07, -10, -11 and -14/-15
+source-specific safety checks independent of this visual/feedback UAT.
+
+### Analytics Snapshots Policy actions and serve-window UAT (#2935)
+
+Retain the approved v1.3 Analytics materialization source and 30-day
+default hot policy. Use **synthetic fixtures only** with known frozen UTC
+boundaries and separately approved disposable Archive Storage/worker;
+do not edit live snapshot timestamps. The shorter Serve Window Protection
+description reads: "Pending and still-serveable snapshots stay hot.
+Archiving requires both stale grace and hot retention to have elapsed."
+
+| Case | Expected result | UAT |
+| --- | --- | --- |
+| Pending snapshot older than cutoff | Excluded from preview, archive and cleanup | NOT RUN |
+| Current materialization / recently refreshed row | Protected, never cleanup-selected | NOT RUN |
+| Expired but still in stale-grace window | Kept hot; no archive or cleanup | NOT RUN |
+| Stale deadline exactly at frozen cutoff | Still protected by strict comparison | NOT RUN |
+| Expired and outside stale grace + frozen hot cutoff | Eligible in Preview and Archive Only | NOT RUN |
+| Concurrently refreshed between selection and cleanup | Rechecked against current row, not deleted; truthful partial cleanup evidence | NOT RUN |
+| Save Policy (success / invalid) | Committed policy + success toast, or error toast and actionable Deck; Activity Audit evidence, no routine success Deck | NOT RUN |
+| Preview (zero/eligible) | Read-only inline boundary; no created JobExecution or success notification | NOT RUN |
+| Archive Only (enabled persisted policy) | Info toast + canonical maintenance JobExecution in Active Work, no duplicate queued Deck notification; verified archive artifact, source row retained | NOT RUN |
+| Archive & Cleanup (approved synthetic only) | Info toast + canonical JobExecution; delete only after archive checksum and per-row recheck | NOT RUN |
+| Disabled policy / failed dispatch / RBAC-negative | Correct blocked action, warning/error toast and Deck when actionable, no unauthorized artifact or delete | NOT RUN |
+| Light/dark/mobile, HTMX/full-page fallback, multiple submits | Shared UI controls remain accessible, toast/OOB appears once, no duplicate job from in-flight submission | NOT RUN |
+
+Focused source/unit tests:
+`tests/contracts/platform_operations/test_data_lifecycle_v1_3_analytics_snapshot_contract.py`
+and
+`tests/contracts/platform_operations/test_data_lifecycle_analytics_snapshot_uat_contract.py`.
+Also run the existing shared lifecycle action/feedback contract. Record
+actual event statuses and Notification Deck visibility, not merely
+toast HTML in a response. User acceptance of Alert Incidents is **not**
+a pass for this Analytics UAT; keep Analytics cases NOT RUN until
+DevContainer evidence and human review.
+
+### Administrative Audit Events manual activation UAT (#2939)
+
+**Paused by default is expected.** Source authorization remains limited
+to active Local Database Super Admin; this temporary route is not a
+general audit export entitlement. The shorter domain description is
+"Source-owned administrative AuditEvent evidence; manual Archive Only."
+The coverage note remains explicit about separate Activity Register,
+Jobs, Tenant Audit Evidence, and pending retention/RBAC review.
+
+| Case | Expected result | UAT |
+| --- | --- | --- |
+| Disabled/absent persisted policy | Preview remains read-only; Archive Only disabled, no jobs | NOT RUN |
+| Authorized manual enable/save | Success toast + Activity Audit, no routine Deck; committed policy enabled/Archive Only/unscheduled; no job starts on Save | NOT RUN |
+| Enabled state refresh | Manual Archive Only enabled message, Archive Only available, no scheduler/cleanup/export controls unlocked | NOT RUN |
+| Manual Archive Only with synthetic eligible records | Info toast + canonical maintenance JobExecution; immutable verified archive/manifest, hot AuditEvent row preserved | NOT RUN |
+| Scheduled spoof/LDAP/non-admin/inactive requester, cleanup/download/purge | Authorization fails closed before mutation, actionable warning/error Deck | NOT RUN |
+| Disable/save after UAT | Success toast, disabled state restored; worker refuses new archive | NOT RUN |
+
+Execute with disposable UAT source/storage and record exact holding
+commit; the synthetic contract
+`tests/contracts/platform_operations/test_data_lifecycle_audit_event_manual_uat_contract.py`
+covers the toggles and safety boundaries but **does not** substitute for
+actual PostgreSQL, Celery, Archive Storage, negative RBAC, or operator UAT.
+
+### AuditEvent operational layout (#2943)
+
+Verify the permanent policy page shows a compact paused/enabled/active state, with no duplicated guidance banners or irrelevant schedule controls. The Info Tip remains accessible and the manual Archive Only action respects saved policy state. Use the existing nine-domain and AuditEvent-specific UAT cases for actual backend, notification, checksum and permission evidence.
+
+### Notification Delivery boundary and Runtime coverage Visual QA (#2959)
+
+For **Notification Delivery**, confirm a single compact inline notice
+below Save Policy (not a second tall alert card): Violet **Archive Only**,
+normal-text hot deduplication/retries/dependencies/lifetime semantics,
+and warning-colored **Cleanup blocked**, with artifact-level-only search
+limitations. Text can wrap naturally below desktop widths without
+horizontal overflow or inaccessible truncation. Confirm no schedule
+hour/minute inputs, **Execution Mode: Manual Archive Only**, and no
+Archive & Cleanup action; the control state must agree with the saved
+policy and back-end. With disposable evidence, run Preview and Archive
+Only; verify Info toast and canonical JobExecution, checksum/manifest,
+preserved hot rows, no duplicate successful queued Deck item. A rejected
+schedule/cleanup/expired purge attempt must fail closed. Source
+dependencies #2868/#2869/#2870 remain NOT ADMITTED.
+
+For **Runtime Observations**, inspect Kubernetes, Metrics Source,
+Alertmanager and Object Storage · MinIO coverage cards in a 2 × 2
+responsive grid at tablet/desktop widths and one column on mobile.
+Confirm equal card height, concise descriptions, no missing provider
+category, icons, focus, light/dark contrasts and right-panel adaptive
+height; other domain grids must keep their existing behavior.
+Record actual browser viewport and SHA before marking DL-E2E-11 PASS.
+
+### Retention Policies shared UI final design audit (#2961)
+
+**Human UI acceptance (2026-10-24)** covers the shared Retention Policies
+page across all nine registered domains, including Tenant Audit Evidence.
+It does **not** grant source-security admission, archived record lookup,
+destructive cleanup or worker/storage end-to-end acceptance.
+
+Source-led design review found and corrected these final deviations:
+- **Execution Boundary** footer uses the canonical title-adjacent Violet
+  `ⓘ Guide` variant rather than the legacy icon-only `?`. The
+  permission-scoped Jobs & Executions link stays an independent action;
+- a single shared card grid sizes by **coverage count**, not domain name:
+  one card spans full width, two are side-by-side, three use three columns
+  at XL, and four form 2 × 2. On mobile each category remains accessible;
+- all nine continue to use the same shared policy Hero, responsive
+  navigation, metric cards, Lifecycle Coverage, Storage Boundary,
+  policy inputs, loading/feedback, CSRF-protected actions and Retention
+  Policies storage/history navigation. Domain-only fields are shown only
+  when relevant to source capability (e.g. Analytics serve window,
+  Generated Report artifacts, Job Executions workload settings).
+
+To close **DL-E2E-11** as an executable Visual QA scenario, check browser
+focus, hover, Escape and touch for the Execution Boundary Guide, the
+1/2/3/4-card arrangements on narrow/wide viewports, light/dark contrast,
+HTMX domain switching with Back/Forward, and permission-scoped actions.
+Source-based contract and operator UI acceptance do not themselves
+establish that those exact browser events were executed.
+
+**Operational admission remains independent:** Notification Delivery
+#2868/#2869/#2870 have unfinished durable identity/aggregates/cleanup;
+AuditEvent #2891/#2892 lacks complete source-level privacy, retention
+and compaction authorization. Keep their archive-only hot evidence and
+security constraints intact. Complete all applicable per-domain
+Preview, canonical JobExecution, archive checksum, source-safe cleanup,
+RBAC-negative and recovery tests before declaring end-to-end lifecycle
+finished. Official CI/CD gates remain HOLD.
+
+### Page-wide human UI acceptance and outstanding admission (#2907)
+
+**ACCEPTED — 2026-10-24 (operator):** the complete Data Lifecycle
+page, including all nine Retention Policies, Archive History and
+Archive Storage. The operator reviewed the later simplified Storage
+design, desktop Archive-First separators and concise Purge Batch Limit
+copy. This closes page design/copy-only issues on UAT holding; avoid
+reopening redesign without a new observed regression.
+
+**NOT CLAIMED:** complete end-to-end Data Lifecycle operation or final
+admission. The earlier Archive History screenshot contained no
+archive rows, and Storage reported a reachable S3 endpoint with
+`Awaiting Evidence`; a later accepted operator screenshot now shows
+three Ready artifacts (see runtime checkpoint below). Consequently successful Verify/download of a
+real approved artifact, profile-matching write/read/checksum,
+maintenance worker queue completion, cleanup safety and security
+negative tests are not evidenced by those screenshots. Record exact
+DevContainer revision, test outputs and scoped source authorization
+separately when available.
+
+Remaining test authority: #2907 (DL-E2E-01–20), #2906 and historical
+#1569/#1571–#1576 for mutation/integrity admission. Notification
+Delivery #2868→#2869→#2870 and AuditEvent #2891→#2892 are independent,
+source-security/compaction blockers. Retain fail-closed archive-only,
+no unauthorized scheduling, deletion, cold purge, export or lookup.
+Official CI/CD, staging/main, deployment and release stay HOLD.
+
+### Archive History and execution — operator-accepted runtime checkpoint (2026-10-24)
+
+**Human UAT accepted:** Functional Regression and Archive Only end-to-end,
+based on the operator's 2026-10-24 report and attached Archive History
+screenshot. The visible history now has **three Ready archive artifacts**
+in the S3-compatible target (superseding the earlier empty-history
+screenshot):
+
+| Hot domain | Mode | Reported records | Reported hot rows cleaned | Archive History status |
+| --- | --- | ---: | ---: | --- |
+| Activity Audit (`operational_activity`) | Archive Only | 172 | 0 | Ready |
+| Activity Audit (`operational_activity`) | Archive Only | 172 | 0 | Ready |
+| Runtime Observations (`runtime_observation`) | Archive And Cleanup | 1,361 | 1,361 | Ready |
+
+The screenshot displays the Data, Manifest and Verify actions for each
+row, plus the default five-row pagination. The two Archive Only rows
+support the expected **no-cleanup** outcome; the third row reports a
+completed cleanup on a cleanup-capable domain. The displayed Ready state
+is the **application's reported archive status**, not independent proof
+that the reviewer clicked Verify, downloaded Data/Manifest, compared
+SHA-256 digests, or checked the resulting source database. The user's
+Human Acceptance of the tested workflow is recorded without claiming
+those specific checks were witnessed in this screenshot.
+
+**Scope boundary:** the operator's functional regression and Archive
+Only acceptance is recorded for the workflow they tested, not as
+automatic execution evidence for all **nine** domains or all negative
+cases. The exact local `git rev-parse HEAD`, command outputs, source
+high-watermarks, worker JobExecution IDs, object-profile integrity
+details and RBAC/failure tests were not supplied. Therefore the
+all-domain DL-E2E-01–20 matrix stays **NOT RUN** until scenario-specific
+evidence is registered. In particular, Notification Delivery and
+AuditEvent still deny hot cleanup, archive-object purge and unadmitted
+archive lookup/export. Do not repeat the already accepted human UI
+review unless a regression is discovered.
+
+## 4. Execution / failure-injection matrix
+
+Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
+runtime evidence. If a scenario is intentionally denied, PASS means
+**correct rejection without side effect**, not feature admission.
+
+| ID | Scope | Expected result | Status |
+| --- | --- | --- | --- |
+| DL-E2E-01 | All 9: registered domains and source coverage | Exact registry parity; no phantom/duplicate source union | NOT RUN |
+| DL-E2E-02 | All 9: GET/Preview with missing/disabled policy | Preview read-only, no automatic policy insertion/job | NOT RUN |
+| DL-E2E-03 | All 9: persisted policy and manual queue | Missing/disabled/invalid policy rejected before lock; proper HTMX state | NOT RUN |
+| DL-E2E-04 | All 9: cutoff/high-watermark and concurrent new rows | Frozen bounds, deterministic id selection, no overshoot or double count | NOT RUN |
+| DL-E2E-05 | All 9: Archive Only with synthetic eligible data | Canonical JobExecution, immutable compressed data/manifest with checksums, no hot deletion | NOT RUN |
+| DL-E2E-06 | All 9: zero eligible rows | No false archive artifact, no fabricated evidence | NOT RUN |
+| DL-E2E-07 | All 9: Verify and missing/corrupt/partial storage | Fail closed, revoke downloadability, preserve verification failure | NOT RUN |
+| DL-E2E-08 | All 9: storage profile rotation and history | Registry reads original nonsecret storage locator, not current target | NOT RUN |
+| DL-E2E-09 | All 9: concurrent requests/lock/retry/worker loss | No unsafe duplicate cleanup, bounded retry, truthful canonical JobExecution | NOT RUN |
+| DL-E2E-10 | All 9: RBAC and direct URL negative | No unauthorized source exposure, action or archive download | NOT RUN |
+| DL-E2E-11 | All 9: responsive UI/HTMX/a11y/history paging | Consistent Violet design, dark/light, 5-row default, focus/error/empty/loading | NOT RUN |
+| DL-E2E-12 | Admitted cleanup-capable domains only | Compare-before-delete after verified archive; exact source ownership/holds | NOT RUN |
+| DL-E2E-13 | Admitted cold-purge domains only | Expiry/time boundary, bounded delete, partial failure and retry | NOT RUN |
+| DL-E2E-14 | `notification_delivery` | Scheduled, hot cleanup and cold purge **DENIED**; terminal-only source selection; dedup remains | NOT RUN |
+| DL-E2E-15 | `audit_event` | Only active Local DB Super Admin can manually archive; source RBAC, export/cleanup/purge **DENIED** | NOT RUN |
+| DL-E2E-16 | `job_execution` / `audit_event` | Hot record absence never fabricates permissioned archived-record existence | NOT RUN |
+| DL-E2E-17 | `generated_report` | Active generations excluded; permitted binary supplement verified against original | NOT RUN |
+| DL-E2E-18 | `analytics_snapshot` | Pending/serveable snapshots remain hot; stale window honored | NOT RUN |
+| DL-E2E-19 | `alert_incident` / `notification_delivery` | Closed-case cleanup does not delete delivery journal or dedup evidence | NOT RUN |
+| DL-E2E-20 | `tenant_audit_evidence` / `runtime_observation` | Committed normalized evidence, provider remains authoritative | NOT RUN |
+
+**Record-level Restore and cold lookup admission boundary:** DL-E2E-16 checks that
+missing hot rows do not fabricate archived-record existence; it does **not**
+qualify record-level Restore, point-in-time rehydration, or per-record cold
+retrieval. Those operations remain **NOT ADMITTED** under #1416 until the
+source owner supplies canonical record identity, verified archive checksum,
+permission/hold checks, a separately approved restore procedure, runtime
+negative-test evidence, and explicit human acceptance. All such execution
+evidence remains **NOT RUN** in this DevContainer register. Prior UI acceptance
+does not constitute server-stage restore authorization or production release.
+
+## 5. Per-domain operator acceptance ledger
+
+| Domain | Preview | Archive + checksum | Negative safety / RBAC | UI / human acceptance |
+| --- | --- | --- | --- | --- |
+| `operational_activity` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `job_execution` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-24 |
+| `generated_report` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `alert_incident` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-23 |
+| `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `notification_delivery` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+| `audit_event` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — Retention Policies UI, 2026-10-24 |
+
+The audit-only contracts of `notification_delivery` / `audit_event`
+mean that rejected destructive operations are expected **PASS** on
+negative tests. Mark actual hot cleanup/cold purge as **NOT ADMITTED**,
+not a runtime failure in the accepted Archive Only scope.
+
+The Analytics Snapshots policy UI/actions were accepted by the operator on
+2026-10-24 (#2935 completed). Its three separate runtime evidence columns
+remain NOT RUN here because raw infrastructure execution evidence was not
+supplied to this ledger; acceptance does not transfer to AuditEvent.
+
+The Alert Incidents UI/actions operator review was accepted on 2026-10-23
+(#2923 and #2929 completed); the three separate runtime evidence columns
+remain NOT RUN here because their underlying outputs were not provided in
+this UAT register. Acceptance does not transfer to Analytics Snapshots.
+
+## 6. Blockers and stop/go criteria
+
+| Capability or unresolved dependency | Existing authority | Admission |
+| --- | --- | --- |
+| Full current-domain archive-only runtime qualification | #2907, #2906 | **PENDING runtime UAT** |
+| Historical Data Lifecycle remediations DL-01..06 | #1569, #1571–#1576 | **Implemented in holding; runtime/human UAT pending** |
+| JobExecution verified **per-record** cold lookup | #1416 | **NOT ADMITTED** |
+| Notification Delivery durable identity/backfill, aggregates, and compaction | #2847/#2850/#2868/#2869/#2870 | **NOT ADMITTED** |
+| AuditEvent producer classification, export retention authority, compaction/lookup | #2889/#2891/#2892 | **NOT ADMITTED** |
+| Legal hold, source-owner retention/purge approval and restore evidence | Source-specific governance authorities | **NO blanket approval** |
+| Official Developer Check, Full Admission and staging/main promotion | Existing KAORI release governance | **HOLD** |
+
+**Stop** when any data origin/storage profile is uncertain, unexpected
+hot deletion occurs, checksum cannot be verified, actor or source RBAC
+is ambiguous, or a protected domain appears scheduled/purgeable.
+Record FAIL with evidence and create a bounded remediation issue rather
+than enabling production features to make the test pass.
+
+**Go for human Archive Only UAT acceptance** only when all applicable
+archive-only cases pass on the exact commit, object integrity and negative
+side effects are demonstrated, and the reviewer records explicit approval.
+This is **not** permission to activate hot compaction, broad archive
+export, restore, cold purge, scheduler, or official release gates.
+
+The operator must preserve raw test outputs/screenshots privately under
+approved KAORI evidence storage; issue comments should contain
+nonsecret summaries, exact SHA and links to governed evidence only.

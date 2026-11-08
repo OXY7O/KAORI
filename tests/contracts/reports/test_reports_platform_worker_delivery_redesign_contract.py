@@ -77,7 +77,12 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
     preview_name_contract = "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)"
     assert preview_name_contract in generate_service
-    assert 'def _get_namespace_options_by_cluster()' in generate_service
+    assert 'def _get_namespace_options_by_cluster(cluster_id: str)' in generate_service
+    assert 'return get_report_namespace_options_by_cluster(cluster_id)' in generate_service
+    scoped_namespace_condition = (
+        "if selected_report_type['scope_asset_type'] == KUBERNETES_CLUSTER_ASSET_TYPE and selected_cluster_id"
+    )
+    assert scoped_namespace_condition in generate_service
     assert 'NamespaceInventory.namespace == namespace' in generate_service
     assert 'MVP2' not in generate + generate_runtime
 

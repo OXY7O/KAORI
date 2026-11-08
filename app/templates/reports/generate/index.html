@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/form_field.html" as form_field %}
+{% import "components/action_button.html" as action_button %}
 {% macro workflow_number(number, compact=false) -%}
     <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-semibold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
           data-generate-section-number="{{ number }}"
@@ -26,8 +27,8 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('wand-sparkles', 'Generate Report', 'file-plus-2') %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                    {% call page_hero.intro('wand-sparkles', 'Reports', 'file-plus-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Generate</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('crosshair', 'Infrastructure Asset Scope') }}
@@ -200,6 +201,7 @@
                                     <input type="text"
                                            name="name"
                                            id="report-name-input"
+                                           maxlength="255"
                                            value="{{ payload.form_state.name }}"
                                            placeholder="Auto-generated from report type and period"
                                            class="{{ form_field.input_classes() }}">
@@ -339,6 +341,24 @@
                                         <p class="mt-1.5 text-xs leading-5 text-content-muted">Object Storage reports are bound to one registered system. Kubernetes cluster and namespace are not part of this scope contract.</p>
                                     </label>
                                 </div>
+                                <div id="artifact-registry-scope-fields"
+                                     class="{% if payload.selected_report_type.scope_asset_type != 'registry_integration' %}hidden{% endif %}"
+                                     data-report-scope-panel="registry_integration">
+                                    <label class="block">
+                                        <span class="text-sm font-semibold text-content-primary">Artifact Registry <span class="text-status-critical-text">*</span></span>
+                                        <select name="registry_integration_id"
+                                                id="artifact-registry-select"
+                                                class="{{ form_field.select_classes() }}">
+                                            <option value=""
+                                                    {% if not payload.form_state.registry_integration_id %}selected{% endif %}>Select Artifact Registry</option>
+                                            {% for registry in payload.artifact_registries %}
+                                                <option value="{{ registry.value }}"
+                                                        {% if payload.form_state.registry_integration_id == registry.value %}selected{% endif %}>{{ registry.label }} · {{ registry.environment }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Artifact Registry reports bind to one active Registry integration and render only committed KAORI evidence.</p>
+                                    </label>
+                                </div>
                                 <div data-scope-filter="period">
                                     <div class="flex min-h-5 items-center justify-between gap-2">
                                         <label for="period-select"
@@ -376,7 +396,7 @@
                                        aria-hidden="true"></i>
                                     <h4 class="text-sm font-semibold leading-5 text-content-primary">Scope Contract</h4>
                                 </div>
-                                <p id="scope-tip-copy" class="mt-3 text-xs leading-5 text-content-muted">Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.</p>
+                                <p id="scope-tip-copy" class="mt-3 text-xs leading-5 text-content-muted">Kubernetes reports use one cluster; Object Storage reports use one system; Artifact Registry reports use one Registry integration.</p>
                                 <div class="mt-4 space-y-3">
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="database"
@@ -759,25 +779,25 @@
                     </div>
                     <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                         <a href="{{ url_for('reports.generated_reports') }}"
-                           class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Cancel</a>
+                           class="{{ action_button.classes('secondary') }}"><i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>Cancel</a>
                         <button type="button"
                                 id="wizard-back-button"
-                                class="hidden min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                                class="hidden {{ action_button.classes('secondary') }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back
                         </button>
                         <button type="button"
                                 id="wizard-next-button"
-                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                            Next
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            Next
                         </button>
                         <button type="submit"
                                 id="generate-report-button"
                                 data-operation-submit
                                 data-loading-label="Queueing report..."
                                 {% if not initial_request_ready %}disabled{% endif %}
-                                class="hidden min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
+                                class="hidden {{ action_button.classes('primary') }}">
                             <i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>
                             <span data-operation-submit-label>Create &amp; Queue Report</span>
                         </button>
@@ -804,9 +824,12 @@
                 "section_options_by_report_type": {{ payload.section_options_by_report_type|tojson }},
                 "report_type_options": {{ payload.report_type_options|tojson }},
                 "namespace_options_by_cluster": {{ payload.namespace_options_by_cluster|tojson }},
+                "namespace_options_url": {{ url_for('reports.generate_namespace_options')|tojson }},
                 "has_clusters": {{ payload.has_clusters|tojson }},
                 "has_object_storage_systems": {{ payload.has_object_storage_systems|tojson }},
+                "has_artifact_registries": {{ payload.has_artifact_registries|tojson }},
                 "initial_sections": {{ payload.form_state.sections|tojson }},
+                "has_validation_errors": {{ (payload.errors|length > 0)|tojson }},
                 "initial_namespace": {{ payload.form_state.namespace|tojson }},
                 "generation_allowed": {{ payload.generation_allowed|tojson }},
                 "initial_request_ready": {{ initial_request_ready|tojson }}

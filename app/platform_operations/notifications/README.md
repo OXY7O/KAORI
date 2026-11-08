@@ -67,9 +67,25 @@ local foreground activities, and footer remain mounted. The endpoint uses
 `Cache-Control: no-store`, and notification mutation responses retain HTMX out-of-band
 badge synchronization.
 
+**Worker health read boundary:** The Deck must not inspect Celery workers or send broker
+RPCs while an ORM read transaction remains active. Queued-job queue posture can
+reuse a recent, bounded in-process worker topology observation. If no fresh
+observation exists, render **Unknown** (never fabricate **Offline** or **Online**).
+Explicit operational probes remain available outside Deck polling; concurrent
+probes within one web process are coalesced so overlapping requests do not
+multiply broker RPCs. This is a runtime hint, not persisted JobExecution evidence
+or an authorization signal.
+
 Do not reintroduce `_notification_deck_content.html`, an `outerHTML` poll on the slider
 root, a self-replacing fragment with a `load` trigger, or separate Activity and
 Notifications polling requests.
+
+## Activity Audit sensitive evidence boundary
+
+Notification operational evidence uses the single recursive sanitizer in `metadata.py` at three boundaries: the shared Notification writer (new rows), Activity Audit/Notification Center read presentation (including existing historical hot rows), and the operational-activity Data Lifecycle archive serializer (including existing older rows). The same sanitizer suppresses secret-bearing nested object keys, credential-shaped freeform text, URL userinfo and bounded encoded assignments while retaining specifically allowlisted correlation references such as `secret_name` and `credential_id`. Detail technical evidence uses this sanitizer rather than a competing regex set. Producer input must still avoid secrets; sanitization is defensive, not permission to log secret material. Existing archives already finalized before this change are immutable and require a separate governed retrospective review to assess whether they contain legacy unsafe metadata.
+
+
+Direct audit-only Notification producers are an explicit exception to the shared writer: `app/access/authentication/audit.py` and `app/kubernetes/tenant/audit_correlation_service.py` call the same `redact_operational_metadata` and `redact_operational_text` helpers before the existing commit. They retain actor attribution, target association, event timestamp, deduplication, audit-only visibility, and provider-observed evidence as committed. This does **not** claim all other direct metadata producers or already-finalized archive artifacts have been audited; #1207/#640 remains open for security validation.
 
 ## Activity Audit evidence-store boundary
 

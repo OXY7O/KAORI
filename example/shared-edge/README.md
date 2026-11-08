@@ -157,7 +157,7 @@ KAORI itself does not declare `edge-public`.
 When the standalone edge is used, the publication mapping is:
 
 ```text
-kaori.cloud
+app.kaori.cloud
     ↓
 standalone Nginx
     ↓
@@ -177,7 +177,7 @@ KAORI_WEB="$(docker ps -q \
 
 bash ./publish-container.sh \
   --site-id kaori \
-  --domain kaori.cloud \
+  --domain app.kaori.cloud \
   --container "$KAORI_WEB" \
   --alias kaori-web \
   --port 5000 \
@@ -187,7 +187,7 @@ bash ./publish-container.sh \
   --client-max-body-size 25m
 ```
 
-The repository file `sites/kaori.env.example` documents the resulting registration. After a future KAORI web-container recreation, locate the new healthy web container and rerun the same `publish-container.sh` command; KAORI deployment itself remains unaware of the public edge.
+The repository file `sites/kaori.env.example` documents the resulting registration. The apex `kaori.cloud` is reserved for the separate KAORI website; do not redirect the apex to the app. During cutover, preserve the former apex registration and its certificate-renewal path until the website is published, or explicitly retire the old lineage through a separate reviewed edge operation. The new app registration replaces site ID `kaori` only after app HTTPS readiness has been proven. After a future KAORI web-container recreation, locate the new healthy web container and rerun the same `publish-container.sh` command; KAORI deployment itself remains unaware of the public edge.
 
 ## Governed staging publication reconciliation
 
@@ -222,7 +222,7 @@ KAORI_WEB="$(docker ps -q \
 
 bash ./publish-container.sh \
   --site-id kaori \
-  --domain kaori.cloud \
+  --domain app.kaori.cloud \
   --container "$KAORI_WEB" \
   --alias kaori-web \
   --port 5000 \

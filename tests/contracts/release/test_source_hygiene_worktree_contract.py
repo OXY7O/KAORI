@@ -1,0 +1,177 @@
+"""Source Hygiene distinguishes linked Git worktrees from unpacked release archives."""
+
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+SOURCE_HYGIENE = ROOT / 'scripts/verify_source_hygiene.sh'
+
+
+def _fixture_source(directory: Path) -> None:
+    scripts = directory / 'scripts'
+    scripts.mkdir(parents=True)
+    shutil.copyfile(SOURCE_HYGIENE, scripts / 'verify_source_hygiene.sh')
+    (directory / '.gitignore').write_text('.ruff_cache/\ntmp/\n', encoding='utf-8')
+    (directory / '.dockerignore').write_text('.ruff_cache/\ntmp/\n', encoding='utf-8')
+
+
+def _generated_files(directory: Path) -> None:
+    ruff_cache = directory / '.ruff_cache' / '0.17.3' / 'sample'
+    ruff_cache.parent.mkdir(parents=True)
+    ruff_cache.write_text('cache\n', encoding='utf-8')
+    diagnostic = directory / 'tmp' / 'ci-artifacts' / 'static-output' / 'verification-report.md'
+    diagnostic.parent.mkdir(parents=True)
+    diagnostic.write_text('runtime evidence\n', encoding='utf-8')
+
+
+def _run_hygiene(directory: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ['bash', 'scripts/verify_source_hygiene.sh'],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _git(directory: Path, *arguments: str) -> None:
+    subprocess.run(['git', *arguments], cwd=directory, capture_output=True, text=True, check=True)
+
+
+def test_normal_and_linked_worktrees_ignore_untracked_generated_artifacts(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+    _git(
+        checkout,
+        '-c',
+        'user.name=KAORI CI Test',
+        '-c',
+        'user.email=ci-test@example.invalid',
+        'commit',
+        '-qm',
+        'Source hygiene fixture',
+    )
+    linked = tmp_path / 'linked-worktree'
+    _git(checkout, 'worktree', 'add', '--detach', str(linked))
+    assert (checkout / '.git').is_dir()
+    assert (linked / '.git').is_file()
+
+    for workspace in (checkout, linked):
+        _generated_files(workspace)
+        check = _run_hygiene(workspace)
+        assert check.returncode == 0, check.stderr
+        assert '[KAORI hygiene] tracked source is clean (3 files checked).' in check.stdout
+
+
+def test_source_archive_rejects_generated_cache_and_diagnostics(tmp_path: Path) -> None:
+    archive = tmp_path / 'unpacked-source-archive'
+    _fixture_source(archive)
+    _generated_files(archive)
+
+    check = _run_hygiene(archive)
+    assert check.returncode != 0
+    assert 'generated/runtime artifacts are present in source archive' in check.stderr
+    assert '.ruff_cache/0.17.3/sample' in check.stderr
+    assert 'tmp/ci-artifacts/static-output/verification-report.md' in check.stderr
+
+
+def test_tracked_generated_file_still_fails_hygiene(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _generated_files(checkout)
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+    _git(checkout, 'add', '-f', '.ruff_cache/0.17.3/sample')
+
+    check = _run_hygiene(checkout)
+    assert check.returncode != 0
+    assert 'generated/runtime artifacts are present in tracked source' in check.stderr
+    assert '.ruff_cache/0.17.3/sample' in check.stderr
+
+
+def test_invalid_git_pointer_fails_closed_instead_of_scanning_zero_tracked_files(tmp_path: Path) -> None:
+    archive = tmp_path / 'source-with-broken-pointer'
+    _fixture_source(archive)
+    (archive / '.git').write_text('gitdir: /missing/kaori-gitdir\n', encoding='utf-8')
+
+    check = _run_hygiene(archive)
+    assert check.returncode != 0
+    assert 'Git metadata is present but no valid working tree was found' in check.stderr
+
+
+def test_git_ls_files_failure_cannot_pass_as_empty_tracked_source(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    # Keep rev-parse real but simulate a failed tracked-source enumeration.
+    # The old process substitution masked the Git failure and printed PASS.
+    git_executable = shutil.which('git')
+    assert git_executable is not None
+    fake_bin = tmp_path / 'bin'
+    fake_bin.mkdir()
+    fake_git = fake_bin / 'git'
+    fake_git.write_text(
+        '#!/usr/bin/env bash\n'
+        'for arg in "$@"; do\n'
+        '  if [[ "$arg" == "ls-files" ]]; then exit 42; fi\n'
+        'done\n'
+        f'exec "{git_executable}" "$@"\n',
+        encoding='utf-8',
+    )
+    fake_git.chmod(0o755)
+    environment = os.environ.copy()
+    environment['PATH'] = f'{fake_bin}{os.pathsep}{environment["PATH"]}'
+    check = subprocess.run(
+        ['bash', 'scripts/verify_source_hygiene.sh'],
+        cwd=checkout,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=environment,
+    )
+    assert check.returncode != 0
+    assert 'Git tracked-source enumeration failed' in check.stderr
+    assert 'tracked source is clean' not in check.stdout
+
+
+def test_tracked_control_character_filename_is_not_hidden_by_git_quotepath(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    # Git's default text ls-files quotes and escapes tab/newline filenames.
+    # NUL-delimited enumeration must pass their literal bytes to the guard.
+    generated = checkout / '.ruff_cache' / 'tab\tcache'
+    generated.parent.mkdir()
+    generated.write_text('generated\n', encoding='utf-8')
+    _git(checkout, 'add', '-f', '.ruff_cache/tab\tcache')
+
+    check = _run_hygiene(checkout)
+    assert check.returncode != 0
+    assert 'generated/runtime artifacts are present in tracked source' in check.stderr
+    assert '.ruff_cache/' in check.stderr
+    assert 'tracked source is clean' not in check.stdout
+
+
+def test_allowed_tracked_newline_filename_remains_one_candidate(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    _fixture_source(checkout)
+    _git(checkout, 'init', '-q')
+    _git(checkout, 'add', '.gitignore', '.dockerignore', 'scripts/verify_source_hygiene.sh')
+
+    unusual = checkout / 'safe\nfile.txt'
+    unusual.write_text('allowed source\n', encoding='utf-8')
+    _git(checkout, 'add', 'safe\nfile.txt')
+
+    check = _run_hygiene(checkout)
+    assert check.returncode == 0, check.stderr
+    assert '[KAORI hygiene] tracked source is clean (4 files checked).' in check.stdout

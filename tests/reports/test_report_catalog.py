@@ -118,3 +118,5 @@ def test_public_report_reference_codes_cover_every_published_report_type() -> No
     assert set(REPORT_TYPE_CODES) == {spec.value for spec in REPORT_TYPE_SPECS}
     assert REPORT_TYPE_CODES['object_storage_inventory'] == 'OSI'
     assert REPORT_TYPE_CODES['object_storage_analysis'] == 'OSA'
+    assert REPORT_TYPE_CODES['artifact_registry_inventory'] == 'ARI'
+    assert REPORT_TYPE_CODES['artifact_registry_analysis'] == 'ARA'

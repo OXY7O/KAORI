@@ -1,0 +1,265 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set inventory_href_endpoint = inventory_href_endpoint|default('github_source_uat.detail') %}
+{% set inventory_htmx_endpoint = inventory_htmx_endpoint|default('github_source_uat.inventory_table') %}
+{% set page_sizes = [5, 10, 25, 50] %}
+{% set matching_total = inventory.matching_total %}
+{% set total_pages = ((matching_total + inventory.per_page - 1) // inventory.per_page) if matching_total else 1 %}
+{% set filters_active = inventory_search or inventory_visibility or inventory_archived %}
+<section id="source-control-inventory"
+         class="{{ table_ui.block_classes(allow_overflow=true) }} min-w-0"
+         data-kaori-github-inventory-registry
+         data-kaori-full-table-registry="repository-inventory"
+         data-kaori-server-filtered-registry
+         aria-live="polite"
+         hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id, page=inventory.page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+         hx-trigger="every 15s"
+         hx-target="#source-control-inventory"
+         hx-swap="outerHTML"
+         hx-sync="this:replace"
+         hx-indicator="#github-inventory-loading">
+    {% set header_actions %}
+        {% if filters_active %}
+            {{ registry_ui.clear_filters_action(url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for(inventory_htmx_endpoint, installation_id=installation.id, page=1, per_page=inventory.per_page),
+            target='#source-control-inventory',
+            select='#source-control-inventory',
+            indicator='#github-inventory-loading',
+            sync='closest section:replace',
+            marker='source-control-inventory') }}
+        {% endif %}
+        {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Committed' if inventory.total is not none else 'Not Observed', display='text') }}
+        {{ integration_status('ready' if inventory.total is not none else 'not_observed', 'Coverage: ' ~ (inventory.coverage|replace('_', ' ') |title), display='text') }}
+    {% endset %}
+    {% set header_guide %}
+        {{ info_tip.render('github-repository-registry-guide', 'Committed Repository Registry',
+                'Only installation-scoped committed grants and exact revisions are shown; GitHub retains provider authority.',
+                [
+                'Unknown means no committed collection, not zero grants.',
+                'Search, visibility, and repository state filter committed grant rows only.',
+                'Full SHA and observation timestamp remain available for each row.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('blocks', 'Committed Repository Registry',
+        'Review authorized repository grants and exact default-branch revisions from committed KAORI evidence.',
+        'github-inventory-loading', 'Refreshing committed repository registry', none,
+        header_actions=header_actions, title_extra=header_guide,
+        result_count=matching_total) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form method="get"
+              action="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory') }}"
+              hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id) }}"
+              hx-target="#source-control-inventory"
+              hx-select="#source-control-inventory"
+              hx-swap="outerHTML"
+              hx-trigger="change, input changed delay:400ms, submit"
+              hx-sync="closest section:replace"
+              hx-indicator="#github-inventory-loading"
+              data-kaori-canonical-registry-filter="source-control-inventory"
+              aria-label="Committed Repository Registry filters"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="inventory">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ inventory.per_page }}">
+            <div>
+                <label for="github-repository-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Repository</label>
+                <input id="github-repository-search"
+                       type="search"
+                       name="inventory_search"
+                       value="{{ inventory_search }}"
+                       maxlength="80"
+                       autocomplete="off"
+                       placeholder="Repository name or ID"
+                       class="{{ table_ui.filter_input_classes() }}">
+            </div>
+            <div>
+                <label for="github-repository-visibility"
+                       class="{{ table_ui.filter_label_classes() }}">Visibility</label>
+                <select id="github-repository-visibility"
+                        name="inventory_visibility"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('', 'All Visibilities'), ('public', 'Public'), ('private', 'Private'), ('internal', 'Internal'), ('unknown', 'Unknown')] %}
+                        <option value="{{ value }}"
+                                {% if inventory_visibility == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="github-repository-state"
+                       class="{{ table_ui.filter_label_classes() }}">Repository State</label>
+                <select id="github-repository-state"
+                        name="inventory_archived"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('', 'All States'), ('active', 'Active'), ('archived', 'Archived'), ('unknown', 'Unknown')] %}
+                        <option value="{{ value }}"
+                                {% if inventory_archived == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <noscript>
+                <div class="flex items-end">
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Filter Results</button>
+                </div>
+            </noscript>
+        </form>
+    </div>
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+            <caption class="sr-only">Committed GitHub repository grants for this installation.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[30%]">Repository</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Access</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Default Branch</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Exact SHA</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Observed</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% if inventory.total is none %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "database" %}
+                            {% set empty_state_label = "Not Observed" %}
+                            {% set empty_state_title = "Inventory Not Yet Observed" %}
+                            {% set empty_state_description = "Run Full Validation, then Sync Repositories. Unknown does not mean zero repositories." %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% elif inventory.total == 0 %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "folder-open" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_title = "No Repositories in Verified Scope" %}
+                            {% set empty_state_description = "Zero repositories was confirmed by a committed collection." %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% elif matching_total == 0 %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "list-filter" %}
+                            {% set empty_state_label = "No Matches" %}
+                            {% set empty_state_title = "No Matching Repositories" %}
+                            {% set empty_state_description = "Adjust search, visibility, or repository state to broaden the committed results." %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% else %}
+                    {% for row in inventory.rows %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                {% set visibility_text = row.visibility|title if row.visibility else 'Visibility Unknown' %}
+                                {% set state_text = 'Archived' if row.archived else ('Active' if row.archived is not none else 'State Unknown') %}
+                                {{ table_ui.title_cell(row.full_name or 'Unknown repository', visibility_text ~ ' · ' ~ state_text, 'folder-git-2') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ integration_status(row.access_status, row.access_status|replace('_', ' ') |title, display='indicator') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <code class="break-words text-xs font-medium text-content-secondary"
+                                      title="{{ row.default_branch or 'Unknown' }}">{{ row.default_branch or 'Unknown' }}</code>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {% if row.exact_default_branch_sha %}
+                                    <code class="text-xs font-medium text-content-primary"
+                                          title="{{ row.exact_default_branch_sha }}">{{ row.exact_default_branch_sha|truncate(16, True) }}</code>
+                                {% else %}
+                                    <span class="text-content-muted">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {% set observed_at = row.revision_observed_at or row.observed_at %}
+                                {% if observed_at %}
+                                    <time datetime="{{ observed_at.isoformat() }}"
+                                          title="{{ observed_at.isoformat() }}"
+                                          class="block whitespace-nowrap">
+                                        <span class="block font-medium text-content-primary">{{ observed_at.strftime("%d %b %Y") }}</span>
+                                        <span class="block text-xs tabular-nums text-content-muted">{{ observed_at.strftime("%H:%M:%S") }} UTC</span>
+                                    </time>
+                                {% else %}
+                                    <span class="text-content-muted">Not Observed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-canonical-registry-footer="source-control-inventory">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            {% if matching_total is none %}
+                <span>Committed grant results not yet observed</span>
+            {% else %}
+                {% set start_item = ((inventory.page - 1) * inventory.per_page + 1) if matching_total else 0 %}
+                {% set end_item = [inventory.page * inventory.per_page, matching_total]|min %}
+                <span>Showing {{ start_item }}–{{ end_item }} of {{ matching_total }} {{ pagination_ui.resource_name('Repositories', matching_total) }}</span>
+            {% endif %}
+            <form method="get"
+                  action="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory') }}"
+                  hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id) }}"
+                  hx-target="#source-control-inventory"
+                  hx-select="#source-control-inventory"
+                  hx-swap="outerHTML"
+                  hx-indicator="#github-inventory-loading"
+                  hx-sync="closest section:replace"
+                  class="{{ pagination_ui.rows_group_classes() }}"
+                  data-kaori-page-size-control="source-control-inventory">
+                <input type="hidden" name="tab" value="inventory">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="inventory_search" value="{{ inventory_search }}">
+                <input type="hidden"
+                       name="inventory_visibility"
+                       value="{{ inventory_visibility }}">
+                <input type="hidden"
+                       name="inventory_archived"
+                       value="{{ inventory_archived }}">
+                <label for="github-inventory-per-page">Rows</label>
+                <select id="github-inventory-per-page"
+                        name="per_page"
+                        data-kaori-auto-submit
+                        aria-label="Committed repository rows per page"
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for size in page_sizes %}
+                        <option value="{{ size }}"
+                                {% if inventory.per_page == size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="Committed repository pagination">
+            {% for label, target_page, enabled in [('Previous', inventory.page - 1, inventory.page > 1), ('Next', inventory.page + 1, inventory.page < total_pages)] %}
+                {% if enabled %}
+                    <a href="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+                       hx-get="{{ url_for(inventory_htmx_endpoint, installation_id=installation.id, page=target_page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
+                       hx-target="#source-control-inventory"
+                       hx-swap="outerHTML"
+                       hx-indicator="#github-inventory-loading"
+                       class="{{ pagination_ui.navigation_classes(false) }}">{{ label }}</a>
+                {% else %}
+                    <span aria-disabled="true"
+                          class="{{ pagination_ui.navigation_classes(true) }}">{{ label }}</span>
+                {% endif %}
+            {% endfor %}
+            {{ pagination_ui.numeric_pages(inventory.page,
+                        total_pages,
+                        page_param='page',
+                        hx_target='#source-control-inventory',
+                        hx_indicator='#github-inventory-loading',
+                        endpoint=inventory_htmx_endpoint,
+                        query_params={'tab': 'inventory', 'per_page': inventory.per_page, 'inventory_search': inventory_search, 'inventory_visibility': inventory_visibility, 'inventory_archived': inventory_archived},
+                        hx_swap='outerHTML',
+                        href_endpoint=inventory_href_endpoint) }}
+        </nav>
+    </footer>
+</section>

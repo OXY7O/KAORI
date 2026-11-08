@@ -50,7 +50,7 @@ def test_provider_matrix_separates_domain_capability_provider_and_adapter() -> N
 
 def test_core_identity_and_binding_schema_are_provider_neutral() -> None:
     model = read('app/models/integration.py')
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     resolver = read('app/integrations/resolver.py')
 
     for field in ('integration_type', 'provider_key', 'adapter_key'):

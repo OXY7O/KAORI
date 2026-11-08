@@ -149,8 +149,21 @@ def main() -> int:
         'General Settings tabs must delegate to shared query-backed HTMX tab authority',
         errors,
     )
-    require('components/loading_bar.html' in general_page, 'General Settings must use shared loading bar', errors)
-    require('general-settings-loading' in general_page, 'General Settings loading indicator missing', errors)
+    require('loading_bar.render(' not in general_page, 'General Settings must not render a loading bar', errors)
+    require(
+        re.search(r'id="general-settings-loading"\s+class="htmx-indicator sr-only"', general_page) is not None,
+        'General Settings nonvisual HTMX status missing',
+        errors,
+    )
+    for relative in (
+        '_time_locale.html',
+        '_regional_format.html',
+        '_system_information.html',
+        '_compatibility_versions.html',
+    ):
+        source = read('app/templates/settings/general/partials/' + relative)
+        require('components/loading_bar.html' not in source, f'{relative}: visual loading bar prohibited', errors)
+        require('loading_bar.render(' not in source, f'{relative}: loading track prohibited', errors)
     for required in (
         "hx_target='#general-settings-page'",
         "hx_indicator='#general-settings-loading'",
@@ -200,8 +213,19 @@ def main() -> int:
         errors,
     )
     require(
-        'data-compatibility-visual-hierarchy="contract-led"' in compatibility_workspace,
-        'Compatibility Versions must keep the contract-led full-width visual hierarchy',
+        'data-compatibility-visual-hierarchy="registry-detail"' in compatibility_workspace,
+        'Compatibility Versions must use the registry-detail full-width visual hierarchy',
+        errors,
+    )
+    compatibility_registry = read('app/templates/settings/general/partials/_compatibility_registry.html')
+    compatibility_results = read('app/templates/settings/general/partials/_compatibility_registry_results.html')
+    require(
+        'data-compatibility-registry="server-paginated"' in compatibility_registry
+        and 'settings/general/partials/_compatibility_registry_results.html' in compatibility_registry
+        and 'data-compatibility-product-list="page-5"' in compatibility_results
+        and 'data-compatibility-product-detail="selected-only"' in compatibility_results
+        and 'data-compatibility-qualification="paginated"' in compatibility_results,
+        'Compatibility Versions must retain the server-paginated Registry + Detail',
         errors,
     )
 
@@ -254,8 +278,16 @@ def main() -> int:
         'Credential security context drifted',
         errors,
     )
-    require('components/loading_bar.html' in account_page, 'Account must use shared loading bar', errors)
-    require('account-settings-loading' in account_page, 'Account loading indicator missing', errors)
+    require('loading_bar.render(' not in account_page, 'Account Settings must not render a loading bar', errors)
+    require(
+        re.search(r'id="account-settings-loading"\s+class="htmx-indicator sr-only"', account_page) is not None,
+        'Account nonvisual HTMX status missing',
+        errors,
+    )
+    for relative in ('_profile_cards.html', '_recent_login_activity.html', '_change_password.html'):
+        source = read('app/templates/settings/account/partials/' + relative)
+        require('components/loading_bar.html' not in source, f'{relative}: visual loading bar prohibited', errors)
+        require('loading_bar.render(' not in source, f'{relative}: loading track prohibited', errors)
     for required in (
         "hx_target='#account-authentication-page'",
         "hx_indicator='#account-settings-loading'",

@@ -30,9 +30,11 @@ def test_runtime_summary_uses_filtered_scope_and_runtime_health_is_not_inferred(
     service = read('app/integrations/service.py')
     workspace = read('app/integrations/overview_workspace.py')
 
-    assert "'runtime_global_stats': _runtime_stats(runtime_rows)" in workspace
-    assert "'runtime_stats': _runtime_stats(filtered_runtime_rows)" in workspace
-    assert "'runtime_scope_label': runtime_scope_label" in workspace
+    assert "'runtime_global_stats': global_stats" in workspace
+    assert "'runtime_stats': filtered_stats" in workspace
+    assert 'global_stats = runtime_stats(fleet)' in workspace
+    assert 'filtered_stats = runtime_stats(selected)' in workspace
+    assert "'runtime_scope_label': _runtime_scope_label(" in workspace
     assert "else ('healthy' if cluster.status == 'connected' else 'not_observed')" not in service
     assert "'health_status': observation.health_status if observation else 'not_observed'" in service
     assert "'observed_at': observation.observed_at if observation else None" in service
@@ -112,7 +114,7 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Available Domains' in overview
     assert 'Planned Domains' in overview
     assert 'Provider Workspaces' in overview
-    assert 'Operational Readiness' in overview
+    assert 'Ready Coverage' in overview
     assert 'Planned Provider Ownership' in overview
     assert 'Coverage Boundary' in overview
     assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
@@ -129,6 +131,8 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Compute & Infrastructure' not in service
     assert 'Vault · OpenBao' not in service
     assert "'readiness_percent'" in service
+    assert "'degraded': summary['degraded']" in service
+    assert "'blocked': summary['blocked']" in service
     assert "'attention_targets'" in service
 
 
@@ -206,3 +210,57 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
     assert "display == 'indicator'" in adapter
     assert "display == 'text'" in adapter
     assert "display == 'special'" in adapter
+
+
+def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> None:
+    overview = read('app/templates/integrations/overview.html')
+
+    assert 'Validated targets eligible for governed use.' in overview
+    assert (
+        'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.'
+        in overview
+    )
+    assert 'Validated targets eligible for governed use' in overview
+
+
+def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None:
+    extensions = read('app/integrations/overview_extensions.py')
+    workspace = read('app/integrations/overview_workspace.py')
+
+    assert (
+        "SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})"
+        in extensions
+    )
+    assert "'object_storage'" not in extensions.split('SPECIALIZED_OVERVIEW_TYPES =', 1)[1].split('\n\n', 1)[0]
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in extensions
+    portfolio = read('app/integrations/overview_sql.py')
+    runtime = read('app/integrations/overview_runtime_sql.py')
+    minio = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    assert 'provider_counts, stats = overview_portfolio_counts()' in workspace
+    assert 'identity.integration_type.in_([module.integration_type for module in modules])' in portfolio
+    assert '~identity.integration_type.in_(specialized)' in portfolio
+    assert 'for implementation in registry.implementations_for_type(module.integration_type):' in runtime
+    assert 'implementation.runtime_overview_builder is None' in runtime
+    assert 'runtime_overview_builder=build_runtime_overview_rows' in minio
+
+
+def test_integration_hero_navigation_does_not_scroll_outer_shell() -> None:
+    domain = read('app/templates/integrations/domain.html')
+    hero = read('app/templates/integrations/partials/_hero.html')
+    shell = read('app/templates/layouts/app.html')
+
+    # A fragment on a cross-page link can scroll the outer, clipped app
+    # viewport instead of the nested KAORI main scroller.
+    assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in domain
+    assert '}}#integration-workspace"' not in domain
+    assert '}}#integration-workspace"' not in hero
+    assert "href=\"{{ url_for('integrations.overview', tab='runtime') }}\"" in hero
+    assert "href=\"{{ url_for('integrations.overview', tab='catalog') }}\"" in hero
+
+    # Retain existing HTMX partial replacement and server-owned runtime tab.
+    assert 'hx-target="#integration-workspace"' in hero
+    assert 'hx-select="#integration-workspace"' in hero
+    assert 'hx-push-url="true"' in hero
+    assert "hx_swap='outerHTML show:none'" in read('app/templates/integrations/overview.html')
+    assert 'data-kaori-main-scroll' in shell
+    assert 'h-full overflow-hidden' in shell

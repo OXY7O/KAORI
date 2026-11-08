@@ -1,0 +1,36 @@
+{% import "components/operational_alert_response.html" as alert_response %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% set alert_response_steps = [('scan-search', 'Validate', 'Confirm provider, snapshot freshness, and alert source.'), ('list-filter', 'Triage', 'Rank severity and scope; identify affected assets and owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate inventory, runtime, security, and alert evidence.'), ('shield-check', 'Respond', 'Run approved Registry response within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm recovery and refresh committed Registry evidence.'), ('clipboard-check', 'Record', 'Record decisions, actions, verification, and follow-up evidence.')] %}
+{% if overview.alerts.available and overview.alerts.total > 0 %}
+    {{ alert_response.render('Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        alert_response_steps,
+        'Controlled Artifact Registry Alert Response Flow',
+        'Runtime, supply-chain or capacity risk. Triage ownership.',
+        'Governance, tag or quota risk. Investigate first.',
+        'Low-risk operational signal. Validate relevance, recurrence, and scope.') }}
+{% else %}
+    {% call operational_section_card.render(
+        'Alert Interpretation & Response',
+        'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        'book-open-check',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        {% if overview.alerts.available %}
+            {% set empty_state_icon = "circle-check" %}
+            {% set empty_state_label = "No Active Signals" %}
+            {% set empty_state_tone = "normal" %}
+            {% set empty_state_title = "Alert Response Not Required" %}
+            {% set empty_state_description = "No active Registry AlertCase requires controlled response for the selected provider." %}
+        {% else %}
+            {% set empty_state_icon = "wifi-off" %}
+            {% set empty_state_label = "Source Unavailable" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Alert Response Evidence Unavailable" %}
+            {% set empty_state_description = "KAORI Alert Intelligence case evidence is temporarily unavailable for this Registry provider." %}
+        {% endif %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endcall %}
+{% endif %}

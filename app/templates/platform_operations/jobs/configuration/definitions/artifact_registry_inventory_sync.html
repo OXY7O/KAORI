@@ -1,0 +1,126 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "platform_operations/jobs/configuration/_schedule_policy.html" as schedule_policy %}
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set can_configure = current_user.has_permission(definition.configure_permission) %}
+{% set overview_metrics = [
+    ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Saved scheduler cadence'),
+    ('package-search', 'Registry Readiness', selected_job.eligible_system_count ~ ' of ' ~ selected_job.registered_system_count, 'Ready Registry providers'),
+    ('clock-3', 'Next Automatic Run', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
+    ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
+] %}
+{% set overview_notice = (selected_job.blocked_system_count ~ ' Registry provider(s) will be skipped until enabled and Full Validation is Ready.') if selected_job.blocked_system_count else 'Successful runs atomically replace committed project, repository, artifact, and tag evidence per Registry provider.' %}
+<div class="space-y-5">
+    {% include "platform_operations/jobs/configuration/_job_overview.html" %}
+    <section class="{{ operational_section.shell_classes() }}">
+        {{ schedule_policy.header('Artifact Registry Inventory Sync Policy',
+                'Scheduled reconciliation remains authoritative; webhooks are supplementary.',
+                policy) }}
+        <form method="post"
+              action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-target="#job-configuration-workspace"
+              hx-swap="outerHTML">
+            {{ policy_form.hidden_tag() }}
+            <div class="space-y-5 p-5 sm:p-6">
+                {{ schedule_policy.controls(policy_form, definition, can_configure,
+                                'Automatic Artifact Registry Inventory Sync',
+                                'Refresh committed Registry inventory when due.',
+                                icon='package-check',
+                                interval_label='Execution Interval',
+                                policy_error=policy_error|default(none) ) }}
+                {{ schedule_policy.timeline(policy) }}
+            </div>
+            {{ schedule_policy.footer(can_configure,
+                        'Saved changes are picked up by the scheduler without restarting Celery Beat.') }}
+        </form>
+    </section>
+    {% set can_reconcile = current_user.has_permission(definition.execute_permission) and current_user.has_permission(definition.domain_execute_permission) %}
+    {% if selected_job.empty_reconciliation_targets and can_reconcile %}
+        <section class="{{ operational_section.shell_classes() }}"
+                 aria-labelledby="registry-confirm-empty-title">
+            <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text shadow-sm"
+                          aria-hidden="true">
+                        <i data-lucide="shield-alert" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
+                        <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                            <h3 id="registry-confirm-empty-title"
+                                class="min-w-0 text-base font-semibold text-content-primary">Confirm an Empty Registry Inventory</h3>
+                            {{ info_tip.render('jobs-empty-registry-recovery-safety',
+                                                        'Guarded Recovery Boundary',
+                                                        'Only after independently verifying all projects were deliberately removed from the selected Registry. Unexpected zero discovery preserves the last-good snapshot. This action checks the prior committed generation and performs two independent complete project discovery requests. Confirmation is bound to the authenticated operator, one eligible Registry instance and its current committed inventory. Changed snapshots, malformed discovery or a nonempty second read fail closed without modifying records.',
+                                                        placement='right',
+                                                        variant='guide') }}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Verify intentional project removal before reconciling the committed inventory.
+                        </p>
+                    </div>
+                </div>
+            </header>
+            <form method="post"
+                  action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                  hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                  hx-target="#job-configuration-workspace"
+                  hx-swap="outerHTML"
+                  class="space-y-4 p-5 sm:p-6">
+                {{ manual_form.hidden_tag() }}
+                <input type="hidden" name="empty_reconciliation" value="confirm">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="registry-confirm-empty-instance"
+                               class="block text-xs font-semibold text-content-secondary">
+                            Registry provider to reconcile
+                        </label>
+                        <select id="registry-confirm-empty-instance"
+                                name="confirm_empty_instance_id"
+                                required
+                                class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
+                            <option value="">Select a previously nonempty Registry</option>
+                            {% for candidate in selected_job.empty_reconciliation_targets %}
+                                <option value="{{ candidate.integration_instance_id }}">
+                                    {{ candidate.instance_name }} · {{ candidate.previous_project_count }} committed projects
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="registry-confirm-empty-phrase"
+                               class="block text-xs font-semibold text-content-secondary">
+                            Enter CONFIRM EMPTY to authorize verification
+                        </label>
+                        <input id="registry-confirm-empty-phrase"
+                               type="text"
+                               name="confirmation_phrase"
+                               placeholder="CONFIRM EMPTY"
+                               required
+                               autocomplete="off"
+                               class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
+                    </div>
+                </div>
+                <div class="flex flex-col gap-3 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="flex min-w-0 items-center gap-2 text-xs leading-5 text-content-secondary">
+                        <i data-lucide="shield-check"
+                           class="h-4 w-4 shrink-0 text-status-warning-text"
+                           aria-hidden="true"></i>
+                        <span>Two complete reads required; mismatches preserve committed records.</span>
+                    </p>
+                    <button type="submit"
+                            {% if selected_job.active_job or selected_job.execution_disabled %}disabled{% endif %}
+                            class="{{ action_button.classes('secondary') }} shrink-0 whitespace-nowrap">
+                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                        Verify &amp; Reconcile Empty
+                    </button>
+                </div>
+            </form>
+        </section>
+    {% endif %}
+    {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
+</div>

@@ -1,3 +1,7 @@
+import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -124,6 +128,31 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     assert '  certbot:' not in source
 
 
+def test_server_overlay_covers_every_canonical_app_worker_environment() -> None:
+    base = _read(BASE_COMPOSE)
+    overlay = _read(SERVER_COMPOSE)
+    base_service_block = base.split('services:\n', maxsplit=1)[1].split('\nvolumes:', maxsplit=1)[0]
+    canonical_services = re.findall(r'^  ([a-z][a-z0-9-]*):$', base_service_block, re.MULTILINE)
+    application_services = [
+        service for service in canonical_services if service not in {'postgres', 'redis', 'validate', 'migrate'}
+    ]
+
+    assert 'registry-security-worker' in application_services
+    for service in application_services:
+        pattern = rf'^  {re.escape(service)}:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|^volumes:|\Z)'
+        match = re.search(pattern, overlay, re.MULTILINE | re.DOTALL)
+        assert match is not None, f'missing production server overlay for {service}'
+        block = match.group(1)
+        assert 'env_file: !override' in block, f'{service} must replace legacy .env.production'
+        for authority in ('KAORI_APP_ENV_FILE', 'KAORI_SECRETS_ENV_FILE', 'KAORI_RELEASE_ENV_FILE'):
+            assert authority in block, f'{service} is missing {authority}'
+
+    for script in (DEPLOY, VERIFY, RESTORE):
+        contents = _read(script)
+        for service in application_services:
+            assert service in contents, f'{script.name} omits application service {service}'
+
+
 def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
     source = _read(WORKFLOW)
 
@@ -228,6 +257,7 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     for service in (
         'web',
         'worker',
+        'registry-security-worker',
         'maintenance-worker',
         'runtime-worker',
         'validation-worker',
@@ -245,6 +275,69 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     assert '--restart-check' in source
     assert 'exactly one Beat' in source
     assert 'web unexpectedly publishes a host port' in source
+
+
+def _validate_celery_worker_response(
+    payload: str, *, expected: list[str] | None = None
+) -> subprocess.CompletedProcess[str]:
+    source = _read(VERIFY)
+    prefix = """docker exec -i "$probe_cid" python -c '"""
+    script = source.split(prefix + '\n', 1)[1].split('\n\' "$destination_csv"', 1)[0]
+    workers = [
+        'worker',
+        'registry-security-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
+    ]
+    names = expected if expected is not None else [f'celery@worker-{n}' for n in range(10)]
+    return subprocess.run(
+        [sys.executable, '-c', script, ','.join(names), ','.join(workers)],
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_celery_worker_readiness_checks_all_nodes_using_one_targeted_inspect() -> None:
+    source = _read(VERIFY)
+    assert source.count(' active_queues 2>/dev/null') == 1
+    assert '--destination="$destination_csv"' in source
+    assert '--json --timeout=20' in source
+    assert 'docker inspect --format' in source
+    assert 'worker) node_prefix=inventory' in source
+    assert 'registry-security-worker) node_prefix=registry-security' in source
+    assert 'reports-worker) node_prefix=reports' in source
+    assert 'Beat PASS' in source
+    assert 'server_database_boundary.py runtime' in source
+    assert '/health/ready' in source
+    assert '--restart-check' in source
+
+
+def test_celery_worker_readiness_positive_and_negative_response_contracts() -> None:
+    names = [f'celery@worker-{n}' for n in range(10)]
+    valid = {name: [{'name': 'queue', 'routing_key': 'queue'}] for name in names}
+    assert _validate_celery_worker_response(json.dumps(valid)).returncode == 0
+
+    missing = valid.copy()
+    del missing[names[4]]
+    result = _validate_celery_worker_response(json.dumps(missing))
+    assert result.returncode != 0
+    assert 'validation-worker did not report active queues' in result.stderr
+
+    empty = {**valid, names[2]: []}
+    assert _validate_celery_worker_response(json.dumps(empty)).returncode != 0
+    invalid_queue = {**valid, names[3]: [{'no_name': 'value'}]}
+    assert _validate_celery_worker_response(json.dumps(invalid_queue)).returncode != 0
+    assert _validate_celery_worker_response('not-json').returncode != 0
+    assert _validate_celery_worker_response('[]').returncode != 0
+    assert _validate_celery_worker_response(json.dumps(valid), expected=[names[0]] * 10).returncode != 0
 
 
 def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
@@ -284,3 +377,52 @@ def test_deployment_commits_release_state_only_after_runtime_verification() -> N
     assert runtime_verified < current_image < active_release
     assert 'committed=false' in deploy
     assert '[[ "$committed" == \'true\' ]] || rm -f -- "$candidate_release_env"' in deploy
+
+
+def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases() -> None:
+    workflow = _read(WORKFLOW)
+    deploy = _read(DEPLOY)
+    backup = _read(BACKUP)
+    verify = _read(VERIFY)
+
+    for marker in (
+        'UAT release evidence · resolving current accepted staging SHA',
+        'UAT release evidence · staging Full Admission PASS',
+        'UAT release evidence · immutable image digest, RC and source pinned',
+        'UAT host · preparing ephemeral SSH credentials',
+        'UAT host · deployment source artifacts transferred',
+        'UAT host · starting governed deploy.sh',
+        'UAT host · governed deployment script completed',
+        'Public-edge reconciliation and human UAT acceptance remain separate',
+    ):
+        assert marker in workflow
+
+    assert workflow.index('UAT host · deployment source artifacts transferred') < workflow.index(
+        'UAT host · starting governed deploy.sh'
+    )
+    assert "printf 'registry_password=%q\\n'" in workflow
+    assert 'bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"' in workflow
+
+    for marker in (
+        'UAT host deployment · validating immutable release',
+        'UAT host deployment · recording verified immutable release state',
+        'Verified release state committed',
+        'Host deployment elapsed',
+    ):
+        assert marker in deploy
+    assert deploy.index("status '✅' 'Internal runtime PASS'") < deploy.index(
+        'UAT host deployment · recording verified immutable release state'
+    )
+
+    # The backup command substitution still receives exactly one stdout path:
+    # phase logs go to stderr, never dump private PostgreSQL role inventory.
+    assert 'backup_path="$(bash "$SCRIPT_DIR/backup.sh")"' in deploy
+    assert 'UAT backup · archive, schema and role checksum evidence PASS' in backup
+    for line in backup.splitlines():
+        if 'printf ' in line and 'UAT backup ·' in line:
+            assert '>&2' in line
+
+    assert 'UAT verification · checking exact Beat count' in verify
+    assert 'UAT verification · checking effective PostgreSQL access' in verify
+    assert 'UAT verification · probing internal web readiness' in verify
+    assert "printf '🩺 Internal web:5000 readiness PASS" in verify

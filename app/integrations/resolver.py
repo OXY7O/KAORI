@@ -95,7 +95,7 @@ def resolve_integration(
 
 def provider_record(instance: IntegrationInstance) -> Any | None:
     """Resolve the provider-specific record through the integration registry."""
-    from app.integrations.registry import get_integration
+    from app.integrations.kernel.registry import get_integration
 
     module = get_integration(instance.integration_type)
     return module.get_record_for_canonical(instance.id)

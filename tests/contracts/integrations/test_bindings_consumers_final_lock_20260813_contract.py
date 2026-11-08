@@ -217,7 +217,8 @@ def test_shared_add_binding_modal_locks_workflow_roles_and_source_ownership() ->
     ):
         assert marker in modal
 
-    assert 'm-auto w-[min(46rem,calc(100vw-2rem))]' in modal
+    assert 'kaori-native-dialog' in modal
+    assert 'max-w-5xl' in modal
     assert 'min-w-0 flex-1 text-xs leading-5 text-content-muted' in modal
     assert 'flex shrink-0 items-center justify-end gap-2' in modal
     assert 'whitespace-nowrap rounded-lg bg-kaori-primary' in modal

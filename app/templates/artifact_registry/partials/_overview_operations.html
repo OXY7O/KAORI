@@ -1,0 +1,38 @@
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/peer_content_grid.html" as peer_content_grid %}
+<div class="space-y-5">
+    {% include "artifact_registry/partials/_overview_provider_health.html" %}
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% call operational_section_card.render(
+                'Inventory Snapshot',
+                'Latest committed Registry counts grouped by operational resource role.',
+                'package-search',
+                action_href=url_for('artifact_registry.inventory'),
+                action_label='Open Inventory',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                <div class="grid gap-3 sm:grid-cols-3">
+                    {% for item in overview.inventory_items %}
+                        {{ evidence_tile.snapshot(item.label, item.value, item.icon, item.role) }}
+                    {% endfor %}
+                </div>
+            {% endcall %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% call operational_section_card.render(
+                'Data Freshness',
+                'Age and availability of committed inventory, metrics, security, and analytics evidence.',
+                'clock-3',
+                body_classes='grid gap-3 p-5 sm:grid-cols-2',
+                extra_classes='h-full'
+                ) %}
+                {% for item in overview.freshness %}
+                    {{ evidence_tile.freshness(item.label, item.value, item.status, item.tone, item.icon, item.description) }}
+                {% endfor %}
+            {% endcall %}
+        </div>
+    </div>
+</div>

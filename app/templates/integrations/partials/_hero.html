@@ -27,14 +27,14 @@
                     {{ page_hero.context_metric('badge-check', 'Ready', stats.ready, 'Validated for operational use') }}
                 </div>
                 <div class="{{ page_hero.context_actions_classes() }}">
-                    <a href="{{ url_for('integrations.overview', tab='catalog') }}#integration-workspace"
+                    <a href="{{ url_for('integrations.overview', tab='catalog') }}"
                        hx-get="{{ url_for('integrations.overview', tab='catalog') }}"
                        hx-target="#integration-workspace"
                        hx-select="#integration-workspace"
                        hx-swap="outerHTML"
                        hx-push-url="true"
                        class="{{ page_hero.context_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
-                    <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
+                    <a href="{{ url_for('integrations.overview', tab='runtime') }}"
                        hx-get="{{ url_for('integrations.overview', tab='runtime') }}"
                        hx-target="#integration-workspace"
                        hx-select="#integration-workspace"

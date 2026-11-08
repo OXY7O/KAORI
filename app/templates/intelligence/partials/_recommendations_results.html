@@ -1,14 +1,35 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% if request.headers.get('HX-Request') == 'true' %}
+    <input type="hidden"
+           id="recommendation-filter-page-size"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}"
+           hx-swap-oob="outerHTML">
+{% endif %}
 {% if recommendation_summary_oob|default(false) %}
+    {% include 'intelligence/partials/_recommendation_hero_posture.html' %}
     {% include 'intelligence/partials/_recommendation_workspace_info.html' %}
 {% endif %}
+{% if payload.registry_runtime_evidence is defined and payload.registry_runtime_evidence.status != 'ready' %}
+    {% import 'components/operational_callout.html' as operational_callout %}
+    <div class="p-4">
+        {{ operational_callout.render(payload.registry_runtime_evidence.title,
+                payload.registry_runtime_evidence.description,
+                icon='waypoints',
+                tone='warning',
+                variant='semantic',
+                action_href=url_for('artifact_registry.runtime') ,
+        action_label='Review Runtime Usage'
+        ) }}
+    </div>
+{% endif %}
 <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-    <p class="text-xs leading-5 text-content-muted">
-        <span class="font-semibold text-content-primary">{{ payload.pagination.total_items }}</span>
-        matching recommendation{{ '' if payload.pagination.total_items == 1 else 's' }}
-    </p>
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-content-secondary">Recommendations</span>
+        {{ table_label.result_count(payload.pagination.total_items) }}
+    </div>
     <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
         {% if payload.active_filter_count|default(0) > 0 %}
             {{ registry_ui.clear_filters_action(url_for('intelligence.recommendations', per_page=payload.pagination.per_page) ,
@@ -22,7 +43,6 @@
             lead=false
             ) }}
         {% endif %}
-        {{ table_label.metadata_label(payload.pagination.total_items ~ ' Results', size='compact') }}
     </div>
 </div>
 {% include 'intelligence/partials/_recommendation_records.html' %}

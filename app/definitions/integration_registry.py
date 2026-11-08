@@ -17,6 +17,7 @@ _PROVIDER_FILES = {
     'metrics_source': 'integrations/observability/metrics_source/contract.yaml',
     'alertmanager': 'integrations/observability/alert_source/providers/alertmanager.yaml',
     'object_storage': 'integrations/storage/object_storage/contract.yaml',
+    'registry': 'integrations/registry/contract.yaml',
 }
 
 

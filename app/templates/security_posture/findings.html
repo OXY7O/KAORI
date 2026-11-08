@@ -1,0 +1,139 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry %}
+{% block title %}Security Findings · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="security-posture-findings-workspace" class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-alert', 'Security', 'database') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Findings</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Inspect qualified CVEs and committed Kubernetes runtime exposure.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-alert', posture.pagination.total_items ~ ' Matching CVEs') }}
+                            {{ page_hero.meta_label('database', posture.sources ~ ' Authorized Sources') }}
+                            {{ page_hero.meta_label('package-search', posture.affected_artifacts ~ ' Affected Artifacts') }}
+                        </div>
+                    {% endcall %}
+                </div>
+            </div>
+        </section>
+        <div role="status"
+             class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
+            Scanner: {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}.
+            Runtime correlation:
+            {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}.
+            Missing, partial or stale evidence is not proof of no exposure.
+            Every result is restricted to authorized committed sources.
+        </div>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 aria-labelledby="security-posture-findings-heading"
+                 id="security-posture-findings-registry">
+            <div class="p-4 sm:p-5">
+                {{ section_intro.render('CVE Finding Registry',
+                                'Distinct scanner CVEs, affected artifact digests, and observed runtime bindings.',
+                                'security-posture-findings-heading') }}
+                <p class="mt-2 text-xs text-content-secondary">
+                    Bindings represent observed containers, not distinct applications.
+                    Digest matches are stronger evidence; mutable references require verification.
+                </p>
+            </div>
+            <span id="security-posture-findings-loading"
+                  class="htmx-indicator sr-only"
+                  role="status">Loading security findings</span>
+            {% if posture.search or posture.severity %}
+                <div class="flex justify-end border-t border-outline-subtle px-5 py-2">
+                    {{ registry.clear_filters_link('security_posture.findings', 'security-posture-findings-registry',
+                                        'security-posture-findings-loading', posture.pagination.per_page, table_ui.action_classes() ) }}
+                </div>
+            {% endif %}
+            {% call registry.filter_form('security_posture.findings',
+                'security-posture-findings-registry', 'security-posture-findings-loading', posture.pagination.per_page,
+                classes='border-y border-outline-subtle bg-surface-hover px-5 py-4') %}
+                <div class="min-w-0 flex-1">
+                    <label for="security-posture-cve-search"
+                           class="{{ table_ui.filter_label_classes() }}">Search CVE</label>
+                    {{ table_ui.search_field('q', posture.search, 'Search CVE ID…', 'security-posture-cve-search') }}
+                </div>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                    <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All severities</option>
+                        {% for option in posture.severity_options %}
+                            <option value="{{ option }}"
+                                    {% if posture.severity == option %}selected{% endif %}>{{ option|title }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endcall %}
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[58rem]') }}">
+                    <caption class="sr-only">
+                        Committed CVE findings. This registry does not claim complete organization-wide coverage.
+                    </caption>
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">CVE / Severity</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Scanner Findings</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Affected Artifacts</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Kubernetes Bindings</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Impact</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for row in posture.rows %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.cve_id, 'Latest usable scanner findings', 'shield-alert') }}
+                                    <div class="mt-1">
+                                        {{ table_label.status_indicator_label(row.severity,
+                                                                                'critical' if row.severity == 'Critical' else 'warning') }}
+                                    </div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.finding_count }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.artifact_count }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="font-semibold text-content-primary">{{ row.binding_count }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ row.digest_binding_count }} digest ·
+                                        {{ row.reference_binding_count }} mutable/other
+                                    </p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    {% if posture.authorized_registry and row.impact_available %}
+                                        <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
+                                           class="{{ table_ui.action_classes() }}">View Impact</a>
+                                    {% else %}
+                                        {{ table_label.status_indicator_label('Unqualified', 'unknown') }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6">
+                                    {% set empty_state_icon = "shield-alert" %}
+                                    {% set empty_state_label = "No Matching Evidence" %}
+                                    {% set empty_state_title = "No CVE records in this source scope" %}
+                                    {% set empty_state_description = "No matching CVEs. This does not confirm safety." %}
+                                    {% include "components/states/_empty_state.html" %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ registry.footer('security_posture.findings',
+                        'security-posture-findings-registry', 'security-posture-findings-loading',
+                        posture.pagination, {'q': posture.search, 'severity': posture.severity},
+                        [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
+        </section>
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,13 @@
+{% import "components/table.html" as table_ui %}
+<section id="identity-provider-workspace"
+         class="{{ table_ui.block_classes() }}"
+         aria-label="Identity Provider Records"
+         data-kaori-idp-records-workspace>
+    {% include "access/identity_providers/partials/_tabs.html" %}
+    {% if active_tab == 'directory' %}
+        {% include "access/identity_providers/partials/_directory_provisioning_strip.html" %}
+    {% else %}
+        {% set embedded = true %}
+        {% include "access/identity_providers/partials/_registry.html" %}
+    {% endif %}
+</section>

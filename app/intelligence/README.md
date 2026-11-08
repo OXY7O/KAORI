@@ -19,6 +19,12 @@ Rules must identify source, domain, impacted assets, evidence, and remediation.
 Imported and internal rules share one catalog contract. Do not embed page-specific
 recommendation rules directly in analytics routes or templates.
 
+Cross-domain domain/Intelligence ownership is governed by
+`docs/architecture/domain-intelligence-ownership-standard.md`. Operational domains own
+facts, lifecycle, analytics, forecasts, anomalies, and committed evidence; Intelligence
+owns recommendation semantics, Rule Catalog, Accepted Risk, Alert Intelligence escalation,
+and decision state. Automation Control remains the governed execution bridge.
+
 ## Cross-domain automation orchestration
 
 The **Automation Control Center** is intentionally owned by the application layer
@@ -66,7 +72,7 @@ Locked current-state contracts:
   first validated Object Storage provider. Current forecast recommendations also consume current worker-materialized Object Storage forecast snapshots.
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
-- **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
+- **Alert Intelligence** supports committed recommendation-origin AlertCase browsing for Kubernetes, Object Storage, and **Artifact Registry** (selected enabled/active Registry IntegrationInstance only). Unknown, disabled, or blocked Registry scopes fail closed rather than widening into another domain or all assets. Registry AlertCase browsing is not the same as Registry provider-native alert collection: Alertmanager-first/Metrics Source fallback materialization into Registry Analytics remains a separate workstream (#952). Kubernetes/Object Storage provider alert-source selection continues to prefer Alertmanager with bounded Metrics Source fallback. Committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. **Registry notification routing is available only through a dedicated, explicitly configured AlertRoutingPolicy with a validated Registry-scoped channel**. The previous implicit default/broadcast path stays disabled, and blocked/disabled/foreign Registry IntegrationInstances are refused. Dev Container UAT and human security acceptance remain pending; this is not official admission. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
 - **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Validated System Runbook activation, deterministic environment bindings, candidate review, decision approval/rejection, deployment-policy configuration, safety controls, readiness evidence, and ordered rollout configuration are governance operations and remain available while infrastructure execution is disabled. Custom runbook authoring is intentionally not production-supported yet. The resolver boundary is independently fail-closed behind `AUTOMATION_EXECUTION_ENABLED=false`; authorization and the worker both enforce it. Execution/verification lifecycle events and decision-governance events are delivered asynchronously through the Integrations-owned Notification Channels contract. Dead-letter executions are immutable and are never replayed with consumed one-time authorization; a retry requires fresh evidence and a new candidate/decision lifecycle.
 
@@ -103,6 +109,22 @@ Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage f
 into a Kubernetes-only surface. Object Storage Analytics recommendation tabs consume the same Intelligence finding source rather than
 re-implementing these rule conditions.
 
+## Dashboard recommendation action copy
+
+The canonical Intelligence rule catalog may declare an optional `dashboard_action` alongside
+its complete `recommended_action`. This is **authored operational microcopy per rule**,
+not a character-trim, generic action mapping, or a new recommendation evaluator.
+Object Storage and Artifact Registry dashboards display `dashboard_action` when defined,
+falling back to the complete action for unmapped or older findings. Kubernetes retains
+its existing action descriptions.
+
+Write short, specific steps that retain provider/source authority, approval requirements,
+evidence refresh, and necessary conditional wording. Do not turn a conditional policy
+recommendation into an unconditional mutation instruction. The full `recommended_action`,
+impact, detailed evidence and remediation remain owned by Intelligence and available
+through the existing linked Recommendations detail. Shared dashboard card geometry and
+status/priority/ranking/asset scopes stay unchanged.
+
 ## Object Storage Rule Catalog coverage
 
 Rule Catalog now records Object Storage definitions as canonical `object_storage.*` rules with explicit
@@ -112,6 +134,12 @@ rule namespace. Metric-signal catalog entries mirror the current Object Storage 
 request-error, waiting-request, and offline-node boundaries. The catalog schema uses a generic
 `evidence_boundary` field so Metrics Source, Alertmanager, provider APIs, committed inventory, and worker
 artifacts can coexist without making one backend the Intelligence schema owner.
+
+### Per-channel resolved delivery and policy authority (#1512)
+
+Firing/resolved delivery evaluates only candidate durable recommendation AlertCases in keyset batches. Closed cases lacking successful prior firing delivery do not qualify for resolved dispatch, even if their per-case completion marker is unset. The resolved completion marker is committed only once every eligible destination from successful prior firing evidence has a successful resolved delivery. A failed channel remains retryable by the same idempotent channel/event key without re-delivering to channels already sent. Previously stranded failed rows can re-enter candidate selection; historical successful resolved cases remain out of the normal dispatch scan.
+
+Channel defaults are permitted only when **no explicit governed routing policy covers the case domain**. A configured but nonmatching/disabled policy must not trigger a broader default broadcast. Registry AlertCase delivery is policy-only: no domain-default fallback, no cross-domain policies, and no delivery from invalid/disabled/blocked Registry providers. Delivery requires a current, validated Registry-scoped channel. Local UAT and human acceptance remain pending. The delivery ledger remains authoritative for retry success and channel suppression; no webhook listener is introduced.
 
 ## Alert Intelligence notification delivery
 
@@ -126,3 +154,107 @@ Automatic Alert Intelligence notification polling runs on the existing maintenan
 - `NOTIFICATION_DELIVERY_MAX_ATTEMPTS` (default `3`, bounded `1..10`)
 
 An enabled channel is not eligible for automatic delivery until Test Delivery succeeds. Active-alert events are deduplicated per channel and alert episode; failed deliveries can retry up to the configured attempt ceiling. Alertmanager remains the authoritative raw routing/receiver layer. Alert Intelligence emits enriched alert events into Notification Channels; Scheduled Reports can use the same channel infrastructure for report completion events.
+
+### Rule Catalog detail bounded read model (#1523)
+
+Definition listing remains source-controlled and read-only. Opening one exception-enabled rule evaluates only its canonical rule/domain, and Tenant Governance evaluation is skipped for unrelated Kubernetes rule families. Exception history is limited to 12 newest rows in SQL; active/expiring totals use scoped SQL aggregates and only current finding assets require active-row hydration. Owner options are read only for authorized create workflows. Partial evaluator evidence must be disclosed, not silently represented as recovered or eligible for Accepted Risk creation. This path performs no live infrastructure-provider requests.
+
+## Vault source-qualified provider AlertCase correlation (#2807)
+
+Central Alert Intelligence owns the **internal-only candidate plan** for a
+Vault `provider_alert` AlertCase sourced from committed Alertmanager
+observations. This is a read-only correlation contract, not case
+creation/resolution. See `app/intelligence/alert_intelligence/vault_provider_plan.py`
+and `app/secrets_pki/TELEMETRY_BINDING.md`.
+
+The case key is scoped opaque HMAC source/occurrence identity; no provider
+alert name/path, raw fingerprint, arbitrary labels or annotations are used
+to join. Prior cases must have exact provider/source identity, minimal
+allowlisted provenance, and `routing_state=suppressed`; ambiguous, legacy,
+sensitive or cross-domain matches block rather than merging. Case absence
+in a recent but bounded source response **never** proves recovery.
+The existing Alert Intelligence user-facing workspace remains explicitly
+recommendation-scoped; no provider-origin cases are projected to it.
+Activation requires separate #724 authorization, governed policy, source
+recovery validation and real DevContainer/human UAT.
+
+## Internal Vault provider AlertCase admission (#2813)
+
+The internal writer `app/intelligence/alert_intelligence/vault_provider_admission.py`
+reuses **canonical** `AlertCase`, `AlertCaseEvent` and `AuditEvent`,
+rather than introducing a separate case system. It is **not called by any
+route, scheduled task or worker** and requires explicit
+`KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true` opt-in at runtime,
+an active operator identity with both Intelligence decision/view and
+Secrets & PKI sync/view permissions, and a fresh exact Vault source.
+With the flag absent, it returns disabled and does not write cases.
+
+On PostgreSQL, same-source work is serialized by row locks on the binding
+and `AlertSignalSnapshot`; the candidate plan is recomputed inside the
+transaction. Only at most ten new firing cases can be inserted per call;
+previously admitted exact firing cases may be refreshed once per new source
+generation. Every case is routing-suppressed and has a generic name,
+opaque handle, canonical scope IDs and allowlisted provenance only.
+Other source states, old closed cases, failures and missing occurrences
+are never resolved, closed or reopened. Writes append sanitized case
+timeline and audit entries, with no notification delivery.
+
+**This is not provider-case feature activation.** Alert Intelligence
+workspace visibility, case mutation routes, scoped RBAC for per-source
+access, routing policy and recovery/closure semantics are still gated
+workstreams, and must be authorized and UAT-proven before this internal
+entrypoint is connected to an operator action.
+
+## HV-12 instance-scoped read-only provider AlertCase workspace (#2817)
+
+Central Alert Intelligence has a **separate read-only Vault Provider Cases**
+view that reuses the existing Violet Hero/table/blocked-state components.
+The existing recommendation-only workspace and mutation endpoints remain
+unchanged for recommendation cases. Generic AlertCase mutation operations
+explicitly refuse `secrets_pki/provider_alert` case IDs, even when guessed.
+
+The scoped Vault view requires **both** `intelligence.view` and
+`secrets_pki.view` in an active normalized KAORI role, plus an **approved
+active exact-instance `ScopeAccessPolicy` revision** for the same actor,
+Vault integration ID and `secrets_pki.view`. Neither a super-admin role
+shortcut, a mount-only grant, ownership nor a related source implies the
+instance case grant. More than one approved matching instance grant is
+ambiguous and denies. Revoked, expired, pending, foreign, unavailable or
+inactive-instance policies deny without existence disclosure.
+
+Only an explicitly supplied canonical Vault instance ID can be viewed.
+The server locks the existing scope policy/revision, reads qualifying
+case records, and commits generic Activity Audit evidence in the same
+transaction before rendering. Audit persistence failure denies case access. Audit failure denies the read. The query is capped at 100 records,
+uses existing pagination default five, and rejects any unqualified case
+rather than silently showing a partial trusted population. Case details
+re-evaluate the policy and exact asset before revealing safe, generic
+committed fields. No fleet fallback or Secret path/fingerprint/labels/
+annotations/HMAC-key/provenance material appears in the HTML.
+
+**No provider-origin AlertCase lifecycle writes, routing, notification
+activation, direct provider GET or Secret inventory read is added.**
+The opt-in admission contract #2813 remains disconnected from HTTP and
+workers. Source failure or absence is not resolved/healthy evidence.
+Human Visual QA and scoped Postgres/DevContainer UAT are still required.
+Focused tests: `tests/intelligence/test_vault_provider_case_workspace.py`.
+
+
+### HV-12 exact-instance write scope and recovery projection hardening (#2821)
+
+The opt-in internal `admit_vault_provider_cases` writer requires the existing
+#724 **exact approved instance-level** `ScopeAccessPolicy` in addition to
+all four capabilities in an active normalized role:
+`intelligence.decisions.create`, `intelligence.view`,
+`secrets_pki.sync`, `secrets_pki.view`. The approved `secrets_pki.view`
+scope constrains the specific Vault instance; it does **not** imply the
+additional global sync/decision capabilities. Roleless Super Admin and
+mount-only grants cannot bypass the resource-scope gate. The grant is checked
+while the same source binding remains transaction-locked; any denied,
+unavailable, expired or ambiguous policy fails closed before case writes.
+
+Vault provider cases created by this contract have source state `firing`.
+The read-only scoped workspace rejects rows claiming `resolved`, since
+HV-12 has no source-qualified recovery/closure transition. Missing
+observations remain unknown, never resolved. Real PostgreSQL race tests
+and operator/denied-scope UAT remain mandatory and Not Tested.

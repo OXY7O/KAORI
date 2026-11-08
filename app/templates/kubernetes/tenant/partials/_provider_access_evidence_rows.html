@@ -1,0 +1,77 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_expandable_row.html" as detail_row %}
+{# Canonical Intelligence rule-catalog table grammar: one row per 5-cell summary, then one static detail row. #}
+{% for event in access_evidence_rows %}
+    {% set evidence = event.metadata_json or {} %}
+    {% set drift_event = access_evidence_drift_by_tenant.get(evidence.tenant_id) %}
+    {% set drift = (drift_event.metadata_json or {}) if drift_event else {} %}
+    {% set remediation_event = access_evidence_remediation_by_observation.get(event.id) %}
+    {% set detail_target_id = 'tenant-' ~ access_provider ~ '-evidence-' ~ event.id %}
+    {% set detail_row_id = detail_target_id ~ '-row' %}
+    <tr class="{{ table_ui.row_classes() }} bg-surface-card">
+        <td class="{{ table_ui.cell_classes() }} w-[29%]">
+            {{ table_ui.title_cell('Capsule Tenant' if access_provider == 'capsule' else 'Native Tenant',
+                        evidence.tenant_id, 'shield-question' if access_provider == 'capsule' else 'shield-check') }}
+        </td>
+        <td class="{{ table_ui.cell_classes() }} w-[17%]">
+            <p class="text-sm text-content-primary">{{ event.created_at|user_datetime }}</p>
+            <p class="mt-1 text-xs text-content-muted">Committed observation</p>
+        </td>
+        <td class="{{ table_ui.cell_classes() }} w-[27%]">
+            <p class="text-sm text-content-primary">
+                {% if access_provider == 'capsule' %}
+                    {{ evidence.owner_count }} owner(s) · {{ evidence.external_count }} external binding(s)
+                {% else %}
+                    {{ evidence.namespaces|length }} namespace(s) · {{ evidence.external_count }} external binding(s)
+                {% endif %}
+            </p>
+            <p class="mt-1 text-xs text-content-muted">
+                {% if access_provider == 'capsule' %}
+                    {{ evidence.kaori_count }} KAORI-labelled
+                {% else %}
+                    {{ evidence.kaori_correlated_count }} KAORI-correlated
+                {% endif %}
+                {% if drift_event %}
+                    · {{ drift.finding_count }} drift finding(s)
+                {% else %}
+                    · Drift not analyzed
+                {% endif %}
+            </p>
+        </td>
+        <td class="{{ table_ui.cell_classes() }} w-[14%]">
+            {{ table_label.status_label('Review Required' if evidence.status == 'review_required' else 'Observed',
+                        'warning' if evidence.status == 'review_required' else 'info', size='compact') }}
+        </td>
+        <td class="{{ table_ui.cell_classes(action=true) }} w-[13%]">
+            {{ detail_row.toggle_button('tenant-' ~ access_provider ~ '-evidence',
+                        event.id,
+                        '',
+                        detail_target_id,
+                        detail_row_id,
+                        open_label='View Details',
+                        close_label='Hide Details',
+                        table_action=true) }}
+        </td>
+    </tr>
+    {% call detail_row.static_detail_row(detail_row_id, detail_target_id, 5) %}
+        {% include 'kubernetes/tenant/partials/_provider_access_evidence_detail.html' %}
+    {% endcall %}
+{% else %}
+    <tr>
+        <td colspan="5" class="{{ table_ui.cell_classes() }} py-8">
+            <div role="status"
+                 class="flex min-h-44 flex-col items-center justify-center gap-3 px-5 py-10 text-center sm:min-h-52 sm:py-12">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <p class="text-sm font-semibold text-content-primary">
+                    {{ 'No matching inspections found.' if access_evidence_filters.search or access_evidence_filters.status else ('No committed external-access inspection yet.' if access_provider == 'capsule' else 'No committed Native RBAC observation yet.') }}
+                </p>
+                <p class="mx-auto max-w-xl text-xs leading-6 text-content-muted">
+                    {{ 'Change or clear the filters to review other committed observations.' if access_evidence_filters.search or access_evidence_filters.status else 'Select a governed Tenant and inspect explicitly. Inspection does not mutate membership, identity or RBAC.' }}
+                </p>
+            </div>
+        </td>
+    </tr>
+{% endfor %}

@@ -1,62 +1,21 @@
-import os
 from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
-from dotenv import dotenv_values
 
+from app.config.environment import (
+    _bounded_env_int,
+    _env_bool,
+    _env_int,
+    _env_optional_str,
+    _env_str,
+    _load_environment_files,
+)
+from app.config.storage_helpers import _normalize_storage_backend, _resolve_path
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-
-
-def _load_environment_files() -> None:
-    """Load .env and optional .env.<APP_ENV> without overriding real OS env vars.
-
-    Precedence:
-    1. OS environment variables
-    2. .env.<APP_ENV> values
-    3. .env values
-    """
-    base_values = dotenv_values(BASE_DIR / '.env')
-    app_env = os.getenv('APP_ENV') or base_values.get('APP_ENV') or 'development'
-    environment_values = dotenv_values(BASE_DIR / f'.env.{app_env}')
-    merged_values = {**base_values, **environment_values}
-
-    for key, value in merged_values.items():
-        if value is not None:
-            os.environ.setdefault(key, value)
-
-
-def _env_str(name: str, default: str = '') -> str:
-    return os.getenv(name, default)
-
-
-def _env_optional_str(name: str) -> str | None:
-    value = os.getenv(name, '').strip()
-    return value or None
-
-
-def _env_int(name: str, default: int = 0) -> int:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        return int(value.strip())
-    except ValueError:
-        return default
-
-
-def _env_bool(name: str, default: bool = False) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
-
-
-def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
-    return max(minimum, min(_env_int(name, default), maximum))
 
 
 def _retention_queue_name() -> str:
@@ -92,6 +51,12 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     schedule.update(build_notification_beat_schedule())
     schedule.update(build_alert_signal_beat_schedule())
+    if _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False):
+        schedule['source-control-signed-delivery-recovery'] = {
+            'task': 'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries',
+            'schedule': crontab(minute='*/5'),
+            'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
+        }
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.platform_operations.jobs.tasks.reconcile_stale_jobs',
@@ -132,16 +97,6 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             },
         }
     return schedule
-
-
-def _normalize_storage_backend(value: str | None) -> str:
-    backend = (value or 'local').strip().lower()
-    return backend if backend in {'local', 's3'} else 'local'
-
-
-def _resolve_path(value: str | None, default: Path) -> str:
-    path = Path((value or str(default)).strip())
-    return str(path if path.is_absolute() else BASE_DIR / path)
 
 
 def _object_storage_usage_stats_mode() -> str:
@@ -253,6 +208,9 @@ class Config:
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
     REPORTS_CELERY_QUEUE = _env_str('REPORTS_CELERY_QUEUE', 'reports').strip() or 'reports'
+    REGISTRY_SECURITY_CELERY_QUEUE = (
+        _env_str('REGISTRY_SECURITY_CELERY_QUEUE', 'registry-security').strip() or 'registry-security'
+    )
     REPORT_STORAGE_HEALTH_MONITOR_ENABLED = _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)
     REPORT_STORAGE_HEALTH_INTERVAL_MINUTES = _bounded_env_int('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1, 1, 60)
     REPORT_STORAGE_HEALTH_STALE_SECONDS = _bounded_env_int('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120, 30, 3600)
@@ -318,6 +276,8 @@ class Config:
     JOB_MAX_ACTIVE_PER_USER = _env_int('JOB_MAX_ACTIVE_PER_USER', 5)
     JOB_MAX_HEAVY_PER_USER = _env_int('JOB_MAX_HEAVY_PER_USER', 1)
     JOB_MAX_ACTIVE_PER_RESOURCE = _env_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
+    SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED', False)
+    SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED = _env_bool('SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED', False)
     JOB_QUEUED_STALE_SECONDS = _env_int('JOB_QUEUED_STALE_SECONDS', 1800)
     JOB_RUNNING_STALE_SECONDS = _env_int('JOB_RUNNING_STALE_SECONDS', 7200)
 
@@ -348,11 +308,22 @@ class Config:
             'app.storage.object_storage.analytics.tasks',
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
+            'app.artifact_registry.tasks',
+            'app.integrations.secrets_management.secrets_pki.tasks',
+            'app.integrations.source_control.tasks',
+            'app.integrations.source_control.webhook_maintenance',
+            'app.artifact_registry.security.tasks',
+            'app.artifact_registry.governance_tasks',
+            'app.artifact_registry.correlation_tasks',
+            'app.artifact_registry.analytics_tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
+            'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
             'app.integrations.runtime.tasks',
+            'app.integrations.runtime.notification_delivery_task',
             'app.integrations.validation.tasks',
             'app.platform_operations.jobs.tasks',
+            'app.platform_operations.jobs.notification_delivery_task',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
             'app.reports.storage.tasks',
@@ -371,17 +342,42 @@ class Config:
             'app.storage.object_storage.analytics.tasks.materialize_object_storage_forecasts': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
-            'app.kubernetes.cluster.tasks.sync_all_clusters': {
-                'queue': 'inventory',
-            },
-            'app.kubernetes.cluster.tasks.sync_single_cluster': {
-                'queue': 'inventory',
-            },
+            'app.kubernetes.cluster.tasks.sync_all_clusters': {'queue': 'inventory'},
+            'app.kubernetes.cluster.tasks.sync_single_cluster': {'queue': 'inventory'},
             'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_pki': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_stored_certificates': {
+                'queue': 'inventory'
+            },
+            'app.integrations.source_control.tasks.sync_source_repositories': {'queue': 'inventory'},
+            'app.integrations.source_control.webhook_maintenance.recover_signed_deliveries': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.intelligence.alert_signals.tasks.observe_vault_alert_source': {'queue': 'inventory'},
+            'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
+            'app.artifact_registry.security.tasks.sync_all_registry_security': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.sync_registry_security_source': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.finalize_registry_security_sync': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.governance_tasks.sync_all_registry_governance': {'queue': 'inventory'},
+            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {
                 'queue': 'inventory',
             },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
+            },
+            'app.kubernetes.tenant.tasks.sync_tenant_inventory': {'queue': 'inventory'},
+            'app.kubernetes.tenant.tasks.decommission_tenant': {
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
             'app.platform_operations.data_lifecycle.retention.tasks.run_domain_retention': {
                 'queue': _retention_queue_name(),
@@ -393,6 +389,9 @@ class Config:
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
+            },
+            'app.integrations.runtime.tasks.dispatch_integration_health_notification': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
             'app.integrations.validation.tasks.validate_integration_instance': {
@@ -407,7 +406,13 @@ class Config:
             'app.platform_operations.jobs.tasks.reconcile_stale_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
+            'app.platform_operations.jobs.tasks.dispatch_failed_job_notification': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.intelligence.alert_signals.tasks.refresh_alert_signals': {
@@ -435,6 +440,9 @@ class Config:
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
             'app.reports.storage.tasks.verify_report_storage_task': {
+                'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
+            },
+            'app.reports.storage.tasks.scan_report_storage_integrity_task': {
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
             'app.intelligence.resolver.tasks.execute_authorized_resolution': {

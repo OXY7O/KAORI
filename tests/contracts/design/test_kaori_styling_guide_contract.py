@@ -95,7 +95,7 @@ def test_style_drift_verifier_matches_the_committed_baseline() -> None:
         ROOT,
         ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json',
     )
-    assert errors == []
+    assert errors == [], '\n'.join(errors)
 
 
 def test_static_quality_gate_runs_the_style_drift_verifier() -> None:
@@ -320,7 +320,7 @@ def test_pod_runtime_components_and_pattern_are_documented() -> None:
     assert 'components/CONTAINER_RUNTIME_COLLECTION.md' in design_readme
     assert 'patterns/KUBERNETES_POD_INVENTORY.md' in design_readme
     assert 'terminated exit code `0` is Completed' in runtime_contract
-    assert 'Pod | Scope | Runtime State | Placement | Ownership & Activity | Details' in pod_pattern
+    assert 'Pod | Scope | Runtime State | Placement | Owner & Restarts | Details' in pod_pattern
     assert 'table_label.status_indicator_label(container.runtime_state_label' in runtime_component
     assert '{% if resource.status %}' in related_component
 
@@ -374,3 +374,140 @@ def test_analytics_overview_snapshot_and_composite_loading_contract_are_document
     assert 'macro snapshot_shell_classes' in surfaces
     assert 'macro metric_grid_classes' in surfaces
     assert 'Capacity is the analytics snapshot-style baseline' in analytics_readme
+
+
+def test_design_system_authority_index_has_one_global_owner() -> None:
+    authority_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    audit = _read('docs/design/audits/KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md')
+
+    assert '# KAORI Design System Authority Index' in authority_index
+    assert 'does **not** define a separate design-system version' in authority_index
+    assert 'KAORI_DESIGN_SYSTEM.md' in authority_index
+    assert 'KAORI_STYLING_GUIDE.md' in authority_index
+    assert 'KAORI_VISUAL_QA.md' in authority_index
+    assert 'KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md' in authority_index
+
+    assert 'DESIGN_SYSTEM.md' in design_readme
+    assert 'compact authority index and compatibility entry point' in design_readme
+    assert 'KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md' in design_readme
+
+    assert 'KAORI_DESIGN_SYSTEM.md' in audit
+    assert 'scripts/verify_ui_reuse.py' in audit
+    assert 'scripts/verify_ui_style.py' in audit
+    assert '#606' in audit
+    assert '#607' in audit
+    assert '#608' in audit
+    assert '#609' in audit
+
+
+def test_page_archetype_and_navigation_registry_is_complete() -> None:
+    registry = _read('docs/design/patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md')
+    tab_registry = _read('docs/design/components/TAB_STYLES.md')
+    authority_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+
+    for archetype in (
+        'Landing',
+        'Overview',
+        'Dashboard',
+        'Inventory / List',
+        'Analytics',
+        'Operational Workspace',
+        'Configuration / Manage',
+        'Detail / Inspector',
+        'Workflow / Wizard',
+        'Administration',
+    ):
+        assert f'**{archetype}**' in registry
+
+    assert '## Overview vs Dashboard' in registry
+    assert 'What needs attention now?' in registry
+    assert 'What exists in this domain?' in registry
+
+    for semantic_key in (
+        'integrated-workspace',
+        'framed-workspace-v2',
+        'compact-segmented',
+        'content-tabs',
+    ):
+        assert semantic_key in registry
+        assert semantic_key in tab_registry
+
+    assert '**No Tabs**' in registry
+    assert '2–3 local mutually exclusive views?' in registry
+    assert 'new fifth tab style' in registry
+    assert 'app/templates/welcome/index.html' in registry
+    assert 'app/templates/kubernetes/dashboard/index.html' in registry
+    assert 'app/templates/reports/generate/index.html' in registry
+
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in authority_index
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in design_readme
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in tab_registry
+
+
+def test_design_system_v2_foundation_and_content_density_matrix_is_registered() -> None:
+    matrix = _read('docs/design/FOUNDATION_AND_CONTENT_DENSITY.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Foundation and Content-Density Matrix' in matrix
+    assert '`frontend/styles.css`' in matrix
+    assert 'Typography Role Matrix' in matrix
+    assert 'Copy-Density Matrix' in matrix
+    assert 'Spacing and Density Matrix' in matrix
+    assert 'Shape and Elevation Matrix' in matrix
+    assert 'Icon Matrix' in matrix
+    assert 'Technical-Data Presentation Matrix' in matrix
+    assert 'Never fix density with page-local font shrinking' in matrix
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_index
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_readme
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in global_design
+
+
+def test_design_system_v2_responsive_accessibility_interaction_matrix_is_registered() -> None:
+    matrix = _read('docs/design/RESPONSIVE_ACCESSIBILITY_INTERACTION.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Responsive, Accessibility, and Interaction Matrix' in matrix
+    assert 'Canonical Viewport Matrix' in matrix
+    assert 'Responsive Composition Matrix' in matrix
+    assert 'Accessibility Matrix' in matrix
+    assert 'HTMX Ownership Matrix' in matrix
+    assert 'Operational State Matrix' in matrix
+    assert 'Motion and Reduced-Motion Matrix' in matrix
+    assert 'tests/ui/conftest.py' in matrix
+    assert 'tests/ui/test_accessibility_disclosures.py' in matrix
+    assert '#613' in matrix
+    assert '#614' in matrix
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_index
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_readme
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in global_design
+
+
+def test_design_system_v2_reference_implementation_and_enforcement_map_is_registered() -> None:
+    coverage = _read('docs/design/REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Design System v2 Reference Implementation and Enforcement Map' in coverage
+    assert 'Shared Component Family References' in coverage
+    assert 'Page Archetype Production References' in coverage
+    assert 'Enforcement Coverage Map' in coverage
+    assert 'Baseline and Debt Policy' in coverage
+    assert 'Design-System Change / Extension Policy' in coverage
+    assert 'scripts/verify_ui_reuse.py' in coverage
+    assert 'scripts/verify_ui_style.py' in coverage
+    assert 'scripts/verify_hero_component_standard.py' in coverage
+    assert 'scripts/verify_dark_mode_standard.py' in coverage
+    assert 'scripts/verify_filter_layout_standard.py' in coverage
+    assert 'scripts/verify_application_shell_standard.py' in coverage
+    assert 'docs/architecture/ui-style-debt-baseline.json' in coverage
+    assert 'docs/architecture/ui-inline-debt-baseline.json' in coverage
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in design_index
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in design_readme
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in global_design

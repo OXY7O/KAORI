@@ -18,7 +18,7 @@ The final recheck found and corrected three release-relevant residuals:
 6. **Blocker-safe evidence visibility:** `Inventory Data Snapshot` is now rendered only after the cluster onboarding blocker clears. Overview, Topology, and every resource workspace show Hero + onboarding guidance while blocked; snapshot/posture/table content remains hidden.
 7. **Storage scope parity:** Storage Inventory now populates the same `scope_label` Hero evidence used by the other resource pages.
 8. **Rendering-test ownership:** Inventory rendering coverage now points to `app/templates/kubernetes/inventory`, preventing a stale test namespace from silently missing the committed template tree.
-9. **Shared setup-blocked Hero:** Inventory Overview, all resource pages, and Topology now inherit the Kubernetes Operations Dashboard blocker pattern through `components/cluster/_hero_blocked_context.html`. Hero geometry remains stable while normal posture evidence is replaced by `Inventory Readiness / Cluster Setup Required`.
+9. **Shared setup-blocked Hero:** Inventory Overview, all resource pages, and Topology inherit the Kubernetes provider-prerequisite pattern through `components/cluster/_hero_blocked_context.html`, which delegates to the shared provider-prerequisite Hero context. Hero identity and metadata roles remain stable while the right-side readiness context changes to `Inventory Readiness / Cluster Setup Required`.
 10. **Hero purpose copy refinement:** resource Hero descriptions now give slightly richer committed-inventory context while remaining inside the global 7–12 word target.
 
 ## KAORI UI standard applicability
@@ -100,8 +100,8 @@ L7 End-to-End Smoke
 
 Source-level verifier, architecture, rendering, security, and contract evidence must be green, followed by authoritative devcontainer Ruff/Ruff Format/djLint/Pyright/Prettier, Functional/Integration/E2E execution, browser smoke, and the full release gate. Once those pass, Inventory becomes **PASS — LOCKED** without reopening its visual design.
 
-## Blocked Metadata and Network Inventory Copy Follow-Up
+## Provider-Prerequisite Reconciliation — October 2026
 
-A cross-domain Hero review found that the setup-blocked right panel was already correct, but Inventory Hero metadata on the left could still render zero-valued counters such as `0 Services in Scope` or `0 Collected Objects`. When no cluster is registered, those values can be mistaken for committed inventory evidence rather than an unavailable source scope.
+The later cross-domain provider-prerequisite authority in #894 supersedes the earlier blocked-metadata replacement approach recorded by this audit. Inventory now follows the platform-wide rule that Hero identity and metadata roles remain structurally stable across Normal and Blocked states, while readiness is expressed additively by the shared provider-prerequisite context.
 
-Inventory Overview, every resource Hero, and Topology now replace normal numeric metadata while blocked with `Committed Inventory` and `Cluster Setup Required`. Normal counters return unchanged after cluster setup is available. Service and Ingress purpose copy is also refined within the canonical Hero copy budget to include endpoint readiness/backend registration and routing posture respectively.
+Accordingly, Inventory Overview, every resource Hero, and Topology keep their normal metadata vocabulary while `components/cluster/_hero_blocked_context.html` delegates the blocked right-side state to `components/provider_prerequisite/_hero_context.html`. Factual counters may resolve to zero when no cluster is registered, but they do not represent provider readiness or successful collection. Normal operational content remains terminally hidden until the prerequisite is satisfied. The final-lock verifier was reconciled with this newer authority rather than reverting the reviewed UI to the superseded metadata-replacement behavior.

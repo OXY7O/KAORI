@@ -1,0 +1,196 @@
+# Harbor Registry Provider
+
+Harbor is the first provider implementation for the KAORI **Registry** integration domain.
+
+## Authority boundary
+
+Harbor remains authoritative for projects, repositories, artifacts, vulnerability data,
+retention/immutability policy, replication, webhooks, users, robot accounts, and native
+Registry state. This foundation does not expose destructive or provider-policy mutation.
+
+KAORI owns normalized provider registration, credential handling, compatibility resolution,
+committed Full Validation evidence, lightweight runtime observation, governance context,
+correlation-ready identity, and audit history.
+
+## Workspace flow
+
+```text
+Integrations → Registry → Harbor
+                    │
+                    ├── Register Connection
+                    │     └── Test Connection
+                    │
+                    └── Connection Detail
+                          ├── Configuration
+                          ├── Validation & Capabilities
+                          └── Runtime & History
+```
+
+`Test Connection` proves Harbor identity and endpoint reachability only. The signed proof is
+bound to the submitting user and effective registration fields and expires after ten minutes.
+Changing any bound field invalidates the proof.
+
+`Full Validation` is the authority for detected Harbor version, compatibility, required
+read-oriented API capabilities, and provider readiness. `Runtime Refresh` is deliberately
+separate and updates lightweight health observations without rebuilding compatibility or
+capability evidence.
+
+## Local devcontainer validation
+
+Use the repository's canonical Dev Container flow; Harbor does not require a separate local
+service or a provider-specific bootstrap path.
+
+Before rebuilding the container, copy `.env.example` to `.env` and set normal development
+secrets. Basic Authentication connections additionally require
+`INTEGRATION_CREDENTIAL_KEY`; Anonymous read-only connections do not persist a password.
+
+Inside the Dev Container:
+
+```bash
+bash scripts/init_db.sh --bootstrap-admin
+python -m pytest \
+  tests/integrations/test_harbor_client.py \
+  tests/integrations/test_harbor_compatibility_contract.py \
+  tests/integrations/test_harbor_readiness.py \
+  tests/integrations/test_harbor_registration_proof.py \
+  tests/contracts/integrations/test_harbor_provider_foundation_contract.py \
+  tests/contracts/integrations/test_harbor_provider_workspace_contract.py \
+  -q
+flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+```
+
+Then open `http://localhost:5000` and follow
+`Integrations → Registry → Harbor`. Exercise the boundary in order: Test Connection,
+Register Connection, Full Validation, then Runtime Refresh. Full Validation expects the
+credential to see at least one Harbor project so KAORI can prove the project-scoped
+repository-list capability. The probe remains GET-only and does not mutate Harbor.
+
+These are focused local checks only. They do not replace Developer Check, Full Admission,
+staging UAT, or the governed promotion flow.
+
+## Provider-prerequisite UI contract
+
+This foundation workspace is the Registry setup destination, so it does not block itself behind a provider
+prerequisite. Future provider-backed Registry operational pages (inventory, governance, operations,
+analytics, correlation, or other consumers) must use the shared #894 Provider Prerequisite Blocking
+contract. Harbor-specific pages may supply Registry nouns, routes, permissions, and setup steps, but must
+not create Harbor-specific blocker geometry.
+
+
+## Webhook configuration ownership
+
+Harbor webhook admission is a Registry reconciliation fast path, while connection-specific
+credential setup belongs to the Harbor connection Configuration workspace.
+
+```text
+Integrations → Registry → Harbor → Connection Detail → Configuration
+                                      └── Webhook Reconciliation
+```
+
+KAORI stores only the webhook token digest. Generating a new token rotates the previous
+credential. Disabling webhook admission does not disable scheduled Registry reconciliation,
+which remains the correctness and repair path.
+
+The receiver URL is rendered from KAORI's current request authority. Operators must
+confirm that Harbor can reach the **actual** endpoint from Harbor's host/container and
+that a trusted HTTPS transport is available outside local development. A displayed
+`localhost` or `127.0.0.1` URL is not a valid cross-host deployment address.
+
+The receive route accepts `Authorization: Bearer <token>` or
+`X-KAORI-Webhook-Token: <token>`. Configure the selected header only where the
+supported Harbor version and deployment provide an appropriate header facility.
+The token is shown only at generation/rotation; never record it in a UAT screenshot,
+log, URL, or tracked evidence. The receive route returns HTTP 400 for invalid JSON,
+401 for a missing/invalid/disabled token, and HTTP 202 for an authenticated parsed
+event, including deduplicated events or a `refresh_failed` enqueue outcome.
+
+**Admission Ready is not webhook-delivery verification.** A last-event timestamp
+shows intake activity, not provider reconciliation success. Inspect the committed
+webhook event status and linked JobExecution/Inventory evidence before claiming
+that the targeted refresh completed. Identical event re-delivery is deduplicated;
+scheduled Inventory reconciliation continues to repair missed/out-of-order events.
+The review-only Gherkin matrix and evidence checklist are in
+`docs/reviews/2026-10-18-harbor-webhook-uat.md`.
+
+Artifact Registry → Governance consumes committed retention, immutability, and replication
+evidence only; it does not own webhook credential configuration or Metrics Source readiness.
+
+
+## Registry provider-agnostic extension gate
+
+Harbor is the first production-qualified Registry provider, not the canonical Registry product identity.
+
+Before the Registry foundation is treated as locked, review the implementation against:
+
+`docs/architecture/registry-provider-extension-gate.md`
+
+That gate requires the second-provider extension path to remain definition/adapter/collector/capability driven without replacing canonical Registry models, Artifact Registry routes/navigation, digest identity, Kubernetes correlation, or source/asset binding architecture.
+
+A Harbor implementation that passes its provider-specific tests but still requires a large domain/UI refactor for ECR, ACR, GAR, GHCR, Docker Hub, or another OCI Registry provider is not considered foundation-complete.
+
+## Foundation exclusions
+
+Artifact inventory, vulnerability findings, webhook workflows, cross-domain Registry
+correlation, consumer bindings, and operational Registry mutation are outside issue #884.
+Those surfaces must not be inferred from this provider foundation.
+
+## Approved outbound Harbor HTTPS policy (#1480)
+
+Connection registration, Test Connection, Full Validation, Runtime Refresh and
+Registry collectors require **verified HTTPS** and an explicitly approved
+endpoint. Previously saved HTTP or `verify_ssl=false` connections fail
+closed until reconfigured to the approved HTTPS origin.
+
+Set `INTEGRATION_HARBOR_ALLOWED_ORIGINS` as comma-separated exact HTTPS origins
+in **both web application and validation/runtime/collection worker** environments.
+For example: `https://harbor.internal.example,https://harbor.example.com`.
+When unset or empty, the client refuses connections before transport.
+For internal PKI, make a trusted PEM CA bundle available to all these processes
+and set `INTEGRATION_HARBOR_CA_BUNDLE=/etc/ssl/harbor-ca.pem`. Default behavior
+uses normal certificate verification. No insecure TLS bypass is offered.
+
+Harbor must be reachable directly through its approved HTTPS origin, including
+when it is exposed through a reverse proxy. Client requests reject HTTP redirects,
+do not inherit shell proxies/netrc and reject unapproved origins. App-level origin
+allowlisting is **not DNS pinning or network egress isolation**. Restrict DNS and
+egress to sanctioned Harbor targets using operator-managed infrastructure policy.
+Private/internal addresses are allowed only when explicitly approved.
+
+Before promotion, verify good/bad internal certificates, blocked HTTP/unapproved
+hosts, redirect rejection, stored insecure-record behavior, secret-free evidence,
+browser edit/resave and web/worker environment parity. The provider's resources
+remain authoritative and are never modified by this change.
+
+
+## Integration Coverage versus provider readiness (#1483)
+
+**Harbor Integration Coverage** is an operational-adoption summary across four
+independent dimensions: (1) provider Full Validation/API readiness, (2)
+committed Inventory snapshot, (3) eligible Metrics Source binding, and (4)
+enabled Webhook reconciliation. **Full Coverage** means all four are ready;
+**Partial Coverage** means at least one dimension is missing. This is **not**
+an additional Registry Inventory eligibility requirement and does not override
+the authoritative Full Validation gate. Metrics and Webhook are optional for
+the provider's core Registry function; `Not Bound` or `Not Enabled` is a
+factual not-adopted dimension, not a failed connection test.
+
+Disabled or inactive registered connections retain historical validation
+and committed evidence for audit, but appear as **Disabled** or **Inactive**
+rather than Full Coverage or Active Ready in the operational summary.
+The Integration workspace owns connection posture; downstream Artifact
+Registry source/consumer eligibility is governed by its own issues/contract.
+
+
+## Second-provider extension evidence (#1484)
+
+`tests/contracts/integrations/test_registry_second_provider_extension_contract.py`
+now checks a synthetic second provider's kernel registration, normalized
+inventory collector dispatch, independent optional security/governance
+collectors and digest-based consumer source contracts. The fixture
+does not create an AWS/ECR connection or mutate provider-owned resources.
+
+These tests remain authored-but-not-executed in the review-only GitHub
+workflow. The Registry extension gate still requires PostgreSQL persisted
+second-provider commit/correlation tests, worker concurrency and human
+UAT before full acceptance. See
+`docs/architecture/registry-provider-extension-gate.md`.

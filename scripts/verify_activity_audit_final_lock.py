@@ -110,7 +110,14 @@ def main() -> int:
         errors,
     )
     require(
-        'This register reads hot PostgreSQL records.' in summary,
+        all(
+            token in summary
+            for token in (
+                'Lifecycle Boundary',
+                'Hot + Archive',
+                'Hot PostgreSQL; verified Data Lifecycle archive.',
+            )
+        ),
         'Activity summary must expose hot/archive boundary',
         errors,
     )

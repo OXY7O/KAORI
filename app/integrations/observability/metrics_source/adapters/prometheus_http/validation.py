@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -18,6 +18,48 @@ _PROBE_EXPRESSIONS = {
     'series_discovery': 'up',
     'label_discovery': '__name__',
 }
+
+
+def _valid_core_response(key: str, payload: Any) -> bool:
+    """Check the API response shape for the exact provider-core probe."""
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        return False
+    data = payload.get('data')
+    if key in {'instant_query', 'range_query'}:
+        if not isinstance(data, dict):
+            return False
+        kind = 'vector' if key == 'instant_query' else 'matrix'
+        if data.get('resultType') != kind or not isinstance(data.get('result'), list) or not data['result']:
+            return False
+        for item in data['result']:
+            if not isinstance(item, dict) or not isinstance(item.get('metric'), dict):
+                return False
+            samples = item.get('value' if kind == 'vector' else 'values')
+            if kind == 'vector':
+                if (
+                    not isinstance(samples, list)
+                    or len(samples) != 2
+                    or not isinstance(samples[0], (int, float))
+                    or not isinstance(samples[1], str)
+                ):
+                    return False
+            elif not isinstance(samples, list) or not all(
+                isinstance(sample, list)
+                and len(sample) == 2
+                and isinstance(sample[0], (int, float))
+                and isinstance(sample[1], str)
+                for sample in samples
+            ):
+                return False
+        return True
+    if key == 'series_discovery':
+        return isinstance(data, list) and all(
+            isinstance(item, Mapping) and all(isinstance(k, str) and isinstance(v, str) for k, v in item.items())
+            for item in data
+        )
+    if key == 'label_discovery':
+        return isinstance(data, list) and all(isinstance(item, str) for item in data)
+    return False
 
 
 def validate_metrics_core(client: PrometheusHttpQueryClient) -> dict[str, Any]:
@@ -63,11 +105,11 @@ def validate_metrics_core(client: PrometheusHttpQueryClient) -> dict[str, Any]:
         capability = definition(key)
         try:
             payload = probe()
-            success = isinstance(payload, dict) and payload.get('status') == 'success'
+            success = _valid_core_response(key, payload)
             detail = (
                 success_evidence
                 if success
-                else str((payload or {}).get('error') or 'Prometheus returned an unsuccessful API response.')
+                else 'Prometheus returned an unsuccessful or malformed API response for this operation.'
             )
         except (MetricsSourceError, AttributeError, TypeError, ValueError) as exc:
             success = False

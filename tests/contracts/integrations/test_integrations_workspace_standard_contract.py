@@ -50,7 +50,7 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
         assert 'provider_registry.search_field(' in template
         assert 'provider_registry.select_field(' in template
 
-    assert 'deployment_type' in alertmanager
+    assert 'selected_compatibility' in alertmanager
     assert 'provider_registry.pagination_footer(' in metrics_source_results
     assert 'provider_registry.pagination_footer(' in alertmanager_results
     kubernetes = read(

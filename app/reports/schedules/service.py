@@ -15,9 +15,10 @@ from sqlalchemy import func, or_, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.celery_queue_health import get_queue_readiness
-from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
+from app.common.pagination import PER_PAGE_OPTIONS, paginate_select
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
@@ -42,13 +43,20 @@ from app.reports.schedules.delivery import get_recommended_actions, get_schedule
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
 from app.reports.schedules.presentation import serialize_run as _serialize_run
-from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
-from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
+from app.reports.schedules.read_models import (
+    _get_run_schedule_options,
+    _get_schedule_counts,
+    _get_schedule_filter_context,
+    _serialize_schedule_rows,
+)
+from app.reports.schedules.readiness import get_automation_posture
+from app.reports.schedules.registry import filter_schedule_statement as _filter_schedule_statement
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
+from app.reports.schedules.support import build_run_filter_options as _build_run_filter_options
+from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
-from app.reports.schedules.support import get_cluster_map as _get_cluster_map
 from app.reports.schedules.support import get_cluster_options as _get_cluster_options
 from app.reports.schedules.support import get_default_sections as _get_default_sections
 from app.reports.schedules.support import get_default_sections_by_report_type as _get_default_sections_by_report_type
@@ -66,10 +74,14 @@ from app.reports.schedules.support import is_valid_timezone as _is_valid_timezon
 from app.reports.schedules.support import parse_optional_int as _parse_optional_int
 from app.reports.schedules.support import parse_run_time as _parse_run_time
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
 )
+from app.reports.scope import get_active_registry_options as _get_artifact_registry_options
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
+
+FAILED_REPORT_SCHEDULE_RETRY_MINUTES = 5
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -115,35 +127,40 @@ def get_report_schedules_payload(
     edit_form_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     query_args = query_args or {}
-    all_schedules = _get_schedule_rows()
+    schedule_count, active_count = _get_schedule_counts()
+    filter_context = _get_schedule_filter_context()
     recent_runs = _get_recent_runs()
-    run_rows, run_pagination, run_selected_filters = _get_run_registry(
-        query_args,
-        all_schedules,
-    )
+    run_rows, run_pagination, run_selected_filters = _get_run_registry(query_args)
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
+    artifact_registry_options = _get_artifact_registry_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     selected_filters = _get_selected_filters(query_args)
-    filtered_schedules = _filter_schedule_rows(all_schedules, selected_filters)
-    schedules, pagination = paginate_sequence(
-        filtered_schedules,
+    schedule_records, pagination = paginate_select(
+        db.session,
+        _filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(
+            ReportSchedule.created_at.desc(), ReportSchedule.id.desc()
+        ),
         page=query_args.get('page', 1),
         per_page=query_args.get('per_page', PER_PAGE_OPTIONS[0]),
     )
+    schedules = _serialize_schedule_rows(schedule_records)
 
     if form_state is None:
         form_state = build_default_schedule_form_state()
 
     if edit_schedule_id is None:
         edit_schedule_id = _parse_optional_int(query_args.get('edit_schedule_id'))
-    edit_schedule = next(
-        (item for item in all_schedules if item['id'] == edit_schedule_id),
-        None,
-    )
+    edit_schedule = next((item for item in schedules if item['id'] == edit_schedule_id), None)
+    if edit_schedule is None and edit_schedule_id is not None:
+        edit_record = db.session.get(ReportSchedule, edit_schedule_id)
+        if edit_record is not None:
+            edit_schedule = _serialize_schedule_rows([edit_record])[0]
     if edit_schedule is not None and edit_form_state is not None:
         edit_schedule = {**edit_schedule, 'edit_state': edit_form_state}
+    selected_form = edit_schedule['edit_state'] if edit_schedule is not None else form_state
+    selected_cluster_id = str(selected_form.get('cluster_id') or '')
 
     report_family_by_report_type = {
         item['value']: str(item.get('family') or 'analytics') for item in REPORT_TYPE_OPTIONS
@@ -165,16 +182,19 @@ def get_report_schedules_payload(
         'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
-            schedules=all_schedules,
+            total_schedules=schedule_count,
+            active_schedules=active_count,
             recent_runs=recent_runs,
         ),
         'schedules': schedules,
-        'all_schedule_count': len(all_schedules),
+        'all_schedule_count': schedule_count,
         'recent_runs': recent_runs,
         'run_rows': run_rows,
         'run_pagination': run_pagination,
         'run_selected_filters': run_selected_filters,
-        'run_filter_options': _get_run_filter_options(all_schedules),
+        'run_filter_options': _build_run_filter_options(
+            _get_run_schedule_options(run_selected_filters['run_schedule']), RUN_PERIOD_OPTIONS
+        ),
         'run_registry_query_params': {
             'workspace': 'runs',
             **{key: value for key, value in run_selected_filters.items() if value},
@@ -183,8 +203,9 @@ def get_report_schedules_payload(
             'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
         ),
         'clusters': cluster_options,
-        'namespace_options_by_cluster': _get_namespace_options_by_cluster(),
+        'namespace_options_by_cluster': _get_namespace_options_by_cluster(selected_cluster_id),
         'object_storage_systems': object_storage_system_options,
+        'artifact_registries': artifact_registry_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -210,9 +231,10 @@ def get_report_schedules_payload(
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': _get_delivery_channel_options(),
         'filter_options': _get_schedule_filter_options(
-            all_schedules,
+            filter_context,
             cluster_options,
             object_storage_system_options,
+            artifact_registry_options,
         ),
         'selected_filters': selected_filters,
         'pagination': pagination,
@@ -230,17 +252,18 @@ def get_report_schedules_payload(
 
 def get_summary_cards(
     *,
-    schedules: list[dict[str, Any]],
+    total_schedules: int,
+    active_schedules: int,
     recent_runs: list[dict[str, Any]],
 ) -> list[dict[str, str]]:
-    active_count = sum(1 for item in schedules if item['is_enabled'])
-    paused_count = len(schedules) - active_count
+    active_count = active_schedules
+    paused_count = total_schedules - active_count
     successful_runs = sum(1 for item in recent_runs if item['status'] == 'success')
 
     return [
         {
             'label': 'Total Schedules',
-            'value': str(len(schedules)),
+            'value': str(total_schedules),
             'caption': 'Persisted recurring definitions',
             'icon': 'calendar-clock',
             'tone': 'blue',
@@ -277,6 +300,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'cluster_id': '',
         'namespace': '',
         'object_storage_system_id': '',
+        'registry_integration_id': '',
         'report_type': report_type,
         'period': '30d',
         'output_format': get_report_primary_output_format(report_type),
@@ -294,7 +318,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
 def get_form_state_from_schedule_form(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
 ) -> dict[str, Any]:
-    report_form_state = get_form_state_from_form(form)
+    report_form_state = get_form_state_from_form(form, for_submission=True)
     state = build_default_schedule_form_state()
     state.update(report_form_state)
     state.update(
@@ -370,6 +394,8 @@ def toggle_report_schedule(schedule_id: int) -> tuple[bool, str]:
     schedule.is_enabled = not bool(schedule.is_enabled)
     if schedule.is_enabled:
         schedule.next_run_at = calculate_next_run_at(schedule)
+    else:
+        schedule.next_run_at = None
     db.session.commit()
 
     status = 'enabled' if schedule.is_enabled else 'paused'
@@ -423,11 +449,12 @@ def run_due_schedules(
             continue
 
         success, message, report_id = execute_schedule(schedule, trigger_source='scheduler')
+        skipped = success and report_id is None
         results.append(
             {
                 'schedule_id': schedule.id,
                 'name': schedule.name,
-                'status': 'success' if success else 'failed',
+                'status': 'skipped' if skipped else 'success' if success else 'failed',
                 'message': message,
                 'report_id': report_id,
             }
@@ -443,11 +470,47 @@ def run_due_schedules(
     }
 
 
+def _retry_unadmitted_schedule(schedule: ReportSchedule, *, failed_at: datetime, trigger_source: str) -> None:
+    # A manual request never changes the automated cadence. Only work that was
+    # not admitted to the report queue is eligible for a bounded scheduled retry.
+    if trigger_source == 'scheduler' and schedule.is_enabled:
+        schedule.next_run_at = failed_at + timedelta(minutes=FAILED_REPORT_SCHEDULE_RETRY_MINUTES)
+
+
 def execute_schedule(
     schedule: ReportSchedule,
     *,
     trigger_source: str,
 ) -> tuple[bool, str, int | None]:
+    # Refresh under a database row lock: the due-query is advisory only.
+    # Other scheduler batches and manual runs must recheck persisted state here.
+    locked_schedule = db.session.scalar(
+        select(ReportSchedule)
+        .where(ReportSchedule.id == schedule.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if locked_schedule is None:
+        db.session.rollback()
+        return False, 'Schedule not found.', None
+    schedule = locked_schedule
+    if trigger_source == 'scheduler' and (
+        not schedule.is_enabled or schedule.next_run_at is None or _ensure_utc(schedule.next_run_at) > datetime.now(UTC)
+    ):
+        db.session.rollback()
+        return True, 'Schedule is no longer due; no report was queued.', None
+    active_run = db.session.scalar(
+        select(ReportScheduleRun.id)
+        .where(
+            ReportScheduleRun.schedule_id == schedule.id,
+            ReportScheduleRun.status.in_(('started', 'queued')),
+        )
+        .limit(1)
+    )
+    if active_run is not None:
+        db.session.rollback()
+        return True, 'An earlier occurrence is still active; no duplicate report was queued.', None
+
     run = ReportScheduleRun()
     run.schedule_id = schedule.id
     run.status = 'started'
@@ -459,11 +522,11 @@ def execute_schedule(
     storage_status = get_report_storage_backend_status()
     if not bool(storage_status.get('write_available', False)):
         run.status = 'failed'
-        run.finished_at = datetime.now(UTC)
+        run.finished_at = failed_at = datetime.now(UTC)
         run.error_message = 'Artifact storage is unavailable. Scheduled report generation was not started.'
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        _retry_unadmitted_schedule(schedule, failed_at=failed_at, trigger_source=trigger_source)
         db.session.commit()
         return False, 'Artifact storage is unavailable. The scheduled report was not created.', None
 
@@ -477,11 +540,11 @@ def execute_schedule(
         )
     except ReportContractError as exc:
         run.status = 'failed'
-        run.finished_at = datetime.now(UTC)
+        run.finished_at = failed_at = datetime.now(UTC)
         run.error_message = str(exc)
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        _retry_unadmitted_schedule(schedule, failed_at=failed_at, trigger_source=trigger_source)
         db.session.commit()
         return False, str(exc), None
 
@@ -491,7 +554,8 @@ def execute_schedule(
     run.report_id = report.id
     schedule.last_run_at = run.started_at
     schedule.last_report_id = report.id
-    schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
+    if trigger_source == 'scheduler':
+        schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
     db.session.commit()
 
     try:
@@ -528,10 +592,12 @@ def execute_schedule(
     run = db.session.get(ReportScheduleRun, run.id)
     if run is not None:
         run.job_execution_id = dispatch_job.id
-        run.status = 'queued'
+        if run.status == 'started':
+            run.status = 'queued'
     refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
-    if refreshed_schedule is not None:
-        refreshed_schedule.last_status = 'queued'
+    if refreshed_schedule is not None and refreshed_schedule.last_report_id == report.id:
+        if refreshed_schedule.last_status not in {'success', 'failed'}:
+            refreshed_schedule.last_status = 'queued'
     db.session.commit()
     return True, dispatch.message, report.id
 
@@ -613,53 +679,6 @@ def calculate_next_run_at(
     return candidate.astimezone(UTC)
 
 
-def get_automation_posture(
-    storage_context: dict[str, Any],
-    worker_context: dict[str, Any],
-) -> dict[str, str]:
-    storage_ready = bool(storage_context.get('ready', False))
-    worker_tone = str(worker_context.get('tone') or 'unknown')
-    worker_ready = worker_tone == 'normal'
-
-    if not storage_ready:
-        return {
-            'status_label': 'Execution Needs Review',
-            'status_tone': 'warning',
-            'title': 'Artifact Execution Paused',
-            'description': (
-                'Schedule definitions remain available for management, but Run Now and unattended '
-                'generation stay paused until artifact storage is writable.'
-            ),
-            'execution_label': 'Paused',
-            'execution_tone': 'warning',
-        }
-
-    if not worker_ready:
-        return {
-            'status_label': 'Dispatcher Needs Review',
-            'status_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
-            'title': 'Dispatcher Needs Attention',
-            'description': (
-                'Artifact storage is writable, but unattended execution depends on a healthy Reports '
-                'worker consuming the dedicated queue.'
-            ),
-            'execution_label': 'Needs Review',
-            'execution_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
-        }
-
-    return {
-        'status_label': 'Automation Ready',
-        'status_tone': 'normal',
-        'title': 'Ready for Unattended Execution',
-        'description': (
-            'Schedule definitions, the Reports worker, and artifact storage are ready for Run Now '
-            'and recurring report execution.'
-        ),
-        'execution_label': 'Ready',
-        'execution_tone': 'normal',
-    }
-
-
 def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str, Any]) -> None:
     schedule.name = form_state['name']
     schedule.description = form_state['description'] or None
@@ -673,6 +692,13 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
         system = db.session.get(ObjectStorageSystem, system_id) if system_id else None
         schedule.scope_asset_id = system_id or None
         schedule.scope_asset_label_snapshot = system.name if system is not None else None
+        schedule.cluster_id = None
+        schedule.namespace = None
+    elif spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        instance_id = str(form_state.get('registry_integration_id') or '').strip()
+        instance = db.session.get(IntegrationInstance, int(instance_id)) if instance_id.isdigit() else None
+        schedule.scope_asset_id = instance_id or None
+        schedule.scope_asset_label_snapshot = instance.name if instance is not None else None
         schedule.cluster_id = None
         schedule.namespace = None
     else:
@@ -736,7 +762,6 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
 
 def _get_run_registry(
     query_args: Mapping[str, str],
-    schedules: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, str]]:
     selected_filters = _get_run_selected_filters(query_args)
     statement = (
@@ -751,6 +776,7 @@ def _get_run_registry(
         statement = statement.where(
             or_(
                 func.lower(func.coalesce(ReportSchedule.name, 'deleted schedule')).like(pattern),
+                func.lower(func.cast(ReportScheduleRun.schedule_snapshot, db.String)).like(pattern),
                 func.lower(func.coalesce(ReportScheduleRun.error_message, '')).like(pattern),
             )
         )
@@ -777,14 +803,7 @@ def _get_run_registry(
         page=query_args.get('run_page', 1),
         per_page=query_args.get('run_per_page', PER_PAGE_OPTIONS[0]),
     )
-    schedule_context_map = {
-        int(item['id']): {
-            'name': str(item['name']),
-            'icon': str(item.get('report_icon') or 'calendar-clock'),
-        }
-        for item in schedules
-        if item.get('id') is not None
-    }
+    schedule_context_map = _get_schedule_context_map([item.schedule_id for item in runs if item.schedule_id])
     return (
         [_serialize_run(item, schedule_context_map) for item in runs],
         pagination,
@@ -806,52 +825,19 @@ def _get_run_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
     }
 
 
-def _get_run_filter_options(
-    schedules: list[dict[str, Any]],
-) -> dict[str, list[dict[str, str]]]:
-    return {
-        'schedules': [
-            {'value': '', 'label': 'All Schedules'},
-            *[
-                {'value': str(item['id']), 'label': str(item['name'])}
-                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
-            ],
-        ],
-        'triggers': [
-            {'value': '', 'label': 'All Triggers'},
-            {'value': 'scheduler', 'label': 'Scheduler'},
-            {'value': 'manual', 'label': 'Manual'},
-        ],
-        'statuses': [
-            {'value': '', 'label': 'All Results'},
-            {'value': 'queued', 'label': 'Queued'},
-            {'value': 'started', 'label': 'Started'},
-            {'value': 'success', 'label': 'Success'},
-            {'value': 'failed', 'label': 'Failed'},
-        ],
-        'periods': list(RUN_PERIOD_OPTIONS),
-    }
-
-
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
     object_storage_system_options: list[dict[str, str]],
+    artifact_registry_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
-    asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
-    }
-    asset_options.update(
-        {
-            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
-            for item in object_storage_system_options
-        }
+    asset_filter_options = _build_schedule_asset_filter_options(
+        schedules,
+        cluster_options,
+        object_storage_system_options,
+        artifact_registry_options,
     )
-    for schedule in schedules:
-        key = str(schedule.get('scope_asset_filter_key') or '')
-        if key and key not in asset_options:
-            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -866,37 +852,13 @@ def _get_schedule_filter_options(
             {'value': '', 'label': 'All Report Types'},
             *[{'value': item['value'], 'label': item['label']} for item in REPORT_TYPE_OPTIONS],
         ],
-        'assets': [
-            {'value': '', 'label': 'All Infrastructure Assets'},
-            *[
-                {'value': value, 'label': label}
-                for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
-            ],
-        ],
+        'assets': asset_filter_options,
         'deliveries': [
             {'value': '', 'label': 'All Delivery'},
             {'value': 'none', 'label': 'No Notification'},
-            *[
-                {'value': item['value'], 'label': item['label']}
-                for item in delivery_catalog
-                if item.get('selectable')
-                or item.get('value')
-                in {str(channel) for schedule in schedules for channel in schedule['notification_channel_ids']}
-            ],
+            *[{'value': item['value'], 'label': item['label']} for item in delivery_catalog if item.get('value')],
         ],
     }
-
-
-def _get_schedule_rows() -> list[dict[str, Any]]:
-    schedules = db.session.scalars(
-        select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
-    ).all()
-    cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
-    delivery_label_map = {
-        int(item['channel_id']): f'{item["label"]} · {item["provider"]}' for item in _get_delivery_channel_options()
-    }
-
-    return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
 
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
@@ -925,7 +887,7 @@ def _get_storage_context() -> dict[str, Any]:
             'checked_at': status.get('checked_at'),
             'source': str(status.get('source') or 'direct'),
         }
-    except Exception:
+    except (OSError, RuntimeError, TypeError, ValueError):
         return {
             'backend': 'unknown',
             'status': 'Needs Review',

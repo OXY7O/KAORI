@@ -1,0 +1,232 @@
+{% extends "layouts/app.html" %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_asset_owner_delete_modal.html" as asset_owner_delete_modal %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
+{% import "integrations/components/_provider_operational_context.html" as operational_context %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_workspace.html" as ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}{{ canonical.name }} · GitHub Integration · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set readiness = canonical.readiness_status or 'validation_required' %}
+    {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+    {% set feedback_map = {
+        "validation_queued": "Full Validation requested through canonical JobExecution.",
+        "validation_blocked": "Full Validation is blocked. Review worker readiness and installation authorization.",
+        "runtime_queued": "Runtime Refresh requested through canonical JobExecution.",
+        "runtime_blocked": "Runtime Refresh could not start. Review worker readiness and installation authorization.",
+        "configuration_updated": "GitHub connection configuration saved; existing validation evidence retained.",
+        "configuration_revalidation_required": "Connection settings saved; run Full Validation before operational use."
+    } %}
+    {% set requested_tab = request.args.get('tab', '') %}
+    {% set initial_tab = requested_tab if requested_tab in ['configuration', 'validation', 'runtime', 'inventory'] else ('validation' if feedback in ['validation_queued', 'validation_blocked'] else ('runtime' if feedback in ['runtime_queued', 'runtime_blocked'] else ('inventory' if feedback in ['sync_queued', 'sync_blocked'] else 'configuration'))) %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-github-installation-detail
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], '{{ initial_tab }}', 'github-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("git-branch", "Source Control Integration", "shield-check") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ canonical.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage GitHub App access, validation, and repository evidence.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
+                            {{ page_hero.meta_label('git-branch', 'Installation ' ~ installation.native_installation_id) }}
+                            {{ page_hero.meta_label('network', canonical.environment|replace('_', ' ') |title) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ provider_detail_posture.render("GitHub connection posture",
+                                "GitHub App Readiness",
+                                source_posture,
+                                "shield-check",
+                                "Full Validation",
+                                readiness|replace("_", " ") |title,
+                "Produced by provider validation",
+                "git-branch",
+                "Committed Repository Grants",
+                inventory.total if inventory.total is not none else "Unknown",
+                "Committed grants only",
+                url_for("github_source.index", tab="registry"),
+                primary_action_label="Review Validation",
+                primary_action_tab="validation",
+                show_primary_action=true,
+                posture_key="github") }}
+            </div>
+        </section>
+        {% if feedback in feedback_map and feedback not in ['configuration_updated', 'configuration_revalidation_required'] %}
+            {{ operational_callout.render("Connection Operation",
+                        feedback_map[feedback],
+                        icon="info",
+                        tone="warning" if feedback in ['validation_blocked', 'runtime_blocked', 'sync_blocked'] else "info",
+                        variant="semantic") }}
+        {% endif %}
+        <section id="github-detail-tabs" class="{{ ui.section_shell_classes() }}">
+            {{ framed_workspace_tabs.render([
+                        ('configuration', 'Configuration', 'settings-2', canonical.environment|replace('_', ' ') |title),
+            ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ') |title),
+            ('runtime', 'Runtime & History', 'activity', 'Jobs & Deliveries'),
+            ('inventory', 'Inventory & Lifecycle', 'database', (inventory.total|string) if inventory.total is not none else 'Unknown')
+            ],
+            prefix='github',
+            aria_label='GitHub Connection Domains') }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="github-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="github-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    <div class="space-y-4 font-sans" data-kaori-connection-contract-v2>
+                        <section class="{{ ui.section_shell_classes() }} overflow-hidden">
+                            {% set github_connection_status %}
+                                {{ integration_status(readiness, display='text') }}
+                            {% endset %}
+                            {% set connection_title_tip %}
+                                {{ info_tip.render('github-connection-contract-guide',
+                                                                'GitHub Connection Contract',
+                                                                'KAORI owns the canonical connection identity and audit context. GitHub owns App installations and repository permissions.',
+                                                                [
+                                                                'Saving descriptive settings preserves the existing provider installation identity.',
+                                                                'Grant changes or App credential rotation require a fresh Full Validation.',
+                                                                'Repository evidence is committed only after separately authorized synchronization.'
+                                                                ],
+                                                                placement='right', variant='guide') }}
+                            {% endset %}
+                            {{ ui.section_header('file-key-2',
+                                                        'Connection Contract',
+                                                        'Canonical identity, installation access, provider authority, and operational ownership for this GitHub connection.',
+                                                        action_html=github_connection_status,
+                                                        title_extra=connection_title_tip) }}
+                            <section aria-labelledby="github-connection-summary-title"
+                                     data-kaori-connection-summary>
+                                <h3 id="github-connection-summary-title" class="sr-only">Connection Summary</h3>
+                                <dl class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                                    {% for label, value, helper in [
+                                        ('Canonical Identity', '#' ~ canonical.id ~ ' · ' ~ canonical.name, 'Stable audit and binding identity'),
+                                        ('Environment', canonical.environment|replace('_', ' ') |title, 'Coverage and policy context'),
+                                        ('GitHub App ID', installation.native_app_id, 'GitHub-owned App identity'),
+                                        ('Installation ID', installation.native_installation_id, 'GitHub-owned installation scope')
+                                        ] %}
+                                        <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                            <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1.5 truncate text-sm font-semibold text-content-primary"
+                                                title="{{ value }}">
+                                                {{ value }}
+                                            </dd>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+                            <div class="space-y-4 p-4 sm:p-5">
+                                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                                         aria-labelledby="github-connection-evidence-title"
+                                         data-kaori-connection-evidence>
+                                    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            {{ ui.palette_icon('waypoints', 'brand', size='sm') }}
+                                            <div class="min-w-0">
+                                                <h3 id="github-connection-evidence-title"
+                                                    class="text-sm font-semibold text-content-primary">Connection Evidence</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Installation identity, access contract, and committed inventory authority currently registered in KAORI.</p>
+                                            </div>
+                                        </div>
+                                        {{ table_label.metadata_label('GitHub REST API v3', 'git-branch') }}
+                                    </header>
+                                    <dl class="grid divide-y divide-outline-subtle lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))] lg:divide-x lg:divide-y-0">
+                                        <div class="min-w-0 p-4 sm:p-5">
+                                            <dt class="flex items-center gap-2.5 text-xs font-semibold text-content-muted">
+                                                {{ ui.palette_icon('server', 'brand', size='sm') }}
+                                                GitHub Host
+                                            </dt>
+                                            <dd class="mt-2">
+                                                <p class="break-all text-sm font-semibold leading-6 text-content-primary">{{ installation.host_key }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">GitHub owns repositories and native permission grants.</p>
+                                            </dd>
+                                        </div>
+                                        <div class="min-w-0 p-4 sm:p-5">
+                                            <dt class="flex items-center gap-2.5 text-xs font-semibold text-content-muted">
+                                                {{ ui.palette_icon('shield-check', 'brand', size='sm') }}
+                                                Connection Validation
+                                            </dt>
+                                            <dd class="mt-2">
+                                                {{ integration_status(readiness, display='indicator') }}
+                                                <p class="mt-2 text-xs leading-5 text-content-secondary">Registration is not Full Validation.</p>
+                                            </dd>
+                                        </div>
+                                        <div class="min-w-0 p-4 sm:p-5">
+                                            <dt class="flex items-center gap-2.5 text-xs font-semibold text-content-muted">
+                                                {{ ui.palette_icon('key-round', 'info', size='sm') }}
+                                                Access Contract
+                                            </dt>
+                                            <dd class="mt-2">
+                                                <p class="text-sm font-semibold text-content-primary">{{ installation.repository_scope|title }} Repositories</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">GitHub App installation grants determine accessible repositories.</p>
+                                            </dd>
+                                        </div>
+                                        <div class="min-w-0 p-4 sm:p-5">
+                                            <dt class="flex items-center gap-2.5 text-xs font-semibold text-content-muted">
+                                                {{ ui.palette_icon('database', 'brand', size='sm') }}
+                                                Inventory Authority
+                                            </dt>
+                                            <dd class="mt-2">
+                                                <p class="text-sm font-semibold text-content-primary">{{ 'Committed' if inventory.total is not none else 'Not Observed' }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI records verified, effective-dated grants only after repository collection.</p>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </section>
+                                {% set github_operational_flow = [('Configure', 'Set connection identity, GitHub App installation, and least-privilege access.', 'settings-2'), ('Validate', 'Verify installation identity, granted permissions, and provider readiness.', 'badge-check'), ('Observe', 'Retain canonical JobExecution and authorized runtime evidence.', 'activity'), ('Synchronize', 'Commit repository grants and exact source revisions after validation.', 'refresh-cw')] %}
+                                {{ operational_context.render('GitHub owns repositories, installation grants, branches, and workflow execution. KAORI governs connection identity, committed evidence, correlation, and audit.',
+                                                                github_operational_flow,
+                                                                ['GitHub App', installation.repository_scope|title, 'Committed Evidence']) }}
+                                {% include 'integrations/source_control/github/partials/_minimum_validation_permissions.html' %}
+                            </div>
+                            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                <div class="flex items-start gap-2.5">
+                                    {{ ui.palette_icon('info', 'info', size='xs') }}
+                                    <p class="pt-0.5 text-xs leading-5 text-content-secondary">GitHub permission changes require fresh Full Validation; repository coverage requires a separate authorized synchronization.</p>
+                                </div>
+                                <a href="{{ url_for('github_source_uat.edit_connection', installation_id=installation.id) }}"
+                                   class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                   title="Edit this GitHub connection in KAORI.">
+                                    <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                    Configure Connection
+                                </a>
+                            </footer>
+                        </section>
+                    </div>
+                </div>
+                <div id="github-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="github-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>{% include "integrations/source_control/github/partials/_detail_validation.html" %}</div>
+                <div id="github-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="github-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/source_control/github/partials/_detail_runtime.html" %}
+                </div>
+                <div id="github-panel-inventory"
+                     x-data='{ deleteModal: false, deleteName: {{ canonical.name|tojson }}, deleteUrl: {{ url_for("github_source_uat.delete_connection", installation_id=installation.id) |tojson }} }'
+                     role="tabpanel"
+                     aria-labelledby="github-tab-inventory"
+                     x-show="activeTab === 'inventory'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/source_control/github/partials/_detail_inventory.html" %}
+                    {{ asset_owner_delete_modal.render('Delete GitHub Connection',
+                                        'Removes the connection from active KAORI use. Existing repository grants, revisions, JobExecution, and audit history are retained. GitHub App permissions are not revoked.',
+                                        'KAORI connection lifecycle only') }}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

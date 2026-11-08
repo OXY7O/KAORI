@@ -13,8 +13,13 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
+from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
+from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
+from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
+from app.models.capsule_handoff_proof import CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory, TLSCertificateUpdateEvent
+from app.models.harbor import HarborInstance
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.intelligence import (
@@ -42,10 +47,26 @@ from app.models.lifecycle import DataLifecyclePolicy
 from app.models.metrics_source import MetricsSource
 from app.models.minio import MinioInstance
 from app.models.notification import Notification
-from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.models.notification_channel import NotificationChannel, NotificationDelivery, NotificationDeliveryIdentity
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.registry import (
+    RegistryAnalyticsSnapshot,
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryGovernanceState,
+    RegistryProject,
+    RegistryProjectGovernance,
+    RegistryReplicationPolicy,
+    RegistryRepository,
+    RegistryScanSnapshot,
+    RegistryTag,
+    RegistryVulnerability,
+    RegistryWebhookEndpoint,
+    RegistryWebhookEvent,
+    RegistryWorkloadBinding,
+)
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (
     ResolverDeploymentPolicy,
@@ -53,15 +74,105 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
+from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
+from app.models.secrets_pki import (
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
+)
+from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
+from app.models.secrets_pki_stored_certificates import (
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
+)
+from app.models.source_control import (
+    GitHubAppCredential,
+    SourceAccount,
+    SourceInstallation,
+    SourceReference,
+    SourceReferenceTransition,
+    SourceRepository,
+    SourceRepositoryCollectionState,
+    SourceRepositoryGrant,
+    SourceRevision,
+    SourceWebhookDelivery,
+)
+from app.models.tenant import (
+    Tenant,
+    TenantAccessGrant,
+    TenantAccessGrantStatus,
+    TenantAccessProfileKey,
+    TenantAccessReconciliationStatus,
+    TenantAccessScope,
+    TenantCapacityDecision,
+    TenantCapacityPolicy,
+    TenantCredential,
+    TenantCredentialDeliveryMethod,
+    TenantCredentialGeneration,
+    TenantCredentialReconciliationStatus,
+    TenantCredentialStatus,
+    TenantCredentialType,
+    TenantEnvironment,
+    TenantEnvironmentName,
+    TenantGroup,
+    TenantLifecycleStatus,
+    TenantMembership,
+    TenantMembershipPrincipalType,
+    TenantMembershipStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
+    TenantOwnershipStatus,
+    TenantProductionAccessException,
+    TenantProductionAccessExceptionStatus,
+    TenantResourceProfile,
+    TenantResourceProfileClass,
+)
+from app.models.tenant_advanced import (
+    TenantAdvancedCapabilityIntent,
+    TenantAdvancedCapabilityStatus,
+    TenantAdvancedResourceKind,
+)
+from app.models.tenant_audit import (
+    TenantAuditCorrelationStatus,
+    TenantAuditEvidence,
+    TenantAuditPrincipalKind,
+)
+from app.models.tenant_managed_resource import (
+    TenantManagedResourceIntent,
+    TenantManagedResourceKind,
+    TenantManagedResourceMode,
+    TenantManagedResourceStatus,
+)
+from app.models.tenant_policy import (
+    TenantDomainMatchMode,
+    TenantDomainReservation,
+    TenantDomainReservationStatus,
+    TenantExposurePolicy,
+    TenantExposurePolicyStatus,
+)
 from app.models.user import User
+from app.models.vault import VaultInstance
 
 __all__ = [
+    'GitHubAppCredential',
+    'SourceAccount',
+    'SourceInstallation',
+    'SourceReference',
+    'SourceReferenceTransition',
+    'SourceRepository',
+    'SourceRepositoryGrant',
+    'SourceRevision',
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
+    'AuthenticationMfaFactor',
+    'AuthenticationSecurityPolicy',
     'AuditEvent',
     'IdentityProvider',
+    'HarborInstance',
+    'VaultInstance',
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
@@ -86,6 +197,49 @@ __all__ = [
     'ClusterStatus',
     'Cluster',
     'User',
+    'Tenant',
+    'TenantAdvancedCapabilityIntent',
+    'TenantAdvancedCapabilityStatus',
+    'TenantAdvancedResourceKind',
+    'TenantAuditCorrelationStatus',
+    'TenantAuditEvidence',
+    'TenantAuditPrincipalKind',
+    'TenantAccessGrant',
+    'TenantAccessGrantStatus',
+    'TenantAccessProfileKey',
+    'TenantAccessReconciliationStatus',
+    'TenantAccessScope',
+    'TenantCapacityDecision',
+    'TenantCapacityPolicy',
+    'TenantCredential',
+    'TenantCredentialDeliveryMethod',
+    'TenantCredentialGeneration',
+    'TenantCredentialReconciliationStatus',
+    'TenantCredentialStatus',
+    'TenantCredentialType',
+    'TenantDomainMatchMode',
+    'TenantDomainReservation',
+    'TenantDomainReservationStatus',
+    'TenantExposurePolicy',
+    'TenantExposurePolicyStatus',
+    'TenantEnvironment',
+    'TenantEnvironmentName',
+    'TenantGroup',
+    'TenantLifecycleStatus',
+    'TenantMembership',
+    'TenantMembershipPrincipalType',
+    'TenantMembershipStatus',
+    'TenantManagedResourceIntent',
+    'TenantManagedResourceKind',
+    'TenantManagedResourceMode',
+    'TenantManagedResourceStatus',
+    'TenantNamespace',
+    'TenantNamespaceProvisioningStatus',
+    'TenantOwnershipStatus',
+    'TenantProductionAccessException',
+    'TenantProductionAccessExceptionStatus',
+    'TenantResourceProfile',
+    'TenantResourceProfileClass',
     'Role',
     'Permission',
     'RolePermission',
@@ -102,6 +256,7 @@ __all__ = [
     'Notification',
     'NotificationChannel',
     'NotificationDelivery',
+    'NotificationDeliveryIdentity',
     'TLSCertificateCollectionState',
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',
@@ -115,13 +270,40 @@ __all__ = [
     'RecommendationAlertPolicy',
     'RecommendationAlertState',
     'RuleException',
+    'RegistryCollectionState',
+    'RegistryProject',
+    'RegistryRepository',
+    'RegistryArtifact',
+    'RegistryTag',
+    'RegistryScanSnapshot',
+    'RegistryVulnerability',
+    'RegistryWorkloadBinding',
+    'RegistryGovernanceState',
+    'RegistryProjectGovernance',
+    'RegistryReplicationPolicy',
+    'RegistryWebhookEndpoint',
+    'RegistryWebhookEvent',
+    'RegistryAnalyticsSnapshot',
     'Report',
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'PKIStoredCertificateCollectionState',
+    'PKIStoredCertificateObservation',
+    'PKIIssuerCollectionState',
+    'PKIIssuerIdentity',
+    'PKIPublicCertificateObservation',
+    'SecretIdentity',
+    'SecretInventoryCollectionState',
+    'SecretProviderRepresentation',
+    'SecretVersionObservation',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',
     'ResolverOperationalControl',
     'ResolverProductionReadinessRecord',
+    'ScopeAccessPolicy',
+    'ScopeAccessPolicyRevision',
+    'SourceRepositoryCollectionState',
+    'SourceWebhookDelivery',
 ]

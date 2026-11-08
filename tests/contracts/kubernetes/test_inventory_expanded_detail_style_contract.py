@@ -65,6 +65,25 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
 
 
+def test_shared_inspector_summary_uses_full_width_modal_band() -> None:
+    shared = read('app/templates/components/details/_detail_content.html')
+    summary = shared.split('{% macro inspector_summary_strip', 1)[1].split(
+        '{%- endmacro %}',
+        1,
+    )[0]
+
+    assert 'data-kaori-inventory-summary-alignment="full-width-band"' in summary
+    assert 'grid min-w-0 w-full overflow-hidden bg-surface-card' in summary
+    assert 'sm:grid-cols-2' in summary
+    assert 'xl:grid-cols-4' in summary
+    for retired in ('mx-4', 'sm:mx-5', 'lg:mx-6', 'rounded-2xl', 'border border-outline-subtle bg-surface-card'):
+        assert retired not in summary
+
+    article = summary.split('<article', 1)[1].split('>', 1)[0]
+    assert 'border-r' not in article
+    assert 'border-b' not in article
+
+
 def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() -> None:
     templates = (
         'app/templates/access/activity_audit/partials/_activity_detail.html',
@@ -89,6 +108,55 @@ def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() ->
             assert 'workspace_header(' in source, relative
             assert 'header_identity_row()' in source, relative
             assert 'inventory_title(' in source, relative
+            assert 'compact=true' in source, relative
+            assert 'context_items=' in source, relative
         else:
             assert 'header_identity_row()' in source, relative
         assert 'header_badge_row()' not in source, relative
+
+
+def test_kubernetes_inventory_headers_follow_approved_three_row_shared_grammar() -> None:
+    shared = read('app/templates/components/details/_detail_content.html')
+    cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
+    permission = read('app/templates/access/permissions/partials/_permission_detail.html')
+    modal_host = read('app/templates/components/resource_detail_modal.html')
+
+    assert "macro workspace_header(description, icon='panel-top-open', context_items=none, compact=false)" in shared
+    assert 'data-kaori-detail-header-layout="title-description-context"' in shared
+    assert 'macro header_context_row(items)' in shared
+    assert 'data-resource-detail-header-context' in shared
+    normalized_shared = shared.replace(') ,', '),')
+    assert "table_label.metadata_label(item.label, item.icon|default(none), true, 'detail')" in normalized_shared
+    header = shared.split('{% macro workspace_header(', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert (
+        header.index('{{ caller() }}')
+        < header.index('{{ description }}')
+        < header.index('header_context_row(context_items)')
+    )
+    assert "'text-xs leading-5 text-content-muted' if compact" in header
+
+    all_details = [
+        'app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html',
+        *(
+            f'app/templates/kubernetes/inventory/{resource}/partials/{filename}'
+            for resource, filename in DETAIL_FILES.items()
+        ),
+    ]
+    for relative in all_details:
+        source = read(relative)
+        header_content = source.split('detail.inspector_summary_strip(', 1)[0]
+        assert 'context_items=' in header_content, relative
+        assert 'compact=true' in header_content, relative
+        assert 'detail.header_identity_row()' in header_content, relative
+        assert 'detail.inventory_title(' in header_content, relative
+        assert (
+            'table_label.status_indicator_label(' in header_content or "item.type == 'StorageClass'" in header_content
+        ), relative
+
+    assert "'label': cluster.kubernetes_version" in cluster
+    assert 'inventory_title(cluster.name, compact=true)' in cluster
+    assert 'status_indicator_label(connection_label, connection_tone' in cluster
+    assert 'context_items=' not in permission
+    assert 'data-resource-detail-header-host' in modal_host
+    assert 'data-resource-detail-summary-host' in modal_host
+    assert 'data-resource-detail-close' in modal_host

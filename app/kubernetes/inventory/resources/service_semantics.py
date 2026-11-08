@@ -188,8 +188,7 @@ def operational_context(registration: dict[str, Any]) -> dict[str, str]:
         registration['label'],
         (
             'Service Snapshot Ready for Review',
-            'Backend registration evidence is available in the committed snapshot. Traffic '
-            'health and reachability remain outside inventory scope.',
+            'Backend registration committed; traffic and reachability remain unverified.',
             'circle-check',
             'normal',
         ),

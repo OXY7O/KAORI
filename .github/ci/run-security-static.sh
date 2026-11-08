@@ -9,15 +9,19 @@ mkdir -p "$ARTIFACT_DIR"
 
 printf '[KAORI CI] workflow lint\n'
 actionlint .github/workflows/*.yml
+printf '✅ Workflow lint PASS\n'
 
 printf '[KAORI CI] workflow security lint\n'
 zizmor --persona=regular --min-severity=medium .github/workflows
+printf '✅ Workflow security lint PASS\n'
 
 printf '[KAORI CI] shell lint\n'
 shellcheck .github/ci/*.sh scripts/*.sh
+printf '✅ Shell lint PASS\n'
 
 printf '[KAORI CI] Dockerfile lint\n'
 hadolint --failure-threshold error Dockerfile .github/ci/Dockerfile
+printf '✅ Dockerfile lint PASS\n'
 
 printf '[KAORI CI] secret scan\n'
 gitleaks git \
@@ -26,6 +30,7 @@ gitleaks git \
   --report-format json \
   --report-path "$ARTIFACT_DIR/gitleaks.json" \
   .
+printf '✅ Redacted secret scan PASS\n'
 
 printf '[KAORI CI] Python SAST\n'
 set +e
@@ -101,12 +106,16 @@ semgrep scan \
   --json \
   --json-output "$ARTIFACT_DIR/semgrep.json" \
   app scripts frontend
+printf '✅ Semgrep SAST PASS\n'
 
 printf '[KAORI CI] Python dependency audit\n'
 pip-audit -r requirements/base.txt --format=json --output="$ARTIFACT_DIR/pip-audit-base.json"
+printf '✅ Base dependency audit PASS\n'
 pip-audit -r requirements/dev.txt --format=json --output="$ARTIFACT_DIR/pip-audit-dev.json"
+printf '✅ Development dependency audit PASS\n'
 
 printf '[KAORI CI] Node dependency audit\n'
 npm audit --audit-level=high --json > "$ARTIFACT_DIR/npm-audit.json"
+printf '✅ Node dependency audit PASS\n'
 
 printf 'PASS — KAORI Free-Plan Static Security\n'

@@ -1,24 +1,27 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
 {% import "components/details/_expandable_row.html" as detail_row %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {# data-detail-toggle data-detail-row data-detail-group="rule-catalog" data-detail-context="Rule Definition" are emitted by detail_row.toggle_button and detail_row.detail_row. #}
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[980px] table-fixed border-collapse text-left">
-        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
+    <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">
+        <caption class="sr-only">Intelligence rule definitions and their availability</caption>
+        <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="w-[32%] px-5 py-3">Rule Definition</th>
-                <th class="w-[18%] px-4 py-3">Domain & Resource</th>
-                <th class="w-[20%] px-4 py-3">Signal Contract</th>
-                <th class="w-[18%] px-4 py-3">Availability</th>
-                <th class="w-[12%] px-5 py-3 text-right">Details</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Rule Definition</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Domain & Resource</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Signal Contract</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Availability</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-outline-subtle">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for item in payload['items']|default([], true) %}
                 {% set detail_target_id = 'catalog-rule-detail-' ~ loop.index %}
                 {% set detail_row_id = detail_target_id ~ '-row' %}
-                <tr class="bg-surface-card align-top transition-colors hover:bg-surface-hover">
-                    <td class="px-5 py-4">
+                <tr class="{{ table_ui.row_classes() }} bg-surface-card align-top">
+                    <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
@@ -32,7 +35,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ item.domain_label }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.source_kind_label }}</p>
                         <div class="mt-2 flex flex-wrap gap-2">
@@ -42,12 +45,12 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ item.signal_source_label }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>
                         <div class="mt-2">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</div>
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex flex-wrap gap-1.5">
                             {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
                             {% if item.alert_escalation.eligible %}
@@ -61,7 +64,7 @@
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Ready in the current KAORI boundary.' if item.status == 'available' else ('Enriched from an upstream signal.' if item.status == 'imported_signal' else 'Cataloged only; enabled outside this boundary.') }}</p>
                     </td>
-                    <td class="px-5 py-4 text-right">
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
                         {{ detail_row.toggle_button('rule-catalog',
                                                 item.rule_key,
                                                 url_for('intelligence.catalog_rule_details', rule_key=item.rule_key) ,
@@ -76,7 +79,7 @@
                 {{ detail_row.detail_row(detail_row_id, detail_target_id, 5) }}
             {% else %}
                 <tr>
-                    <td colspan="5" class="px-5 py-8">
+                    <td colspan="5" class="{{ table_ui.cell_classes() }} py-8">
                         {{ intelligence_ui.empty_state('No Rule Definitions Match the Current Filters', 'Adjust the catalog filters or search text.', 'search-x', 'No Results') }}
                     </td>
                 </tr>

@@ -61,6 +61,21 @@ def main() -> int:
         errors.append('Identity Provider provider definitions must be loaded from the source-controlled catalog')
     if 'AuthProviderType' in catalog:
         errors.append('Identity Provider core must not restore a product enum')
+    for required in ('BrowserProtocol', 'BrowserPkcePolicy', 'BrowserProviderProfile', 'browser_profile'):
+        if required not in catalog:
+            errors.append(f'Identity Provider catalog missing reusable browser profile contract: {required}')
+
+    provider_catalog = read('app/definitions/catalogs/access/authentication/identity_provider/providers.yaml')
+    for required in (
+        'browser_profile:',
+        'protocol: oidc',
+        'protocol: oauth2',
+        'identity_resolver_key: oidc_claims',
+        'identity_resolver_key: github',
+        'pkce_policy: preferred',
+    ):
+        if required not in provider_catalog:
+            errors.append(f'Identity Provider provider catalog missing browser profile authority: {required}')
 
     routes = read('app/access/identity_providers/routes.py')
     if "url_prefix='/access/identity-providers'" not in routes:
@@ -80,6 +95,19 @@ def main() -> int:
     for forbidden in ('google_oidc', 'github_oauth', "=== 'google'", "=== 'github'", "=== 'ldap'"):
         if forbidden in form_js:
             errors.append(f'Identity Provider core form JS contains product/adapter-specific branch: {forbidden}')
+
+    integration_contract = read('docs/authentication/PROVIDER_INTEGRATION_CONTRACT.md')
+    architecture = read('docs/authentication/AUTHENTICATION_ARCHITECTURE.md')
+    for required in (
+        'Browser Protocol and Provider Profile Contract',
+        'OAuth 2.0 alone is not a universal identity protocol',
+        'Provider-specific identity resolvers',
+    ):
+        if required not in integration_contract:
+            errors.append(f'Identity Provider integration contract missing reusable browser authority: {required}')
+    for required in ('Browser Protocol / Provider Separation', 'reusable oidc adapter', 'reusable oauth2 transport'):
+        if required not in architecture:
+            errors.append(f'Authentication architecture missing reusable browser extension authority: {required}')
 
     login = read('app/templates/access/authentication/partials/_login_form.html')
     if 'provider.provider_type' in login:

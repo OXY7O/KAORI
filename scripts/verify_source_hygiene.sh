@@ -26,8 +26,26 @@ is_forbidden_path() {
 violations=()
 checked=0
 
-if [[ -d .git ]]; then
-    mapfile -t candidates < <(git -c safe.directory="$ROOT" ls-files)
+# Linked Git worktrees use a .git *file*; only unpacked archives lack Git metadata.
+if [[ -d .git || -f .git ]]; then
+    # A broken/spoofed .git pointer must not turn the tracked-source check into
+    # a vacuous PASS when git ls-files would otherwise yield no candidates.
+    if [[ "$(git -c safe.directory="$ROOT" rev-parse --is-inside-work-tree 2>/dev/null || true)" != 'true' ]]; then
+        printf 'ERROR: Git metadata is present but no valid working tree was found.\n' >&2
+        exit 1
+    fi
+    # Process substitution hides the producer exit status: a failed git
+    # ls-files must never be mistaken for a clean (empty) tracked-source set.
+    tracked_list="$(mktemp)"
+    # NUL framing preserves literal filenames even when Git quotePath would
+    # escape tabs/newlines in its default newline-delimited presentation.
+    if ! git -c safe.directory="$ROOT" ls-files -z > "$tracked_list"; then
+        rm -f "$tracked_list"
+        printf 'ERROR: Git tracked-source enumeration failed.\n' >&2
+        exit 1
+    fi
+    mapfile -d '' -t candidates < "$tracked_list"
+    rm -f "$tracked_list"
     source_label='tracked source'
 else
     mapfile -d '' -t candidates < <(

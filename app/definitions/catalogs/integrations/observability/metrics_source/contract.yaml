@@ -74,7 +74,7 @@ capabilities:
   required_by:
   - All metrics consumers
   impact: KAORI cannot retrieve current metrics.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the instant-query operation required by the selected metrics adapter through the exact endpoint configured in KAORI.
   expected_signals: []
 - key: range_query
@@ -84,7 +84,7 @@ capabilities:
   - Forecast
   - Trends
   impact: Historical charts and forecast inputs are unavailable.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the range-query operation required by the selected metrics adapter and confirm that the access path permits historical queries.
   expected_signals: []
 - key: series_discovery
@@ -93,7 +93,7 @@ capabilities:
   - Consumer binding validation
   - Metrics inventory
   impact: KAORI cannot inspect metric-series identity for bound consumers.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the series-discovery operation required by the selected metrics adapter.
   expected_signals: []
 - key: label_discovery
@@ -102,7 +102,7 @@ capabilities:
   - Consumer binding validation
   - Metrics identity
   impact: KAORI cannot discover metric names or labels used to validate consumer bindings.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the label-discovery operation required by the selected metrics adapter.
   expected_signals: []
 - key: kubernetes_identity
@@ -233,6 +233,22 @@ binding_profiles:
     signal_key: kube_pod_info
     label: Kubernetes pod identity
   no_match_message: The canonical cluster selector was accepted, but no scoped kube-state-metrics identity series matched. Verify cluster=<stable-cluster-name> is query-visible on the Kubernetes source series and matches the binding value. Direct Prometheus requires a scrape target label; Thanos should preserve the same identity from each source Prometheus external label. Then review kube_node_info, kube_namespace_status_phase, and kube_pod_info.
+- adapter_key: prometheus_http
+  asset_type: registry_instance
+  profile_key: registry-metrics-v1
+  label: Registry Metrics v1
+  validation_strategy: custom
+  consumer_family: metrics
+  probes: []
+  no_match_message: The selector was accepted, but no qualified Registry identity metrics matched. Verify that the Metrics Source selector isolates the intended Registry deployment and that its provider metrics are scraped.
+- adapter_key: prometheus_http
+  asset_type: vault_instance
+  profile_key: vault-telemetry-v1
+  label: Vault Instance Telemetry v1
+  validation_strategy: custom
+  consumer_family: metrics
+  probes: []
+  no_match_message: No qualified Vault core identity signal matched this Metrics Source binding. Configure the exact vault_instance label equal to the canonical KAORI IntegrationInstance ID on the Prometheus scrape target, and validate node/HA identity.
 - adapter_key: prometheus_http
   asset_type: object_storage_system
   profile_key: object-storage-metrics-v1

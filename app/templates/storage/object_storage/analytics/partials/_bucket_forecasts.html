@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% set bucket_forecasts = metrics.bucket_forecasts|default([], true) %}
 {% set bucket_forecast_summary = metrics.bucket_forecast_summary|default({}, true) %}
@@ -7,7 +8,18 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="container" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Bucket Forecast Watch</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Bucket Forecast Watch</h2>
+                        {{ info_tip.render('object-storage-bucket-forecast-watch-guide',
+                                                'Bucket Forecast Watch Guide',
+                                                'Bucket growth and quota timing are committed planning signals, not active provider alerts.',
+                                                items=[
+                                                'Forecast Ready requires usable bucket history; History Gaps explicitly mark missing samples.',
+                                                'Quota-Bounded buckets can have an estimated quota ETA when a configured quota exists.',
+                                                'Forecast Watch summarizes planning attention; Alertmanager owns active alert lifecycle.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">
                         Review bucket growth, 30-day projection, quota timing, and history coverage. These are planning signals, not active alerts.
                     </p>
@@ -74,7 +86,6 @@
                 {% include 'components/states/_empty_state.html' %}
             </section>
         {% endif %}
-        {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}
         <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
             <p class="text-xs leading-5 text-content-muted">
                 Forecast Watch is derived from committed bucket usage history and configured quota evidence. Critical and warning labels indicate projected planning pressure only; active alert lifecycle and routing remain owned by Alertmanager.
@@ -93,3 +104,6 @@
         </div>
     {% endif %}
 </section>
+{% if bucket_forecasts %}
+    {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}
+{% endif %}

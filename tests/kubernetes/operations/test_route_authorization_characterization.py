@@ -61,6 +61,18 @@ def _cluster_context() -> dict[str, object]:
     }
 
 
+def _clusterless_context() -> dict[str, object]:
+    return {
+        'show_banner': True,
+        'is_kubernetes_scope': True,
+        'is_blocked': True,
+        'has_clusters': False,
+        'cluster_count': 0,
+        'can_manage_clusters': False,
+        'database_ready': True,
+    }
+
+
 @pytest.fixture()
 def app(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
@@ -110,6 +122,7 @@ def test_authorized_clusterless_configmap_htmx_returns_blocker_before_live_workf
         monkeypatch,
         OperationsRouteUser({'kubernetes_configmaps.create'}),
     )
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
     monkeypatch.setattr(operation_flow, 'has_registered_clusters', lambda: False)
 
     response = client.get('/kubernetes-operations/configmaps/create', headers={'HX-Request': 'true'})

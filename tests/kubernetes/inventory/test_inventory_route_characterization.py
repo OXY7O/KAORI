@@ -82,6 +82,18 @@ def _freshness_context() -> dict[str, object]:
     }
 
 
+def _clusterless_context() -> dict[str, object]:
+    return {
+        'show_banner': True,
+        'is_kubernetes_scope': True,
+        'is_blocked': True,
+        'has_clusters': False,
+        'cluster_count': 0,
+        'can_manage_clusters': False,
+        'database_ready': True,
+    }
+
+
 @pytest.fixture()
 def app(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
@@ -97,6 +109,7 @@ def app(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
     monkeypatch.setattr(inventory_routes, 'get_inventory_freshness_context', lambda **_kwargs: _freshness_context())
+    monkeypatch.setattr(inventory_routes, 'get_inventory_clusters', lambda: [])
     return create_app('testing')
 
 
@@ -129,6 +142,7 @@ def test_authorized_clusterless_htmx_inventory_read_returns_blocker_without_reso
 ) -> None:
     user = InventoryRouteUser(allowed=True)
     client = _client_for_user(app, monkeypatch, user)
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
     monkeypatch.setattr(inventory_routes, 'has_registered_clusters', lambda: False)
 
     def unexpected_resource_query(**_kwargs):

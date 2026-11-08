@@ -149,6 +149,27 @@ def main() -> int:
         'Update Strategy must be present in the compact row.',
         errors,
     )
+    column_percent = {
+        'Workload': 26,
+        'Scope': 23,
+        'Operational State': 14,
+        'Managed Pods': 12,
+        'Update Strategy': 15,
+        'Details': 10,
+    }
+    require(
+        sum(column_percent.values()) == 100
+        and all(
+            f'w-[{percent}%]' in table_content.split(f'>{name}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for name, percent in column_percent.items()
+        )
+        and "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table_content
+        and 'overflow-x-auto overscroll-x-contain' in table_content
+        and "table_ui.title_cell(workload.name, workload.identity_supporting, 'boxes')" in table_content
+        and 'table_ui.namespaced_scope_identity(workload.cluster_name,' in table_content,
+        'Workload and Scope columns must retain approved proportions and full-name access.',
+        errors,
+    )
     require(
         '>Runtime Footprint<' not in table_content,
         'The compact row must not restore the deprecated container/runtime column.',

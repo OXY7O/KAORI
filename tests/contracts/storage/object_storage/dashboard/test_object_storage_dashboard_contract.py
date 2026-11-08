@@ -18,9 +18,10 @@ def test_object_storage_dashboard_is_registered_and_visible_beside_kubernetes() 
     assert "url_for('object_storage_dashboard.index')" in navigation
     assert '>Object Storage</span>' in navigation
     assert "request.endpoint.startswith('object_storage_dashboard.')" in navigation
-    assert "endpoint.startswith(('kubernetes_dashboard.', 'object_storage_dashboard.'))" in breadcrumbs
-    assert "'object_storage_dashboard': 'Object Storage Operations'" in breadcrumbs
-    assert 'BreadcrumbItem(dashboard_label)' in breadcrumbs
+    assert "elif endpoint.startswith('kubernetes_dashboard.'):" in breadcrumbs
+    assert "elif endpoint.startswith('object_storage_dashboard.'):" in breadcrumbs
+    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumbs
+    assert "BreadcrumbItem('Overview')" in breadcrumbs
     assert "navigation_endpoints=('kubernetes_dashboard.index', 'object_storage_dashboard.index')" in release_registry
     assert "blueprint_vars=('kubernetes_dashboard_bp', 'object_storage_dashboard_bp')" in release_registry
 
@@ -31,7 +32,9 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 
     assert "url_prefix='/dashboards/object-storage'" in routes
     assert routes.count("@permission_required('dashboard.view')") == 2
-    assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
+    assert 'normalize_operational_tab' in routes
+    assert 'normalize_dashboard_page_size' in routes
+    assert 'is_htmx_request(request.headers)' in routes
     assert "'kpi_cards': 'storage/object_storage/dashboard/partials/_kpi_cards.html'" in routes
     assert "'overview': 'storage/object_storage/dashboard/partials/_overview.html'" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
@@ -45,7 +48,7 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
     assert 'forecast_snapshot_state(' in service
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
     assert "dashboard['alerts'] = _alerts(selected)" in service
-    assert "status_reason = 'Inventory & analytics ready.'" in service
+    assert "status_reason = 'Inventory, analytics, and primary alert evidence ready.'" in service
     assert 'Committed inventory and analytics evidence are available.' not in service
     assert 'ObjectStorageBucket' not in service
     for forbidden in (
@@ -67,10 +70,15 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
+
     for label in ('Operations Overview', 'Capacity & Demand', 'Signals & Actions', 'Reporting'):
-        assert label in content
-        assert label in kubernetes_content
-    assert 'components/workspace_tabs.html' in content
+        assert label in framework
+    assert 'components/operational_dashboard_workspace.html' in content
+    assert 'components/operational_dashboard_workspace.html' in kubernetes_content
+    assert 'dashboard_workspace.controller(' in content
+    assert 'dashboard_workspace.navigation(' in content
+    assert 'dashboard_workspace.panel(' in content
     assert 'storage/object_storage/dashboard/partials/_hero.html' in content
     assert 'storage/object_storage/dashboard/partials/_signal_overview.html' in content
     assert (
@@ -86,6 +94,8 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     assert 'page_hero.operational_dashboard(' in hero
     assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
+    assert 'data-kaori-dashboard-framework="operational-v1"' in framework
+    assert 'workspace_tabs.render(standard_tabs' in framework
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
@@ -111,16 +121,16 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'Forecast & Growth Risk' in forecast
     assert 'Top Bucket Consumers' in consumers
     assert 'storage/object_storage/dashboard/partials/_alerts_summary.html' in signals
-    assert 'Alert Interpretation & Response' in response
-    assert 'Recommended Actions' in actions
+    assert 'components/operational_alert_response.html' in response
+    assert 'components/operational_recommendation_cards.html' in actions
     assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert 'reporting_workspace.guidance(' in reporting_guidance
 
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
     for token in (
         'components/table.html',
-        "table_ui.table_classes('min-w-[1040px]')",
+        "table_ui.table_classes('min-w-[1040px]' if pagination.total_items > 0 else '')",
         'Snapshot Sources',
         'Metrics Source',
         'Alert Signals',
@@ -146,12 +156,18 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
     kubernetes_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
 
-    assert 'SYSTEM_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
+    application_contract = read('app/dashboards/common/operational.py')
+    pagination = read('app/common/pagination.py')
+    assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
+    assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
     assert "request.args.get('system_health_page', '1')" in routes
-    assert "request.args.get('system_health_per_page', '5')" in routes
+    assert "normalize_dashboard_page_size(request.args.get('system_health_per_page'))" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
     assert 'from app.common.pagination import paginate_sequence' in service
-    assert "'empty_observed_systems': len(empty_observed_systems)" in service
+    assert "'empty_observed_systems': empty_observed" in service
+    assert 'func.count(ObjectStorageSystem.id)' in service
+    assert 'ObjectStorageSystem.inventory_observed_at.is_not(None)' in service
+    assert '~ObjectStorageSystem.buckets.any()' in service
     assert "if section in {'overview', 'system_health'}:" in service
     assert "dashboard['system_health_pagination'] = pagination" in service
     assert "'&system_health_page=' ~ dashboard.system_health_pagination.page" in content
@@ -171,8 +187,8 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     ):
         assert token in health
 
-    for size in ('5', '10', '25', '50'):
-        assert size in health
+    assert 'for size in pagination.allowed_per_page' in health
+    assert '[5, 10, 25, 50]' not in health
     assert 'components/pagination.html' in kubernetes_health
     assert 'cluster_health_per_page' in kubernetes_health
     assert 'pagination_ui.numeric_pages' in kubernetes_health
@@ -183,10 +199,13 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
 
     assert "assert 'Operational Metrics Contract' in readiness" in verifier
     assert "assert 'Readiness By Evidence Domain' in readiness" in verifier
-    assert "assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker" in verifier
+    assert (
+        "assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in dependency_blocker" in verifier
+    )
+    assert "assert 'dependency_blocked_step = 4' in dependency_blocker" in verifier
     assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
     assert (
-        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
+        "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Recommendations')"
         in verifier
     )
 
@@ -202,6 +221,24 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
 
     assert 'storage/object_storage/dashboard/partials/_forecast_risk.html' in capacity
     assert 'storage/object_storage/dashboard/partials/_top_consumers.html' in capacity
+    assert 'Object Storage utilization balance chart' in capacity
+    assert 'Capacity Balance' in capacity
+    assert 'progress_bar.bar(usage_percent,' in capacity
+    assert 'progress_bar.bar(free_percent,' in capacity
+    assert 'Object Storage committed free capacity percentage' in capacity
+    assert 'Utilization unavailable' in capacity
+    assert 'Capacity Decision Notes' not in capacity
+    assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity
+    assert 'dashboard.capacity.utilization if dashboard.capacity.utilization is number else none' in capacity
+    assert "'Used Capacity'" in capacity
+    assert "'Free Capacity'" in capacity
+    assert "'Usable Capacity'" in capacity
+    assert "'Used'" in capacity and "'Free'" in capacity and "'Total'" in capacity
+    assert 'grid gap-3 lg:grid-cols-3' in capacity
+    assert 'components/progress_bar.html' in capacity
+    assert 'progress_bar.bar(percent,' in capacity
+    assert 'percentage unavailable' in capacity
+    assert 'Capacity Utilization</h3>' not in capacity
     for token in (
         'components/operational_flow_steps.html',
         'Data Scope',
@@ -231,9 +268,50 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
         assert token in consumers
     assert 'consumer_panel' in kubernetes_consumers
     assert 'build_forecast_view(payload, state)' in service
+    assert 'No bucket forecast shows 90-day capacity pressure; monitor growth.' in presentation
+    assert 'Keep analytics and forecasts current; review concentration before growth.' in capacity
+    expected_consumer_copy = (
+        "f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'"
+    )
+    assert expected_consumer_copy in presentation
     assert "'chart_items': [chart_item] if chart_item else []" in presentation
     assert "'usage': usage_items" in presentation
     assert "'requests': request_items" in presentation
+
+
+def test_object_storage_forecast_uses_kubernetes_current_to_projected_comparison() -> None:
+    forecast = read('app/templates/storage/object_storage/dashboard/partials/_forecast_risk.html')
+    kubernetes_forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    presentation = read('app/storage/object_storage/dashboard/presentation.py')
+
+    for token in (
+        'components/resource_series_legend.html',
+        'resource_series_legend.swatch("storage")',
+        'sm:col-span-2',
+        'data-lucide="arrow-right"',
+        '>Current</p>',
+        '>Projected</p>',
+        'dashboard.forecast.current_percent_display',
+        'dashboard.forecast.projected_percent_display',
+        'dashboard.forecast.current_display',
+        'dashboard.forecast.projected_30d_display',
+        'dashboard.forecast.growth_per_day_display',
+        'dashboard.forecast.days_to_capacity_display',
+        'dashboard.forecast.sample_count',
+        "else 'Trend Unavailable'",
+    ):
+        assert token in forecast
+    assert 'data-lucide="arrow-right"' in kubernetes_forecast
+    assert 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in kubernetes_forecast
+    assert 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in forecast
+    assert "('Current Usage'," not in forecast
+    assert "('Projected 30d'," not in forecast
+    assert "'current_percent_display': format_percent(current_percent)" in presentation
+    assert "'projected_percent_display': format_percent(projected_percent)" in presentation
+    assert "'current_display': format_bytes(current)" in presentation
+    assert "'projected_30d_display': format_bytes(projected)" in presentation
+    assert 'if not dashboard.forecast.available' in forecast
+    assert 'Forecast Conclusion' in forecast
 
 
 def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
@@ -244,7 +322,12 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
     reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
-    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    shared_alerts = read('app/templates/components/operational_alert_summary.html')
+    shared_response = read('app/templates/components/operational_alert_response.html')
+    shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    kubernetes_actions = read('app/templates/kubernetes/dashboard/partials/_recommended_actions.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
 
@@ -254,21 +337,561 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
         'storage/object_storage/dashboard/partials/_recommended_actions.html',
     ):
         assert token in signals
-    assert 'Alerts Summary' in alerts
+    assert 'components/operational_alert_summary.html' in alerts
+    assert 'Alerts Summary' in shared_alerts
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
-    assert "for case in posture['cases'][:3]" in service
-    assert 'Alert Interpretation & Response' in response
-    assert 'Controlled Response Flow' in response
-    assert 'Recommended Actions' in actions
-    assert 'dashboard-recommended-actions' in kubernetes_signals
+    assert "for case in posture['cases'][:5]" in service
+    assert 'components/operational_alert_response.html' in response
+    assert 'Alert Interpretation & Response' in shared_response
+    assert 'Controlled Response Flow' in shared_response
+    # Shorten domain-owned guidance only; preserve the six canonical flow steps.
+    for guidance in (
+        'Confirm scope, committed snapshot freshness, and alert-source evidence.',
+        'Rank severity, blast radius, affected bucket or request path, and owner.',
+        'Correlate capacity, requests, growth, provider state, and alerts.',
+        'Confirm alert recovery, request health, storage availability, and capacity.',
+        'Record decisions, actions, verification, and follow-up evidence.',
+    ):
+        assert guidance in response
+        assert len(guidance) <= 76
+    assert "'Potential impact. Start triage and assign ownership.'" in response
+    assert 'components/numbered_governance_steps.html' in shared_response
+    assert 'components/operational_flow_steps.html' not in response
+    assert 'components/operational_recommendation_cards.html' in actions
+    assert 'Recommended Actions' in shared_recommendations
+    # Both domains already use the same renderer; lock its existing 2-line
+    # preview and ellipsized source without trimming committed action content.
+    assert "source_icon='database'" in actions
+    assert "source_icon='database'" in kubernetes_actions
+    for token in (
+        'line-clamp-2 break-words text-sm font-semibold leading-5',
+        'mt-2 line-clamp-2 text-xs leading-5 text-content-muted',
+        'title="{{ action.title }}"',
+        '<span class="truncate">{{ action.source }}</span>',
+    ):
+        assert token in shared_recommendations
+    assert 'kubernetes/dashboard/partials/_recommended_actions.html' in kubernetes_signals
+    assert 'dashboard-recommended-actions' in kubernetes_actions
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
     assert 'get_dashboard_recommendation_findings' in service
 
     assert "peer_content_grid.column_classes('primary', 'seven-five')" in reporting
     assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Recent Report Activity' in reporting_summary
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
-    assert 'Reporting Control' in reporting_guidance
-    assert 'Controlled Reporting Flow' in reporting_guidance
-    assert 'Controlled Reporting Flow' in kubernetes_reporting
+    assert 'components/reporting_dashboard_workspace.html' in reporting_summary
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert "'Object Storage'" in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'reporting_workspace.guidance(' in reporting_guidance
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in service
+    assert 'Reporting Summary' in reporting_workspace
+    assert 'Recent Report Activity' in reporting_workspace
+    assert 'Reporting Workflow' in reporting_workspace
+    assert 'Scope Bound' in reporting_workspace
+    assert 'Evidence Backed' in reporting_workspace
+    assert 'Review First' in reporting_workspace
+    assert 'Governed Flow' in reporting_workspace
+    assert 'Execution Mode' in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use templates for repeatable report structure.' in reporting_workspace
+    assert 'components/numbered_governance_steps.html' not in reporting_workspace
+    assert 'components/operational_flow_steps.html' not in reporting_workspace
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
+    assert 'reporting_workspace.guidance(' in kubernetes_reporting
+
+
+def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_per_section() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'def _dashboard_shell_context(' in service
+    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+
+    assert '_inventory_summary(' not in overview
+    assert 'return _dashboard_shell_context(' in overview
+    assert 'dashboard = get_dashboard_overview(' not in section
+    assert 'dashboard = _dashboard_shell_context(' in section
+
+    assert "if section in {'overview', 'system_health'}:" in section
+    assert "elif section == 'kpi_cards':" in section
+    assert "elif section == 'capacity':" in section
+    assert "elif section == 'signals':" in section
+    assert "elif section == 'reporting':" in section
+
+    signals_branch = section.split("elif section == 'signals':", 1)[1].split("elif section == 'reporting':", 1)[0]
+    assert '_forecast(selected)' not in signals_branch
+    assert '_capacity(selected)' not in signals_branch
+    assert '_top_consumers(selected)' not in signals_branch
+
+    reporting_branch = section.split("elif section == 'reporting':", 1)[1]
+    assert '_freshness(selected, systems)' not in reporting_branch
+
+
+def test_fleet_freshness_renders_four_distinct_committed_evidence_types(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    systems = [
+        SimpleNamespace(id=1, inventory_observed_at=datetime.now(UTC)),
+        SimpleNamespace(id=2, inventory_observed_at=datetime.now(UTC)),
+    ]
+    analytics = {'1': True, '2': True}
+    forecasts = {'1': True, '2': False}
+    streams = {
+        '1': {'connected': True, 'fallback_used': True},
+        '2': {'connected': False, 'fallback_used': False},
+    }
+
+    def snapshot(system):
+        key = str(system.id)
+        return {'stream': streams[key]}, {'usable': analytics[key]}
+
+    def get_forecast_snapshot(*, system_id: str, history_window: str):
+        assert history_window == '30d'
+        return {'usable': forecasts[system_id]}
+
+    monkeypatch.setattr(service, '_snapshot_payload', snapshot)
+    monkeypatch.setattr(service, 'get_forecast_snapshot', get_forecast_snapshot)
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda snapshot: snapshot)
+    monkeypatch.setattr(service, '_alert_view', lambda payload: (payload['stream'], {}))
+
+    rows = service._freshness(None, systems)
+    assert [row['label'] for row in rows] == [
+        'Inventory Fleet',
+        'Analytics Fleet',
+        'Forecast Fleet',
+        'Alert Evidence Fleet',
+    ]
+    assert [row['status'] for row in rows] == ['Ready', 'Ready', 'Partial', 'Partial']
+    assert rows[1]['value'] == '2 / 2 systems'
+    assert rows[2]['value'] == '1 / 2 systems'
+    assert rows[3]['value'] == '1 / 2 systems'
+    assert rows[3]['tone'] == 'warning'
+    assert '1 system(s) using fallback evidence' in rows[3]['description']
+
+
+def test_fleet_freshness_keeps_missing_and_fallback_evidence_explicit(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    systems = [SimpleNamespace(id=1, inventory_observed_at=None)]
+    snapshot = {'stream': {'connected': True, 'fallback_used': True}}
+    monkeypatch.setattr(service, '_snapshot_payload', lambda system: (snapshot, {'usable': True}))
+    monkeypatch.setattr(service, '_alert_view', lambda payload: (payload['stream'], {}))
+    monkeypatch.setattr(service, 'get_forecast_snapshot', lambda **kwargs: {'usable': False})
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda value: value)
+
+    rows = service._freshness(None, systems)
+    assert len(rows) == 4
+    assert [row['status'] for row in rows] == [
+        'Not Collected',
+        'Ready',
+        'Required',
+        'Fallback',
+    ]
+    assert rows[3]['tone'] == 'warning'
+
+    monkeypatch.setattr(service, '_snapshot_payload', lambda system: (None, {'usable': False}))
+    rows = service._freshness(None, systems)
+    assert len(rows) == 4
+    assert [row['status'] for row in rows] == [
+        'Not Collected',
+        'Required',
+        'Required',
+        'Required',
+    ]
+    assert rows[3]['value'] == '0 / 1 systems'
+    assert rows[3]['tone'] == 'unknown'
+
+
+def test_object_storage_fleet_and_single_system_share_four_tile_renderer() -> None:
+    source = read('app/storage/object_storage/dashboard/service.py')
+    overview = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    tile = read('app/templates/components/operational_evidence_tile.html')
+
+    fleet_branch = source.split('def _freshness(', 1)[1].split('    analytics_snapshot = ', 1)[0]
+    selected_branch = source.split('    analytics_snapshot = ', 1)[1].split('def _capacity(', 1)[0]
+    assert fleet_branch.count("'label':") == 4
+    assert selected_branch.count("'label':") == 4
+    assert 'forecast_snapshot_state(' in fleet_branch
+    assert '_snapshot_payload(system)' in fleet_branch
+    assert '_alert_view(payload)' in fleet_branch
+    assert "'Fallback' if alert_fallback else 'Available'" in fleet_branch
+    assert 'for item in dashboard.freshness' in overview
+    assert 'evidence_tile.freshness(' in overview
+    assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in overview
+    assert '{% macro freshness(' in tile
+
+
+def test_system_health_alert_signals_reflect_committed_snapshot_source(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
+    system = SimpleNamespace(
+        id='system-1',
+        name='Storage One',
+        environment='uat',
+        status='connected',
+        inventory_observed_at=datetime.now(UTC),
+        buckets=[],
+    )
+    # Alert Intelligence cases are independent of provider alert snapshot availability.
+    monkeypatch.setattr(
+        service,
+        '_kaori_alert_posture',
+        lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+    )
+    alertmanager_payload = {
+        'alert_streams': {
+            'alertmanager': {
+                'connected': True,
+                'resolved_source': 'alertmanager',
+                'rows': [],
+            },
+        },
+    }
+    metrics_fallback_payload = {
+        'alert_streams': {
+            'alertmanager': {'connected': False, 'configured': True},
+            'metrics_source': {
+                'connected': True,
+                'resolved_source': 'metrics_source',
+                'rows': [],
+            },
+        },
+    }
+    cases = [
+        (
+            alertmanager_payload,
+            {'usable': True, 'label': 'Ready'},
+            True,
+            False,
+            'Alertmanager · committed alert evidence',
+        ),
+        (
+            metrics_fallback_payload,
+            {'usable': True, 'label': 'Ready'},
+            True,
+            True,
+            'Metrics Source fallback · committed alert evidence',
+        ),
+        (
+            {'alert_streams': {}},
+            {'usable': True, 'label': 'Ready'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+        (
+            None,
+            {'usable': False, 'label': 'Required'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+        (
+            alertmanager_payload,
+            {'usable': False, 'label': 'Expired'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+    ]
+    for payload, state, connected, fallback, label in cases:
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system, result=(payload, state): result)
+        rows = service._health_rows([system])
+        assert len(rows) == 1
+        row = rows[0]
+        assert row['alerts_connected'] is connected
+        assert row['alerts_fallback'] is fallback
+        assert row['alert_source_label'] == label
+        assert row['active_alerts'] == 0
+        assert row['inventory_ready'] is True
+        assert row['snapshot_ready'] is bool(state['usable'])
+
+
+def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_tones() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+    health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
+    freshness = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
+    application = read('app/dashboards/common/operational.py')
+    shared_tabs = read('app/common/operational_tabs.py')
+    storage_routes = read('app/storage/object_storage/dashboard/routes.py')
+    registry_routes = read('app/artifact_registry/routes.py')
+    kubernetes_routes = read('app/kubernetes/dashboard/routes.py')
+
+    rows = service.split('def _health_rows(', 1)[1].split('def _dashboard_kpis(', 1)[0]
+    for field in (
+        "'inventory_ready':",
+        "'snapshot_ready':",
+        "'alerts_connected':",
+        "'alerts_fallback':",
+        "'alert_source_label':",
+    ):
+        assert field in rows
+    assert '_snapshot_payload(system)' in rows
+    assert '_alert_view(payload)' in rows
+    assert "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))" in rows
+    assert 'load_alert_stream(' not in rows
+    assert 'get_alertmanager_alerts(' not in rows
+    for field in ('row.inventory_ready', 'row.snapshot_ready', 'row.alerts_connected', 'row.alerts_fallback'):
+        assert field in health
+    assert 'bg-status-warning' in health
+    assert 'bg-status-normal' in health
+    assert 'bg-status-unknown' in health
+    assert 'row.alert_source_label' in health
+    assert 'sr-only' in health
+    assert 'row.alerts_status' in kubernetes
+    assert 'row.inventory_ready' in registry
+    assert 'row.metrics_ready' in registry
+    assert 'row.security_ready' in registry
+    assert 'for item in dashboard.freshness' in freshness
+    for route in (storage_routes, registry_routes, kubernetes_routes):
+        assert 'normalize_operational_tab' in route
+        assert 'normalize_dashboard_page_size' in route
+    assert 'OPERATIONAL_DASHBOARD_TABS as OPERATIONAL_DASHBOARD_TABS' in application
+    for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
+        assert tab in shared_tabs
+
+
+def test_object_storage_fleet_inventory_freshness_qualifies_partial_and_missing() -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    one = SimpleNamespace(id=1, inventory_observed_at=datetime.now(UTC))
+    missing = SimpleNamespace(id=2, inventory_observed_at=None)
+
+    def snapshot(_system):
+        return None, {'usable': False}
+
+    from unittest.mock import patch
+
+    with (
+        patch.object(service, '_snapshot_payload', snapshot),
+        patch.object(service, 'get_forecast_snapshot', return_value=None),
+        patch.object(service, 'forecast_snapshot_state', return_value={'usable': False}),
+    ):
+        partial = service._freshness(None, [one, missing])[0]
+        assert (partial['status'], partial['tone'], partial['value']) == ('Partial', 'warning', '1 / 2 systems')
+        assert 'Latest inventory' in partial['description']
+
+        none = service._freshness(None, [missing])[0]
+        assert (none['status'], none['tone'], none['value']) == ('Not Collected', 'unknown', '0 / 1 systems')
+
+        empty = service._freshness(None, [])[0]
+        assert empty['status'] == 'Not Collected'
+        assert empty['value'] == '0 / 0 systems'
+
+
+def test_object_storage_selected_freshness_distinguishes_primary_fallback_and_missing(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    system = SimpleNamespace(id='sys-1', inventory_observed_at=None)
+    monkeypatch.setattr(service, 'get_analytics_snapshot', lambda **_kwargs: None)
+    monkeypatch.setattr(service, 'analytics_snapshot_state', lambda _snapshot: {'usable': False})
+    monkeypatch.setattr(service, 'get_forecast_snapshot', lambda **_kwargs: None)
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda _snapshot: {'usable': False})
+
+    for stream, expected in (
+        ({'connected': True, 'fallback_used': False, 'resolved_label': 'Alertmanager'}, ('Available', 'normal')),
+        ({'connected': True, 'fallback_used': True, 'resolved_label': 'Metrics Source'}, ('Fallback', 'warning')),
+        ({'connected': False, 'fallback_used': False, 'resolved_label': 'Unavailable'}, ('Unavailable', 'unknown')),
+    ):
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+        monkeypatch.setattr(service, '_alert_view', lambda _payload, answer=stream: (answer, {}))
+        alert = service._freshness(system, [system])[3]
+        assert (alert['status'], alert['tone']) == expected
+        assert alert['value'] == stream['resolved_label']
+
+
+def test_system_health_requires_complete_committed_evidence_for_healthy(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
+    observed = datetime.now(UTC)
+    system = SimpleNamespace(
+        id='storage-1',
+        name='Storage',
+        environment='dev',
+        status='connected',
+        inventory_observed_at=observed,
+        buckets=[],
+    )
+    monkeypatch.setattr(
+        service,
+        '_kaori_alert_posture',
+        lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+    )
+    primary = {'alert_streams': {'alertmanager': {'connected': True, 'rows': []}}}
+    fallback = {
+        'alert_streams': {
+            'alertmanager': {'connected': False, 'configured': True},
+            'metrics_source': {'connected': True, 'rows': []},
+        }
+    }
+    cases = [
+        (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, observed, 'Healthy'),
+        (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, None, 'Warning'),
+        (primary, {'usable': True, 'state': 'failed', 'stale': False, 'label': 'Stale · Failed'}, observed, 'Warning'),
+        (primary, {'usable': True, 'state': 'pending', 'stale': False, 'label': 'Refreshing'}, observed, 'Warning'),
+        (primary, {'usable': True, 'state': 'ready', 'stale': True, 'label': 'Stale'}, observed, 'Warning'),
+        (primary, {'usable': False, 'state': 'ready', 'label': 'Expired'}, observed, 'Warning'),
+        ({'alert_streams': {}}, {'usable': True, 'state': 'ready', 'label': 'Current'}, observed, 'Warning'),
+        (fallback, {'usable': True, 'state': 'ready', 'label': 'Current'}, observed, 'Warning'),
+    ]
+    for payload, snapshot_state, inventory_at, expected in cases:
+        system.inventory_observed_at = inventory_at
+        monkeypatch.setattr(
+            service,
+            '_snapshot_payload',
+            lambda _system, result=(payload, snapshot_state): result,
+        )
+        row = service._health_rows([system])[0]
+        assert row['overall_status'] == expected
+        if expected == 'Healthy':
+            assert row['alerts_connected'] is True
+            assert row['alerts_fallback'] is False
+        else:
+            assert row['overall_tone'] == 'warning'
+
+
+def test_system_health_keeps_observed_critical_alerts_prioritized(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
+    system = SimpleNamespace(
+        id='storage-1',
+        name='Storage',
+        environment='dev',
+        status='ready',
+        inventory_observed_at=None,
+        buckets=[],
+    )
+    monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+    monkeypatch.setattr(
+        service,
+        '_kaori_alert_posture',
+        lambda _system: {'total': 1, 'critical': 1, 'warning': 0, 'info': 0},
+    )
+    row = service._health_rows([system])[0]
+    assert row['overall_status'] == 'Critical'
+    assert row['overall_tone'] == 'critical'
+
+
+def test_object_storage_dashboard_bucket_reads_are_bounded_to_visible_scope() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+    aggregates = read('app/storage/object_storage/inventory/aggregates.py')
+    shell = service.split('def _systems(', 1)[1].split('def _selected_system(', 1)[0]
+    summary = service.split('def _inventory_summary(', 1)[1].split('def _health_rows(', 1)[0]
+    health = service.split('def _health_rows(', 1)[1].split('def _dashboard_kpis(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+
+    assert 'load_only(' in shell and 'selectinload(' not in shell
+    assert 'ObjectStorageSystem.buckets' not in shell
+    assert 'bucket_usage_summary(' in summary and '~ObjectStorageSystem.buckets.any()' in summary
+    assert 'system.buckets' not in summary
+    assert 'bucket_usage_by_system([str(system.id) for system in systems])' in health
+    assert 'system.buckets' not in health
+    assert 'visible_systems, pagination = paginate_sequence(' in section
+    assert "dashboard['health_rows'] = _health_rows(visible_systems)" in section
+    assert 'bucket.object_storage_system_id.in_(system_ids)' in aggregates
+    assert 'group_by(bucket.object_storage_system_id)' in aggregates
+
+
+def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+    from app.storage.object_storage.dashboard import service
+    from app.storage.object_storage.inventory import aggregates
+
+    engine = create_engine('sqlite+pysqlite:///:memory:')
+    ObjectStorageSystem.__table__.create(engine)
+    ObjectStorageBucket.__table__.create(engine)
+    with Session(engine) as session:
+        monkeypatch.setattr(aggregates, 'db', SimpleNamespace(session=session))
+        monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
+        first = ObjectStorageSystem(
+            id='first',
+            name='First',
+            environment='test',
+            status='ready',
+            inventory_observed_at=datetime.now(UTC),
+        )
+        second = ObjectStorageSystem(
+            id='second',
+            name='Second',
+            environment='test',
+            status='ready',
+            inventory_observed_at=datetime.now(UTC),
+        )
+        session.add_all([first, second])
+        session.add_all(
+            [
+                ObjectStorageBucket(
+                    id=1,
+                    object_storage_system_id='first',
+                    name='one',
+                    observed_at=datetime.now(UTC),
+                    size_bytes=10,
+                    object_count=3,
+                    quota_state='configured',
+                    quota_bytes=100,
+                ),
+                ObjectStorageBucket(
+                    id=2,
+                    object_storage_system_id='second',
+                    name='two',
+                    observed_at=datetime.now(UTC),
+                    size_bytes=20,
+                    object_count=5,
+                ),
+            ]
+        )
+        session.commit()
+
+        assert aggregates.bucket_usage_by_system(['first']) == {
+            'first': {'buckets': 1, 'stored_bytes': 10, 'stored_samples': 1}
+        }
+        selected = service._inventory_summary([first], selected=first)
+        assert (selected['buckets'], selected['stored_bytes'], selected['objects']) == (1, 10, 3)
+        assert (selected['quota_configured'], selected['usage_collected']) == (1, 1)
+        assert selected['empty_observed_systems'] == 0
+
+        fleet = service._inventory_summary([first, second])
+        assert (fleet['buckets'], fleet['stored_bytes'], fleet['objects']) == (2, 30, 8)
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+        monkeypatch.setattr(
+            service,
+            '_kaori_alert_posture',
+            lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+        )
+        health = service._health_rows([first])
+        assert len(health) == 1
+        assert health[0]['bucket_count'] == 1
+        assert health[0]['usage_source'] == 'Inventory'
+        assert health[0]['stored_display'] == '10 B'
+    engine.dispose()

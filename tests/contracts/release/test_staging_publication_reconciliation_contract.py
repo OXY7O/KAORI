@@ -72,6 +72,23 @@ def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
     assert 'certbot' not in source.lower()
 
 
+def test_reconciliation_uses_portable_application_hostname_authority() -> None:
+    source = _read(WORKFLOW)
+
+    assert '/etc/kaori/app.env' in source
+    assert 'KAORI_PUBLIC_BASE_URL' in source
+    assert 'TRUSTED_HOSTS' in source
+    assert "parsed.scheme != 'https'" in source
+    assert "'localhost' not in trusted" in source
+    assert '--domain "$app_hostname"' in source
+    assert '--domain kaori.cloud' not in source
+
+    # Neither application release state nor the standalone edge infrastructure
+    # becomes owned by this publication-only stage.
+    assert '/opt/shared-edge/runtime/publish-container.sh' in source
+    assert '/opt/shared-edge/runtime/apply.sh' in source
+
+
 def test_reconciliation_requires_current_healthy_frontend_only() -> None:
     source = _read(WORKFLOW)
 
@@ -133,3 +150,29 @@ def test_reconciliation_runs_only_after_successful_deploy_job() -> None:
         'KAORI_HOST_KNOWN_HOSTS',
     ):
         assert f'{secret_name}: ${{{{ secrets.{secret_name} }}}}' in call_job
+
+
+def test_expanded_publication_step_reports_only_independently_executed_phases() -> None:
+    workflow = _read(WORKFLOW)
+    for marker in (
+        'Public-edge admission · validating SSH target and credential presence',
+        'Public-edge · preparing ephemeral SSH identity',
+        'Public-edge · checking external shared-edge authority',
+        'Public-edge · checking deployed KAORI web container readiness',
+        'Public-edge · requesting idempotent container publication',
+        'Public-edge · applying shared-edge authority',
+        'Public-edge · shared-edge apply PASS',
+        'Public-edge publication PASS is not independent human UAT acceptance',
+    ):
+        assert marker in workflow
+    assert workflow.index('Public-edge · checking deployed KAORI web container readiness') < workflow.index(
+        'Public-edge · requesting idempotent container publication'
+    )
+    # A private key must be written into the restricted temporary file,
+    # not emitted to Actions stdout or discarded by the deployment adapter.
+    assert 'printf \'%s\\n\' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"' in workflow
+    assert 'umask 077' in workflow
+    assert 'chmod 600 "$key_file" "$known_hosts_file"' in workflow
+    assert 'cat "$key_file"' not in workflow
+    assert 'bash "$edge_publish"' in workflow
+    assert 'bash "$edge_apply"' in workflow

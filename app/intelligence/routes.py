@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.intelligence.overview import get_intelligence_overview_payload
@@ -80,7 +81,10 @@ def catalog() -> ResponseReturnValue:
 @intelligence_bp.get('/catalog/<path:rule_key>/details')
 @permission_required('intelligence.view')
 def catalog_rule_details(rule_key: str) -> ResponseReturnValue:
-    rule = get_catalog_rule(rule_key)
+    rule = get_catalog_rule(
+        rule_key,
+        include_owner_options=current_user.has_permission('intelligence.decisions.create'),
+    )
     if rule is None:
         abort(404)
     return render_template(

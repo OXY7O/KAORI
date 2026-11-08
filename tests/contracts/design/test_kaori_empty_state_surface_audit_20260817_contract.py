@@ -16,7 +16,7 @@ def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
 def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     reviewed_empty_state_owners = (
         'app/templates/welcome/index.html',
-        'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
+        'app/templates/components/operational_alert_summary.html',
         'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
         'app/templates/components/kubernetes_operation_ui.html',
         'app/templates/kubernetes/analytics/components/_evidence_record_list.html',
@@ -29,6 +29,10 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     )
     for relative in reviewed_empty_state_owners:
         assert 'components/states/_empty_state.html' in read(relative), relative
+
+    dashboard_alerts = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
+    assert 'components/operational_alert_summary.html' in dashboard_alerts
+    assert 'components/states/_empty_state.html' not in dashboard_alerts
 
     overview = read('app/templates/platform_operations/overview/index.html')
     assert 'data-kaori-empty-state' not in overview
@@ -61,7 +65,17 @@ def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> 
         assert 'components/states/_empty_state.html' in source, relative
 
     intelligence = read('app/templates/intelligence/partials/_recommendation_records.html')
-    assert has_jinja_assignment(intelligence, 'empty_state_label', 'No Results')
+    # Source-qualified states must not collapse unavailable evidence into a healthy zero.
+    for label in (
+        'Evidence Unavailable',
+        'No Matching Findings',
+        'Evidence Review Required',
+        'No Active Findings',
+    ):
+        assert has_jinja_assignment(intelligence, 'empty_state_label', label)
+    assert "readiness_status == 'unavailable'" in intelligence
+    assert "readiness_status in ['partial', 'not_collected']" in intelligence
+    assert 'components/states/_empty_state.html' in intelligence
     assert 'rounded-xl border border-dashed border-outline-strong bg-surface-hover px-4 py-10' not in intelligence
 
 

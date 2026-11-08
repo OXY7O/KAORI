@@ -14,8 +14,12 @@ A developer should be able to start from the product concept and predict the pac
 
 - `app/access/` — authentication, users, identity providers, RBAC, roles, permissions, Activity Audit.
 - `app/integrations/` — provider-neutral integration contracts, providers/adapters, registration and binding workspaces.
+- `app/source_control/` — provider-neutral committed repository, delivery, and governance evidence; GitHub connectivity remains under `app/integrations/source_control/`.
+- `app/secrets_pki/` — provider-neutral secrets, certificates, leases, consumers, and lifecycle evidence; Vault connectivity remains under `app/integrations/secrets_management/`.
+- `app/security_posture/` — cross-domain committed security findings, correlation, and assurance; not a duplicate scanner or shared authentication/security infrastructure under `app/security/`.
 - `app/kubernetes/` — Kubernetes managed-asset lifecycle, dashboard, inventory, analytics, governance, and live operations.
 - `app/storage/` — infrastructure storage managed assets; Object Storage inventory/analytics live here.
+- `app/artifact_registry/` — provider-neutral committed Registry inventory, security evidence, governance evidence, runtime correlation, analytics, and reporting context; provider connectivity remains under `app/integrations/registry/` as defined by `artifact-registry-domain.md`.
 - `app/intelligence/` — recommendations, Alert Intelligence, Automation Control, Knowledge, and resolver workflows.
 - `app/platform_operations/` — jobs/executions, operational notifications, health, Data Lifecycle, and operational control surfaces.
 - `app/reports/`, `app/settings/`, `app/welcome/` — independent application capabilities.
@@ -58,6 +62,8 @@ New repository modules may not depend on Flask request globals, `current_user`, 
 The MVC persistence-debt baseline is intentionally empty. Direct ORM persistence in `routes.py`, `*_routes.py`, or `*_web.py`, and database mutation in presentation modules, are forbidden and fail the application-package architecture gate.
 
 ## Physical namespace rules
+
+Shared Integration Kernel infrastructure uses explicit kernel ownership where a capability name would otherwise collide with framework infrastructure. The canonical provider-registration module is `app/integrations/kernel/registry.py`; `app/integrations/registry/` is reserved for the provider-neutral Registry capability and its providers. Do not restore `app/integrations/registry.py` or introduce capability aliases solely to avoid a namespace collision.
 
 Canonical examples:
 

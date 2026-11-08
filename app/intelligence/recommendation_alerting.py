@@ -37,13 +37,14 @@ def effective_alert_policy(
     *,
     override: RecommendationAlertPolicy | None = None,
     observed_severity: str | None = None,
+    override_loaded: bool = False,
 ) -> dict[str, Any]:
     rule = catalog_rule(rule_key)
     if rule is None:
         return _disabled_policy(rule_key)
     default = _definition_policy(rule)
     row = override
-    if row is None:
+    if row is None and not override_loaded:
         row = RecommendationAlertPolicy.query.filter_by(rule_key=rule_key).first()
     if row is None:
         return _apply_observed_severity({**default, 'source': 'definition'}, observed_severity)
@@ -108,6 +109,7 @@ def decorate_recommendation_findings(findings: list[dict[str, Any]]) -> list[dic
         policy = effective_alert_policy(
             rule_key,
             override=overrides.get(rule_key),
+            override_loaded=True,
             observed_severity=str(item.get('severity') or 'info'),
         )
         state = states.get(finding_key)
@@ -134,7 +136,11 @@ def decorate_catalog_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
     exception_counts = active_exception_counts(exception_keys)
     for rule in rules:
         key = str(rule.get('rule_key') or '')
-        rule['alert_escalation'] = effective_alert_policy(key, override=overrides.get(key))
+        rule['alert_escalation'] = effective_alert_policy(
+            key,
+            override=overrides.get(key),
+            override_loaded=True,
+        )
         rule['active_exception_count'] = int(exception_counts.get(key, 0)) if key in exception_keys else 0
     return rules
 

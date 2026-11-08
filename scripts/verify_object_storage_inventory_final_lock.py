@@ -221,8 +221,10 @@ def main() -> int:
         'ObjectStorageBucket.query',
         "'snapshot_source': 'Committed Snapshot'",
         "'is_blocked': total_systems == 0",
-        "'snapshot': _overview_snapshot(all_rows)",
-        "'snapshot': _overview_snapshot(system_rows)",
+        "'snapshot': _committed_system_snapshot()",
+        'paginate_query(',
+        'def _filtered_systems(',
+        'def _filtered_buckets(',
     ):
         if token not in presentation:
             errors.append(f'Committed-snapshot presentation boundary missing: {token}')

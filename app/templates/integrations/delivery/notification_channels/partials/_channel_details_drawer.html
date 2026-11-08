@@ -1,0 +1,176 @@
+{% import "components/side_drawer.html" as side_drawer %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+{% set channel_drawer_id = 'notification-channel-details-' ~ channel.id %}
+{% call side_drawer.render(channel_drawer_id, 'Channel Details',
+    description=channel.name ~ ' · ' ~ channel.provider_label,
+    x_show='detailChannel === ' ~ channel.id,
+    close_expression="if (!document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')) detailChannel = null",
+    width='xl', delegate_clicks=true) %}
+    <div class="space-y-4">
+        {% call side_drawer.section('Operational Status', icon='activity',
+            badge=table_label.status_label(channel.status, channel.tone, size='compact'), density='compact') %}
+            <dl class="grid grid-cols-2 gap-3">
+                {{ side_drawer.context_fact('Lifecycle', 'Archived' if channel.lifecycle_state == 'retired' else ('Enabled' if channel.enabled else 'Disabled') , icon='archive') }}
+                {{ side_drawer.context_fact('Destination', channel.destination_label, icon=channel.provider_icon) }}
+            </dl>
+        {% endcall %}
+        {% set test_tone = 'normal' if channel.test_status == 'success' else ('warning' if channel.test_status == 'failed' else 'unknown') %}
+        {% call side_drawer.section('Delivery Evidence', 'Committed test and provider outcomes.', icon='history', density='compact') %}
+            <dl class="grid gap-3 sm:grid-cols-2">
+                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                    <dt class="text-xs font-semibold text-content-muted">Last Test</dt>
+                    <dd class="mt-2">
+                        {{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required') , test_tone, size='compact') }}
+                    </dd>
+                    <p class="mt-1 text-xs tabular-nums text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</p>
+                </div>
+                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                    <dt class="text-xs font-semibold text-content-muted">Last Delivery</dt>
+                    <dd class="mt-2">
+                        {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
+                    </dd>
+                    <p class="mt-1 text-xs tabular-nums text-content-muted">{{ channel.last_delivery_at|user_datetime("No delivery") if channel.last_delivery_at else 'No delivery yet' }}</p>
+                </div>
+            </dl>
+            <p class="mt-3 text-xs text-content-muted">Provider delivery does not prove human receipt.</p>
+        {% endcall %}
+        {% if channel.lifecycle_state == 'active' and can_manage %}
+            {% call side_drawer.section('Channel Actions', 'Manage the active channel after reviewing its status and evidence.', icon='settings-2', density='compact') %}
+                <div class="grid gap-2.5 sm:grid-cols-2">
+                    <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
+                       hx-get="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
+                       hx-target="#notification-channels-workspace"
+                       hx-select="#notification-channels-workspace"
+                       hx-swap="outerHTML"
+                       hx-indicator="#notification-channel-loading"
+                       hx-push-url="false"
+                       class="{{ action_button.classes('soft', full=true) }}">
+                        <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                        Edit Channel
+                    </a>
+                    <form method="post"
+                          action="{{ url_for('notification_channels.test', channel_id=channel.id) }}"
+                          hx-post="{{ url_for('notification_channels.test', channel_id=channel.id) }}"
+                          hx-target="#notification-channels-workspace"
+                          hx-select="#notification-channels-workspace"
+                          hx-swap="outerHTML"
+                          hx-indicator="#notification-channel-loading"
+                          hx-push-url="false"
+                          hx-disabled-elt="button[type='submit']">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ channel_return_fields() }}
+                        <button type="submit" class="{{ action_button.classes('soft', full=true) }}">
+                            <i data-lucide="send" class="h-4 w-4" aria-hidden="true"></i>
+                            Test Delivery
+                        </button>
+                    </form>
+                </div>
+                <div class="mt-3 border-t border-outline-subtle pt-3">
+                    <div class="grid gap-2.5 sm:grid-cols-2"
+                         role="group"
+                         aria-label="Channel lifecycle actions">
+                        <button type="button"
+                                data-kaori-dialog-open
+                                data-dialog-target="notification-channel-retire-{{ channel.id }}"
+                                aria-haspopup="dialog"
+                                aria-controls="notification-channel-retire-{{ channel.id }}"
+                                class="{{ action_button.classes('warning', full=true) }}">
+                            <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                            Retire Channel
+                        </button>
+                        {% if channel.delete_blocked %}
+                            <button type="button"
+                                    data-kaori-dialog-open
+                                    data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="notification-channel-delete-blockers-{{ channel.id }}"
+                                    aria-label="Locked: view deletion dependencies for {{ channel.name }}"
+                                    title="View deletion dependencies for {{ channel.name }}"
+                                    class="{{ action_button.classes('locked-info', full=true) }}">
+                                <i data-lucide="lock-keyhole" class="h-4 w-4" aria-hidden="true"></i>
+                                Delete Locked
+                            </button>
+                        {% else %}
+                            <button type="button"
+                                    data-destructive-modal-open
+                                    data-destructive-modal-id="notification-channel-delete-confirmation"
+                                    data-destructive-target="{{ channel.name }}"
+                                    data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="notification-channel-delete-confirmation"
+                                    aria-label="Confirm deletion of {{ channel.name }}"
+                                    class="{{ action_button.classes('critical', full=true) }}">
+                                <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                                Delete Channel
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endcall %}
+        {% endif %}
+        {% call side_drawer.section('Delivery Policy', 'Source-owned eligible routing and event capabilities.', icon='list-checks',
+            badge=table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks'), density='compact') %}
+            <dl class="grid gap-3 sm:grid-cols-2">
+                {{ side_drawer.context_fact('Minimum Severity', channel.minimum_severity_label, icon='shield') }}
+                <div class="min-w-0">
+                    <dt class="text-xs font-medium text-content-muted">Routing Domains</dt>
+                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                        {{ channel.domain_labels|join(", ") if channel.domain_labels else 'No domains selected' }}
+                    </dd>
+                </div>
+            </dl>
+            <div class="mt-4 space-y-3">
+                <h4 class="text-xs font-semibold text-content-primary">Allowed Event Capabilities</h4>
+                {% for group in channel.event_type_groups %}
+                    <section class="rounded-lg border border-outline-subtle bg-surface-hover p-3"
+                             aria-label="{{ group.label }} allowed events">
+                        <div class="flex items-center justify-between gap-3">
+                            <h5 class="min-w-0 break-words text-xs font-semibold text-content-primary">{{ group.label }}</h5>
+                            <span class="shrink-0 text-xs text-content-muted">{{ group.events|length }} event{{ '' if group.events|length == 1 else 's' }}</span>
+                        </div>
+                        <ul class="mt-2 space-y-1.5">
+                            {% for event_label in group.events %}
+                                <li class="flex gap-2 text-xs leading-5 text-content-secondary">
+                                    <i data-lucide="check"
+                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                       aria-hidden="true"></i>
+                                    <span class="break-words">{{ event_label }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                {% else %}
+                    <p class="text-xs text-content-muted">No allowed events.</p>
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% call side_drawer.section('Lifecycle & Governance', icon='shield-check', density='compact') %}
+            <dl class="grid gap-3 sm:grid-cols-2">
+                {{ side_drawer.context_fact('Committed Deliveries', channel.delivery_record_count, icon='history') }}
+                {{ side_drawer.context_fact('Report References', channel.report_schedule_count, icon='calendar-clock') }}
+            </dl>
+            {% if channel.report_schedule_names %}
+                <ul class="mt-3 list-disc space-y-1 pl-4 text-xs text-content-secondary">
+                    {% for schedule_name in channel.report_schedule_names %}
+                        <li class="break-words">{{ schedule_name }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if channel.lifecycle_state == 'retired' %}
+                <div class="mt-4 border-t border-outline-subtle pt-3">
+                    {{ table_label.status_label('Archived', 'unknown', size='compact') }}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {{ side_drawer.context_fact('Retired At', channel.retired_at|user_datetime('Not recorded') if channel.retired_at else 'Not recorded', icon='calendar') }}
+                        {{ side_drawer.context_fact('Retired By (User ID)', channel.retired_by_user_id or 'Unavailable', icon='user-round') }}
+                    </dl>
+                    <p class="mt-3 break-words text-xs leading-5 text-content-secondary"><strong>Reason:</strong> {{ channel.retirement_reason }}</p>
+                </div>
+            {% else %}
+                <p class="mt-3 text-xs text-content-muted">
+                    {{ 'Hard delete is locked by committed evidence or report references.' if channel.delete_blocked else 'No committed dependency blocks hard delete.' }}
+                </p>
+            {% endif %}
+        {% endcall %}
+    </div>
+{% endcall %}

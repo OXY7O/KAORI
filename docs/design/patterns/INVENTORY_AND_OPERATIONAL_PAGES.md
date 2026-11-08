@@ -30,6 +30,8 @@ This document defines reusable structures. It does not define domain-specific fi
 5. Runtime, validation, history, and audit evidence in separate sections or tabs.
 6. HTMX updates target the affected content region and preserve hero stability.
 
+For the **Kubernetes Operations Overview**, the Hero supporting line and each of the three Execution & Evidence Model step descriptions are compact, single-line desktop guidance. Keep their responsibilities distinguishable: select/verify the live target in its capability workspace, enforce operation-specific permission/preflight checks, and retain auditable feedback from provider-authoritative execution. Use concise copy (roughly 50 characters) with normal responsive wrapping; never force `whitespace-nowrap`, truncation, smaller typography, or page-local width overrides to achieve the desktop result.
+
 ## Selector pattern
 
 - Labels use sentence case.
@@ -137,3 +139,9 @@ The registry remains server-paginated with default 5 and options 5/10/25/50. The
 - Queued and cooperative heavy jobs may show `Cancel` when the user has `jobs.cancel`.
 - Running provider validation/runtime work shows `Protected Run` because provider requests are not force-terminated mid-flight.
 - Block loading indicators sit directly below the corresponding block header before filters or data content.
+
+## Canonical table Results badge (review standard, #1675)
+
+Table/card headers with a reliable committed or server-paginated total show the compact KAORI Violet **Results** metadata badge beside the owning title and any existing single Info Tip (reference: Artifact Registry Repositories Inventory). Use `components/table_label.html::result_count(count)` and the shared `table.html::inventory_block_header(..., result_count=...)`; do not fork local badge markup or substitute a semantic warning/status label. The chip is informational, not interactive. Use consistent `list-filter` icon, neutral Violet metadata treatment, compact padding, and responsive title-row wrapping; keep existing icon surface, descriptions, filters, actions, accessibility and HTMX behavior intact.
+
+The number is the **filtered total across all pages**, not the current page's visible rows. Pass `pagination.total_items`, `inventory.pagination.total_items`, or another authoritative total from the existing committed read model. Render `0 Results` and `1 Result` correctly. A missing/unknown count omits the badge rather than showing a fabricated zero. A provider readiness/status count is not interchangeable with a result total. Tables without reliable count evidence must remain unbadged until their existing read models provide it without new live-provider reads. On HTMX filter/pagination changes, update the owning table header with the corresponding total; do not append multiple badges across swaps.

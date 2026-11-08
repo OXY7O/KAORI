@@ -180,10 +180,16 @@ def main() -> int:
     topology_hero = read('app/templates/kubernetes/inventory/topology/partials/_hero.html')
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
-        'page_hero.blocked_context_body(' in blocked_hero
-        and "('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in blocked_hero
-        and "('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in blocked_hero,
-        'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
+        'components/provider_prerequisite/_hero_context.html' in blocked_hero
+        and "provider_prerequisite_scope = cluster_blocked_scope|default('Workspace Readiness')" in blocked_hero
+        and "provider_prerequisite_title = cluster_blocked_title|default('Cluster Setup Required')" in blocked_hero
+        and "provider_prerequisite_resource_label = cluster_blocked_cluster_label|default('Connected Clusters')"
+        in blocked_hero
+        and "provider_prerequisite_resource_value = cluster_blocked_cluster_value|default('0')" in blocked_hero
+        and "provider_prerequisite_state_value = cluster_blocked_state_value|default('Blocked')" in blocked_hero
+        and "provider_prerequisite_state_supporting = cluster_blocked_state_supporting|default('Cluster access is required')"
+        in blocked_hero,
+        'Inventory must inherit the canonical Kubernetes provider-prerequisite Hero context.',
         errors,
     )
     require(
@@ -202,12 +208,15 @@ def main() -> int:
             f'{page_name} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
+        metadata_index = hero_source.find('page_hero.metadata_row_classes()')
+        blocker_index = hero_source.find('{% if cluster_onboarding.is_blocked %}')
         require(
-            'Committed Inventory' in hero_source and 'Cluster Setup Required' in hero_source,
-            f'{page_name} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
+            metadata_index >= 0 and metadata_index < blocker_index,
+            f'{page_name} Hero metadata roles must remain stable before provider-prerequisite readiness context.',
             errors,
         )
     overview_page = read('app/templates/kubernetes/inventory/overview/index.html')
+    overview_shell = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster.html')
     overview_content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
     overview_detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     topology_page = read('app/templates/kubernetes/inventory/topology/index.html')
@@ -220,6 +229,31 @@ def main() -> int:
             f'{page_name} must hide Inventory Data Snapshot behind the onboarding blocker.',
             errors,
         )
+    section_intro = read('app/templates/components/section_intro.html')
+    require(
+        'macro render(title, description, id=None, supporting=None' in section_intro
+        and 'text-lg font-semibold text-content-primary' in section_intro
+        and 'text-sm leading-6 text-content-secondary' in section_intro,
+        'Shared Section Intro must own the accepted plain Inventory hierarchy.',
+        errors,
+    )
+    require(
+        'components/section_intro.html' in overview_page
+        and "'Inventory Assets'" in overview_page
+        and "'Multi-Cluster Inventory'" in overview_page,
+        'Inventory Overview must use shared section hierarchy for assets and multi-cluster inventory.',
+        errors,
+    )
+    require(
+        'components/section_intro.html' in topology_page and "'Inventory Relationships'" in topology_page,
+        'Topology must use shared section hierarchy above its visualization workspace.',
+        errors,
+    )
+    require(
+        'Open Cluster Integrations' in overview_shell and 'Open Cluster List' not in overview_shell,
+        'Inventory Overview cluster table action must use Open Cluster Integrations.',
+        errors,
+    )
 
     for token in (
         'resource_detail_modal.inventory_host(',
@@ -267,18 +301,47 @@ def main() -> int:
         'Shared Inventory resource-sheet bands must align the description rail to the four-column summary header.',
         errors,
     )
+    inspector_summary = detail_primitives.split('{% macro inspector_summary_strip', 1)[-1].split(
+        '{%- endmacro %}',
+        1,
+    )[0]
+    require(
+        'data-kaori-inventory-summary-alignment="full-width-band"' in inspector_summary
+        and 'grid min-w-0 w-full overflow-hidden bg-surface-card' in inspector_summary
+        and 'mx-4' not in inspector_summary
+        and 'sm:mx-5' not in inspector_summary
+        and 'lg:mx-6' not in inspector_summary
+        and 'rounded-2xl' not in inspector_summary,
+        'Shared Inventory modal summary must remain one flush full-width band without inset card framing.',
+        errors,
+    )
     require(
         'macro inventory_copy_button(label)' in detail_primitives
         and 'data-kaori-copy-button' in detail_primitives
-        and 'data-kaori-copy-source' in detail_primitives,
-        'Shared Inventory detail primitives must provide accessible copy controls for technical identifiers.',
+        and 'aria-label="Copy {{ label }}"' in detail_primitives,
+        'Shared clipboard helper must remain available outside Kubernetes Inventory details.',
         errors,
     )
+    for macro_name in ('inventory_technical_row', 'inspector_technical_row', 'inventory_fact_grid'):
+        prefix = f'{{% macro {macro_name}('
+        macro_body = (
+            detail_primitives.split(prefix, 1)[1].split('{%- endmacro %}', 1)[0] if prefix in detail_primitives else ''
+        )
+        require(
+            bool(macro_body)
+            and all(
+                marker not in macro_body
+                for marker in ('data-kaori-copy-', 'inventory_copy_button(', 'data-lucide="copy"')
+            ),
+            f'{macro_name} must expose selectable facts without Inventory clipboard controls.',
+            errors,
+        )
 
     namespace_detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     require(
-        'Unset namespace controls remain neutral until evaluated against an explicit governance policy.'
-        in namespace_detail
+        'A missing ResourceQuota does not automatically indicate a compliance failure' in namespace_detail
+        and 'ResourceQuota collection state:' in namespace_detail
+        and 'ResourceQuota Evidence Not Reported' in namespace_detail
         and 'data-kaori-reported-quota' in namespace_detail
         and 'Hard Limit' in namespace_detail,
         'Namespace detail must keep concise governance wording and the clear Reported Quotas box contract.',
@@ -296,6 +359,7 @@ def main() -> int:
 
     for resource in RESOURCE_NAMES:
         hero = read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
+        table_card = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_card.html')
         table = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_content.html')
         workspace = read(f'app/templates/kubernetes/inventory/{resource}/partials/_page_workspace.html')
         blocker = workspace.find('{% if cluster_onboarding.is_blocked %}')
@@ -304,6 +368,25 @@ def main() -> int:
         require(
             blocker >= 0 and blocker < blocker_else < snapshot,
             f'{resource} must hide Inventory Data Snapshot behind the onboarding blocker.',
+            errors,
+        )
+        require(
+            'components/section_intro.html' in workspace
+            and "'Operational Posture'" in workspace
+            and "'Inventory Records'" in workspace,
+            f'{resource} must use shared Operational Posture and Inventory Records hierarchy.',
+            errors,
+        )
+        require(
+            'Open Cluster Integrations' in hero and 'Manage Clusters' not in hero,
+            f'{resource} Hero cluster action must use Open Cluster Integrations.',
+            errors,
+        )
+        require(
+            'Open Cluster Integrations' in table_card
+            and 'Open Cluster List' not in table_card
+            and 'Manage Clusters' not in table_card,
+            f'{resource} table cluster action must use Open Cluster Integrations.',
             errors,
         )
         require(
@@ -316,9 +399,11 @@ def main() -> int:
             f'{resource} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
+        metadata_index = hero.find('page_hero.metadata_row_classes()')
+        blocker_index = hero.find('{% if cluster_onboarding.is_blocked %}')
         require(
-            'Committed Inventory' in hero and 'Cluster Setup Required' in hero,
-            f'{resource} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
+            metadata_index >= 0 and metadata_index < blocker_index,
+            f'{resource} Hero metadata roles must remain stable before provider-prerequisite readiness context.',
             errors,
         )
         require('components/table.html' in table, f'{resource} must use the shared table component.', errors)
@@ -400,8 +485,8 @@ def main() -> int:
     audit = read('docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md')
     usability_audit = read('docs/design/audits/KUBERNETES_INVENTORY_USABILITY_AUDIT_2026_08_24.md')
     require(
-        '# Inventory Resource Page Pattern v1.3' in standard,
-        'Inventory Resource Page standard must be v1.3.',
+        '# Inventory Resource Page Pattern v1.4' in standard,
+        'Inventory Resource Page standard must be v1.4.',
         errors,
     )
     for phrase in (
@@ -409,6 +494,8 @@ def main() -> int:
         'Status Badge Box',
         '5 / 10 / 25 / 50',
         'Full Workspace Modal',
+        'components/section_intro.html',
+        'Open Cluster Integrations',
     ):
         require(phrase in standard, f'Inventory standard must document {phrase}.', errors)
     require(

@@ -23,13 +23,15 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
+from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 from app.platform_operations.kubernetes.secret_reveal.service import (
     build_secret_reveal_settings_context,
+    commit_secret_reveal_settings_transaction,
     get_secret_reveal_cluster,
     rollback_secret_reveal_settings_transaction,
 )
-from app.platform_operations.notifications.feedback import queue_operational_feedback
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.notifications.feedback import OperationalActionPresentation, queue_operational_feedback
+from app.platform_operations.notifications.service import record_operational_activity, stage_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
 
@@ -42,7 +44,10 @@ def _validate_csrf() -> None:
 
 
 def _settings_request_args(cluster_id: str) -> dict[str, Any]:
-    settings_args: dict[str, Any] = {'cluster_id': cluster_id}
+    settings_args: dict[str, Any] = {
+        'cluster_id': cluster_id,
+        'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites',
+    }
     for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
         value = (request.form.get(key) or '').strip()
         if value:
@@ -83,7 +88,11 @@ def _settings_response(cluster_id: str, operation_feedback: dict[str, Any] | Non
             **operation_feedback,
             toast_oob=True,
         )
-    response = make_response(workspace_html + feedback_html)
+    summary_html = render_template(
+        'platform_operations/kubernetes/_summary_oob.html',
+        **build_kubernetes_administration_summary(),
+    )
+    response = make_response(workspace_html + summary_html + feedback_html)
     response.headers['HX-Push-Url'] = page_url
     response.headers['HX-Trigger'] = json.dumps({'kaori:notifications-changed': True})
     return response
@@ -103,22 +112,35 @@ def _record_settings_activity(
     title: str,
     message: str,
     metadata: dict[str, object],
+    durable_with_operation: bool = False,
 ) -> dict[str, Any]:
+    action_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal')
+    evidence = {
+        **metadata,
+        'secret_value_recorded': False,
+        'kubeconfig_recorded': False,
+    }
+    if durable_with_operation:
+        return stage_operational_activity(
+            user_id=current_user.id,
+            event_type=event_type,
+            status=status,
+            title=title,
+            message=message,
+            action_url=action_url,
+            action=OperationalActionPresentation(label='Open Kubernetes Administration', icon='server-cog'),
+            metadata=evidence,
+        )
     return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
         title=title,
         message=message,
-        action_url=url_for('platform_operations.kubernetes.index', tab='secret-reveal'),
+        action_url=action_url,
         action_label='Open Kubernetes Administration',
         action_icon='server-cog',
-        metadata={
-            **metadata,
-            'secret_value_recorded': False,
-            'kubeconfig_recorded': False,
-        },
-        queue_feedback=False,
+        metadata=evidence,
     )
 
 
@@ -126,7 +148,7 @@ def _record_settings_activity(
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
     redirect_args: dict[str, Any] = {'tab': 'secret-reveal'}
-    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page'):
+    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view'):
         value = (request.args.get(key) or '').strip()
         if value:
             redirect_args[key] = value
@@ -155,6 +177,7 @@ def workspace():
 
     selected_cluster = context.get('selected_cluster')
     push_args: dict[str, Any] = {
+        'view': 'policies' if request.args.get('view') == 'policies' else 'prerequisites',
         'namespace_q': context['namespace_filters']['query'],
         'namespace_policy': context['namespace_filters']['policy'],
         'page': context['namespace_pagination']['page'],
@@ -183,6 +206,7 @@ def update_readiness(cluster_id: str):
             cluster,
             encryption_verified=request.form.get('encryption_verified') == '1',
             audit_verified=request.form.get('audit_verified') == '1',
+            commit=False,
         )
         readiness = cluster_reveal_readiness_evidence(cluster)
         ready = readiness['ready']
@@ -205,7 +229,9 @@ def update_readiness(cluster_id: str):
                 'cluster_credential_configured': readiness['credential_configured'],
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
@@ -242,6 +268,7 @@ def update_namespace_policy(cluster_id: str):
             namespace,
             requested_policy,
             actor_user_id=current_user.id,
+            commit=False,
         )
         enabled = change.policy != 'disabled'
         operation_feedback = _record_settings_activity(
@@ -261,7 +288,9 @@ def update_namespace_policy(cluster_id: str):
                 'previous_policy': change.previous_policy,
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(

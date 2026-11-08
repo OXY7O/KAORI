@@ -37,7 +37,7 @@ def test_alerts_hero_uses_canonical_context_card_and_evidence_semantics() -> Non
     assert 'evidence_incomplete' in hero
     assert re.search(r'posture_status\s*=\s*["\']Watch["\']', hero)
     assert re.search(r'posture_tone\s*=\s*["\']warning["\']', hero)
-    assert "'Manage Clusters'" in hero
+    assert "'Open Cluster Integrations'" in hero
     assert 'context_posture_header' not in hero
     assert 'context_posture_note' not in hero
     assert 'context_bottom_notice' not in hero
@@ -62,7 +62,7 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
     assert 'aria-label="Alert severity profile"' in overview
     assert 'Info Alerts' in overview
     assert 'Evidence Coverage' in overview
-    assert 'xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]' in overview
+    assert 'xl:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.9fr)]' in overview
     assert 'xl:grid-cols-6' not in overview
     assert 'Investigation Posture' not in overview
     assert 'progress_bar' not in overview

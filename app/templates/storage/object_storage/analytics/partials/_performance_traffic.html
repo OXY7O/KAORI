@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -7,7 +8,18 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Data Flow &amp; Activity Direction</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Throughput &amp; Request Direction</h2>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Throughput &amp; Request Direction</h2>
+                        {{ info_tip.render('object-storage-throughput-request-direction-guide',
+                                                'Throughput & Request Direction Guide',
+                                                'Committed ingress and egress traffic are distinct from S3 request rates and request reliability.',
+                                                items=[
+                                                'Traffic In and Traffic Out are storage-data flow; Total Traffic is meaningful only when both sources are available.',
+                                                'Request and error trends describe observed historical activity in the selected time range, not health by themselves.',
+                                                'Highest-demand and highest-error buckets are based on committed bucket samples and their measured evidence coverage.',
+                                                ],
+                                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                         Compare ingress and egress with request and error direction; throughput alone does not indicate health or saturation.
                     </p>
@@ -87,7 +99,7 @@
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout('Highest Request Demand', metrics.performance.top_request_bucket_name, metrics.performance.top_request_bucket_value ~ ' is the highest observed bucket request rate. Bucket request evidence covers ' ~ metrics.performance.bucket_request_coverage_display ~ ' of known bucket records.', icon='container', role='insight') }}
-        {{ analysis_surface.interpretation_callout('Highest Error Ratio', metrics.performance.top_error_bucket_name, metrics.performance.top_error_bucket_value ~ ' is the highest observed bucket error ratio. Bucket error-ratio evidence covers ' ~ metrics.performance.bucket_error_coverage_display ~ ' of known bucket records.', icon='triangle-alert', role='evidence') }}
+        {{ analysis_surface.interpretation_callout('Highest Request Demand', metrics.performance.top_request_bucket_name, metrics.performance.top_request_bucket_value ~ ' peak request rate · Coverage: ' ~ metrics.performance.bucket_request_coverage_display ~ '.', icon='container', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Highest Error Ratio', metrics.performance.top_error_bucket_name, metrics.performance.top_error_bucket_value ~ ' peak error ratio · Coverage: ' ~ metrics.performance.bucket_error_coverage_display ~ '.', icon='triangle-alert', role='evidence') }}
     </div>
 </section>

@@ -4,12 +4,14 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from app.reports.export.xlsx.analytics_preparation.alerts import prepare_alerts
+from app.reports.export.xlsx.analytics_preparation.artifact_registry import prepare_artifact_registry
 from app.reports.export.xlsx.analytics_preparation.capacity import prepare_capacity
 from app.reports.export.xlsx.analytics_preparation.forecast import prepare_forecast
 from app.reports.export.xlsx.analytics_preparation.object_storage import prepare_object_storage
 from app.reports.export.xlsx.analytics_preparation.overview import prepare_overview
 from app.reports.export.xlsx.analytics_preparation.resource_utilization import prepare_resource_utilization
 from app.reports.export.xlsx.analytics_preparation.storage import prepare_storage
+from app.reports.export.xlsx.analytics_preparation.tenant_governance import prepare_tenant_governance
 from app.reports.export.xlsx.analytics_preparation.top_consumers import prepare_top_consumers
 from app.reports.export.xlsx.analytics_preparation.workload import prepare_workload
 from app.reports.export.xlsx.analytics_profile_catalog import (
@@ -41,7 +43,9 @@ _PREPARERS: dict[str, _Preparer] = {
     'resource_forecast': prepare_forecast,
     'top_consumers': prepare_top_consumers,
     'alerts_anomalies': prepare_alerts,
+    'tenant_governance': prepare_tenant_governance,
     'object_storage_analysis': prepare_object_storage,
+    'artifact_registry_analysis': prepare_artifact_registry,
 }
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import selectinload
@@ -32,20 +32,38 @@ def _format_percent(value: float | None) -> str:
     return f'{value:.1f}%' if value is not None else 'N/A'
 
 
-def _provider_identity(system: ObjectStorageSystem) -> tuple[str, str]:
-    identity = (
+def _active_object_storage_providers() -> dict[str, IntegrationInstance]:
+    """Only committed enabled/active integration instances authorize active findings."""
+    providers = (
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'object_storage',
-            IntegrationInstance.metadata_json['asset_type'].as_string() == 'object_storage_system',
-            IntegrationInstance.metadata_json['asset_key'].as_string() == str(system.id),
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
         )
         .order_by(IntegrationInstance.id.asc())
-        .first()
+        .all()
     )
-    if identity is None:
+    identities: dict[str, IntegrationInstance] = {}
+    for provider in providers:
+        metadata = provider.metadata_json if isinstance(provider.metadata_json, dict) else {}
+        if metadata.get('asset_type') != 'object_storage_system':
+            continue
+        asset_key = str(metadata.get('asset_key') or '').strip()
+        if asset_key and asset_key not in identities:
+            identities[asset_key] = provider
+    return identities
+
+
+def _provider_identity(
+    system: ObjectStorageSystem, identities: dict[str, IntegrationInstance] | None = None
+) -> tuple[str, str]:
+    if identities is None:
+        identities = _active_object_storage_providers()
+    identity = identities.get(str(system.id))
+    if identity is None or not identity.enabled or identity.lifecycle_status != 'active':
         return '', 'Object Storage'
     provider_key = str(identity.provider_key or '').strip().lower()
-    metadata = identity.metadata_json or {}
+    metadata = identity.metadata_json if isinstance(identity.metadata_json, dict) else {}
     provider_label = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title() or 'Object Storage')
     return provider_key, provider_label
 
@@ -294,41 +312,66 @@ def build_object_storage_recommendation_findings(
     live provider, Metrics Source, or Alertmanager query is issued from Intelligence.
     """
 
-    systems = (
-        ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets))
-        .order_by(ObjectStorageSystem.name.asc())
-        .all()
-    )
+    providers = _active_object_storage_providers()
+    if not providers:
+        return []
+    # Keyset + selectinload bounds bucket hydration to one system page.
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    last_id = ''
     findings: list[dict[str, Any]] = []
-    for system in systems:
-        provider_key, provider_label = _provider_identity(system)
-        if provider_key != 'minio':
-            continue
-        findings.extend(
-            _forecast_findings(
-                rules=rules,
-                system=system,
-                provider_key=provider_key,
-                provider_label=provider_label,
+    while True:
+        systems = (
+            ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets))
+            .filter(
+                ObjectStorageSystem.id.in_(tuple(providers)),
+                ObjectStorageSystem.id > last_id,
+                ObjectStorageSystem.inventory_observed_at >= cutoff,
             )
+            .order_by(ObjectStorageSystem.id.asc())
+            .limit(100)
+            .all()
         )
-        for bucket in system.buckets:
+        if not systems:
+            break
+        for system in systems:
+            provider_key, provider_label = _provider_identity(system, providers)
+            if provider_key != 'minio':
+                continue
             findings.extend(
-                _quota_findings(
+                _forecast_findings(
                     rules=rules,
                     system=system,
-                    bucket=bucket,
                     provider_key=provider_key,
                     provider_label=provider_label,
                 )
             )
-            findings.extend(
-                _governance_findings(
-                    rules=rules,
-                    system=system,
-                    bucket=bucket,
-                    provider_key=provider_key,
-                    provider_label=provider_label,
+            for bucket in system.buckets:
+                # A recently collected system cannot make an older bucket
+                # projection a currently assessed governance or capacity risk.
+                observed = bucket.observed_at
+                if observed is None:
+                    continue
+                if observed.tzinfo is None:
+                    observed = observed.replace(tzinfo=UTC)
+                if observed < cutoff:
+                    continue
+                findings.extend(
+                    _quota_findings(
+                        rules=rules,
+                        system=system,
+                        bucket=bucket,
+                        provider_key=provider_key,
+                        provider_label=provider_label,
+                    )
                 )
-            )
+                findings.extend(
+                    _governance_findings(
+                        rules=rules,
+                        system=system,
+                        bucket=bucket,
+                        provider_key=provider_key,
+                        provider_label=provider_label,
+                    )
+                )
+        last_id = str(systems[-1].id)
     return findings

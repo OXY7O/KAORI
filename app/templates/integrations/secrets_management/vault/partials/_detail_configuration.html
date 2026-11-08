@@ -1,0 +1,29 @@
+{% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
+{% set summary_items = [
+    ('Canonical Identity', instance.name, 'Stable KAORI connection and audit identity'),
+    ('Environment', instance.environment or 'Unspecified', 'Approved workload context'),
+    ('Detected Version', instance.detected_version or 'Not Observed', 'Last committed provider discovery'),
+    ('Compatibility', (instance.compatibility_status or 'Not Validated')|replace('_', ' ')|title, 'Full Validation qualification')
+] %}
+{% set evidence_items = [
+    ('server', 'brand', 'Vault HTTPS Endpoint', instance.endpoint, 'Approved internal Vault origin; no live read during page rendering.'),
+    ('shield-check', 'success', 'TLS Trust', 'Verified HTTPS', 'Trust the approved internal CA and Vault server identity.'),
+    ('key-round', 'info', 'AppRole Authentication', 'AppRole · ' ~ instance.auth_mount, 'SecretID is encrypted; access tokens are transient and never displayed.'),
+    ('database', 'brand', 'Approved KV v2 Mounts', ((instance.kv2_mounts or [])|length|string) ~ ' metadata-only mounts', 'Inventory requires separately authorized collection and scoped metadata permissions.')
+] %}
+{% set flow_items = [('Configure', 'Set a reusable connection identity, approved origin, AppRole and mount boundaries.', 'settings-2'), ('Validate', 'Prove Vault version, authentication and required API capabilities via Full Validation.', 'badge-check'), ('Observe', 'Record Vault runtime health independently from API capability readiness.', 'activity'), ('Correlate', 'Use committed KV v2, PKI and independently qualified consumer evidence.', 'waypoints')] %}
+{{ provider_configuration_contract.render('Vault',
+'key-round',
+readiness,
+summary_items,
+evidence_items,
+'Vault remains authoritative for Secret values, tokens, leases, issuance and ACLs. KAORI governs only connection, committed metadata, correlation and audit.',
+flow_items,
+'Connection changes require Full Validation. Registered scopes do not grant per-Secret access.',
+url_for('vault.edit_instance', instance_id=instance.id) ,
+operational_metadata=[
+'SecretID · Encrypted / Not Displayed',
+'Namespace · ' ~ (instance.namespace or 'Root'),
+'Connection · ' ~ ('Enabled' if instance.enabled else 'Disabled'),
+'KV v2 · Metadata Only'
+]) }}

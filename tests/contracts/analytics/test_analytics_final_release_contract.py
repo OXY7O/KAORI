@@ -55,9 +55,13 @@ def test_analytics_consumes_shared_content_tabs_without_compatibility_wrapper() 
     overview = read('app/templates/kubernetes/analytics/overview/index.html')
     consumers = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
 
-    for source in (workspace, overview, consumers):
+    # Direct owners and delegated consumers must all use the same shared
+    # content-tabs primitive, without a compatibility implementation.
+    for source in (workspace, overview):
         assert 'components/content_tabs.html' in source
         assert 'content_tabs.render_buttons' in source
+    assert 'kubernetes/analytics/components/_analysis_workspace.html' in consumers
+    assert 'analytics_workspace.tabbed(' in consumers
     assert not (ROOT / 'app/templates/analytics/components/_content_tabs.html').exists()
     assert not (ROOT / 'app/templates/analytics/components/_snapshot_panel.html').exists()
     assert not (ROOT / 'app/templates/kubernetes/analytics/materialization/_freshness.html').exists()
@@ -69,7 +73,7 @@ def test_analytics_final_recheck_evidence_is_wired_to_release_gate() -> None:
     tracker = read('docs/reviews/2026-08-10-final-recheck.md')
 
     assert 'python scripts/verify_analytics_final_lock.py' in quality_gate
-    assert 'tests/kubernetes/analytics' in quality_gate
+    assert "-m 'not debug and not e2e and not contract and not migration'" in quality_gate
     assert 'test_analytics_final_release_contract.py' in coverage
     assert 'test_analytics_security.py' in coverage
     assert 'test_analytics_rendering.py' in coverage

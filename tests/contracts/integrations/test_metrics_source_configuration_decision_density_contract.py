@@ -24,5 +24,6 @@ def test_metrics_source_configuration_exposes_provider_and_consumer_boundary() -
     assert "metrics_source_label ~ ' Metrics Endpoint'" in template
     assert 'metrics_source_label ~ " Query API"' in template
     assert 'Metrics Authority' in template
-    assert 'bindings only govern consumer selection' in template
+    assert 'owns queries and retention; bindings select consumers.' in template
+    assert 'keeps source readiness separate from consumer bindings and query routing.' in template
     assert 'url_for("metrics.edit_instance"' in template

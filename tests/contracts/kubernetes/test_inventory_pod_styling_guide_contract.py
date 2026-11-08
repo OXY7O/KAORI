@@ -18,15 +18,35 @@ def test_pod_inventory_applies_resource_page_pattern() -> None:
     assert 'inventory.ready_count' in hero
     assert 'inventory.exception_count' in hero
     assert 'posture_grid.render(posture_metrics, columns=4)' in summary
+    assert "inventory.total_image_references ~ ' image references across all container types.'" in summary
+    assert 'image references across regular, init, and ephemeral containers.' not in summary
     assert 'Running Coverage' not in summary
     assert '>Pod</th>' in table
     assert '>Scope</th>' in table
     assert '>Runtime State</th>' in table
     assert '>Placement</th>' in table
-    assert '>Ownership & Activity</th>' in table
+    assert '>Owner & Restarts</th>' in table
     assert 'table_ui.namespaced_scope_identity(' in table
     assert 'pod.operational_state_label' in table
     assert 'pod.state_evidence' in table
+    assert 'table_label.metadata_label(pod.owner_kind_label)' in table
+    assert 'pod.restart_summary' in table
+    assert 'pod.owner_name_display' not in table
+    assert 'pod.owner_display' not in table
+    assert 'line-clamp-2' not in table
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'w-[13%]">Owner & Restarts</th>' in table
+
+
+def test_compact_pod_owner_table_preserves_full_owner_evidence_in_modal() -> None:
+    detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
+    service = read('app/kubernetes/inventory/resources/pods.py')
+    card = read('app/templates/kubernetes/inventory/pods/partials/_table_card.html')
+
+    assert "detail.inventory_row('Owner', pod.owner_display)" in detail
+    assert "'owner_display': owner_display" in service
+    assert "'owner_name_display': owner_name_display" in service
+    assert 'Full owner name and controller evidence remain in View Details' in card
 
 
 def test_pod_filters_are_owner_aware_and_workspace_scoped() -> None:

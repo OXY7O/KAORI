@@ -28,8 +28,10 @@ def test_protected_reveal_uses_shared_analytics_content_tab_style_with_fallback(
 
 def test_protected_reveal_empty_cluster_copy_is_compact() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
-    assert 'No eligible cluster. Review readiness or policy.' in page
-    assert 'No eligible cluster. Check readiness or enable a policy.' not in page
+    assert "'Protected Reveal globally disabled' if not global_reveal_enabled" in page
+    assert "'No eligible protected cluster' if not clusters" in page
+    assert '{% if not global_reveal_enabled %}disabled{% endif %}' in page
+    assert "'Select protected cluster'" in page
 
 
 def test_secret_surfaces_remain_semantic_token_owned() -> None:

@@ -323,6 +323,7 @@ def can_edit_user(
     requested_role_id: int | None,
     requested_is_active: bool,
     requested_is_super_admin: bool,
+    validate_new_role: bool = True,
 ) -> tuple[bool, str | None]:
     if not actor.has_permission('users.manage'):
         return False, 'You do not have permission to edit users.'
@@ -330,9 +331,10 @@ def can_edit_user(
     if target.deleted_at is not None:
         return False, 'Deleted users cannot be edited.'
 
-    allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
-    if not allowed:
-        return allowed, message
+    if validate_new_role:
+        allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
+        if not allowed:
+            return allowed, message
 
     requested_is_admin_level = requested_admin_level(
         role_id=requested_role_id,
@@ -393,6 +395,7 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
             requested_role_id=user.role_id,
             requested_is_active=user.account_is_active,
             requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
+            validate_new_role=False,
         )
         can_reset, reset_reason = can_reset_user_password(actor, user)
         can_activate, activate_reason = can_activate_user(actor, user)
@@ -443,6 +446,37 @@ def get_user(user_id: int) -> User | None:
     return db.session.get(User, user_id)
 
 
+def user_version_token(user: User) -> str:
+    """Snapshot identity and security-sensitive fields for optimistic edits."""
+    updated_at = user.updated_at
+    if updated_at.tzinfo is None:
+        updated_at = updated_at.replace(tzinfo=UTC)
+    return '|'.join(
+        (
+            updated_at.astimezone(UTC).isoformat(timespec='microseconds'),
+            str(user.role_id or ''),
+            str(int(user.account_is_active)),
+            str(int(user.is_super_admin)),
+            str(user.auth_session_version),
+            str(user.deleted_at.isoformat() if user.deleted_at is not None else ''),
+        )
+    )
+
+
+def lock_user_for_mutation(user_id: int) -> User | None:
+    """Lock and refresh the persisted user row before reviewing an Edit POST."""
+    return db.session.query(User).populate_existing().filter(User.id == int(user_id)).with_for_update().one_or_none()
+
+
+def rollback_user_edit_transaction() -> None:
+    """Release the serialized stale edit transaction before fetching fresh user state."""
+    db.session.rollback()
+
+
+def user_version_matches(user: User, token: str | None) -> bool:
+    return bool(token and token == user_version_token(user))
+
+
 def persist_created_user(*, actor: User, user: User) -> None:
     try:
         db.session.flush()
@@ -475,34 +509,58 @@ def persist_updated_user(*, actor: User, user: User) -> None:
 
 
 def activate_user_account(*, actor: User, user: User) -> None:
-    set_user_active(user, True)
-    record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
-    db.session.commit()
+    try:
+        set_user_active(user, True)
+        record_admin_event(
+            actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def deactivate_user_account(*, actor: User, user: User) -> None:
-    set_user_active(user, False)
-    record_admin_event(
-        actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
-    )
-    db.session.commit()
+    try:
+        set_user_active(user, False)
+        record_admin_event(
+            actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def reset_user_password(*, actor: User, user: User, password: str) -> None:
-    user.set_password(password)
-    record_admin_event(
-        actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
-    )
-    db.session.commit()
+    try:
+        user.set_password(password)
+        record_admin_event(
+            actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def restore_user_account(*, actor: User, user: User) -> None:
-    restore_user(user)
-    record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
-    db.session.commit()
+    try:
+        restore_user(user)
+        record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def delete_user_account(*, actor: User, user: User) -> None:
-    soft_delete_user(user)
-    record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
-    db.session.commit()
+    try:
+        soft_delete_user(user)
+        record_admin_event(
+            actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise

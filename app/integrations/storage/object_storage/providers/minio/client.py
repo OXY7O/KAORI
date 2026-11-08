@@ -114,6 +114,19 @@ def _bucket_inventory(
     *,
     location: str | None = None,
 ) -> tuple[MinioBucketSummary, ...]:
+    # A malformed or truncated ListBuckets response is not authoritative zero
+    # (and is never complete evidence for a destructive inventory replacement).
+    rows = payload.get('Buckets') if isinstance(payload, dict) else None
+    if (
+        not isinstance(rows, list)
+        or payload.get('IsTruncated')
+        or payload.get('NextContinuationToken')
+        or any(not isinstance(item, dict) or not str(item.get('Name') or '').strip() for item in rows)
+    ):
+        raise MinioConnectionError(
+            'ListBuckets returned incomplete or malformed inventory evidence. '
+            'KAORI preserved the last committed snapshot; verify response completeness before retrying.'
+        )
     return tuple(
         sorted(
             (
@@ -523,7 +536,7 @@ def _enrich_bucket_summary(
         'sections': [
             {
                 'title': 'MinIO Bucket Configuration',
-                'description': 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.',
+                'description': 'Collected MinIO S3 settings.',
                 'icon': 'settings-2',
                 'rows': configuration.native_rows,
             }

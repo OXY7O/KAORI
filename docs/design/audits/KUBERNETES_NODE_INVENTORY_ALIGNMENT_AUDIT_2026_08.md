@@ -138,5 +138,11 @@ tests/contracts/kubernetes/test_node_inventory_standard_contract.py
 - Data semantics: corrected.
 - Shared-component ownership: strengthened.
 - Accessibility: strengthened.
+
+## Local review follow-up — 2026-10-13 (issue #1693)
+
+Human detail-sheet feedback requested shorter technical section subtitles and removal of copy affordances from Node UUID/IP facts. Cluster Overview Inventory Breakdown and the five Node detail section subtitles were condensed without changing committed evidence or the V10 sheet geometry. Node System UUID, Internal IP and External IP now use the existing non-copyable `inspector_technical_row` default. Other Inventory copy workflows and shared clipboard handlers are unaffected.
+
+Source-only implementation in the dedicated issue branch targets `kaori/review/staging-uat` for controlled DevContainer visual review. Runtime verifier, pytest, formatting gates, browser light/dark/responsive checks, Developer Check, Full Admission, CI/CD, staging/main and deployment remain unexecuted/on HOLD until authorized.
 - Legacy July audit: historical record only.
 - Canonical standard: `docs/design/patterns/KUBERNETES_NODE_INVENTORY.md`.

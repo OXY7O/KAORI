@@ -235,6 +235,7 @@ def validate_boundaries(
 
     service_form_imports: set[tuple[str, str]] = set()
     graph: dict[str, set[str]] = {}
+    edge_evidence: dict[tuple[str, str], tuple[str, int]] = {}
 
     for record in records:
         relative_source = record.source.relative_to(app_root.parent).as_posix()
@@ -313,6 +314,7 @@ def validate_boundaries(
 
         if target_domain is not None and target_domain != source_domain:
             graph.setdefault(source_domain, set()).add(target_domain)
+            edge_evidence.setdefault((source_domain, target_domain), (relative_source, record.line))
 
     allowed_service_form_imports = {
         (str(item['source']), str(item['target']))
@@ -334,6 +336,12 @@ def validate_boundaries(
             continue
         if not any(component <= envelope for envelope in envelopes):
             errors.append('new or expanded top-level dependency cycle: ' + ', '.join(sorted(component)))
+            # A failing SCC without edge provenance cannot identify the source-level
+            # import to repair. Keep the failure strict and make the evidence actionable.
+            for source in sorted(component):
+                for target in sorted(graph.get(source, set()) & component):
+                    path, line = edge_evidence[(source, target)]
+                    errors.append(f'cycle dependency: {source} -> {target} via {path}:{line}')
 
     return errors
 

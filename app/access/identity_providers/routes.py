@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import cast
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.authentication.identity_provider.adapters.ldap.client import ExternalProviderError
 from app.access.authentication.identity_provider.browser import SsoProviderError
@@ -27,7 +27,7 @@ from app.access.identity_providers.forms import (
     configuration_from_form,
     populate_form,
 )
-from app.access.identity_providers.notifications import identity_provider_feedback
+from app.access.identity_providers.notifications import IdentityProviderFeedbackSource, identity_provider_feedback
 from app.access.identity_providers.provisioning import (
     IdentityProjectionError,
     assign_projection_role_choices,
@@ -39,8 +39,10 @@ from app.access.identity_providers.provisioning_proof import (
     issue_projection_proof,
     verify_projection_proof,
 )
+from app.access.identity_providers.registration_proof import issue_registration_proof, verify_registration_proof
 from app.access.identity_providers.repository import get_identity_provider
 from app.access.identity_providers.service import (
+    ProviderIdentityRebindError,
     assign_provider_role_choices,
     build_identity_provider_payload,
     commit_identity_projection,
@@ -53,6 +55,7 @@ from app.access.identity_providers.service import (
 from app.access.rbac.decorators import permission_required
 from app.common.admin_audit import record_admin_event
 from app.models import IdentityProvider, User
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 
 bp = Blueprint('identity_providers', __name__, url_prefix='/access/identity-providers')
 
@@ -74,9 +77,17 @@ def _form_context(form: IdentityProviderForm, provider: IdentityProvider | None,
 def index():
     filters = normalize_provider_filters(request.args.to_dict())
     payload = build_identity_provider_payload(filters)
-    payload['active_tab'] = 'providers' if request.args.get('tab') == 'providers' else 'overview'
-    if request.headers.get('HX-Request') == 'true':
-        return render_template('access/identity_providers/partials/_registry.html', **payload)
+    # Overview is always visible. The tab selects only the records workspace.
+    # Legacy ?tab=overview links continue to resolve to the default registry.
+    payload['active_tab'] = 'directory' if request.args.get('tab') == 'directory' else 'providers'
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true':
+        # Workspace navigation and registry filters have distinct HTMX targets.
+        # Returning the registry for a tab swap would discard its wrapper/tabs.
+        if request.headers.get('HX-Target') == 'identity-provider-workspace':
+            return render_template('access/identity_providers/partials/_workspace.html', **payload)
+        # Filter/Rows/pagination replace only the embedded registry. The
+        # surrounding workspace owns the outer border, radius and shadow.
+        return render_template('access/identity_providers/partials/_registry.html', embedded=True, **payload)
     return render_template('access/identity_providers/index.html', **payload)
 
 
@@ -87,14 +98,43 @@ def create():
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
+            return render_template('access/identity_providers/form.html', **_form_context(form, None))
+        verified, verification_message = verify_registration_proof(
+            token=request.form.get('connection_test_proof'), form=form, user_id=actor.id
+        )
+        if not verified:
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_registration_blocked',
+                status='error',
+                title='Connection Test Required',
+                message=verification_message,
+                source=IdentityProviderFeedbackSource(
+                    provider_key=str(form.provider_key.data or ''),
+                ),
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+            )
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
         try:
             provider = create_identity_provider(configuration_from_form(form))
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to create identity provider configuration.')
+            form.key.errors = [*form.key.errors, 'The provider could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_create_failed',
+                status='error',
+                title='Provider creation failed',
+                message='No provider configuration was saved.',
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
@@ -102,8 +142,10 @@ def create():
                 status='success',
                 title='Identity provider created',
                 message=f'{provider.display_name} configuration was created.',
-                provider_id=provider.id,
-                provider_key=provider.provider_key,
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
             )
             return redirect(url_for('identity_providers.index'))
     return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -121,23 +163,53 @@ def edit(provider_id: int):
     if request.method == 'GET':
         populate_form(form, provider)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
+        revoked_identity_count = 0
         try:
-            update_identity_provider(provider, configuration_from_form(form))
+            _, revoked_identity_count = update_identity_provider(provider, configuration_from_form(form))
+        except ProviderIdentityRebindError as exc:
+            if form.provider_key.data != provider.provider_key:
+                form.provider_key.errors = [*form.provider_key.errors, str(exc)]
+            else:
+                form.key.errors = [*form.key.errors, str(exc)]
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to update identity provider id %s.', provider.id)
+            form.key.errors = [*form.key.errors, 'The provider changes could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_update_failed',
+                status='error',
+                title='Provider update failed',
+                message='No provider configuration changes were saved.',
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
                 event_type='identity_provider_updated',
                 status='success',
                 title='Identity provider updated',
-                message=f'{provider.display_name} configuration was updated.',
-                provider_id=provider.id,
-                provider_key=provider.provider_key,
+                message=(
+                    f'{provider.display_name} authentication is disabled. '
+                    f'{revoked_identity_count} linked account session generation(s) invalidated.'
+                    if not provider.enabled
+                    else f'{provider.display_name} configuration was updated.'
+                ),
+                source=IdentityProviderFeedbackSource(
+                    provider_id=provider.id,
+                    provider_key=provider.provider_key,
+                ),
             )
             return redirect(url_for('identity_providers.index'))
     return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -153,28 +225,45 @@ def test_configuration(provider_id: int | None = None):
     actor = cast(User, current_user)
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
-    test_result: dict[str, str]
+    status = 'error'
+    title = 'Connection Test Blocked'
+    message = 'Complete the required provider fields before testing the current configuration.'
+    registration_proof = ''
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
-            return render_template('access/identity_providers/form.html', **_form_context(form, provider))
-        candidate = IdentityProvider()
-        apply_identity_provider_configuration(candidate, configuration_from_form(form))
-        try:
-            message = validate_identity_provider(candidate)
-        except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
-            test_result = {'status': 'error', 'title': 'Connection Test Failed', 'message': str(exc)}
         else:
-            test_result = {'status': 'success', 'title': 'Connection Test Passed', 'message': message}
-    else:
-        test_result = {
-            'status': 'error',
-            'title': 'Connection Test Blocked',
-            'message': 'Complete the required provider fields before testing the current configuration.',
-        }
+            candidate = IdentityProvider()
+            apply_identity_provider_configuration(candidate, configuration_from_form(form))
+            try:
+                message = validate_identity_provider(candidate)
+            except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
+                title, message = 'Connection Test Failed', str(exc)
+            else:
+                status, title = 'success', 'Connection Test Passed'
+                if provider is None:
+                    registration_proof = issue_registration_proof(form=form, user_id=actor.id)
+
+    # Connection tests use canonical feedback while preserving unsaved form values.
+    # Only failures enter the Notification Deck; both outcomes retain Activity Audit.
+    identity_provider_feedback(
+        actor=actor,
+        event_type='identity_provider_connection_tested',
+        status=status,
+        title=title,
+        message=message,
+        source=IdentityProviderFeedbackSource(
+            provider_id=provider.id if provider else None,
+            provider_key=str(form.provider_key.data or ''),
+        ),
+        delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+    )
     return render_template(
-        'access/identity_providers/form.html', **_form_context(form, provider, test_result=test_result)
+        'access/identity_providers/form.html',
+        **_form_context(form, provider, registration_proof=registration_proof),
     )
 
 
@@ -196,8 +285,10 @@ def validate(provider_id: int):
         status=status,
         title=title,
         message=message,
-        provider_id=provider.id,
-        provider_key=provider.provider_key,
+        source=IdentityProviderFeedbackSource(
+            provider_id=provider.id,
+            provider_key=provider.provider_key,
+        ),
     )
     return redirect(url_for('identity_providers.index'))
 
@@ -235,8 +326,10 @@ def directory_provisioning():
                     status='error',
                     title='Directory search failed',
                     message=str(exc),
-                    provider_id=selected_provider.id,
-                    provider_key=selected_provider.provider_key,
+                    source=IdentityProviderFeedbackSource(
+                        provider_id=selected_provider.id,
+                        provider_key=selected_provider.provider_key,
+                    ),
                 )
     return render_template(
         'access/identity_providers/directory_provisioning.html',
@@ -314,8 +407,26 @@ def provision_identity():
             status='error',
             title='Provisioning failed',
             message=str(exc),
-            provider_id=provider.id,
-            provider_key=provider.provider_key,
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
+        )
+    except SQLAlchemyError:
+        rollback_identity_provider_transaction()
+        current_app.logger.exception(
+            'Directory identity projection transaction failed for provider id %s.', provider.id
+        )
+        identity_provider_feedback(
+            actor=actor,
+            event_type='external_identity_provision_failed',
+            status='error',
+            title='Provisioning failed',
+            message='The identity could not be provisioned because the database transaction failed. Please retry.',
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
         )
     else:
         identity_provider_feedback(
@@ -324,7 +435,9 @@ def provision_identity():
             status='success',
             title='Directory user provisioned',
             message=f'{user.username} can authenticate through {provider.display_name}.',
-            provider_id=provider.id,
-            provider_key=provider.provider_key,
+            source=IdentityProviderFeedbackSource(
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            ),
         )
     return redirect(url_for('users.index'))

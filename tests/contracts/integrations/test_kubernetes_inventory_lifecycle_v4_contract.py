@@ -33,7 +33,12 @@ def test_inventory_lifecycle_keeps_kaori_table_standard_for_bound_sources():
     shared = (ROOT / 'app/templates/integrations/components/_asset_owner_observability_sources.html').read_text(
         encoding='utf-8'
     )
-    assert 'asset_owner_sources.render(' in text
+    binding_registry = (
+        ROOT
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+    ).read_text(encoding='utf-8')
+    assert '_binding_registry.html' in text
+    assert 'asset_owner_sources.render(' in binding_registry
     assert 'table_ui.table_classes(' in shared
     assert 'table_ui.head_classes()' in shared
     assert 'table_ui.row_classes()' in shared
@@ -56,3 +61,10 @@ def test_inventory_lifecycle_consolidates_retention_and_delete_boundary():
     assert 'Delete Connection' in text
     assert 'data-kaori-inventory-lifecycle-boundary' in text
     assert 'data-kaori-connection-lifecycle' not in text
+
+
+def test_inventory_lifecycle_lists_kubernetes_tenant_as_an_operational_consumer():
+    text = source()
+    assert "'Kubernetes Tenant'" in text
+    assert "'Committed Tenant intent + provider authority'" in text
+    assert 'Tenant ownership, namespace allocations, access grants, credentials, and reconciliation evidence.' in text

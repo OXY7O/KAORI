@@ -98,6 +98,30 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('object_storage_inventory.view', 'object_storage_inventory.overview'),),
     },
     {
+        'title': 'Artifact Registry',
+        'label': 'Registry Visibility & Supply Chain',
+        'description': (
+            'Review committed Registry inventory, artifact security evidence, Kubernetes runtime usage, governance posture, '
+            'and materialized analytics across registered providers.'
+        ),
+        'icon': 'package',
+        'scope': 'Registry',
+        'group': 'visibility',
+        'targets': (('artifact_registry.view', 'artifact_registry.overview'),),
+    },
+    {
+        'title': 'Secrets & PKI',
+        'label': 'Secret Inventory & Readiness',
+        'description': (
+            'Review approved Vault KV v2 metadata collection coverage, committed inventory freshness, '
+            'and evidence readiness without displaying Secret values or claiming PKI delivery assurance.'
+        ),
+        'icon': 'key-round',
+        'scope': 'Secrets & PKI',
+        'group': 'visibility',
+        'targets': (('secrets_pki.view', 'secrets_pki.overview'),),
+    },
+    {
         'title': 'Kubernetes Analytics',
         'label': 'Operational Analytics',
         'description': (
@@ -134,7 +158,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Integrations',
         'label': 'Integration & Connectivity',
         'description': (
-            'Manage infrastructure, observability, and platform providers with connection readiness, '
+            'Manage infrastructure, observability, secrets management, and platform providers with connection readiness, '
             'bindings, notification channels, and runtime status.'
         ),
         'icon': 'blocks',
@@ -154,7 +178,6 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'group': 'operations',
         'targets': (
             ('jobs.view', 'platform_operations.overview.index'),
-            ('jobs.configure', 'platform_operations.overview.index'),
             ('platform_operations.view_data_lifecycle', 'platform_operations.overview.index'),
             ('kubernetes_secrets.manage_reveal', 'platform_operations.overview.index'),
         ),
@@ -183,6 +206,18 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
             ('kubernetes_secrets.rotate_tls', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.bulk_rotate_tls', 'kubernetes_operations.secret_management'),
         ),
+    },
+    {
+        'title': 'Tenant Management',
+        'label': 'Governed Tenancy',
+        'description': (
+            'Manage tenant definitions, resource profiles, namespace provisioning, access and capacity governance, '
+            'and lifecycle operations across registered Kubernetes clusters.'
+        ),
+        'icon': 'building-2',
+        'scope': 'Compute',
+        'group': 'operations',
+        'targets': (('tenant.view', 'tenant.index'),),
     },
     {
         'title': 'Kubernetes Governance',
@@ -221,8 +256,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Access',
         'label': 'Identity, Access & Audit',
         'description': (
-            'Manage users, roles, permissions, authentication events, and operational '
-            'audit records according to assigned authority.'
+            'Manage users, roles, permissions, identity providers, directory-projected external identities, '
+            'authentication evidence, and operational audit records according to assigned authority.'
         ),
         'icon': 'users-round',
         'scope': 'Platform',
@@ -230,6 +265,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (
             ('users.view', 'access.overview.index'),
             ('users.manage', 'access.overview.index'),
+            ('identity_providers.view', 'access.overview.index'),
             ('roles.view', 'access.overview.index'),
             ('activity_audit.view', 'access.overview.index'),
         ),
