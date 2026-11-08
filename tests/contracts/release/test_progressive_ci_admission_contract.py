@@ -206,7 +206,6 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
     assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
 
 
-
 def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
     workflow = read(WORKFLOW)
     profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
