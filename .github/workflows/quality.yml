@@ -639,7 +639,9 @@ jobs:
 
   admission:
     name: CI Admission
-    if: ${{ always() && needs.validation-profile.result == 'success' }}
+    # Required checks must FAIL, never silently SKIP, when source routing is denied.
+    # This hosted aggregate runs after dependency outcomes, before any checkout.
+    if: ${{ always() }}
     permissions:
       contents: read
       statuses: write
@@ -650,6 +652,28 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Enforce Trusted Admission Route Before Checkout
+        shell: bash
+        env:
+          PROFILE_RESULT: ${{ needs.validation-profile.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$PROFILE_RESULT" == "success" ]] || {
+            echo 'BLOCK: Resolve Profile did not succeed; CI Admission must fail, not skip.' >&2
+            exit 1
+          }
+          if [[ "$EVENT_NAME" == 'pull_request' && "$BASE_REF" == 'main' ]]; then
+            [[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" && "$HEAD_REF" == 'kaori/staging' && "$IS_DRAFT" == 'false' ]] || {
+              echo 'BLOCK: main requires a Ready promotion from trusted kaori/staging.' >&2
+              exit 1
+            }
+          fi
+
       - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
