@@ -59,7 +59,15 @@ def test_history_registries_are_scoped_server_filtered_paginated():
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
 
     assert "JobExecution.integration_type == 'source_control'" in runtime_source
-    assert 'JobExecution.integration_instance_id == installation.integration_instance_id' in runtime_source
+    assert '_installation_job_predicate(' in runtime_source
+    assert 'integration_instance_id=installation.integration_instance_id' in runtime_source
+    assert 'installation_id=installation.id' in runtime_source
+    assert 'JobExecution.integration_instance_id == integration_instance_id' in runtime_source
+    assert "JobExecution.job_type == 'integration_operation'" in runtime_source
+    assert "JobExecution.job_type == 'source_control_repository_inventory'" in runtime_source
+    assert "JobExecution.scope_type == 'integration_instance'" in runtime_source
+    assert "JobExecution.scope_type == 'source_control_installation'" in runtime_source
+    assert "JobExecution.scope_key == f'installation:{installation_id}'" in runtime_source
     assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
     assert "operation='runtime_refresh'" in runtime_source
     assert 'runtime_refresh_job' in runtime_source
