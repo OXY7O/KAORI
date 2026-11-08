@@ -239,3 +239,59 @@ def test_proven_raster_artifact_cannot_bypass_geometry(tmp_path: Path, monkeypat
             manifest_path=_manifest(tmp_path, height=800),
             evidence_root=tmp_path / 'evidence',
         )
+
+def test_multiple_proven_mobile_raster_variants_keep_exact_png_and_manifest_authority(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    page = _test_page()
+    approved_png = page.screenshot.return_value
+    # Distinct real PNG with a one-level pixel difference, not an arbitrary fuzzy comparison.
+    with Image.open(BytesIO(approved_png)) as original:
+        candidate = original.copy()
+    candidate.putpixel((0, 0), (254, 255, 255))
+    buffer = BytesIO()
+    candidate.save(buffer, format='PNG')
+    alternate_png = buffer.getvalue()
+    assert approved_png != alternate_png
+
+    expected_sha = '0' * 64
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {
+            'welcome-light-mobile': (
+                expected_sha,
+                hashlib.sha256(approved_png).hexdigest(),
+                hashlib.sha256(alternate_png).hexdigest(),
+            )
+        },
+    )
+
+    for reviewed_png in (approved_png, alternate_png):
+        assert visual._matches_proven_raster_variant('welcome-light-mobile', reviewed_png, expected_sha)
+        assert not visual._matches_proven_raster_variant('welcome-dark-mobile', reviewed_png, expected_sha)
+        assert not visual._matches_proven_raster_variant('welcome-light-mobile', reviewed_png, '1' * 64)
+        assert not visual._matches_proven_raster_variant('welcome-light-mobile', reviewed_png + b'x', expected_sha)
+
+    page.screenshot.return_value = alternate_png
+    with pytest.warns(UserWarning, match='exact reviewed one-time raster artifact variant'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path),
+            evidence_root=tmp_path / 'evidence',
+        )
+    with pytest.raises(AssertionError, match='dimensions changed'):
+        assert_visual_baseline(
+            page,
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path, height=800),
+            evidence_root=tmp_path / 'evidence',
+        )
+

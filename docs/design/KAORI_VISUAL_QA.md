@@ -99,34 +99,53 @@ The exception emits an explicit test warning. This is not permission to update
 baselines, loosen viewport geometry or discard screenshots. Real Welcome mobile
 light/dark evidence and the repeatability investigation are tracked under #2196.
 
-### Artifact-proven repeatable mobile raster variants (#2196)
+### Artifact-proven repeatable mobile raster variants (#2196, #4348)
 
-The canonical 12 Welcome baseline fingerprints and dimensions remain **unchanged**.
-Two independently reproduced CI screenshots contain the exact same application
-content/geometry as the human-reviewed reference images, with only subpixel
-antialiasing variations. Original and later screenshot PNGs were directly
-compared at their native dimensions:
+The canonical twelve Welcome baseline fingerprints and dimensions remain **unchanged**.
+The original two independently reproduced CI raster variants from #2196 retained
+exactly the same application content/geometry as the human-reviewed reference PNGs,
+with only subpixel antialiasing differences:
 
-- `welcome-light-mobile`, 390x844: reviewed evidence
+- `welcome-light-mobile`, 390×844: original approved evidence
   [#41063819874](https://github.com/OXY7O/KAORI/actions/runs/41063819874),
   variant [#41307712956](https://github.com/OXY7O/KAORI/actions/runs/41307712956):
-  108/329,160 pixels differ, per-RGB-channel delta at most 2.
-- `welcome-dark-small-mobile`, 360x800: reviewed evidence
+  108/329,160 pixels differ, maximum per-RGB-channel delta 2/255.
+- `welcome-dark-small-mobile`, 360×800: approved evidence
   [#41137574450](https://github.com/OXY7O/KAORI/actions/runs/41137574450),
   variant [#41301151684](https://github.com/OXY7O/KAORI/actions/runs/41301151684):
-  48/288,000 pixels differ, per-RGB-channel delta at most 2.
+  48/288,000 pixels differ, maximum per-channel delta 2/255.
 
-For those two exact surface/viewport/theme keys only, after the canonical
-normalized digest and single-channel quantization guards have failed, the
-shared assertion may accept the **byte-exact SHA256 of the previously inspected
-variant PNG**, but only while the manifest's original human-reviewed normalized
-digest is also an exact match and the canonical viewport dimensions pass.
-Every different PNG byte sequence, changed or missing approved manifest SHA,
-other viewport/theme, layout/content change, or changed geometry still fails.
-This is a finite evidence-bound repeatability exception, not a new generic
-pixel threshold, perceptual-diff policy, alternate visual baseline manifest,
-or permission for rebaselining. Each use emits a visible warning. These two
-fixed artifacts require independent evidence review before promotion.
+A **separate light/mobile raster variant** was independently extracted and
+compared from the actual failing [Full Admission #42470804698](https://github.com/OXY7O/KAORI/actions/runs/42470804698),
+artifact `tests-42470804698-1` (ID `13613054900`), exact candidate source
+`913a1fe1dccac521f77b57fd8c36364730b5b2e9`:
+
+- `ui-browser/visual-welcome-index-light-mobile.png`: raw SHA256
+  `3cd27318fdadd3f8cb62ebc5e6c1a5550fde8ccb76fb13cf98e24cff2d366bcb`,
+  **byte-identical** to the original approved Light Mobile PNG documented in #2196.
+- `ui-browser/welcome-light-mobile-actual.png`: raw SHA256
+  `44a7da200c6e75dd3507bfdfe7d9c66acd7c00c6027f0d36858f91e3f6d746d8`.
+  Both screenshots have **390×844** geometry; native RGB comparison shows
+  **138/329,160 pixels differ, maximum per-channel delta 2/255**. Independent
+  screenshot viewing shows no content, alignment or component changes. Its
+  normalized visual digest differed, so the original visual test correctly FAILed.
+
+The approved manifest continues to require the exact original normalized
+fingerprint and viewport geometry. For those **two** exact theme/viewport keys
+only, the shared assertion may accept **only the individually enumerated raw PNG
+SHA256 signatures**, and only after the canonical thumbnail fingerprint and
+single-edge quantization guards fail. The new #4348 entry is one additional
+specific Light Mobile signature; it does not expand surface, theme, viewport,
+layout threshold or allowed pixel tolerance. Arbitrary different PNG bytes,
+wrong baseline SHA, viewport/geometry differences and changed content still FAIL.
+The test emits a visible warning for any accepted exact variant.
+
+This is an **issue-scoped proposed extension of the previously approved #2196
+mechanism**, not an automatic Visual QA acceptance: independent review of the
+actual artifact screenshots and exact-source Developer Check/Full Admission,
+staging smoke and human UAT remain required **before promotion**. No normalized
+manifest SHA is regenerated. Never add a generic fuzzy threshold, screenshot
+masking, new baseline manifest or broad raster exception to force green CI.
 
 Ordinary CI must never rewrite this manifest.
 
