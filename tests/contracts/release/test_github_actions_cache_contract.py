@@ -27,14 +27,50 @@ def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
     assert 'kaori-ci-toolchain:${{ github.sha }}' not in source
 
 
-def test_existing_local_toolchain_image_is_reused() -> None:
+def test_hosted_profile_keeps_canonical_key_without_cross_runner_image_build() -> None:
     source = read(QUALITY)
-
     resolver = source.split('- name: Resolve CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[0]
-    assert 'docker image inspect "$image"' in resolver
-    assert '|| docker build' in resolver
-    assert '--file .github/ci/Dockerfile' in resolver
+    assert 'kaori-ci-toolchain:$key' in resolver
+    assert 'sha256sum | cut -c1-20' in resolver
+    assert 'docker image inspect' not in resolver
+    assert 'docker build' not in resolver
 
+
+def test_hosted_toolchain_uses_pinned_branch_scoped_buildkit_cache() -> None:
+    developer_source = read(ROOT / '.github/workflows/developer-check.yml')
+    quality_source = read(QUALITY)
+    expected_setup = 'docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069'
+    expected_build = 'docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc'
+    for source, expected_jobs in ((developer_source, 2), (quality_source, 2)):
+        assert source.count(expected_setup) == expected_jobs
+        assert source.count(expected_build) == expected_jobs
+        assert source.count('cache-from: type=gha,scope=kaori-ci-toolchain-v1') == expected_jobs
+        assert source.count(
+            'cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m'
+        ) == expected_jobs
+        assert source.count('file: .github/ci/Dockerfile') >= expected_jobs
+        assert source.count('tags: ${{ steps.hosted-toolchain.outputs.image }}') == expected_jobs
+        assert source.count('push: false') == expected_jobs
+        assert source.count('load: true') == expected_jobs
+        assert source.count('docker image inspect "$EXPECTED_IMAGE" >/dev/null') == expected_jobs
+        assert source.count('[[ "$image" == "$EXPECTED_IMAGE" ]]') >= expected_jobs
+        assert 'cache-mode: write' not in source
+        assert 'cache-mode: write-only' not in source
+
+
+def test_cached_layers_do_not_replace_exact_source_validation() -> None:
+    developer = read(ROOT / '.github/workflows/developer-check.yml')
+    full = read(QUALITY)
+    assert 'Reject untrusted pull request before checkout' in developer
+    assert 'ROUTE_RESULT: ${{ needs.route.result }}' in developer
+    assert 'Run Python & Governance Checks' in developer
+    assert 'Run Frontend & Focused Validation' in developer or 'Frontend & Focused Validation' in developer
+    assert 'Run Security Gate' in full
+    assert 'Run Functional Tests' in full
+    assert 'Scan Production Image' in full
+    assert 'Validate Runtime & DAST' in full
+    assert 'name: CI Admission' in full
+    assert 'statuses: write' in full
 
 def test_buildkit_caches_downloads_without_replacing_install_steps() -> None:
     ci_source = read(CI_DOCKERFILE)
