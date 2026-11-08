@@ -15,13 +15,25 @@ Record each control's actual **ENABLED / DISABLED / UNAVAILABLE / NOT VERIFIED**
 | Dependency Graph | NOT VERIFIED | Admin confirms effective graph and manifest coverage |
 | Dependabot alerts | NOT VERIFIED | Admin confirms alerts and safe sample triage |
 | Dependabot security updates | NOT VERIFIED | Admin confirms eligibility and actual advisory behavior |
-| Dependabot version updates | NOT VERIFIED | #4220 is Draft; schedule requires accepted default-branch config and observed bot PR |
+| Dependabot version updates | NOT VERIFIED | #4220 merged only to review holding; schedule NOT ACTIVE until configuration exists on default `main` and a bot PR is observed |
 | Secret scanning | NOT VERIFIED | Admin verifies availability, coverage and alert triage without revealing findings |
 | Push protection | NOT VERIFIED | Admin checks effective policy and a harmless negative test |
 | CodeQL / code scanning | NOT VERIFIED | Inspect existing workflows and default/advanced setup before enabling; avoid duplicate analysis |
 | Dependency review | NOT VERIFIED | Confirm effective PR check context and safe sample |
 | Private vulnerability reporting | NOT VERIFIED | Admin verifies the private report entry point; do not publish a real vulnerability to test |
 | Security advisory workflow | NOT VERIFIED | Confirm private maintainer access and sanitized triage/closure evidence |
+
+## Verified code and public metadata snapshot — 2026-11-08
+
+These statements describe **source and public repository API access**, not native GitHub Settings activation or actual alert handling:
+
+- **Dependabot version-update configuration:** `.github/dependabot.yml` exists on `kaori/review/staging-uat` (pip `/requirements`, npm `/`, GitHub Actions `/`; weekly Asia/Jakarta; two open PRs per ecosystem) after [holding PR #4220](https://github.com/OXY7O/KAORI/pull/4220), but a root `main` file read returned **404 Not Found**. The scheduler is **NOT ACTIVE from this holding change**; version update PR intake will require admitted default-branch promotion and an actual bot-PR observation. Dependabot alerts/security updates are independent native settings and remain NOT VERIFIED.
+- **Existing scanner workflows:** `.github/workflows/quality.yml` on both `main` and holding includes an existing **Security Gate** invoking `.github/ci/run-security-static.sh`, and a Trivy image scan. This is **source presence only**; neither source file establishes a successful present-day admitted scan, active GitHub CodeQL, secret scanning, push protection or private reporting.
+- **CodeQL availability boundary:** There is no dedicated `.github/workflows/codeql.yml` or `.github/workflows/codeql.yaml` in either branch checked. This **does not prove CodeQL is disabled**: GitHub default setup is not represented by a dedicated repository workflow. Review the effective Code Scanning settings and a real analysis record before making any enablement, duplication or disablement decision.
+- **Public-fork workflow:** `.github/workflows/community-fork-check.yml` is present only in holding, not on `main` at this observation. That code remains unadmitted; its source does not demonstrate an actual external fork run or a configured branch-protection policy. See #4214/#4278 and #4216.
+- **API access limitations:** Connected repository metadata does not expose effective `security_and_analysis` state; GitHub code-scanning-alert and Actions-artifact enumeration are not supported through this interface. **NOT EXPOSED / UNSUPPORTED is not DISABLED or zero alerts**. Admin must verify privately in the owning repository and capture sanitized after-state.
+
+**Current activation boundary:** No admin Settings changes, release, vulnerability simulation, credential access, license cutover, official staging Full Admission or Human UAT occurred as part of this metadata snapshot. All ten checklist controls above remain **NOT VERIFIED**.
 
 ## Triage and non-escalation contract
 
