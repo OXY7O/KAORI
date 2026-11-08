@@ -448,7 +448,7 @@ jobs:
 
       - name: Upload Successful Static Verification Details
         if: ${{ success() && matrix.gate == 'static' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-admission-static-verifiers-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/static-output
@@ -457,7 +457,7 @@ jobs:
 
       - name: Upload Successful Security Scan Evidence
         if: ${{ success() && matrix.gate == 'security' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-admission-security-scans-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/security
@@ -466,7 +466,7 @@ jobs:
 
       - name: Upload Static JUnit Evidence
         if: ${{ success() && matrix.gate == 'static' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-admission-junit-static-${{ github.run_id }}
           path: tmp/ci-artifacts/test-output/contract-migration.xml
@@ -476,7 +476,7 @@ jobs:
 
       - name: Upload Functional JUnit Evidence
         if: ${{ success() && matrix.gate == 'functional' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-admission-junit-functional-${{ github.run_id }}
           path: |
@@ -490,7 +490,7 @@ jobs:
       # browser traces/screenshots; failure diagnostics remain a separate artifact.
       - name: Upload Successful Functional Timing Report
         if: ${{ success() && matrix.gate == 'functional' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-admission-functional-timing-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/test-output/functional-tests.*.log
@@ -499,7 +499,7 @@ jobs:
 
       - name: Upload Static Diagnostics
         if: ${{ failure() && matrix.gate == 'static' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: static-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/static-output
@@ -508,7 +508,7 @@ jobs:
 
       - name: Upload Security Diagnostics
         if: ${{ failure() && matrix.gate == 'security' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: security-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/security
@@ -517,7 +517,7 @@ jobs:
 
       - name: Upload Test Diagnostics
         if: ${{ failure() && matrix.gate == 'functional' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/test-output
@@ -526,7 +526,7 @@ jobs:
 
       - name: Upload Runtime Diagnostics
         if: ${{ failure() && matrix.gate == 'runtime' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: runtime-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -626,7 +626,7 @@ jobs:
           bash scripts/quality_gate.sh --smoke
       - name: Upload Smoke Diagnostics
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: smoke-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/test-output
@@ -762,7 +762,7 @@ jobs:
       - name: Upload Admission Evidence
         id: full-evidence-upload
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.full-evidence.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kaori-full-admission-${{ needs.validation-profile.outputs.source_sha }}
           path: admission-evidence.json
