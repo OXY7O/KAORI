@@ -10,7 +10,7 @@ PARCEL_WATCHER_VERSION = '2.6.0'
 BROTLI_VERSION = '1.2.1'
 DNSPYTHON_VERSION = '2.9.0'
 URLLIB3_VERSION = '2.8.0'
-OAUTHLIB_VERSION = '4.0.0'
+OAUTHLIB_VERSION = '4.0.1'
 
 
 def read(path: str) -> str:
@@ -78,6 +78,8 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     assert f'oauthlib=={OAUTHLIB_VERSION}' in base_lock
     assert 'oauthlib==3.3.1' not in base_in
     assert 'oauthlib==3.3.1' not in base_lock
+    assert 'oauthlib==4.0.0' not in base_in
+    assert 'oauthlib==4.0.0' not in base_lock
 
     for name, version, vulnerable in (
         ('Brotli', BROTLI_VERSION, '1.2.0'),
