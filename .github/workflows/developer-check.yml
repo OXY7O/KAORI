@@ -261,10 +261,10 @@ jobs:
     # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
     needs: [route, toolchain, python-check]
     if: ${{ !cancelled() && needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     # Full affected-capability Draft selection may include thousands of browser cases.
     # Allow a completed failure report; do not narrow tests or relax the aggregate.
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -272,12 +272,30 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
+      - name: Build canonical toolchain on hosted runner
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: toolchain identity differs from trusted preparation job' >&2
+            exit 1
+          }
+          docker build --file .github/ci/Dockerfile --tag "$image" .
+          docker image inspect "$image" >/dev/null
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted focused-test toolchain — exact key %s (fresh isolated build)\n' "$key"
+
       - name: Prepare Isolated Focused Test Runtime
         id: focused-runtime
         if: ${{ needs.route.outputs.test_paths != '' || needs.route.outputs.contracts == 'true' }}
         shell: bash
         env:
-          TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
@@ -296,7 +314,7 @@ jobs:
       - name: Run Frontend & Focused Validation
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
           TEMPLATE_PATHS: ${{ needs.route.outputs.template_paths }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
