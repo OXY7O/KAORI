@@ -182,8 +182,8 @@ def test_hosted_toolchain_preflight_produces_only_deterministic_image_identity()
     assert 'docker image inspect' not in toolchain
     assert 'docker build' not in toolchain
     assert 'image: ${{ steps.toolchain.outputs.image }}' in toolchain
-    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in python_job
-    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in focused
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
 
 
 def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
@@ -199,7 +199,7 @@ def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
     assert "needs.route.result == 'success'" in python_job
     assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in python_job
     assert 'persist-credentials: false' in python_job
-    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
     assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in python_job
     assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
     assert 'Run Python & Governance Checks' in python_job
@@ -224,7 +224,7 @@ def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> N
     assert "needs.python-check.result == 'success'" in focused
     assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in focused
     assert 'persist-credentials: false' in focused
-    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in focused
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
     assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
     assert 'TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
     assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
@@ -255,8 +255,12 @@ def test_hosted_admission_profile_matrix_and_smoke_preserve_exact_source_authori
     assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in profile
     for block in (matrix, smoke):
         assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in block
-        assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in block
-        assert 'docker image inspect "$image" >/dev/null' in block
+        assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in block
+        assert 'docker image inspect "$EXPECTED_IMAGE" >/dev/null' in block
+        assert 'file: .github/ci/Dockerfile' in block
+        assert 'push: false' in block
+        assert 'load: true' in block
+        assert 'cache-from: type=gha,scope=kaori-ci-toolchain-v1' in block
         assert 'needs.validation-profile.outputs.toolchain_image' in block
     assert 'max-parallel: 1' in matrix
     assert 'strategy:' in matrix and 'fail-fast: true' in matrix
