@@ -70,3 +70,16 @@ def test_production_image_uses_an_independent_frontend_build() -> None:
     assert 'COPY --from=frontend-build --chown=kaori:kaori' in production
     assert '/build/app/static/css/output.css' in production
     assert 'build-css' in package['scripts']
+
+def test_static_gate_builds_generated_css_before_dark_mode_verification() -> None:
+    gate = _read('scripts/quality_gate.sh')
+    static = gate.split('run_static() {', 1)[1].split('run_tests() {', 1)[0]
+    install = "run_timed_setup 'Static CSS npm dependencies' npm ci --no-audit --no-fund"
+    build = "run_timed_setup 'Static CSS build' npm run build-css"
+    dark = "'Dark Mode Standard' 'python scripts/verify_dark_mode_standard.py'"
+
+    assert static.index(install) < static.index(build) < static.index(dark)
+    assert 'run_timed_setup' in gate
+    verifier = _read('scripts/verify_dark_mode_standard.py')
+    assert 'compiled = _read(COMPILED)' in verifier
+    assert "'compiled CSS'" in verifier
