@@ -54,3 +54,23 @@ class InventoryTests(unittest.TestCase):
             self.assertGreaterEqual(result['reachable_history_object_count'], 6)
             self.assertNotIn('private-detached-name', str(result))
             self.assertEqual(result['assessment'], 'INCOMPLETE')
+
+    def test_detached_head_referenced_by_custom_ref_is_not_unreferenced(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+
+            def git(*args):
+                return subprocess.run(['git', '-C', directory, *args], check=True, capture_output=True).stdout.strip()
+
+            git('init', '-q')
+            git('config', 'user.name', 'Test')
+            git('config', 'user.email', 'test@example.invalid')
+            git('commit', '--allow-empty', '-qm', 'base')
+            git('checkout', '--detach', '-q', 'HEAD')
+            git('commit', '--allow-empty', '-qm', 'detached')
+            git('update-ref', 'refs/custom/audit', 'HEAD')
+
+            result = inventory(repo)
+            self.assertFalse(result['head_outside_local_refs'])
+            self.assertEqual(result['history_commit_count'], 2)
+            self.assertEqual(result['assessment'], 'INCOMPLETE')
