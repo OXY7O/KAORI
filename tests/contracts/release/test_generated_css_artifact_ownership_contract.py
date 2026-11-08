@@ -71,6 +71,7 @@ def test_production_image_uses_an_independent_frontend_build() -> None:
     assert '/build/app/static/css/output.css' in production
     assert 'build-css' in package['scripts']
 
+
 def test_static_gate_builds_generated_css_before_dark_mode_verification() -> None:
     gate = _read('scripts/quality_gate.sh')
     static = gate.split('run_static() {', 1)[1].split('run_tests() {', 1)[0]
