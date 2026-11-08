@@ -209,9 +209,9 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
 
 def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
     workflow = read(WORKFLOW)
-    profile = workflow.split('\\n  validation-profile:', 1)[1].split('\\n  full-admission-gates:', 1)[0]
-    matrix = workflow.split('\\n  full-admission-gates:', 1)[1].split('\\n  integration-smoke:', 1)[0]
-    admission = workflow.split('\\n  admission:', 1)[1]
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
 
     assert 'runs-on: ubuntu-24.04' in admission
     assert admission.count('python3 scripts/ci_admission.py ') == 3
