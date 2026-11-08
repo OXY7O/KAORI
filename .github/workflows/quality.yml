@@ -215,13 +215,12 @@ jobs:
     name: ${{ matrix.name }}
     strategy:
       fail-fast: true
-      # Temporary 8-GB single-host builder mitigation (#2219): one heavyweight
-      # gate at a time until RAM/host isolation is increased and revalidated.
-      # Keep fail-fast and all five comprehensive matrix entries unchanged.
-      max-parallel: 1
+      # Five independent GitHub-hosted workers (#4306), one for each mandatory
+      # comprehensive gate; fail-fast cancels siblings on any gate failure.
+      # CI Admission still requires the complete matrix to succeed.
+      max-parallel: 5
       matrix:
         include:
-          # Under serial admission, start the longest Functional gate first.
           - gate: functional
             name: Functional Tests
           - gate: static
