@@ -354,4 +354,3 @@ def test_dark_small_mobile_known_png_variants_remain_exact_and_geometry_bounded(
             manifest_path=manifest_path,
             evidence_root=tmp_path / 'evidence',
         )
-
