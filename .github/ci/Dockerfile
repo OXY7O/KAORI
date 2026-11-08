@@ -72,12 +72,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
-        amd64) action_asset_arch='amd64'; gitleaks_arch='x64'; trivy_arch='64bit'; hadolint_arch='x86_64' ;; \
-        arm64) action_asset_arch='arm64'; gitleaks_arch='arm64'; trivy_arch='ARM64'; hadolint_arch='arm64' ;; \
+        amd64) action_asset_arch='amd64'; actionlint_api_asset_id='384924896'; gitleaks_arch='x64'; trivy_arch='64bit'; hadolint_arch='x86_64' ;; \
+        arm64) action_asset_arch='arm64'; actionlint_api_asset_id='384924897'; gitleaks_arch='arm64'; trivy_arch='ARM64'; hadolint_arch='arm64' ;; \
         *) echo "Unsupported CI toolchain architecture: $arch" >&2; exit 1 ;; \
     esac; \
-    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz"; \
-    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz" \
+      || curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -H 'Accept: application/octet-stream' -fsSLo /tmp/actionlint.tar.gz "https://api.github.com/repos/rhysd/actionlint/releases/assets/${actionlint_api_asset_id}"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt" \
+      || curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -H 'Accept: application/octet-stream' -fsSLo /tmp/actionlint-checksums.txt "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924918"; \
     grep " actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz$" /tmp/actionlint-checksums.txt \
       | sed "s#actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz#/tmp/actionlint.tar.gz#" \
       | sha256sum -c -; \
