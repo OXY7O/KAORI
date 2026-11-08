@@ -130,6 +130,20 @@ class ReleaseAssetInventoryTests(unittest.TestCase):
                 self.assertIsNone(result["release_count"])
                 self.assertEqual(result["assessment"], "INCOMPLETE")
 
+    def test_nonstandard_json_constants_fail_closed_at_any_depth(self):
+        for constant in ("NaN", "Infinity", "-Infinity"):
+            for payload in (
+                f"[[{{\"id\":1,\"draft\":false,\"prerelease\":false,\"assets\":[],\"extra\":{constant}}}]]",
+                f"[[{{\"id\":1,\"draft\":false,\"prerelease\":false,\"assets\":[{{\"id\":2,\"extra\":{constant}}}]}}]]",
+            ):
+                with self.subTest(constant=constant, payload=payload):
+                    def runner(command, **kwargs):
+                        return subprocess.CompletedProcess(command, 0, payload, "")
+                    result = module.inventory("OXY7O/KAORI", runner)
+                    self.assertEqual(result["assessment"], "INCOMPLETE")
+                    self.assertEqual(result["release_metadata_access"], "FAILED_OR_INCOMPLETE")
+                    self.assertIsNone(result["release_count"])
+
     def test_invalid_repository_rejected_before_runner(self):
         def runner(*args, **kwargs):
             self.fail("runner must not be called")
