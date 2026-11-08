@@ -6,8 +6,8 @@ EXPECTED_RUNNERS = {
         'developer-check': 'runs-on: ubuntu-24.04',
         'ready-admission-guard': 'runs-on: ubuntu-24.04',
         'toolchain': 'runs-on: [self-hosted, linux, x64, kaori-ci]',
-        'python-check': 'runs-on: [self-hosted, linux, x64, kaori-ci]',
-        'validation-check': 'runs-on: [self-hosted, linux, x64, kaori-ci]',
+        'python-check': 'runs-on: ubuntu-24.04',
+        'validation-check': 'runs-on: ubuntu-24.04',
     },
     '.github/workflows/publish-staging-image.yml': {
         'wait-for-quality': 'runs-on: [self-hosted, linux, x64, platform-ci]',
