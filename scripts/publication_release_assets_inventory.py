@@ -50,9 +50,9 @@ def inventory(repository, runner=subprocess.run):
         if not isinstance(pages, list) or not pages or len(pages) > MAX_PAGES:
             raise ValueError("invalid pagination")
         releases = []
-        for page in pages:
-            if not isinstance(page, list):
-                raise ValueError("invalid page")
+        for index, page in enumerate(pages):
+            if not isinstance(page, list) or (not page and index < len(pages) - 1):
+                raise ValueError("invalid or interrupted pagination")
             if len(releases) + len(page) > MAX_RELEASES:
                 raise ValueError('release inventory exceeds budget')
             releases.extend(page)
