@@ -138,6 +138,75 @@ def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission(
     assert "github.head_ref != 'kaori/staging'" in quality
 
 
+def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    assert 'runs-on: ubuntu-24.04' in admission
+    assert admission.count('python3 scripts/ci_admission.py ') == 3
+    assert 'docker run' not in admission
+    assert 'CI_TOOLCHAIN_IMAGE:' not in admission
+    assert 'statuses: write' in admission
+    assert 'name: CI Admission' in admission
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in profile
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in matrix
+    assert 'Resolve CI Toolchain' in profile
+    assert 'CI_TOOLCHAIN_IMAGE=' in matrix
+
+
+def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Python & Governance' in python_job
+    assert 'runs-on: ubuntu-24.04' in python_job
+    assert 'timeout-minutes: 45' in python_job
+    assert 'needs: [route, toolchain]' in python_job
+    assert "needs.route.result == 'success'" in python_job
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in python_job
+    assert 'persist-credentials: false' in python_job
+    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in python_job
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in python_job
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'Run Python & Governance Checks' in python_job
+    assert "run_toolchain 'Pyright'" in python_job
+    assert "run_toolchain 'Ruff Check'" in python_job
+    assert "run_toolchain 'Code Health'" in python_job
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in toolchain
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+
+
+def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Frontend & Focused Validation' in focused
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'timeout-minutes: 75' in focused
+    assert 'needs: [route, toolchain, python-check]' in focused
+    assert "needs.python-check.result == 'success'" in focused
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in focused
+    assert 'persist-credentials: false' in focused
+    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+    assert 'TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'docker compose --file .github/ci/compose.yml up --detach --wait postgres redis' in focused
+    assert 'docker compose --file .github/ci/compose.yml run --rm --no-deps ci' in focused
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in focused
+    assert "run_toolchain 'DjLint Full Templates'" in focused
+    assert "run_toolchain 'Frontend Dependencies'" in focused
+    assert 'pytest -q --tb=short $paths' in focused
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in toolchain
+
+
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
     source = read(WORKFLOW)
     matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
