@@ -6,7 +6,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'publication_actions_inventory.py'
+SCRIPT = Path(__file__).resolve().parents[2] / 'scripts' / 'publication_actions_inventory.py'
 spec = importlib.util.spec_from_file_location('publication_actions_inventory', SCRIPT)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
