@@ -771,6 +771,7 @@ def test_artifact_redirect_rejects_https_downgrade() -> None:
     else:
         raise AssertionError('Artifact redirect downgrade must fail closed.')
 
+
 def test_main_promotion_required_ci_admission_fails_closed_before_checkout() -> None:
     """Run the existing required aggregate's pre-checkout source guard with safe identities."""
     workflow = yaml.safe_load(read(WORKFLOW))
