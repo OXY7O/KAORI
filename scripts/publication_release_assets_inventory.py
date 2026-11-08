@@ -88,7 +88,7 @@ def inventory(repository, runner=subprocess.run):
                       asset_count=asset_count, draft_count=drafts,
                       prerelease_count=prereleases,
                       limitations="Accessible release/asset metadata only; deleted releases, asset bytes, workflow logs, secrets and rights not reviewed")
-    except (OSError, ValueError, TypeError, UnicodeError, subprocess.TimeoutExpired):
+    except (OSError, ValueError, TypeError, UnicodeError, RecursionError, subprocess.TimeoutExpired):
         pass
     return result
 
