@@ -42,7 +42,11 @@ def inventory(repository, runner=subprocess.run):
                 record[key] = value
             return record
 
-        pages = json.loads(response.stdout, object_pairs_hook=reject_duplicate_keys)
+        def reject_nonfinite_constant(value):
+            raise ValueError("non-standard JSON constant")
+
+        pages = json.loads(response.stdout, object_pairs_hook=reject_duplicate_keys,
+                           parse_constant=reject_nonfinite_constant)
         if not isinstance(pages, list) or not pages or len(pages) > MAX_PAGES:
             raise ValueError("invalid pagination")
         releases = []
