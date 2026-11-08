@@ -17,7 +17,6 @@ from __future__ import annotations
 import base64
 import os
 import secrets
-import stat
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
