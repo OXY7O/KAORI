@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
@@ -766,3 +770,68 @@ def test_artifact_redirect_rejects_https_downgrade() -> None:
         assert 'https' in str(exc).lower()
     else:
         raise AssertionError('Artifact redirect downgrade must fail closed.')
+
+
+def test_main_promotion_required_ci_admission_fails_closed_before_checkout() -> None:
+    """Run the existing required aggregate's pre-checkout source guard with safe identities."""
+    workflow = yaml.safe_load(read(WORKFLOW))
+    admission = workflow["jobs"]["admission"]
+
+    assert admission["name"] == "CI Admission"
+    assert admission["if"] == "${{ always() }}"
+    assert admission["runs-on"] == "ubuntu-24.04"
+    assert "validation-profile" in admission["needs"]
+
+    guard, checkout = admission["steps"][:2]
+    assert guard["name"] == "Enforce Trusted Admission Route Before Checkout"
+    assert checkout["name"] == "Checkout Source"
+    assert checkout["with"]["persist-credentials"] is False
+
+    expected_env = {
+        "PROFILE_RESULT": "${{ needs.validation-profile.result }}",
+        "EVENT_NAME": "${{ github.event_name }}",
+        "BASE_REF": "${{ github.base_ref }}",
+        "HEAD_REF": "${{ github.head_ref }}",
+        "HEAD_REPO": "${{ github.event.pull_request.head.repo.full_name }}",
+        "IS_DRAFT": "${{ github.event.pull_request.draft }}",
+    }
+    for name, value in expected_env.items():
+        assert guard["env"][name] == value
+
+    for profile, event, base, head, source, draft, allowed in (
+        ("success", "pull_request", "main", "kaori/staging", "OXY7O/KAORI", "false", True),
+        ("success", "pull_request", "main", "kaori/staging", "external/KAORI-fork", "false", False),
+        ("success", "pull_request", "main", "kaori/task-4304-main-promotion-required-check-fail-closed", "OXY7O/KAORI", "false", False),
+        ("success", "pull_request", "main", "kaori/staging", "OXY7O/KAORI", "true", False),
+        ("success", "pull_request", "main", "kaori/staging", "", "false", False),
+        ("failure", "pull_request", "main", "kaori/staging", "OXY7O/KAORI", "false", False),
+        ("skipped", "pull_request", "main", "kaori/staging", "OXY7O/KAORI", "false", False),
+        ("cancelled", "pull_request", "main", "kaori/staging", "OXY7O/KAORI", "false", False),
+        ("success", "pull_request", "kaori/staging", "kaori/task-4304-main-promotion-required-check-fail-closed", "OXY7O/KAORI", "false", True),
+        ("success", "push", "", "", "", "", True),
+    ):
+        environment = {
+            **os.environ,
+            "GITHUB_REPOSITORY": "OXY7O/KAORI",
+            "PROFILE_RESULT": profile,
+            "EVENT_NAME": event,
+            "BASE_REF": base,
+            "HEAD_REF": head,
+            "HEAD_REPO": source,
+            "IS_DRAFT": draft,
+        }
+        result = subprocess.run(
+            ["bash", "-c", guard["run"]],
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        assert (result.returncode == 0) is allowed, (
+            profile, event, base, head, source, draft, result.stderr
+        )
+
+    # A rejected route cannot checkout untrusted code or start privileged validation:
+    # profile-gated downstream work remains conditional on a successful route.
+    assert "needs.validation-profile.outputs.execution == 'full'" in workflow["jobs"]["full-admission-gates"]["if"]
