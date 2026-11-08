@@ -73,6 +73,26 @@ class ReleaseAssetInventoryTests(unittest.TestCase):
         finally:
             module.MAX_PAGES, module.MAX_ASSETS = original_pages, original_assets
 
+    def test_release_record_budget_fails_closed(self):
+        original = module.MAX_RELEASES
+        try:
+            module.MAX_RELEASES = 1
+            releases = [{"id": i, "draft": False, "prerelease": False, "assets": []}
+                        for i in (1, 2)]
+            result = self.run_inventory([releases])
+            self.assertEqual(result["release_metadata_access"], "FAILED_OR_INCOMPLETE")
+            self.assertIsNone(result["release_count"])
+            self.assertEqual(result["assessment"], "INCOMPLETE")
+        finally:
+            module.MAX_RELEASES = original
+
+    def test_unencodable_unicode_response_fails_closed(self):
+        def runner(command, **kwargs):
+            return subprocess.CompletedProcess(command, 0, "\ud800", "")
+        result = module.inventory("OXY7O/KAORI", runner)
+        self.assertEqual(result["release_metadata_access"], "FAILED_OR_INCOMPLETE")
+        self.assertIsNone(result["release_count"])
+
     def test_response_size_budget_fails_closed(self):
         original = module.MAX_RESPONSE_BYTES
         try:
