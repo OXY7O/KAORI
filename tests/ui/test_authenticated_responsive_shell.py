@@ -61,9 +61,9 @@ def _assert_no_document_overflow(page: Page) -> None:
             }"""
         )
         pytest.fail(
-            f"document overflow: scrollWidth={dimensions['scrollWidth']}, "
-            f"clientWidth={dimensions['clientWidth']}, "
-            f"offender_geometry={offenders}"
+            f'document overflow: scrollWidth={dimensions["scrollWidth"]}, '
+            f'clientWidth={dimensions["clientWidth"]}, '
+            f'offender_geometry={offenders}'
         )
 
 
