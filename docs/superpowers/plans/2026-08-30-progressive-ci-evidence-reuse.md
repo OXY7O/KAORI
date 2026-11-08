@@ -40,11 +40,11 @@
 The contract requires:
 
 ```python
-assert "      - ready_for_review" in workflow
-assert "      - converted_to_draft" in workflow
-assert "github.event.pull_request.draft == false" in workflow
-assert "draft pr" in delivery.lower()
-assert "ready for review" in delivery.lower()
+assert '      - ready_for_review' in workflow
+assert '      - converted_to_draft' in workflow
+assert 'github.event.pull_request.draft == false' in workflow
+assert 'draft pr' in delivery.lower()
+assert 'ready for review' in delivery.lower()
 ```
 
 - [x] **Step 2: Confirm the pre-change source violates the contract**
