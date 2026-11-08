@@ -44,8 +44,14 @@ def test_dependabot_version_update_intake_is_bounded_to_governed_staging() -> No
 def test_dependabot_branches_do_not_bypass_canonical_developer_check() -> None:
     workflow = yaml.safe_load(DEVELOPER_CHECK.read_text(encoding='utf-8'))
     route = workflow['jobs']['route']
-    assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in route['if']
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route['if']
+    guard = route['steps'][0]
+    assert guard['name'] == 'Reject untrusted pull request before checkout'
+    assert guard['env']['HEAD_REPO'] == '${{ github.event.pull_request.head.repo.full_name }}'
+    assert guard['env']['HEAD_REF'] == '${{ github.event.pull_request.head.ref }}'
+    assert '[[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" ]]' in guard['run']
+    assert '[[ "$HEAD_REF" == kaori/* && "$HEAD_REF" != kaori/staging ]]' in guard['run']
+    assert route['steps'][1]['name'] == 'Checkout Work Branch'
+    assert 'always()' in workflow['jobs']['developer-check']['if']
     full_admission = workflow['jobs']['full-admission']
     assert "needs.developer-check.result == 'success'" in full_admission['if']
     assert 'github.event.pull_request.head.repo.full_name == github.repository' in full_admission['if']
