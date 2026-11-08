@@ -1,4 +1,4 @@
-"""Keep heavy Developer Check workloads sequential on shared self-hosted runners."""
+"""Keep heavy Developer Check workloads sequential across trusted runner pools."""
 
 from pathlib import Path
 
@@ -14,8 +14,13 @@ def test_python_typecheck_and_focused_database_suite_cannot_overlap() -> None:
     focused = jobs['validation-check']
     aggregate = jobs['developer-check']
 
-    assert python['runs-on'] == ['self-hosted', 'linux', 'x64', 'kaori-ci']
-    assert focused['runs-on'] == ['self-hosted', 'linux', 'x64', 'kaori-ci']
+    for job in (python, focused):
+        runner = job['runs-on']
+        assert runner == ['self-hosted', 'linux', 'x64', 'kaori-ci'] or runner == 'ubuntu-24.04'
+        if runner == 'ubuntu-24.04':
+            # Ephemeral runners must resolve the canonical image locally;
+            # Docker tags cannot be transferred from the toolchain job.
+            assert any(step.get('id') == 'hosted-toolchain' for step in job['steps'])
     assert 'python-check' in focused['needs']
     assert {'python-check', 'validation-check'} <= set(aggregate['needs'])
 
