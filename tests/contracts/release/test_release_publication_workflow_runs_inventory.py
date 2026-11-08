@@ -6,7 +6,6 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-
 SCRIPT = Path(__file__).resolve().parents[3] / "scripts/publication_workflow_runs_inventory.py"
 SPEC = importlib.util.spec_from_file_location("publication_workflow_runs_inventory", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
