@@ -130,6 +130,33 @@ artifact `tests-42470804698-1` (ID `13613054900`), exact candidate source
   screenshot viewing shows no content, alignment or component changes. Its
   normalized visual digest differed, so the original visual test correctly FAILed.
 
+A **new Dark Small-Mobile raster variant** (issue #4353) was confirmed from
+the *same canonical test case* in two GitHub-hosted Full Admission runs, not
+from the separate `visual-welcome-index` screenshot scenario:
+- Passing [#42470804698](https://github.com/OXY7O/KAORI/actions/runs/42470804698)
+  artifact `tests-42470804698-1` (ID `13613054900`),
+  `ui-browser/welcome-dark-small-mobile.png`, raw SHA256
+  `eb06353d4195f75239d3c6d0f4e4df9cbf2e2c430909d55c1b04f6688b875a14`:
+  **byte-identical to the approved original** documented in #2196.
+- Failing [#42475695760](https://github.com/OXY7O/KAORI/actions/runs/42475695760),
+  artifact `tests-42475695760-1` (ID `13615436726`),
+  `ui-browser/welcome-dark-small-mobile-actual.png`, raw SHA256
+  `7d7b6ac51fd3cb60ded45ded8b2c2cc32383dc665da9c58de1e5c315565ca2c9`.
+- Both PNGs are **360×800**. Native same-case RGB comparison finds
+  **72/288,000 pixels differ, maximum per-channel delta 2/255**,
+  confined to antialiasing near text/icons. No theme-toggle state,
+  layout, content or geometry change is present. The failed normalized
+  fingerprint `02e86f1c0cb1d0acc5963238d671818bb12e6bccb63dc3685d3253d1db70178a`
+  did not match the original approved `47dbac59b975c21d8d47c55a405c28a61a9bb99ef7ad933e36dac19ce6168145`,
+  so the original CI failure was correct pending evidence review.
+
+The new exact raw Dark Small-Mobile signature is enumerated under the existing
+#2196 finite-variant guard, requires unchanged approved normalized digest and
+360×800 geometry, and still rejects every other raw PNG and all alternate
+theme/viewport keys. This evidence is **not** permission to widen a pixel
+threshold or automatically accept a visual difference; independent human Visual
+QA approval and exact-source Full Admission remain mandatory.
+
 The approved manifest continues to require the exact original normalized
 fingerprint and viewport geometry. For those **two** exact theme/viewport keys
 only, the shared assertion may accept **only the individually enumerated raw PNG

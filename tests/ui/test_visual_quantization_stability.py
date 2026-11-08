@@ -295,3 +295,63 @@ def test_multiple_proven_mobile_raster_variants_keep_exact_png_and_manifest_auth
             manifest_path=_manifest(tmp_path, height=800),
             evidence_root=tmp_path / 'evidence',
         )
+
+
+def test_dark_small_mobile_known_png_variants_remain_exact_and_geometry_bounded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    image = Image.new('RGB', (360, 800), (255, 255, 255))
+    original_buffer = BytesIO()
+    image.save(original_buffer, format='PNG')
+    original_png = original_buffer.getvalue()
+    image.putpixel((8, 8), (254, 255, 255))
+    variant_buffer = BytesIO()
+    image.save(variant_buffer, format='PNG')
+    variant_png = variant_buffer.getvalue()
+
+    expected_sha = '0' * 64
+    key = 'welcome-dark-small-mobile'
+    monkeypatch.setattr(
+        visual,
+        '_PROVEN_RASTER_VARIANTS',
+        {key: (expected_sha, hashlib.sha256(original_png).hexdigest(), hashlib.sha256(variant_png).hexdigest())},
+    )
+    for approved_png in (original_png, variant_png):
+        assert visual._matches_proven_raster_variant(key, approved_png, expected_sha)
+        assert not visual._matches_proven_raster_variant('welcome-light-mobile', approved_png, expected_sha)
+        assert not visual._matches_proven_raster_variant(key, approved_png, '1' * 64)
+        assert not visual._matches_proven_raster_variant(key, approved_png + b'x', expected_sha)
+
+    manifest_path = tmp_path / 'baseline.json'
+    manifest_path.write_text(
+        json.dumps({key: {'width': 360, 'height': 800, 'visual_sha256': expected_sha}}),
+        encoding='utf-8',
+    )
+    page = Mock()
+    page.screenshot.return_value = variant_png
+    with pytest.warns(UserWarning, match='exact reviewed one-time raster artifact variant'):
+        assert_visual_baseline(
+            cast(Page, page),
+            surface='welcome',
+            theme='dark',
+            viewport_name='small-mobile',
+            manifest_path=manifest_path,
+            evidence_root=tmp_path / 'evidence',
+        )
+
+    manifest_path.write_text(
+        json.dumps({key: {'width': 360, 'height': 801, 'visual_sha256': expected_sha}}),
+        encoding='utf-8',
+    )
+    with pytest.raises(AssertionError, match='dimensions changed'):
+        assert_visual_baseline(
+            cast(Page, page),
+            surface='welcome',
+            theme='dark',
+            viewport_name='small-mobile',
+            manifest_path=manifest_path,
+            evidence_root=tmp_path / 'evidence',
+        )
+
