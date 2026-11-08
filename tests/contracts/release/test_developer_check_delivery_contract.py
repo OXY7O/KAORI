@@ -138,7 +138,7 @@ def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> Non
     assert jobs['full-admission']['needs'] == 'developer-check'
     assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
     assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
-    assert 'github.event.pull_request.draft == true' not in jobs['route']['if']
+    assert 'if' not in jobs['route']  # Fork/branch denial runs as a failing hosted step.
     assert 'uses: ./.github/workflows/quality.yml' in source
 
 
