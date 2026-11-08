@@ -44,7 +44,7 @@ jobs:
   validation-profile:
     name: Resolve Profile
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && ((github.base_ref == 'kaori/staging' && startsWith(github.head_ref, 'kaori/') && github.head_ref != 'kaori/staging') || (github.base_ref == 'main' && github.head_ref == 'kaori/staging'))) }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       profile: ${{ steps.final.outputs.profile }}
@@ -74,7 +74,6 @@ jobs:
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Source Identity
@@ -111,7 +110,6 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           DISPATCH_PROFILE: ${{ inputs.validation_profile }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" && "${DISPATCH_PROFILE:-full}" == "full" ]]; then
@@ -122,13 +120,7 @@ jobs:
               echo 'reason=Manual dispatch requested Full Admission.'
             } >> "$GITHUB_OUTPUT"
           else
-            docker run --rm \
-              --user "$(id -u):$(id -g)" \
-              --env HOME=/tmp \
-              --volume "$PWD:/workspace" \
-              --workdir /workspace \
-              "$CI_TOOLCHAIN_IMAGE" \
-              python scripts/ci_admission.py route \
+            python3 scripts/ci_admission.py route \
                 --event-name "$EVENT_NAME" \
                 --ref "$EVENT_REF" \
                 --base-ref "${BASE_REF:-}" \
@@ -143,17 +135,9 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --env GH_TOKEN \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py find-evidence \
+          python3 scripts/ci_admission.py find-evidence \
               --repository "$GITHUB_REPOSITORY" \
               --token "$GH_TOKEN" \
               --workflow quality.yml \
@@ -174,16 +158,9 @@ jobs:
           EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
           EVIDENCE_SOURCE_SHA: ${{ steps.evidence.outputs.evidence_source_sha }}
           EVIDENCE_SOURCE_TREE: ${{ steps.evidence.outputs.evidence_source_tree }}
-          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            python scripts/ci_admission.py verify-lineage \
+          python3 scripts/ci_admission.py verify-lineage \
               --profile "$PROFILE" \
               --source-sha "$SOURCE_SHA" \
               --source-tree "$SOURCE_TREE" \
@@ -255,7 +232,7 @@ jobs:
             name: Frontend
           - gate: runtime
             name: Runtime & DAST
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
       - name: Checkout Source
@@ -265,6 +242,41 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: admission gate toolchain identity mismatch' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted Full Admission gate toolchain key: %s\n' "$key"
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing gates
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
       - name: Prepare Gate Contract
         shell: bash
         run: |
@@ -553,7 +565,7 @@ jobs:
     if: ${{ needs.validation-profile.outputs.execution == 'fast' }}
     needs: validation-profile
     name: Fast Smoke
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout Source
@@ -562,6 +574,42 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: Fast Smoke toolchain identity mismatch' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted Fast Smoke toolchain key: %s\n' "$key"
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing gates
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
       - name: Prepare Smoke Contract
         shell: bash
         run: |
