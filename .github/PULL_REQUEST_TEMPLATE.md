@@ -42,7 +42,7 @@ For external fork PRs, record any public fork-check result separately as **feedb
 
 ## Security Impact
 
-State the trust-boundary, secret, dependency, vulnerability, authorization, or security-validation impact. Use `None — <reason>` when there is no meaningful security impact. Never include secrets, private endpoints/hostnames, credentials, unsanitized logs, or exploitable vulnerability details in a public PR. Follow [SECURITY.md](../SECURITY.md) for private security reporting.
+State the trust-boundary, secret, dependency, vulnerability, authorization, or security-validation impact. Use `None — <reason>` when there is no meaningful security impact. Never include secrets, private endpoints/hostnames, credentials, unsanitized logs, or exploitable vulnerability details in a public PR. Follow [SECURITY.md](https://github.com/OXY7O/KAORI/blob/main/SECURITY.md) for private security reporting.
 
 ## Migration / Data Impact
 
