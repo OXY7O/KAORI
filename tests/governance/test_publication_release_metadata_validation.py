@@ -29,6 +29,8 @@ def _run(pages):
     [None],
     [{}],
     [[None]],
+    [[], [_release(rid=1)]],
+    [[_release(rid=1)], [], [_release(rid=2)]],
     [[_release(rid=0)]],
     [[_release(rid=True)]],
     [[_release(rid=1), _release(rid=1)]],
@@ -61,3 +63,10 @@ def test_valid_multi_page_inventory_is_counted_without_exposing_metadata():
     assert (result["release_count"], result["asset_count"],
             result["draft_count"], result["prerelease_count"]) == (2, 2, 1, 1)
     assert "PRIVATE_ASSET" not in json.dumps(result)
+
+
+def test_terminal_empty_page_does_not_imply_historical_clearance():
+    result = _run([[_release(rid=1)], []])
+    assert result["release_metadata_access"] == "READ"
+    assert result["release_count"] == 1
+    assert result["assessment"] == "INCOMPLETE"
