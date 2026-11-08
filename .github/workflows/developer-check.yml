@@ -28,8 +28,9 @@ env:
 jobs:
   route:
     name: Route Checks
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # A skipped job can satisfy a required check: run on a hosted worker and
+    # FAIL untrusted origins explicitly before checkout or privileged work.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       python: ${{ steps.route.outputs.python }}
@@ -46,6 +47,22 @@ jobs:
       reuse: ${{ steps.reuse.outcome == 'success' && steps.reuse.outputs.reuse == 'true' }}
       reuse_reason: ${{ steps.reuse.outputs.reuse_reason }}
     steps:
+      - name: Reject untrusted pull request before checkout
+        shell: bash
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'BLOCK: external fork is not authorized for trusted KAORI Developer Check.' >&2
+            exit 1
+          }
+          [[ "$HEAD_REF" == kaori/* && "$HEAD_REF" != kaori/staging ]] || {
+            echo 'BLOCK: source must be an issue-linked KAORI work branch, not staging.' >&2
+            exit 1
+          }
+
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -122,8 +139,8 @@ jobs:
     needs: route
     # Pure documentation/copy outside validation authority does not need a CI image.
     if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     outputs:
       image: ${{ steps.toolchain.outputs.image }}
     steps:
@@ -140,7 +157,6 @@ jobs:
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
           printf '✅ Developer Check toolchain — %s\n' "$image"
 
@@ -148,8 +164,8 @@ jobs:
     name: Python & Governance
     needs: [route, toolchain]
     if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -158,10 +174,46 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: toolchain identity differs from trusted preparation job' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted Python toolchain — exact key %s (cached image build follows)\n' "$key"
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing checks
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
+
       - name: Run Python & Governance Checks
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
@@ -261,10 +313,10 @@ jobs:
     # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
     needs: [route, toolchain, python-check]
     if: ${{ !cancelled() && needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+    runs-on: ubuntu-24.04
     # Full affected-capability Draft selection may include thousands of browser cases.
     # Allow a completed failure report; do not narrow tests or relax the aggregate.
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -272,12 +324,48 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
+      - name: Verify canonical hosted toolchain identity
+        id: hosted-toolchain
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          [[ "$image" == "$EXPECTED_IMAGE" ]] || {
+            echo 'BLOCK: toolchain identity differs from trusted preparation job' >&2
+            exit 1
+          }
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Hosted focused-test toolchain — exact key %s (cached image build follows)\n' "$key"
+
+      - name: Initialize isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build canonical toolchain with branch-scoped GitHub cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.hosted-toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Verify canonical toolchain is available to existing checks
+        shell: bash
+        env:
+          EXPECTED_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
+        run: docker image inspect "$EXPECTED_IMAGE" >/dev/null
+
       - name: Prepare Isolated Focused Test Runtime
         id: focused-runtime
         if: ${{ needs.route.outputs.test_paths != '' || needs.route.outputs.contracts == 'true' }}
         shell: bash
         env:
-          TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
@@ -296,7 +384,7 @@ jobs:
       - name: Run Frontend & Focused Validation
         shell: bash
         env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
           TEMPLATE_PATHS: ${{ needs.route.outputs.template_paths }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
@@ -430,14 +518,17 @@ jobs:
       - toolchain
       - python-check
       - validation-check
-    if: ${{ always() && needs.route.result == 'success' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # Required Developer Check must FAIL when route denies a fork/invalid branch.
+    # Never skip the required status context on a failed or skipped route.
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Aggregate Selected Checks
         shell: bash
         env:
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          ROUTE_RESULT: ${{ needs.route.result }}
           VERIFIED_DRAFT_REUSE: ${{ needs.route.outputs.reuse }}
           VERIFIED_DRAFT_REASON: ${{ needs.route.outputs.reuse_reason }}
           ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
@@ -454,6 +545,10 @@ jobs:
           VALIDATION_RESULT: ${{ needs.validation-check.result }}
         run: |
           set -Eeuo pipefail
+          [[ "$ROUTE_RESULT" == "success" ]] || {
+            echo 'BLOCK: required Developer Check denied; trusted route did not succeed.' >&2
+            exit 1
+          }
           python_required=false
           validation_required=false
           toolchain_required=false
@@ -538,7 +633,8 @@ jobs:
     name: Ready Admission Guard
     needs: [developer-check, full-admission]
     if: ${{ always() && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
-    runs-on: [self-hosted, linux, x64, platform-ci]
+    # Hosted for trusted lightweight checks; privileged/heavy gates remain isolated.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Enforce Completed Full Admission

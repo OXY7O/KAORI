@@ -129,13 +129,148 @@ def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission(
     route_header = developer.split('\n  route:', 1)[1].split('\n    steps:', 1)[0]
     assert 'github.event.pull_request.draft == true' not in route_header
     assert 'github.event.pull_request.draft == false' not in route_header
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route_header
+    assert '    if:' not in route_header
+    assert 'runs-on: ubuntu-24.04' in route_header
+    route_body = developer.split('\n  route:', 1)[1].split('\n  toolchain:', 1)[0]
+    assert 'Reject untrusted pull request before checkout' in route_body
+    assert 'HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}' in route_body
+    assert 'HEAD_REF: ${{ github.event.pull_request.head.ref }}' in route_body
+    assert 'BLOCK: external fork is not authorized' in route_body
+    aggregate = developer.split('\n  developer-check:', 1)[1].split('\n  full-admission:', 1)[0]
+    assert 'if: ${{ always() }}' in aggregate
+    assert 'ROUTE_RESULT: ${{ needs.route.result }}' in aggregate
+    assert '[[ "$ROUTE_RESULT" == "success" ]]' in aggregate
 
     # Reusable Full Admission still receives the caller PR context and therefore
     # retains the existing feature-PR routing guard inside the called workflow.
     assert "github.base_ref == 'kaori/staging'" in quality
     assert "startsWith(github.head_ref, 'kaori/')" in quality
     assert "github.head_ref != 'kaori/staging'" in quality
+
+
+def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    assert 'runs-on: ubuntu-24.04' in admission
+    assert admission.count('python3 scripts/ci_admission.py ') == 3
+    assert 'docker run' not in admission
+    assert 'CI_TOOLCHAIN_IMAGE:' not in admission
+    assert 'statuses: write' in admission
+    assert 'name: CI Admission' in admission
+    assert 'runs-on: ubuntu-24.04' in profile
+    assert 'runs-on: ubuntu-24.04' in matrix
+    assert 'Resolve CI Toolchain' in profile
+    assert 'CI_TOOLCHAIN_IMAGE=' in matrix
+
+
+def test_hosted_toolchain_preflight_produces_only_deterministic_image_identity() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Prepare Toolchain' in toolchain
+    assert 'runs-on: ubuntu-24.04' in toolchain
+    assert 'name: Resolve CI Toolchain' in toolchain
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in toolchain
+    assert 'persist-credentials: false' in toolchain
+    assert 'sha256sum | cut -c1-20' in toolchain
+    assert 'image="kaori-ci-toolchain:$key"' in toolchain
+    assert 'docker image inspect' not in toolchain
+    assert 'docker build' not in toolchain
+    assert 'image: ${{ steps.toolchain.outputs.image }}' in toolchain
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+
+
+def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Python & Governance' in python_job
+    assert 'runs-on: ubuntu-24.04' in python_job
+    assert 'timeout-minutes: 45' in python_job
+    assert 'needs: [route, toolchain]' in python_job
+    assert "needs.route.result == 'success'" in python_job
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in python_job
+    assert 'persist-credentials: false' in python_job
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in python_job
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in python_job
+    assert 'Run Python & Governance Checks' in python_job
+    assert "run_toolchain 'Pyright'" in python_job
+    assert "run_toolchain 'Ruff Check'" in python_job
+    assert "run_toolchain 'Code Health'" in python_job
+    assert 'runs-on: ubuntu-24.04' in toolchain
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+
+
+def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Frontend & Focused Validation' in focused
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'timeout-minutes: 75' in focused
+    assert 'needs: [route, toolchain, python-check]' in focused
+    assert "needs.python-check.result == 'success'" in focused
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in focused
+    assert 'persist-credentials: false' in focused
+    assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+    assert 'TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'docker compose --file .github/ci/compose.yml up --detach --wait postgres redis' in focused
+    assert 'docker compose --file .github/ci/compose.yml run --rm --no-deps ci' in focused
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in focused
+    assert "run_toolchain 'DjLint Full Templates'" in focused
+    assert "run_toolchain 'Frontend Dependencies'" in focused
+    assert 'pytest -q --tb=short $paths' in focused
+    assert 'runs-on: ubuntu-24.04' in toolchain
+
+
+def test_hosted_admission_profile_matrix_and_smoke_preserve_exact_source_authority() -> None:
+    workflow = read(WORKFLOW)
+    profile = workflow.split('\n  validation-profile:', 1)[1].split('\n  full-admission-gates:', 1)[0]
+    matrix = workflow.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    smoke = workflow.split('\n  integration-smoke:', 1)[1].split('\n  admission:', 1)[0]
+    admission = workflow.split('\n  admission:', 1)[1]
+
+    for block in (profile, matrix, smoke, admission):
+        assert 'runs-on: ubuntu-24.04' in block
+    assert 'docker run' not in profile
+    assert 'docker build' not in profile
+    assert 'python3 scripts/ci_admission.py route' in profile
+    assert 'python3 scripts/ci_admission.py find-evidence' in profile
+    assert 'python3 scripts/ci_admission.py verify-lineage' in profile
+    assert 'toolchain_image: ${{ steps.toolchain.outputs.image }}' in profile
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in profile
+    for block in (matrix, smoke):
+        assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in block
+        assert 'tags: ${{ steps.hosted-toolchain.outputs.image }}' in block
+        assert 'docker image inspect "$EXPECTED_IMAGE" >/dev/null' in block
+        assert 'file: .github/ci/Dockerfile' in block
+        assert 'push: false' in block
+        assert 'load: true' in block
+        assert 'cache-from: type=gha,scope=kaori-ci-toolchain-v1' in block
+        assert 'needs.validation-profile.outputs.toolchain_image' in block
+    assert 'max-parallel: 1' in matrix
+    assert 'strategy:' in matrix and 'fail-fast: true' in matrix
+    assert 'Run Security Gate' in matrix
+    assert 'Run Functional Tests' in matrix
+    assert 'Run Static & Governance' in matrix
+    assert 'Validate Runtime & DAST' in matrix
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in smoke
+    assert 'statuses: write' in admission
+    assert 'KAORI CI / Admission' in admission
 
 
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
@@ -145,7 +280,7 @@ def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> Non
     assert 'needs: validation-profile' in matrix
     assert 'strategy:' in matrix
     assert 'fail-fast: true' in matrix
-    # Temporary 8-GB builder budget (#2219): serialize heavy matrix legs,
+    # Preserve the governed serial admission matrix until hosted capacity is measured,
     # without skipping any required gate or weakening fail-fast admission.
     assert 'max-parallel: 1' in matrix
     assert 'max-parallel: 2' not in matrix
