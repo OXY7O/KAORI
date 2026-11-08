@@ -139,8 +139,8 @@ jobs:
     needs: route
     # Pure documentation/copy outside validation authority does not need a CI image.
     if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     outputs:
       image: ${{ steps.toolchain.outputs.image }}
     steps:
@@ -157,7 +157,6 @@ jobs:
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
           printf '✅ Developer Check toolchain — %s\n' "$image"
 
