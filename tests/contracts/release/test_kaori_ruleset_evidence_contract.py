@@ -64,3 +64,23 @@ def test_ruleset_handover_preserves_admission_and_security_boundaries() -> None:
         "privileged self-hosted runners",
     ):
         assert required in text
+
+def test_ruleset_handover_flags_skipped_required_checks_without_claiming_staging_acceptance() -> None:
+    evidence = EVIDENCE.read_text(encoding="utf-8")
+    assert "Required-status skipped-job hazard" in evidence
+    assert "skipped by a job-level" in evidence
+    assert "even as a required check" in evidence
+    for issue, pull in (("#4278", "#4239"), ("#141", "#141"), ("#79", "#79")):
+        assert issue in evidence and pull in evidence
+    for required in (
+        "before checkout",
+        "Draft PR to official staging",
+        "PENDING",
+        "real fork negative test",
+        "403 Resource not accessible by integration",
+        "different conditions",
+        "single-maintainer deadlock",
+    ):
+        assert required in evidence
+    assert "NOT ACCEPTED" in evidence
+    assert "NO-GO" in evidence
