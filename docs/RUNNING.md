@@ -123,6 +123,21 @@ npm run build-frontend
 npm run verify-frontend
 ```
 
+The minified stylesheet `app/static/css/output.css` is **generated** and
+ignored by Git. Rebuilding it does not change tracked source files. CSS is
+created automatically by the DevContainer startup and frontend/functional
+quality gates; only edit `frontend/styles.css` and templates. Preserve
+pinned vendor files and the local font under their established source-control
+rules.
+
+The production Docker build generates CSS in its isolated frontend stage.
+A source ZIP created with `scripts/build_source_archive.sh` contains source
+only and needs a frontend build before running KAORI. A runtime ZIP created
+with `scripts/build_runtime_archive.sh` performs `npm ci`, a complete
+frontend build and verification, and checks CSS/vendor files inside the ZIP
+before reporting success. Node/npm and its locked dependencies are therefore
+required for creating a runtime ZIP, not for running the resulting package.
+
 ### 5. Start the web application
 
 Preferred VS Code path: press `F5` and select **KAORI: Flask Debug**.
