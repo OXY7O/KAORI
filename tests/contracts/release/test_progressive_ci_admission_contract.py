@@ -138,6 +138,31 @@ def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission(
     assert "github.head_ref != 'kaori/staging'" in quality
 
 
+def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Frontend & Focused Validation' in focused
+    assert 'runs-on: ubuntu-24.04' in focused
+    assert 'timeout-minutes: 75' in focused
+    assert 'needs: [route, toolchain, python-check]' in focused
+    assert "needs.python-check.result == 'success'" in focused
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in focused
+    assert 'persist-credentials: false' in focused
+    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in focused
+    assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
+    assert 'TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
+    assert 'docker compose --file .github/ci/compose.yml up --detach --wait postgres redis' in focused
+    assert 'docker compose --file .github/ci/compose.yml run --rm --no-deps ci' in focused
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in focused
+    assert "run_toolchain 'DjLint Full Templates'" in focused
+    assert "run_toolchain 'Frontend Dependencies'" in focused
+    assert 'pytest -q --tb=short $paths' in focused
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in toolchain
+
+
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
     source = read(WORKFLOW)
     matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
