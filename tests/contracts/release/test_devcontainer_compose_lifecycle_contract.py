@@ -147,6 +147,23 @@ def test_development_image_keeps_recursive_dev_requirements_available() -> None:
     assert 'python -m pip install -r /tmp/requirements/dev.txt' in development
 
 
+def test_devcontainer_browser_matches_the_pinned_ci_playwright_runtime() -> None:
+    dockerfile = read(DOCKERFILE)
+    development = dockerfile.split('FROM base AS development', 1)[1].split('\nFROM node:', 1)[0]
+    ci_dockerfile = read(ROOT / '.github/ci/Dockerfile')
+
+    assert 'playwright==1.62.0' in read(DEV_REQUIREMENTS)
+    assert 'ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright' in development
+    assert 'PLAYWRIGHT_BROWSERS_PATH=/ms-playwright' in ci_dockerfile
+    assert 'python -m playwright install --with-deps chromium' in development
+    assert 'python -m playwright install --with-deps chromium' in ci_dockerfile
+    assert 'chmod -R a+rX /ms-playwright' in development
+    assert development.index('python -m pip install -r /tmp/requirements/dev.txt') < development.index(
+        'python -m playwright install --with-deps chromium'
+    ) < development.index('USER vscode')
+    assert 'python -m playwright install' not in dockerfile.split('FROM base AS production', 1)[1]
+
+
 def test_development_docs_define_one_canonical_compose_boundary() -> None:
     development = read(ROOT / 'docs' / 'DEVELOPMENT.md')
     running = read(ROOT / 'docs' / 'RUNNING.md')

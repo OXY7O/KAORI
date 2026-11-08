@@ -162,6 +162,34 @@ Useful VS Code tasks:
 - `KAORI: Build Tailwind CSS`
 - `KAORI: Developer Check Plan` — resolve the same path-aware validation plan used by GitHub Actions against `kaori/staging`.
 
+### Chromium / Playwright browser tests
+
+The **development** Docker image installs the locked Playwright Chromium browser
+and required Linux libraries during image build, using the same
+`PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` as the canonical CI toolchain.
+This is a shared, read-only browser installation for both the `vscode` and
+`root` container users; the executable must not depend on either user's
+`~/.cache/ms-playwright`. The production image does not contain this browser.
+
+After pulling a Dockerfile change, use **Dev Containers: Rebuild and Reopen in
+Container** (not only restart or `git pull`). In the new container, check the
+browser environment with the existing test harness:
+
+```bash
+python -m playwright --version
+echo "$PLAYWRIGHT_BROWSERS_PATH"
+python -m pytest -q -x --tb=short tests/ui/test_accessibility_disclosures.py \
+  -k user_menu_is_accessible_disclosure_and_escape_restores_focus
+bash scripts/quality_gate.sh --tests
+```
+
+A pre-existing container image can report `BrowserType.launch: Executable
+doesn't exist` even though `playwright` is installed as a Python package.
+Rebuild to install the matching browser and system libraries; do not skip
+Chromium cases, change viewport assertions, or mark Functional/E2E PASS on a
+missing-browser error. Preserve `app/static/css/output.css` worktree changes
+for review because `--tests` rebuilds CSS.
+
 ### Engineering Evolution v2 development tracks
 
 KAORI supports two context-sensitive inner development loops with one governed delivery outcome:
