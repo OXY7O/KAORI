@@ -156,6 +156,26 @@ def test_hosted_ci_admission_evidence_does_not_require_local_toolchain_image() -
     assert 'CI_TOOLCHAIN_IMAGE=' in matrix
 
 
+def test_hosted_toolchain_preflight_produces_only_deterministic_image_identity() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+    toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
+    python_job = source.split('\n  python-check:', 1)[1].split('\n  validation-check:', 1)[0]
+    focused = source.split('\n  validation-check:', 1)[1].split('\n  developer-check:', 1)[0]
+
+    assert 'name: Prepare Toolchain' in toolchain
+    assert 'runs-on: ubuntu-24.04' in toolchain
+    assert 'name: Resolve CI Toolchain' in toolchain
+    assert 'ref: ${{ env.KAORI_SOURCE_SHA }}' in toolchain
+    assert 'persist-credentials: false' in toolchain
+    assert 'sha256sum | cut -c1-20' in toolchain
+    assert 'image="kaori-ci-toolchain:$key"' in toolchain
+    assert 'docker image inspect' not in toolchain
+    assert 'docker build' not in toolchain
+    assert 'image: ${{ steps.toolchain.outputs.image }}' in toolchain
+    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in python_job
+    assert 'docker build --file .github/ci/Dockerfile --tag "$image" .' in focused
+
+
 def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
     source = read(DEVELOPER_WORKFLOW)
     toolchain = source.split('\n  toolchain:', 1)[1].split('\n  python-check:', 1)[0]
@@ -176,7 +196,7 @@ def test_hosted_python_governance_builds_matching_canonical_toolchain() -> None:
     assert "run_toolchain 'Pyright'" in python_job
     assert "run_toolchain 'Ruff Check'" in python_job
     assert "run_toolchain 'Code Health'" in python_job
-    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in toolchain
+    assert 'runs-on: ubuntu-24.04' in toolchain
     assert 'runs-on: ubuntu-24.04' in focused
     assert 'CI_TOOLCHAIN_IMAGE: ${{ steps.hosted-toolchain.outputs.image }}' in focused
     assert '[[ "$image" == "$EXPECTED_IMAGE" ]]' in focused
@@ -204,7 +224,7 @@ def test_hosted_focused_validation_preserves_canonical_compose_and_checks() -> N
     assert "run_toolchain 'DjLint Full Templates'" in focused
     assert "run_toolchain 'Frontend Dependencies'" in focused
     assert 'pytest -q --tb=short $paths' in focused
-    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in toolchain
+    assert 'runs-on: ubuntu-24.04' in toolchain
 
 
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
