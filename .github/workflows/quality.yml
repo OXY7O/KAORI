@@ -401,11 +401,13 @@ jobs:
           if ! python3 scripts/ci_zap_safe_summary.py \
             --input tmp/ci-artifacts/zap/baseline.json \
             --output "$report" \
-            --source-sha "$SOURCE_SHA"; then
-            printf '### OWASP ZAP — sanitized Runtime & DAST evidence\n\n'
-            printf 'Summary: **NOT VERIFIED**. Traditional JSON was absent or incompatible.\n\n'
-            printf 'Read this exact-run Runtime & DAST step outcome and existing scanner logs.\n'
-          fi > /dev/null
+            --source-sha "$SOURCE_SHA" > /dev/null; then
+            {
+              printf '### OWASP ZAP — sanitized Runtime & DAST evidence\n\n'
+              printf 'Summary: **NOT VERIFIED**. Traditional JSON was absent or incompatible.\n\n'
+              printf 'Read this exact-run Runtime & DAST step outcome and existing scanner logs.\n'
+            } > "$report"
+          fi
           if [[ ! -s "$report" ]]; then
             {
               printf '### OWASP ZAP — sanitized Runtime & DAST evidence\n\n'
