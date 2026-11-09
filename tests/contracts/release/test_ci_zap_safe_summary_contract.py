@@ -128,3 +128,25 @@ def test_cli_does_not_echo_sensitive_content_when_report_is_invalid(
     assert not output.exists()
     for value in SENSITIVE:
         assert value not in captured.out + captured.err
+
+
+def test_existing_zap_gate_remains_authoritative_and_summary_is_not_sarif() -> None:
+    root = Path(__file__).resolve().parents[3]
+    workflow = (root / ".github/workflows/quality.yml").read_text(encoding="utf-8")
+    scanner = (root / ".github/ci/run-zap-baseline.sh").read_text(encoding="utf-8")
+    runtime = (root / ".github/ci/run-runtime-validation.sh").read_text(encoding="utf-8")
+
+    assert "zap-baseline.py" in scanner
+    assert "-I" in scanner
+    assert "-r baseline.html" in scanner
+    assert "-J baseline.json" in scanner
+    assert "bash .github/ci/run-zap-baseline.sh" in runtime
+    assert 'if: ${{ always() && matrix.gate == \'runtime\' && steps.runtime_dast.outcome != \'skipped\' }}' in workflow
+    assert "scripts/ci_zap_safe_summary.py" in workflow
+    assert "needs.validation-profile.outputs.source_sha" in workflow
+    assert "tmp/ci-artifacts/zap/sanitized-summary.md" in workflow
+    assert "name: Upload Sanitized ZAP Evidence" in workflow
+    assert "if-no-files-found: warn" in workflow
+    assert "Runtime and DAST results are deployment/security checks" in workflow
+    assert "category: kaori-dast-zap" not in workflow
+    assert "security-events: write" not in workflow
