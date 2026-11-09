@@ -231,7 +231,7 @@ KAORI targets **Node 22.23.2** and declares **npm 10.9.9** as the package-manage
 
 npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine floor is satisfied by Node 22.23.2, but adopting npm 12 would introduce a separate package-manager major lifecycle across Dev Container, CI, and frontend builds. KAORI stays on the latest reviewed npm 10 patch for this maintenance line instead.
 
-Frontend audit also identified Tailwind 4.3.3 and Prettier 3.9.8 as available patch updates. They are **deferred** until their `package-lock.json` changes can be regenerated through the **normal package-manager workflow** inside the aligned Dev Container and verified against generated CSS, formatting, vendor assets, and visual/frontend gates. The lockfile must never be edited manually to force those versions.
+The frontend dependency intake now pins **Tailwind 4.3.4** and **Prettier 3.9.10** in `package.json` and `package-lock.json`. These replace the previously deferred patch candidates. Each grouped version update must be adopted from the package-manager-generated lockfile through the **normal package-manager workflow** on an issue-linked trusted KAORI branch, then verified against generated CSS, formatting, vendor assets, security, responsive/visual browser gates and applicable human UAT. The lockfile must never be edited manually to force package versions or integrity hashes.
 
 Edit `requirements/base.in` for runtime dependencies and `requirements/dev.in`
 for development-only tools. Then run inside the Dev Container:
