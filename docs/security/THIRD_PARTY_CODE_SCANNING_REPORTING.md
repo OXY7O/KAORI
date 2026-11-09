@@ -22,6 +22,49 @@ GitHub Actions artifacts and gate exit statuses are **execution evidence**, not 
 - The existing Security gate is unchanged. Nothing about this uploader downgrades or suppresses Bandit, Semgrep, Gitleaks, Trivy, ZAP, pip-audit, npm audit, CodeQL or other CI.
 - This first slice **does not yet publish Bandit or Trivy**; both require separate approved native SARIF/provenance verification. Native SARIF must come from existing scanners rather than inventing findings or duplicating CodeQL.
 
+## Bandit native SARIF — proposed second trusted SAST slice (#4390)
+
+The **existing admitted Semgrep publisher** has a separate, verified protected
+staging report (`Semgrep OSS`, category `kaori-sast-semgrep`, commit
+`a149825dfdfa03830cdeba6993fe62a2de51580d`); the maintainer confirmed
+Semgrep OSS is visible in Security and quality. **Bandit is a separate candidate**
+until its own exact-SHA branch upload, security inspection and Human Acceptance
+are complete. Its stable planned category is `kaori-sast-bandit`.
+
+The current Full Admission `.github/ci/run-security-static.sh` stays
+authoritative: `bandit -r app scripts -q -ll -f json` writes the original
+`bandit.json` evidence, with the same Medium-or-higher severity threshold,
+noise contract, exit code and failure handling. The accepted-commit publisher
+reuses **the same Bandit version, targets and flags** for a native **SARIF**
+format report; it does not relabel PR-head evidence as staging data and does
+not weaken the existing JSON-gated scan.
+
+Native Bandit SARIF 2.1.0 uses the upstream optional `sarif` formatter, not
+a local JSON converter. The candidate preserves `bandit[sarif]==1.9.4` and
+explicitly pins `jschema-to-python==1.2.3` and `sarif-om==1.0.4` in the
+existing security toolchain requirements. Because the optional libraries are
+older packages, the full Security gate and independent supply-chain/security
+review must confirm their suitability before merge; a dependency-inventory
+declaration alone is not risk acceptance.
+
+The trusted `.github/workflows/security-findings-publish.yml` job retains
+a single GitHub-hosted job-scoped `security-events: write` token and the
+exact `github.sha` checkout. It uploads the **Bandit** native SARIF as a
+second, separately categorized analysis using the existing pinned uploader.
+Both scanner exits, both SARIF validations and both uploads are checked in
+the final fail-closed job outcome, including when a scanner produced valid
+findings but returned a nonzero status. A completed upload with zero results
+proves **only that scan**; a missing analysis is a reporting defect.
+
+**Pre-acceptance test:** the existing pytest security contract executes
+the native Bandit formatter on a synthetic no-findings Python fixture and
+checks valid SARIF version, actual tool identity and results. Required
+postmerge UAT: inspect the **Bandit** tool on
+`refs/heads/kaori/staging`, category `kaori-sast-bandit`,
+exact merge commit, scanner threshold and alert privacy; separately verify
+Semgrep `kaori-sast-semgrep` remains unchanged. No third-party scanner
+may transmit secret matches or raw DAST requests as a surrogate report.
+
 ## DAST and sensitive evidence policy (#4391)
 
 The current ZAP baseline writes `baseline.html` and `baseline.json` under `tmp/ci-artifacts/zap`, with isolated CI runtime target `http://runtime:5000/`. The ZAP report-generation add-on has an official `sarif-json` template, but sample SARIF includes target URLs, probe text, cookies, HTTP headers and response bodies. **Never upload these raw fields to the public GitHub Security tab.**
