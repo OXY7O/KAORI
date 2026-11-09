@@ -7,7 +7,7 @@ SECURITY = ROOT / 'SECURITY.md'
 
 def test_native_security_register_never_implies_unverified_enablement() -> None:
     content = BASELINE.read_text(encoding='utf-8')
-    assert '**Status: PARTIALLY EVIDENCED / CURRENT ADMIN RECHECK PENDING.**' in content
+    assert '**Status: PARTIALLY VERIFIED / REMAINING SECURITY ACCEPTANCE PENDING.**' in content
     assert 'Historical admin evidence checklist — 2026-11-08' in content
     for control in (
         'Dependency Graph',
@@ -57,7 +57,7 @@ def test_native_security_readback_does_not_promote_holding_source_to_activation(
     ):
         assert statement in content
     assert '| Dependabot version updates | NOT VERIFIED |' in content
-    assert '**Status: PARTIALLY EVIDENCED / CURRENT ADMIN RECHECK PENDING.**' in content
+    assert '**Status: PARTIALLY VERIFIED / REMAINING SECURITY ACCEPTANCE PENDING.**' in content
 
 
 def test_incremental_security_readback_keeps_admin_uncertainty_explicit() -> None:
@@ -79,5 +79,26 @@ def test_incremental_security_readback_keeps_admin_uncertainty_explicit() -> Non
     assert 'does not prove CodeQL default setup is disabled' in content
     assert 'Do **not** commit a second' in content
     assert 'Do not silently duplicate security' in content
+    assert '#4212' in content
+    assert 'NO-GO' in content
+
+
+def test_native_security_current_admin_setup_is_separate_from_scan_acceptance() -> None:
+    content = BASELINE.read_text(encoding='utf-8')
+    assert 'Current administrator readback — 2026-11-09' in content
+    for control in (
+        'Dependabot alerts',
+        'Secret scanning',
+        'Push protection',
+        'Private vulnerability reporting',
+    ):
+        assert f'| {control} | **ENABLED**' in content
+    assert '| Dependabot security updates | **DISABLED**' in content
+    assert '| CodeQL Default Setup | **CONFIGURED**' in content
+    assert 'CodeQL Setup run #42552941921' in content
+    assert 'updated_at=null' in content
+    assert 'the complete first scan is not yet accepted' in content
+    assert 'Dependency Graph / Dependency review / advisory handling' in content
+    assert 'No code scanning findings, payloads or private advisory details' in content
     assert '#4212' in content
     assert 'NO-GO' in content

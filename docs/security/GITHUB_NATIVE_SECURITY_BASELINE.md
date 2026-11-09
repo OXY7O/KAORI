@@ -1,6 +1,6 @@
 # GitHub-native security baseline — evidence register (#4215)
 
-**Status: PARTIALLY EVIDENCED / CURRENT ADMIN RECHECK PENDING.** This register separates a historical source-only NOT VERIFIED snapshot from dated administrator evidence and actual Dependabot intake. Previous enablement and successful CI do not prove a control remains enabled today. Never paste credentials, private advisory contents, vulnerability payloads, internal infrastructure details, or unredacted scan logs into public issues, PRs, CI artifacts or Slack.
+**Status: PARTIALLY VERIFIED / REMAINING SECURITY ACCEPTANCE PENDING.** This register separates a historical source-only NOT VERIFIED snapshot from dated administrator evidence and actual Dependabot intake. Previous enablement and successful CI do not prove a control remains enabled today. Never paste credentials, private advisory contents, vulnerability payloads, internal infrastructure details, or unredacted scan logs into public issues, PRs, CI artifacts or Slack.
 
 ## Scope and authority
 
@@ -64,6 +64,51 @@ not effective security control settings or live GHAS triage.
 | Private vulnerability reporting | ENABLED (2026-11-05 admin readback) | CURRENT NOT RECHECKED; verify private reporting entry point and maintainer ownership |
 | Security advisory workflow | NOT VERIFIED | PVR availability alone does not establish completed advisory triage or disclosure process |
 
+### Current administrator readback — 2026-11-09 (supersedes historical status where verified)
+
+The repository administrator executed authenticated `gh api` in WSL on
+**2026-11-09** and supplied sanitized API responses. This is an actual
+**current control settings** readback, unlike the historical source-only
+snapshot. The administrator—not this documentation change—executed the
+CodeQL default-setup PATCH.
+
+| Native control | 2026-11-09 effective setting | Still required for operational acceptance |
+| --- | --- | --- |
+| Dependabot alerts | **ENABLED**, `GET /vulnerability-alerts` returned HTTP 204 | Actual safe, private advisory triage not yet validated |
+| Dependabot security updates | **DISABLED**, repository metadata and `GET /automated-security-fixes` returned `enabled=false` | Keep intentionally disabled pending approved default-`main` security PR intake |
+| Secret scanning | **ENABLED**, `security_and_analysis.secret_scanning.status=enabled` | Alert inventory and private escalation evidence |
+| Push protection | **ENABLED**, `security_and_analysis.secret_scanning_push_protection.status=enabled` | Actual effective coverage and governed bypass review |
+| Secret scanning non-provider patterns | **DISABLED**, current repository metadata | Optional entitlement/policy decision; do not enable blindly |
+| Secret scanning validity checks | **DISABLED**, current repository metadata | Optional entitlement/policy decision; do not enable blindly |
+| Private vulnerability reporting | **ENABLED**, `GET /private-vulnerability-reporting` returned `enabled=true` | Validate private reporting entry point and sanitized triage |
+| CodeQL Default Setup | **CONFIGURED** after the administrator PATCH, `query_suite=default`, `runner_type=standard` | First analysis and findings triage are **PENDING**, not a PASS merely because setup succeeded |
+| Dependency Graph / Dependency review / advisory handling | **NOT VERIFIED** in the supplied effective-settings readback | Confirm manifest coverage, entitlement, check behavior and restricted handling |
+
+**CodeQL setup provenance:** `GET /code-scanning/default-setup` initially
+returned `state=not-configured`. The administrator then submitted
+`PATCH /code-scanning/default-setup` with
+`state=configured`, `query_suite=default`, and `runner_type=standard`;
+immediate readback returned `state=configured`, `languages=[]` and
+`updated_at=null`. The asynchronous
+[CodeQL Setup run #42552941921](https://github.com/OXY7O/KAORI/actions/runs/42552941921)
+was created on default `main` source
+`6c3136fa1ffb1b0f2ee37b430ce4d089c2e9f745`.
+Independent workflow-job readback showed analyses for **GitHub Actions**,
+**JavaScript/TypeScript**, and **Python**; Actions and JavaScript/TypeScript
+were SUCCESS on an initial check while Python was still IN PROGRESS.
+Therefore `languages=[]` from immediate setup is not treated as zero
+language coverage, and **the complete first scan is not yet accepted**.
+Record a final full-run conclusion and permitted sanitized
+`code-scanning/analyses` metadata before marking CodeQL analysis PASS.
+
+Keep the existing `quality.yml` Security Gate, Gitleaks, Bandit, Semgrep,
+Trivy, dependency audits and Runtime/DAST authoritative; CodeQL adds a
+GitHub-native analysis surface, **not** a replacement or duplicate workflow.
+No code scanning findings, payloads or private advisory details are copied
+into this public repository document. This setup does not authorize
+Dependabot security-update PRs, weakening branch protection, production
+release, or rights/publication GO.
+
 **Default branch hazard:** Dependabot **version updates** are routed by
 `dependabot.yml` toward `kaori/staging`; Dependabot **security update PRs
 target the repository default branch `main`**. Do not enable automated
@@ -78,12 +123,13 @@ review, or main promotion.
    vulnerability reporting. The 2026-11-05 values are historical: do not
    change already enabled controls merely because this connector cannot
    read the current settings. Keep screenshots and alert identifiers private.
-2. Under **Code Security → CodeQL analysis**, verify whether **Default setup**
-   or **Advanced setup** is already active, the languages and actual analysis
-   result. If neither exists and approved, prefer GitHub-managed **Default
-   setup** rather than a parallel workflow. Do **not** commit a second
-   `codeql.yml`. Existing Gitleaks, Bandit, Semgrep, Trivy, pip-audit,
-   npm audit and DAST remain authoritative for their own scopes.
+2. **CodeQL Default Setup is now configured** from the administrator's
+   2026-11-09 action. Verify the final outcome of setup run #42552941921,
+   actual analyzed languages, and sanitized Code Scanning analysis metadata
+   on default `main`; do not confuse enabled setup with scan PASS. Do
+   **not** commit a second `codeql.yml` or enable a competing Advanced
+   setup. Existing Gitleaks, Bandit, Semgrep, Trivy, pip-audit, npm audit
+   and DAST remain authoritative for their own scopes.
 3. Check **Dependency review** eligibility and an actual safe PR result
    before considering any new check. Do not silently duplicate security
    scanners, protected statuses, or an untrusted-runner execution path.
