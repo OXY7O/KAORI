@@ -44,14 +44,10 @@ def test_semgrep_sarif_reuses_the_existing_sast_scan() -> None:
 
 
 def test_code_scanning_upload_is_only_for_trusted_pushes() -> None:
-    workflow = (ROOT / '.github' / 'workflows' / 'quality.yml').read_text(
-        encoding='utf-8'
-    )
-    reporter = workflow.split('  semgrep-code-scanning:\n', 1)[1].split(
-        '  integration-smoke:\n', 1
-    )[0]
+    workflow = (ROOT / '.github' / 'workflows' / 'quality.yml').read_text(encoding='utf-8')
+    reporter = workflow.split('  semgrep-code-scanning:\n', 1)[1].split('  integration-smoke:\n', 1)[0]
 
-    assert 'github.event_name == \'push\'' in reporter
+    assert "github.event_name == 'push'" in reporter
     assert "github.ref == 'refs/heads/kaori/staging'" in reporter
     assert "github.ref == 'refs/heads/main'" in reporter
     assert 'needs: [validation-profile, full-admission-gates]' in reporter
@@ -66,24 +62,20 @@ def test_code_scanning_upload_is_only_for_trusted_pushes() -> None:
     assert 'github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938' in reporter
     assert 'pull_request_target' not in workflow
 
-    scan_artifact = workflow.split(
-        '      - name: Retain Semgrep SARIF for trusted branch code scanning\n', 1
-    )[1].split('      - name: Upload Successful Static Verification Details\n', 1)[0]
-    assert 'matrix.gate == \'security\'' in scan_artifact
+    scan_artifact = workflow.split('      - name: Retain Semgrep SARIF for trusted branch code scanning\n', 1)[1].split(
+        '      - name: Upload Successful Static Verification Details\n', 1
+    )[0]
+    assert "matrix.gate == 'security'" in scan_artifact
     assert "github.event_name == 'push'" in scan_artifact
     assert 'tmp/ci-artifacts/security/semgrep.sarif' in scan_artifact
 
 
 def test_reusable_sarif_permission_is_not_granted_to_untrusted_forks() -> None:
-    caller = (ROOT / '.github' / 'workflows' / 'developer-check.yml').read_text(
-        encoding='utf-8'
-    )
-    route = caller.split('  full-admission:\n', 1)[1].split(
-        '  ready-admission-guard:\n', 1
-    )[0]
+    caller = (ROOT / '.github' / 'workflows' / 'developer-check.yml').read_text(encoding='utf-8')
+    route = caller.split('  full-admission:\n', 1)[1].split('  ready-admission-guard:\n', 1)[0]
 
-    assert "github.event.pull_request.draft == false" in route
-    assert "github.event.pull_request.head.repo.full_name == github.repository" in route
+    assert 'github.event.pull_request.draft == false' in route
+    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route
     assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in route
     assert 'permissions:\n      contents: read\n      actions: read' in route
     assert '      security-events: write\n    uses: ./.github/workflows/quality.yml' in route
