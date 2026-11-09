@@ -108,7 +108,7 @@ jobs:
       - name: Upload Draft Route Identity
         if: ${{ github.event.pull_request.draft == true && steps.draft-identity.outcome == 'success' }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kaori-draft-developer-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/developer-check/draft-developer-evidence.json
@@ -504,7 +504,7 @@ jobs:
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: browser-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/test-output/ui-browser
