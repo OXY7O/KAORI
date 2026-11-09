@@ -108,7 +108,7 @@ jobs:
           set -Eeuo pipefail
           {
             printf '### KAORI Semgrep Code Scanning — accepted branch\n\n'
-            printf 'Source SHA: `%s` · Ref: `%s`\n\n' "$GITHUB_SHA" "$GITHUB_REF"
+            printf 'Source SHA: %s · Ref: %s\n\n' "$GITHUB_SHA" "$GITHUB_REF"
             printf 'Semgrep scan: **%s** · SARIF validation: **%s** · GitHub upload: **%s**\n' \
               "$SCAN_OUTCOME" "$REPORT_OUTCOME" "$UPLOAD_OUTCOME"
             printf '\nThis reporter does not replace Developer Check, Full Admission or CodeQL Default Setup.\n'
