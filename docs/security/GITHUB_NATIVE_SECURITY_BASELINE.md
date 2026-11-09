@@ -81,7 +81,7 @@ CodeQL default-setup PATCH.
 | Secret scanning non-provider patterns | **DISABLED**, current repository metadata | Optional entitlement/policy decision; do not enable blindly |
 | Secret scanning validity checks | **DISABLED**, current repository metadata | Optional entitlement/policy decision; do not enable blindly |
 | Private vulnerability reporting | **ENABLED**, `GET /private-vulnerability-reporting` returned `enabled=true` | Validate private reporting entry point and sanitized triage |
-| CodeQL Default Setup | **CONFIGURED** after the administrator PATCH, `query_suite=default`, `runner_type=standard` | First analysis and findings triage are **PENDING**, not a PASS merely because setup succeeded |
+| CodeQL Default Setup | **CONFIGURED**, `query_suite=default`, `runner_type=standard`; initial [CodeQL Setup run #42552941921](https://github.com/OXY7O/KAORI/actions/runs/42552941921) **SUCCESS** | Three CodeQL language jobs passed, but alert inventory and actual findings triage still require authorized review |
 | Dependency Graph / Dependency review / advisory handling | **NOT VERIFIED** in the supplied effective-settings readback | Confirm manifest coverage, entitlement, check behavior and restricted handling |
 
 **CodeQL setup provenance:** `GET /code-scanning/default-setup` initially
@@ -94,12 +94,12 @@ immediate readback returned `state=configured`, `languages=[]` and
 was created on default `main` source
 `6c3136fa1ffb1b0f2ee37b430ce4d089c2e9f745`.
 Independent workflow-job readback showed analyses for **GitHub Actions**,
-**JavaScript/TypeScript**, and **Python**; Actions and JavaScript/TypeScript
-were SUCCESS on an initial check while Python was still IN PROGRESS.
-Therefore `languages=[]` from immediate setup is not treated as zero
-language coverage, and **the complete first scan is not yet accepted**.
-Record a final full-run conclusion and permitted sanitized
-`code-scanning/analyses` metadata before marking CodeQL analysis PASS.
+**JavaScript/TypeScript**, and **Python**. The run completed **SUCCESS** and
+**all three language jobs passed**. The immediate `languages=[]` response
+was not interpreted as zero language coverage. This is **initial CodeQL
+scan PASS**, not evidence of zero vulnerabilities or completed findings
+triage. Collect permitted sanitized `code-scanning/analyses` metadata and
+classify any alerts privately before full operational acceptance.
 
 Keep the existing `quality.yml` Security Gate, Gitleaks, Bandit, Semgrep,
 Trivy, dependency audits and Runtime/DAST authoritative; CodeQL adds a
@@ -123,10 +123,10 @@ review, or main promotion.
    vulnerability reporting. The 2026-11-05 values are historical: do not
    change already enabled controls merely because this connector cannot
    read the current settings. Keep screenshots and alert identifiers private.
-2. **CodeQL Default Setup is now configured** from the administrator's
-   2026-11-09 action. Verify the final outcome of setup run #42552941921,
-   actual analyzed languages, and sanitized Code Scanning analysis metadata
-   on default `main`; do not confuse enabled setup with scan PASS. Do
+2. **CodeQL Default Setup is configured** and setup run #42552941921
+   **PASS** across all three language jobs. Independently verify sanitized
+   Code Scanning analysis metadata and restricted alert triage on default
+   `main`; do not confuse successful scanning with zero findings. Do
    **not** commit a second `codeql.yml` or enable a competing Advanced
    setup. Existing Gitleaks, Bandit, Semgrep, Trivy, pip-audit, npm audit
    and DAST remain authoritative for their own scopes.

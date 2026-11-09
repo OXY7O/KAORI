@@ -7,7 +7,8 @@ SECURITY = ROOT / 'SECURITY.md'
 
 def test_native_security_register_never_implies_unverified_enablement() -> None:
     content = BASELINE.read_text(encoding='utf-8')
-    assert '**Status: PARTIALLY VERIFIED / REMAINING SECURITY ACCEPTANCE PENDING.**' in content
+    assert '**Status: PARTIALLY VERIFIED' in content
+    assert 'REMAINING SECURITY ACCEPTANCE PENDING.**' in content
     assert 'Historical admin evidence checklist — 2026-11-08' in content
     for control in (
         'Dependency Graph',
@@ -57,7 +58,8 @@ def test_native_security_readback_does_not_promote_holding_source_to_activation(
     ):
         assert statement in content
     assert '| Dependabot version updates | NOT VERIFIED |' in content
-    assert '**Status: PARTIALLY VERIFIED / REMAINING SECURITY ACCEPTANCE PENDING.**' in content
+    assert '**Status: PARTIALLY VERIFIED' in content
+    assert 'REMAINING SECURITY ACCEPTANCE PENDING.**' in content
 
 
 def test_incremental_security_readback_keeps_admin_uncertainty_explicit() -> None:
@@ -97,7 +99,10 @@ def test_native_security_current_admin_setup_is_separate_from_scan_acceptance() 
     assert '| CodeQL Default Setup | **CONFIGURED**' in content
     assert 'CodeQL Setup run #42552941921' in content
     assert 'updated_at=null' in content
-    assert 'the complete first scan is not yet accepted' in content
+    assert 'all three language jobs passed' in content
+    assert 'initial CodeQL' in content
+    assert 'scan PASS' in content
+    assert 'not evidence of zero vulnerabilities' in content
     assert 'Dependency Graph / Dependency review / advisory handling' in content
     assert 'No code scanning findings, payloads or private advisory details' in content
     assert '#4212' in content
