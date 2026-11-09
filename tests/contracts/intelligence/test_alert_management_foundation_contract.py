@@ -85,7 +85,8 @@ def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
 
 def test_alert_notification_templates_share_sandboxed_render_boundary() -> None:
     templates = read('app/intelligence/alert_intelligence/templates.py')
-    assert 'from jinja2.sandbox import SandboxedEnvironment, SecurityError' in templates
+    assert 'from jinja2.exceptions import SecurityError' in templates
+    assert 'from jinja2.sandbox import SandboxedEnvironment' in templates
     assert '_ENV = SandboxedEnvironment(' in templates
     assert '_HTML_ENV = SandboxedEnvironment(' in templates
     assert 'undefined=StrictUndefined' in templates
