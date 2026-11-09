@@ -1,4 +1,7 @@
-bandit==1.9.4
+bandit[sarif]==1.9.4
+# Native Bandit SARIF output requires these reviewed optional formatter packages.
+jschema-to-python==1.2.3
+sarif-om==1.0.4
 pip-audit==2.10.1
 semgrep==1.177.0
 
