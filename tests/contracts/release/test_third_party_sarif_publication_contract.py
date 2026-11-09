@@ -99,7 +99,9 @@ def test_bandit_reporter_preserves_pinned_policy_and_least_privilege() -> None:
     assert 'category: kaori-sast-bandit' in bandit_job
     assert 'github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066' in bandit_job
     assert 'wait-for-processing: true' in bandit_job
-    assert '[[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success ]]' in bandit_job
+    assert (
+        '[[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success ]]' in bandit_job
+    )
     assert 'continue-on-error: true' in bandit_job
     assert 'pull_request_target' not in source
     assert 'gitleaks' not in source.lower()
@@ -112,9 +114,7 @@ def test_bandit_native_sarif_formatter_produces_real_source_locations(tmp_path: 
     assert binary is not None, 'KAORI canonical CI toolchain must include Bandit.'
     fixture = tmp_path / 'bandit_fixture.py'
     fixture.write_text(
-        'import subprocess\n\n'
-        'def unsafe(user_input):\n'
-        '    subprocess.Popen("echo " + user_input, shell=True)\n',
+        'import subprocess\n\ndef unsafe(user_input):\n    subprocess.Popen("echo " + user_input, shell=True)\n',
         encoding='utf-8',
     )
     report = tmp_path / 'bandit.sarif'
@@ -132,9 +132,7 @@ def test_bandit_native_sarif_formatter_produces_real_source_locations(tmp_path: 
     assert run['tool']['driver']['name'] == 'Bandit'
     assert run['results'], 'A synthetic shell-injection fixture must produce SARIF findings.'
     assert all(
-        finding['locations'][0]['physicalLocation']['artifactLocation']['uri'].endswith(
-            'bandit_fixture.py'
-        )
+        finding['locations'][0]['physicalLocation']['artifactLocation']['uri'].endswith('bandit_fixture.py')
         and finding['locations'][0]['physicalLocation']['region']['startLine'] >= 1
         for finding in run['results']
     )
