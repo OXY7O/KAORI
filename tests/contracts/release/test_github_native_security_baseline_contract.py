@@ -7,7 +7,8 @@ SECURITY = ROOT / 'SECURITY.md'
 
 def test_native_security_register_never_implies_unverified_enablement() -> None:
     content = BASELINE.read_text(encoding='utf-8')
-    assert '**Status: PREPARED / NOT VERIFIED.**' in content
+    assert '**Status: PARTIALLY EVIDENCED / CURRENT ADMIN RECHECK PENDING.**' in content
+    assert 'Historical admin evidence checklist — 2026-11-08' in content
     for control in (
         'Dependency Graph',
         'Dependabot alerts',
@@ -56,4 +57,27 @@ def test_native_security_readback_does_not_promote_holding_source_to_activation(
     ):
         assert statement in content
     assert '| Dependabot version updates | NOT VERIFIED |' in content
-    assert '**Status: PREPARED / NOT VERIFIED.**' in content
+    assert '**Status: PARTIALLY EVIDENCED / CURRENT ADMIN RECHECK PENDING.**' in content
+
+
+def test_incremental_security_readback_keeps_admin_uncertainty_explicit() -> None:
+    content = BASELINE.read_text(encoding='utf-8')
+    assert 'Incremental control reconciliation — 2026-11-09 (#4377)' in content
+    assert 'CURRENT NOT RECHECKED' in content
+    for control in (
+        'Secret scanning',
+        'Push protection',
+        'Private vulnerability reporting',
+    ):
+        assert f'| {control} | ENABLED (2026-11-05 admin readback)' in content
+    assert '| Dependabot alerts | ENABLED (2026-11-05' in content
+    assert '| Dependabot security updates | DISABLED (2026-11-05' in content
+    assert '| Dependabot version updates | OBSERVED ACTIVE' in content
+    for pr in ('#4368', '#4369', '#4370', '#4373', '#4374'):
+        assert pr in content
+    assert 'target the repository default branch `main`' in content
+    assert 'does not prove CodeQL default setup is disabled' in content
+    assert 'Do **not** commit a second' in content
+    assert 'do not silently duplicate security' in content
+    assert '#4212' in content
+    assert 'NO-GO' in content
