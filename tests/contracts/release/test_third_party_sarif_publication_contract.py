@@ -49,7 +49,8 @@ def test_sarif_upload_preserves_failed_scan_gate_and_excludes_secret_payloads() 
     assert 'github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066' in source
     assert 'category: kaori-sast-semgrep' in source
     assert 'wait-for-processing: true' in source
-    assert '(.runs[0].tool.driver.name | ascii_downcase == "semgrep")' in source
+    assert '($tool == "semgrep" or $tool == "semgrep oss" or' in source
+    assert '$tool == "semgrep community edition")' in source
     assert 'SCAN_OUTCOME: ${{ steps.scan.outcome }}' in source
     assert 'REPORT_OUTCOME: ${{ steps.report.outcome }}' in source
     assert 'UPLOAD_OUTCOME: ${{ steps.upload.outcome }}' in source
