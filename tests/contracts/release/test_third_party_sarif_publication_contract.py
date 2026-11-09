@@ -110,7 +110,9 @@ def test_bandit_native_sarif_uses_own_category_and_strict_upload_gate() -> None:
     assert 'pull_request_target' not in source
 
 
-def test_bandit_formatter_generates_native_sarif_from_synthetic_source(tmp_path: Path) -> None:
+def test_bandit_formatter_generates_native_sarif_from_synthetic_source(
+    tmp_path: Path,
+) -> None:
     source = tmp_path / 'no-findings.py'
     report = tmp_path / 'bandit.sarif'
     source.write_text('def safe_answer() -> int:\n    return 42\n', encoding='utf-8')
