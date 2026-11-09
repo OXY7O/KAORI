@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   semgrep-code-scanning:
-    name: Semgrep Code Scanning
+    name: SAST Code Scanning
     # Never grant security-events:write to untrusted fork/PR source.
     if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/kaori/staging' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-24.04
@@ -101,6 +101,48 @@ jobs:
           category: kaori-sast-semgrep
           wait-for-processing: true
 
+      # Reuse the accepted source SHA, canonical build and scoped publishing
+      # token. Original Full Admission Bandit JSON and policy remain unchanged.
+      - name: Run Existing Bandit Rules as SARIF
+        id: bandit_scan
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p tmp/ci-artifacts/security
+          docker run --rm --name "kaori-bandit-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
+            bandit -r app scripts -q -ll -f sarif \
+              -o tmp/ci-artifacts/security/bandit.sarif
+
+      - name: Confirm Native Bandit SARIF Report
+        id: bandit_report
+        if: ${{ always() && steps.bandit_scan.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          report=tmp/ci-artifacts/security/bandit.sarif
+          test -s "$report"
+          jq -e '
+            .version == "2.1.0" and
+            (.runs | type == "array" and length == 1) and
+            (.runs[0].tool.driver.name | ascii_downcase == "bandit") and
+            (.runs[0].results | type == "array")
+          ' "$report" >/dev/null
+
+      - name: Publish Bandit Findings to GitHub Code Scanning
+        id: bandit_upload
+        if: ${{ always() && steps.bandit_report.outcome == 'success' }}
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: tmp/ci-artifacts/security/bandit.sarif
+          category: kaori-sast-bandit
+          wait-for-processing: true
+
       - name: Enforce Original Scanner Outcome and Upload Evidence
         if: ${{ always() }}
         shell: bash
@@ -108,16 +150,23 @@ jobs:
           SCAN_OUTCOME: ${{ steps.scan.outcome }}
           REPORT_OUTCOME: ${{ steps.report.outcome }}
           UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+          BANDIT_SCAN_OUTCOME: ${{ steps.bandit_scan.outcome }}
+          BANDIT_REPORT_OUTCOME: ${{ steps.bandit_report.outcome }}
+          BANDIT_UPLOAD_OUTCOME: ${{ steps.bandit_upload.outcome }}
         run: |
           set -Eeuo pipefail
           {
-            printf '### KAORI Semgrep Code Scanning — accepted branch\n\n'
+            printf '### KAORI SAST Code Scanning — accepted branch\n\n'
             printf 'Source SHA: %s · Ref: %s\n\n' "$GITHUB_SHA" "$GITHUB_REF"
             printf 'Semgrep scan: **%s** · SARIF validation: **%s** · GitHub upload: **%s**\n' \
               "$SCAN_OUTCOME" "$REPORT_OUTCOME" "$UPLOAD_OUTCOME"
+            printf 'Bandit scan: **%s** · SARIF validation: **%s** · GitHub upload: **%s**\n' \
+              "$BANDIT_SCAN_OUTCOME" "$BANDIT_REPORT_OUTCOME" "$BANDIT_UPLOAD_OUTCOME"
             printf '\nThis reporter does not replace Developer Check, Full Admission or CodeQL Default Setup.\n'
           } >> "$GITHUB_STEP_SUMMARY"
-          [[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success ]] || {
-            printf 'FAIL: Semgrep findings publication or original scanner gate did not complete successfully.\n' >&2
+          [[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success &&
+             "$BANDIT_SCAN_OUTCOME" == success && "$BANDIT_REPORT_OUTCOME" == success &&
+             "$BANDIT_UPLOAD_OUTCOME" == success ]] || {
+            printf 'FAIL: SAST findings publication or scanner gate did not complete successfully.\n' >&2
             exit 1
           }
