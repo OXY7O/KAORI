@@ -113,6 +113,35 @@ The maintainer agreed **in principle** with Apache-2.0 for **rights-cleared soft
 
 **Coverage reconciliation:** all eight pre-existing register rows above remain **NOT VERIFIED**. Still required: signed/recorded ownership and contribution authority; AI-provider terms/input provenance; third-party font/content attribution; full Git history and deleted blobs; release/OCI/workflow artifacts and logs; secret scanning effectiveness and private incident disposition; independent rights review; explicit per-repository human GO/NO-GO. The only action taken by the parallel Website PR is a scoped source asset retirement / documentation update; no license, community launch, new rights, deployment or release is approved here.
 
+## Website dependency-license and retained-public-surface inventory — 2026-11-09 (partial evidence; NO-GO)
+
+This is a dated **read-only source/metadata reconciliation** under #4212 and [Website #136](https://github.com/OXY7O/kaori-website/issues/136). The lockfile was read at accepted Website `kaori/staging@2aed567d2a692ad94f6dfa5db8caac7267d96937` (blob `50de93253ec9c03cb161ce078e7b030d8ef2ae93`), **not** from `main` or installed `node_modules`. Its lockfile v3 lists **394 non-root dependency records**; **394/394 declare a license *metadata string***. The website project's root `package.json` has **no `license` field**. A package declaration is **not** the actual package notice, legal completeness, or proof that the package ships with the public static output.
+
+| Lockfile declared license expression | Non-root package records |
+| --- | ---: |
+| `MIT` | 298 |
+| `MPL-2.0` | 26 |
+| `Apache-2.0` | 20 |
+| `ISC` | 16 |
+| `LGPL-3.0-or-later` | 10 |
+| `BSD-2-Clause` | 8 |
+| `BSD-3-Clause` | 4 |
+| `Apache-2.0 AND LGPL-3.0-or-later` | 3 |
+| `BlueOak-1.0.0` | 3 |
+| `0BSD` | 2 |
+| `CC0-1.0` | 2 |
+| `OFL-1.1` | 1 |
+| `Apache-2.0 AND LGPL-3.0-or-later AND MIT` | 1 |
+| **Total** | **394** |
+
+**Distribution/rights boundaries:** direct runtime dependencies include `@fontsource-variable/inter@5.3.0` (`OFL-1.1`) and `astro@7.4.0` (`MIT`); test-only direct `@axe-core/playwright@4.10.2` declares `MPL-2.0`. The transitive inventory includes platform-optional `@img/sharp-*` and `@img/sharp-libvips-*` records with combined `Apache-2.0 AND LGPL-3.0-or-later` or `LGPL-3.0-or-later` expressions, plus `lightningcss` records with `MPL-2.0`. **Do not assume** all optional platform binaries or development/test packages are redistributed in the production static site or OCI image. Verify the actual **published image layers, generated static output, included license/notice texts and font files** before assigning redistribution and attribution obligations. Keep third-party font/artwork outside a blanket future Website Apache-2.0 grant.
+
+**Brand current-vs-historical state:** source at official Website `kaori/staging@2aed567d2a692ad94f6dfa5db8caac7267d96937` has exactly **two current tracked files** under `public/branding/`: `kaori-logo.svg` (maintainer-reported KAORI design) and `kaori-connected-operations-hub.webp` (KAORI-directed ChatGPT/AI-assisted exploration). The old `kaori-operations-fabric.svg` is absent from staging after independently reviewed and admitted [Website PR #186](https://github.com/OXY7O/kaori-website/pull/186). The historical public `main` snapshot in the preceding section correctly showed three files **at its different SHA and date**. Deletion in staging **does not remove historical objects or deployed older copies**, nor confer exclusive copyright or trademark rights.
+
+**Git/release metadata scope:** the Website default-`main` paginated commit endpoint returned **406 commit records** (`per_page=100`, pages 1–6 yielding 100/100/100/100/6/0) back to the first available record on 2026-10-16, while the single-page branch-list read returned **38 visible branch refs** at that observation. These are provider API **metadata inventories only**: there is no review of commit contents, deleted/unreachable objects, branch-exclusive histories or prior fork payloads. The Website release endpoint returned **9 visible Release records with 0 attached GitHub Release assets** in returned records, again not covering OCI images, retained Actions artifacts/logs or past deleted releases. Do not claim history or publication clearance.
+
+**What remains to establish an actual Website rights GO:** owner/contributor chain-of-title and rights to license software; approval of trademark/logo and AI-service terms, inputs and any third-party-derived image material; exact third-party attribution and shipped-artifact license contents; credential/secret historical and currently active exposure assessment across three repos; Git refs/tags/release/OCI/Actions-log and generated-site contents; independent security and rights acceptance, with any confidential finding handled through approved private channels. All eight original coverage-register rows remain **NOT VERIFIED**; the overall decision remains **NO-GO** for `LICENSE`, `NOTICE`, SPDX license metadata, external contribution launch, production release or deployment. No actual license grant or security configuration mutation is performed in this evidence entry.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
