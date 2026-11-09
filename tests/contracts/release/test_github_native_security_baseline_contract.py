@@ -79,7 +79,7 @@ def test_incremental_security_readback_keeps_admin_uncertainty_explicit() -> Non
         assert pr in content
     assert 'target the repository default branch `main`' in content
     assert 'does not prove CodeQL default setup is disabled' in content
-    assert 'Do **not** commit a second' in content
+    assert '**not** commit a second' in content
     assert 'Do not silently duplicate security' in content
     assert '#4212' in content
     assert 'NO-GO' in content
