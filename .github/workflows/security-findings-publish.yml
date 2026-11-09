@@ -121,3 +121,102 @@ jobs:
             printf 'FAIL: Semgrep findings publication or original scanner gate did not complete successfully.\n' >&2
             exit 1
           }
+
+  bandit-code-scanning:
+    name: Bandit Code Scanning
+    # Accepted long-lived branch SHA only; never run privileged PR/fork code.
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/kaori/staging' || github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout Accepted Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Resolve Canonical Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          printf 'image=kaori-ci-toolchain:%s\n' "$key" >> "$GITHUB_OUTPUT"
+
+      - name: Initialize Isolated Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build Canonical Toolchain
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: .github/ci/Dockerfile
+          target: ci
+          push: false
+          load: true
+          tags: ${{ steps.toolchain.outputs.image }}
+          cache-from: type=gha,scope=kaori-ci-toolchain-v1
+          cache-to: type=gha,scope=kaori-ci-toolchain-v1,mode=max,ignore-error=true,timeout=5m
+
+      - name: Run Existing Bandit Scope as SARIF
+        id: bandit_scan
+        continue-on-error: true
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p tmp/ci-artifacts/security
+          docker run --rm --name "kaori-bandit-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
+            bandit -r app scripts -q -ll -f sarif \
+              -o tmp/ci-artifacts/security/bandit.sarif
+
+      - name: Confirm Native Bandit SARIF Report
+        id: bandit_report
+        if: ${{ always() && steps.bandit_scan.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          report=tmp/ci-artifacts/security/bandit.sarif
+          test -s "$report"
+          jq -e '
+            .version == "2.1.0" and
+            (.runs | type == "array" and length == 1) and
+            ((.runs[0].tool.driver.name | ascii_downcase) == "bandit") and
+            (.runs[0].results | type == "array")
+          ' "$report" >/dev/null
+
+      - name: Publish Bandit Findings to GitHub Code Scanning
+        id: bandit_upload
+        if: ${{ always() && steps.bandit_report.outcome == 'success' }}
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: tmp/ci-artifacts/security/bandit.sarif
+          category: kaori-sast-bandit
+          wait-for-processing: true
+
+      - name: Enforce Bandit Scanner Outcome and Upload Evidence
+        if: ${{ always() }}
+        shell: bash
+        env:
+          SCAN_OUTCOME: ${{ steps.bandit_scan.outcome }}
+          REPORT_OUTCOME: ${{ steps.bandit_report.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.bandit_upload.outcome }}
+        run: |
+          set -Eeuo pipefail
+          {
+            printf '### KAORI Bandit Code Scanning — accepted branch\n\n'
+            printf 'Source SHA: %s · Ref: %s\n\n' "$GITHUB_SHA" "$GITHUB_REF"
+            printf 'Bandit scan: **%s** · SARIF validation: **%s** · GitHub upload: **%s**\n' \
+              "$SCAN_OUTCOME" "$REPORT_OUTCOME" "$UPLOAD_OUTCOME"
+            printf '\nThis reporter does not replace the mandatory Full Admission Security gate.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success ]] || {
+            printf 'FAIL: Bandit scanner, native SARIF validation or publication failed.\n' >&2
+            exit 1
+          }
