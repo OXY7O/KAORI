@@ -17,12 +17,12 @@ from typing import Any
 
 MAX_REPORT_BYTES = 32 * 1024 * 1024
 RISK_NAMES = (
-    (3, "High"),
-    (2, "Medium"),
-    (1, "Low"),
-    (0, "Informational"),
+    (3, 'High'),
+    (2, 'Medium'),
+    (1, 'Low'),
+    (0, 'Informational'),
 )
-SHA_PATTERN = re.compile(r"[0-9a-fA-F]{40}\Z")
+SHA_PATTERN = re.compile(r'[0-9a-fA-F]{40}\Z')
 
 
 class UnverifiedZapReport(ValueError):
@@ -32,29 +32,29 @@ class UnverifiedZapReport(ValueError):
 def _risk_code(value: object) -> int:
     if type(value) is int and 0 <= value <= 3:
         return value
-    if type(value) is str and value in ("0", "1", "2", "3"):
+    if type(value) is str and value in ('0', '1', '2', '3'):
         return int(value)
-    raise UnverifiedZapReport("Invalid risk category")
+    raise UnverifiedZapReport('Invalid risk category')
 
 
 def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
     if not isinstance(payload, dict):
-        raise UnverifiedZapReport("Invalid report structure")
-    sites = payload.get("site")
+        raise UnverifiedZapReport('Invalid report structure')
+    sites = payload.get('site')
     if not isinstance(sites, list) or not sites:
-        raise UnverifiedZapReport("Missing scanned sites")
+        raise UnverifiedZapReport('Missing scanned sites')
 
     totals: Counter[int] = Counter()
     for site in sites:
         if not isinstance(site, dict):
-            raise UnverifiedZapReport("Invalid site structure")
-        alerts = site.get("alerts")
+            raise UnverifiedZapReport('Invalid site structure')
+        alerts = site.get('alerts')
         if not isinstance(alerts, list):
-            raise UnverifiedZapReport("Missing alert list")
+            raise UnverifiedZapReport('Missing alert list')
         for alert in alerts:
             if not isinstance(alert, dict):
-                raise UnverifiedZapReport("Invalid alert structure")
-            totals[_risk_code(alert.get("riskcode"))] += 1
+                raise UnverifiedZapReport('Invalid alert structure')
+            totals[_risk_code(alert.get('riskcode'))] += 1
 
     return len(sites), totals
 
@@ -62,61 +62,61 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
 def render_summary(payload: Any, source_sha: str) -> str:
     """Render ONLY allowlisted, non-sensitive numerical evidence."""
     if not SHA_PATTERN.fullmatch(source_sha):
-        raise UnverifiedZapReport("Invalid source identity")
+        raise UnverifiedZapReport('Invalid source identity')
     site_count, totals = _count_risks(payload)
 
     lines = [
-        "### OWASP ZAP — sanitized Runtime & DAST evidence",
-        "",
-        f"Committed source SHA: `{source_sha.lower()}`",
-        "",
-        "These counts describe grouped alert records in a traditional ZAP JSON report.",
-        "They are **not** ZAP CLI FAIL/WARN/PASS counts, a Code scanning",
-        "SARIF analysis, or proof of complete application security.",
-        "",
-        "| Risk class | Grouped alert records |",
-        "| --- | ---: |",
+        '### OWASP ZAP — sanitized Runtime & DAST evidence',
+        '',
+        f'Committed source SHA: `{source_sha.lower()}`',
+        '',
+        'These counts describe grouped alert records in a traditional ZAP JSON report.',
+        'They are **not** ZAP CLI FAIL/WARN/PASS counts, a Code scanning',
+        'SARIF analysis, or proof of complete application security.',
+        '',
+        '| Risk class | Grouped alert records |',
+        '| --- | ---: |',
     ]
     for code, label in RISK_NAMES:
-        lines.append(f"| {label} | {totals[code]} |")
+        lines.append(f'| {label} | {totals[code]} |')
     lines.extend(
         [
-            f"| **Total** | **{sum(totals.values())}** |",
-            "",
-            f"Scanned site entries: **{site_count}**.",
-            "Actual gate result and ZAP CLI warning/failure classifications remain",
-            "authoritative in this same Full Admission run. ZAP warnings may be",
-            "non-blocking under the existing `-I` policy.",
-            "Raw HTTP targets, paths, queries, headers, cookies, bodies, payloads",
-            "and instance details are intentionally excluded.",
-            "",
+            f'| **Total** | **{sum(totals.values())}** |',
+            '',
+            f'Scanned site entries: **{site_count}**.',
+            'Actual gate result and ZAP CLI warning/failure classifications remain',
+            'authoritative in this same Full Admission run. ZAP warnings may be',
+            'non-blocking under the existing `-I` policy.',
+            'Raw HTTP targets, paths, queries, headers, cookies, bodies, payloads',
+            'and instance details are intentionally excluded.',
+            '',
         ]
     )
-    return "\n".join(lines)
+    return '\n'.join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Render only allowlisted ZAP aggregates")
-    parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--source-sha", required=True)
+    parser = argparse.ArgumentParser(description='Render only allowlisted ZAP aggregates')
+    parser.add_argument('--input', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--source-sha', required=True)
     args = parser.parse_args(argv)
 
     try:
         if args.input.stat().st_size > MAX_REPORT_BYTES:
-            raise UnverifiedZapReport("Report exceeds bounded input size")
-        payload = json.loads(args.input.read_text(encoding="utf-8"))
+            raise UnverifiedZapReport('Report exceeds bounded input size')
+        payload = json.loads(args.input.read_text(encoding='utf-8'))
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(summary, encoding="utf-8")
+        args.output.write_text(summary, encoding='utf-8')
     except (OSError, ValueError, UnicodeError):
         # Don't echo source exceptions: paths and parser context may be sensitive.
-        print("ZAP sanitized summary NOT VERIFIED; no raw fields emitted.", file=sys.stderr)
+        print('ZAP sanitized summary NOT VERIFIED; no raw fields emitted.', file=sys.stderr)
         return 2
 
-    print("ZAP sanitized summary available; raw fields omitted.")
+    print('ZAP sanitized summary available; raw fields omitted.')
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())
