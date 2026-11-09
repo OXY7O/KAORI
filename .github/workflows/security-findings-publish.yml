@@ -131,7 +131,7 @@ jobs:
             .version == "2.1.0" and
             (.runs | type == "array" and length == 1) and
             (.runs[0].tool.driver.name | ascii_downcase == "bandit") and
-            (.runs[0].results | type == "array")
+            ((.runs[0].results // []) | type == "array")
           ' "$report" >/dev/null
 
       - name: Publish Bandit Findings to GitHub Code Scanning
