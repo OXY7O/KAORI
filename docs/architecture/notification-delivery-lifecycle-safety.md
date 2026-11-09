@@ -21,6 +21,42 @@ executed database changes. **Current hot cleanup remains prohibited**.
 - Activity Audit remains business-action evidence, not a notification delivery
   callback. CDEvents SDLC Delivery Intelligence #536 is a separate product.
 
+## Alert Intelligence template execution boundary (#4384)
+
+Alert Intelligence owns the **operator-configured notification template**
+selection, safe rendering, preview and provider-independent message content.
+Notification Channels remains authoritative for outbound delivery, provider
+credential access and dispatch evidence. Only users authorized for
+`integrations.manage` can mutate template overrides; this permission does
+**not** make template source intrinsically safe.
+
+- User-configurable Jinja template source is parsed and rendered through
+  `SandboxedEnvironment` for both preview/test and actual case delivery.
+  The plain text / Markdown environment preserves historical non-HTML output;
+  the HTML environment preserves Jinja autoescape and existing HTML tag /
+  attribute validation. Both retain `StrictUndefined` and built-in
+  conditional template tokens.
+- On save, the candidate override is rendered against the existing bounded
+  preview context **before** it is persisted. Unsafe attribute/method access
+  and undefined variables fail closed with a sanitized validation error.
+  Previously persisted unsafe expressions are still denied at runtime.
+- When a case has no configured subject template, its fallback title is
+  assembled as literal alert data, **never** interpreted as a new template.
+  Untrusted alert labels must not become executable Jinja source.
+- Provider dispatch and Activity Audit must not leak template probes,
+  sensitive context or secret-bearing variables in public logs/issues.
+  Sandboxed Jinja does **not** itself prove CPU/memory resource limits for
+  custom template logic. Additional runtime budget controls, if warranted,
+  require separate issue authority and testing.
+
+Validation: targeted negative pytest for unsafe attributes at save, preview
+and delivery, positive tests for built-in conditional tokens, supported
+provider formats and HTML escaping, existing Alert Operations contracts,
+Developer Check, Full Admission and staging UAT. CodeQL alerts are resolved
+only after actual reanalysis on the remediated branch/commit; CI green is
+not proof of zero vulnerabilities. No provider credential, deployment or
+data migration changes are authorized by this document.
+
 ## Current correctness dependencies
 
 1. `notification_deliveries` itself owns the only unique event/channel
