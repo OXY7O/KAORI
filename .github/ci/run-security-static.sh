@@ -105,6 +105,7 @@ semgrep scan \
   --exclude app/static/vendor \
   --json \
   --json-output "$ARTIFACT_DIR/semgrep.json" \
+  --sarif-output "$ARTIFACT_DIR/semgrep.sarif" \
   app scripts frontend
 printf '✅ Semgrep SAST PASS\n'
 
