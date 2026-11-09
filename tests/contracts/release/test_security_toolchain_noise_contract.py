@@ -31,3 +31,44 @@ def test_sast_noise_cleanup_preserves_security_gate_strictness() -> None:
     assert '--error' in runner
     assert '--config .github/ci/semgrep.yml' in runner
     assert 'app scripts frontend' in runner
+
+
+def test_semgrep_sarif_reuses_the_existing_sast_scan() -> None:
+    runner = SECURITY_RUNNER.read_text(encoding='utf-8')
+
+    assert runner.count('semgrep scan') == 1
+    assert '--json-output "$ARTIFACT_DIR/semgrep.json"' in runner
+    assert '--sarif-output "$ARTIFACT_DIR/semgrep.sarif"' in runner
+    assert '--error' in runner
+    assert 'bandit -r app scripts -q -ll' in runner
+
+
+def test_code_scanning_upload_is_only_for_trusted_pushes() -> None:
+    workflow = (ROOT / '.github' / 'workflows' / 'quality.yml').read_text(
+        encoding='utf-8'
+    )
+    reporter = workflow.split('  semgrep-code-scanning:\n', 1)[1].split(
+        '  integration-smoke:\n', 1
+    )[0]
+
+    assert 'github.event_name == \'push\'' in reporter
+    assert "github.ref == 'refs/heads/kaori/staging'" in reporter
+    assert "github.ref == 'refs/heads/main'" in reporter
+    assert 'needs: [validation-profile, full-admission-gates]' in reporter
+    assert 'runs-on: ubuntu-24.04' in reporter
+    assert 'security-events: write' in reporter
+    assert 'contents: read' in reporter
+    assert 'actions: read' in reporter
+    assert 'SCANNED_SHA' in reporter and 'PUSH_SHA' in reporter
+    assert 'persist-credentials: false' in reporter
+    assert 'kaori-semgrep-sast-' in reporter
+    assert 'category: kaori-semgrep-sast' in reporter
+    assert 'github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938' in reporter
+    assert 'pull_request_target' not in workflow
+
+    scan_artifact = workflow.split(
+        '      - name: Retain Semgrep SARIF for trusted branch code scanning\n', 1
+    )[1].split('      - name: Upload Successful Static Verification Details\n', 1)[0]
+    assert 'matrix.gate == \'security\'' in scan_artifact
+    assert "github.event_name == 'push'" in scan_artifact
+    assert 'tmp/ci-artifacts/security/semgrep.sarif' in scan_artifact
