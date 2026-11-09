@@ -99,6 +99,20 @@ finding outside public Issues, PRs, and source files. Until then, no LICENSE,
 NOTICE, public rights grant, external contributor launch, release, tag or
 deployment is authorized by this metadata readback.
 
+## Maintainer-reported Website artwork provenance — 2026-11-09 (partial evidence; NO-GO)
+
+Under [Website licensing #136](https://github.com/OXY7O/kaori-website/issues/136), the KAORI maintainer supplied the following creation and usage statement. This is a **first-party assertion to investigate**, not an independent chain-of-title, copyright, or legal authorization:
+
+| Website asset | Maintainer statement / present scope | Remaining rights decision |
+| --- | --- | --- |
+| `public/branding/kaori-logo.svg` | Designed by the KAORI team; an actively used KAORI identity asset, also aligned with the Application's canonical logo | Retain as protected logo/trademark; identify accountable brand rights holder and approved use terms, outside any blanket Apache-2.0 source-code grant |
+| `public/branding/kaori-operations-fabric.svg` | Designed by the KAORI team and originally copied from the Application; **not used by the Website anymore** | Retire only the unused Website copy under [PR #186](https://github.com/OXY7O/kaori-website/pull/186), preserving historical provenance and the independent Application source; removal is not a retroactive history purge |
+| `public/branding/kaori-connected-operations-hub.webp` | KAORI-directed collaborative exploration with ChatGPT / AI-assisted image generation, approved for the Website Hero; the existing Website #41 record traces its later caption crop, resize and compression | Validate AI service terms, inputs/third-party material, output usage/redistribution and human contributions before making an exclusive-copyright or trademark grant; preserve active Website use while pending |
+
+The maintainer agreed **in principle** with Apache-2.0 for **rights-cleared software source**, separate protection/permission for KAORI brands and illustrations, and independent license/NOTICE obligations for third-party dependencies including Inter. This is **not** final publication authorization. The non-licensed current Website posture and historical public disclosure remain unchanged; public accessibility, in-house design, or AI-assisted creation alone do not establish all exclusive ownership or redistribution rights.
+
+**Coverage reconciliation:** all eight pre-existing register rows above remain **NOT VERIFIED**. Still required: signed/recorded ownership and contribution authority; AI-provider terms/input provenance; third-party font/content attribution; full Git history and deleted blobs; release/OCI/workflow artifacts and logs; secret scanning effectiveness and private incident disposition; independent rights review; explicit per-repository human GO/NO-GO. The only action taken by the parallel Website PR is a scoped source asset retirement / documentation update; no license, community launch, new rights, deployment or release is approved here.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
