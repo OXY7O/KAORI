@@ -1,6 +1,6 @@
 # Community feedback intake — maintainer triage contract
 
-**Status: pre-launch / maintainer preparation.** GitHub repository metadata reported `has_discussions=true` for `OXY7O/KAORI` on 2026-11-08 (Asia/Jakarta). This observation establishes only the repository toggle, **not** accepted community launch, configured categories/moderation, a successful live triage rehearsal, private vulnerability reporting, external contribution acceptance, or public support commitments. External contribution launch still requires separate maintainer acceptance after #4212 (publication and rights), #4214 (fork-safe validation), #4215 (native security), and #4216 (rulesets). The shared organization policy workstream [OXY7O/.github #2](https://github.com/OXY7O/.github/issues/2) is independently **completed**, not a substitute for those unresolved controls.
+**Status: pre-launch / maintainer preparation.** GitHub repository metadata reported `has_discussions=true` for `OXY7O/KAORI` on 2026-11-08 (Asia/Jakarta). This observation establishes only the repository toggle, **not** accepted community launch, configured categories/moderation, a successful live triage rehearsal, private vulnerability reporting, external contribution acceptance, or public support commitments. External contribution launch still requires separate maintainer acceptance after #4212 (publication and rights), #4214 (fork-safe validation), #4215 (native security), and #4216 (rulesets). The shared organization policy workstream [OXY7O/.github#2](https://github.com/OXY7O/.github/issues/2) is independently **completed**, not a substitute for those unresolved controls.
 
 ## Verified control readback — 2026-11-09
 
@@ -59,7 +59,7 @@ This example makes the acceptance boundary reviewable without implying that comm
 
 - [ ] Rights/publication review records GO for the relevant repository (#4212).
 - [ ] Fork safety and security controls have actual negative-test evidence (#4214/#4215/#4216).
-- [x] Shared organization community policy accepted: [OXY7O/.github #2](https://github.com/OXY7O/.github/issues/2) is Closed/Completed; independently approved [PR #3](https://github.com/OXY7O/.github/pull/3) and recovery [PR #6](https://github.com/OXY7O/.github/pull/6) merged shared defaults to protected main. This is organization policy coverage **only**, not a contributor-launch GO.
+- [x] Shared organization community policy accepted: [OXY7O/.github#2](https://github.com/OXY7O/.github/issues/2) is Closed/Completed; independently approved [PR #3](https://github.com/OXY7O/.github/pull/3) and recovery [PR #6](https://github.com/OXY7O/.github/pull/6) merged shared defaults to protected main. This is organization policy coverage **only**, not a contributor-launch GO.
 - [ ] Admin verifies the observed `has_discussions=true` setting, actual public access, moderation and intended categories (Announcements, Ideas, Q&A, General, Show and Tell); toggle observed 2026-11-08, **live acceptance NOT VERIFIED**.
 - [ ] Private vulnerability intake is independently verified; public navigation never directs vulnerability details to Discussions.
 - [ ] A sanitized test Discussion is triaged against existing Issue/Project metadata without creating a duplicate.
