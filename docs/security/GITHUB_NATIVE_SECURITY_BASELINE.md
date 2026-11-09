@@ -101,6 +101,37 @@ scan PASS**, not evidence of zero vulnerabilities or completed findings
 triage. Collect permitted sanitized `code-scanning/analyses` metadata and
 classify any alerts privately before full operational acceptance.
 
+### Initial CodeQL findings summary — 2026-11-09 (private triage #4379)
+
+An authorized administrator queried the first completed default-`main` CodeQL
+analyses and **open-alert** severity summary after setup run #42552941921.
+These are two different data sets: `results_count` is an analysis metric,
+whereas the open-alert API returns issue records. Their equal totals are
+**not evidence of one-to-one identity**.
+
+| Analysis category | Rules | Analysis results |
+| --- | ---: | ---: |
+| Python | 43 | 69 |
+| JavaScript/TypeScript | 87 | 0 |
+| GitHub Actions | 17 | 0 |
+
+The separate open-alert API returned **69 open alerts** at this timestamp:
+**2 Critical**, **48 High**, and **19 Medium**. This is a current scanner
+severity assessment, **not** confirmation of exploitation, production
+reachability, or 69 distinct vulnerabilities. All detailed alert locations,
+identifiers and reproducible findings must remain in an authorized private
+security triage context.
+
+**Decision boundary:** first CodeQL scan **PASS**, findings review
+**UNRESOLVED**; do not mark security/release readiness GO based on a
+successful analysis job. Immediately prioritize authorized review and
+disposition of the two Critical alerts under
+[#4379](https://github.com/OXY7O/KAORI/issues/4379), then group High and
+Medium by rule, affected source and applicability. Avoid mass dismissals,
+false-positive assumptions, duplicate scanners or downgrading the query
+suite. Issue #4215 stays open until actual findings governance and
+remaining native control acceptance are complete.
+
 Keep the existing `quality.yml` Security Gate, Gitleaks, Bandit, Semgrep,
 Trivy, dependency audits and Runtime/DAST authoritative; CodeQL adds a
 GitHub-native analysis surface, **not** a replacement or duplicate workflow.

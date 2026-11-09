@@ -107,3 +107,20 @@ def test_native_security_current_admin_setup_is_separate_from_scan_acceptance() 
     assert 'No code scanning findings, payloads or private advisory details' in content
     assert '#4212' in content
     assert 'NO-GO' in content
+
+
+def test_codeql_first_run_alert_summary_is_not_security_acceptance() -> None:
+    content = BASELINE.read_text(encoding='utf-8')
+    assert 'Initial CodeQL findings summary — 2026-11-09' in content
+    assert '| Python | 43 | 69 |' in content
+    assert '| JavaScript/TypeScript | 87 | 0 |' in content
+    assert '| GitHub Actions | 17 | 0 |' in content
+    assert '**69 open alerts**' in content
+    assert '**2 Critical**' in content
+    assert '**48 High**' in content
+    assert '**19 Medium**' in content
+    assert 'not evidence of one-to-one identity' in content
+    assert 'findings review' in content
+    assert '**UNRESOLVED**' in content
+    assert '#4379' in content
+    assert 'do not mark security/release readiness GO' in content
