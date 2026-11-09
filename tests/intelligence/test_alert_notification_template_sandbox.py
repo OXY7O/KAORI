@@ -34,12 +34,8 @@ def test_allowed_variables_and_conditionals_still_render(
 def test_html_escapes_context_and_plain_text_keeps_existing_output() -> None:
     source = '<b>{{ alert_name }}</b>'
     value = '<untrusted>'
-    assert templates._HTML_ENV.from_string(source).render(alert_name=value) == (
-        '<b>&lt;untrusted&gt;</b>'
-    )
-    assert templates._ENV.from_string(source).render(alert_name=value) == (
-        '<b><untrusted></b>'
-    )
+    assert templates._HTML_ENV.from_string(source).render(alert_name=value) == ('<b>&lt;untrusted&gt;</b>')
+    assert templates._ENV.from_string(source).render(alert_name=value) == ('<b><untrusted></b>')
 
 
 @pytest.mark.parametrize('field', ['subject', 'body'])
@@ -73,12 +69,10 @@ def test_save_rejects_unsafe_override_before_database_mutation() -> None:
 
 def _override(monkeypatch: pytest.MonkeyPatch, *, subject: str | None, body: str) -> None:
     fake_model = MagicMock()
-    fake_model.query.filter_by.return_value.order_by.return_value.first.return_value = (
-        SimpleNamespace(
-            subject_template=subject,
-            body_template=body,
-            content_format='plain_text',
-        )
+    fake_model.query.filter_by.return_value.order_by.return_value.first.return_value = SimpleNamespace(
+        subject_template=subject,
+        body_template=body,
+        content_format='plain_text',
     )
     monkeypatch.setattr(templates, 'AlertNotificationTemplate', fake_model)
     monkeypatch.setattr(
@@ -89,9 +83,7 @@ def _override(monkeypatch: pytest.MonkeyPatch, *, subject: str | None, body: str
 
 
 @pytest.mark.parametrize('field', ['subject', 'body'])
-def test_delivery_denies_unsafe_saved_override(
-    monkeypatch: pytest.MonkeyPatch, field: str
-) -> None:
+def test_delivery_denies_unsafe_saved_override(monkeypatch: pytest.MonkeyPatch, field: str) -> None:
     forbidden = "{{ 'value'.__class__ }}"
     _override(
         monkeypatch,
@@ -100,9 +92,7 @@ def test_delivery_denies_unsafe_saved_override(
     )
     case = SimpleNamespace(severity='warning', alert_name='Known case')
     with pytest.raises(ValueError, match='unsupported expression'):
-        templates.render_case_message(
-            case, provider_key='email', event_state='firing', action_url=None
-        )
+        templates.render_case_message(case, provider_key='email', event_state='firing', action_url=None)
 
 
 def test_delivery_treats_fallback_title_as_literal_case_data(
