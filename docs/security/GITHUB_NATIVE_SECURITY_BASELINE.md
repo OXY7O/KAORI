@@ -181,6 +181,59 @@ deployment or `main` source were mutated in this documentation work.
 The publication and rights assessment #4212 remains **NO-GO**. Staging
 and human acceptance still require their own evidence.
 
+## Existing Actions SAST to GitHub Code scanning — candidate #4392 (not yet accepted)
+
+KAORI's **authoritative SAST and DAST execution** stays in the existing Full
+Admission lanes; displaying findings in a GitHub security UI does not replace
+their security gate, risk decision, UAT, committed evidence or reviewer.
+
+- The existing `.github/ci/run-security-static.sh` runs **one pinned Semgrep
+  scan** with `--error`, the original local rules and exclusions. Candidate
+  #4392 retains the Semgrep JSON artifact and additionally emits native
+  `semgrep.sarif` from the **same** execution. Bandit, Gitleaks, dependency
+  audits and Trivy continue unchanged. CodeQL **Default Setup** remains the
+  separate native analysis provider and must not be duplicated.
+- A separate GitHub-hosted `Semgrep Code Scanning` job is restricted to
+  **trusted `push` events to `kaori/staging` or `main`** with fresh Full
+  Admission execution. It retrieves only this workflow run's Semgrep SARIF,
+  confirms the scanned SHA equals the push SHA, checks out that verified SHA
+  without persisted credentials, and uses SHA-pinned
+  `github/codeql-action/upload-sarif` with stable analysis category
+  `kaori-semgrep-sast`.
+- Only the **reporter job** has `security-events: write` in addition to
+  `contents: read` and `actions: read`. An external fork, draft PR,
+  unauthorized promotion or normal PR validation is **not** a SARIF publisher.
+  There is no `pull_request_target` escalation, shared secret or
+  new security-scanner execution. Semgrep exit status remains authoritative;
+  a reporting job must not turn a real Security Gate FAIL into PASS.
+- Fast Smoke / evidence reuse does **not** rerun the SAST scanner and therefore
+  does **not** create a new Semgrep analysis. This must not be represented as
+  a fresh scan. Any absent report or GitHub ingestion rejection is a coverage
+  gap, not zero findings; respect source SHA, analysis category and retention.
+- The intended UI is **GitHub → Security and quality → Code scanning**, filter
+  tool **Semgrep** and select the analyzed branch as appropriate. The Code
+  scanning list defaults to the default branch, typically `main`; a scan
+  uploaded only on `kaori/staging` is **not proof of `main` coverage**.
+  On public repositories, some PR annotations may be readable publicly, so
+  scan SARIF must never be treated as a private vault for tokens or payloads.
+  Report only actual source-scoped SAST findings.
+- This is **candidate source design**, not a claim that GitHub has already
+  ingested a Semgrep report. Acceptance requires independent review, exact
+  Ready admission, staging push/UAT, and the security owner verifying the
+  corresponding SARIF analysis and branch under GitHub Code scanning.
+  The separate protected-staging **native CodeQL** missing-scan issue #4388
+  is not fixed by publishing third-party Semgrep results.
+
+**DAST boundary:** Existing ZAP `-J baseline.json` is traditional runtime
+JSON **not SARIF**. ZAP's SARIF report template can contain request URLs,
+query values or attack snippets; its runtime endpoints generally do not
+identify an exact source file/line. [#4393](https://github.com/OXY7O/KAORI/issues/4393)
+requires a reviewed sanitization, location-truthfulness and upload trial
+before any ZAP finding is published through GitHub Code scanning. Until then,
+use the existing isolated Runtime & DAST gate and authorized Actions report
+artifacts; **do not fabricate source locations** or publish live attack
+details to satisfy a dashboard request.
+
 ## Triage and non-escalation contract
 
 1. Route suspected vulnerabilities privately using `SECURITY.md`; do not create a public reproduction issue.
