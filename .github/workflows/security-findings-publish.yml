@@ -84,9 +84,13 @@ jobs:
           set -Eeuo pipefail
           report=tmp/ci-artifacts/security/semgrep.sarif
           test -s "$report"
-          jq -e '.version == "2.1.0" and
-                 (.runs | type == "array" and length == 1) and
-                 (.runs[0].tool.driver.name | ascii_downcase == "semgrep")' "$report" >/dev/null
+          jq -e '
+            (.runs[0].tool.driver.name | ascii_downcase) as $tool |
+            .version == "2.1.0" and
+            (.runs | type == "array" and length == 1) and
+            ($tool == "semgrep" or $tool == "semgrep oss" or
+             $tool == "semgrep community edition")
+          ' "$report" >/dev/null
 
       - name: Publish Semgrep Findings to GitHub Code Scanning
         id: upload
