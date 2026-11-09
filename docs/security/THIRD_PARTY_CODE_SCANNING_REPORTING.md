@@ -2,7 +2,7 @@
 
 **Authority:** [#4390](https://github.com/OXY7O/KAORI/issues/4390) (SAST), [#4391](https://github.com/OXY7O/KAORI/issues/4391) (DAST), under #4215. Separate CodeQL protected-staging trigger investigation #4388 remains open.
 
-**Candidate status:** source proposal until official Developer Check, Ready Full Admission, staging CI and human/security UAT accept a pinned commit. Do not treat this design document as an active GitHub Security configuration or proof of scan ingestion.
+**Implementation status (2026-11-09):** Semgrep SARIF technical ingestion is **VERIFIED** on staging merge `a149825dfdfa03830cdeba6993fe62a2de51580d`, GitHub analysis ID `2124505346` (`Semgrep OSS`, `kaori-sast-semgrep`, 0 findings). Independent human Security UI acceptance remains pending. **Bandit** below is a new, unadmitted candidate until official Developer Check, Full Admission, staging SARIF analysis and human acceptance. No change to CodeQL Default Setup or original DAST authority.
 
 ## Source of truth and destinations
 
@@ -20,7 +20,18 @@ GitHub Actions artifacts and gate exit statuses are **execution evidence**, not 
 - SARIF category is stable: `kaori-sast-semgrep`. The uploaded finding locations are the real checked-out repository paths reported by Semgrep. CodeQL Default Setup is unaffected, and the reporting action is **not** a CodeQL analysis.
 - `--error` is preserved. The reporter may upload a valid SARIF report containing findings **and still fail** the workflow when Semgrep returns failure. Upload errors and malformed reports likewise fail visibly. No `continue-on-error` outcome is accepted as a successful scan.
 - The existing Security gate is unchanged. Nothing about this uploader downgrades or suppresses Bandit, Semgrep, Gitleaks, Trivy, ZAP, pip-audit, npm audit, CodeQL or other CI.
-- This first slice **does not yet publish Bandit or Trivy**; both require separate approved native SARIF/provenance verification. Native SARIF must come from existing scanners rather than inventing findings or duplicating CodeQL.
+- Semgrep staging technical ingestion **PASS**: [PR #4395](https://github.com/OXY7O/KAORI/pull/4395), publisher [run #42574899895](https://github.com/OXY7O/KAORI/actions/runs/42574899895), GitHub analysis `2124505346` at exact staging commit. `results_count=0` reflects **Semgrep rules/scope only**, not zero vulnerabilities or UAT approval. Trivy remains outside this phase.
+
+## Bandit (second bounded SAST reporting slice, #4390)
+
+- The **mandatory** Python Security gate remains `bandit -r app scripts -q -ll -f json`, with its JSON evidence, exit policy and fail-fast interpretation unchanged.
+- Native SARIF is enabled using pinned `bandit[sarif]==1.9.4` plus pinned native formatter dependencies `sarif-om==1.0.4`, `jschema-to-python==1.2.3`; these are installed by the existing canonical CI toolchain, not a new scanner or an unmanaged installer.
+- A separate **Bandit Code Scanning** job in the same protected push-only publication workflow runs identical `app scripts` recursive scope, `-q -ll` severity/confidence thresholds, and outputs `bandit.sarif` with Bandit's supported native `-f sarif` formatter. The original Semgrep job, category and verified ingestion path remain unchanged.
+- Bandit upload uses the existing pinned `github/codeql-action/upload-sarif` action with a **distinct, stable** `kaori-sast-bandit` category, job-scoped `security-events: write`, exact committed `github.sha` and `wait-for-processing: true`. GitHub explicitly separates different tool/category reports on the same commit.
+- A synthetic local contract exercises native SARIF from an intentionally insecure **temporary test fixture**, confirms a real Bandit finding with its actual source path and line, and never uploads that fixture or finding. This is not a finding in KAORI source code.
+- Any scanner finding preserves its failure outcome; a successfully uploaded report with findings **does not** turn a failed security scan into PASS. Missing SARIF, wrong tool identity or failed GitHub processing likewise produces a failed reporter. Actual staging branch API analysis metadata and independent security review are required before claiming this candidate active.
+- Source locations and snippets in native Bandit SARIF describe existing committed Python code; **do not** upload any credential, arbitrary secret match, private runtime payload or untrusted externally supplied report. Gitleaks remains redacted/private.
+
 
 ## DAST and sensitive evidence policy (#4391)
 
