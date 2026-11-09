@@ -72,3 +72,21 @@ def test_code_scanning_upload_is_only_for_trusted_pushes() -> None:
     assert 'matrix.gate == \'security\'' in scan_artifact
     assert "github.event_name == 'push'" in scan_artifact
     assert 'tmp/ci-artifacts/security/semgrep.sarif' in scan_artifact
+
+
+def test_reusable_sarif_permission_is_not_granted_to_untrusted_forks() -> None:
+    caller = (ROOT / '.github' / 'workflows' / 'developer-check.yml').read_text(
+        encoding='utf-8'
+    )
+    route = caller.split('  full-admission:\n', 1)[1].split(
+        '  ready-admission-guard:\n', 1
+    )[0]
+
+    assert "github.event.pull_request.draft == false" in route
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in route
+    assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in route
+    assert 'permissions:\n      contents: read\n      actions: read' in route
+    assert '      security-events: write\n    uses: ./.github/workflows/quality.yml' in route
+    # No global write grant: the untrusted fork jobs inherit read-only access.
+    header = caller.split('jobs:\n', 1)[0]
+    assert 'security-events: write' not in header
