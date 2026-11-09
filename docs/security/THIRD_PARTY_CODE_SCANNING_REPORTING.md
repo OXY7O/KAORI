@@ -39,6 +39,21 @@ The current ZAP baseline writes `baseline.html` and `baseline.json` under `tmp/c
 
 For endpoint-only findings, an ephemeral HTTP URL is **not** a repository source path and must not be mapped to an invented file or line number. DAST findings without approved truthful source-location mapping remain **Actions security evidence** and source-traceable remediation issues, not fabricated Code Scanning alerts. The DAST workstream must test privacy redaction, valid SARIF source locations, provider feature compatibility and security ownership before enabling upload. No external scan targets, active attacks or production DAST are authorized here.
 
+### DAST Code scanning eligibility and privacy decision gate (2026-11-09)
+
+The official [ZAP `sarif-json` report sample](https://www.zaproxy.org/docs/desktop/addons/report-generation/report-sarif-json/) places scanned HTTP URLs (including query parameters and injected text) in `locations[].physicalLocation.artifactLocation.uri`. It also demonstrates request headers, cookies, response content, attack values and snippets as report fields. This is **not safe-by-default** for public GitHub Code scanning. Our current `-J baseline.json` is ZAP traditional JSON, not SARIF, and its existing warning dispositions remain authoritative.
+
+[GitHub's SARIF requirements](https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support) use the result's first `locations[]` element as a source artifact location for annotations, and interpret uploaded paths relative to committed repository files where possible. An ephemeral ZAP target such as `http://runtime:5000/` is **not** a committed source file. Removing the URL is not permission to replace it with an invented `app/...` line number. A location-less result may not appear as an actionable Code scanning alert.
+
+| Observed DAST report classification | Approved presentation until further review | Condition to enter Code scanning |
+| --- | --- | --- |
+| Alert with verified mapping to an actual offending repository source file and relevant lines | Restricted ZAP artifact and Actions gate (existing) | Security reviewer validates truthful and reproducible source correlation plus sanitized, synthetic-format SARIF and publication impact |
+| Runtime/endpoint/header/configuration alert without trustworthy source-code location | Restricted ZAP HTML/JSON artifact, reviewed disposition and Actions evidence | **No SARIF Code scanning upload** solely for appearance; retain as DAST evidence or create a governed remediation issue |
+| Alert carrying a runtime route, query/credential, cookie, body, attack string, session identifier or internal target | Protected evidence only; no raw public alert | Must prove lossless-enough privacy sanitization (no sensitive fields), safe result identity and approved source mapping before any publication |
+| No alerts observed in one ZAP baseline | Existing exact-run scan status/evidence; no DAST SARIF claim | Do not synthesize a zero-result DAST Code scanning analysis unless this reporting capability has been separately validated and approved |
+
+**Next required proof under #4391:** use **synthetic local test data only** to exercise ZAP traditional JSON and optional SARIF conversion and assert that every publicly exported field excludes private URL/host/path/query, Authorization/Cookie, request/response bodies, injection payload and user/session identifiers. Confirm that every retained finding has reviewer-approved source-location mapping with stable rules/partial fingerprints, or reject upload explicitly without silently dropping findings. Then seek independent security/privacy acceptance **before** adding any trusted-push reporter. Do not change ZAP scan scope, `-I`, existing warning dispositions, CI severity, deployment or production targets for reporting convenience.
+
 Gitleaks secret matches and raw provider credentials must also **never** be published through SARIF. Existing redaction/push protection remains authoritative.
 
 ## Evidence and UAT
