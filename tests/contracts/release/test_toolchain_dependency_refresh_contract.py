@@ -104,8 +104,8 @@ def test_tailwind_watcher_security_override_is_exact_and_prunes_vulnerable_chain
     packages = package_lock['packages']
     watcher = packages['node_modules/@parcel/watcher']
 
-    assert package['devDependencies']['@tailwindcss/cli'] == '4.3.1'
-    assert package['devDependencies']['tailwindcss'] == '4.3.1'
+    assert package['devDependencies']['@tailwindcss/cli'] == '4.3.4'
+    assert package['devDependencies']['tailwindcss'] == '4.3.4'
     assert package['overrides']['@parcel/watcher'] == PARCEL_WATCHER_VERSION
     assert watcher['version'] == PARCEL_WATCHER_VERSION
     assert watcher['dependencies']['picomatch'].startswith('^4.')
@@ -118,8 +118,8 @@ def test_npm_12_major_upgrade_is_deliberately_deferred() -> None:
     development = read('docs/DEVELOPMENT.md')
 
     assert 'npm 12.0.2' in development
-    assert 'Tailwind 4.3.3' in development
-    assert 'Prettier 3.9.8' in development
+    assert 'Tailwind 4.3.4' in development
+    assert 'Prettier 3.9.10' in development
     assert 'deferred' in development.lower()
     assert 'Node 22.23.2' in development
     assert 'npm 10.9.9' in development
