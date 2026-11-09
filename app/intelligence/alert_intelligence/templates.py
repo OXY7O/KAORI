@@ -6,7 +6,8 @@ from html.parser import HTMLParser
 from typing import Any
 
 from jinja2 import StrictUndefined, TemplateSyntaxError, UndefinedError, select_autoescape
-from jinja2.sandbox import SandboxedEnvironment, SecurityError
+from jinja2.exceptions import SecurityError
+from jinja2.sandbox import SandboxedEnvironment
 
 from app.models.alert_ops import AlertCase, AlertNotificationTemplate
 
