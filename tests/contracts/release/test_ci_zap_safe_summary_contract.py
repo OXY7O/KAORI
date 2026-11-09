@@ -141,7 +141,7 @@ def test_existing_zap_gate_remains_authoritative_and_summary_is_not_sarif() -> N
     assert '-r baseline.html' in scanner
     assert '-J baseline.json' in scanner
     assert 'bash .github/ci/run-zap-baseline.sh' in runtime
-    assert 'if: ${{ always() && matrix.gate == \'runtime\' && steps.runtime_dast.outcome != \'skipped\' }}' in workflow
+    assert "if: ${{ always() && matrix.gate == 'runtime' && steps.runtime_dast.outcome != 'skipped' }}" in workflow
     assert 'scripts/ci_zap_safe_summary.py' in workflow
     assert 'needs.validation-profile.outputs.source_sha' in workflow
     assert 'tmp/ci-artifacts/zap/sanitized-summary.md' in workflow
