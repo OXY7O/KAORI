@@ -83,6 +83,21 @@ def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
     assert 'data-resource-detail-toggle' in resolved
 
 
+def test_alert_notification_templates_share_sandboxed_render_boundary() -> None:
+    templates = read('app/intelligence/alert_intelligence/templates.py')
+    assert 'from jinja2.sandbox import SandboxedEnvironment, SecurityError' in templates
+    assert '_ENV = SandboxedEnvironment(' in templates
+    assert '_HTML_ENV = SandboxedEnvironment(' in templates
+    assert 'undefined=StrictUndefined' in templates
+    assert 'default_for_string=False' in templates
+    assert 'default_for_string=True' in templates
+    assert 'def _render_template_source(' in templates
+    assert 'except (SecurityError, UndefinedError) as exc:' in templates
+    assert 'render_template_preview(' in templates
+    assert 'body = _render_template_source(body_template' in templates
+    assert 'else _default_title(case, event_state)' in templates
+
+
 def test_notification_templates_are_provider_format_aware_and_resettable() -> None:
     model = read('app/models/alert_ops.py')
     templates = read('app/intelligence/alert_intelligence/templates.py')
