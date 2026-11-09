@@ -56,7 +56,7 @@ def test_sarif_upload_preserves_failed_scan_gate_and_excludes_secret_payloads() 
     assert 'SCAN_OUTCOME: ${{ steps.scan.outcome }}' in source
     assert 'REPORT_OUTCOME: ${{ steps.report.outcome }}' in source
     assert 'UPLOAD_OUTCOME: ${{ steps.upload.outcome }}' in source
-    assert '[[ "$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success ]]' in source
+    assert '"$SCAN_OUTCOME" == success && "$REPORT_OUTCOME" == success && "$UPLOAD_OUTCOME" == success &&' in source
     assert 'gitleaks' not in source.lower()
     assert 'zap' not in source.lower()
     assert 'pull_request_target' not in source
