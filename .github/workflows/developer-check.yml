@@ -624,6 +624,14 @@ jobs:
     # GitHub's implicit success() short-circuit the mandatory Full Admission job.
     # !cancelled() preserves cancellation safety; the aggregate must be SUCCESS.
     if: ${{ !cancelled() && needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    # Only the trusted same-repository Ready path invokes the reusable
+    # admission workflow. Permit its isolated push-only SARIF reporter job to
+    # request security-events write without changing fork/draft job permissions.
+    permissions:
+      contents: read
+      actions: read
+      statuses: write
+      security-events: write
     uses: ./.github/workflows/quality.yml
 
   # Independent fail-closed terminal check. GitHub may report a workflow green
