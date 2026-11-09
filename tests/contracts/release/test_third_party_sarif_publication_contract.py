@@ -72,3 +72,37 @@ def test_dast_publication_requires_truthful_locations_and_privacy_review() -> No
     assert 'NOT VERIFIED' in documentation
     assert 'Gitleaks' in documentation
     assert 'CodeQL Default Setup' in documentation
+
+
+def test_native_bandit_sarif_publisher_pins_optional_formatter() -> None:
+    requirements = SECURITY_REQUIREMENTS.read_text(encoding='utf-8')
+    original_gate = SECURITY_GATE.read_text(encoding='utf-8')
+    source = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'bandit[sarif]==1.9.4' in requirements
+    assert 'jschema-to-python==1.2.3' in requirements
+    assert 'sarif-om==1.0.4' in requirements
+    assert 'bandit -r app scripts -q -ll -f json' in original_gate
+    assert 'bandit -r app scripts -q -ll -f sarif' in source
+    assert 'bandit -r app scripts -q -ll -f sarif' not in original_gate
+    assert '-o tmp/ci-artifacts/security/bandit.sarif' in source
+
+
+def test_bandit_native_sarif_uses_own_category_and_strict_upload_gate() -> None:
+    source = WORKFLOW.read_text(encoding='utf-8')
+    assert 'name: SAST Code Scanning' in source
+    assert 'id: bandit_scan' in source
+    assert 'id: bandit_report' in source
+    assert 'id: bandit_upload' in source
+    assert 'category: kaori-sast-bandit' in source
+    assert 'category: kaori-sast-semgrep' in source
+    assert '(.runs[0].tool.driver.name | ascii_downcase == "bandit")' in source
+    assert 'BANDIT_SCAN_OUTCOME: ${{ steps.bandit_scan.outcome }}' in source
+    assert 'BANDIT_REPORT_OUTCOME: ${{ steps.bandit_report.outcome }}' in source
+    assert 'BANDIT_UPLOAD_OUTCOME: ${{ steps.bandit_upload.outcome }}' in source
+    assert '"$BANDIT_SCAN_OUTCOME" == success' in source
+    assert '"$BANDIT_REPORT_OUTCOME" == success' in source
+    assert '"$BANDIT_UPLOAD_OUTCOME" == success' in source
+    assert source.count('wait-for-processing: true') == 2
+    assert source.count('github/codeql-action/upload-sarif@') == 2
+    assert 'pull_request_target' not in source
