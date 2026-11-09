@@ -1,5 +1,7 @@
 """Third-party Code Scanning reporting never widens KAORI's trusted CI boundary."""
 
+import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -106,3 +108,24 @@ def test_bandit_native_sarif_uses_own_category_and_strict_upload_gate() -> None:
     assert source.count('wait-for-processing: true') == 2
     assert source.count('github/codeql-action/upload-sarif@') == 2
     assert 'pull_request_target' not in source
+
+
+def test_bandit_formatter_generates_native_sarif_from_synthetic_source(tmp_path: Path) -> None:
+    source = tmp_path / 'no-findings.py'
+    report = tmp_path / 'bandit.sarif'
+    source.write_text('def safe_answer() -> int:\n    return 42\n', encoding='utf-8')
+
+    completed = subprocess.run(
+        ['bandit', '-q', '-ll', '-f', 'sarif', '-o', str(report), str(source)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(report.read_text(encoding='utf-8'))
+    assert payload['version'] == '2.1.0'
+    assert len(payload['runs']) == 1
+    assert payload['runs'][0]['tool']['driver']['name'] == 'Bandit'
+    assert payload['runs'][0].get('results', []) == []
