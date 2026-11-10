@@ -1,6 +1,5 @@
 name: Chore
 description: Track KAORI maintenance or administrative work without a product behavior change.
-title: ""
 body:
   - type: markdown
     attributes:

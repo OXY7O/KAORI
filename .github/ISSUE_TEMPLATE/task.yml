@@ -1,6 +1,5 @@
 name: Task
 description: Track a concrete implementation or operational deliverable.
-title: ""
 body:
   - type: markdown
     attributes:

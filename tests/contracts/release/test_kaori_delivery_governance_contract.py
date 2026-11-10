@@ -85,16 +85,18 @@ def test_issue_forms_use_native_issue_type_without_title_prefixes() -> None:
     expected = {
         'epic.yml': 'Epic',
         'user-story.yml': 'User Story',
-        'bug.yml': 'Bug',
+        'bug.yml': 'Bug Report',
         'task.yml': 'Task',
         'spike.yml': 'Spike',
         'chore.yml': 'Chore',
         'technical-debt.yml': 'Technical Debt',
     }
+    assert {path.name for path in ISSUE_DIR.glob('*.yml')} == {*expected, 'config.yml'}
     for filename, name in expected.items():
         form = load_form(filename)
         assert form['name'] == name
-        assert form['title'] == ''
+        assert len(name) > 3
+        assert 'title' not in form
         assert form['body']
         markdown = '\n'.join(
             item.get('attributes', {}).get('value', '') for item in form['body'] if item.get('type') == 'markdown'
