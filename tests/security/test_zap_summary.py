@@ -44,3 +44,14 @@ def test_incompatible_evidence_fails_closed():
 def test_invalid_source_sha_cannot_escape_markdown():
     summary = zap_summary.summarize({"site": [{"alerts": []}]})
     assert "NOT VERIFIED" in zap_summary.render(summary, "bad`injection")
+
+
+def test_oversized_report_is_not_parsed_or_echoed(tmp_path, monkeypatch, capsys):
+    report = tmp_path / "zap.json"
+    with report.open("wb") as stream:
+        stream.truncate(zap_summary.MAX_REPORT_BYTES + 1)
+    monkeypatch.setattr("sys.argv", ["zap_summary", str(report), "--source-sha", SHA])
+    zap_summary.main()
+    output = capsys.readouterr().out
+    assert "NOT VERIFIED" in output
+    assert "Sites scanned:" not in output
