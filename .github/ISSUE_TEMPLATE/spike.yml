@@ -1,6 +1,5 @@
 name: Spike
 description: Timebox research that must end in evidence and a decision.
-title: ""
 body:
   - type: markdown
     attributes:

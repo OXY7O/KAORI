@@ -1,6 +1,5 @@
 name: Technical Debt
 description: Track explicit KAORI maintainability, reliability, performance, security, or structural debt.
-title: ""
 body:
   - type: markdown
     attributes:
