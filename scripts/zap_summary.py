@@ -64,6 +64,21 @@ def render(summary, source_sha):
     return "\n".join(lines) + "\n"
 
 
+def _reject_duplicate_keys(pairs):
+    """Reject ambiguous JSON keys rather than silently trusting the last value."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Ambiguous ZAP JSON object")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite_number(_value):
+    """NaN and Infinity are not valid JSON evidence."""
+    raise ValueError("Non-finite ZAP JSON number")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
@@ -73,7 +88,7 @@ def main():
         # Bound untrusted scan artifacts before parsing; do not echo file contents.
         if args.report.stat().st_size > MAX_REPORT_BYTES:
             raise ValueError("ZAP report exceeds bounded input size")
-        summary = summarize(json.loads(args.report.read_text(encoding="utf-8")))
+        summary = summarize(json.loads(\n            args.report.read_text(encoding="utf-8"),\n            object_pairs_hook=_reject_duplicate_keys,\n            parse_constant=_reject_nonfinite_number,\n        ))
     except (OSError, UnicodeError, ValueError):
         summary = None
     print(render(summary, args.source_sha), end="")
