@@ -32,7 +32,7 @@ def summarize(report):
             if code not in RISK_CODES:
                 return None
             entries = alert.get("instances")
-            if not isinstance(entries, list):
+            if not isinstance(entries, list) or any(not isinstance(entry, dict) for entry in entries):
                 return None
             families[code] += 1
             instances[code] += len(entries)
