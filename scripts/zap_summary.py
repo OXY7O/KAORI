@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 RISK_CODES = ("0", "1", "2", "3", "4")
+MAX_REPORT_BYTES = 32 * 1024 * 1024
 
 
 def summarize(report):
@@ -69,6 +70,9 @@ def main():
     parser.add_argument("--source-sha", required=True)
     args = parser.parse_args()
     try:
+        # Bound untrusted scan artifacts before parsing; do not echo file contents.
+        if args.report.stat().st_size > MAX_REPORT_BYTES:
+            raise ValueError("ZAP report exceeds bounded input size")
         summary = summarize(json.loads(args.report.read_text(encoding="utf-8")))
     except (OSError, UnicodeError, ValueError):
         summary = None
