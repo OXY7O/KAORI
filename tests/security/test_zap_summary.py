@@ -33,7 +33,9 @@ def test_incompatible_evidence_fails_closed():
     cases = ({}, {"site": "bad"}, {"site": [{"alerts": None}]},
              {"site": [{"alerts": [{"riskcode": "unknown", "instances": []}]}]},
              {"site": [{"alerts": [{"riskcode": "2"}]}]},
-             {"site": [{"alerts": [{"riskcode": True, "instances": []}]}]})
+             {"site": [{"alerts": [{"riskcode": True, "instances": []}]}]},
+             {"site": [{"alerts": [{"riskcode": "2", "instances": ["untrusted"]}]}]},
+             {"site": [{"alerts": [{"riskcode": "2", "instances": [None]}]}]})
     for report in cases:
         assert zap_summary.summarize(report) is None
         assert "NOT VERIFIED" in zap_summary.render(zap_summary.summarize(report), SHA)
