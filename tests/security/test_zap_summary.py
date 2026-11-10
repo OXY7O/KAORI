@@ -55,3 +55,21 @@ def test_oversized_report_is_not_parsed_or_echoed(tmp_path, monkeypatch, capsys)
     output = capsys.readouterr().out
     assert "NOT VERIFIED" in output
     assert "Sites scanned:" not in output
+
+
+def test_ambiguous_or_nonfinite_json_is_not_verified(tmp_path, monkeypatch, capsys):
+    # Duplicate riskcode can otherwise silently replace a High alert with Low.
+    cases = (
+        '{"site":[{"alerts":[{"riskcode":"3","riskcode":"0","instances":[]}]}]}',
+        '{"site":[{"alerts":[{"riskcode":"3","instances":[],"confidence":NaN}]}]}',
+        '{"site":[{"alerts":[{"riskcode":"3","instances":[],"confidence":Infinity}]}]}',
+    )
+    report = tmp_path / "zap.json"
+    for raw in cases:
+        report.write_text(raw, encoding="utf-8")
+        monkeypatch.setattr("sys.argv", ["zap_summary", str(report), "--source-sha", SHA])
+        zap_summary.main()
+        output = capsys.readouterr().out
+        assert "NOT VERIFIED" in output
+        assert "Sites scanned:" not in output
+        assert "riskcode" not in output
