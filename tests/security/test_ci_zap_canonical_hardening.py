@@ -150,3 +150,23 @@ def test_partial_summary_write_failure_does_not_leave_evidence(tmp_path, monkeyp
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_alert_family_limit_is_cumulative_across_sites(monkeypatch):
+    monkeypatch.setattr(zap, 'MAX_ALERT_FAMILIES', 2)
+    payload = {'site': [
+        {'alerts': [{'riskcode': '3'}]},
+        {'alerts': [{'riskcode': '1'}, {'riskcode': '0'}]},
+    ]}
+    with pytest.raises(zap.UnverifiedZapReport, match='Excessive alert records'):
+        zap.render_summary(payload, SHA)
+
+
+def test_alert_family_limit_exact_boundary_across_sites(monkeypatch):
+    monkeypatch.setattr(zap, 'MAX_ALERT_FAMILIES', 2)
+    payload = {'site': [
+        {'alerts': [{'riskcode': '3'}]},
+        {'alerts': [{'riskcode': '1'}]},
+    ]}
+    summary = zap.render_summary(payload, SHA)
+    assert '| **Total** | **2** |' in summary
