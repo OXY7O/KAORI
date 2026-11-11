@@ -372,3 +372,27 @@ def test_failed_fdopen_closes_raw_report_descriptor(tmp_path, monkeypatch, capsy
         os.fstat(opened[0])
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_opened_regular_file_size_is_checked_before_read(tmp_path, monkeypatch, capsys):
+    import os
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    original_fstat = os.fstat
+
+    def oversized_descriptor_stat(descriptor):
+        actual = original_fstat(descriptor)
+        if actual.st_size == report.stat().st_size:
+            # Simulate a filesystem reporting an oversized opened regular file.
+            values = list(actual)
+            values[6] = zap.MAX_REPORT_BYTES + 1
+            return os.stat_result(values)
+        return actual
+
+    monkeypatch.setattr(zap.os, 'fstat', oversized_descriptor_stat)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
