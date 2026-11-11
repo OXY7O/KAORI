@@ -100,6 +100,10 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
                 raise UnverifiedZapReport('Invalid alert instances')
             if len(alert_instances) > MAX_ALERT_INSTANCES - instances:
                 raise UnverifiedZapReport('Excessive alert instances')
+            # A non-object instance is not a compatible traditional ZAP record.
+            # Inspect only types; never serialize private instance fields.
+            if any(not isinstance(instance, dict) for instance in alert_instances):
+                raise UnverifiedZapReport('Invalid alert instance structure')
             instances += len(alert_instances)
             totals[_risk_code(alert.get('riskcode'))] += 1
 
