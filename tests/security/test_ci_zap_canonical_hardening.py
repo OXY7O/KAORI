@@ -248,3 +248,25 @@ def test_valid_instance_objects_remain_accepted_without_publishing_details():
     summary = zap.render_summary(payload, SHA)
     assert '| High | 1 |' in summary
     assert secret not in summary
+
+
+def test_instance_total_is_numeric_and_excludes_private_fields():
+    secret = 'https://private.example/path?token=do-not-emit'
+    payload = {
+        'site': [
+            {'alerts': [{'riskcode': '3', 'instances': [{'uri': secret}, {}]}]},
+            {'alerts': [{'riskcode': '1', 'instances': [{'message': secret}]}]},
+        ]
+    }
+    summary = zap.render_summary(payload, SHA)
+    assert 'Alert instance entries: **3**.' in summary
+    assert 'Scanned site entries: **2**.' in summary
+    assert secret not in summary
+
+
+def test_missing_instance_arrays_report_zero_without_claiming_clean_scan():
+    payload = {'site': [{'alerts': [{'riskcode': '3'}]}]}
+    summary = zap.render_summary(payload, SHA)
+    assert 'Alert instance entries: **0**.' in summary
+    assert '| High | 1 |' in summary
+    assert 'proof of complete application security' in summary
