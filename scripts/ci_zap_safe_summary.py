@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections import Counter
@@ -37,6 +38,13 @@ def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _reject_constant(_value: str) -> None:
     raise UnverifiedZapReport('Non-finite JSON number')
+
+
+def _finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise UnverifiedZapReport('Non-finite JSON number')
+    return parsed
 
 
 SHA_PATTERN = re.compile(r'[0-9a-fA-F]{40}\Z')
@@ -143,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
             raw.decode('utf-8'),
             object_pairs_hook=_unique_keys,
             parse_constant=_reject_constant,
+            parse_float=_finite_float,
         )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
