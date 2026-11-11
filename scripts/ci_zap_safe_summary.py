@@ -65,7 +65,7 @@ def _risk_code(value: object) -> int:
     raise UnverifiedZapReport('Invalid risk category')
 
 
-def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
+def _count_risks(payload: Any) -> tuple[int, Counter[int], int]:
     if not isinstance(payload, dict):
         raise UnverifiedZapReport('Invalid report structure')
     sites = payload.get('site')
@@ -107,14 +107,14 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
             instances += len(alert_instances)
             totals[_risk_code(alert.get('riskcode'))] += 1
 
-    return len(sites), totals
+    return len(sites), totals, instances
 
 
 def render_summary(payload: Any, source_sha: str) -> str:
     """Render ONLY allowlisted, non-sensitive numerical evidence."""
     if not SHA_PATTERN.fullmatch(source_sha):
         raise UnverifiedZapReport('Invalid source identity')
-    site_count, totals = _count_risks(payload)
+    site_count, totals, instance_count = _count_risks(payload)
 
     lines = [
         '### OWASP ZAP — sanitized Runtime & DAST evidence',
@@ -135,6 +135,7 @@ def render_summary(payload: Any, source_sha: str) -> str:
             f'| **Total** | **{sum(totals.values())}** |',
             '',
             f'Scanned site entries: **{site_count}**.',
+            f'Alert instance entries: **{instance_count}**.',
             'Actual gate result and ZAP CLI warning/failure classifications remain',
             'authoritative in this same Full Admission run. ZAP warnings may be',
             'non-blocking under the existing `-I` policy.',
