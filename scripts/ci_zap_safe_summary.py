@@ -181,7 +181,13 @@ def main(argv: list[str] | None = None) -> int:
         if hasattr(os, 'O_NOFOLLOW'):
             flags |= os.O_NOFOLLOW
         descriptor = os.open(args.input, flags)
-        with os.fdopen(descriptor, 'rb') as stream:
+        try:
+            stream = os.fdopen(descriptor, 'rb')
+        except BaseException:
+            # fdopen may fail before taking ownership of the raw descriptor.
+            os.close(descriptor)
+            raise
+        with stream:
             if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
                 raise UnverifiedZapReport('Non-regular ZAP report input')
             raw = stream.read(MAX_REPORT_BYTES + 1)
