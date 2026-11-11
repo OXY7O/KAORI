@@ -86,3 +86,17 @@ def test_deeply_nested_json_is_not_verified(tmp_path, monkeypatch, capsys):
     assert "NOT VERIFIED" in output
     assert "Sites scanned:" not in output
     assert "Traceback" not in output
+
+
+def test_bounded_read_rejects_valid_json_larger_than_limit(tmp_path, monkeypatch, capsys):
+    # A valid but oversized report must not be accepted even when a stat
+    # pre-check would be stale; the parser must bound the actual bytes read.
+    report = tmp_path / "zap.json"
+    report.write_text('{"site":[{"alerts":[]}],"padding":"' + "x" * 128 + '"}', encoding="utf-8")
+    monkeypatch.setattr(zap_summary, "MAX_REPORT_BYTES", 64)
+    monkeypatch.setattr("sys.argv", ["zap_summary", str(report), "--source-sha", SHA])
+    zap_summary.main()
+    output = capsys.readouterr().out
+    assert "NOT VERIFIED" in output
+    assert "Sites scanned:" not in output
+    assert "padding" not in output
