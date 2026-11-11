@@ -126,6 +126,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        # A reused workspace must never retain a prior run's verified-looking output.
+        # Failure to clear it is a publication failure, not a valid new summary.
+        args.output.unlink(missing_ok=True)
         with args.input.open('rb') as stream:
             raw = stream.read(MAX_REPORT_BYTES + 1)
         if len(raw) > MAX_REPORT_BYTES:
