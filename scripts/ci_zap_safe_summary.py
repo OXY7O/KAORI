@@ -174,10 +174,16 @@ def main(argv: list[str] | None = None) -> int:
         # A reused workspace must never retain a prior run's verified-looking output.
         # Failure to clear it is a publication failure, not a valid new summary.
         args.output.unlink(missing_ok=True)
-        # Refuse FIFOs/devices: bounded read sizes do not bound blocking I/O.
-        if not stat.S_ISREG(args.input.stat().st_mode):
-            raise UnverifiedZapReport('Non-regular ZAP report input')
-        with args.input.open('rb') as stream:
+        # Open without following symlinks or blocking on a FIFO swapped in
+        # after the initial path check. Validate the opened descriptor, not
+        # only the pathname (which may change between stat and open).
+        flags = os.O_RDONLY | os.O_NONBLOCK
+        if hasattr(os, 'O_NOFOLLOW'):
+            flags |= os.O_NOFOLLOW
+        descriptor = os.open(args.input, flags)
+        with os.fdopen(descriptor, 'rb') as stream:
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                raise UnverifiedZapReport('Non-regular ZAP report input')
             raw = stream.read(MAX_REPORT_BYTES + 1)
         if len(raw) > MAX_REPORT_BYTES:
             raise UnverifiedZapReport('Report exceeds bounded input size')
