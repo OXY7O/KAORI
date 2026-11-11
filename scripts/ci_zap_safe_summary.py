@@ -10,8 +10,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -161,13 +163,22 @@ def main(argv: list[str] | None = None) -> int:
         )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
+        # Publish atomically: a symlink introduced after the initial alias check
+        # must never redirect writes to the raw report or another sensitive file.
+        # A failed write also must not expose a partial, verified-looking summary.
+        temporary: Path | None = None
         try:
-            args.output.write_text(summary, encoding='utf-8')
-        except OSError:
-            # A failed write may have created a truncated, apparently valid artifact.
-            # Best-effort removal ensures a failed publication cannot be reused.
-            args.output.unlink(missing_ok=True)
-            raise
+            with tempfile.NamedTemporaryFile(
+                mode='w', encoding='utf-8', dir=args.output.parent,
+                prefix='.zap-summary-', suffix='.tmp', delete=False,
+            ) as stream:
+                temporary = Path(stream.name)
+                stream.write(summary)
+            os.replace(temporary, args.output)
+            temporary = None
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     except (OSError, ValueError, UnicodeError, RecursionError):
         # Don't echo source exceptions: paths and parser context may be sensitive.
         print('ZAP sanitized summary NOT VERIFIED; no raw fields emitted.', file=sys.stderr)
