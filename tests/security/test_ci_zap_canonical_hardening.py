@@ -306,14 +306,37 @@ def test_fifo_report_is_rejected_before_blocking_read(tmp_path, monkeypatch, cap
     output = tmp_path / 'summary.md'
     os.mkfifo(report)
     output.write_text('stale verified-looking evidence', encoding='utf-8')
-    original_open = Path.open
+    original_open = os.open
 
-    def refuse_fifo_open(path, *args, **kwargs):
+    def inspect_nonblocking_open(path, flags, *args, **kwargs):
         if path == report:
-            raise AssertionError('non-regular input must not be opened')
-        return original_open(path, *args, **kwargs)
+            assert flags & os.O_NONBLOCK
+        return original_open(path, flags, *args, **kwargs)
 
-    monkeypatch.setattr(Path, 'open', refuse_fifo_open)
+    monkeypatch.setattr(os, 'open', inspect_nonblocking_open)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_swapped_fifo_is_rejected_by_open_descriptor(tmp_path, monkeypatch, capsys):
+    import os
+
+    if not hasattr(os, 'mkfifo'):
+        pytest.skip('FIFO not supported on this platform')
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    original_open = os.open
+
+    def swap_before_open(path, flags, *args, **kwargs):
+        if path == report:
+            report.unlink()
+            os.mkfifo(report)
+            assert flags & os.O_NONBLOCK
+        return original_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(os, 'open', swap_before_open)
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
