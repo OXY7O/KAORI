@@ -136,9 +136,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Refuse aliasing the raw report: unlinking output would destroy input.
         # A symlink output could otherwise redirect publication to another file.
-        if args.output.is_symlink() or (
-            args.output.exists() and args.input.exists() and args.output.samefile(args.input)
-        ) or args.output.resolve() == args.input.resolve():
+        if (
+            args.output.is_symlink()
+            or (args.output.exists() and args.input.exists() and args.output.samefile(args.input))
+            or args.output.resolve() == args.input.resolve()
+        ):
             raise UnverifiedZapReport('Unsafe evidence output location')
         # A reused workspace must never retain a prior run's verified-looking output.
         # Failure to clear it is a publication failure, not a valid new summary.
@@ -155,7 +157,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(summary, encoding='utf-8')
+        try:
+            args.output.write_text(summary, encoding='utf-8')
+        except OSError:
+            # A failed write may have created a truncated, apparently valid artifact.
+            # Best-effort removal ensures a failed publication cannot be reused.
+            args.output.unlink(missing_ok=True)
+            raise
     except (OSError, ValueError, UnicodeError, RecursionError):
         # Don't echo source exceptions: paths and parser context may be sensitive.
         print('ZAP sanitized summary NOT VERIFIED; no raw fields emitted.', file=sys.stderr)
