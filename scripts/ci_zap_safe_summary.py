@@ -12,6 +12,7 @@ import json
 import math
 import os
 import re
+import stat
 import sys
 import tempfile
 from collections import Counter
@@ -173,6 +174,9 @@ def main(argv: list[str] | None = None) -> int:
         # A reused workspace must never retain a prior run's verified-looking output.
         # Failure to clear it is a publication failure, not a valid new summary.
         args.output.unlink(missing_ok=True)
+        # Refuse FIFOs/devices: bounded read sizes do not bound blocking I/O.
+        if not stat.S_ISREG(args.input.stat().st_mode):
+            raise UnverifiedZapReport('Non-regular ZAP report input')
         with args.input.open('rb') as stream:
             raw = stream.read(MAX_REPORT_BYTES + 1)
         if len(raw) > MAX_REPORT_BYTES:
