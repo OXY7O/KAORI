@@ -209,9 +209,7 @@ def test_cumulative_instance_limit_rejects_multiple_sites(monkeypatch):
 def test_instance_limit_boundary_does_not_publish_instance_details(monkeypatch):
     monkeypatch.setattr(zap, 'MAX_ALERT_INSTANCES', 2)
     secret = 'https://private.example/?token=do-not-publish'
-    payload = {
-        'site': [{'alerts': [{'riskcode': '3', 'instances': [{'uri': secret}, {}]}]}]
-    }
+    payload = {'site': [{'alerts': [{'riskcode': '3', 'instances': [{'uri': secret}, {}]}]}]}
     summary = zap.render_summary(payload, SHA)
     assert '| High | 1 |' in summary
     assert secret not in summary
@@ -224,15 +222,11 @@ def test_malformed_instances_fail_closed():
 
 
 @pytest.mark.parametrize('invalid_instance', [None, 'sensitive', 7, ['nested']])
-def test_malformed_instance_entry_fails_closed_without_echoing_private_data(
-    tmp_path, capsys, invalid_instance
-):
+def test_malformed_instance_entry_fails_closed_without_echoing_private_data(tmp_path, capsys, invalid_instance):
     report = tmp_path / 'zap.json'
     output = tmp_path / 'summary.md'
     report.write_text(
-        __import__('json').dumps(
-            {'site': [{'alerts': [{'riskcode': '3', 'instances': [invalid_instance]}]}]}
-        ),
+        __import__('json').dumps({'site': [{'alerts': [{'riskcode': '3', 'instances': [invalid_instance]}]}]}),
         encoding='utf-8',
     )
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
@@ -274,10 +268,14 @@ def test_missing_instance_arrays_do_not_claim_verified_zero():
 
 def test_mixed_present_and_missing_instances_do_not_claim_partial_total():
     payload = {
-        'site': [{'alerts': [
-            {'riskcode': '3', 'instances': [{}, {}]},
-            {'riskcode': '1'},
-        ]}]
+        'site': [
+            {
+                'alerts': [
+                    {'riskcode': '3', 'instances': [{}, {}]},
+                    {'riskcode': '1'},
+                ]
+            }
+        ]
     }
     summary = zap.render_summary(payload, SHA)
     assert 'Alert instance entries: **NOT VERIFIED**' in summary
@@ -290,3 +288,10 @@ def test_explicit_empty_instance_arrays_report_verified_zero():
     summary = zap.render_summary(payload, SHA)
     assert 'Alert instance entries: **0**.' in summary
     assert '| High | 1 |' in summary
+
+
+@pytest.mark.parametrize('riskcode', [True, False, 1.0, -1, 4, '04', None])
+def test_noncanonical_riskcode_never_claims_verified_evidence(riskcode):
+    payload = {'site': [{'alerts': [{'riskcode': riskcode, 'instances': []}]}]}
+    with pytest.raises(zap.UnverifiedZapReport, match='Invalid risk category'):
+        zap.render_summary(payload, SHA)
