@@ -134,23 +134,40 @@ def test_overflow_float_in_ignored_json_field_fails_closed(tmp_path, capsys):
     assert 'NOT VERIFIED' in capsys.readouterr().err
 
 
-def test_partial_summary_write_failure_does_not_leave_evidence(tmp_path, monkeypatch, capsys):
+def test_atomic_publication_failure_leaves_no_partial_evidence(tmp_path, monkeypatch, capsys):
     report = tmp_path / 'zap.json'
     output = tmp_path / 'summary.md'
     report.write_text('{"site": [{"alerts": []}]}', encoding='utf-8')
-    original_write = Path.write_text
+    output.write_text('stale summary', encoding='utf-8')
 
-    def fail_after_partial_write(path, data, *args, **kwargs):
-        if path == output:
-            original_write(path, data[:20], *args, **kwargs)
-            raise OSError('synthetic publication failure')
-        return original_write(path, data, *args, **kwargs)
+    def fail_replace(_source, _destination):
+        raise OSError('synthetic atomic publication failure')
 
-    monkeypatch.setattr(Path, 'write_text', fail_after_partial_write)
+    monkeypatch.setattr(zap.os, 'replace', fail_replace)
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
+    assert not list(tmp_path.glob('.zap-summary-*.tmp'))
     assert 'NOT VERIFIED' in capsys.readouterr().err
 
+
+def test_late_output_symlink_cannot_redirect_atomic_publication(tmp_path, monkeypatch):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    private = tmp_path / 'private.txt'
+    report.write_text('{"site": [{"alerts": []}]}', encoding='utf-8')
+    private.write_text('must stay private', encoding='utf-8')
+    original_replace = zap.os.replace
+
+    def inject_symlink_then_replace(source, destination):
+        output.symlink_to(private)
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(zap.os, 'replace', inject_symlink_then_replace)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert not output.is_symlink()
+    assert private.read_text(encoding='utf-8') == 'must stay private'
+    assert 'Committed source SHA' in output.read_text(encoding='utf-8')
+    assert not list(tmp_path.glob('.zap-summary-*.tmp'))
 
 def test_alert_family_limit_is_cumulative_across_sites(monkeypatch):
     monkeypatch.setattr(zap, 'MAX_ALERT_FAMILIES', 2)
