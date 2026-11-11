@@ -73,3 +73,15 @@ def test_ambiguous_or_nonfinite_json_is_not_verified(tmp_path, monkeypatch, caps
         assert "NOT VERIFIED" in output
         assert "Sites scanned:" not in output
         assert "riskcode" not in output
+
+
+def test_deeply_nested_json_is_not_verified(tmp_path, monkeypatch, capsys):
+    # json.loads can raise RecursionError before schema validation begins.
+    report = tmp_path / "zap.json"
+    report.write_text('[' * 1500 + '0' + ']' * 1500, encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["zap_summary", str(report), "--source-sha", SHA])
+    zap_summary.main()
+    output = capsys.readouterr().out
+    assert "NOT VERIFIED" in output
+    assert "Sites scanned:" not in output
+    assert "Traceback" not in output
