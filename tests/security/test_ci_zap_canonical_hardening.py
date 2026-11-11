@@ -58,3 +58,17 @@ def test_safe_multi_site_counts_never_echo_raw_urls():
     assert "| High | 1 |" in result
     assert "| Low | 1 |" in result
     assert secret not in result
+
+
+def test_excessive_scanned_sites_fail_closed(monkeypatch):
+    monkeypatch.setattr(zap, "MAX_SITE_ENTRIES", 1)
+    payload = {"site": [{"alerts": []}, {"alerts": []}]}
+    with pytest.raises(zap.UnverifiedZapReport, match="Excessive scanned sites"):
+        zap.render_summary(payload, SHA)
+
+
+def test_site_limit_boundary_remains_valid(monkeypatch):
+    monkeypatch.setattr(zap, "MAX_SITE_ENTRIES", 2)
+    payload = {"site": [{"alerts": []}, {"alerts": []}]}
+    summary = zap.render_summary(payload, SHA)
+    assert "Scanned site entries: **2**." in summary
