@@ -89,7 +89,7 @@ def main():
         if args.report.stat().st_size > MAX_REPORT_BYTES:
             raise ValueError("ZAP report exceeds bounded input size")
         summary = summarize(json.loads(\n            args.report.read_text(encoding="utf-8"),\n            object_pairs_hook=_reject_duplicate_keys,\n            parse_constant=_reject_nonfinite_number,\n        ))
-    except (OSError, UnicodeError, ValueError):
+    except (OSError, UnicodeError, ValueError, RecursionError):
         summary = None
     print(render(summary, args.source_sha), end="")
 
