@@ -413,3 +413,25 @@ def test_symlinked_output_directory_cannot_redirect_evidence(tmp_path, capsys):
     assert not output.exists()
     assert not (outside / 'summary.md').exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_invalid_source_sha_clears_stale_evidence_without_opening_raw_report(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    original_open = zap.os.open
+    opened_report = []
+
+    def reject_report_open(path, flags, *args, **kwargs):
+        if path == report:
+            opened_report.append(path)
+            raise AssertionError('Invalid identity must fail before raw report access')
+        return original_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(zap.os, 'open', reject_report_open)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', 'invalid']) == 2
+    assert not opened_report
+    assert not output.exists()
+    assert report.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
