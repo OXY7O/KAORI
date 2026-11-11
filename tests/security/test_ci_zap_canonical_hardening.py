@@ -435,3 +435,39 @@ def test_invalid_source_sha_clears_stale_evidence_without_opening_raw_report(tmp
     assert not output.exists()
     assert report.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_report_mutated_during_read_is_not_published(tmp_path, monkeypatch, capsys):
+    import os
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    original_fstat = os.fstat
+    calls = 0
+
+    def changed_descriptor_stat(descriptor):
+        nonlocal calls
+        actual = original_fstat(descriptor)
+        if actual.st_size == report.stat().st_size:
+            calls += 1
+            if calls == 2:
+                values = list(actual)
+                values[6] += 1
+                return os.stat_result(values)
+        return actual
+
+    monkeypatch.setattr(zap.os, 'fstat', changed_descriptor_stat)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert calls == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_unchanged_descriptor_remains_publishable(tmp_path):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
