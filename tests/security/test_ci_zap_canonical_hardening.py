@@ -295,3 +295,25 @@ def test_noncanonical_riskcode_never_claims_verified_evidence(riskcode):
     payload = {'site': [{'alerts': [{'riskcode': riskcode, 'instances': []}]}]}
     with pytest.raises(zap.UnverifiedZapReport, match='Invalid risk category'):
         zap.render_summary(payload, SHA)
+
+
+def test_fifo_report_is_rejected_before_blocking_read(tmp_path, monkeypatch, capsys):
+    import os
+
+    if not hasattr(os, 'mkfifo'):
+        pytest.skip('FIFO not supported on this platform')
+    report = tmp_path / 'zap.fifo'
+    output = tmp_path / 'summary.md'
+    os.mkfifo(report)
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    original_open = Path.open
+
+    def refuse_fifo_open(path, *args, **kwargs):
+        if path == report:
+            raise AssertionError('non-regular input must not be opened')
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', refuse_fifo_open)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
