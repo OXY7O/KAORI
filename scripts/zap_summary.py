@@ -10,6 +10,8 @@ from pathlib import Path
 
 RISK_CODES = ("0", "1", "2", "3")
 MAX_REPORT_BYTES = 32 * 1024 * 1024
+MAX_ALERT_FAMILIES = 100_000
+MAX_INSTANCES = 1_000_000
 
 
 def summarize(report):
@@ -37,6 +39,9 @@ def summarize(report):
                 return None
             families[code] += 1
             instances[code] += len(entries)
+            # Do not present truncated or unbounded aggregate evidence as verified.
+            if sum(families.values()) > MAX_ALERT_FAMILIES or sum(instances.values()) > MAX_INSTANCES:
+                return None
     return {"sites": len(sites), "families": families, "instances": instances}
 
 
