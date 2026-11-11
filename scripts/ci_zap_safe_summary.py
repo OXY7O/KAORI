@@ -79,6 +79,10 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
         alerts = site.get('alerts')
         if not isinstance(alerts, list):
             raise UnverifiedZapReport('Missing alert list')
+        # Reject oversized batches before walking individual alert objects.
+        # The limit is cumulative across sites, not per-site.
+        if len(alerts) > MAX_ALERT_FAMILIES - families:
+            raise UnverifiedZapReport('Excessive alert records')
         for alert in alerts:
             if not isinstance(alert, dict):
                 raise UnverifiedZapReport('Invalid alert structure')
