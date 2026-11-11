@@ -65,7 +65,7 @@ def _risk_code(value: object) -> int:
     raise UnverifiedZapReport('Invalid risk category')
 
 
-def _count_risks(payload: Any) -> tuple[int, Counter[int], int]:
+def _count_risks(payload: Any) -> tuple[int, Counter[int], int | None]:
     if not isinstance(payload, dict):
         raise UnverifiedZapReport('Invalid report structure')
     sites = payload.get('site')
@@ -77,6 +77,7 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int], int]:
     totals: Counter[int] = Counter()
     families = 0
     instances = 0
+    complete_instance_counts = True
     for site in sites:
         if not isinstance(site, dict):
             raise UnverifiedZapReport('Invalid site structure')
@@ -95,6 +96,8 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int], int]:
                 raise UnverifiedZapReport('Excessive alert records')
             # Instance details remain private, but bound their cumulative count.
             # ZAP may omit instances for an alert family.
+            if 'instances' not in alert:
+                complete_instance_counts = False
             alert_instances = alert.get('instances', [])
             if not isinstance(alert_instances, list):
                 raise UnverifiedZapReport('Invalid alert instances')
@@ -107,7 +110,7 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int], int]:
             instances += len(alert_instances)
             totals[_risk_code(alert.get('riskcode'))] += 1
 
-    return len(sites), totals, instances
+    return len(sites), totals, instances if complete_instance_counts else None
 
 
 def render_summary(payload: Any, source_sha: str) -> str:
@@ -135,7 +138,11 @@ def render_summary(payload: Any, source_sha: str) -> str:
             f'| **Total** | **{sum(totals.values())}** |',
             '',
             f'Scanned site entries: **{site_count}**.',
-            f'Alert instance entries: **{instance_count}**.',
+            (
+                f'Alert instance entries: **{instance_count}**.'
+                if instance_count is not None
+                else 'Alert instance entries: **NOT VERIFIED** (missing instance arrays).'
+            ),
             'Actual gate result and ZAP CLI warning/failure classifications remain',
             'authoritative in this same Full Admission run. ZAP warnings may be',
             'non-blocking under the existing `-I` policy.',
