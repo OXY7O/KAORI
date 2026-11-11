@@ -27,6 +27,7 @@ RISK_NAMES = (
 )
 MAX_ALERT_FAMILIES = 100_000
 MAX_SITE_ENTRIES = 100_000
+MAX_ALERT_INSTANCES = 1_000_000
 
 
 def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -75,6 +76,7 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
 
     totals: Counter[int] = Counter()
     families = 0
+    instances = 0
     for site in sites:
         if not isinstance(site, dict):
             raise UnverifiedZapReport('Invalid site structure')
@@ -91,6 +93,14 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
             families += 1
             if families > MAX_ALERT_FAMILIES:
                 raise UnverifiedZapReport('Excessive alert records')
+            # Instance details remain private, but bound their cumulative count.
+            # ZAP may omit instances for an alert family.
+            alert_instances = alert.get('instances', [])
+            if not isinstance(alert_instances, list):
+                raise UnverifiedZapReport('Invalid alert instances')
+            if len(alert_instances) > MAX_ALERT_INSTANCES - instances:
+                raise UnverifiedZapReport('Excessive alert instances')
+            instances += len(alert_instances)
             totals[_risk_code(alert.get('riskcode'))] += 1
 
     return len(sites), totals
@@ -169,8 +179,12 @@ def main(argv: list[str] | None = None) -> int:
         temporary: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                mode='w', encoding='utf-8', dir=args.output.parent,
-                prefix='.zap-summary-', suffix='.tmp', delete=False,
+                mode='w',
+                encoding='utf-8',
+                dir=args.output.parent,
+                prefix='.zap-summary-',
+                suffix='.tmp',
+                delete=False,
             ) as stream:
                 temporary = Path(stream.name)
                 stream.write(summary)
