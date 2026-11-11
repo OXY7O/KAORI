@@ -85,11 +85,14 @@ def main():
     parser.add_argument("--source-sha", required=True)
     args = parser.parse_args()
     try:
-        # Bound untrusted scan artifacts before parsing; do not echo file contents.
-        if args.report.stat().st_size > MAX_REPORT_BYTES:
+        # Read at most one byte beyond the limit. A pre-read stat() check alone
+        # is racy when a scan artifact changes between inspection and parsing.
+        with args.report.open("rb") as stream:
+            raw = stream.read(MAX_REPORT_BYTES + 1)
+        if len(raw) > MAX_REPORT_BYTES:
             raise ValueError("ZAP report exceeds bounded input size")
         summary = summarize(json.loads(
-            args.report.read_text(encoding="utf-8"),
+            raw.decode("utf-8"),
             object_pairs_hook=_reject_duplicate_keys,
             parse_constant=_reject_nonfinite_number,
         ))
