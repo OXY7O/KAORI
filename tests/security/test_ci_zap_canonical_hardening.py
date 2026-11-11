@@ -340,3 +340,35 @@ def test_swapped_fifo_is_rejected_by_open_descriptor(tmp_path, monkeypatch, caps
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_failed_fdopen_closes_raw_report_descriptor(tmp_path, monkeypatch, capsys):
+    import os
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale evidence', encoding='utf-8')
+    original_open = os.open
+    original_fdopen = os.fdopen
+    opened = []
+
+    def record_open(path, flags, *args, **kwargs):
+        descriptor = original_open(path, flags, *args, **kwargs)
+        if path == report:
+            opened.append(descriptor)
+        return descriptor
+
+    def fail_report_wrap(descriptor, *args, **kwargs):
+        if descriptor in opened:
+            raise OSError('synthetic stream wrapping failure')
+        return original_fdopen(descriptor, *args, **kwargs)
+
+    monkeypatch.setattr(os, 'open', record_open)
+    monkeypatch.setattr(os, 'fdopen', fail_report_wrap)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert len(opened) == 1
+    with pytest.raises(OSError):
+        os.fstat(opened[0])
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
