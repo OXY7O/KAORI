@@ -188,8 +188,14 @@ def main(argv: list[str] | None = None) -> int:
             os.close(descriptor)
             raise
         with stream:
-            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            opened_stat = os.fstat(stream.fileno())
+            if not stat.S_ISREG(opened_stat.st_mode):
                 raise UnverifiedZapReport('Non-regular ZAP report input')
+            # Reject known oversized regular files without reading their contents.
+            # The bounded read below remains authoritative if the file grows
+            # after fstat or a filesystem reports a stale size.
+            if opened_stat.st_size > MAX_REPORT_BYTES:
+                raise UnverifiedZapReport('Report exceeds bounded input size')
             raw = stream.read(MAX_REPORT_BYTES + 1)
         if len(raw) > MAX_REPORT_BYTES:
             raise UnverifiedZapReport('Report exceeds bounded input size')
