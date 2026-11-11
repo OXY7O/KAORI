@@ -206,6 +206,15 @@ def main(argv: list[str] | None = None) -> int:
             if opened_stat.st_size > MAX_REPORT_BYTES:
                 raise UnverifiedZapReport('Report exceeds bounded input size')
             raw = stream.read(MAX_REPORT_BYTES + 1)
+            # A concurrent writer must not turn a partial/mixed scan into
+            # apparently verified evidence. Compare metadata on this descriptor.
+            final_stat = os.fstat(stream.fileno())
+            if (
+                opened_stat.st_size != final_stat.st_size
+                or opened_stat.st_mtime_ns != final_stat.st_mtime_ns
+                or opened_stat.st_ctime_ns != final_stat.st_ctime_ns
+            ):
+                raise UnverifiedZapReport('ZAP report changed during read')
         if len(raw) > MAX_REPORT_BYTES:
             raise UnverifiedZapReport('Report exceeds bounded input size')
         payload = json.loads(
