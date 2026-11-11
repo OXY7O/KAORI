@@ -72,3 +72,28 @@ def test_site_limit_boundary_remains_valid(monkeypatch):
     payload = {"site": [{"alerts": []}, {"alerts": []}]}
     summary = zap.render_summary(payload, SHA)
     assert "Scanned site entries: **2**." in summary
+
+
+def test_invalid_report_removes_stale_summary_before_failure(tmp_path, capsys):
+    report = tmp_path / "zap.json"
+    output = tmp_path / "summary.md"
+    report.write_text('{"site": null}', encoding="utf-8")
+    output.write_text("stale VERIFIED-looking evidence", encoding="utf-8")
+
+    result = zap.main(["--input", str(report), "--output", str(output), "--source-sha", SHA])
+
+    assert result == 2
+    assert not output.exists()
+    assert "NOT VERIFIED" in capsys.readouterr().err
+
+
+def test_valid_report_replaces_stale_summary_without_leaking_it(tmp_path):
+    report = tmp_path / "zap.json"
+    output = tmp_path / "summary.md"
+    report.write_text('{"site": [{"alerts": []}]}', encoding="utf-8")
+    output.write_text("old private payload", encoding="utf-8")
+
+    assert zap.main(["--input", str(report), "--output", str(output), "--source-sha", SHA]) == 0
+    summary = output.read_text(encoding="utf-8")
+    assert "Committed source SHA" in summary
+    assert "old private payload" not in summary
