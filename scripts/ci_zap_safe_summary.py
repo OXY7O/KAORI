@@ -163,6 +163,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        # Refuse publication through a symlinked parent directory. Otherwise
+        # an attacker-controlled workspace alias can redirect sanitized evidence
+        # outside the intended output tree even when the filename is regular.
+        if args.output.parent.resolve() != args.output.parent.absolute():
+            raise UnverifiedZapReport('Unsafe evidence output directory')
         # Refuse aliasing the raw report: unlinking output would destroy input.
         # A symlink output could otherwise redirect publication to another file.
         if (
