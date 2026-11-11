@@ -1,6 +1,5 @@
 name: Epic
 description: Define a multi-story KAORI product or platform outcome.
-title: ""
 body:
   - type: markdown
     attributes:

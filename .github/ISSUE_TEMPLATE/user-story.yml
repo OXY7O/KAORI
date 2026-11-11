@@ -1,6 +1,5 @@
 name: User Story
 description: Define a testable user or operator capability.
-title: ""
 body:
   - type: markdown
     attributes:

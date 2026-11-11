@@ -1,6 +1,5 @@
-name: Bug
+name: Bug Report
 description: Report a reproducible KAORI defect or regression.
-title: ""
 body:
   - type: markdown
     attributes:

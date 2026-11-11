@@ -331,7 +331,7 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
     assert 'release-suite.xml' in matrix
     assert 'e2e.xml' in matrix
 
-    assert 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1' in admission
+    assert 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2' in admission
     assert 'Download Static JUnit Evidence' in admission
     assert 'Download Functional JUnit Evidence' in admission
     assert 'Write Full Test Taxonomy Summary' in admission

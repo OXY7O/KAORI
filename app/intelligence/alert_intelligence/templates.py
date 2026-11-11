@@ -5,7 +5,9 @@ from datetime import UTC
 from html.parser import HTMLParser
 from typing import Any
 
-from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, select_autoescape
+from jinja2 import StrictUndefined, TemplateSyntaxError, UndefinedError, select_autoescape
+from jinja2.exceptions import SecurityError
+from jinja2.sandbox import SandboxedEnvironment
 
 from app.models.alert_ops import AlertCase, AlertNotificationTemplate
 
@@ -90,13 +92,13 @@ _BUILT_INS: tuple[AlertTemplateDefinition, ...] = (
     ),
 )
 
-_ENV = Environment(
+_ENV = SandboxedEnvironment(
     autoescape=select_autoescape(default=False, default_for_string=False),
     undefined=StrictUndefined,
     trim_blocks=True,
     lstrip_blocks=True,
 )
-_HTML_ENV = Environment(
+_HTML_ENV = SandboxedEnvironment(
     autoescape=select_autoescape(default=True, default_for_string=True),
     undefined=StrictUndefined,
     trim_blocks=True,
@@ -170,9 +172,15 @@ def upsert_template_override(
     normalized_body = str(body_template or '').strip()
     if not normalized_name or not normalized_body:
         raise ValueError('Template name and body are required.')
-    _validate_template(normalized_body, content_format=normalized_format)
-    if subject_template:
-        _validate_template(subject_template, content_format='plain_text')
+    normalized_subject = str(subject_template or '').strip()[:500] or None
+    # Validate the executable template before persisting a provider override.
+    render_template_preview(
+        provider_key=provider_key,
+        event_state=event_state,
+        subject_template=normalized_subject,
+        body_template=normalized_body,
+        content_format=normalized_format,
+    )
     row = (
         AlertNotificationTemplate.query.filter_by(provider_key=provider_key, event_state=event_state)
         .order_by(AlertNotificationTemplate.id.desc())
@@ -183,7 +191,7 @@ def upsert_template_override(
         row.provider_key = provider_key
         row.event_state = event_state
     row.name = normalized_name[:160]
-    row.subject_template = str(subject_template or '').strip()[:500] or None
+    row.subject_template = normalized_subject
     row.body_template = normalized_body
     row.content_format = normalized_format
     row.enabled = True
@@ -219,9 +227,8 @@ def render_template_preview(
         _validate_template(subject_template, content_format='plain_text')
     context = _preview_context(event_state)
     subject_source = subject_template or f'[{event_state.upper()}][{{{{ severity }}}}] {{{{ alert_name }}}}'
-    subject = _ENV.from_string(subject_source).render(**context).strip()
-    renderer = _HTML_ENV if normalized_format == 'html' else _ENV
-    body = renderer.from_string(body_template).render(**context).strip()
+    subject = _render_template_source(subject_source, context=context, content_format='plain_text')
+    body = _render_template_source(body_template, context=context, content_format=normalized_format)
     if normalized_format == 'html':
         _validate_safe_html(body)
     return subject, body
@@ -272,9 +279,13 @@ def render_case_message(
     body_template = override.body_template if override else definition.body
     content_format = override.content_format if override else definition.content_format
     context = _template_context(case, action_url=action_url)
-    subject = _ENV.from_string(subject_template or _default_title(case, event_state)).render(**context).strip()
-    renderer = _HTML_ENV if content_format == 'html' else _ENV
-    body = renderer.from_string(body_template).render(**context).strip()
+    # Case labels are literal data, not executable source for a fallback subject.
+    subject = (
+        _render_template_source(subject_template, context=context, content_format='plain_text')
+        if subject_template
+        else _default_title(case, event_state)
+    )
+    body = _render_template_source(body_template, context=context, content_format=content_format)
     if content_format == 'html':
         _validate_safe_html(body)
     return subject or _default_title(case, event_state), body, content_format
@@ -337,6 +348,14 @@ def _definition(provider_key: str, event_state: str) -> AlertTemplateDefinition:
         if definition.provider_key == provider_key and definition.event_state == event_state:
             return definition
     raise ValueError(f'No Alert Intelligence template is registered for {provider_key}/{event_state}.')
+
+
+def _render_template_source(source: str, *, context: dict[str, str], content_format: str) -> str:
+    renderer = _HTML_ENV if content_format == 'html' else _ENV
+    try:
+        return renderer.from_string(source).render(**context).strip()
+    except (SecurityError, UndefinedError) as exc:
+        raise ValueError('Notification template contains an unsupported expression.') from exc
 
 
 def _validate_template(value: str, *, content_format: str) -> None:
