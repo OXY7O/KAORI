@@ -1,4 +1,4 @@
-'''Fail-closed canonical ZAP evidence regressions for #4400.'''
+"""Fail-closed canonical ZAP evidence regressions for #4400."""
 
 import importlib.util
 from pathlib import Path
@@ -129,6 +129,24 @@ def test_overflow_float_in_ignored_json_field_fails_closed(tmp_path, capsys):
     report = tmp_path / 'zap.json'
     output = tmp_path / 'summary.md'
     report.write_text('{"site":[{"alerts":[]}],"unused":1e999}', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_partial_summary_write_failure_does_not_leave_evidence(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site": [{"alerts": []}]}', encoding='utf-8')
+    original_write = Path.write_text
+
+    def fail_after_partial_write(path, data, *args, **kwargs):
+        if path == output:
+            original_write(path, data[:20], *args, **kwargs)
+            raise OSError('synthetic publication failure')
+        return original_write(path, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'write_text', fail_after_partial_write)
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
