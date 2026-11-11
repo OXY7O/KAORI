@@ -23,6 +23,7 @@ RISK_NAMES = (
     (0, 'Informational'),
 )
 MAX_ALERT_FAMILIES = 100_000
+MAX_SITE_ENTRIES = 100_000
 
 
 def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -59,6 +60,8 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
     sites = payload.get('site')
     if not isinstance(sites, list) or not sites:
         raise UnverifiedZapReport('Missing scanned sites')
+    if len(sites) > MAX_SITE_ENTRIES:
+        raise UnverifiedZapReport('Excessive scanned sites')
 
     totals: Counter[int] = Counter()
     families = 0
