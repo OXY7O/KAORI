@@ -221,3 +221,30 @@ def test_malformed_instances_fail_closed():
     payload = {'site': [{'alerts': [{'riskcode': '3', 'instances': 'not-a-list'}]}]}
     with pytest.raises(zap.UnverifiedZapReport, match='Invalid alert instances'):
         zap.render_summary(payload, SHA)
+
+
+@pytest.mark.parametrize('invalid_instance', [None, 'sensitive', 7, ['nested']])
+def test_malformed_instance_entry_fails_closed_without_echoing_private_data(
+    tmp_path, capsys, invalid_instance
+):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text(
+        __import__('json').dumps(
+            {'site': [{'alerts': [{'riskcode': '3', 'instances': [invalid_instance]}]}]}
+        ),
+        encoding='utf-8',
+    )
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    captured = capsys.readouterr()
+    assert 'NOT VERIFIED' in captured.err
+    assert 'sensitive' not in captured.err
+
+
+def test_valid_instance_objects_remain_accepted_without_publishing_details():
+    secret = 'https://private.example/?token=never-echo'
+    payload = {'site': [{'alerts': [{'riskcode': '3', 'instances': [{'uri': secret}, {}]}]}]}
+    summary = zap.render_summary(payload, SHA)
+    assert '| High | 1 |' in summary
+    assert secret not in summary
