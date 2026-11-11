@@ -97,3 +97,27 @@ def test_valid_report_replaces_stale_summary_without_leaking_it(tmp_path):
     summary = output.read_text(encoding="utf-8")
     assert "Committed source SHA" in summary
     assert "old private payload" not in summary
+
+
+@pytest.mark.parametrize("alias", ["same_path", "symlink", "hardlink"])
+def test_output_alias_cannot_destroy_or_overwrite_raw_zap_evidence(tmp_path, capsys, alias):
+    report = tmp_path / "zap.json"
+    raw = '{"site": [{"alerts": [{"riskcode": "3"}]}]}'
+    report.write_text(raw, encoding="utf-8")
+    output = tmp_path / "summary.md"
+    if alias == "same_path":
+        output = report
+    elif alias == "symlink":
+        output.symlink_to(report)
+    else:
+        import os
+
+        os.link(report, output)
+
+    result = zap.main(["--input", str(report), "--output", str(output), "--source-sha", SHA])
+
+    assert result == 2
+    assert report.read_text(encoding="utf-8") == raw
+    assert "NOT VERIFIED" in capsys.readouterr().err
+    if alias == "symlink":
+        assert output.is_symlink()
