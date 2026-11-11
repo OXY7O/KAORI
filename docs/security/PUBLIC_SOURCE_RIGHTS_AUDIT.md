@@ -161,6 +161,30 @@ This is a dated **read-only source/metadata reconciliation** under #4212 and [We
 
 **What remains to establish an actual Website rights GO:** owner/contributor chain-of-title and rights to license software; approval of trademark/logo and AI-service terms, inputs and any third-party-derived image material; exact third-party attribution and shipped-artifact license contents; credential/secret historical and currently active exposure assessment across three repos; Git refs/tags/release/OCI/Actions-log and generated-site contents; independent security and rights acceptance, with any confidential finding handled through approved private channels. All eight original coverage-register rows remain **NOT VERIFIED**; the overall decision remains **NO-GO** for `LICENSE`, `NOTICE`, SPDX license metadata, external contribution launch, production release or deployment. No actual license grant or security configuration mutation is performed in this evidence entry.
 
+## Bounded default-branch tree and ref metadata — 2026-11-11 (NO-GO unchanged)
+
+This is a **new read-only provider metadata checkpoint** under #4212, not a Git history, published artifact, vulnerability or legal rights clearance. The actual GitHub `GET /repos/{repo}/git/trees/main?recursive=1` response returned `truncated=false` for all three public repositories. Counts reflect **tracked blob names and sizes at the exact default-main commit**; they do not inspect blob contents, unreachable history, alternate branches, archives, generated sites, workflow output or private registries.
+
+| Repository | Inspected default-main SHA | Tracked blobs | Markdown/MDX/RST | Image-like tracked blobs | Visible branch refs |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `OXY7O/KAORI` | `12ea7c0e487569f3187a139a935e89c07ab46744` | 4,816 | 652 | 6 | 772 |
+| `OXY7O/kaori-website` | `41091df060e406e2ade7ae63fc67bc65c4454559` | 66 | 14 | 3 | 38 |
+| `OXY7O/kaori-docs` | `6915fb97c5f53d8e5043876d51401d08bd683879` | 46 | 9 | 1 | 58 |
+
+File classes above use **extension-only filters**: documentation `.md/.mdx/.rst`; image-like `.svg/.png/.jpg/.jpeg/.webp/.gif/.ico`. The eight full GitHub branch-list pages for KAORI returned `100+100+100+100+100+100+100+72` records; Website and Docs returned 38 and 58 in their first page. The provider marked **two current branches protected** per repository in this snapshot. This branch inventory is a **scope and cleanup risk indicator**, not proof that all branch tips, tag refs, historical blobs or deleted references have been scanned. In particular, retained unmerged/test branches must not be deleted merely to make an audit look complete; audit first, then apply the existing governed Branch Hygiene and evidence-retention policy. The prior deliberately invalid test branch under #4278 remained visible among KAORI refs at this checkpoint.
+
+A parallel read of public `GET /repos/{repo}/releases?per_page=100` and `GET /repos/{repo}/actions/runs?per_page=1` returned these **bounded current metadata results**:
+
+| Repository | Visible Releases | Prerelease / non-prerelease | Attached GitHub Release assets in returned objects | Provider-reported total Actions workflow runs |
+| --- | ---: | ---: | ---: | ---: |
+| `OXY7O/KAORI` | 2 | 2 / 0 | 0 | 3,911 |
+| `OXY7O/kaori-website` | 9 | 7 / 2 | 0 | 409 |
+| `OXY7O/kaori-docs` | 9 | 9 / 0 | 0 | 264 |
+
+These provider-reported counters change over time. The returned `assets=[]` on current Release objects **does not** rule out existing/deleted OCI images, workflow artifacts, Action logs, independent Pages/static site assets, deleted releases or historic exposures. A separate Git tags listing endpoint was unsupported through the connected fetch tool; tag-ref coverage remains **NOT VERIFIED**. The `total_count` workflow value is **not** a paginated run-content review. Current tree filename keywords can identify examples/tests and potential review candidates, but were **not** treated as proof of secrets or of their absence; no sensitive path list or credential value is published.
+
+**Next safe evidence collection:** inspect/triage the bounded tracked-tree classes, all **reachable branch and tag tips plus earlier Git history**, public/retained GitHub Actions artifacts and logs using the **existing repository-approved inventories**, release/registry outputs and currently deployed Website/Docs, then privately reconcile credential alerts and source/content rights with independent owner sign-off. Maintain the original eight audit register rows at **NOT VERIFIED**, the licensing/public-contribution decision at **NO-GO**, and existing separate source-license/brand/AI attribution boundaries. No active secret, ownership transfer or rights-clearance conclusion is asserted by this metadata snapshot.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
