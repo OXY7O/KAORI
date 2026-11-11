@@ -126,6 +126,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        # Refuse aliasing the raw report: unlinking output would destroy input.
+        # A symlink output could otherwise redirect publication to another file.
+        if args.output.is_symlink() or (
+            args.output.exists() and args.input.exists() and args.output.samefile(args.input)
+        ) or args.output.resolve() == args.input.resolve():
+            raise UnverifiedZapReport('Unsafe evidence output location')
         # A reused workspace must never retain a prior run's verified-looking output.
         # Failure to clear it is a publication failure, not a valid new summary.
         args.output.unlink(missing_ok=True)
