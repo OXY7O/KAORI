@@ -169,21 +169,55 @@ def test_late_output_symlink_cannot_redirect_atomic_publication(tmp_path, monkey
     assert 'Committed source SHA' in output.read_text(encoding='utf-8')
     assert not list(tmp_path.glob('.zap-summary-*.tmp'))
 
+
 def test_alert_family_limit_is_cumulative_across_sites(monkeypatch):
     monkeypatch.setattr(zap, 'MAX_ALERT_FAMILIES', 2)
-    payload = {'site': [
-        {'alerts': [{'riskcode': '3'}]},
-        {'alerts': [{'riskcode': '1'}, {'riskcode': '0'}]},
-    ]}
+    payload = {
+        'site': [
+            {'alerts': [{'riskcode': '3'}]},
+            {'alerts': [{'riskcode': '1'}, {'riskcode': '0'}]},
+        ]
+    }
     with pytest.raises(zap.UnverifiedZapReport, match='Excessive alert records'):
         zap.render_summary(payload, SHA)
 
 
 def test_alert_family_limit_exact_boundary_across_sites(monkeypatch):
     monkeypatch.setattr(zap, 'MAX_ALERT_FAMILIES', 2)
-    payload = {'site': [
-        {'alerts': [{'riskcode': '3'}]},
-        {'alerts': [{'riskcode': '1'}]},
-    ]}
+    payload = {
+        'site': [
+            {'alerts': [{'riskcode': '3'}]},
+            {'alerts': [{'riskcode': '1'}]},
+        ]
+    }
     summary = zap.render_summary(payload, SHA)
     assert '| **Total** | **2** |' in summary
+
+
+def test_cumulative_instance_limit_rejects_multiple_sites(monkeypatch):
+    monkeypatch.setattr(zap, 'MAX_ALERT_INSTANCES', 2)
+    payload = {
+        'site': [
+            {'alerts': [{'riskcode': '3', 'instances': [{'uri': 'private'}]}]},
+            {'alerts': [{'riskcode': '1', 'instances': [{}, {}]}]},
+        ]
+    }
+    with pytest.raises(zap.UnverifiedZapReport, match='Excessive alert instances'):
+        zap.render_summary(payload, SHA)
+
+
+def test_instance_limit_boundary_does_not_publish_instance_details(monkeypatch):
+    monkeypatch.setattr(zap, 'MAX_ALERT_INSTANCES', 2)
+    secret = 'https://private.example/?token=do-not-publish'
+    payload = {
+        'site': [{'alerts': [{'riskcode': '3', 'instances': [{'uri': secret}, {}]}]}]
+    }
+    summary = zap.render_summary(payload, SHA)
+    assert '| High | 1 |' in summary
+    assert secret not in summary
+
+
+def test_malformed_instances_fail_closed():
+    payload = {'site': [{'alerts': [{'riskcode': '3', 'instances': 'not-a-list'}]}]}
+    with pytest.raises(zap.UnverifiedZapReport, match='Invalid alert instances'):
+        zap.render_summary(payload, SHA)
