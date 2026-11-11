@@ -34,6 +34,7 @@ def test_incompatible_evidence_fails_closed():
              {"site": [{"alerts": [{"riskcode": "unknown", "instances": []}]}]},
              {"site": [{"alerts": [{"riskcode": "2"}]}]},
              {"site": [{"alerts": [{"riskcode": True, "instances": []}]}]},
+             {"site": [{"alerts": [{"riskcode": "4", "instances": []}]}]},
              {"site": [{"alerts": [{"riskcode": "2", "instances": ["untrusted"]}]}]},
              {"site": [{"alerts": [{"riskcode": "2", "instances": [None]}]}]})
     for report in cases:
