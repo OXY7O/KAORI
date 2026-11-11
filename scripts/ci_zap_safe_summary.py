@@ -179,6 +179,10 @@ def main(argv: list[str] | None = None) -> int:
         # A reused workspace must never retain a prior run's verified-looking output.
         # Failure to clear it is a publication failure, not a valid new summary.
         args.output.unlink(missing_ok=True)
+        # Reject untrusted source identity before opening or parsing raw DAST data.
+        # The stale output has already been cleared to avoid false prior evidence.
+        if not SHA_PATTERN.fullmatch(args.source_sha):
+            raise UnverifiedZapReport('Invalid source identity')
         # Open without following symlinks or blocking on a FIFO swapped in
         # after the initial path check. Validate the opened descriptor, not
         # only the pathname (which may change between stat and open).
