@@ -8,7 +8,7 @@ import argparse
 import json
 from pathlib import Path
 
-RISK_CODES = ("0", "1", "2", "3", "4")
+RISK_CODES = ("0", "1", "2", "3")
 MAX_REPORT_BYTES = 32 * 1024 * 1024
 
 
@@ -88,7 +88,11 @@ def main():
         # Bound untrusted scan artifacts before parsing; do not echo file contents.
         if args.report.stat().st_size > MAX_REPORT_BYTES:
             raise ValueError("ZAP report exceeds bounded input size")
-        summary = summarize(json.loads(\n            args.report.read_text(encoding="utf-8"),\n            object_pairs_hook=_reject_duplicate_keys,\n            parse_constant=_reject_nonfinite_number,\n        ))
+        summary = summarize(json.loads(
+            args.report.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_nonfinite_number,
+        ))
     except (OSError, UnicodeError, ValueError, RecursionError):
         summary = None
     print(render(summary, args.source_sha), end="")
