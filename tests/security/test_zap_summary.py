@@ -100,3 +100,22 @@ def test_bounded_read_rejects_valid_json_larger_than_limit(tmp_path, monkeypatch
     assert "NOT VERIFIED" in output
     assert "Sites scanned:" not in output
     assert "padding" not in output
+
+
+def test_excessive_alert_families_fail_closed(monkeypatch):
+    monkeypatch.setattr(zap_summary, "MAX_ALERT_FAMILIES", 1)
+    report = {"site": [{"alerts": [
+        {"riskcode": "3", "instances": []},
+        {"riskcode": "1", "instances": []},
+    ]}]}
+    assert zap_summary.summarize(report) is None
+    assert "NOT VERIFIED" in zap_summary.render(zap_summary.summarize(report), SHA)
+
+
+def test_excessive_instance_count_fails_closed(monkeypatch):
+    monkeypatch.setattr(zap_summary, "MAX_INSTANCES", 1)
+    report = {"site": [{"alerts": [
+        {"riskcode": "2", "instances": [{}, {}]},
+    ]}]}
+    assert zap_summary.summarize(report) is None
+    assert "NOT VERIFIED" in zap_summary.render(zap_summary.summarize(report), SHA)
