@@ -264,9 +264,29 @@ def test_instance_total_is_numeric_and_excludes_private_fields():
     assert secret not in summary
 
 
-def test_missing_instance_arrays_report_zero_without_claiming_clean_scan():
+def test_missing_instance_arrays_do_not_claim_verified_zero():
     payload = {'site': [{'alerts': [{'riskcode': '3'}]}]}
+    summary = zap.render_summary(payload, SHA)
+    assert 'Alert instance entries: **NOT VERIFIED** (missing instance arrays).' in summary
+    assert '| High | 1 |' in summary
+    assert 'proof of complete application security' in summary
+
+
+def test_mixed_present_and_missing_instances_do_not_claim_partial_total():
+    payload = {
+        'site': [{'alerts': [
+            {'riskcode': '3', 'instances': [{}, {}]},
+            {'riskcode': '1'},
+        ]}]
+    }
+    summary = zap.render_summary(payload, SHA)
+    assert 'Alert instance entries: **NOT VERIFIED**' in summary
+    assert 'Alert instance entries: **2**.' not in summary
+    assert '| **Total** | **2** |' in summary
+
+
+def test_explicit_empty_instance_arrays_report_verified_zero():
+    payload = {'site': [{'alerts': [{'riskcode': '3', 'instances': []}]}]}
     summary = zap.render_summary(payload, SHA)
     assert 'Alert instance entries: **0**.' in summary
     assert '| High | 1 |' in summary
-    assert 'proof of complete application security' in summary
