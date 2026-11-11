@@ -396,3 +396,20 @@ def test_opened_regular_file_size_is_checked_before_read(tmp_path, monkeypatch, 
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_symlinked_output_directory_cannot_redirect_evidence(tmp_path, capsys):
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    alias = tmp_path / 'alias'
+    alias.symlink_to(outside, target_is_directory=True)
+    output = alias / 'summary.md'
+
+    result = zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA])
+
+    assert result == 2
+    assert not output.exists()
+    assert not (outside / 'summary.md').exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
