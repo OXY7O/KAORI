@@ -22,6 +22,22 @@ RISK_NAMES = (
     (1, 'Low'),
     (0, 'Informational'),
 )
+MAX_ALERT_FAMILIES = 100_000
+
+
+def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise UnverifiedZapReport('Ambiguous JSON object')
+        result[key] = value
+    return result
+
+
+def _reject_constant(_value: str) -> None:
+    raise UnverifiedZapReport('Non-finite JSON number')
+
+
 SHA_PATTERN = re.compile(r'[0-9a-fA-F]{40}\Z')
 
 
@@ -45,6 +61,7 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
         raise UnverifiedZapReport('Missing scanned sites')
 
     totals: Counter[int] = Counter()
+    families = 0
     for site in sites:
         if not isinstance(site, dict):
             raise UnverifiedZapReport('Invalid site structure')
@@ -54,6 +71,9 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int]]:
         for alert in alerts:
             if not isinstance(alert, dict):
                 raise UnverifiedZapReport('Invalid alert structure')
+            families += 1
+            if families > MAX_ALERT_FAMILIES:
+                raise UnverifiedZapReport('Excessive alert records')
             totals[_risk_code(alert.get('riskcode'))] += 1
 
     return len(sites), totals
@@ -103,13 +123,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        if args.input.stat().st_size > MAX_REPORT_BYTES:
+        with args.input.open('rb') as stream:
+            raw = stream.read(MAX_REPORT_BYTES + 1)
+        if len(raw) > MAX_REPORT_BYTES:
             raise UnverifiedZapReport('Report exceeds bounded input size')
-        payload = json.loads(args.input.read_text(encoding='utf-8'))
+        payload = json.loads(
+            raw.decode('utf-8'),
+            object_pairs_hook=_unique_keys,
+            parse_constant=_reject_constant,
+        )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(summary, encoding='utf-8')
-    except (OSError, ValueError, UnicodeError):
+    except (OSError, ValueError, UnicodeError, RecursionError):
         # Don't echo source exceptions: paths and parser context may be sensitive.
         print('ZAP sanitized summary NOT VERIFIED; no raw fields emitted.', file=sys.stderr)
         return 2
