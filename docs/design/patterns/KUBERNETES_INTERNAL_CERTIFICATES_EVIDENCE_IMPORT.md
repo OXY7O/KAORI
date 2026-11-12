@@ -84,6 +84,24 @@ Supported components are intentionally restricted to kubeadm's known control-pla
 
 The validator rejects unknown keys, invalid UTC timestamps, duplicate components, inconsistent CA/leaf classification, unknown types, oversized source files and mismatched cluster identities. A `complete` manifest replaces the complete known inventory for the exact cluster+node+source; use `partial` until completeness has been verified. A failed validation commits nothing. A repeated normalized manifest is idempotent; older evidence cannot overwrite a newer committed snapshot.
 
+### Preflight the `db-bootstrap` Python image before any privileged PKI schema upgrade
+
+During the 2026-11-12 local UAT, the operator-only migrator passed
+`PASS: trusted, non-superuser migration identity admitted`, but Flask
+could not import `run:app` because the running `db-bootstrap` image lacked
+the **already-locked** `qrcode` package. As a consequence, `flask db`
+was unavailable and **no schema migration completed**. This is distinct
+from the earlier `kaori_runtime` schema `CREATE` privilege denial.
+
+Follow the **canonical DevContainer** image rebuild and Python import
+preflight in
+[devcontainer-postgres-first-run.md](../../operations/devcontainer-postgres-first-run.md)
+before the separately authorized `--upgrade-only` operation. The one-shot
+Compose service is built from the Dockerfile `development` stage and must
+contain base dependencies (including `qrcode==8.2`); do not install
+dependencies manually in a throwaway container or disable MFA. The
+preflight only verifies software availability, not the database schema.
+
 ### PostgreSQL migration permission failure — use the **existing KAORI privileged migration service**
 
 **Canonical authority:** [DevContainer PostgreSQL first-run & upgrade](../../operations/devcontainer-postgres-first-run.md) (#1427, merged #1462), `scripts/devcontainer/bootstrap-db.sh`, and the existing [least-privilege contract](../../../tests/contracts/release/test_devcontainer_postgres_runtime_role_contract.py). These **supersede generic DBA GRANT instructions for the KAORI DevContainer**.
