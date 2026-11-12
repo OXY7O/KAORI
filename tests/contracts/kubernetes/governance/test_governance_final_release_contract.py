@@ -184,7 +184,7 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert access.count('  - internal_certificates.view') == 5
 
     assert 'View PKI Evidence' in workspace
-    assert "url_for('governance.internal_certificates', cluster_id=record.id)" in workspace
+    assert "url_for('governance.internal_certificates', cluster_id=record.id, evidence_tab='certificates')" in workspace
     assert "'cluster_id': payload.selected_cluster_id" in workspace
     assert 'Clear Cluster Scope' in workspace
 
@@ -207,6 +207,15 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     operations = read('app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html')
     posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
 
+    assert 'Internal PKI Evidence' in workspace
+    assert 'components/workspace_tabs.html' in workspace
+    assert 'workspace_tabs.render_query_tabs(evidence_tabs' in workspace
+    assert 'id="internal-pki-evidence-workspace"' in workspace
+    assert 'hx-select="#internal-pki-evidence-workspace"' in workspace
+    assert "'Registered Source Coverage'" in workspace
+    assert "'Certificate Inventory'" in workspace
+    assert "active_tab == 'sources'" in workspace
+    assert "evidence_tab='certificates'" in workspace
     assert 'Internal PKI Source Registry' in workspace
     assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
     assert "registry_ui.footer('governance.internal_certificates'" in workspace
@@ -253,8 +262,9 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'check_internal_pki_schema_readiness()' in route
     assert 'schema_readiness.ready' in route
     assert 'get_internal_certificate_inventory_page' in service
-    assert 'committed_count = select(func.count(InternalPKICertificateInventory.id))' in service
-    assert 'committed_count.where(InternalPKICertificateInventory.cluster_id == cluster_id)' in service
+    assert 'operational = get_internal_pki_operational_summary(cluster_id)' in service
+    assert 'statement = statement.where(inventory.cluster_id == cluster_id)' in service
+    assert "'committed_total': operational['total']" in service
     assert 'InternalPKICertificateInventory.query' in service
     assert 'InternalPKIEvidenceBatch' in service
     assert 'source_rows = db.session.execute(' in service
@@ -301,6 +311,10 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'Internal Certificate Registry' in partial
     assert "registry_ui.filter_form('governance.internal_certificates'" in partial
     assert "registry_ui.footer('governance.internal_certificates'" in partial
+    assert 'name="evidence_tab" value="certificates"' in partial
+    assert "'evidence_tab': 'certificates'" in partial
+    assert 'name="search"' in partial
+    assert 'name="page"' in partial
     assert "page_param='cert_page'" in partial
     assert 'cert_per_page' in partial
     assert 'Operator Attested' in partial
