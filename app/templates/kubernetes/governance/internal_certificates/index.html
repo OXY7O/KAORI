@@ -79,8 +79,8 @@
                         page=payload.pagination.page,
                         per_page=payload.pagination.per_page,
                         cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_page=inventory.pagination.page if inventory else 1,
-                        cert_per_page=inventory.pagination.per_page if inventory else 5)
+                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
                     ),
                     (
                     'certificates',
@@ -93,8 +93,8 @@
                         page=payload.pagination.page,
                         per_page=payload.pagination.per_page,
                         cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_page=inventory.pagination.page if inventory else 1,
-                        cert_per_page=inventory.pagination.per_page if inventory else 5)
+                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
                     )
                 ] %}
                 <section id="internal-pki-evidence-workspace"
@@ -137,8 +137,8 @@
                                         aria_label='Filter registered clusters for internal PKI source assessment') %}
                                         <input type="hidden" name="evidence_tab" value="sources">
                                         <input type="hidden" name="cert_search" value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
-                                        <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else 1 }}">
-                                        <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else 5 }}">
+                                        <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else request.args.get('cert_page', 1) }}">
+                                        <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5) }}">
                                         {% if payload.selected_cluster_id %}
                                             <input type="hidden"
                                                    name="cluster_id"
@@ -207,7 +207,7 @@
                                                     'internal-pki-source-registry',
                                                     'internal-pki-source-loading',
                                                     payload.pagination,
-                                                    {'search': payload.search, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_page': inventory.pagination.page if inventory else 1, 'cert_per_page': inventory.pagination.per_page if inventory else 5},
+                                                    {'search': payload.search, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
                                                     payload.pagination.allowed_per_page,
                                                     resource_label='Clusters',
                                                     rows_aria_label='Clusters per page',
