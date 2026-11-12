@@ -301,7 +301,8 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'op.drop_table(' in migration
 
     assert "section_intro.render('Source Readiness'" not in template
-    assert 'aria-label="Internal PKI source readiness"' in template
+    assert 'aria-label="Internal certificate source readiness"' in template
+    assert 'aria-label="Internal PKI source readiness"' not in template
     assert 'partials/_snapshot_context.html' in template
     assert 'partials/_collection_operations.html' in template
     assert 'partials/_posture.html' in template
