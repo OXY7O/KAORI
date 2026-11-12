@@ -28,11 +28,16 @@ RISK_NAMES = (
 )
 MAX_ALERT_FAMILIES = 100_000
 MAX_SITE_ENTRIES = 100_000
+MAX_OBJECT_MEMBERS = 10_000
 MAX_ALERT_INSTANCES = 1_000_000
 
 
 def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
+    # A bounded raw report can still contain a huge object with tiny keys.
+    # Cap members before building the dictionary to avoid memory amplification.
+    if len(pairs) > MAX_OBJECT_MEMBERS:
+        raise UnverifiedZapReport('Excessive JSON object members')
     for key, value in pairs:
         if key in result:
             raise UnverifiedZapReport('Ambiguous JSON object')
