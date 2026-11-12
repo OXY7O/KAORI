@@ -103,6 +103,7 @@
                                      class="{{ table_ui.block_classes() }}">
                                 {% set source_clear_query = {
                                     'evidence_tab': 'sources',
+                                    'clear_filters': 'sources',
                                     'per_page': payload.pagination.per_page,
                                     'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
                                     'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
@@ -114,11 +115,13 @@
                                 } %}
                                 {% set source_clear_action %}
                                     {% if payload.search or payload.filters.environment or payload.filters.platform or payload.selected_cluster_id %}
-                                        {{ registry_ui.clear_filters_action(
+                                        <span class="inline-flex" hx-boost="false" hx-disable>
+                                            {{ registry_ui.clear_filters_action(
                                             url_for('governance.internal_certificates', **source_clear_query),
                                             table_ui.action_classes(),
                                             marker='internal-pki-evidence-workspace',
                                             lead=false) }}
+                                        </span>
                                     {% endif %}
                                 {% endset %}
                                 {% set source_badge = table_label.metadata_label(table_label.count_text(payload.pagination.total_items, 'Cluster'), icon='server') %}
