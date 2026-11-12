@@ -48,19 +48,19 @@
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}
             {% set governance_capabilities = [
-                {
-                    'icon': 'badge-check',
-                    'title': 'TLS Certificates',
-                    'status': 'Implemented',
-                    'tone': 'normal',
-                    'description': 'Govern certificate lifecycle, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.',
-                    'boundary': 'TLS-specific posture and evidence stay inside the TLS Certificates capability.',
-                    'href': url_for('governance.tls_certificates') if can_view_tls else none,
-                    'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
-                    'action_icon': 'arrow-right' if can_view_tls else 'lock',
-                    'available': can_view_tls
-                }
-                ] %}
+                            {
+                                'icon': 'badge-check',
+                                'title': 'TLS Certificates',
+                                'status': 'Implemented',
+                                'tone': 'normal',
+                                'description': 'Manage certificate lifecycle, Ingress coverage, and governed TLS rotation.',
+                                'boundary': 'Detailed TLS evidence stays in this workspace.',
+                                'href': url_for('governance.tls_certificates') if can_view_tls else none,
+                                'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
+                                'action_icon': 'arrow-right' if can_view_tls else 'lock',
+                                'available': can_view_tls
+                            }
+                        ] %}
             {% if can_view_tls and tls_snapshot is not none %}
                 {% with payload={'snapshot': tls_snapshot} %}
                     {% include "kubernetes/governance/tls_certificates/partials/_snapshot_context.html" %}
@@ -124,15 +124,15 @@
                                 'governance-model-heading') }}
                 {% set model_guide %}
                     {{ info_tip.render('governance-operating-model-guide',
-                                    'Governance Operating Model Guide',
-                                    'This domain overview connects policy and evidence without replacing Kubernetes.',
-                                    items=[
-                                    'Kubernetes retains live resource and enforcement authority.',
-                                    'KAORI normalizes committed evidence, ownership, and governance policy context.',
-                                    'Mutations remain in authorized operational workflows with auditable outcomes.'
-                                    ],
-                                    placement='right',
-                                    variant='guide') }}
+                                        'Governance Operating Model Guide',
+                                        'This domain overview connects policy and evidence without replacing Kubernetes.',
+                                        items=[
+                                        'Kubernetes retains live resource and enforcement authority.',
+                                        'KAORI normalizes committed evidence, ownership, and governance policy context.',
+                                        'Mutations remain in authorized operational workflows with auditable outcomes.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
                 {% endset %}
                 {% call operational_section_card.render(
                     'Governance Operating Model',
