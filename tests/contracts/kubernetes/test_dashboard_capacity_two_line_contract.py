@@ -101,4 +101,3 @@ def test_three_dashboard_capacity_sections_use_one_shared_card_presentation() ->
     assert "'Used Capacity'" in storage and "'Free Capacity'" in storage and "'Usable Capacity'" in storage
     assert 'overview.capacity.metrics' in registry
     assert "missing_label='Inventory' if item.progress_label == 'Inventory' else 'No Quota'" in registry
-
