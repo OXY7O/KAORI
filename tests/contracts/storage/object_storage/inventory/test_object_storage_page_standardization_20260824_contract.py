@@ -246,35 +246,30 @@ def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
     assert 'bucket.provider_detail_sections' in bucket
 
 
-def test_object_storage_posture_titles_expose_accessible_shared_guides() -> None:
-    guide = read('app/templates/components/info_tip.html')
-    assert "variant='guide'" in guide
-    assert '<span>Guide</span>' in guide
-    assert 'data-kaori-info-tip-trigger' in guide
-    assert 'role="tooltip"' in guide
+def test_object_storage_posture_titles_use_canonical_indicator_metadata_labels() -> None:
+    kubernetes = read('app/templates/kubernetes/inventory/nodes/partials/_summary_cards.html')
+    shared_label = read('app/templates/components/table_label.html')
+    assert "table_label.metadata_label(posture_metrics|length ~ ' Indicators'" in kubernetes
+    assert 'macro metadata_label(text,' in shared_label
 
-    for path, title, guide_id in (
+    for path, title in (
         (
             'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html',
             'System Inventory Posture',
-            'object-storage-systems-posture-guide',
         ),
         (
             'app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html',
             'Object Storage Namespace Posture',
-            'object-storage-namespaces-posture-guide',
         ),
     ):
         source = read(path)
-        assert 'components/info_tip.html' in source
-        assert f"info_tip.render('{guide_id}'" in source
-        assert f"'{title} Guide'" in source
+        assert "components/table_label.html" in source
         assert f"'{title}'" in source
-        assert "variant='guide'" in source
-        assert "placement='right'" in source
-        assert 'header_badge=posture_guide' in source
+        assert "table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid')" in source
+        assert 'header_badge=posture_badge' in source
         assert 'posture_grid.render(metrics, columns=4)' in source
         assert "body_classes='p-0'" in source
-        assert "table_label.metadata_label('Info'" not in source
+        assert "components/info_tip.html" not in source
+        assert "variant='guide'" not in source
+        assert 'posture_guide' not in source
         Environment().parse(source)
-
