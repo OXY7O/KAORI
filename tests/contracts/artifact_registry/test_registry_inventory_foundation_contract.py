@@ -318,17 +318,18 @@ def test_registry_resource_posture_descriptions_are_compact_and_evidence_qualifi
         assert description in current_metrics
         assert len(description) <= 40
 
-    assert "RegistryProject.public.is_(True)" in current_metrics
-    assert "RegistryProject.public.is_(None)" in current_metrics
-    assert "func.count(RegistryRepository.pull_count)" in current_metrics
-    assert "RegistryArtifact.tags.any()" in current_metrics
+    assert 'RegistryProject.public.is_(True)' in current_metrics
+    assert 'RegistryProject.public.is_(None)' in current_metrics
+    assert 'func.count(RegistryRepository.pull_count)' in current_metrics
+    assert 'RegistryArtifact.tags.any()' in current_metrics
 
 
 def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_section_copy() -> None:
     from jinja2 import Environment
 
     root = ROOT / 'app/templates'
-    kubernetes = (root / 'kubernetes/inventory/namespaces/partials/_namespace_detail_content.html').read_text()
+    kubernetes_path = root / 'kubernetes/inventory/namespaces/partials/_namespace_detail_content.html'
+    kubernetes = kubernetes_path.read_text()
     assert 'compact=true' in kubernetes
     assert 'detail.header_identity_row()' in kubernetes
     assert 'detail.inventory_section(' in kubernetes
@@ -338,12 +339,25 @@ def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_sectio
         (
             'repository',
             'repository.name',
-            ('Repository Identity', 'Registry Source', 'Artifact Coverage', 'Provider Timing', 'Snapshot Context'),
+            (
+                'Repository Identity',
+                'Registry Source',
+                'Artifact Coverage',
+                'Provider Timing',
+                'Snapshot Context',
+            ),
         ),
         (
             'artifact',
             'artifact.digest_short',
-            ('Artifact Identity', 'Registry Location', 'Tag References', 'Artifact Timing', 'Registry Source', 'Snapshot Context'),
+            (
+                'Artifact Identity',
+                'Registry Location',
+                'Tag References',
+                'Artifact Timing',
+                'Registry Source',
+                'Snapshot Context',
+            ),
         ),
     ):
         source = (root / f'artifact_registry/partials/_inventory_{resource}_detail.html').read_text()
@@ -356,7 +370,7 @@ def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_sectio
         assert 'detail.resource_sheet()' in source
         assert 'detail.inspector_summary_strip(' in source
         assert 'detail.inventory_section(' in source
-        assert 'description=\'Provider and environment.\'' in source or resource == 'project'
+        assert "description='Provider and environment.'" in source
         for heading in sections:
             assert f"'{heading}'" in source
         assert "description='Snapshot freshness and scope.'" in source
