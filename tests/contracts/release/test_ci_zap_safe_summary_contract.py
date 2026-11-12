@@ -246,3 +246,31 @@ def test_concurrent_cli_invocations_have_independent_json_object_budgets(
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert list(pool.map(run_one, range(2))) == [0, 0]
     assert all((tmp_path / f'summary-{i}.md').exists() for i in range(2))
+
+
+def test_cli_rejects_in_place_temporary_evidence_tampering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A same-inode temporary rewrite must not become published evidence."""
+    import scripts.ci_zap_safe_summary as zap_summary
+
+    raw = tmp_path / 'baseline.json'
+    raw.write_text(json.dumps(_report()), encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    original_stat = Path.stat
+    tampered = False
+
+    def tamper_before_stat(path: Path, *args: object, **kwargs: object) -> object:
+        nonlocal tampered
+        if path.name.startswith('.zap-summary-') and not tampered:
+            tampered = True
+            # Preserve inode and file type while changing the content and size.
+            with path.open('a', encoding='utf-8') as stream:
+                stream.write('UNTRUSTED TEMPORARY CONTENT')
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'stat', tamper_before_stat)
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
+    assert tampered
+    assert not output.exists()
+    assert raw.exists()
