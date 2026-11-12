@@ -289,10 +289,87 @@ def test_registry_fleet_evidence_descriptions_are_compact_and_source_qualified()
         "int(overview['stale_snapshot_count'])",
         "int(overview['pending_snapshot_count'])",
         "int(overview['failed_refresh_count'])",
-        "RegistryProject.public.is_not(None)",
-        "RegistryProject.public.is_(True)",
+        'RegistryProject.public.is_not(None)',
+        'RegistryProject.public.is_(True)',
     ):
         assert evidence_source in presentation
+
+
+def test_registry_resource_posture_descriptions_are_compact_and_evidence_qualified() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+    current_metrics = presentation.split('def _inventory_resource_posture_metrics(', 1)[1].split(
+        'def _inventory_posture_copy(', 1
+    )[0]
+    expected = (
+        'Committed Registry projects.',
+        'Providers with project evidence.',
+        'Provider-confirmed public projects.',
+        'Projects lacking visibility data.',
+        'Committed Registry repositories.',
+        'Providers with repository evidence.',
+        'Artifacts in committed repositories.',
+        'Repositories with pull-count data.',
+        'Committed Registry artifacts.',
+        'Providers with artifact evidence.',
+        'Artifacts with committed tags.',
+        'Artifacts without current tags.',
+    )
+    for description in expected:
+        assert description in current_metrics
+        assert len(description) <= 40
+
+    assert "RegistryProject.public.is_(True)" in current_metrics
+    assert "RegistryProject.public.is_(None)" in current_metrics
+    assert "func.count(RegistryRepository.pull_count)" in current_metrics
+    assert "RegistryArtifact.tags.any()" in current_metrics
+
+
+def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_section_copy() -> None:
+    from jinja2 import Environment
+
+    root = ROOT / 'app/templates'
+    kubernetes = (root / 'kubernetes/inventory/namespaces/partials/_namespace_detail_content.html').read_text()
+    assert 'compact=true' in kubernetes
+    assert 'detail.header_identity_row()' in kubernetes
+    assert 'detail.inventory_section(' in kubernetes
+
+    for resource, title, sections in (
+        ('project', 'project.name', ('Project Identity', 'Registry Source', 'Repository Coverage', 'Snapshot Context')),
+        (
+            'repository',
+            'repository.name',
+            ('Repository Identity', 'Registry Source', 'Artifact Coverage', 'Provider Timing', 'Snapshot Context'),
+        ),
+        (
+            'artifact',
+            'artifact.digest_short',
+            ('Artifact Identity', 'Registry Location', 'Tag References', 'Artifact Timing', 'Registry Source', 'Snapshot Context'),
+        ),
+    ):
+        source = (root / f'artifact_registry/partials/_inventory_{resource}_detail.html').read_text()
+        Environment().parse(source)
+        assert 'detail.workspace_header(' in source
+        assert 'compact=true' in source
+        assert 'context_items=' in source
+        assert f'detail.inventory_title({title}, compact=true)' in source
+        assert 'detail.header_identity_row()' in source
+        assert 'detail.resource_sheet()' in source
+        assert 'detail.inspector_summary_strip(' in source
+        assert 'detail.inventory_section(' in source
+        assert 'description=\'Provider and environment.\'' in source or resource == 'project'
+        for heading in sections:
+            assert f"'{heading}'" in source
+        assert "description='Snapshot freshness and scope.'" in source
+
+    project = (root / 'artifact_registry/partials/_inventory_project_detail.html').read_text()
+    assert 'table_label.status_indicator_label(project.visibility.label' in project
+    assert "context_items=[{'label': project.provider_name, 'icon': 'boxes'}]" in project
+    repository = (root / 'artifact_registry/partials/_inventory_repository_detail.html').read_text()
+    assert "'label': repository.project_name" in repository
+    assert "'label': repository.provider_name" in repository
+    artifact = (root / 'artifact_registry/partials/_inventory_artifact_detail.html').read_text()
+    assert "'label': artifact.repository_name" in artifact
+    assert "'label': artifact.provider_name" in artifact
 
 
 def test_registry_compact_catalog_cards_preserve_actions_and_counts() -> None:
