@@ -29,10 +29,16 @@ RISK_NAMES = (
 MAX_ALERT_FAMILIES = 100_000
 MAX_SITE_ENTRIES = 100_000
 MAX_OBJECT_MEMBERS = 10_000
+MAX_JSON_OBJECTS = 100_000
+_json_objects_seen = 0
 MAX_ALERT_INSTANCES = 1_000_000
 
 
 def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    global _json_objects_seen
+    _json_objects_seen += 1
+    if _json_objects_seen > MAX_JSON_OBJECTS:
+        raise UnverifiedZapReport('Excessive JSON object count')
     result: dict[str, Any] = {}
     # A bounded raw report can still contain a huge object with tiny keys.
     # Cap members before building the dictionary to avoid memory amplification.
@@ -254,6 +260,9 @@ def main(argv: list[str] | None = None) -> int:
         # scan report. Do not publish a valid-looking JSON prefix as evidence.
         if len(raw) != opened_stat.st_size:
             raise UnverifiedZapReport('Incomplete ZAP report read')
+        # Reset the bounded container counter for every invocation in this process.
+        global _json_objects_seen
+        _json_objects_seen = 0
         payload = json.loads(
             raw.decode('utf-8'),
             object_pairs_hook=_unique_keys,
