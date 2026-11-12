@@ -258,7 +258,14 @@ def _internal_pki_source_page() -> dict[str, object]:
         'selected_cluster_id': '',
         'search': '',
         'filters': {'environment': '', 'platform': ''},
-        'filter_options': {'environments': ['non-production'], 'platforms': ['kubernetes']},
+        'filter_options': {
+            'environments': ['non-production'],
+            'platforms': ['kubernetes'],
+            'clusters': [
+                {'id': 'cluster-01', 'name': 'Pilot Cluster'},
+                {'id': 'cluster-02', 'name': 'Secondary Cluster'},
+            ],
+        },
         'records': [
             {
                 'id': 'cluster-01',
@@ -575,6 +582,25 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'All Expiry States' in content
     assert 'All Coverage' in content
     assert 'All Freshness' in content
+    assert 'id="internal-pki-cluster-filter"' in content
+    assert re.search(r'<option value=""\s+selected>All Clusters</option>', content)
+    assert 'Secondary Cluster' in content
+
+    source_view = client.get('/governance/internal-certificates')
+    assert source_view.status_code == 200
+    view_html = source_view.get_data(as_text=True)
+    view_link = re.search(
+        r'<a href="([^"]+)"[^>]*aria-label="View PKI Evidence for Pilot Cluster"',
+        view_html,
+    )
+    assert view_link is not None
+    view_result = client.get(unescape(view_link.group(1)))
+    assert view_result.status_code == 200
+    view_html = view_result.get_data(as_text=True)
+    assert re.search(r'<option value="cluster-01"\s+selected>Pilot Cluster</option>', view_html)
+    assert 'Cluster: Pilot Cluster' in view_html
+    assert 'Clear Filters' in view_html
+
     filtered = client.get('/governance/internal-certificates?evidence_tab=certificates&cert_search=ca&cert_kind=ca')
     assert filtered.status_code == 200
     filtered_html = filtered.get_data(as_text=True)
@@ -607,6 +633,8 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert cleared.status_code == 200
     cleared_html = cleared.get_data(as_text=True)
     assert 'Internal Certificate Registry' in cleared_html
+    assert re.search(r'<option value=""\s+selected>All Clusters</option>', cleared_html)
+    assert not re.search(r'<option value="cluster-01"\s+selected>', cleared_html)
     assert 'Clear Filters' not in cleared_html
     assert 'Clear Cluster Scope' not in cleared_html
     assert 'All Coverage' in cleared_html
