@@ -58,7 +58,7 @@ def main() -> int:
 
     for token in (
         "@permission_required('governance.view')",
-        "can_view_tls=current_user.has_permission('tls_certificates.view')",
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
     ):
         require(
             token in governance_source,
