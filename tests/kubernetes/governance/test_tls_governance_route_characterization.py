@@ -207,7 +207,7 @@ def test_governance_authorized_tls_view_reuses_actual_tls_snapshot_partial(
     assert response.status_code == 200
     assert calls == ['read']
     content = response.get_data(as_text=True)
-    assert content.count('TLS Collection Snapshot') == 1
+    assert content.count('aria-label="TLS Collection Snapshot"') == 1
     assert 'Kubernetes TLS Secrets + Ingresses' in content
     assert '11 TLS Secrets' in content
     assert 'Governance Control Context' not in content
