@@ -77,15 +77,20 @@ def present_milliseconds(value: int | float | None, *, empty: str = 'Not observe
 
 
 def pretty_structured_json(value: object) -> str | None:
-    """Pretty-print valid JSON objects/arrays for read-only metadata; leave other values unchanged."""
-    if not isinstance(value, str) or not value.lstrip().startswith(('{', '[')):
-        return None
-
-    try:
-        parsed = json.loads(value)
-    except (json.JSONDecodeError, RecursionError):
+    """Pretty-print native JSON containers or encoded JSON without changing the evidence."""
+    if isinstance(value, (dict, list)):
+        parsed = value
+    elif isinstance(value, str) and value.lstrip().startswith(('{', '[')):
+        try:
+            parsed = json.loads(value)
+        except (json.JSONDecodeError, RecursionError):
+            return None
+    else:
         return None
 
     if not isinstance(parsed, (dict, list)):
         return None
-    return json.dumps(parsed, indent=2, ensure_ascii=False)
+    try:
+        return json.dumps(parsed, indent=2, ensure_ascii=False)
+    except (TypeError, ValueError, RecursionError):
+        return None
