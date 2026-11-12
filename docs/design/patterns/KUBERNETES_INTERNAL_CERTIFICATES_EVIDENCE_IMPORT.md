@@ -43,7 +43,7 @@ Run the context-specific commands **only if** the intended test context is `dock
 - **Docker Desktop / kubeadm**: native provisioning may use kubeadm under Docker Desktop's managed control plane, but `kubeadm` is not expected to run on the workstation. An owner-approved control-plane-local, version-qualified, **read-only** source is still required before constructing the strict kubeadm manifest. Do not `docker exec` into infrastructure containers or mount control-plane paths just to bypass permission controls.
 - Docker Desktop manages its own Kubernetes lifecycle. **Never attempt to renew, overwrite or rotate its control-plane/etcd PKI from KAORI**, and do not use `kubeadm certs renew` as a Docker Desktop operational playbook. For a disposable local cluster, lifecycle/reset actions remain under Docker Desktop ownership and need separate human approval because reset may discard local workloads/resources.
 
-Reference: [Docker Desktop Kubernetes provider/provisioner documentation](https://docs.docker.com/desktop/use-desktop/kubernetes/). The `#4442` source support matrix and deferred `#4445` renewal blueprint must carry the provider-specific decision; the current view is source readiness, not verified PKI expiry.
+Reference: [Docker Desktop Kubernetes provider/provisioner documentation](https://docs.docker.com/desktop/use-desktop/kubernetes/). The `#4442` source support matrix and `#4445` native-renewal ownership decision define the provider boundary; the current view reports source metadata, not verified active PKI expiry.
 
 ## Verified Docker Desktop control-plane report — v1.36.4 pilot (2026-11-12)
 
@@ -55,8 +55,7 @@ The operator has now demonstrated an **actual read-only source observation** for
 **11 leaf/kubeconfig entries and 3 CAs**. Reported expiry is 11 September
 2027 for most leaf entries, 12 November 2027 for apiserver, and 8 September
 2036 for the CAs. Source file observation does **not** cryptographically prove
-active certificate installation or authorize rotation. The PKI tables were
-previously empty; this is **source evidence, not a completed KAORI import**.
+active certificate installation or authorize rotation. The PKI tables were previously empty. On 2026-11-12 the operator imported the reviewed 14-record batch `107855b3-8f8b-407a-84fe-9bdf7e75be38` into the development database and verified 11 leaf + 3 CA inventory rows and Activity Audit. **This remains operator-attested UAT metadata, not automated collection or proof of installed/active certificate use.**
 
 Docker Desktop may use the **kind** cluster provisioner even when its
 `desktop-control-plane` node has a functional **kubeadm** binary. These are
@@ -170,8 +169,7 @@ No secrets or source reports are attached to GitHub issues.
 
 The importer remains unchanged and authoritative: strict v1 manifest,
 registered UUID, source-qualified deduplicated upsert, Activity Audit,
-and no mutation on validation failures. #4443 automated collection and
-#4445 Ansible-governed renewal remain separate, deferred work.
+and no mutation on validation failures. #4443 approved Ansible read-only collection remains a separate future workstream. #4445 confirms renewal stays with the native Kubernetes platform or external PKI owner; KAORI renewal is not planned.
 
 ## 2. Strict, metadata-only manifest
 
@@ -327,7 +325,7 @@ After a successful import and refresh:
 - `Kubernetes → Governance → Internal Certificates` shows the committed **Internal Certificate Registry** with default 5/page, cluster/node/component, kind, issuer, source-reported `NotAfter`, externally managed flag, evidence reference/collection time, status and source coverage.
 - The status is one of **Expired**, **Critical Window** (within 7 days), **Renewal Window** (within 30 days), **Outside Window**, or **Stale Evidence** (metadata older than 30 days). These are **display classifications of operator-reported expiry**, not verified active health. Expiry windows are provisional display thresholds pending policy approval, not automation triggers.
 - Empty/unsupported/permission denied/migration gap remain distinct from healthy; an empty inventory never produces a green success indicator.
-- **Source Readiness** changes to **Operator Attested** only when a source batch exists. Authority remains explicitly **Operator Supplied**, and renewal stays deferred.
+- **Source Readiness** changes to **Operator Attested** only when a source batch exists. Authority remains explicitly **Operator Supplied**; renewal is native platform/PKI-owned, not deferred KAORI execution.
 - Existing TLS Secrets / Ingress coverage remains a separate capability; no blending of counts or identities.
 
 ## 5. Failure and recovery
@@ -344,7 +342,7 @@ After a successful import and refresh:
 | New migration not applied | UI shows **Inventory Schema Upgrade Required**, never invents an empty healthy inventory |
 | Failed database write | Roll back batch, rows and audit together |
 | Source older than 30 days | Keep evidence; mark Stale Evidence |
-| Renewal request | No action available until Ansible/governed workstream #4445 is approved |
+| Renewal request | Not supported in KAORI; follow the native platform or PKI owner's approved procedure outside KAORI |
 
 ## 6. Validation and acceptance
 
@@ -352,4 +350,4 @@ Run existing quality gates, focused importer/read-model/route tests, schema upgr
 
 **Human acceptance requires actual non-production source evidence.** The code path can be reviewed without it, but the operational requirement “certificate values visible” is not complete until a real authorized source is imported and verified in Dev Container. Keep #4443/#4444 OPEN; no PKI renewal or host mutation is implemented here.
 
-Related: [Source Contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md), [Deferred Renewal Blueprint](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md), #4461, #4443, #4444, #4445.
+Related: [Source Contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md), [Native Renewal Ownership](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md), #4461, #4443, #4444, #4445.

@@ -1,6 +1,6 @@
 # Kubernetes Internal Certificates — Source and Support Contract
 
-> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; actual inventory rows require operator-reviewed import. Production PKI source qualification, automated collector (#4443), and all renewal/mutation (#4445) remain deferred. Authority: #4441 / #4442.
+> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; a 14-record pilot batch was committed and audit-verified in the operator's Dev Container on 2026-11-12. Production automated ingestion remains separate. Production source qualification and automated collection (#4443) remain pending. Renewal/CA rotation stay native to the platform or PKI owner **outside KAORI** by decision #4445; Ansible is collection-only. Authority: #4441 / #4442.
 
 ## 1. Domain boundary
 
@@ -63,14 +63,11 @@ remain operator-local outside Git.
 **Observed validity from this report:** ten of the leaf/kubeconfig entries
 have `NotAfter=2027-09-11T04:08:18Z`, apiserver has
 `NotAfter=2027-11-12T03:45:43Z`, and three CAs have
-`NotAfter=2036-09-08T04:08:18Z`. The metadata has not been
-committed to KAORI until the operator runs the reviewed importer against
-the registered cluster UUID; a verified source does not imply a
-populated inventory or accepted active-certificate posture.
+`NotAfter=2036-09-08T04:08:18Z`. The operator subsequently committed the reviewed 14-record metadata batch `107855b3-8f8b-407a-84fe-9bdf7e75be38` on 2026-11-12, and verified 11 leaf + 3 CA inventory records and Activity Audit in Dev Container. This is **operator-attested UAT evidence**, not automatic collection, verified installed certificates or full cluster coverage.
 
 Implementation and safe operator steps:
 [KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md).
-Approval to execute any renewal through Ansible remains **deferred** (#4445).
+Ansible is planned solely for approved **read-only collection** (#4443). Renewal and CA rotation remain native platform/PKI-owner procedures outside KAORI (#4445).
 
 ## 4. Discovery checklist per actual registered cluster
 
@@ -139,6 +136,8 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 
 **Normalization invariants:** unique key by cluster, source, node and source-qualified certificate identity; upsert is idempotent; commit a complete bounded batch atomically; separate collection state from individual certificate rows; retain previous successful evidence while marking it stale if a later run fails; preserve node/correlation/source provenance; enforce cluster-level RBAC on both list and detail; allow no private keys, base64 kubeconfigs, bearer tokens or unredacted stdout; do not reprint rejected source data in parser exceptions.
 
+**Automated ingestion qualification:** today's `import_attested_pki_metadata` CLI/read model is specifically **operator-attested**. A future Ansible/provider collector under #4443 must not silently reuse that provenance label: it must record actual authorized job/source identity, source kind/version, per-node coverage, run outcome/freshness and distinguish automated source-qualified evidence from manual operator attestation in the committed read model. Reuse strict metadata normalization but extend the execution evidence contract separately with compatibility/negative tests. Provider-owned renewal remains outside this collector.
+
 ## 6. Acceptance gates and blockers
 
 | Workstream | Ready when | Explicit blocker |
@@ -146,7 +145,7 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 | #4442 source discovery | Non-production Docker Desktop v1.36.4 output schema observed; owner validates source identity, security and local-only access | **Pilot report now supplied; source/owner review still required for admission and other clusters** |
 | #4443 committed collection | Existing strict operator-only import and schema/read model are implemented; automated worker/runner requires separate authority | **Automated PKI collection remains deferred; CLI preparation does not perform a provider call** |
 | #4444 read-only workspace | Existing visible Source Pending card and registry, permission-aware, committed read model; verify actual 14-row pilot import, scoped 5/page, coverage/unknown, no live calls | **Empty until operator-approved source import; UAT/Human Acceptance outstanding** |
-| #4445 renewal feasibility | Source ownership, exact provider capability and execution-plane contract independently approved | **Deferred pending Ansible orchestration readiness and operator approval** |
+| #4445 native renewal ownership | Platform/PKI owner and native procedure documented | **No KAORI renewal implementation; Ansible limited to approved read-only collection** |
 
 No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mutation is permitted by this document.
 
@@ -166,13 +165,12 @@ The Internal Certificates workspace may show these actual committed
 certificates after an approved source manifest is imported and the database
 migration is applied. Until then, the certificate table is empty or
 **Inventory Schema Upgrade Required**; the Source Registry continues to report
-committed cluster registration metadata. The planned Ansible collector and
-renewal execution remain separate future work. No sample manifest counts as
+committed cluster registration metadata. The planned Ansible collector is **read-only**; KAORI renewal execution is not an implementation target. No sample manifest counts as
 live PKI evidence.
 
-## Renewal design handoff (deferred)
+## Native platform renewal ownership (approved monitor-only boundary)
 
-The implementation-ready **design-only** renewal workflow, policy, safe Ansible/provider boundary, preflight, recovery and testing matrix is retained in [KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md) (#4445). It is not an approved mutation implementation or permission to add a Renew button before Ansible execution and security gates are admitted.
+The historical KAORI-renewal workflow is superseded. The retained [native renewal ownership decision](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md) (#4445) confirms KAORI collects and reports evidence only; kubeadm, managed providers and external PKI owners perform renewal outside KAORI. No Renew button or Ansible renewal job is planned.
 
 ## 2026-11-12 UI delivery amendment — implemented source-readiness stage (#4453)
 
@@ -182,10 +180,10 @@ The first-stage page reads only registered `Cluster` and associated `KubernetesC
 
 The route has separate `internal_certificates.view` plus `governance.view` and `clusters.view` guards. Existing KAORI RBAC role scope is global, **not per-cluster**; finer source-specific access must be defined and tested before a future PKI certificate detail implementation. Default roles receive the new read-only permission after governed `flask seed-rbac`, not as a read-path side effect.
 
-**Milestone distinction:** #4453 closes only after exact-SHA QA and Human Acceptance of the **source-readiness** page. #4443 remains blocked on verified PKI source/identity; full #4444 committed certificate inventory/expiry posture remains OPEN and must not be marked complete from this UI-only phase. #4445 renewal remains deferred until approved Ansible orchestration.
+**Milestone distinction:** #4453 closes only after exact-SHA QA and Human Acceptance of the **source-readiness** page. #4443 remains blocked on verified PKI source/identity; full #4444 committed certificate inventory/expiry posture remains OPEN and must not be marked complete from this UI-only phase. #4445 assigns renewal to native platform/PKI owners; Ansible is planned for read-only collection only.
 
 ## 7. Next evidence needed
 
 For one **non-production pilot** cluster: approved distribution/version confirmation, control-plane/etcd topology, owning team, source tool/version, permitted read-only execution identity, redacted field inventory and permission outcome, actual collection window and full/partial coverage assessment. Then update this matrix and #4442 before #4443 collector work begins.
 
-**References / implementation:** #4441 parent, #4442 discovery, #4443 collector, #4444 UI, #4445 future renewal; #556 Ansible authority; #757 Governance domain-first; `app/models/cluster.py`; `app/kubernetes/governance/tls_certificates/collector.py`.
+**References / implementation:** #4441 parent, #4442 discovery, #4443 collector, #4444 UI, #4445 native renewal ownership; #556 Ansible collection authority; #757 Governance domain-first; `app/models/cluster.py`; `app/kubernetes/governance/tls_certificates/collector.py`.

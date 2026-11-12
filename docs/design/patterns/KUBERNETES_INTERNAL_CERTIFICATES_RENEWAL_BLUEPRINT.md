@@ -1,208 +1,80 @@
-# Kubernetes Internal Certificates — Governed Renewal Blueprint
+# Kubernetes Internal Certificates — Native Renewal Ownership and Read-only Collection
 
-> **Design-only / deferred** — 2026-11-12 operator decision. Authority #4441 / #4445, source discovery #4442, read-only evidence #4443, operational UI #4444, Ansible execution authority #556. **This document does not authorize execution.** No renewal/rotate button, schedule, host privilege, Ansible job or CA operation is enabled by this design.
+> **Approved architecture decision, 2026-11-12 — supersedes the historical KAORI renewal blueprint.** Authority #4441 / #4445; source contract #4442, collection #4443, operational UI #4444, Ansible capability #556 and Kubernetes governance #757. This path is retained for existing documentation links. **KAORI does not orchestrate or execute certificate renewal, CA rotation or CSR approval.**
 
-## 1. Recorded product decision
+## 1. Product decision and ownership
 
-KAORI builds **Internal Certificates monitoring first** (source-qualified, committed evidence and an RBAC-scoped read-only workspace). Lifecycle mutation becomes a separate, separately approved feature **after an Ansible orchestration integration is operational, audited and admitted**.
+**Internal Certificates is a read-only collection, inventory, expiry monitoring and governance capability.** KAORI collects qualified non-secret metadata through an approved authoritative source, validates/normalizes it, commits evidence, correlates owner and source, and renders the latest recorded posture. Native Kubernetes/distribution tooling, managed providers or external PKI systems retain all certificate lifecycle operations.
 
-**KAORI normalizes, correlates, governs and audits. kubeadm / provider / external CA owns certificate lifecycle; approved Ansible executes applicable host changes; Git defines execution automation; committed evidence proves the result.**
+- **Kubeadm/control-plane and etcd certificates:** owning infrastructure team uses the verified cluster-native `kubeadm` and platform maintenance procedure **outside KAORI**. KAORI never dispatches `kubeadm certs renew`.
+- **Managed Kubernetes:** the managed provider owns supported control-plane PKI lifecycle; KAORI displays only documented provider-exposed facts and links to the owner's operating procedure.
+- **External CA / Vault / custom PKI:** the signing/PKI provider and its owner remain authoritative; KAORI stores lifecycle metadata and an owner handoff, never signing material.
+- **Kubelet client and serving certificates:** cluster-native rotation and approved CSR processes remain external. A CSR alone is not evidence of an installed certificate's validity; KAORI does not approve CSRs.
+- **CA certificates:** any CA/key/trust rotation is a separate external change-controlled platform procedure, not a KAORI action.
 
-- KAORI must **never** become a CA, signer, direct SSH console or clone of kubeadm.
-- A certificate can be valid but **unsupported for KAORI rotation**. UI must show the distinct authoritative state and owner handoff.
-- One cluster's kubeadm procedures cannot be assumed safe for another cluster. No universal `Rotate All` button.
-- Kubelet client rotation is normally automatic where configured; show monitor/diagnose rather than force renewal. Kubelet serving CSRs must not be automatically approved without identity verification. kubeadm does not provide automatic CA rotation.
-- TLS Secrets/Ingress certificates remain in the existing TLS Certificates capability, not this internal PKI surface.
-- No private keys, CA keys, kubeconfig credentials, CSR keys, raw privileged stdout or secret path values may be ingested into KAORI committed evidence or Activity Audit.
+The previous proposal for KAORI `Request Renewal`, `Rotate All`, preflight/approval/execute controls, Ansible renewal playbooks or lifecycle mutation schema is **withdrawn** as an implementation target. Preserving historical discussion does not confer permission to implement those actions. A future change to this boundary requires an explicit new architecture decision, bounded issue, security review and human approval.
 
-## 2. Boundary architecture
-
-```text
-Kubernetes → Governance → Internal Certificates
-  │
-  ├─ Read-only committed view (#4443 + #4444)
-  │     Source & trust → Identity/CA family → Expiration/Posture → Provenance
-  │     Coverage, freshness and owner / provider-specific handoff
-  │
-  └─ Future (disabled until separately admitted)
-        Renewal Plan Request → Policy/Capability decision → Human Approval
-        → Preflight evidence + reservation/lock + exact scope
-        → KAORI Orchestration Adapter
-        → Approved Ansible job / native provider controller
-        → kubeadm/managed-provider/PKI authority
-        → Post-change evidence, health checks, auditable outcome
-```
-
-External engines remain authoritative for command/version compatibility and execution state. KAORI persists normalized orchestration IDs, policy decisions and committed evidence. Regular UI reads committed KAORI state, not a synchronous live provider call.
-
-## 3. Support matrix and future UI behavior
-
-| Source ownership | Monitoring | Potential operation | UI action after admission |
-|---|---|---|---|
-| kubeadm-managed control-plane leaf certificates | Qualified node-local evidence | Target-specific `kubeadm certs renew <name>` through approved Ansible and per-node lifecycle | **Request Renewal**, only if support + preflight gates all pass |
-| kubeadm etcd peer/server/client | Qualified per-host evidence + etcd topology | Separately approved etcd-specific HA procedure and verification | **Request Renewal** with high-risk controls only; otherwise external handoff |
-| Kubernetes / etcd / front-proxy CA | Public CA expiry/status | Manual multi-step CA trust rotation; kubeadm does not automate it | **View Owner Runbook**, not auto renew |
-| kubelet client | Installed certificate evidence; CSR state separately | Usually kubelet-native auto-renewal; handle failure through incident runbook | **Rotation Monitoring**, no forced default renewal |
-| kubelet serving | Installed cert + CSR signer/approval state | Verified signer/identity and change-controlled approval where approved | **Review CSR / Owner Handoff**, never blanket auto approve |
-| Managed Kubernetes control plane | Provider API only if exposed | Provider-controlled | **Open Provider Procedure** or **Provider Managed** |
-| External CA/custom PKI | External verified records | CA system of record | **External Handoff** or **Unsupported** |
-| Unknown distribution or incomplete evidence | `Not Collected` / `Unsupported` / `Stale` | **None** | **No mutation action** |
-
-*The table is a decision framework, not proof that any registered cluster currently supports these operations.* Exact tooling and paths are not automatically authorized.
-
-## 4. Committed contracts (future implementation, not current DB migration)
-
-### 4.1 Source qualification
-
-Each supported cluster/node/component source shall record:
-```text
-cluster_id, node_id, certificate_identity, certificate_kind, source_kind,
-source_version, managed_by, issuer_kind, evidence_collected_at,
-not_before, not_after, source_freshness, coverage_status, collection_run_id,
-owner_id, capability_assessment, assessment_version, external_handoff_ref
-```
-
-No UI action may be offered without a **fresh, successful** source-qualified record and an independently approved capability assessment. `Unknown` or an empty recordset cannot become `Healthy`.
-
-### 4.2 Renewal capability decision
-
-Store a **separate** per cluster × component × owner decision (not a boolean `can_renew`):
+## 2. Committed read-only architecture
 
 ```text
-capability_state:
-  monitor_only | supported_via_approved_engine | provider_managed |
-  external_handoff | unsupported | unknown
-reason_code, authority, approved_runbook_ref, automation_git_revision,
-executor_binding_ref, required_approval_policy, risk_class,
-assessment_version, assessed_at, expires_at, security_review_ref
+KAORI scheduled/on-demand evidence collection (#4443, future)
+  -> Source capability resolution by cluster/provider/instance
+  -> Authorized Ansible / approved host collector, when admitted
+     OR documented provider API / supplementary Kubernetes API
+  -> Strict versioned metadata adapter + validation
+  -> Idempotent committed PKI batch + inventory + Activity Audit
+  -> Kubernetes > Governance > Internal Certificates read model (#4444)
+     Source, freshness, coverage, certificate identity, issuer,
+     source-reported NotAfter, expiration posture, owner and native handoff
 ```
 
-This is future schema design, pending existing taxonomy/RBAC review; it is not an instruction to create database tables or new enum names immediately.
+**Ansible executes read-only acquisition only**, never certificate renewal. Use the existing #556 orchestration integration when operational; do not add direct SSH, unrestricted shell, control-plane mounts or privileged Kubernetes API execution from a page or KAORI worker. Normal UI GET reads committed KAORI state, not live provider calls.
 
-### 4.3 Governed renewal request / evidence
+The current `flask prepare-internal-pki` + `flask import-internal-pki` manual operator-attested path remains a restricted **non-production UAT/controlled fallback**. It proves normalization and persistence, **not** automated collection, installed certificate use, CA trust, or full-node coverage. #4443 is the separate authority to implement scheduled collection after source owner/identity and runner compatibility are approved.
 
-```text
-request_id, idempotency_key, exact cluster/node/certificate scope,
-requester, impact/risk tier, maintenance_window, preflight_evidence_refs,
-change_ticket_ref, approval_actor_and_time, policy_decision,
-approved_automation_ref_and_git_sha, executor_job_id,
-provider_operation_id, started_at, completed_at,
-before_not_after, after_not_after, leaf_or_ca_kind,
-health_before_ref, health_after_ref, post_validation_ref,
-rollback_or_recovery_ref, final_outcome, audit_correlation_id
-```
+**Automated-collection adapter boundary:** the current v1 manual importer and the UI explicitly label committed batches **Operator Attested**. Do not wire an Ansible result directly into that operator-attested CLI path and present it as independently verified. #4443 must introduce or extend existing collection-run provenance (runner/job identity, approved source version, node scope, outcome, timestamps and evidence authority), reuse safe normalization where valid, and make UI source labels distinguish operator attestation from automated source-qualified collection. Migration/contract changes require a separate bounded implementation issue and tests; collection remains read-only.
 
-Record references/IDs, **not** credential material or unredacted host command output. Use KAORI job + Activity Audit/evidence patterns and existing rollback/recovery conventions; do not create a separate execution subsystem.
+## 3. Collection support and evidence boundaries
 
-## 5. Future workflow state machine
+| Source family | Read-only evidence source | Coverage / provenance rule | Lifecycle owner |
+| --- | --- | --- | --- |
+| Self-managed kubeadm control-plane leaf / local etcd | Version-verified `kubeadm certs check-expiration -o json` on each authorized control-plane host | Exact node, tool/schema version, leaf + CA linkage, collection time and partial/full node scope | Cluster operations team using native kubeadm / etcd runbook |
+| Kubelet installed client/serving cert | Approved node-local certificate evidence when available | Distinguish installed evidence from Kubernetes CSR observation | Kubelet/native signer and owning cluster team |
+| Kubernetes CSR | RBAC-scoped Kubernetes API | Supplementary request/approval state; not installed expiry | Approved signer / CSR controller |
+| Managed control plane (GKE/EKS/AKS/OKE) | Official provider API **only for exposed fields** | Provider-managed/Unavailable when active cert expiry is not exposed | Cloud provider |
+| External CA / custom distribution | Approved external PKI source/API | External authority and owner, no key material | External PKI operator |
+| Unsupported/unknown source | No invented values | Not Collected/Unsupported/Unknown, not Healthy | Cluster owner |
 
-```text
-Discovered (committed, qualified)
-  → Not Eligible / Monitor Only
-  OR → Plan Draft
-        → Preflight Pending
-        → Preflight Passed / Blocked
-        → Approval Pending
-        → Approved / Rejected / Expired
-        → Scheduled (approved maintenance window)
-        → Locked (exclusive cluster/node/PKI identity)
-        → Executing (approved external job)
-        → Post-Validation
-        → Verified & Evidence Committed
-          OR Failed / Recovery Required
-```
+Strict metadata-only validation must reject unexpected keys, credentials, PEM, private keys, raw kubeconfig, arbitrary host stdout and unsupported versions. Never persist any CA signing key, CSR private key, provider credential or raw privileged output in KAORI DB, Activity Audit, job logs or GitHub.
 
-`Verified` requires new committed certificate expiry **and** independent API/etcd/cluster health evidence. A successful Ansible exit code is not an acceptance criterion on its own.
+Expected coverage is derived from independently verified cluster/control-plane topology, not a successful response from one node. A failed run must **not** delete previous committed evidence; retain the old snapshot, separately expose failure/freshness and maintain source-qualified identities. Atomic commit, idempotent batches, bounded output/timeouts and read-side cluster/RBAC isolation are mandatory.
 
-- Preflight evidence and approval must have **bounded freshness** and be invalidated when target, requested certificate, CA/owner, source state, playbook revision, maintenance window or execution identity changes.
-- Make requests idempotent; no duplicate renewal for same exact target/window. One active operation per compatible PKI authority/cluster scope. Network retries must reconcile the execution ID, not start a second run.
-- Cancellation after mutation begins is **not** an automatic rollback. A failed etcd/control-plane renewal enters a controlled recovery state.
+## 4. Expiration monitoring and operational handoff
 
-## 6. Required mutation preflight (not yet implemented)
+The Registry may show source-reported `not_after`, issuer, leaf/CA, owner, externally-managed state, collection provenance and evidence freshness. Display classifications (expired/critical/renewal-window/outside-window/stale) are monitoring labels, **not** a renewal authorization or proof the certificate is active. Never report empty or stale evidence as verified Healthy.
 
-**Universal gates:** identified distribution and PKI owner; certificate vs CA classification; exact node/cluster identity; active, fresh committed evidence; user RBAC + step-up if required; approved automation Git commit; secret-safe approved engine binding; change ticket; maintenance window; owner approval; service-impact evaluation; recoverable backups of control-plane/etcd state and trust material in their **approved protected location**, never KAORI database; verified recovery owner.
+When operator action may be required:
+1. KAORI identifies the affected cluster, node, component, expiry, evidence age and qualified native/PKI owner, without presenting mutation controls.
+2. The operator uses the **authoritative external platform runbook**, change/maintenance approval, backup/recovery planning and native tool/API outside KAORI.
+3. After the external change, KAORI collects a new read-only evidence batch through an approved source and compares source-reported post-change validity. Provider health/trust verification remains independently owned and must not be inferred from a new expiry date.
+4. KAORI can correlate the external change reference, before/after evidence and Activity Audit without duplicating execution or storing secret material.
 
-**Control-plane gates:** HA membership and number of available apiservers; API readiness, scheduler/controller health and service endpoints; existing client connections; load-balancer/endpoint strategy; independent node/clock validity. A multi-control-plane cluster uses **one-node-at-a-time** approved operations, with health/expiry verification between nodes; never parallel renew all nodes.
+For a high-availability control plane, the external owner must consider one-node-at-a-time operations, control-plane and etcd quorum, static-pod restarts, backup/restore and rollback through their own approved procedure. This document is **not** a kubeadm renewal procedure and grants no execution authority.
 
-**etcd gates:** peer membership, quorum, leader/current health, snapshot/restore rehearsability and external-etcd topology. A failed quorum gate is BLOCKED, not overridden by a low expiry value.
+## 5. Implementation and acceptance boundaries
 
-**Rotation-specific gates:** detect kubeadm-managed vs external CA and correctly scope the leaf certificate. CA rotation must use a separately approved manual trust-distribution plan; changing CA key material or forcing CSR approvals is out of scope.
+- **#4442**: verify distribution, PKI owner, source API/command/schema/version, per-node coverage, approved execution identity and safe output before admitting a source.
+- **#4461 / #4480**: existing strict manually imported UAT metadata and source-specific adapter, without any host automation.
+- **#4443**: future bounded child implementation(s) for collection scheduling, existing Ansible/provider executor integration, safe node reads, failure/retry, normalization, evidence commit and tests; **read-only only**.
+- **#4444 / #4465**: committed evidence-backed UI, correct breadcrumb, permissions, default 5-row pagination, light/dark/mobile, native owner guidance.
+- **#4445**: product boundary and native renewal handoff authority; no KAORI renewal implementation workstream.
 
-**Execution identity:** use approved Ansible inventory/credential references and host permissions; no raw SSH from a web handler; allowlist exact command/targets and bounded output. Job parameters cannot become arbitrary shell commands, paths or YAML injection.
+Tests must include secret rejection, unqualified provider, unauthorized collection/cluster access, outdated/mismatched schema, failed run retaining prior evidence, partial HA scope, duplicate/idempotent batch, stale/expired distinction, UI no-renew controls and cross-domain regression. Use existing `ruff`, `pyright`, `djlint`, `pytest`, Playwright and `verify_*` gates. Provider evidence and Human UAT are mandatory for each approved collection source. Do not claim CI or UAT PASS without execution on the exact candidate.
 
-## 7. Execution and recovery design
+**Official admission and all host mutation remain governed by the existing KAORI workflow.** Updating this monitoring-only decision never authorizes a new runner, production access or external PKI change.
 
-- Plan is Git-defined and pinned to immutable commit SHA; execute via existing Ansible orchestration provider once admitted. Use native check/validation and module/task idempotence where possible; never treat check mode as a guarantee that certificate mutation is safe.
-- For supported kubeadm leaf rotation, execute **certificate-specific** renewal under exact approved host/runbook. The mechanism may require controlled restart of static control-plane Pods or component reload and re-distribution of renewed kubeconfig certificates. This is a deployment-sensitive change and always needs human acceptance.
-- Before any mutation, the owning operations team stores and verifies an encrypted/controlled recovery copy and relevant etcd snapshot as appropriate. KAORI stores only backup reference + verification result.
-- After mutation, collect new host-local validity from the same authoritative source, test API readiness/health and etcd quorum, compare identity and validity, verify dependent components and commit source-qualified evidence.
-- On post-check failure: pause remaining hosts, block further automation, escalate incident, preserve execution/recovery evidence and invoke approved recovery **manually**. Do not assume copying old certificates back is always safe after CA trust changes.
-- CA rotation and managed-provider lifecycle transitions remain **external-handoff workflows** until independently approved.
+## References
 
-Kubernetes reference: [kubeadm renewal](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/), [certificate rotation](https://kubernetes.io/docs/tasks/tls/certificate-rotation/), [manual CA rotation](https://kubernetes.io/docs/tasks/tls/manual-rotation-of-ca-certificates/).
-
-## 8. UX reserved for future (not live)
-
-Current read-only workspace (#4444) will show:
-- Source Readiness, Collection Freshness, Coverage, Expiry Posture, Owner/Authority, Certificate Inventory (default 5/page), Not Collected/Unsupported/Unknown/Expired as distinct statuses, and evidence-driven details.
-- **Rotation Readiness** as an informative, **non-actionable** assessment: Unsupported / Provider Managed / External Handoff / Pending Assessment / Candidate for Future Governance. Avoid future feature buttons that suggest executable capability.
-
-Only after separate implementation/admission may there be a **Request Renewal** action. Its workflow must have distinct Plan/Preflight/Approval/Execute/Verify/Evidence steps, explicit risk, and a clearly visible provider/executor authority. No hidden click-to-rotate within a read-only registry.
-
-## 9. Security risks and non-negotiable negative tests
-
-| Risk | Gate / test |
-|---|---|
-| Private/CA key or kubeconfig exfiltration | Refuse ingest; scrub standard outputs; no raw executor stdout in DB/UI/logs; scan artifacts |
-| Cross-cluster RBAC leakage | Enumerate/filter only authorized clusters; negative tests for direct URL/API with wrong cluster |
-| Unsupported managed provider invoked as kubeadm | Matrix + capability gating; provider unsupported returns no action |
-| External CA falsely marked renewable | Source/issuer ownership validation; no kubeadm mutation |
-| Incomplete/old evidence marked healthy | Coverage/freshness failure states precede expiry |
-| Concurrent HA/etcd renewal | Exclusive locks, one-by-one host sequence, quorum checks; negative tests |
-| Unauthorized schedule or expired approval | Role/step-up, immutable scoped approval and maintenance window |
-| Untrusted Git playbook or injection | Pinned Git SHA, signed/approved template, validated parameters and engine identity |
-| Ansible/transport failure mid-rotation | Correlate existing job, never blindly retry; manual recovery workflow |
-| CSR spoofing and blanket approval | Disallow default automated CSR approvals; verify signer and node ownership |
-
-## 10. Future quality gates / full acceptance
-
-**Engineering:** existing `ruff`, `pyright`, `pytest`, `djlint`, `prettier`, contract and `verify_*` gates appropriate to touched code; Developer Check, Full Admission, Visual QA, DAST/security checks. Do not write a redundant verification framework.
-
-**Staging/UAT:** controlled disposable kubeadm pilot with (a) single control plane and (b) multi-control-plane HA if relevant; expired/near-expiry, partial coverage, stale evidence, revoked permissions, externally managed CA, provider-managed, kubelet CSR, etcd quorum failure, transport/runner interruption, node fail/rejoin, backup recovery simulation. Exact pre/post expiry, API and etcd health, audit and rollback runbook evidence; security approval and explicit Human Acceptance.
-
-**Release:** separate implementation child issue and PR; stage through `kaori/review/staging-uat` → official admission → `kaori/staging` UAT → human acceptance → `main` promotion, release/tag if required. Deployment and infrastructure mutation remain blocked until security and operations approval.
-
-## Read-model extension (operator-attested evidence)
-
-The interim #4461 metadata-only import provides source-qualified committed
-certificate records prior to Ansible execution integration. Operator attestation
-is not an eligible renewal capability decision. Its `InternalPKICertificateInventory`
-values are **not proof** of installed/running certificates; future #4445
-preflight must revalidate the authoritative source through the approved
-Ansible/provider engine and compare control-plane/etcd health. A valid
-operator-supplied expiry must never enable a Renew action automatically.
-See [Evidence Import Runbook](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md).
-
-## 11. Deferred dependency and restart checklist
-
-**Hold point:** no suitable admitted Ansible orchestration execution binding + approved Git playbook and credential references for this Kubernetes PKI scope have been evidenced. #4445 is therefore **design/feasibility only**. Do not schedule background renewal, create buttons, grant sudo or rotate certificates while held.
-
-When the operator says “resume internal certificate renewal”, start from these existing workstreams rather than rediscovery:
-
-1. Confirm #4442 source support and owner decision, and #4443/#4444 committed read-only evidence and UI acceptance. Check current merged code/docs.
-2. Verify #556 Ansible provider integration, job execution/readiness and approval hooks have been admitted for the **actual** cluster topology, without cloning execution code.
-3. For each exact certificate/source family, review decision matrix, privileges, backup/restoration, incident escalation and multi-node impact; obtain security/ops sign-off.
-4. Break down #4445 into implementation child issue(s): capability assessment/eligible policy; approved Ansible template + immutable version; preflight/approval; dispatch/state correlation; post-validation/recovery/evidence; limited first pilot. No umbrella large PR.
-5. Execute canary non-production UAT and separately authorize production pilot only after manual acceptance.
-
-**Open work is not considered complete simply because this blueprint was merged.** Design review, approved source evidence and future Ansible readiness are required.
-
-## References and record
-
-- #4441 Internal Certificates foundation
-- #4442 per-cluster source/authority matrix; [source contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md)
-- #4443 committed PKI evidence collector
-- #4444 implemented-only read-only workspace and second Governance capability card
-- #4445 renewal feasibility / deferred design authority
-- #556 Ansible infrastructure automation architecture; #757 Governance implemented-only authority
-- `app/models/cluster.py`, `app/kubernetes/governance/tls_certificates/collector.py`
+- [Internal Certificates Source & Support Contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md)
+- [Operator-Attested Metadata Import Runbook](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md)
+- #4441 foundation; #4442 discovery; #4443 collector; #4444 workspace; #4445 lifecycle ownership; #556 Ansible; #757 Governance
