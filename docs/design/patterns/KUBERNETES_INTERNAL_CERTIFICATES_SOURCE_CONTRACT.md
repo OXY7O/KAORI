@@ -1,6 +1,6 @@
 # Kubernetes Internal Certificates — Source and Support Contract
 
-> **Status:** Proposed source contract, 2026-11-12; source support is **not yet verified** against registered production clusters. Authority: #4441 / discovery #4442; subsequent collector #4443 and workspace #4444. **No collection, renewal, menu or mutation is authorized by this document.**
+> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; actual inventory rows require operator-reviewed import. Production PKI source qualification, automated collector (#4443), and all renewal/mutation (#4445) remain deferred. Authority: #4441 / #4442.
 
 ## 1. Domain boundary
 
@@ -143,9 +143,9 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 
 | Workstream | Ready when | Explicit blocker |
 |---|---|---|
-| #4442 source discovery | Owner-verified distribution + provider identity + approved read-only source per pilot cluster; security source review | **Current discovery evidence missing** |
-| #4443 committed collection | Approved source and identity; schema validation; worker/runner authorization; migration; negative and retry tests; committed/read-only evidence | Cannot substitute a live page request or stale TLS Secret inventory |
-| #4444 read-only workspace | Actual #4443 committed data; role/cluster-scoped pagination 5; coverage+unknown states; no live calls | Do not place a placeholder second catalog card or claim `2 Capabilities` |
+| #4442 source discovery | Non-production Docker Desktop v1.36.4 output schema observed; owner validates source identity, security and local-only access | **Pilot report now supplied; source/owner review still required for admission and other clusters** |
+| #4443 committed collection | Existing strict operator-only import and schema/read model are implemented; automated worker/runner requires separate authority | **Automated PKI collection remains deferred; CLI preparation does not perform a provider call** |
+| #4444 read-only workspace | Existing visible Source Pending card and registry, permission-aware, committed read model; verify actual 14-row pilot import, scoped 5/page, coverage/unknown, no live calls | **Empty until operator-approved source import; UAT/Human Acceptance outstanding** |
 | #4445 renewal feasibility | Source ownership, exact provider capability and execution-plane contract independently approved | **Deferred pending Ansible orchestration readiness and operator approval** |
 
 No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mutation is permitted by this document.
