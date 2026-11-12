@@ -202,10 +202,14 @@
                                     ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
                                 ] %}
             {% endif %}
+            {% set summary_badge %}
+                {{ table_label.metadata_label(security_metrics|length ~ ' Indicators', icon='layout-grid') }}
+            {% endset %}
             {% call section_card.render(
                 'Security Evidence Summary',
                 'Committed scanner evidence for the active Registry scope.',
                 'shield-check',
+                header_badge=summary_badge,
                 body_classes='p-0',
                 aria_label=security.title ~ ' summary'
                 ) %}
@@ -494,17 +498,17 @@
                                 {% endcall %}
                                 <div class="overflow-x-auto">
                                     {% if security.view == 'vulnerabilities' %}
-                                        <table class="{{ table_ui.table_classes('min-w-[68rem] !table-fixed') }}">
+                                        <table class="{{ table_ui.table_classes('min-w-[72rem] !table-fixed') }}">
                                             <caption class="sr-only">Committed vulnerability findings. Full evidence is available in View More.</caption>
                                             <thead class="{{ table_ui.head_classes() }}">
                                                 <tr>
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Finding</th>
-                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Artifact</th>
-                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Package / Fix</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Artifact</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Package / Fix</th>
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Runtime Exposure</th>
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Evidence</th>
                                                     <th scope="col"
-                                                        class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                                                        class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="{{ table_ui.body_classes() }}">
@@ -513,51 +517,54 @@
                                                     {% set vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id %}
                                                     <tr class="{{ table_ui.row_classes() }}">
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            {{ table_ui.title_cell(row.vulnerability_id, '', 'shield-alert') }}
-                                                            <div class="mt-1.5">{{ table_label.status_indicator_label(row.severity_label, severity_tone) }}</div>
+                                                            {% set severity_badge %}
+                                                                {{ table_label.status_indicator_label(row.severity_label, severity_tone) }}
+                                                            {% endset %}
+                                                            {{ table_ui.title_cell(row.vulnerability_id, icon='shield-alert', supporting_content=severity_badge) }}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {{ table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search') }}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                                                               title="{{ row.package }}">{{ row.package }}</p>
-                                                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
-                                                               title="Installed: {{ row.installed_version }}">Installed: {{ row.installed_version }}</p>
-                                                            <p class="mt-1 text-xs font-medium text-content-muted">
+                                                            {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version) }}
+                                                            <p class="mt-1 text-xs leading-5 text-content-muted">
                                                                 {{ 'Fix observed' if row.fix_available else 'No fix observed' }}
                                                             </p>
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {% if row.runtime_exposure_count %}
-                                                                {{ table_label.status_indicator_label(row.runtime_exposure_count ~ ' Bindings', 'critical' if row.severity == 'critical' else 'warning') }}
+                                                                {{ table_label.status_indicator_label(row.runtime_exposure_count ~ (' Binding' if row.runtime_exposure_count == 1 else ' Bindings'), 'critical' if row.severity == 'critical' else 'warning') }}
                                                             {% else %}
                                                                 {{ table_label.status_indicator_label('Not Observed', 'unknown') }}
                                                             {% endif %}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            {{ table_ui.title_cell(row.source_name, '', 'blocks') }}
-                                                            <div class="mt-1.5">{{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}</div>
+                                                            {% set freshness_badge %}
+                                                                {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                                            {% endset %}
+                                                            {{ table_ui.title_cell(row.source_name, icon='blocks', supporting_content=freshness_badge) }}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                                                            <button type="button"
+                                                            <div class="{{ table_ui.action_grid_classes(columns=1) }}">
+                                                                <button type="button"
                                                                     data-kaori-dialog-open
                                                                     data-dialog-target="{{ vulnerability_dialog_id }}"
                                                                     aria-haspopup="dialog"
                                                                     aria-controls="{{ vulnerability_dialog_id }}"
                                                                     aria-label="View vulnerability evidence for {{ row.vulnerability_id }} on {{ row.repository }} package {{ row.package }}"
-                                                                    class="{{ table_ui.action_classes() }}">
-                                                                <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                                View More
-                                                            </button>
-                                                            {% if row.impact_available %}
-                                                                <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.vulnerability_id.upper() ) }}"
-                                                                   aria-label="Review Kubernetes impact for {{ row.vulnerability_id }}"
-                                                                   class="{{ table_ui.action_classes() }}">
-                                                                    <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                                    Impact
-                                                                </a>
-                                                            {% endif %}
+                                                                        class="{{ table_ui.action_classes() }} w-full">
+                                                                    <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    View More
+                                                                </button>
+                                                                {% if row.impact_available %}
+                                                                    <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.vulnerability_id.upper() ) }}"
+                                                                       aria-label="Review Kubernetes impact for {{ row.vulnerability_id }}"
+                                                                       class="{{ table_ui.action_classes() }} w-full">
+                                                                        <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                        Impact
+                                                                    </a>
+                                                                {% endif %}
+                                                            </div>
                                                             {{ supply_chain_detail.vulnerability(row, vulnerability_dialog_id) }}
                                                         </td>
                                                     </tr>
