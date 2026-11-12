@@ -28,6 +28,7 @@ Compact segmented tabs must render the configured `data-*` attribute with the ta
 
 - Hero owns topology posture: Clusters, Namespaces, Resources, Relationships, and Graph Coverage.
 - Inventory Data Snapshot owns exact collection time, source, scope, committed coverage, and exceptions.
+- The Inventory Relationship Map header shows a quiet `N Relationships` Violet metadata label from `graph.summary.relationships`; the existing `updateSummary()` refreshes it after graph filter/reload, just like the Hero count. The number represents edges in the current **bounded committed visible graph**, not full provider relationship coverage; graph truncation warnings remain separate.
 - Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action. Both are peer utilities and use the same compact header-action geometry; Reload Snapshot is not styled as a dominant primary CTA.
 - Filter Bar owns graph data scope.
 - Canvas Toolbar owns local presentation and export actions.
