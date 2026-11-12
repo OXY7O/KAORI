@@ -182,36 +182,30 @@ def _inventory_fleet_readings(overview: dict[str, Any], committed_provider_ids: 
 
     if provider_count == 0:
         coverage_title, coverage_tone = 'No Registry Providers', 'unknown'
-        coverage_description = 'Register a Registry provider to establish committed inventory.'
+        coverage_description = 'Register a provider for committed inventory.'
     elif snapshot_count == provider_count:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'normal'
-        coverage_description = (
-            'Every configured Registry provider has retained a committed inventory snapshot as current KAORI evidence.'
-        )
+        coverage_description = 'All configured providers have committed snapshots.'
     else:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'warning'
-        coverage_description = 'One or more Registry providers still require a committed inventory snapshot.'
+        coverage_description = 'Some providers still lack committed snapshots.'
 
     if exception_count:
         exception_title, exception_tone = f'{exception_count} Snapshot Attention', 'warning'
-        exception_description = 'Review stale, pending, or failed Registry inventory conditions.'
+        exception_description = 'Review stale, pending, or failed snapshots.'
     else:
         exception_title, exception_tone = 'No Snapshot Attention', 'normal'
-        exception_description = 'No stale, pending, or failed committed Registry snapshot condition is active.'
+        exception_description = 'No stale, pending, or failed snapshots.'
 
     if project_count == 0:
         visibility_title, visibility_tone = 'No Visibility Evidence', 'unknown'
-        visibility_description = 'No committed Registry projects are available for visibility assessment.'
+        visibility_description = 'No committed projects to assess visibility.'
     elif visibility_observed < project_count:
         visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'warning'
-        visibility_description = (
-            f'{public_projects} public project(s); remaining project visibility still requires provider evidence.'
-        )
+        visibility_description = f'{public_projects} confirmed public; visibility evidence incomplete.'
     else:
         visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'normal'
-        visibility_description = (
-            f'Project visibility evidence is complete; {public_projects} project(s) are declared public.'
-        )
+        visibility_description = f'All visibility observed; {public_projects} confirmed public.'
 
     return [
         {
