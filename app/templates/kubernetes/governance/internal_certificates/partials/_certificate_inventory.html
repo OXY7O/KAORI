@@ -24,7 +24,7 @@
                 title_extra=certificate_badge) }}
             <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                 {% call registry_ui.filter_form('governance.internal_certificates',
-                    'internal-pki-certificate-registry',
+                    'internal-pki-evidence-workspace',
                     'internal-pki-certificate-loading',
                     inventory.pagination.per_page,
                     page_param='cert_page',
@@ -105,7 +105,7 @@
                     </div>
                     {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
                         {{ registry_ui.clear_filters_link('governance.internal_certificates',
-                            'internal-pki-certificate-registry',
+                            'internal-pki-evidence-workspace',
                             'internal-pki-certificate-loading',
                             inventory.pagination.per_page,
                             table_ui.action_classes(),
@@ -190,7 +190,7 @@
                   class="htmx-indicator sr-only"
                   role="status">Loading committed certificate evidence</span>
             {{ registry_ui.footer('governance.internal_certificates',
-                'internal-pki-certificate-registry',
+                'internal-pki-evidence-workspace',
                 'internal-pki-certificate-loading',
                 inventory.pagination,
                 {'cert_search': inventory.search, 'cert_kind': inventory.filters.kind, 'cert_expiry': inventory.filters.expiry, 'cert_coverage': inventory.filters.coverage, 'cert_freshness': inventory.filters.freshness, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
