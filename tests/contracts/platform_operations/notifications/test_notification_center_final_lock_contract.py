@@ -130,7 +130,6 @@ def test_notification_tabs_use_shared_semantic_empty_states() -> None:
     assert 'class="px-5 py-12 text-center"' not in page
 
 
-
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
