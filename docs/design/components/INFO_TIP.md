@@ -75,43 +75,39 @@ line in the reviewed 1440×900 viewport without changing other providers.
 The shared Overview Guide does not alter KPI counts, operational readiness,
 repository evidence, provider admission or backend behavior.
 
-## Integration Workspace heading and Guide
+## Integration Workspace heading — no duplicate Guide
 
 All seven provider Integration landing pages (Kubernetes, Metrics Source,
 Alertmanager, MinIO, Harbor, Vault, GitHub) use the shared
 `components/integration_workspace_tabs.html` adapter. Its section heading
-is **outside** the existing operational card: **Provider Connections &
-Coverage** with the concise description **Monitor provider readiness,
-committed coverage, and registered connections.** This outer heading
-uses icon-free semantic typography and responsive spacing rather than
-duplicated provider templates. The **inner Integration Workspace** card
-retains its existing section icon and title-adjacent Violet Guide.
+remains **outside** the operational card: **Provider Connections & Coverage**
+with the concise description **Monitor provider readiness, committed coverage,
+and registered connections.** This outer heading uses icon-free semantic
+typography and responsive spacing instead of duplicated provider templates.
 
-**Inside** the card, the existing **Integration Workspace** title owns a
-single compact Violet `Guide` immediately beside it. The adapter passes
-the canonical `info_tip.render(..., placement="right", variant="guide")`
-as optional `title_extra` to the existing
-`integrations/components/_workspace.html::section_header` macro.
-This preserves the generic section header's default rendering for callers
-without `title_extra` and keeps the Guide separate from right-aligned
-operational actions. The Guide explains **Integration Coverage** (observed
-and committed evidence where available), **Connection Registry** (canonical
-registration and readiness), and the **Authority Boundary** (external
-providers own native resources; KAORI normalizes and correlates committed
-evidence). Do not imply that all external source inventory is already
-complete, nor hide required readiness/errors in contextual help.
+Inside the card, the existing **Integration Workspace** header retains its
+icon, title, and short explanatory sentence, but deliberately has **no second
+Guide**. The provider-owned **Integration Overview** directly above already
+contains the canonical title-adjacent Guide explaining Integration Contract,
+Consumer Resolution, and Authority Boundary. The **Integration Coverage**
+and **Connection Registry** tab labels and results describe their own scopes;
+repeating a Guide in the nested workspace adds redundant interaction. This
+decision supersedes the earlier inner-workspace Guide contract following
+2026-11-13 operator Visual UAT. Never remove the provider Overview Guide or
+hide visible readiness, validation failures, or permission notices.
 
-The two provider tabs, their URL-backed state, HTMX/Alpine behavior, default
-five-row pagination, and connection authorization are unchanged. The existing
-`info_tips.js` controller remains the only hover, focus, click/touch, Escape
-and viewport-portal implementation. No individual provider page may add
-another workspace Guide or a new script for this shared header.
+The shared `integrations/components/_workspace.html::section_header` retains
+optional `title_extra` for other approved title-level help consumers, but the
+integration workspace adapter no longer supplies it. Both provider tabs, their
+URL-backed state, HTMX/Alpine behavior, default five-row pagination, counts,
+and connection authorization remain unchanged. No new script or page-local
+Guide may be added to compensate for the removed duplicate.
 
 ## Provider detail heading Guides — GitHub UAT reference
 
 Canonical GitHub connection detail sections use the **same title-adjacent
 Violet info + Guide control** as Tenant Membership Registry and the
-Integration Workspace. This is a labeled **Guide**, not a standalone `?`,
+provider Integration Overview. This is a labeled **Guide**, not a standalone `?`,
 circle-help, or unlabelled `i` icon:
 
 - **Connection Contract** — `integrations/source_control/github/uat_detail.html`

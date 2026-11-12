@@ -86,3 +86,51 @@ def test_kubernetes_connection_form_reuses_shared_shell_and_semantic_ownership()
     assert 'hx-target="#kubernetes-connection-test-result"' in form
     assert 'provider_registration_actions.render(' in form
     assert form_path not in baseline['files']
+
+
+def test_kubernetes_registration_guidance_is_concise_without_weakening_test_proof() -> None:
+    from jinja2 import Environment
+
+    add = read('app/templates/kubernetes/cluster/add.html')
+    form = read('app/templates/kubernetes/cluster/partials/_form.html')
+    actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    context = read('app/templates/integrations/components/_provider_registration_context.html')
+
+    Environment().parse(add)
+    for message in (
+        'Test API access before registration.',
+        'Changes invalidate proof; re-test to register.',
+        'Review coverage, API readiness, and bindings.',
+    ):
+        assert message in add
+        assert len(message) <= 48
+
+    assert "provider_registration_context.render(" in add
+    assert 'Kubernetes Registration Flow' in add
+    assert 'Orchestration Integrations' in add
+    assert 'url_for("integrations.orchestration")' in add
+    assert 'Open Orchestration Integrations' in add
+    assert 'Kubernetes owns live cluster state.' in add
+    assert 'Upload Least-Privilege Kubeconfig' in add
+    assert 'Test Kubernetes Access' in add
+    assert 'Full Validation before downstream consumers rely on it.' in add
+    assert 'whitespace-nowrap' not in add
+    assert 'truncate' not in add
+
+    assert 'components/info_flow.html' in context
+    assert 'components/related_page_card.html' in context
+    assert 'flow_note=flow_note' in context
+    assert 'boundary=authority_boundary' in context
+
+    # The short warning never replaces the actual client/server proof gate.
+    assert 'invalidateConnectionTest(event)' in form
+    assert "this.connectionVerified = false" in form
+    assert "this.$refs.connectionProof.value = ''" in form
+    assert 'x-on:input.capture="invalidateConnectionTest($event)"' in form
+    assert 'x-on:change.capture="invalidateConnectionTest($event)"' in form
+    assert 'x-on:kubernetes-connection-tested.window="applyConnectionTest($event)"' in form
+    assert 'name="connection_test_proof"' in form
+    assert 'hx-target="#kubernetes-connection-test-result"' in form
+    assert 'provider_registration_actions.render(' in form
+    assert 'x-bind:disabled="!connectionVerified"' in actions
+    assert 'Complete Test Connection before registration' in actions
