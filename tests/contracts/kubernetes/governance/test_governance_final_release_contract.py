@@ -186,7 +186,7 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'View PKI Evidence' in workspace
     assert "url_for('governance.internal_certificates', cluster_id=record.id, evidence_tab='certificates')" in workspace
     assert "'cluster_id': payload.selected_cluster_id" in workspace
-    assert 'Clear Cluster Scope' in workspace
+    assert 'Clear Cluster Scope' not in workspace
 
     assert 'db.session.execute(' in service
     assert 'KubernetesConnection.detected_platform' in service
@@ -218,14 +218,20 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert "evidence_tab='certificates'" in workspace
     assert 'Internal PKI Source Registry' in workspace
     assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
-    assert "registry_ui.clear_filters_link('governance.internal_certificates'" in workspace
+    assert 'registry_ui.clear_filters_action(' in workspace
+    assert "url_for('governance.internal_certificates', **source_clear_query)" in workspace
+    assert "'evidence_tab': 'sources'" in workspace
+    assert 'payload.selected_cluster_id' in workspace
+    assert "marker='internal-pki-evidence-workspace'" in workspace
     assert 'header_actions=source_clear_action' in workspace
     assert 'table_ui.cluster_identity(record.name, record.environment)' in workspace
     assert 'table_ui.header_cell_classes(true)' in workspace
     assert 'table_ui.cell_classes(true)' in workspace
     assert 'aria-label="View PKI Evidence for {{ record.name }}"' in workspace
     assert workspace.index('{% set source_clear_action %}') < workspace.index('inventory_block_header(')
-    assert workspace.index("registry_ui.clear_filters_link('governance.internal_certificates'") < workspace.index("registry_ui.filter_form('governance.internal_certificates'")
+    assert workspace.index('registry_ui.clear_filters_action(') < workspace.index(
+        "registry_ui.filter_form('governance.internal_certificates'"
+    )
     assert 'name="environment"' in workspace
     assert 'name="platform"' in workspace
     assert 'payload.filter_options.environments' in workspace
@@ -332,13 +338,18 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'Internal Certificate Registry' in partial
     assert "registry_ui.filter_form('governance.internal_certificates'" in partial
     assert "registry_ui.footer('governance.internal_certificates'" in partial
-    assert "registry_ui.clear_filters_link('governance.internal_certificates'" in partial
+    assert 'registry_ui.clear_filters_action(' in partial
+    assert "url_for('governance.internal_certificates', **certificate_clear_query)" in partial
+    assert 'inventory.cluster_id' in partial
+    assert 'certificate_scope_badge' in partial
     assert 'header_actions=certificate_clear_action' in partial
-    assert "table_ui.title_cell(certificate.component" in partial
+    assert 'table_ui.title_cell(certificate.component' in partial
     assert "'key-round' if certificate.kind == 'ca' else 'file-badge'" in partial
     assert 'data-lucide="calendar-clock"' in partial
     assert partial.index('{% set certificate_clear_action %}') < partial.index('inventory_block_header(')
-    assert partial.index("registry_ui.clear_filters_link('governance.internal_certificates'") < partial.index("registry_ui.filter_form('governance.internal_certificates'")
+    assert partial.index('registry_ui.clear_filters_action(') < partial.index(
+        "registry_ui.filter_form('governance.internal_certificates'"
+    )
     assert 'name="cert_kind"' in partial
     assert 'name="cert_expiry"' in partial
     assert 'name="cert_coverage"' in partial
