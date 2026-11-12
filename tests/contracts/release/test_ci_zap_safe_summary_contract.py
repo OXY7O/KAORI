@@ -216,3 +216,33 @@ def test_cli_accepts_bounded_json_object_members(tmp_path: Path) -> None:
 
     assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 0
     assert '| **Total** | **0** |' in output.read_text(encoding='utf-8')
+
+
+def test_concurrent_cli_invocations_have_independent_json_object_budgets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two simultaneous reports must not consume a shared object counter."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    import scripts.ci_zap_safe_summary as zap_summary
+
+    monkeypatch.setattr(zap_summary, 'MAX_JSON_OBJECTS', 3)
+    barrier = Barrier(2)
+    original_loads = zap_summary.json.loads
+
+    def synchronized_loads(*args: object, **kwargs: object) -> object:
+        barrier.wait(timeout=5)
+        return original_loads(*args, **kwargs)
+
+    monkeypatch.setattr(zap_summary.json, 'loads', synchronized_loads)
+
+    def run_one(index: int) -> int:
+        raw = tmp_path / f'baseline-{index}.json'
+        output = tmp_path / f'summary-{index}.md'
+        raw.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+        return main(['--input', str(raw), '--output', str(output), '--source-sha', SHA])
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(run_one, range(2))) == [0, 0]
+    assert all((tmp_path / f'summary-{i}.md').exists() for i in range(2))
