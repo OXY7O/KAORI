@@ -1,0 +1,129 @@
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/workspace_link_card.html" as workspace_card %}
+{% import "components/table_label.html" as table_label %}
+<div id="artifact-registry-security-overview" class="space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('shield-check', 'Artifact Registry Security', 'shield-check') %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ security.title }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Review committed scan findings, supply-chain evidence, and runtime exposure.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('blocks', security.source_count ~ ' Security Sources') }}
+                        {{ page_hero.meta_label('octagon-alert', security.critical ~ ' Critical Findings') }}
+                        {{ page_hero.meta_label('package-search', security.affected_artifacts ~ ' Affected Artifacts') }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card('Committed Registry security evidence',
+                        'Committed Security Evidence',
+                        'Security Posture',
+                        security.posture.label,
+                        security.posture.tone,
+                        [
+                        ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Committed critical/high findings'),
+                        ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Committed workload bindings')
+                        ],
+                        'Review Vulnerabilities',
+                        url_for('artifact_registry.security'),
+                        action_icon='shield-alert',
+                        blocked=security.setup_blocked or security.inventory_required,
+                        blocked_info='Register a Registry provider to begin security collection.' if security.setup_blocked else 'Collect committed inventory before reviewing security evidence.',
+                        blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required') }}
+        </div>
+    </section>
+    {% if security.setup_blocked %}
+        {% include "artifact_registry/components/_setup_blocker.html" %}
+    {% elif security.inventory_required %}
+        {% set blocked_state_icon = 'package-search' %}
+        {% set blocked_state_label = 'Inventory Required' %}
+        {% set blocked_state_title = 'Collect Artifact Inventory First' %}
+        {% set blocked_state_description = 'Security evidence is associated with committed artifact digests. Run Inventory Sync before reviewing security posture.' %}
+        {% set blocked_state_steps = ['Open Artifact Registry Inventory', 'Run Inventory Sync', 'Return To Security', 'Review Committed Evidence'] %}
+        {% set blocked_state_action_url = url_for('artifact_registry.inventory') %}
+        {% set blocked_state_action_label = 'Open Inventory' %}
+        {% set blocked_state_action_icon = 'boxes' %}
+        {% set blocked_state_permission = 'artifact_registry.view' %}
+        {% set blocked_state_variant = 'section' %}
+        {% include "components/states/_blocked_state.html" %}
+    {% else %}
+        {{ snapshot_context_bar.render(source_label=security.snapshot.source_label,
+                status=security.snapshot.status,
+                tone=security.snapshot.tone,
+                description=security.snapshot.description,
+                latest_collected=security.snapshot.latest_collected_at|user_datetime if security.snapshot.latest_collected_at else 'Not Collected',
+                scope_label=security.snapshot.scope_label,
+                coverage_label=security.snapshot.coverage_label,
+                exceptions_label=security.snapshot.exceptions_label,
+                icon='shield-check',
+                title='Security Evidence Snapshot',
+                latest_supporting='Last committed scanner evidence.',
+                scope_supporting='Provider-neutral Registry scope.',
+                coverage_supporting=security.snapshot.coverage_supporting,
+                exceptions_supporting=security.snapshot.exceptions_supporting,
+                coverage_tone=security.snapshot.coverage_tone,
+                exceptions_tone=security.snapshot.exceptions_tone,
+                metric_icon_palette='brand',
+                coverage_metric_label='Security Coverage',
+                exceptions_metric_label='Security Exceptions') }}
+        <section class="space-y-4" aria-labelledby="artifact-registry-security-overview-workspaces-heading">
+            {{ section_intro.render('Security Workspaces',
+                        'Open the evidence workspace for vulnerability or supply-chain review.',
+                        'artifact-registry-security-overview-workspaces-heading') }}
+            {% set workspace_badge %}
+                {{ table_label.metadata_label('2 Workspaces', icon='layout-grid') }}
+            {% endset %}
+            {% call section_card.render(
+                'Security Workspace Catalog',
+                'Choose the committed security evidence to investigate.',
+                'layout-grid',
+                header_badge=workspace_badge,
+                body_classes='p-5'
+                ) %}
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {{ workspace_card.render({
+                            'href': url_for('artifact_registry.security', source_id=request.args.get('source_id')),
+                            'title': 'Vulnerabilities',
+                            'label': 'Committed Security',
+                            'description': 'Review committed findings and correlated runtime exposure.',
+                            'icon': 'shield-alert',
+                            'scope': security.critical ~ ' Critical',
+                            'search_text': 'Vulnerabilities',
+                            'action_label': 'Browse Vulnerabilities'
+                            }, compact=true) }}
+                    {{ workspace_card.render({
+                            'href': url_for('artifact_registry.security_supply_chain', source_id=request.args.get('source_id')),
+                            'title': 'Supply Chain',
+                            'label': 'Provider Evidence',
+                            'description': 'Review observed signatures, SBOM availability, and evidence gaps.',
+                            'icon': 'badge-check',
+                            'scope': security.coverage_gaps ~ ' Coverage Gaps',
+                            'search_text': 'Supply Chain',
+                            'action_label': 'Browse Supply Chain'
+                            }, compact=true) }}
+                </div>
+            {% endcall %}
+        </section>
+        <section class="space-y-4" aria-labelledby="artifact-registry-security-overview-posture-heading">
+            {{ section_intro.render('Security Evidence Posture',
+                        'Prioritized committed scan and runtime correlation signals.',
+                        'artifact-registry-security-overview-posture-heading') }}
+            {% set posture_badge %}
+                {{ table_label.metadata_label(security.posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+            {% endset %}
+            {% call section_card.render(
+                'Registry Security Evidence',
+                'Committed findings and correlated runtime evidence for the active Registry scope.',
+                'shield-check',
+                header_badge=posture_badge,
+                body_classes='p-5'
+                ) %}
+                {{ posture_grid.render(security.posture_metrics, columns=4, compact=true) }}
+            {% endcall %}
+        </section>
+    {% endif %}
+</div>
