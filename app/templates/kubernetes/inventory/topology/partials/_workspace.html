@@ -5,6 +5,9 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/topology_primitives.html" as topology_parts %}
 {% import "components/table_registry.html" as registry_ui %}
+{% set relationship_badge %}
+    {{ table_label.metadata_label(table_label.count_text(graph.summary.relationships, 'Relationship'), icon='git-fork', text_id='topology-relationship-badge-count') }}
+{% endset %}
 {% set topology_filters_active = filters.cluster_id or filters.namespace or filters.scope != 'all' or filters.depth != '1' %}
 {% set topology_header_actions = registry_ui.clear_filters_action(
     url_for('inventory.topology'),
@@ -24,6 +27,7 @@
     action_icon='refresh-cw',
     loading_id='topology-loading',
     header_actions=topology_header_actions,
+    header_badge=relationship_badge,
     action_classes=table_ui.action_classes()
     ) %}
     <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
