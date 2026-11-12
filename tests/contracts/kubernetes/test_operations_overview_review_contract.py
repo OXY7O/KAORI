@@ -174,6 +174,57 @@ def test_operations_catalog_headings_use_canonical_title_guide() -> None:
         assert 'info_items=[' in page
 
 
+def test_configmap_and_secret_catalogs_use_external_section_intros_and_one_guide() -> None:
+    shared_intro = read('app/templates/components/section_intro.html')
+    shared_catalog = read('app/templates/components/operational_workflow_catalog.html')
+    assert 'macro render(title, description, id=None, supporting=None' in shared_intro
+    assert "variant='guide'" in shared_catalog
+
+    for domain, title, intro, description, anchor_id, heading_id, guide_id in (
+        (
+            'configmaps',
+            'Choose a ConfigMap Operation',
+            'ConfigMap Workflows',
+            'Select a validated workflow for live ConfigMap configuration.',
+            'configmap-workflows',
+            'configmap-workflows-heading',
+            'configmap-operation-catalog-guide',
+        ),
+        (
+            'secrets',
+            'Choose a Secret Operation',
+            'Secret Workflows',
+            'Choose governed workflows for Secrets, protected reveal, and TLS rotation.',
+            'secret-workflows',
+            'secret-workflows-heading',
+            'secret-operation-catalog-guide',
+        ),
+    ):
+        page = read(f'app/templates/kubernetes/operations/{domain}/index.html')
+        assert 'components/section_intro.html' in page
+        assert f"section_intro.render('{intro}'" in page
+        assert description in page
+        assert f'aria-labelledby="{heading_id}"' in page
+        assert f"'{heading_id}'" in page
+        assert f'id="{anchor_id}"' in page
+        assert page.index(f"section_intro.render('{intro}'") < page.index(f"'{title}'")
+        assert page.count(f"info_id='{guide_id}'") == 1
+        assert page.count('workflow_catalog.render(') == 1
+        assert 'components/operational_workflow_card.html' in page
+        assert 'current_user.has_permission(' in page
+        assert 'operation_evidence_boundary.html' in page
+        assert 'whitespace-nowrap' not in page
+        assert 'truncate' not in page
+
+    configmaps = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secrets = read('app/templates/kubernetes/operations/secrets/index.html')
+    for name in ('Create ConfigMap', 'Update ConfigMap', 'Delete ConfigMap'):
+        assert name in configmaps
+    for name in ('Create Secret', 'Replace Secret Data', 'Delete Secret', 'Protected Secret Reveal', 'TLS Rotation'):
+        assert name in secrets
+    assert "url_for('platform_operations.kubernetes.secret_reveal.index')" in secrets
+
+
 def test_operations_overview_uses_committed_cluster_connection_evidence() -> None:
     flow = read('app/kubernetes/operations/operation_flow.py')
     routes = read('app/kubernetes/operations/routes.py')
