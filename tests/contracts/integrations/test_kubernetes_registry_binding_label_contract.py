@@ -20,10 +20,7 @@ def test_kubernetes_registry_uses_shared_single_line_binding_label():
         "table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source'))"
         in template
     )
-    assert (
-        'title="{{ table_label.count_text(row.source_binding_count, '
-        "'Consumer association') }}\">"
-    ) in template
+    assert "title=\"{{ table_label.count_text(row.source_binding_count, 'Consumer association') }}\"" in template
 
     # The old stacked caption must not return: the accessible title carries
     # the fuller meaning without adding another visible row.
