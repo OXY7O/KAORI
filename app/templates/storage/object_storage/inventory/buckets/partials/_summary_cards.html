@@ -1,6 +1,6 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
 {% set latest_label = inventory.latest_observed_at|user_datetime if inventory.latest_observed_at else 'Not Collected' %}
 {% set metrics = [
     ('boxes', 'Assets in Scope', inventory.total_assets, 'Assets matching active filters.', 'brand'),
@@ -8,23 +8,14 @@
     ('box', 'Containers', inventory.total_containers, 'Container-native object-storage namespaces.', 'brand'),
     ('clock-3', 'Latest Snapshot', latest_label, 'Latest committed inventory observation.', 'normal' if inventory.latest_observed_at else 'unknown')
 ] %}
-{% set posture_guide %}
-    {{ info_tip.render('object-storage-namespaces-posture-guide',
-        'Object Storage Namespace Posture Guide',
-        'Bucket and container counts follow provider-native namespace types within the selected committed inventory scope.',
-        items=[
-            'Assets in Scope follows the active inventory filters.',
-            'Buckets and Containers are distinct provider-native namespace types.',
-            'Latest Snapshot reports the most recent committed inventory observation.'
-        ],
-        placement='right',
-        variant='guide') }}
+{% set posture_badge %}
+    {{ table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid') }}
 {% endset %}
 {% call operational_section_card.render(
     'Object Storage Namespace Posture',
     'Canonical inventory coverage across provider-specific bucket and container implementations.',
     'boxes',
-    header_badge=posture_guide,
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(metrics, columns=4) }}
