@@ -81,6 +81,42 @@ The input path above is an **example**, not a file created by KAORI. Do not comm
 
 **Migration and import are UAT DB changes.** Never run them against production without explicit environment/backup/change approval. A migration is not a certificate renewal and has no Kubernetes host-side effects.
 
+## 3A. Verify above-Hero Governance navigation and inventory scope (Dev Container)
+
+The page-level **Overview · TLS Certificates · Internal Certificates** tabs are rendered by the
+existing `layouts/app.html` and `workspace_tabs.render_navigation` component **above the
+Hero**. They are permission-aware. A user without at least two authorized detailed views
+will not receive a tab row; do not duplicate it inside the page template.
+
+After the approved staging-UAT checkout and database migration, explicitly reconcile
+the canonical role permissions in the **intended Dev Container database**:
+
+```bash
+flask db current
+flask seed-rbac
+```
+
+`flask seed-rbac` mutates the selected database and should never be run blindly against
+production. It is **not** invoked by an HTTP GET. Verify the user has
+`governance.view`, `clusters.view`, and `internal_certificates.view` to access
+Internal Certificates; `tls_certificates.view` controls the TLS tab separately.
+Custom roles must be reviewed and updated through existing Access workflows.
+
+In **Internal PKI Source Registry**, select a registered cluster using **View PKI
+Evidence**. The URL retains `cluster_id` for this page's committed certificate
+inventory; **Clear Cluster Scope** returns to all clusters. Search and default
+five-row pagination remain scoped to the selected cluster, and the total committed
+source-reported certificate count must not display another cluster's count.
+
+If `flask db current` shows an unapplied internal PKI schema revision, apply the
+approved migration before import; `Inventory Schema Upgrade Required` is distinct
+from `No internal certificate evidence is committed`.
+
+**Evidence for UAT:** record exact git SHA, selected DB environment, migration state,
+RBAC seed result, a screenshot of the three authorized tabs **above** the Hero, a
+screenshot of a cluster-scoped certificate registry after a real approved import,
+and the redacted evidence batch ID. Never attach raw kubeadm stdout or keys.
+
 ## 4. Read-only UI and expected states
 
 After a successful import and refresh:

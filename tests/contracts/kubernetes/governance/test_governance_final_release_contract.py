@@ -183,6 +183,11 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert '- key: internal_certificates.view' in access
     assert access.count('  - internal_certificates.view') == 5
 
+    assert 'View PKI Evidence' in workspace
+    assert "url_for('governance.internal_certificates', cluster_id=record.id)" in workspace
+    assert "'cluster_id': payload.selected_cluster_id" in workspace
+    assert 'Clear Cluster Scope' in workspace
+
     assert 'db.session.execute(' in service
     assert 'KubernetesConnection.detected_platform' in service
     assert 'KubernetesConnection.detected_version' in service
