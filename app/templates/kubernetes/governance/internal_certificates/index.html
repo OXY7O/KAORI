@@ -57,10 +57,7 @@
                 <p class="mt-1 text-xs text-content-secondary">Source assessment is unavailable. No certificate health or expiry status is inferred.</p>
             </section>
         {% elif payload %}
-            <section class="space-y-4" aria-labelledby="internal-pki-posture-heading">
-                {{ section_intro.render('Source Readiness',
-                                'Review collection authority and evidence limitations before enabling internal PKI monitoring.',
-                                'internal-pki-posture-heading') }}
+            <section class="space-y-4" aria-label="Internal PKI source readiness">
                 {% set source_guide %}
                     {{ info_tip.render('internal-pki-source-readiness-guide',
                                         'Internal PKI Source Readiness Guide',
