@@ -493,3 +493,28 @@ def test_missing_nofollow_support_fails_closed_before_raw_report_open(tmp_path, 
     assert not output.exists()
     assert report.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_short_read_with_stable_descriptor_metadata_is_not_verified(tmp_path, monkeypatch, capsys):
+    import os
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    original_fstat = os.fstat
+    report_size = report.stat().st_size
+
+    def stable_but_incomplete_descriptor_stat(descriptor):
+        actual = original_fstat(descriptor)
+        if actual.st_size == report_size:
+            values = list(actual)
+            values[6] += 1
+            return os.stat_result(values)
+        return actual
+
+    monkeypatch.setattr(zap.os, 'fstat', stable_but_incomplete_descriptor_stat)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert report.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
