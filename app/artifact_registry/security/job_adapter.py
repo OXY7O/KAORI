@@ -102,8 +102,17 @@ def build_registry_security_sync_state(*, policy: JobPolicy | None = None) -> di
         label, tone, icon = 'Ready', 'normal', 'circle-check'
         helper = 'Committed Security evidence is available. Sync again when fresher provider evidence is needed.'
 
+    compact_helper = {
+        'Queued': 'Security sync queued.',
+        'Syncing': 'Security evidence refreshing.',
+        'Sync Failed': 'Last sync failed; earlier evidence retained.',
+        'Not Collected': 'Security evidence not collected.',
+        'Ready': 'Committed security evidence available.',
+    }[label]
+
     return {
         'label': label,
+        'compact_helper': compact_helper,
         'tone': tone,
         'icon': icon,
         'helper': helper,
