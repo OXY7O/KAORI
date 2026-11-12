@@ -86,7 +86,9 @@ def main() -> int:
     internal_service = read('app/kubernetes/governance/internal_certificates/service.py')
     internal_page = read('app/templates/kubernetes/governance/internal_certificates/index.html')
     pki_snapshot = read('app/templates/kubernetes/governance/internal_certificates/partials/_snapshot_context.html')
-    pki_operations = read('app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html')
+    pki_operations = read(
+        'app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html'
+    )
     pki_posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
     access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
