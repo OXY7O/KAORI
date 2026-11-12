@@ -41,6 +41,11 @@ def main() -> int:
     shared_side_drawer_js = read('app/static/js/side_drawer.js')
     shared_side_drawer = read('app/templates/components/side_drawer.html')
     shared_action_button = read('app/templates/components/action_button.html')
+    shared_title_cell = (
+        read('app/templates/components/table_primitives.html')
+        .split('{% macro title_cell(', 1)[1]
+        .split('{%- endmacro %}', 1)[0]
+    )
     read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read(
         'app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html'
@@ -326,8 +331,9 @@ def main() -> int:
         and 'grid min-w-0 lg:grid-cols-5' in template
         and 'lg:border-b-0 lg:border-r' in template
         and 'aria-label="Recent committed delivery attempts"' in template
-        and 'title="{{ delivery.event_label }}"' in template
-        and 'title="{{ delivery.channel_name }}"' in template
+        and "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in delivery_template
+        and 'title="{{ name }}"' in shared_title_cell
+        and 'title="{{ supporting_text }}"' in shared_title_cell
         and 'Delivery outcome:' in template
         and 'Showing up to 5 committed records.' in template
         and 'Provider acceptance does not prove human receipt.' in template,

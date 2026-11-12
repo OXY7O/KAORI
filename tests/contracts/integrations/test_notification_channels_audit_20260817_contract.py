@@ -1296,3 +1296,16 @@ def test_channel_event_disclosures_preserve_nested_inspection_and_action_securit
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in active
     assert 'channel.retirement_reason' in drawer
     assert 'data-kaori-channel-archived-boundary' in drawer
+
+def test_notification_snapshot_verifier_accepts_shared_recent_delivery_title_cell() -> None:
+    verifier = read('scripts/verify_notification_channels.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    shared = read('app/templates/components/table_primitives.html')
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in page
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in verifier
+    assert "read('app/templates/components/table_primitives.html')" in verifier
+    assert 'title="{{ name }}"' in shared
+    assert 'title="{{ supporting_text }}"' in shared
+    assert 'title="{{ delivery.event_label }}"' not in verifier
+    assert 'title="{{ delivery.channel_name }}"' not in verifier
+    assert "'unified notification snapshot outside-card section intro'" in verifier
