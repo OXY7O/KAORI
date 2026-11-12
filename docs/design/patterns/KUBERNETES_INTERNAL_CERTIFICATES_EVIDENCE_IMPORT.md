@@ -316,11 +316,21 @@ and the redacted evidence batch ID. Never attach raw kubeadm stdout or keys.
 The approved Internal Certificates layout follows the already-admitted TLS
 operational composition: **above-Hero capability tabs → Hero → Internal PKI
 Collection Snapshot → Internal PKI Collection Operations → Certificate Posture
-→ Registered Source Coverage → Certificate Inventory**. It reuses canonical
+→ Internal PKI Evidence tabs**. The evidence section uses the same canonical
+`workspace_tabs.render_query_tabs` server/HTMX interaction as Artifact Registry
+CVE Evidence, with **Registered Source Coverage** (default) and **Certificate
+Inventory** (on demand) in one workspace panel. `View PKI Evidence` opens the
+certificate tab scoped to the selected cluster, and browser navigation retains
+each tab's independent search/page/rows parameters. It reuses canonical
 `snapshot_context_bar`, `action_button`, `operational_section_card`, and
 `resource_posture_grid` components. The original **PKI Evidence Boundaries**
 explanation remains an Info Tip on Collection Operations, not a redundant
 full-size card or standalone Source Readiness heading.
+
+The snapshot text deliberately uses concise, complete one-line copy
+(`PKI evidence is committed; active use is unverified.`, `Collection time in UTC.`,
+`Coverage is unverified.`) within the existing compact shared context bar;
+meaningful source detail remains in the registry, Info Tip and audit metadata.
 
 The snapshot and posture are derived from **committed KAORI inventory/batch
 rows**. The latest source report is a source-capture timestamp in UTC, **not**
