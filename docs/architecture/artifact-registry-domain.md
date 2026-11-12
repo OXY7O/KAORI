@@ -629,9 +629,13 @@ project / Kubernetes namespace in the shared contextual metadata row. Preserve
 the committed summary strip and the five existing `detail.inventory_section`
 bands, but keep their left-rail descriptions concise (≤28 characters) for
 Artifact Identity, Registry Provenance, Runtime Target, Correlation Evidence
-and Security Exposure. Full digest, mutable tag confidence, source/observed
-timestamps, workload/Pod/container/image evidence and Critical/High findings
-stay visible in the existing fact rows. The section copy must never imply
+and Security Exposure. For the two identity-bearing rail badges, show the
+stable category labels **Registry Artifact** and **Kubernetes Workload**, never
+an unbounded project/repository or cluster/namespace concatenation. Complete
+names remain in the Project, Repository, Cluster, Namespace, Workload, Pod,
+Container and Image Reference facts (and header/summary context). Full digest,
+mutable tag confidence, source/observed timestamps, workload/Pod/container/image
+evidence and Critical/High findings stay visible in the existing fact rows. The section copy must never imply
 provider-side runtime verification or a fresh scanner request. Normal responsive
 wrapping is allowed at narrow widths; no new modal family or local styling.
 
