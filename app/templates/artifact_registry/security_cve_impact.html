@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -62,11 +63,57 @@
                 </p>
             </div>
         {% endif %}
-        <section class="space-y-4" aria-labelledby="artifact-registry-cve-findings-intro">
-            {{ section_intro.render('Affected Artifacts',
-                        'Review source-qualified scanner findings for this CVE.',
-                        'artifact-registry-cve-findings-intro') }}
-            <section id="artifact-registry-cve-findings"
+        <section class="space-y-4"
+                 aria-labelledby="artifact-registry-cve-evidence-heading">
+            {{ section_intro.render('CVE Evidence',
+                        'Inspect committed artifact findings and correlated Kubernetes runtime bindings.',
+                        'artifact-registry-cve-evidence-heading') }}
+            {% set evidence_tabs = [
+                (
+                'findings',
+                'Affected Artifact Evidence',
+                'package-search',
+                url_for('artifact_registry.security_cve_impact',
+                    cve_id=impact.cve_id,
+                    evidence_tab='findings',
+                    finding_q=impact.filters.finding_search,
+                    finding_severity=impact.filters.finding_severity,
+                    finding_page=impact.finding_pagination.page,
+                    finding_per_page=impact.finding_pagination.per_page,
+                    runtime_q=impact.filters.runtime_search,
+                    runtime_match=impact.filters.runtime_match,
+                    runtime_page=impact.runtime_pagination.page,
+                    runtime_per_page=impact.runtime_pagination.per_page)
+                ),
+                (
+                'runtime',
+                'Kubernetes Runtime Exposure',
+                'waypoints',
+                url_for('artifact_registry.security_cve_impact',
+                    cve_id=impact.cve_id,
+                    evidence_tab='runtime',
+                    finding_q=impact.filters.finding_search,
+                    finding_severity=impact.filters.finding_severity,
+                    finding_page=impact.finding_pagination.page,
+                    finding_per_page=impact.finding_pagination.per_page,
+                    runtime_q=impact.filters.runtime_search,
+                    runtime_match=impact.filters.runtime_match,
+                    runtime_page=impact.runtime_pagination.page,
+                    runtime_per_page=impact.runtime_pagination.per_page)
+                )
+                ] %}
+            <section id="artifact-registry-cve-evidence-workspace"
+                     aria-label="CVE evidence workspaces"
+                     hx-select="#artifact-registry-cve-evidence-workspace"
+                     class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                {{ workspace_tabs.render_query_tabs(evidence_tabs,
+                                impact.active_tab,
+                                aria_label='CVE evidence types',
+                                hx_target='#artifact-registry-cve-evidence-workspace',
+                                hx_sync='#artifact-registry-cve-evidence-workspace:replace') }}
+                <div class="min-w-0 p-4 sm:p-5">
+                    {% if impact.active_tab == 'findings' %}
+                        <section id="artifact-registry-cve-findings"
                  aria-label="Affected Artifact Evidence"
                  class="{{ table_ui.block_classes() }}">
             {% set findings_badge %}
@@ -204,13 +251,9 @@
                         control_name='artifact-registry-cve-findings',
                         page_param='finding_page',
                         per_page_param='finding_per_page') }}
-        </section>
-        </section>
-        <section class="space-y-4" aria-labelledby="artifact-registry-cve-runtime-intro">
-            {{ section_intro.render('Runtime Exposure',
-                        'Trace affected artifact digests to committed Kubernetes workloads.',
-                        'artifact-registry-cve-runtime-intro') }}
-            <section id="artifact-registry-cve-runtime"
+                        </section>
+                    {% else %}
+                        <section id="artifact-registry-cve-runtime"
                  aria-label="Kubernetes Runtime Exposure"
                  class="{{ table_ui.block_classes() }}">
             {% set runtime_badge %}
@@ -351,6 +394,9 @@
                         control_name='artifact-registry-cve-runtime',
                         page_param='runtime_page',
                         per_page_param='runtime_per_page') }}
+                        </section>
+                    {% endif %}
+                </div>
             </section>
         </section>
     </div>
