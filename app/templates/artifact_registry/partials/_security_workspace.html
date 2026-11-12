@@ -191,15 +191,15 @@
                 {% set security_metrics = [
                                     ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
                                     ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
-                                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'info'),
-                                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
+                                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Digests with critical/high findings.', 'warning' if security.affected_artifacts else 'info'),
+                                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings to high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
                                 ] %}
             {% else %}
                 {% set security_metrics = [
-                                    ('badge-check', 'Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'info'),
-                                    ('file-check-2', 'SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'info'),
+                                    ('badge-check', 'Signature Observed', security.signature_observed, 'Provider-reported signatures.', 'info'),
+                                    ('file-check-2', 'SBOM Available', security.sbom_available, 'Provider-reported SBOMs.', 'info'),
                                     ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'info'),
-                                    ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
+                                    ('blocks', 'Security Sources', security.source_count, 'Registry sources in this scope.', 'info')
                                 ] %}
             {% endif %}
             {% set summary_badge %}
@@ -533,7 +533,7 @@
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {% if row.runtime_exposure_count %}
-                                                                {{ table_label.status_indicator_label(row.runtime_exposure_count ~ (' Binding' if row.runtime_exposure_count == 1 else ' Bindings'), 'critical' if row.severity == 'critical' else 'warning') }}
+                                                                {{ table_label.status_indicator_label(row.runtime_exposure_count ~ (' Binding' if row.runtime_exposure_count == 1 else ' Bindings') , 'critical' if row.severity == 'critical' else 'warning') }}
                                                             {% else %}
                                                                 {{ table_label.status_indicator_label('Not Observed', 'unknown') }}
                                                             {% endif %}
