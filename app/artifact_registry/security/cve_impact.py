@@ -129,16 +129,12 @@ def build_cve_runtime_impact(
             )
         )
     if finding_severity:
-        visible_findings = visible_findings.filter(
-            func.lower(RegistryVulnerability.severity) == finding_severity
-        )
+        visible_findings = visible_findings.filter(func.lower(RegistryVulnerability.severity) == finding_severity)
 
     visible_bindings = bindings
     if runtime_search:
         runtime_pattern = _literal_contains(runtime_search)
-        matching_clusters = select(Cluster.id).where(
-            Cluster.name.ilike(runtime_pattern, escape='\\')
-        )
+        matching_clusters = select(Cluster.id).where(Cluster.name.ilike(runtime_pattern, escape='\\'))
         visible_bindings = visible_bindings.filter(
             or_(
                 RegistryWorkloadBinding.cluster_id.ilike(runtime_pattern, escape='\\'),
