@@ -4,8 +4,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from flask import url_for
+from flask import current_app, url_for
 from sqlalchemy import or_
+from werkzeug.routing import BuildError
 
 from app.extensions.db import db
 from app.models.cluster import Cluster
@@ -149,12 +150,12 @@ NAVIGATION_ENTRIES: tuple[NavigationEntry, ...] = (
         ('notifications', 'personal inbox', 'active work'),
     ),
     NavigationEntry(
-        'CVE Impact',
-        'Artifact Registry security findings and runtime impact',
-        'artifact_registry.security_cve_impact',
+        'Vulnerabilities',
+        'Artifact Registry security findings; select a CVE for runtime impact',
+        'artifact_registry.security',
         'shield-alert',
         'artifact_registry.view',
-        ('registry security', 'vulnerabilities'),
+        ('cve', 'cve impact', 'registry security'),
     ),
     NavigationEntry(
         'Supply Chain',
@@ -263,15 +264,19 @@ def _sidebar_navigation_results(
                 if not query and identity not in quick_positions:
                     continue
                 label = str(child['label'])
-                title = f"{workspace['label']} · {label}" if children else label
-                subtitle = f"{section['label']} · {workspace['label']}"
+                title = f'{workspace["label"]} · {label}' if children else label
+                subtitle = f'{section["label"]} · {workspace["label"]}'
                 searchable = f'{title} {subtitle}'
-                score = _score(query, title, searchable) if query else len(QUICK_NAVIGATION_KEYS) - quick_positions[identity]
+                score = (
+                    _score(query, title, searchable)
+                    if query
+                    else len(QUICK_NAVIGATION_KEYS) - quick_positions[identity]
+                )
                 if query and score <= 0:
                     continue
                 results.append(
                     {
-                        'id': f"navigation:{workspace['key']}:{child['key'] if children else 'home'}",
+                        'id': f'navigation:{workspace["key"]}:{child["key"] if children else "home"}',
                         'kind': 'Navigation',
                         'title': title,
                         'subtitle': subtitle,
@@ -316,13 +321,21 @@ def navigation_results(
         score = _score(query, entry.label, searchable) if query else 1
         if query and score <= 0:
             continue
+        try:
+            destination = url_for(entry.endpoint)
+        except BuildError:
+            current_app.logger.warning(
+                'Global Search skipped an unbuildable legacy navigation endpoint: %s',
+                entry.endpoint,
+            )
+            continue
         entries.append(
             {
                 'id': f'navigation:{entry.endpoint}',
                 'kind': 'Navigation',
                 'title': entry.label,
                 'subtitle': entry.description,
-                'url': url_for(entry.endpoint),
+                'url': destination,
                 'icon': entry.icon,
                 'status': '',
                 'status_tone': '',
@@ -339,6 +352,7 @@ def navigation_results(
     deduplicated = list(by_url.values())
     deduplicated.sort(key=lambda item: (-int(item['_score']), str(item['title']).lower()))
     return deduplicated[:MAX_NAVIGATION_RESULTS]
+
 
 def _kubernetes_resource_results(query: str, current_cluster_id: str) -> list[dict[str, Any]]:
     like = f'%{query}%'
