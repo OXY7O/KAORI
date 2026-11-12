@@ -91,7 +91,6 @@ def test_notification_page_size_uses_one_change_request_and_preserves_filters() 
     assert 'option == pager.per_page' in content
 
 
-
 def test_notification_center_evidence_context_precedes_register() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
