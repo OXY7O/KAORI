@@ -53,6 +53,7 @@ _KUBERNETES_OPERATION_PERMISSIONS = _KUBERNETES_CONFIGMAP_PERMISSIONS + _KUBERNE
 _KUBERNETES_GOVERNANCE_PERMISSIONS = (
     'governance.view',
     'tls_certificates.view',
+    'internal_certificates.view',
 )
 
 _OPERATIONS_CENTER_PERMISSIONS = (
@@ -534,6 +535,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'badge-check',
             'governance.tls_certificates',
             ('tls_certificates.view',),
+        ),
+        CapabilityViewDefinition(
+            'internal_certificates',
+            'Internal Certificates',
+            'shield-alert',
+            'governance.internal_certificates',
+            ('internal_certificates.view',),
         ),
     ),
     'kubernetes_tenant': (

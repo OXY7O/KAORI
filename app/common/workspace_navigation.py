@@ -78,6 +78,9 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'inventory.configuration': 'configuration',
         'inventory.configuration_details': 'configuration',
     },
+    'kubernetes_governance': {
+        'governance.internal_certificates': 'internal_certificates',
+    },
     'kubernetes_operations': {
         'kubernetes_operations.overview': 'overview',
         'kubernetes_operations.create_configmap': 'configmaps',
@@ -197,7 +200,13 @@ def build_capability_navigation(
         return None
 
     visible_views = tuple(
-        view for view in _CAPABILITY_VIEWS[capability_key] if _has_any_permission(user, view.permissions)
+        view
+        for view in _CAPABILITY_VIEWS[capability_key]
+        if _has_any_permission(user, view.permissions)
+        and (
+            view.endpoint != 'governance.internal_certificates'
+            or (user.has_permission('governance.view') and user.has_permission('clusters.view'))
+        )
     )
     if len(visible_views) < 2:
         return None

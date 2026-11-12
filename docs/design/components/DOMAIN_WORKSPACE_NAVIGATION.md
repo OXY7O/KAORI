@@ -73,7 +73,7 @@ ConfigMap workflow endpoints such as Create, Update, Delete, live target lookup,
 ### Kubernetes / Governance
 
 ```text
-Overview · TLS Certificates
+Overview · TLS Certificates · Internal Certificates
 ```
 
 ### Kubernetes / Tenant
