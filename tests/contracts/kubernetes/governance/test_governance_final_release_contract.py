@@ -203,21 +203,38 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'get_tls_certificate_page(' not in service
     assert 'kubeadm certs renew' not in service
 
+    snapshot = read('app/templates/kubernetes/governance/internal_certificates/partials/_snapshot_context.html')
+    operations = read('app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html')
+    posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
+
     assert 'Internal PKI Source Registry' in workspace
     assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
     assert "registry_ui.footer('governance.internal_certificates'" in workspace
-    assert 'components/resource_posture_grid.html' in workspace
-    assert 'components/info_tip.html' in workspace
-    assert 'Not Collected' in workspace
-    assert 'Not Verified' in workspace
+    assert 'Not Collected' in service
+    assert 'Not Verified' in service
     assert 'Provider-Owned Renewal' in workspace
-    assert "'Renewal', 'Provider Owned'" in workspace
-    assert 'Renewal stays with the platform or PKI provider.' in workspace
     assert 'Renewal Deferred' not in workspace
-    assert 'Collection source not configured' in workspace
-    assert 'Automated PKI Collection Pending' in workspace
-    assert 'Request Renewal' not in workspace
-    assert 'Rotate All' not in workspace
+    assert 'Internal PKI Collection Snapshot' in snapshot
+    assert 'components/snapshot_context_bar.html' in snapshot
+    assert 'Internal PKI Collection Operations' in operations
+    assert 'PKI Evidence Boundaries' in operations
+    assert 'components/info_tip.html' in operations
+    assert 'Sync Internal PKI' in operations
+    assert 'disabled' in operations
+    assert 'hx-post' not in operations
+    assert '<form' not in operations
+    assert 'No Worker Runs' in operations
+    assert 'Not Scheduled' in operations
+    assert 'Renewal stays with the platform or PKI provider.' in operations
+    assert 'Source-Reported Certificate Posture' in posture
+    assert 'components/resource_posture_grid.html' in posture
+    assert 'Not Assessed' in posture
+    assert 'Partial Evidence' in posture
+    assert 'Request Renewal' not in workspace + operations
+    assert 'Rotate All' not in workspace + operations
+    assert workspace.index('partials/_snapshot_context.html') < workspace.index('partials/_collection_operations.html')
+    assert workspace.index('partials/_collection_operations.html') < workspace.index('partials/_posture.html')
+    assert workspace.index('partials/_posture.html') < workspace.index('partials/_certificate_inventory.html')
 
 
 def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only() -> None:
@@ -275,7 +292,9 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
 
     assert "section_intro.render('Source Readiness'" not in template
     assert 'aria-label="Internal PKI source readiness"' in template
-    assert 'PKI Evidence Boundaries' in template
+    assert 'partials/_snapshot_context.html' in template
+    assert 'partials/_collection_operations.html' in template
+    assert 'partials/_posture.html' in template
     assert 'partials/_certificate_inventory.html' in template
     assert 'inventory.committed_total' in template
     assert 'inventory.total' in partial

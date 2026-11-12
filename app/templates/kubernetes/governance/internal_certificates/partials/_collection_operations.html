@@ -1,0 +1,64 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+{% set source_guide %}
+    {{ info_tip.render(
+        'internal-pki-source-readiness-guide',
+        'PKI Evidence Boundaries',
+        'Source-qualified certificate expiry metadata does not establish installed certificate health.',
+        items=[
+            'Control-plane and etcd evidence require approved node-local or provider-owned read-only collection.',
+            'Kubelet CSR metadata is not proof of an installed client or serving certificate.',
+            'Native Kubernetes and PKI providers own renewal; KAORI will only collect and monitor evidence.'
+        ],
+        placement='right',
+        variant='guide'
+    ) }}
+{% endset %}
+<section id="internal-pki-collection-operations"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="internal-pki-collection-operations-heading">
+    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="refresh-cw" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 id="internal-pki-collection-operations-heading"
+                        class="text-base font-semibold text-content-primary">Internal PKI Collection Operations</h2>
+                    {{ table_label.status_label('Not Configured', 'unknown', none, 'detail') }}
+                    {{ source_guide }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Future read-only Ansible collection requires an approved source and execution identity. Renewal stays with the platform or PKI provider.
+                </p>
+            </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+            <button type="button"
+                    disabled
+                    aria-disabled="true"
+                    title="Unavailable: no approved Internal PKI Ansible collector or collection job is configured."
+                    class="{{ action_button.classes('primary', false) }}">
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                Sync Internal PKI
+            </button>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Automatic Collection</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">Not Configured · Ansible Pending</p>
+        </div>
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Last Automated Run</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">No Worker Runs</p>
+        </div>
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Next Scheduled</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">Not Scheduled</p>
+        </div>
+    </div>
+</section>

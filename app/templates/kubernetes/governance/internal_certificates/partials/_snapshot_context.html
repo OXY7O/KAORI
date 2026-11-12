@@ -1,0 +1,22 @@
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
+{% set operational = inventory.operational if inventory and inventory.operational is defined else none %}
+{% set schema_ready = schema_readiness and schema_readiness.ready %}
+{{ snapshot_context.render(
+    source_label=operational.source_label if operational else 'No admitted PKI source',
+    status=operational.status if operational else ('Schema Upgrade Required' if not schema_ready else 'Not Collected'),
+    tone=operational.tone if operational else 'unknown',
+    description='Committed internal PKI metadata; active certificate installation and trust are not verified.',
+    latest_collected=operational.latest_collected if operational else 'Not Collected',
+    scope_label=payload.records[0].name if payload.selected_cluster_id and payload.records else ('Selected Cluster' if payload.selected_cluster_id else 'All Clusters'),
+    coverage_label=operational.coverage_label if operational else 'Not Assessed',
+    exceptions_label=operational.exceptions_label if operational else 'Not Assessed',
+    icon='database-backup',
+    title='Internal PKI Collection Snapshot',
+    latest_label='Latest Source Report',
+    latest_supporting='Operator-reported collection time (UTC)',
+    scope_supporting='Committed cluster scope',
+    coverage_supporting='Source-declared; active use unverified',
+    exceptions_supporting='Reported expiry and freshness signals',
+    coverage_tone='warning' if operational and operational.partial_evidence else 'unknown',
+    exceptions_tone='warning' if operational and (operational.expired or operational.critical_window or operational.stale) else 'unknown'
+) }}

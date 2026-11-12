@@ -335,7 +335,13 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'Not Collected' in content
     assert 'Not Verified' in content
     assert 'Unknown' in content
-    assert 'Renewal Deferred' in content
+    assert 'Provider-Owned Renewal' in content
+    assert 'Internal PKI Collection Snapshot' in content
+    assert 'Internal PKI Collection Operations' in content
+    assert 'Sync Internal PKI' in content
+    assert 'No Worker Runs' in content
+    assert 'Not Assessed' in content
+    assert 'Renewal Deferred' not in content
     assert 'Request Renewal' not in content
     assert 'Rotate All' not in content
 
@@ -394,6 +400,22 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
         return {
             'total': 1,
             'committed_total': 1,
+            'operational': {
+                'total': 1,
+                'outside_window': 1,
+                'renewal_window': 0,
+                'critical_window': 0,
+                'expired': 0,
+                'not_yet_valid': 0,
+                'stale': 0,
+                'partial_evidence': 1,
+                'status': 'Operator Attested',
+                'tone': 'info',
+                'source_label': 'Operator-attested kubeadm metadata',
+                'latest_collected': '12 Nov 2026 12:36 UTC',
+                'coverage_label': 'Partial Source Evidence',
+                'exceptions_label': '0 Reported Signals',
+            },
             'records': [
                 {
                     'component': 'apiserver',
@@ -441,6 +463,12 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'control-plane-01' in content
     assert 'Operator Attested' in content
     assert 'Installed status unverified' in content
+    assert 'Internal PKI Collection Snapshot' in content
+    assert 'Source-Reported Certificate Posture' in content
+    assert 'Partial Source Evidence' in content
+    assert 'Sync Internal PKI' in content
+    assert 'No Worker Runs' in content
+    assert 'Not Scheduled' in content
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 

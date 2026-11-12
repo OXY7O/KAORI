@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 
 from app.extensions.db import db
 from app.models.cluster import Cluster
@@ -150,6 +150,75 @@ def _expiry_presentation(not_before: datetime | None, not_after: datetime) -> tu
     return 'Outside Window', 'normal'
 
 
+def get_internal_pki_operational_summary(cluster_id: str) -> dict[str, Any]:
+    """Summarize committed source-reported PKI evidence, never installed certificate health."""
+    now = datetime.now(UTC)
+    inventory = InternalPKICertificateInventory
+    batch = InternalPKIEvidenceBatch
+    valid_from = or_(inventory.not_before.is_(None), inventory.not_before <= now)
+    statement = (
+        select(
+            func.count(inventory.id).label('total'),
+            func.count(inventory.id)
+            .filter(and_(valid_from, inventory.not_after > now + timedelta(days=30)))
+            .label('outside_window'),
+            func.count(inventory.id)
+            .filter(
+                and_(
+                    valid_from,
+                    inventory.not_after > now + timedelta(days=7),
+                    inventory.not_after <= now + timedelta(days=30),
+                )
+            )
+            .label('renewal_window'),
+            func.count(inventory.id)
+            .filter(
+                and_(
+                    valid_from,
+                    inventory.not_after > now,
+                    inventory.not_after <= now + timedelta(days=7),
+                )
+            )
+            .label('critical_window'),
+            func.count(inventory.id).filter(inventory.not_after <= now).label('expired'),
+            func.count(inventory.id).filter(inventory.not_before > now).label('not_yet_valid'),
+            func.count(inventory.id)
+            .filter(inventory.collected_at < now - timedelta(days=30))
+            .label('stale'),
+            func.count(inventory.id).filter(batch.coverage_state == 'partial').label('partial_evidence'),
+            func.max(inventory.collected_at).label('latest_collected'),
+        )
+        .select_from(inventory)
+        .join(batch, batch.id == inventory.evidence_batch_id)
+    )
+    if cluster_id:
+        statement = statement.where(inventory.cluster_id == cluster_id)
+    result = db.session.execute(statement).one()
+    total = int(result.total or 0)
+    stale = int(result.stale or 0)
+    partial_evidence = int(result.partial_evidence or 0)
+    exceptions = int(result.expired or 0) + int(result.critical_window or 0) + stale
+    latest = _aware(result.latest_collected) if result.latest_collected else None
+    return {
+        'total': total,
+        'outside_window': int(result.outside_window or 0),
+        'renewal_window': int(result.renewal_window or 0),
+        'critical_window': int(result.critical_window or 0),
+        'expired': int(result.expired or 0),
+        'not_yet_valid': int(result.not_yet_valid or 0),
+        'stale': stale,
+        'partial_evidence': partial_evidence,
+        'status': 'Not Collected' if not total else ('Stale Evidence' if stale else 'Operator Attested'),
+        'tone': 'unknown' if not total else ('warning' if stale else 'info'),
+        'source_label': 'Operator-attested kubeadm metadata' if total else 'No admitted PKI source',
+        'latest_collected': latest.strftime('%d %b %Y %H:%M UTC') if latest else 'Not Collected',
+        'coverage_label': 'Not Assessed'
+        if not total
+        else ('Partial Source Evidence' if partial_evidence else 'Source-Declared Coverage'),
+        'exceptions_label': 'Not Assessed' if not total else f'{exceptions} Reported Signals',
+    }
+
+
 def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
     """Bounded page of committed operator-attested PKI metadata, never live provider data."""
     cluster_id = str(args.get('cluster_id') or '').strip()
@@ -219,13 +288,12 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 'freshness_tone': 'warning' if stale else 'info',
             }
         )
-    committed_count = select(func.count(InternalPKICertificateInventory.id))
-    if cluster_id:
-        committed_count = committed_count.where(InternalPKICertificateInventory.cluster_id == cluster_id)
+    operational = get_internal_pki_operational_summary(cluster_id)
     return {
         'records': records,
         'search': search,
         'cluster_id': cluster_id,
+        'operational': operational,
         'pagination': {
             'page': page,
             'per_page': per_page,
@@ -240,6 +308,6 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
             'next_page': min(page + 1, pages),
         },
         'total': total,
-        'committed_total': db.session.scalar(committed_count) or 0,
+        'committed_total': operational['total'],
         'source_label': 'Operator Attested',
     }
