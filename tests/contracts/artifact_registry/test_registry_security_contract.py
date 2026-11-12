@@ -252,6 +252,65 @@ def test_security_operations_guidance_is_one_line_and_keeps_execution_status() -
     assert "'helper': helper" in jobs
 
 
+def test_security_overview_retains_unknown_evidence_and_fails_closed(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    import pytest
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.security import presentation as security_presentation
+
+    source = SimpleNamespace(id=9, provider_key='harbor')
+    evidence = {
+        'artifact_total': 3,
+        'scanned_artifacts': 0,
+        'current_scanned_artifacts': 0,
+        'critical_total': 0,
+        'high_total': 0,
+        'affected_artifacts': 0,
+        'runtime_exposed': 0,
+        'signature_observed': 0,
+        'sbom_available': 0,
+        'coverage_gaps': 3,
+    }
+    monkeypatch.setattr(security_presentation, '_registered_sources', lambda: [source])
+    monkeypatch.setattr(security_presentation, '_providers', lambda: [source])
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_scope_evidence',
+        lambda **kwargs: evidence,
+    )
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_scope_labels',
+        lambda **kwargs: ('Selected Registry Source', 'Harbor'),
+    )
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_snapshot_context',
+        lambda *args, **kwargs: {'status': 'Not Collected'},
+    )
+
+    overview = security_presentation.build_security_overview(source_id=9)
+    assert overview['source_id'] == 9
+    assert overview['source_count'] == 1
+    assert overview['posture']['label'] == 'Coverage Incomplete'
+    assert all(metric[4] == 'unknown' for metric in overview['posture_metrics'])
+    assert overview['critical'] == 0
+    assert overview['coverage_gaps'] == 3
+
+    evidence['current_scanned_artifacts'] = 2
+    evidence['critical_total'] = 4
+    observed = security_presentation.build_security_overview(source_id=9)
+    assert observed['posture_metrics'][0][2] == 4
+    assert observed['posture_metrics'][0][4] == 'critical'
+    assert observed['posture_metrics'][1][4] == 'info'
+    assert observed['posture']['label'] == 'Critical Findings'
+
+    with pytest.raises(NotFound):
+        security_presentation.build_security_overview(source_id=19)
+
+
 def test_registry_security_capabilities_are_provider_declared() -> None:
     providers = read('app/integrations/registry/security_collectors.py')
     harbor = read('app/integrations/registry/providers/harbor/security.py')
