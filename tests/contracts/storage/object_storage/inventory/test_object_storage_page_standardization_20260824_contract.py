@@ -263,16 +263,13 @@ def test_object_storage_posture_titles_use_canonical_indicator_metadata_labels()
         ),
     ):
         source = read(path)
-        assert "components/table_label.html" in source
+        assert 'components/table_label.html' in source
         assert f"'{title}'" in source
-        assert (
-            "table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid')"
-            in source
-        )
+        assert "table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid')" in source
         assert 'header_badge=posture_badge' in source
         assert 'posture_grid.render(metrics, columns=4)' in source
         assert "body_classes='p-0'" in source
-        assert "components/info_tip.html" not in source
+        assert 'components/info_tip.html' not in source
         assert "variant='guide'" not in source
         assert 'posture_guide' not in source
         Environment().parse(source)
