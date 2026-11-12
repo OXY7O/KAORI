@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -62,10 +63,51 @@
                                 'internal-pki-posture-heading') }}
                 {% include "kubernetes/governance/internal_certificates/partials/_posture.html" %}
             </section>
-            <section class="space-y-4" aria-labelledby="internal-pki-inventory-heading">
-                {{ section_intro.render('Registered Source Coverage',
-                                'Review registered clusters and identify missing internal PKI collection sources.',
-                                'internal-pki-inventory-heading') }}
+            <section class="space-y-4" aria-labelledby="internal-pki-evidence-heading">
+                {{ section_intro.render('Internal PKI Evidence',
+                                'Review committed cluster source coverage or source-reported certificate inventory.',
+                                'internal-pki-evidence-heading') }}
+                {% set evidence_tabs = [
+                    (
+                    'sources',
+                    'Registered Source Coverage',
+                    'server-cog',
+                    url_for('governance.internal_certificates',
+                        evidence_tab='sources',
+                        cluster_id=payload.selected_cluster_id,
+                        search=payload.search,
+                        page=payload.pagination.page,
+                        per_page=payload.pagination.per_page,
+                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
+                        cert_page=inventory.pagination.page if inventory else 1,
+                        cert_per_page=inventory.pagination.per_page if inventory else 5)
+                    ),
+                    (
+                    'certificates',
+                    'Certificate Inventory',
+                    'file-badge',
+                    url_for('governance.internal_certificates',
+                        evidence_tab='certificates',
+                        cluster_id=payload.selected_cluster_id,
+                        search=payload.search,
+                        page=payload.pagination.page,
+                        per_page=payload.pagination.per_page,
+                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
+                        cert_page=inventory.pagination.page if inventory else 1,
+                        cert_per_page=inventory.pagination.per_page if inventory else 5)
+                    )
+                ] %}
+                <section id="internal-pki-evidence-workspace"
+                         aria-label="Internal PKI evidence workspaces"
+                         hx-select="#internal-pki-evidence-workspace"
+                         class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    {{ workspace_tabs.render_query_tabs(evidence_tabs,
+                                    active_tab,
+                                    aria_label='Internal PKI evidence types',
+                                    hx_target='#internal-pki-evidence-workspace',
+                                    hx_sync='#internal-pki-evidence-workspace:replace') }}
+                    <div class="min-w-0 p-4 sm:p-5">
+                        {% if active_tab == 'sources' %}
                 <section id="internal-pki-source-registry"
                          class="{{ table_ui.block_classes() }}">
                     {% set source_badge = table_label.metadata_label(table_label.count_text(payload.pagination.total_items, 'Cluster'), icon='server') %}
@@ -79,7 +121,7 @@
                     title_extra=source_badge) }}
                     {% if payload.selected_cluster_id %}
                         <div class="border-b border-outline-subtle px-5 py-3">
-                            <a href="{{ url_for('governance.internal_certificates') }}"
+                            <a href="{{ url_for('governance.internal_certificates', evidence_tab='sources') }}"
                                class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                 <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                 Clear Cluster Scope
@@ -93,6 +135,10 @@
                             payload.pagination.per_page,
                             form_id='internal-pki-source-filter',
                             aria_label='Filter registered clusters for internal PKI source assessment') %}
+                            <input type="hidden" name="evidence_tab" value="sources">
+                            <input type="hidden" name="cert_search" value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
+                            <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else 1 }}">
+                            <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else 5 }}">
                             {% if payload.selected_cluster_id %}
                                 <input type="hidden"
                                        name="cluster_id"
@@ -129,7 +175,7 @@
                                         <td class="px-4 py-3 align-top">
                                             <p class="font-semibold text-content-primary">{{ record.name }}</p>
                                             <p class="mt-1 text-xs text-content-muted">{{ record.environment }}</p>
-                                            <a href="{{ url_for('governance.internal_certificates', cluster_id=record.id) }}"
+                                            <a href="{{ url_for('governance.internal_certificates', cluster_id=record.id, evidence_tab='certificates') }}"
                                                class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                                                aria-label="Review internal PKI evidence for {{ record.name }}">
                                                 View PKI Evidence
@@ -161,14 +207,18 @@
                                         'internal-pki-source-registry',
                                         'internal-pki-source-loading',
                                         payload.pagination,
-                                        {'search': payload.search, 'cluster_id': payload.selected_cluster_id},
+                                        {'search': payload.search, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_page': inventory.pagination.page if inventory else 1, 'cert_per_page': inventory.pagination.per_page if inventory else 5},
                                         payload.pagination.allowed_per_page,
                                         resource_label='Clusters',
                                         rows_aria_label='Clusters per page',
                                         control_name='internal-pki-source') }}
                 </section>
+                        {% else %}
+                            {% include "kubernetes/governance/internal_certificates/partials/_certificate_inventory.html" %}
+                        {% endif %}
+                    </div>
+                </section>
             </section>
-            {% include "kubernetes/governance/internal_certificates/partials/_certificate_inventory.html" %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
