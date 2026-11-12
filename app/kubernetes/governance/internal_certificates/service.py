@@ -39,6 +39,8 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
     """
     selected_cluster_id = str(args.get('cluster_id') or '').strip()
     search = str(args.get('search') or '').strip()[:100]
+    environment = str(args.get('environment') or '').strip()[:64]
+    platform = str(args.get('platform') or '').strip()[:64]
     page = _page_number(args.get('page'))
     per_page = _per_page(args.get('per_page'))
 
@@ -60,7 +62,26 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
     if search:
         count_stmt = count_stmt.where(Cluster.name.ilike(f'%{search}%'))
         stmt = stmt.where(Cluster.name.ilike(f'%{search}%'))
+    if environment:
+        count_stmt = count_stmt.where(Cluster.environment == environment)
+        stmt = stmt.where(Cluster.environment == environment)
+    if platform:
+        count_stmt = count_stmt.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        count_stmt = count_stmt.where(KubernetesConnection.detected_platform == platform)
+        stmt = stmt.where(KubernetesConnection.detected_platform == platform)
 
+    environments = db.session.scalars(
+        select(Cluster.environment)
+        .where(Cluster.environment.is_not(None))
+        .distinct()
+        .order_by(Cluster.environment)
+    ).all()
+    platforms = db.session.scalars(
+        select(KubernetesConnection.detected_platform)
+        .where(KubernetesConnection.detected_platform.is_not(None))
+        .distinct()
+        .order_by(KubernetesConnection.detected_platform)
+    ).all()
     total_items = db.session.scalar(count_stmt) or 0
     total_pages = max(ceil(total_items / per_page), 1)
     page = min(page, total_pages)
@@ -86,6 +107,8 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
         'records': records,
         'selected_cluster_id': selected_cluster_id,
         'search': search,
+        'filters': {'environment': environment, 'platform': platform},
+        'filter_options': {'environments': environments, 'platforms': platforms},
         'registered_total': db.session.scalar(select(func.count(Cluster.id))) or 0,
         'pagination': {
             'page': page,
@@ -221,6 +244,14 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
     """Bounded page of committed operator-attested PKI metadata, never live provider data."""
     cluster_id = str(args.get('cluster_id') or '').strip()
     search = str(args.get('cert_search') or '').strip()[:100]
+    kind = str(args.get('cert_kind') or '').strip()
+    expiry = str(args.get('cert_expiry') or '').strip()
+    coverage = str(args.get('cert_coverage') or '').strip()
+    freshness = str(args.get('cert_freshness') or '').strip()
+    kind = kind if kind in {'leaf', 'ca'} else ''
+    expiry = expiry if expiry in {'outside_window', 'renewal_window', 'critical_window', 'expired', 'not_yet_valid'} else ''
+    coverage = coverage if coverage in {'partial', 'complete'} else ''
+    freshness = freshness if freshness in {'recent', 'stale'} else ''
     page = _page_number(args.get('cert_page'))
     per_page = _per_page(args.get('cert_per_page'))
     query = InternalPKICertificateInventory.query.join(
@@ -238,8 +269,36 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 InternalPKICertificateInventory.component.ilike(pattern),
                 InternalPKICertificateInventory.node_name.ilike(pattern),
                 Cluster.name.ilike(pattern),
+                InternalPKICertificateInventory.issuer.ilike(pattern),
             )
         )
+    certificate = InternalPKICertificateInventory
+    if kind:
+        query = query.filter(certificate.kind == kind)
+    if coverage:
+        query = query.filter(InternalPKIEvidenceBatch.coverage_state == coverage)
+    now = datetime.now(UTC)
+    valid_from = or_(certificate.not_before.is_(None), certificate.not_before <= now)
+    if expiry == 'outside_window':
+        query = query.filter(valid_from, certificate.not_after > now + timedelta(days=30))
+    elif expiry == 'renewal_window':
+        query = query.filter(
+            valid_from,
+            certificate.not_after > now + timedelta(days=7),
+            certificate.not_after <= now + timedelta(days=30),
+        )
+    elif expiry == 'critical_window':
+        query = query.filter(
+            valid_from, certificate.not_after > now, certificate.not_after <= now + timedelta(days=7)
+        )
+    elif expiry == 'expired':
+        query = query.filter(valid_from, certificate.not_after <= now)
+    elif expiry == 'not_yet_valid':
+        query = query.filter(certificate.not_before > now)
+    if freshness == 'stale':
+        query = query.filter(certificate.collected_at < now - timedelta(days=30))
+    elif freshness == 'recent':
+        query = query.filter(certificate.collected_at >= now - timedelta(days=30))
 
     total = query.count()
     pages = max(ceil(total / per_page), 1)
@@ -290,6 +349,7 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
     return {
         'records': records,
         'search': search,
+        'filters': {'kind': kind, 'expiry': expiry, 'coverage': coverage, 'freshness': freshness},
         'cluster_id': cluster_id,
         'operational': operational,
         'pagination': {
