@@ -243,6 +243,7 @@ def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
     assert 'section.description' in bucket
     assert 'bucket.provider_detail_sections' in bucket
 
+
 def test_object_storage_posture_titles_expose_accessible_shared_guides() -> None:
     from jinja2 import Environment
 
@@ -274,6 +275,6 @@ def test_object_storage_posture_titles_expose_accessible_shared_guides() -> None
         assert 'header_badge=posture_guide' in source
         assert 'posture_grid.render(metrics, columns=4)' in source
         assert "body_classes='p-0'" in source
-        assert 'table_label.metadata_label(\'Info\'' not in source
+        assert "table_label.metadata_label('Info'" not in source
         Environment().parse(source)
 
