@@ -124,6 +124,11 @@ def main() -> int:
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
     require(
+        "section_intro.render('Source Readiness'" not in internal_page,
+        'Internal PKI must not render a standalone Source Readiness intro directly after Hero.',
+        errors,
+    )
+    require(
         'Request Renewal' not in internal_page and 'Rotate All' not in internal_page,
         'Internal PKI source readiness must remain non-mutating.',
         errors,
