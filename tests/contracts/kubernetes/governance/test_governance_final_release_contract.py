@@ -174,7 +174,7 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert "- key: internal_certificates.view" in access
     assert access.count('  - internal_certificates.view') == 5
 
-    assert 'Cluster.query' in service
+    assert 'db.session.execute(' in service
     assert 'KubernetesConnection.detected_platform' in service
     assert 'KubernetesConnection.detected_version' in service
     assert 'select(func.count(Cluster.id))' in service
