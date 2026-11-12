@@ -24,7 +24,8 @@
                                 asset.description,
                                 url_for(asset.endpoint) ,
                 asset.icon,
-                action_label=asset.action_label) }}
+                action_label=asset.action_label,
+                compact_count=true) }}
             {% endfor %}
         </div>
     {% endcall %}
