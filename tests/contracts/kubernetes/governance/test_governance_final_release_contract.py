@@ -82,8 +82,10 @@ def test_governance_overview_is_domain_first_and_child_capability_evidence_stays
     assert 'header_badge=model_guide' in overview
     assert "body_classes='p-5'" in overview
     assert 'overflow-hidden rounded-xl border border-outline-subtle' in overview
-    assert overview.index("title='Governance Control Context'") < overview.index("section_intro.render('Governance Scope'")
-    assert overview.index("section_intro.render('Governance Scope'") < overview.index("section_intro.render('Governance Model'")
+    context_position = overview.index("title='Governance Control Context'")
+    scope_position = overview.index("section_intro.render('Governance Scope'")
+    model_position = overview.index("section_intro.render('Governance Model'")
+    assert context_position < scope_position < model_position
     assert 'get_tls_certificate_page' not in overview
     assert "latest_collected=payload.snapshot.latest_collected" not in overview
 
