@@ -47,20 +47,20 @@
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}
-                {% set governance_capabilities = [
-                                    {
-                                        'icon': 'badge-check',
-                                        'title': 'TLS Certificates',
-                                        'status': 'Implemented',
-                                        'tone': 'normal',
-                                        'description': 'Govern certificate lifecycle, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.',
-                                        'boundary': 'TLS-specific posture and evidence stay inside the TLS Certificates capability.',
-                                        'href': url_for('governance.tls_certificates') if can_view_tls else none,
-                                        'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
-                                        'action_icon': 'arrow-right' if can_view_tls else 'lock',
-                                        'available': can_view_tls
-                                    }
-                                ] %}
+            {% set governance_capabilities = [
+                {
+                    'icon': 'badge-check',
+                    'title': 'TLS Certificates',
+                    'status': 'Implemented',
+                    'tone': 'normal',
+                    'description': 'Govern certificate lifecycle, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.',
+                    'boundary': 'TLS-specific posture and evidence stay inside the TLS Certificates capability.',
+                    'href': url_for('governance.tls_certificates') if can_view_tls else none,
+                    'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
+                    'action_icon': 'arrow-right' if can_view_tls else 'lock',
+                    'available': can_view_tls
+                }
+                ] %}
             {{ context_bar.render(
                 source_label='KAORI Governance Capability Definitions',
                 status='Read-only',
