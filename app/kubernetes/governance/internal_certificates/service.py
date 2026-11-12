@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.kubernetes import KubernetesConnection
+from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
 
 _DEFAULT_PER_PAGE = 5
 _PER_PAGE_OPTIONS = (5, 10, 25, 50)
@@ -101,4 +103,140 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
         'status': 'Not Collected',
         'source_authority': 'Not Verified',
         'renewal_state': 'Monitor Only',
+    }
+
+
+def _aware(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def enrich_internal_pki_source_states(payload: dict[str, Any]) -> None:
+    """Apply the newest attested source batch without conflating it with installed PKI."""
+    ids = [record['id'] for record in payload['records']]
+    if not ids:
+        return
+    source_rows = db.session.execute(
+        select(
+            InternalPKIEvidenceBatch.cluster_id,
+            func.max(InternalPKIEvidenceBatch.collected_at),
+        )
+        .where(InternalPKIEvidenceBatch.cluster_id.in_(ids))
+        .group_by(InternalPKIEvidenceBatch.cluster_id)
+    ).all()
+    latest = {cluster_id: timestamp for cluster_id, timestamp in source_rows}
+    for record in payload['records']:
+        collected_at = latest.get(record['id'])
+        if collected_at is None:
+            continue
+        stale = datetime.now(UTC) - _aware(collected_at) > timedelta(days=30)
+        record['collection_status'] = 'Stale Evidence' if stale else 'Operator Attested'
+        record['collection_tone'] = 'warning' if stale else 'info'
+        record['authority_status'] = 'Operator Supplied'
+        record['expiry_status'] = 'Expiry Evidence Available'
+
+
+def _expiry_presentation(not_before: datetime | None, not_after: datetime) -> tuple[str, str]:
+    """Reported expiry posture; freshness is shown separately from expiration."""
+    now = datetime.now(UTC)
+    if not_before is not None and _aware(not_before) > now:
+        return 'Not Yet Valid', 'unknown'
+    remaining = _aware(not_after) - now
+    if remaining <= timedelta(0):
+        return 'Expired', 'critical'
+    if remaining <= timedelta(days=7):
+        return 'Critical Window', 'critical'
+    if remaining <= timedelta(days=30):
+        return 'Renewal Window', 'warning'
+    return 'Outside Window', 'normal'
+
+
+def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
+    """Bounded page of committed operator-attested PKI metadata, never live provider data."""
+    cluster_id = str(args.get('cluster_id') or '').strip()
+    search = str(args.get('cert_search') or '').strip()[:100]
+    page = _page_number(args.get('cert_page'))
+    per_page = _per_page(args.get('cert_per_page'))
+    query = InternalPKICertificateInventory.query.join(
+        Cluster, Cluster.id == InternalPKICertificateInventory.cluster_id
+    ).join(
+        InternalPKIEvidenceBatch,
+        InternalPKIEvidenceBatch.id == InternalPKICertificateInventory.evidence_batch_id,
+    )
+    if cluster_id:
+        query = query.filter(InternalPKICertificateInventory.cluster_id == cluster_id)
+    if search:
+        pattern = f'%{search}%'
+        query = query.filter(
+            or_(
+                InternalPKICertificateInventory.component.ilike(pattern),
+                InternalPKICertificateInventory.node_name.ilike(pattern),
+                Cluster.name.ilike(pattern),
+            )
+        )
+
+    total = query.count()
+    pages = max(ceil(total / per_page), 1)
+    page = min(page, pages)
+    source_rows = (
+        query.with_entities(
+            InternalPKICertificateInventory,
+            Cluster.name,
+            InternalPKIEvidenceBatch.source_version,
+            InternalPKIEvidenceBatch.coverage_state,
+            InternalPKIEvidenceBatch.operator_reference,
+        )
+        .order_by(
+            Cluster.name.asc(),
+            InternalPKICertificateInventory.node_name.asc(),
+            InternalPKICertificateInventory.component.asc(),
+        )
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+    records = []
+    for certificate, cluster_name, version, coverage, reference in source_rows:
+        status, tone = _expiry_presentation(certificate.not_before, certificate.not_after)
+        stale = datetime.now(UTC) - _aware(certificate.collected_at) > timedelta(days=30)
+        records.append(
+            {
+                'cluster_name': cluster_name,
+                'node_name': certificate.node_name,
+                'component': certificate.component,
+                'kind': certificate.kind,
+                'issuer': certificate.issuer,
+                'not_before': certificate.not_before,
+                'not_after': certificate.not_after,
+                'externally_managed': certificate.externally_managed,
+                'collected_at': certificate.collected_at,
+                'source_kind': certificate.source_kind,
+                'source_version': version,
+                'coverage': coverage,
+                'reference': reference,
+                'status': status,
+                'tone': tone,
+                'freshness': 'Stale Evidence' if stale else 'Recently Collected',
+                'freshness_tone': 'warning' if stale else 'info',
+            }
+        )
+    return {
+        'records': records,
+        'search': search,
+        'cluster_id': cluster_id,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'allowed_per_page': _PER_PAGE_OPTIONS,
+            'total_items': total,
+            'total_pages': pages,
+            'start_item': (page - 1) * per_page + 1 if total else 0,
+            'end_item': min(page * per_page, total),
+            'has_prev': page > 1,
+            'has_next': page < pages,
+            'prev_page': max(page - 1, 1),
+            'next_page': min(page + 1, pages),
+        },
+        'total': total,
+        'committed_total': db.session.scalar(select(func.count(InternalPKICertificateInventory.id))) or 0,
+        'source_label': 'Operator Attested',
     }

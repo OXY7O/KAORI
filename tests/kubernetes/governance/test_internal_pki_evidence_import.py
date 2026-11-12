@@ -1,0 +1,153 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+
+import pytest
+from flask import Flask
+
+from app.extensions.db import db
+from app.kubernetes.governance.internal_certificates.evidence_import import (
+    PKIEvidenceValidationError,
+    import_attested_pki_metadata,
+    validate_metadata_manifest,
+)
+from app.kubernetes.governance.internal_certificates.service import (
+    enrich_internal_pki_source_states,
+    get_internal_certificate_inventory_page,
+)
+from app.models.audit import AuditEvent
+from app.models.cluster import Cluster
+from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
+
+
+def _manifest(cluster_id: str, *, collected_at: datetime | None = None) -> dict:
+    now = collected_at or datetime.now(UTC)
+    return {
+        'schema_version': 'kaori.internal-pki-evidence.v1',
+        'cluster_id': cluster_id,
+        'node_name': 'control-plane-01',
+        'source_kind': 'kubeadm_check_expiration',
+        'source_version': 'v1.31.0',
+        'collected_at': now.isoformat(),
+        'coverage_state': 'complete',
+        'reference': 'CHG-20261112-001',
+        'certificates': [
+            {
+                'component': 'apiserver',
+                'kind': 'leaf',
+                'issuer': 'ca',
+                'not_before': (now - timedelta(days=30)).isoformat(),
+                'not_after': (now + timedelta(days=40)).isoformat(),
+                'externally_managed': False,
+            },
+            {
+                'component': 'ca',
+                'kind': 'ca',
+                'issuer': None,
+                'not_before': None,
+                'not_after': (now + timedelta(days=365)).isoformat(),
+                'externally_managed': False,
+            },
+        ],
+    }
+
+
+@pytest.fixture()
+def pki_repository_app():
+    app = Flask(__name__)
+    app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI='sqlite+pysqlite:///:memory:',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(app)
+    with app.app_context():
+        Cluster.__table__.create(db.engine)
+        InternalPKIEvidenceBatch.__table__.create(db.engine)
+        InternalPKICertificateInventory.__table__.create(db.engine)
+        AuditEvent.__table__.create(db.engine)
+        yield app
+        db.session.remove()
+        AuditEvent.__table__.drop(db.engine)
+        InternalPKICertificateInventory.__table__.drop(db.engine)
+        InternalPKIEvidenceBatch.__table__.drop(db.engine)
+        Cluster.__table__.drop(db.engine)
+
+
+def test_manifest_validates_metadata_without_accepting_pkcs_payload() -> None:
+    payload = _manifest(str(uuid4()))
+    normalized = validate_metadata_manifest(payload)
+    assert len(normalized['certificates']) == 2
+    assert [item['component'] for item in normalized['certificates']] == ['apiserver', 'ca']
+    assert normalized['certificates'][0]['not_after'].tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    ('change', 'expected'),
+    (
+        (lambda p: p.update({'private_key': '-----BEGIN PRIVATE KEY-----'}), 'missing or unexpected'),
+        (lambda p: p['certificates'][0].update({'pem': '-----BEGIN CERTIFICATE-----'}), 'missing or unexpected'),
+        (lambda p: p['certificates'][0].update({'kind': 'ca'}), 'kind'),
+        (lambda p: p['certificates'][0].update({'component': 'kubelet-client'}), 'Unsupported'),
+        (lambda p: p.update({'collected_at': '2026-11-12T15:00:00'}), 'UTC'),
+        (lambda p: p['certificates'].append(dict(p['certificates'][0])), 'Duplicate'),
+    ),
+)
+def test_manifest_fails_closed_for_untrusted_or_ambiguous_evidence(change, expected: str) -> None:
+    payload = _manifest(str(uuid4()))
+    change(payload)
+    with pytest.raises(PKIEvidenceValidationError, match=expected):
+        validate_metadata_manifest(payload)
+
+
+def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
+    pki_repository_app,
+) -> None:
+    with pki_repository_app.app_context():
+        cluster_id = str(uuid4())
+        db.session.add(Cluster(id=cluster_id, name='PKI Pilot', environment='non-production'))
+        db.session.commit()
+        payload = _manifest(cluster_id)
+        first, created = import_attested_pki_metadata(payload)
+        assert created is True
+        second, repeated = import_attested_pki_metadata(payload)
+        assert repeated is False
+        assert first.id == second.id
+        assert InternalPKIEvidenceBatch.query.count() == 1
+        assert InternalPKICertificateInventory.query.count() == 2
+        assert AuditEvent.query.filter_by(action='internal_pki_operator_metadata_import').count() == 1
+
+        page = get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_per_page': '5'})
+        assert page['total'] == 2
+        assert page['pagination']['per_page'] == 5
+        assert {row['component'] for row in page['records']} == {'apiserver', 'ca'}
+        assert all(row['source_kind'] == 'kubeadm_check_expiration' for row in page['records'])
+
+        source_payload = {
+            'records': [
+                {
+                    'id': cluster_id,
+                    'collection_status': 'Not Collected',
+                    'authority_status': 'Not Verified',
+                    'expiry_status': 'Unknown',
+                }
+            ]
+        }
+        enrich_internal_pki_source_states(source_payload)
+        assert source_payload['records'][0]['collection_status'] == 'Operator Attested'
+        assert source_payload['records'][0]['authority_status'] == 'Operator Supplied'
+
+
+def test_rejected_older_import_preserves_latest_committed_evidence(pki_repository_app) -> None:
+    with pki_repository_app.app_context():
+        cluster_id = str(uuid4())
+        db.session.add(Cluster(id=cluster_id, name='PKI Pilot', environment='non-production'))
+        db.session.commit()
+        newer = _manifest(cluster_id)
+        import_attested_pki_metadata(newer)
+        old = _manifest(cluster_id, collected_at=datetime.now(UTC) - timedelta(days=3))
+        with pytest.raises(PKIEvidenceValidationError, match='older'):
+            import_attested_pki_metadata(old)
+        assert InternalPKIEvidenceBatch.query.count() == 1
+        assert InternalPKICertificateInventory.query.count() == 2

@@ -18,7 +18,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Review internal Kubernetes PKI source readiness and collection coverage.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database', 'Committed Cluster Registry') }}
-                            {{ page_hero.meta_label('shield-alert', 'PKI Not Collected') }}
+                            {{ page_hero.meta_label('file-badge', inventory.committed_total ~ ' Source-Reported Certificates') if inventory and inventory.committed_total else page_hero.meta_label('shield-alert', 'PKI Not Collected') }}
                             {{ page_hero.meta_label('workflow', 'Renewal Deferred') }}
                         </div>
                     {% endcall %}
@@ -35,11 +35,11 @@
                     {{ page_hero.context_card('Internal PKI source context',
                                         'Source Readiness',
                                         'Control-plane PKI',
-                                        'Not Collected',
-                                        'unknown',
+                                        'Operator Attested' if inventory and inventory.committed_total else 'Not Collected',
+                                        'info' if inventory and inventory.committed_total else 'unknown',
                                         [
                                         ('server', 'Registered Clusters', payload.registered_total, 'Committed KAORI cluster registrations') ,
-                    ('shield-alert', 'PKI Evidence', 'Not Collected', 'No approved collector has been run')
+                    ('shield-alert', 'PKI Evidence', inventory.committed_total ~ ' Attested Records' if inventory and inventory.committed_total else 'Not Collected', 'Installed status remains unverified')
                     ],
                     'Open Cluster Integrations',
                     url_for('integrations.kubernetes'),
@@ -81,7 +81,7 @@
                     body_classes='p-4',
                     aria_label='Internal certificate source evidence boundaries'
                     ) %}
-                    {% set metrics = [('database', 'Internal PKI Evidence', 'Not Collected', 'No approved PKI collector or expiry evidence', 'unknown'), ('shield-help', 'PKI Authority', 'Not Verified', 'Confirm distribution, owner, and source identity', 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
+                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Not Verified', 'Confirm distribution, owner, and source identity', 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
                     {{ posture_grid.render(metrics, columns=3, compact=true) }}
                 {% endcall %}
             </section>
@@ -143,7 +143,7 @@
                                             <p class="text-content-primary">{{ record.connection_platform or 'Not Reported' }}</p>
                                             <p class="mt-1 text-xs text-content-muted">Detected platform · {{ record.connection_version or 'Version not reported' }}</p>
                                         </td>
-                                        <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.collection_status, 'unknown') }}</td>
+                                        <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown')) }}</td>
                                         <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.authority_status, 'unknown') }}</td>
                                         <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.expiry_status, 'unknown') }}</td>
                                     </tr>
@@ -171,10 +171,11 @@
                                         control_name='internal-pki-source') }}
                 </section>
             </section>
+            {% include "kubernetes/governance/internal_certificates/partials/_certificate_inventory.html" %}
             <section class="rounded-xl border border-outline-default bg-surface-card p-5"
                      aria-label="Internal certificate collection next step">
-                <h2 class="text-sm font-semibold text-content-primary">Collection source not configured</h2>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Confirm the Kubernetes distribution, PKI authority, supported read-only source, and approved execution identity before collecting certificate expiration evidence. Renewal is not available in this workspace.</p>
+                <h2 class="text-sm font-semibold text-content-primary">{{ 'Automated PKI Collection Pending' if inventory and inventory.committed_total else 'Collection source not configured' }}</h2>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Operator-attested metadata can be imported for an approved cluster and node. Confirm distribution, PKI authority, and source identity before automatic collection. Renewal remains unavailable until Ansible orchestration is admitted.</p>
             </section>
         {% endif %}
     </div>
