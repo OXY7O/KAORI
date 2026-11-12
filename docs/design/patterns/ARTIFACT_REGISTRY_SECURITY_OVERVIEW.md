@@ -111,8 +111,9 @@ The scanner evidence table presents Registry source/artifact/digest provenance,
 package/installed version, severity, fix version, last observed scan and
 Runtime Usage drill-down. The runtime table presents cluster/namespace,
 workload/pod/container, provider-neutral match confidence, observation time
-and Runtime Usage drill-down. Full immutable digests remain visible in a
-responsive wrapping value; interactive links remain keyboard accessible.
+and Runtime Usage drill-down. Digest previews are compact in the multi-record
+table, while the entire immutable value remains available in a native,
+keyboard-operable disclosure with breakable monospace content.
 A digest match carries stronger evidence than a mutable tag/reference.
 No runtime rows never means the CVE or the application estate is safe;
 external provider findings and committed KAORI correlation remain authoritative.
@@ -136,11 +137,11 @@ domain evidence title, filtered result count badge and loading bar), with no
 extra nested colored surface or independent second section heading. Shared
 `table_ui` column/body/cell styles and canonical registry filtering, empty
 states, pagination and runtime actions remain authoritative. The content
-hierarchy prioritizes asset/workload identity, then visible full digest or
-pod/container metadata, followed by source-qualified severity/freshness or
-correlation badges. Keep digest strings breakable rather than truncating
-immutable identities; give both tables proportional column widths with
-responsive horizontal scrolling.
+hierarchy prioritizes asset/workload identity, then a compact digest preview
+with accessible full-value disclosure or pod/container metadata, followed by
+source-qualified severity/freshness or correlation badges. Preserve the full
+breakable immutable identity inside its disclosure, with proportional columns
+and responsive horizontal scrolling.
 
 Both evidence tables can contain many records. Each therefore exposes the
 canonical `table_registry.filter_form` and `clear_filters_link`, not a static
@@ -148,8 +149,9 @@ textbox or page-local HTMX pattern. The form macro accepts an optional
 `path_params` argument for routes with required path identity (here:
 `/artifact-registry/security/cve/<cve_id>/impact`). Default form behavior for
 routes without path variables is unchanged. The shared form retains its
-latest-request-wins `hx-sync`, section-owned `hx-target` / `hx-select`,
-accessible label, debounced input, and push-URL behavior.
+latest-request-wins `hx-sync`, shared workspace-owned `hx-target` /
+`hx-select` (keeping query-backed tab URLs synchronized), accessible label,
+debounced input, and push-URL behavior.
 
 The **Affected Artifacts** table supports a literal case-insensitive text
 search over Registry source, repository/project, immutable digest, package and
@@ -187,23 +189,25 @@ desktop snapshot readable without forcing `whitespace-nowrap` on narrow
 screens or hiding actual readiness/provenance. The authoritative status,
 timestamp, source scope, coverage and exception indicators are unchanged.
 
-Within the canonical five-column Affected Artifact Evidence table, show the
-**full immutable SHA digest** as a semantic label/value pair (`dl/dt/dd`),
-with an explicitly named `Digest` label, a monospace breakable value and
-its unshortened `title` for inspection. The runtime Workload / Pod cell
-similarly shows `Pod` and `Container` as aligned semantic label/value
-rows beneath the canonical workload identity. Do not collapse the pod into
-the workload title or truncate the digest to save horizontal space.
+Within the canonical five-column Affected Artifact Evidence table, retain
+the `Digest` semantic label/value pair (`dl/dt/dd`). Show a compact
+prefix-and-suffix digest preview inside a native `details/summary`
+disclosure. The expanded content contains the **full immutable SHA digest**
+untruncated in a breakable monospace value, also available in `title` for
+inspection. The entire digest remains selectable and copyable with no JS or
+provider call. The runtime Workload / Pod cell keeps `Pod` and `Container`
+as aligned semantic rows beneath the workload identity.
 
-Both evidence filter bars retain the shared
-`table_registry.clear_filters_link` action at the trailing side.
-The action is the same 40px height as the shared input/select fields and
-aligns to the bottom of the existing wrapping filter layout; do not add an
-extra flex child wrapper that defeats the filter layout's
-`data-kaori-filter-action` rules. Clear only the active table's filters,
-preserve its `evidence_tab` and the other table's search/page/Rows state.
-Use the existing canonical styles for light/dark, hover, focus and
-responsive breakpoints.
+Following the approved table-header action-group standard
+(`docs/design/components/TABLE_AND_LABEL.md` §11), both tabs render
+conditional `table_registry.clear_filters_link` inside the existing
+`inventory_block_header(..., header_actions=...)`, **not** alongside
+filter fields. Search and facet inputs remain full-width, content-aware peers.
+The link resets only the active tab's filters and page while preserving its
+Rows, `evidence_tab`, and the other tab's search/page/Rows state. Filter,
+Clear Filters and footer requests replace the shared CVE evidence workspace
+so query-backed tab links cannot retain stale state. Shared Violet light/dark,
+focus, responsive and keyboard semantics remain authoritative.
 
 ## QA and admission
 
