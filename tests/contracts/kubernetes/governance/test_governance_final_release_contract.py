@@ -278,6 +278,27 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
         assert forbidden not in service
 
 
+def test_internal_pki_devcontainer_migration_uses_existing_privileged_handoff() -> None:
+    pki_runbook = read('docs/design/patterns/KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md')
+    canonical_runbook = read('docs/operations/devcontainer-postgres-first-run.md')
+    migration_runner = read('scripts/devcontainer/bootstrap-db.sh')
+    role_contract = read('tests/contracts/release/test_devcontainer_postgres_runtime_role_contract.py')
+
+    command = (
+        'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml '
+        'run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only'
+    )
+    assert command in pki_runbook
+    assert command in canonical_runbook
+    assert 'KAORI_DB_MIGRATION_URL' in migration_runner
+    assert 'kaori_migrator' in migration_runner
+    assert 'grant_postgres_runtime.sql' in migration_runner
+    assert 'flask --app run:app seed-rbac' in migration_runner
+    assert 'test_devcontainer_operator_bootstrap_orders_schema_grants_and_app_admin' in role_contract
+    assert 'Do NOT run `flask db upgrade` with the restricted workspace DATABASE_URL.' in pki_runbook
+    assert 'GRANT USAGE, CREATE ON SCHEMA public TO approved_kaori_migration_role' not in pki_runbook
+
+
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
     source = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     assert 'def get_active_tls_sync_job(' not in source
