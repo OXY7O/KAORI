@@ -395,6 +395,22 @@ def main() -> int:
         'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
+    tls_live_state = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html')
+    for token in (
+        'components/info_tip.html',
+        "info_tip.render('tls-inventory-operations-guide'",
+        "'TLS Inventory Operations Guide'",
+        "variant='guide'",
+        'does not renew or rotate certificates',
+        'Bulk Rotation opens a separate permission-controlled workflow',
+    ):
+        require(token in tls_live_state, f'TLS Inventory Operations Guide is missing: {token}', errors)
+    require(
+        tls_live_state.index('table_label.status_label(payload.sync_state.label')
+        < tls_live_state.index("info_tip.render('tls-inventory-operations-guide'"),
+        'TLS Inventory Operations Guide must follow the existing live status badge.',
+        errors,
+    )
     page_content = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_content.html')
     workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
     require(
