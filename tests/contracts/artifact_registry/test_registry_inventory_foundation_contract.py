@@ -373,7 +373,11 @@ def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_sectio
         assert "description='Provider and environment.'" in source
         for heading in sections:
             assert f"'{heading}'" in source
-        assert "description='Snapshot freshness and scope.'" in source
+        assert "description='Snapshot freshness.'" in source
+        for line in source.splitlines():
+            if "description='" in line:
+                description = line.split("description='", 1)[1].split("'", 1)[0]
+                assert len(description) <= 28
 
     project = (root / 'artifact_registry/partials/_inventory_project_detail.html').read_text()
     assert 'table_label.status_indicator_label(project.visibility.label' in project
