@@ -97,6 +97,13 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert "action_href=url_for('governance.tls_certificates')" not in overview
     assert 'get_tls_certificate_page' not in overview
     assert 'tls_payload' not in overview
+    compact_copy = 'Review TLS lifecycle, Ingress coverage, and governed rotation.'
+    assert len(compact_copy) <= 65
+    assert f"'description': '{compact_copy}'" in overview
+    assert "'supporting': capability.boundary" not in overview
+    assert '{{ capability.boundary }}' not in overview
+    assert "'boundary':" not in overview
+    assert "'title': 'Internal Certificates'" not in overview
     assert 'workspace.status_tone|default(none)' in shared_card
     assert "workspace.action_label|default('Open Workspace', true)" in shared_card
 
