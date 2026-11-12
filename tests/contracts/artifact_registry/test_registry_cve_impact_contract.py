@@ -253,18 +253,13 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
     Environment().parse(page)
 
     # Reuse the exact Membership Registry/Tenant Group Registry tab pattern.
-    membership = read(
-        'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html'
-    )
+    membership = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     assert 'workspace_tabs.render_query_tabs(' in membership
     assert 'workspace_tabs.render_query_tabs(evidence_tabs,' in page
     assert "impact.active_tab == 'findings'" in page
     assert "evidence_tab='findings'" in page
     assert "evidence_tab='runtime'" in page
-    assert (
-        "impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'"
-        in routes
-    )
+    assert "impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'" in routes
     assert page.count('section_intro.render(') == 1
     assert "section_intro.render('CVE Evidence'" in page
     assert 'id="artifact-registry-cve-evidence-workspace"' in page
@@ -289,9 +284,7 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
     assert "per_page_param='finding_per_page'" in page
     assert "per_page_param='runtime_per_page'" in page
 
-    finding = page.split('id="artifact-registry-cve-findings"', 1)[1].split(
-        'id="artifact-registry-cve-runtime"', 1
-    )[0]
+    finding = page.split('id="artifact-registry-cve-findings"', 1)[1].split('id="artifact-registry-cve-runtime"', 1)[0]
     runtime = page.split('id="artifact-registry-cve-runtime"', 1)[1]
     for section in (finding, runtime):
         assert 'registry.filter_form(' in section
@@ -300,16 +293,16 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
 
     # Operator-facing metadata stays complete and readable.
     for marker in (
-        'Digest:',
+        '<dt class="font-semibold text-content-secondary">Digest</dt>',
         'row.digest',
         'row.project',
         'row.source',
         'Installed:',
         'Fix:',
         'Scan Evidence',
-        'Pod:',
+        '<dt class="font-semibold text-content-secondary">Pod</dt>',
         'row.pod',
-        'Container:',
+        '<dt class="font-semibold text-content-secondary">Container</dt>',
         'row.container',
         'row.match.description',
         'row.observed_at|user_datetime',
@@ -318,8 +311,41 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
 
     # Clear action follows the filters, not the search field.
     assert page.count('lead=false') == 2
-    assert 'min-w-0 break-all font-mono' in page
-    assert 'min-w-0 break-all text-xs' in page
+    assert page.count('<dl class="mt-2 grid min-w-0') == 2
+    assert page.count('min-w-0 break-all font-mono text-content-muted') == 3
+    assert 'grid-cols-[3.25rem_minmax(0,1fr)]' in page
+    assert 'grid-cols-[4.5rem_minmax(0,1fr)]' in page
+
+
+def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> None:
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    Environment().parse(page)
+
+    # Snapshot summary uses one short line at the submitted desktop viewport.
+    summary = 'Committed Registry × Kubernetes correlation.'
+    assert f"description='{summary}'" in page
+    assert len(summary) <= 48
+    assert 'description=impact.correlation.description' not in page
+
+    # Preserve full technical evidence and semantic key/value hierarchy.
+    assert page.count('<dl class="mt-2 grid min-w-0') == 2
+    assert page.count('</dl>') == 2
+    for key, value in (
+        ('Digest', 'row.digest'),
+        ('Pod', 'row.pod'),
+        ('Container', 'row.container'),
+    ):
+        assert f'<dt class="font-semibold text-content-secondary">{key}</dt>' in page
+        assert f'title="{{{{ {value} }}}}"' in page
+        assert f'{{{{ {value} }}}}' in page
+    assert 'border-t border-outline-subtle pt-2' in page
+    assert 'font-mono text-content-muted' in page
+
+    # Reuse the shared Clear Filters action without an extra responsive wrapper.
+    assert page.count("table_ui.action_classes() ~ ' h-10 self-end'") == 2
+    assert page.count('lead=false') == 2
+    assert page.count('registry.clear_filters_link(') == 2
+    assert page.count('registry.filter_form(') == 2
 
 
 def test_cve_impact_canonical_filter_form_handles_required_identity_and_htmx() -> None:
