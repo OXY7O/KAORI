@@ -42,7 +42,7 @@
             </p>
         {% endcall %}
         {% if channel.lifecycle_state == 'active' and can_manage %}
-            {% call side_drawer.section('Channel Actions', 'Review evidence before changing this channel.', icon='settings-2', density='compact') %}
+            {% call side_drawer.section('Channel Actions', 'Manage the active channel after reviewing its status and evidence.', icon='settings-2', density='compact') %}
                 <div class="grid gap-2.5 sm:grid-cols-2">
                     <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
                        hx-get="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
