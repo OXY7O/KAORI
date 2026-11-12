@@ -185,7 +185,6 @@ def test_desktop_sidebar_toggle_swaps_panel_icon_and_persists_state(
     assert not page.evaluate("document.documentElement.classList.contains('sidebar-collapsed')")
 
 
-
 def test_mobile_navigation_closes_after_destination_selection(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
