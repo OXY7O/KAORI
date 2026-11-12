@@ -269,7 +269,6 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 InternalPKICertificateInventory.component.ilike(pattern),
                 InternalPKICertificateInventory.node_name.ilike(pattern),
                 Cluster.name.ilike(pattern),
-                InternalPKICertificateInventory.issuer.ilike(pattern),
             )
         )
     certificate = InternalPKICertificateInventory
