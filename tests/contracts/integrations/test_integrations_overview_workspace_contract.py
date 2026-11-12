@@ -333,11 +333,11 @@ def test_runtime_overview_lifecycle_action_moves_to_authorized_header() -> None:
     assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in header
     assert "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in header
     assert header.index('Open Data Lifecycle') < header.index('Reload Evidence')
-    assert "class=\"{{ table_ui.action_classes() }}\"" in header
+    assert 'class="{{ table_ui.action_classes() }}"' in header
     assert 'Runtime Evidence Lifecycle' not in runtime
     assert 'Open Data Lifecycle' not in after_pagination
     assert 'data-kaori-runtime-overview-violet-icons' in runtime
-    assert "provider_registry.pagination_footer(runtime_pagination" in runtime
+    assert 'provider_registry.pagination_footer(runtime_pagination' in runtime
     assert '<div id="integration-runtime-modal-host"></div>' in runtime
     assert 'hx-target="#integration-runtime-overview"' in header
     assert 'hx-push-url="true"' in header
@@ -382,3 +382,34 @@ def test_runtime_overview_modal_uses_single_readable_evidence_context() -> None:
     assert '[overflow-wrap:anywhere]' in modal
     assert 'bg-surface-hover' in modal
     assert "footer_text='Runtime evidence is persisted independently" in modal
+
+
+def test_runtime_overview_metric_summary_is_inset_from_header_and_filters() -> None:
+    from jinja2 import Environment
+
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    workspace = read('app/templates/integrations/components/_workspace.html')
+    Environment().parse(runtime)
+
+    after_header = runtime.split('</header>', 1)[1]
+    region = after_header.split('data-kaori-runtime-metrics-region', 1)[1].split(
+        'table_ui.inventory_filter_bar_classes()', 1
+    )[0]
+    assert 'class="px-5 py-4 sm:px-6"' in after_header
+    assert after_header.index('data-kaori-runtime-metrics-region') < after_header.index(
+        'table_ui.inventory_filter_bar_classes()'
+    )
+    assert 'integration_ui.metric_grid_classes(5)' in region
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' in region
+    assert 'metric_grid_classes(5) }} border-b border-outline-subtle' not in region
+    assert 'integration_ui.metric_card(label, value, helper, icon, tone)' in region
+    assert 'sm:grid-cols-2 xl:grid-cols-5' in workspace
+    assert "('Healthy', runtime_stats.healthy" in region
+    assert "('Degraded', runtime_stats.degraded" in region
+    assert "('Unhealthy', runtime_stats.unhealthy" in region
+    assert "('Not Observed', runtime_stats.not_observed" in region
+    assert "('Capability Attention', runtime_stats.capability_attention" in region
+    assert 'provider_registry.pagination_footer(runtime_pagination' in runtime
+    assert 'hx-trigger="change delay:100ms"' in runtime
+    assert 'Open Data Lifecycle' in runtime
+    assert 'Reload Evidence' in runtime
