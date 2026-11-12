@@ -333,11 +333,17 @@ on the active tab's search/facets or selected cluster scope. The Clear Filters
 action belongs to `table_ui.inventory_block_header(header_actions=...)`, next
 to Open Cluster Integrations, **not** the filter input row. Unlike normal
 HTMX search/page/tab requests, PKI Clear Filters follows the canonical
-**full-page GET href fallback** to avoid a stuck nested-workspace HTMX
-clear interaction. This resets the active tab's search/facets/page and
-`cluster_id` to All Clusters; it preserves the current Rows setting and
-the opposite tab's search/page/Rows. It never executes a provider request,
-certificate renewal, or any database mutation.
+**full-page GET href fallback** (`hx-boost="false"`/`hx-disable` on
+the local action wrapper) to avoid a stuck nested-workspace HTMX clear
+interaction. The GET carries an explicit `clear_filters=sources|certificates`
+intent, which the authorized read-only route normalizes with a 303 redirect
+to a clean, canonical URL. The route discards any stale/reinjected active-tab
+filter keys even when included by old browser/form state. The redirect drops
+the active tab's search/facets/page and `cluster_id` to All Clusters, preserving
+Rows and the opposite tab's search/page/Rows. The button disappears when no
+active filters or cluster scope remain. No provider request, certificate
+renewal, or database mutation occurs. Regression tests must follow the
+rendered URL and its redirect; static DOM checks alone are insufficient.
 
 Registered Source Coverage supports committed **Cluster Search, Environment,
 Detected Platform** filters; the option lists are derived only from committed
