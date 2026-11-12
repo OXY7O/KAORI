@@ -274,12 +274,12 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'statement = statement.where(inventory.cluster_id == cluster_id)' in service
     assert "'committed_total': operational['total']" in service
     assert 'InternalPKICertificateInventory.query' in service
-    assert "Cluster.environment == environment" in service
-    assert "KubernetesConnection.detected_platform == platform" in service
-    assert "certificate.kind == kind" in service
-    assert "InternalPKIEvidenceBatch.coverage_state == coverage" in service
-    assert "certificate.not_after <= now" in service
-    assert "certificate.collected_at < now - timedelta(days=30)" in service
+    assert 'Cluster.environment == environment' in service
+    assert 'KubernetesConnection.detected_platform == platform' in service
+    assert 'certificate.kind == kind' in service
+    assert 'InternalPKIEvidenceBatch.coverage_state == coverage' in service
+    assert 'certificate.not_after <= now' in service
+    assert 'certificate.collected_at < now - timedelta(days=30)' in service
     assert 'InternalPKIEvidenceBatch' in service
     assert 'source_rows = db.session.execute(' in service
     assert 'func.max(InternalPKIEvidenceBatch.collected_at)' in service
