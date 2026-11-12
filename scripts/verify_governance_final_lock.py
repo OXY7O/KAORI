@@ -80,6 +80,67 @@ def main() -> int:
         errors,
     )
 
+    # Internal PKI source-readiness is a real read-only cluster registry,
+    # not fabricated control-plane certificate evidence or an executable renewal.
+    internal_routes = read('app/kubernetes/governance/internal_certificates/routes.py')
+    internal_service = read('app/kubernetes/governance/internal_certificates/service.py')
+    internal_page = read('app/templates/kubernetes/governance/internal_certificates/index.html')
+    access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
+    governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
+    for guard in (
+        "@permission_required('governance.view')",
+        "@permission_required('clusters.view')",
+        "@permission_required('internal_certificates.view')",
+    ):
+        require(guard in internal_routes, f'Internal PKI source route missing guard: {guard}', errors)
+    require(
+        "if registered_clusters is True else None" in internal_routes,
+        'Internal PKI must block clusterless/unknown source reads before hitting the registry.',
+        errors,
+    )
+    for item in (
+        'Cluster.query',
+        'KubernetesConnection.detected_platform',
+        'KubernetesConnection.detected_version',
+        "'collection_status': 'Not Collected'",
+        "'authority_status': 'Not Verified'",
+        "'expiry_status': 'Unknown'",
+        '_DEFAULT_PER_PAGE = 5',
+    ):
+        require(item in internal_service, f'Internal PKI source projection is missing: {item}', errors)
+    for forbidden in ('get_integration(', 'get_tls_certificate_page(', 'kubeadm certs renew'):
+        require(
+            forbidden not in internal_service and forbidden not in internal_routes,
+            f'Internal PKI read-only route must not collect or mutate source data: {forbidden}',
+            errors,
+        )
+    for item in (
+        'Internal PKI Source Registry',
+        "registry_ui.filter_form('governance.internal_certificates'",
+        "registry_ui.footer('governance.internal_certificates'",
+        'Not Collected',
+        'Not Verified',
+        'Renewal Deferred',
+    ):
+        require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
+    require(
+        'Request Renewal' not in internal_page and 'Rotate All' not in internal_page,
+        'Internal PKI source readiness must remain non-mutating.',
+        errors,
+    )
+    for item in (
+        "'title': 'Internal Certificates'",
+        "'status': 'Source Pending'",
+        "'available': can_view_internal_certificates",
+        'sm:grid-cols-2',
+    ):
+        require(item in governance_overview, f'Governance needs a truthful second capability: {item}', errors)
+    require(
+        'internal_certificates.view: [governance.view, clusters.view]' in access_defaults,
+        'Internal PKI must use the canonical dependent RBAC permission.',
+        errors,
+    )
+
     for name, expected_permission in (
         ('tls_certificates_index', 'tls_certificates.view'),
         ('tls_certificates_detail', 'tls_certificates.view'),
@@ -166,7 +227,7 @@ def main() -> int:
     for token in (
         'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
-        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        'Open independent governance workspaces with explicit evidence and source-readiness status.',
         'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",

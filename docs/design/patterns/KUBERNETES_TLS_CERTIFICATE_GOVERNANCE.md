@@ -45,6 +45,12 @@ The Overview Hero keeps its compact description **Review Kubernetes governance c
 
 Governance Capabilities remains a **scalable equal-height catalog** of implemented child capabilities only; no unimplemented placeholder links are allowed. Counts in its metadata badge represent implemented capability definitions, not permissions granted to the current viewer. TLS collection details must not be mixed into that count.
 
+### Internal Certificates source-readiness milestone (#4453)
+
+A second compact Governance capability card **Internal Certificates** links to a functional, permission-gated source-readiness registry of committed cluster registrations. Its status is **Source Pending**, not an assertion that control-plane expiry has been collected or is healthy. The new authorized route reads `Cluster` and `KubernetesConnection` metadata only and labels each cluster **Not Collected / Not Verified / Unknown** for PKI. The capability catalog count may therefore display **2 Capabilities** (implemented navigation workspaces), while only TLS Certificates currently has committed certificate validity evidence. The source is not inferred from TLS Secrets/Ingress. No renewal action is shown.
+
+This narrow milestone is authorized by the later operator request (#4453) and documented in [KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md). The full PKI collector/read model (#4443), evidence-backed expiry inventory (#4444), and governed renewal (#4445) remain separate unfinished workstreams. Do not promote the Internal Certificates card to **Implemented** PKI monitoring or show fictitious certificate counts until #4443 is accepted.
+
 ## Canonical structure
 
 ```text

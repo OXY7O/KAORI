@@ -10,6 +10,7 @@ from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
 from app.kubernetes.governance import routes as governance_routes
+from app.kubernetes.governance.internal_certificates import routes as internal_pki_routes
 from app.kubernetes.governance.tls_certificates import routes as tls_routes
 
 
@@ -236,3 +237,111 @@ def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
     content = response.get_data(as_text=True)
     assert 'Connect Your First Kubernetes Cluster' in content
     assert 'TLS Collection Snapshot' not in content
+
+
+def _internal_pki_source_page() -> dict[str, object]:
+    return {
+        'registered_total': 1,
+        'selected_cluster_id': '',
+        'search': '',
+        'records': [
+            {
+                'id': 'cluster-01',
+                'name': 'Pilot Cluster',
+                'environment': 'non-production',
+                'connection_platform': 'kubernetes',
+                'connection_version': 'v1.30',
+                'collection_status': 'Not Collected',
+                'authority_status': 'Not Verified',
+                'expiry_status': 'Unknown',
+            }
+        ],
+        'pagination': {
+            'page': 1,
+            'per_page': 5,
+            'allowed_per_page': (5, 10, 25, 50),
+            'total_items': 1,
+            'total_pages': 1,
+            'start_item': 1,
+            'end_item': 1,
+            'has_prev': False,
+            'has_next': False,
+            'prev_page': 1,
+            'next_page': 1,
+        },
+    }
+
+
+def test_internal_pki_source_read_denied_before_registry_probe(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = GovernanceRouteUser({'governance.view', 'clusters.view'})
+    client = _client_for_user(app, monkeypatch, user)
+
+    def fail_if_called() -> None:
+        raise AssertionError('PKI source registry must not be read without child authorization')
+
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', fail_if_called)
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', fail_if_called)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 403
+
+
+def test_internal_pki_source_requires_parent_and_cluster_visibility(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for permissions in ({'internal_certificates.view'}, {'governance.view', 'internal_certificates.view'}):
+        client = _client_for_user(app, monkeypatch, GovernanceRouteUser(permissions))
+        response = client.get('/governance/internal-certificates')
+        assert response.status_code == 403
+
+
+def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
+    client = _client_for_user(app, monkeypatch, user)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    calls: list[str] = []
+
+    def read_committed(_args) -> dict[str, object]:
+        calls.append('read')
+        return _internal_pki_source_page()
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_committed)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert 'Internal PKI Source Registry' in content
+    assert 'Pilot Cluster' in content
+    assert 'Not Collected' in content
+    assert 'Not Verified' in content
+    assert 'Unknown' in content
+    assert 'Renewal Deferred' in content
+    assert 'Request Renewal' not in content
+    assert 'Rotate All' not in content
+
+
+def test_internal_pki_source_clusterless_blocks_registry_query(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: False)
+
+    def unexpected_query(_args) -> None:
+        raise AssertionError('Registry read must not happen without registered clusters')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', unexpected_query)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert 'Connect Your First Kubernetes Cluster' in response.get_data(as_text=True)

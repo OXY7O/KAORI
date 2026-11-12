@@ -58,7 +58,7 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
         'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Scope',
         'Governance Capabilities',
-        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        'Open independent governance workspaces with explicit evidence and source-readiness status.',
         'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
@@ -139,6 +139,67 @@ def test_tls_snapshot_copy_posture_badge_and_search_follow_shared_inventory_patt
     assert "table_ui.search_field('search'," in filters
     assert "id='tls-search-filter'" in filters
     assert 'Search Secret name, namespace, subject, or issuer' not in filters
+
+
+
+def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace() -> None:
+    routes = read('app/kubernetes/governance/routes.py')
+    child = read('app/kubernetes/governance/internal_certificates/routes.py')
+    service = read('app/kubernetes/governance/internal_certificates/service.py')
+    overview = read('app/templates/kubernetes/governance/overview/index.html')
+    workspace = read('app/templates/kubernetes/governance/internal_certificates/index.html')
+    access = read('app/definitions/catalogs/access/rbac/access.yaml')
+
+    assert "@permission_required('governance.view')" in child
+    assert "@permission_required('clusters.view')" in child
+    assert "@permission_required('internal_certificates.view')" in child
+    assert "if registered_clusters is True else None" in child
+    assert routes.index("can_view_internal_certificates = current_user.has_permission(") < routes.index(
+        "can_view_internal_certificates=can_view_internal_certificates"
+    )
+    assert "endpoint='internal_certificates'" in routes
+    assert "view_func=internal_certificates_index" in routes
+    assert "current_user.has_permission('clusters.view')" in routes
+    assert "'title': 'Internal Certificates'" in overview
+    assert "'status': 'Source Pending'" in overview
+    assert "url_for('governance.internal_certificates')" in overview
+    assert "'available': can_view_internal_certificates" in overview
+    assert "'title': 'TLS Certificates'" in overview
+    assert 'sm:grid-cols-2' in overview
+    assert "capability.search_text" in overview
+    assert 'workspace_card.render(' in overview
+
+    assert "permission_dependencies:" in access
+    assert "internal_certificates.view: [governance.view, clusters.view]" in access
+    assert "- key: internal_certificates.view" in access
+    assert access.count('  - internal_certificates.view') == 5
+
+    assert 'db.session.execute(' in service
+    assert 'KubernetesConnection.detected_platform' in service
+    assert 'KubernetesConnection.detected_version' in service
+    assert 'select(func.count(Cluster.id))' in service
+    assert 'KubernetesConnection.kubeconfig,' not in service
+    assert 'Cluster.kubernetes_connection' not in service
+    assert 'Cluster.name.ilike' in service
+    assert '_DEFAULT_PER_PAGE = 5' in service
+    assert "'collection_status': 'Not Collected'" in service
+    assert "'authority_status': 'Not Verified'" in service
+    assert "'expiry_status': 'Unknown'" in service
+    assert 'get_integration(' not in service
+    assert 'get_tls_certificate_page(' not in service
+    assert 'kubeadm certs renew' not in service
+
+    assert 'Internal PKI Source Registry' in workspace
+    assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
+    assert "registry_ui.footer('governance.internal_certificates'" in workspace
+    assert 'components/resource_posture_grid.html' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'Not Collected' in workspace
+    assert 'Not Verified' in workspace
+    assert 'Renewal Deferred' in workspace
+    assert 'No approved PKI collector' in workspace
+    assert 'Request Renewal' not in workspace
+    assert 'Rotate All' not in workspace
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
