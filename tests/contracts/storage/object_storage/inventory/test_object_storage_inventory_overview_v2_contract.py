@@ -150,7 +150,12 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in registry
     assert "body_classes='p-0'" in fleet
+    assert "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'" in fleet
+    assert 'header_badge=fleet_badge' in fleet
     assert "body_classes='p-5'" in catalog
+    assert 'compact_count=true' in catalog
+    assert "macro render(title, count, description, href, icon, action_label='Open Inventory', compact_count=false)" in cards
+    assert "table_label.metadata_label(count, icon='layers-3')" in cards
     assert 'sm:grid-cols-2' in catalog
     assert "'action_label': 'Browse Systems'" in presentation
     assert "'action_label': 'Browse Buckets & Containers'" in presentation
@@ -193,6 +198,7 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     html_catalog = env.get_template('storage/object_storage/inventory/overview/partials/_summary_cards.html').render(
         overview=overview, url_for=lambda endpoint: '/' + endpoint.replace('.', '/')
     )
+    assert '4 Indicators' in html_fleet
     assert html_fleet.count('>Quota Assessed</p>') == 1
     assert 'Protection Attention' in html_fleet
     assert 'Public Exposure' in html_fleet
@@ -200,7 +206,29 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert 'No public exposure observed.' in html_fleet
     assert 'object-storage-asset-catalog' in html_catalog
     assert '2 Asset Types' in html_catalog
+    assert html_catalog.count('data-lucide="layers-3"') == 3
+    assert 'text-2xl font-semibold leading-none' not in html_catalog
     assert 'Browse Systems' in html_catalog
     assert 'Browse Buckets &amp; Containers' in html_catalog
     assert '/object_storage_inventory/systems' in html_catalog
     assert '/object_storage_inventory/buckets' in html_catalog
+
+def test_compact_object_storage_asset_counts_preserve_default_shared_card_behavior() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    card = env.get_template('components/inventory_asset_card.html').module.render
+    normal = card('Nodes', 8, 'Committed Nodes.', '/nodes', 'server')
+    compact = card('Systems', 1, 'Committed systems.', '/systems', 'server', compact_count=True)
+
+    assert 'text-2xl font-semibold leading-none' in normal
+    assert 'text-2xl font-semibold leading-none' not in compact
+    assert 'kaori-semantic-label' in compact
+    assert 'data-lucide="layers-3"' in compact
+    assert 'Committed systems.' in compact
+    assert 'href="/systems"' in compact
+    for source in (normal, compact):
+        assert 'data-kaori-inventory-identity-icon' in source
+        assert 'data-lucide="arrow-up-right"' in source
+        assert 'focus-visible:ring-outline-focus' in source
+
