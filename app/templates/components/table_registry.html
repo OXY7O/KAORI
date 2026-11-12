@@ -13,12 +13,12 @@
 
   Consumers own only endpoint, filter fields, table content, and optional polling.
 #}
-{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page', form_id='', aria_label='') -%}
+{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page', form_id='', aria_label='', path_params=none) -%}
     <form method="GET"
           {% if form_id %}id="{{ form_id }}"{% endif %}
           {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}
-          action="{{ url_for(endpoint) }}"
-          hx-get="{{ url_for(endpoint) }}"
+          action="{{ url_for(endpoint, **(path_params or {}) ) }}"
+          hx-get="{{ url_for(endpoint, **(path_params or {}) ) }}"
           hx-trigger="change, input changed delay:450ms"
           hx-target="#{{ registry_id }}"
           hx-select="#{{ registry_id }}"
