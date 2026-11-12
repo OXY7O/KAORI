@@ -142,7 +142,7 @@
                                 {% endif %}
                                 <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                                     {% call registry_ui.filter_form('governance.internal_certificates',
-                                        'internal-pki-source-registry',
+                                        'internal-pki-evidence-workspace',
                                         'internal-pki-source-loading',
                                         payload.pagination.per_page,
                                         form_id='internal-pki-source-filter',
@@ -199,7 +199,7 @@
                                         </div>
                                         {% if payload.search or payload.filters.environment or payload.filters.platform %}
                                             {{ registry_ui.clear_filters_link('governance.internal_certificates',
-                                                'internal-pki-source-registry',
+                                                'internal-pki-evidence-workspace',
                                                 'internal-pki-source-loading',
                                                 payload.pagination.per_page,
                                                 table_ui.action_classes(),
@@ -274,7 +274,7 @@
                                       class="htmx-indicator sr-only"
                                       role="status">Loading cluster source records</span>
                                 {{ registry_ui.footer('governance.internal_certificates',
-                                                    'internal-pki-source-registry',
+                                                    'internal-pki-evidence-workspace',
                                                     'internal-pki-source-loading',
                                                     payload.pagination,
                                                     {'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''), 'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''), 'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''), 'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
