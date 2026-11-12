@@ -67,47 +67,26 @@
                 {{ section_intro.render('Internal PKI Evidence',
                                 'Review committed cluster source coverage or source-reported certificate inventory.',
                                 'internal-pki-evidence-heading') }}
+                {% set evidence_query = {
+                    'cluster_id': payload.selected_cluster_id,
+                    'search': payload.search,
+                    'environment': payload.filters.environment,
+                    'platform': payload.filters.platform,
+                    'page': payload.pagination.page,
+                    'per_page': payload.pagination.per_page,
+                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                    'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                    'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                    'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                    'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                    'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                    'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                } %}
                 {% set evidence_tabs = [
-                    (
-                    'sources',
-                    'Registered Source Coverage',
-                    'server-cog',
-                    url_for('governance.internal_certificates',
-                        evidence_tab='sources',
-                        cluster_id=payload.selected_cluster_id,
-                        search=payload.search,
-                        environment=payload.filters.environment,
-                        platform=payload.filters.platform,
-                        page=payload.pagination.page,
-                        per_page=payload.pagination.per_page,
-                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_kind=inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
-                        cert_expiry=inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
-                        cert_coverage=inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
-                        cert_freshness=inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
-                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
-                    ),
-                    (
-                    'certificates',
-                    'Certificate Inventory',
-                    'file-badge',
-                    url_for('governance.internal_certificates',
-                        evidence_tab='certificates',
-                        cluster_id=payload.selected_cluster_id,
-                        search=payload.search,
-                        environment=payload.filters.environment,
-                        platform=payload.filters.platform,
-                        page=payload.pagination.page,
-                        per_page=payload.pagination.per_page,
-                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_kind=inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
-                        cert_expiry=inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
-                        cert_coverage=inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
-                        cert_freshness=inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
-                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
-                    )
+                    ('sources', 'Registered Source Coverage', 'server-cog',
+                        url_for('governance.internal_certificates', evidence_tab='sources', **evidence_query)),
+                    ('certificates', 'Certificate Inventory', 'file-badge',
+                        url_for('governance.internal_certificates', evidence_tab='certificates', **evidence_query))
                 ] %}
                 <section id="internal-pki-evidence-workspace"
                          aria-label="Internal PKI evidence workspaces"
