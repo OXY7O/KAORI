@@ -154,10 +154,7 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true)' in fleet
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in registry
     assert "body_classes='p-5'" in fleet
-    assert (
-        "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'"
-        in fleet
-    )
+    assert "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'" in fleet
     assert 'header_badge=fleet_badge' in fleet
     assert "body_classes='p-5'" in catalog
     assert 'components/workspace_link_card.html' in catalog
