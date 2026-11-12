@@ -172,6 +172,40 @@ def main() -> int:
         'New governance capabilities join this catalog only after implementation and authorization',
     ):
         require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
+    for token in (
+        'components/snapshot_context_bar.html',
+        "title='Governance Control Context'",
+        "status='Read-only'",
+        "latest_label='Provider Authority'",
+        "coverage_metric_label='Implemented Capabilities'",
+        "exceptions_metric_label='Execution Handoff'",
+        "coverage_label=table_label.count_text(governance_capabilities|length, 'Capability')|trim",
+        'header_badge=capability_badge',
+        "info_tip.render('governance-operating-model-guide'",
+        "variant='guide'",
+        'header_badge=model_guide',
+        "body_classes='p-5'",
+        'overflow-hidden rounded-xl border border-outline-subtle',
+    ):
+        require(
+            token in overview,
+            f'Governance Overview domain context and Operations layout is missing: {token}',
+            errors,
+        )
+    context_position = overview.index("title='Governance Control Context'")
+    scope_position = overview.index("section_intro.render('Governance Scope'")
+    require(
+        context_position < scope_position,
+        'Governance context must come after the Hero and before Governance Scope.',
+        errors,
+    )
+    require(
+        'get_tls_certificate_page' not in overview
+        and 'tls_payload' not in overview
+        and 'latest_collected=payload.snapshot.latest_collected' not in overview,
+        'Governance domain context must not load child TLS inventory or collection status.',
+        errors,
+    )
     require(
         "action_href=url_for('governance.tls_certificates')" not in overview
         and "action_label='Open TLS Certificates'" not in overview,
@@ -183,7 +217,8 @@ def main() -> int:
         'Committed Governance Posture',
         'TLS Governance Snapshot',
         'TLS Governance Posture',
-        'components/snapshot_context_bar.html',
+        "title='TLS Collection Snapshot'",
+        'tls_payload',
         '{% if can_view_tls and tls_payload %}',
         'TLS View Restricted',
     ):
