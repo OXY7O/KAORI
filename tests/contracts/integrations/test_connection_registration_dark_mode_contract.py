@@ -105,7 +105,7 @@ def test_kubernetes_registration_guidance_is_concise_without_weakening_test_proo
         assert message in add
         assert len(message) <= 48
 
-    assert "provider_registration_context.render(" in add
+    assert 'provider_registration_context.render(' in add
     assert 'Kubernetes Registration Flow' in add
     assert 'Orchestration Integrations' in add
     assert 'url_for("integrations.orchestration")' in add
@@ -119,12 +119,12 @@ def test_kubernetes_registration_guidance_is_concise_without_weakening_test_proo
 
     assert 'components/info_flow.html' in context
     assert 'components/related_page_card.html' in context
-    assert 'flow_note=flow_note' in context
+    assert 'note=flow_note' in context
     assert 'boundary=authority_boundary' in context
 
     # The short warning never replaces the actual client/server proof gate.
     assert 'invalidateConnectionTest(event)' in form
-    assert "this.connectionVerified = false" in form
+    assert 'this.connectionVerified = false' in form
     assert "this.$refs.connectionProof.value = ''" in form
     assert 'x-on:input.capture="invalidateConnectionTest($event)"' in form
     assert 'x-on:change.capture="invalidateConnectionTest($event)"' in form
@@ -134,3 +134,37 @@ def test_kubernetes_registration_guidance_is_concise_without_weakening_test_proo
     assert 'provider_registration_actions.render(' in form
     assert 'x-bind:disabled="!connectionVerified"' in actions
     assert 'Complete Test Connection before registration' in actions
+
+
+def test_kubernetes_edit_sidebar_copy_preserves_full_validation_boundary() -> None:
+    from jinja2 import Environment
+
+    edit = read('app/templates/kubernetes/cluster/edit.html')
+    form = read('app/templates/kubernetes/cluster/partials/_form.html')
+    context = read('app/templates/integrations/components/_provider_registration_context.html')
+    Environment().parse(edit)
+
+    assert 'Kubernetes Configuration Flow' in edit
+    for copy in (
+        'Full Validation must pass before readiness.',
+        'Review coverage, API readiness, and bindings.',
+    ):
+        assert copy in edit
+        assert len(copy) <= 48
+    assert 'Saving changes does not establish readiness until Full Validation succeeds.' not in edit
+    assert 'Review Kubernetes integration coverage, API readiness, and governed consumer bindings' not in edit
+    assert 'Full Validation' in edit
+    assert 'Save Changes' in edit
+    assert 'Run Full Validation' in edit
+    assert 'Persist the revised connection contract and return readiness to Validation Required.' in edit
+    assert 'Kubernetes owns live resources and API authorization.' in edit
+    assert 'url_for("integrations.orchestration")' in edit
+    assert 'Open Orchestration Integrations' in edit
+    assert 'whitespace-nowrap' not in edit
+    assert 'truncate' not in edit
+    assert 'note=flow_note' in context
+    assert 'boundary=authority_boundary' in context
+    assert "form_mode == 'add'" in form
+    assert 'provider_registration_actions.render(' in form
+    assert "form_action_bar.render(action_helper, aria_label='Kubernetes Configuration Actions'" in form
+    assert 'hx-target="#kubernetes-connection-test-result"' in form
