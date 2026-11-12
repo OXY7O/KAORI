@@ -116,9 +116,13 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="5" class="p-6 text-sm text-content-secondary">
-                                    No matching CVE finding in the latest usable committed scans for active Registry sources.
-                                    This does not prove the application fleet is unaffected; check scan coverage and freshness.
+                                <td colspan="5" class="p-0">
+                                    {% set empty_state_icon = 'shield-alert' %}
+                                    {% set empty_state_label = 'Evidence Unavailable' %}
+                                    {% set empty_state_title = 'No matching committed CVE findings' %}
+                                    {% set empty_state_description = 'No matching CVE finding in the latest usable committed scans for active Registry sources. This does not prove the application fleet is unaffected; check scan coverage and freshness.' %}
+                                    {% set empty_state_min_height = 'min-h-[160px]' %}
+                                    {% include "components/states/_empty_state.html" %}
                                 </td>
                             </tr>
                         {% endfor %}
@@ -151,7 +155,7 @@
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted"
                  role="note">
                 <span>{{ impact.digest_count }} digest matches · {{ impact.tag_count }} other/reference matches.</span>
-                <span>Digest matches are stronger than mutable tags; workload names do not establish Application or Team ownership.</span>
+                <span>Digest matches are stronger than mutable tag references. Workload names are not canonical application or Team identities.</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
@@ -193,9 +197,13 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="5" class="p-6 text-sm text-content-secondary">
-                                    No committed Kubernetes runtime binding for these affected artifacts.
-                                    {{ 'Correlation is not current; absence is unverified.' if not impact.evidence_ready else 'Other runtimes and unknown Service mappings are outside this evidence scope.' }}
+                                <td colspan="5" class="p-0">
+                                    {% set empty_state_icon = 'waypoints' %}
+                                    {% set empty_state_label = 'Not Observed' %}
+                                    {% set empty_state_title = 'No committed runtime bindings' %}
+                                    {% set empty_state_description = 'No committed Kubernetes runtime binding for these affected artifacts. ' ~ ('Correlation is not current; absence is unverified.' if not impact.evidence_ready else 'Other runtimes and unknown Service mappings are outside this evidence scope.') %}
+                                    {% set empty_state_min_height = 'min-h-[160px]' %}
+                                    {% include "components/states/_empty_state.html" %}
                                 </td>
                             </tr>
                         {% endfor %}
