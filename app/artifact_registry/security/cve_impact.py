@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 from werkzeug.exceptions import NotFound
 
@@ -33,8 +33,24 @@ def normalize_cve_id(value: str) -> str:
     return cve_id
 
 
+def _literal_contains(value: str) -> str:
+    """Escape SQL LIKE wildcards so committed-evidence search stays literal."""
+    escaped = value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+    return f'%{escaped}%'
+
+
 def build_cve_runtime_impact(
-    cve_id: str, *, finding_page: int = 1, runtime_page: int = 1, per_page: int = 5
+    cve_id: str,
+    *,
+    finding_page: int = 1,
+    runtime_page: int = 1,
+    per_page: int = 5,
+    finding_per_page: int | None = None,
+    runtime_per_page: int | None = None,
+    finding_search: str = '',
+    finding_severity: str = '',
+    runtime_search: str = '',
+    runtime_match: str = '',
 ) -> dict[str, Any]:
     """Read existing source-qualified scan and Kubernetes binding evidence only.
 
@@ -42,6 +58,14 @@ def build_cve_runtime_impact(
     evidence or correlation must never be presented as a clean application fleet.
     """
     canonical_cve = normalize_cve_id(cve_id)
+    finding_search = str(finding_search or '').strip()[:128]
+    runtime_search = str(runtime_search or '').strip()[:128]
+    finding_severity = str(finding_severity or '').strip().lower()
+    runtime_match = str(runtime_match or '').strip().lower()
+    if finding_severity not in {'critical', 'high', 'medium', 'low', 'unknown'}:
+        finding_severity = ''
+    if runtime_match not in {'digest', 'other'}:
+        runtime_match = ''
     sources = _providers()
     source_by_id = {int(source.id): source for source in sources}
     source_ids = list(source_by_id)
@@ -84,8 +108,55 @@ def build_cve_runtime_impact(
     digest_count = bindings.filter(RegistryWorkloadBinding.match_type == 'digest').order_by(None).count()
     tag_count = binding_count - digest_count
 
+    # Filters belong to their own evidence table. Keep global CVE and runtime
+    # correlation/counts authoritative and source-qualified, not search-scoped.
+    visible_findings = findings
+    if finding_search:
+        finding_pattern = _literal_contains(finding_search)
+        matching_sources = [
+            source_id
+            for source_id, source in source_by_id.items()
+            if finding_search.casefold() in source.name.casefold()
+        ]
+        visible_findings = visible_findings.filter(
+            or_(
+                RegistryRepository.name.ilike(finding_pattern, escape='\\'),
+                RegistryProject.name.ilike(finding_pattern, escape='\\'),
+                RegistryArtifact.digest.ilike(finding_pattern, escape='\\'),
+                RegistryVulnerability.package.ilike(finding_pattern, escape='\\'),
+                RegistryVulnerability.installed_version.ilike(finding_pattern, escape='\\'),
+                RegistryProject.integration_instance_id.in_(matching_sources),
+            )
+        )
+    if finding_severity:
+        visible_findings = visible_findings.filter(
+            func.lower(RegistryVulnerability.severity) == finding_severity
+        )
+
+    visible_bindings = bindings
+    if runtime_search:
+        runtime_pattern = _literal_contains(runtime_search)
+        matching_clusters = select(Cluster.id).where(
+            Cluster.name.ilike(runtime_pattern, escape='\\')
+        )
+        visible_bindings = visible_bindings.filter(
+            or_(
+                RegistryWorkloadBinding.cluster_id.ilike(runtime_pattern, escape='\\'),
+                RegistryWorkloadBinding.cluster_id.in_(matching_clusters),
+                RegistryWorkloadBinding.namespace.ilike(runtime_pattern, escape='\\'),
+                RegistryWorkloadBinding.workload_name.ilike(runtime_pattern, escape='\\'),
+                RegistryWorkloadBinding.pod_name.ilike(runtime_pattern, escape='\\'),
+                RegistryWorkloadBinding.container_name.ilike(runtime_pattern, escape='\\'),
+                RegistryWorkloadBinding.image_reference.ilike(runtime_pattern, escape='\\'),
+            )
+        )
+    if runtime_match == 'digest':
+        visible_bindings = visible_bindings.filter(RegistryWorkloadBinding.match_type == 'digest')
+    elif runtime_match == 'other':
+        visible_bindings = visible_bindings.filter(RegistryWorkloadBinding.match_type != 'digest')
+
     finding_items, finding_pagination = paginate_query(
-        findings.options(
+        visible_findings.options(
             joinedload(RegistryVulnerability.scan_snapshot)
             .joinedload(RegistryScanSnapshot.artifact)
             .joinedload(RegistryArtifact.repository)
@@ -95,7 +166,7 @@ def build_cve_runtime_impact(
             RegistryVulnerability.id.asc(),
         ),
         page=finding_page,
-        per_page=per_page,
+        per_page=finding_per_page if finding_per_page is not None else per_page,
     )
     finding_rows = []
     for item in finding_items:
@@ -122,7 +193,7 @@ def build_cve_runtime_impact(
         )
 
     binding_items, runtime_pagination = paginate_query(
-        bindings.order_by(
+        visible_bindings.order_by(
             RegistryWorkloadBinding.cluster_id.asc(),
             RegistryWorkloadBinding.namespace.asc(),
             RegistryWorkloadBinding.workload_name.asc(),
@@ -130,7 +201,7 @@ def build_cve_runtime_impact(
             RegistryWorkloadBinding.id.asc(),
         ),
         page=runtime_page,
-        per_page=per_page,
+        per_page=runtime_per_page if runtime_per_page is not None else per_page,
     )
     cluster_ids = {str(item.cluster_id) for item in binding_items}
     cluster_names = {
@@ -170,4 +241,10 @@ def build_cve_runtime_impact(
         'correlation': correlation,
         'evidence_ready': evidence_ready,
         'source_count': len(sources),
+        'filters': {
+            'finding_search': finding_search,
+            'finding_severity': finding_severity,
+            'runtime_search': runtime_search,
+            'runtime_match': runtime_match,
+        },
     }
