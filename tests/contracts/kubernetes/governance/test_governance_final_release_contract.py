@@ -38,7 +38,7 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'if can_view_tls and has_registered_clusters() is True:' in routes
     assert 'tls_snapshot = get_tls_collection_snapshot()' in routes
     assert 'get_tls_certificate_page' not in routes
-    permission_position = routes.index("can_view_tls = current_user.has_permission(")
+    permission_position = routes.index('can_view_tls = current_user.has_permission(')
     readiness_position = routes.index('if can_view_tls and has_registered_clusters() is True:')
     snapshot_position = routes.index('tls_snapshot = get_tls_collection_snapshot()')
     assert permission_position < readiness_position < snapshot_position
@@ -108,6 +108,30 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'scalable equal-height catalog' in standard
     assert 'parent section owns no TLS-specific action' in standard
     assert 'two-column grid' in standard
+
+
+def test_tls_snapshot_copy_posture_badge_and_search_follow_shared_inventory_patterns() -> None:
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    snapshot_partial = read('app/templates/kubernetes/governance/tls_certificates/partials/_snapshot_context.html')
+    posture = read('app/templates/kubernetes/governance/tls_certificates/partials/_summary_cards.html')
+    filters = read('app/templates/kubernetes/governance/tls_certificates/partials/_filters.html')
+    inventory = read('app/templates/kubernetes/inventory/nodes/partials/_summary_cards.html')
+
+    description = 'TLS certificates and Ingress host mappings.'
+    assert len(description) <= 48
+    assert f"'description': '{description}'" in service
+    assert "'source_label': 'Kubernetes TLS Secrets + Ingresses'" in service
+    assert 'payload.snapshot.description' in snapshot_partial
+    assert 'components/resource_posture_grid.html' in posture
+    assert 'components/table_label.html' in posture
+    assert "table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid')" in posture
+    assert 'header_badge=posture_badge' in posture
+    assert 'posture_grid.render(metrics, columns=3)' in posture
+    assert "table_label.metadata_label(posture_metrics|length ~ ' Indicators', icon='layout-grid')" in inventory
+    assert "'Search certificates...'" in filters
+    assert "table_ui.search_field('search'," in filters
+    assert "id='tls-search-filter'" in filters
+    assert 'Search Secret name, namespace, subject, or issuer' not in filters
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:

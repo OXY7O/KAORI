@@ -65,12 +65,20 @@ def main() -> int:
             f'Governance Overview route must preserve domain authorization and child-capability visibility: {token}',
             errors,
         )
-    for retired_dependency in ('get_tls_certificate_page', 'has_registered_clusters', 'tls_payload'):
+    for retired_dependency in ('get_tls_certificate_page', 'tls_payload'):
         require(
             retired_dependency not in governance_source,
-            f'Governance Overview route must not load child-capability evidence: {retired_dependency}',
+            f'Governance Overview route must not load full child-capability evidence: {retired_dependency}',
             errors,
         )
+    permission_position = governance_source.find("can_view_tls = current_user.has_permission('tls_certificates.view')")
+    cluster_gate_position = governance_source.find('if can_view_tls and has_registered_clusters() is True:')
+    snapshot_read_position = governance_source.find('tls_snapshot = get_tls_collection_snapshot()')
+    require(
+        0 <= permission_position < cluster_gate_position < snapshot_read_position,
+        'TLS snapshot retrieval must follow child permission and cluster-readiness checks.',
+        errors,
+    )
 
     for name, expected_permission in (
         ('tls_certificates_index', 'tls_certificates.view'),
@@ -176,8 +184,8 @@ def main() -> int:
         'overflow-hidden rounded-xl border border-outline-subtle',
         'workspace_card.render(',
         'compact=true',
-        "kubernetes/governance/tls_certificates/partials/_snapshot_context.html",
-        "{% if can_view_tls and tls_snapshot is not none %}",
+        'kubernetes/governance/tls_certificates/partials/_snapshot_context.html',
+        '{% if can_view_tls and tls_snapshot is not none %}',
     ):
         require(token in overview, f'Governance Overview composition is missing: {token}', errors)
 

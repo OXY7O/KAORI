@@ -85,17 +85,17 @@
                         {% for capability in governance_capabilities %}
                             {% if capability.available %}
                                 {{ workspace_card.render({
-                                    'href': capability.href,
-                                    'title': capability.title,
-                                    'label': 'Governance Capability',
-                                    'description': capability.description,
-                                    'supporting': capability.boundary,
-                                    'icon': capability.icon,
-                                    'scope': capability.status,
-                                    'status_tone': capability.tone,
-                                    'action_label': capability.action,
-                                    'search_text': 'kubernetes tls certificates governance lifecycle ingress'
-                                    }, compact=true) }}
+                                                                'href': capability.href,
+                                                                'title': capability.title,
+                                                                'label': 'Governance Capability',
+                                                                'description': capability.description,
+                                                                'supporting': capability.boundary,
+                                                                'icon': capability.icon,
+                                                                'scope': capability.status,
+                                                                'status_tone': capability.tone,
+                                                                'action_label': capability.action,
+                                                                'search_text': 'kubernetes tls certificates governance lifecycle ingress'
+                                                                }, compact=true) }}
                             {% else %}
                                 <article class="flex h-full min-h-40 min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4"
                                          aria-label="TLS Certificates permission required">

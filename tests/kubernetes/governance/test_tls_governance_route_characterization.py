@@ -151,7 +151,7 @@ def _committed_tls_snapshot() -> dict[str, str]:
         'source_label': 'Kubernetes TLS Secrets + Ingresses',
         'status': 'Complete',
         'tone': 'normal',
-        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'description': 'TLS certificates and Ingress host mappings.',
         'latest_collected': '12 Nov 2026 10:47 WIB',
         'latest_supporting': 'Worker-generated snapshot',
         'scope_label': 'All Clusters',
@@ -236,4 +236,3 @@ def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
     content = response.get_data(as_text=True)
     assert 'Connect Your First Kubernetes Cluster' in content
     assert 'TLS Collection Snapshot' not in content
-
