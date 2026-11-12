@@ -1185,8 +1185,8 @@ def test_channel_registry_guide_and_primary_action_follow_shared_kaori_contract(
     assert '@click="provider = ' in header
     assert 'Setup Guide' not in header
     assert 'data-dialog-target="notification-channel-guide-dialog"' not in header
-    assert "inline-flex h-10" in shared
-    assert "hover:bg-kaori-primary-hover active:bg-kaori-primary-dark" in shared
+    assert 'inline-flex h-10' in shared
+    assert 'hover:bg-kaori-primary-hover active:bg-kaori-primary-dark' in shared
     assert 'aria-label="Open {{ provider.label }} setup guide"' in source
     assert 'data-dialog-target="notification-channel-guide-dialog"' in source
     assert 'id="notification-channel-guide-dialog"' in modal
@@ -1228,8 +1228,8 @@ def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_c
     assert 'grid grid-cols-2 divide-x divide-outline-subtle' in evidence
     assert 'rounded-lg border border-outline-subtle bg-surface-hover p-3' not in evidence
     assert 'Last Test' in evidence and 'Last Delivery' in evidence
-    assert "channel.last_tested_at|user_datetime" in evidence
-    assert "channel.last_delivery_at|user_datetime" in evidence
+    assert 'channel.last_tested_at|user_datetime' in evidence
+    assert 'channel.last_delivery_at|user_datetime' in evidence
     assert 'Provider delivery does not prove human receipt.' in evidence
     assert 'data-lucide="info"' in evidence
 
@@ -1238,12 +1238,20 @@ def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_c
     assert "side_drawer.context_fact('Routing Domains'" in policy
     assert 'for group in channel.event_type_groups' in policy
     assert 'for event_label in group.events' in policy
-    assert 'border-l-2 border-brand-outline pl-3' in policy
+    assert 'data-kaori-channel-event-groups' in policy
+    assert 'data-kaori-channel-event-group' in policy
+    assert '<details class="group"' in policy
+    assert '<summary class="flex cursor-pointer list-none' in policy
+    assert 'group-open:rotate-180' in policy
+    assert 'group.events|length' in policy
+    assert 'data-lucide="chevron-down"' in policy
+    assert 'Expand a group to inspect allowed events.' in policy
+    assert '<details open' not in policy
+    assert 'aria-label="{{ group.label }} allowed events"' in policy
+    assert 'border-l-2 border-brand-outline pl-3' not in policy
     assert 'bg-surface-hover p-3' not in policy
 
-    lifecycle = drawer.split("side_drawer.section('Lifecycle & Governance'", 1)[1].split(
-        '{% endcall %}', 1
-    )[0]
+    lifecycle = drawer.split("side_drawer.section('Lifecycle & Governance'", 1)[1].split('{% endcall %}', 1)[0]
     assert "side_drawer.metric('Committed Deliveries'" in lifecycle
     assert "side_drawer.metric('Report References'" in lifecycle
     assert "variant='plain'" in lifecycle
@@ -1258,12 +1266,33 @@ def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_c
     assert 'channel.report_schedule_names' in lifecycle
 
     assert "channel.lifecycle_state == 'active' and can_manage" in drawer
-    assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index(
-        "'Delivery Policy'"
-    )
+    assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index("'Delivery Policy'")
     assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
     assert 'data-destructive-modal-open' in drawer
     assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in drawer
     assert 'delegate_clicks=true' in drawer
     assert 'x-data="kaoriSideDrawer"' in shared
     assert 'credential_payload' not in drawer
+
+
+def test_channel_event_disclosures_preserve_nested_inspection_and_action_security() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    policy = drawer.split("side_drawer.section('Delivery Policy'", 1)[1].split('{% endcall %}', 1)[0]
+    active = drawer.split("{% if channel.lifecycle_state == 'active' and can_manage %}", 1)[1].split(
+        '{% endcall %}', 1
+    )[0]
+    Environment().parse(drawer)
+    assert 'data-kaori-channel-event-groups' in policy
+    assert policy.count('<details class="group"') == 1
+    assert policy.count('<summary class=') == 1
+    assert '<details open' not in policy
+    assert 'group.events|length' in policy
+    assert '{% for event_label in group.events %}' in policy
+    assert 'aria-label="{{ group.label }} allowed events"' in policy
+    assert 'No allowed events.' in policy
+    assert "channel.event_type_labels|length ~ ' Allowed Uses'" in drawer
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-kaori-dialog-open' in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in active
+    assert 'channel.retirement_reason' in drawer
+    assert 'data-kaori-channel-archived-boundary' in drawer

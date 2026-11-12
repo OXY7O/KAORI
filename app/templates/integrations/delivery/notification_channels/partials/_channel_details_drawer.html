@@ -7,11 +7,12 @@
     x_show='detailChannel === ' ~ channel.id,
     close_expression="if (!document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')) detailChannel = null",
     width='xl', delegate_clicks=true) %}
-    <div class="flex min-h-full flex-col gap-3" data-kaori-channel-details-layout>
+    <div class="flex min-h-full flex-col gap-3"
+         data-kaori-channel-details-layout>
         {% call side_drawer.section('Operational Status', icon='activity',
             badge=table_label.status_label(channel.status, channel.tone, size='compact'), density='compact') %}
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
-                {{ side_drawer.context_fact('Lifecycle', 'Archived' if channel.lifecycle_state == 'retired' else ('Enabled' if channel.enabled else 'Disabled'), icon='archive') }}
+                {{ side_drawer.context_fact('Lifecycle', 'Archived' if channel.lifecycle_state == 'retired' else ('Enabled' if channel.enabled else 'Disabled') , icon='archive') }}
                 {{ side_drawer.context_fact('Destination', channel.destination_label, icon=channel.provider_icon) }}
             </dl>
         {% endcall %}
@@ -21,7 +22,7 @@
                 <div class="min-w-0 pr-3">
                     <dt class="text-xs font-medium text-content-muted">Last Test</dt>
                     <dd class="mt-1.5">
-                        {{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required'), test_tone, size='compact') }}
+                        {{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required') , test_tone, size='compact') }}
                     </dd>
                     <p class="mt-1.5 text-xs leading-5 tabular-nums text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</p>
                 </div>
@@ -34,12 +35,14 @@
                 </div>
             </dl>
             <p class="mt-3 flex items-start gap-2 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-content-muted">
-                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="info"
+                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
                 <span>Provider delivery does not prove human receipt.</span>
             </p>
         {% endcall %}
         {% if channel.lifecycle_state == 'active' and can_manage %}
-            {% call side_drawer.section('Channel Actions', 'Manage the active channel after reviewing its status and evidence.', icon='settings-2', density='compact') %}
+            {% call side_drawer.section('Channel Actions', 'Review evidence before changing this channel.', icon='settings-2', density='compact') %}
                 <div class="grid gap-2.5 sm:grid-cols-2">
                     <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
                        hx-get="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1, channel_search=payload.channel_filters.search, channel_provider=payload.channel_filters.provider, channel_state=payload.channel_filters.state, channel_page=payload.channel_pagination.page, channel_per_page=payload.channel_pagination.per_page) }}"
@@ -112,33 +115,42 @@
                 </div>
             {% endcall %}
         {% endif %}
-        {% call side_drawer.section('Delivery Policy', 'Source-owned eligible routing and event capabilities.', icon='list-checks',
+        {% call side_drawer.section('Delivery Policy', 'Eligible routing and governed event capabilities.', icon='list-checks',
             badge=table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks'), density='compact') %}
             <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
                 {{ side_drawer.context_fact('Minimum Severity', channel.minimum_severity_label, icon='shield') }}
                 {{ side_drawer.context_fact('Routing Domains', channel.domain_labels|join(", ") if channel.domain_labels else 'No domains selected', icon='workflow') }}
             </dl>
             <div class="mt-3 border-t border-outline-subtle pt-3">
-                <h4 class="text-xs font-semibold text-content-secondary">Allowed Event Capabilities</h4>
-                <div class="mt-2 space-y-3">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h4 class="text-xs font-semibold text-content-secondary">Allowed Event Capabilities</h4>
+                    <p class="text-xs text-content-muted">Expand a group to inspect allowed events.</p>
+                </div>
+                <div class="mt-2 divide-y divide-outline-subtle" data-kaori-channel-event-groups>
                     {% for group in channel.event_type_groups %}
-                        <section class="border-l-2 border-brand-outline pl-3"
-                                 aria-label="{{ group.label }} allowed events">
-                            <div class="flex items-baseline justify-between gap-3">
-                                <h5 class="min-w-0 break-words text-xs font-semibold text-content-primary">{{ group.label }}</h5>
-                                <span class="shrink-0 text-xs tabular-nums text-content-muted">{{ group.events|length }} event{{ '' if group.events|length == 1 else 's' }}</span>
-                            </div>
-                            <ul class="mt-1.5 space-y-1">
+                        <details class="group" data-kaori-channel-event-group>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md px-2 py-2.5 text-xs hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <span class="min-w-0 break-words font-semibold text-content-primary">{{ group.label }}</span>
+                                <span class="flex shrink-0 items-center gap-2 text-content-muted">
+                                    <span class="tabular-nums">{{ group.events|length }} event{{ '' if group.events|length == 1 else 's' }}</span>
+                                    <i data-lucide="chevron-down"
+                                       class="h-3.5 w-3.5 text-kaori-primary transition-transform group-open:rotate-180"
+                                       aria-hidden="true"></i>
+                                </span>
+                            </summary>
+                            <ul class="space-y-1 px-3 pb-3 pt-1" aria-label="{{ group.label }} allowed events">
                                 {% for event_label in group.events %}
-                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary">
-                                        <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <li class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                        <i data-lucide="check"
+                                           class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
                                         <span class="break-words">{{ event_label }}</span>
                                     </li>
                                 {% endfor %}
                             </ul>
-                        </section>
+                        </details>
                     {% else %}
-                        <p class="text-xs text-content-muted">No allowed events.</p>
+                        <p class="py-2 text-xs text-content-muted">No allowed events.</p>
                     {% endfor %}
                 </div>
             </div>
@@ -158,7 +170,9 @@
             {% if channel.lifecycle_state == 'retired' %}
                 <div class="mt-3 border-t border-outline-subtle pt-3">
                     <p class="mb-3 flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                        <i data-lucide="archive" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="archive"
+                           class="h-3.5 w-3.5 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Retirement Record
                     </p>
                     <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -179,7 +193,9 @@
         {% if channel.lifecycle_state == 'retired' %}
             <p class="mt-auto flex items-center gap-2 border-t border-outline-subtle px-1 pt-3 text-xs leading-5 text-content-muted"
                data-kaori-channel-archived-boundary>
-                <i data-lucide="lock-keyhole" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="lock-keyhole"
+                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
                 Archived channels are read-only; committed evidence remains available.
             </p>
         {% endif %}
