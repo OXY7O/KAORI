@@ -1212,3 +1212,55 @@ def test_delivery_evidence_boundary_guide_retains_persistent_delivery_truth() ->
     assert 'Independent Activity Audit' in delivery
     assert 'sending a notification does not create an audit event.' in delivery
     assert 'Hot delivery records and verified Data Lifecycle archive bundles' in delivery
+
+
+def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_cards() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    shared = read('app/templates/components/side_drawer.html')
+    Environment().parse(drawer)
+
+    assert 'data-kaori-channel-details-layout' in drawer
+    assert 'space-y-3' in drawer
+    assert drawer.count('side_drawer.section(') == 5
+    assert "badge=table_label.status_label(channel.status, channel.tone, size='compact')" in drawer
+
+    evidence = drawer.split("side_drawer.section('Delivery Evidence'", 1)[1].split('{% endcall %}', 1)[0]
+    assert 'grid grid-cols-2 divide-x divide-outline-subtle' in evidence
+    assert 'rounded-lg border border-outline-subtle bg-surface-hover p-3' not in evidence
+    assert 'Last Test' in evidence and 'Last Delivery' in evidence
+    assert "channel.last_tested_at|user_datetime" in evidence
+    assert "channel.last_delivery_at|user_datetime" in evidence
+    assert 'Provider delivery does not prove human receipt.' in evidence
+    assert 'data-lucide="info"' in evidence
+
+    policy = drawer.split("side_drawer.section('Delivery Policy'", 1)[1].split('{% endcall %}', 1)[0]
+    assert "side_drawer.context_fact('Minimum Severity'" in policy
+    assert "side_drawer.context_fact('Routing Domains'" in policy
+    assert 'for group in channel.event_type_groups' in policy
+    assert 'for event_label in group.events' in policy
+    assert 'border-l-2 border-brand-outline pl-3' in policy
+    assert 'bg-surface-hover p-3' not in policy
+
+    lifecycle = drawer.split("side_drawer.section('Lifecycle & Governance'", 1)[1].split(
+        '{% endcall %}', 1
+    )[0]
+    assert "side_drawer.metric('Committed Deliveries'" in lifecycle
+    assert "side_drawer.metric('Report References'" in lifecycle
+    assert "variant='plain'" in lifecycle
+    assert 'Retirement Record' in lifecycle
+    assert 'channel.retired_at|user_datetime' in lifecycle
+    assert 'channel.retired_by_user_id' in lifecycle
+    assert 'channel.retirement_reason' in lifecycle
+    assert "table_label.status_label('Archived'" not in lifecycle
+    assert 'channel.report_schedule_names' in lifecycle
+
+    assert "channel.lifecycle_state == 'active' and can_manage" in drawer
+    assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index(
+        "'Delivery Policy'"
+    )
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in drawer
+    assert 'delegate_clicks=true' in drawer
+    assert 'x-data="kaoriSideDrawer"' in shared
+    assert 'credential_payload' not in drawer
