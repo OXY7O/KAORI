@@ -152,8 +152,10 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'Registry Asset Catalog' in overview_template
     assert 'Inventory Assets' in overview_template
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3, compact=true)' in overview_template
-    assert 'inventory.fleet_posture_metrics|length ~ \' Indicators\'' in overview_template
-    assert overview_template.index('registry-assets-heading') < overview_template.index('registry-fleet-posture-heading')
+    assert "inventory.fleet_posture_metrics|length ~ ' Indicators'" in overview_template
+    assert overview_template.index('registry-assets-heading') < overview_template.index(
+        'registry-fleet-posture-heading'
+    )
     assert 'header_badge=posture_badge' in resource_template
     assert "inventory.resource_posture_metrics|length ~ ' Indicators'" in resource_template
     assert 'inventory.fleet_readings' not in overview_template
@@ -247,7 +249,7 @@ def test_registry_inventory_catalog_matches_approved_object_storage_composition(
     assert "'Registry Fleet Evidence'" in overview
     assert "inventory.fleet_posture_metrics|length ~ ' Indicators'" in overview
     assert 'header_badge=fleet_badge' in overview
-    assert 'body_classes=\'p-5\'' in overview
+    assert "body_classes='p-5'" in overview
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3, compact=true)' in overview
     assert 'operational_callout.render(' not in overview
     assert "'fleet_posture_metrics': [" in presentation
@@ -259,9 +261,38 @@ def test_registry_inventory_catalog_matches_approved_object_storage_composition(
     assert 'header_badge=posture_badge' in resource
     assert "inventory.resource_posture_metrics|length ~ ' Indicators'" in resource
     assert 'posture_grid.render(inventory.resource_posture_metrics, columns=4)' in resource
-    assert "components/info_tip.html" in resource
-    assert "title_extra=registry_title_tip" in resource
+    assert 'components/info_tip.html' in resource
+    assert 'title_extra=registry_title_tip' in resource
     assert resource.count('info_tip.render(') == 3
+
+
+def test_registry_fleet_evidence_descriptions_are_compact_and_source_qualified() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+
+    descriptions = (
+        'Register a provider for committed inventory.',
+        'All configured providers have committed snapshots.',
+        'Some providers still lack committed snapshots.',
+        'Review stale, pending, or failed snapshots.',
+        'No stale, pending, or failed snapshots.',
+        'No committed projects to assess visibility.',
+    )
+    for description in descriptions:
+        assert description in presentation
+        assert len(description) <= 55
+
+    assert "f'{public_projects} confirmed public; visibility evidence incomplete.'" in presentation
+    assert "f'All visibility observed; {public_projects} confirmed public.'" in presentation
+    for evidence_source in (
+        "int(overview['provider_count'])",
+        "int(overview['snapshot_count'])",
+        "int(overview['stale_snapshot_count'])",
+        "int(overview['pending_snapshot_count'])",
+        "int(overview['failed_refresh_count'])",
+        "RegistryProject.public.is_not(None)",
+        "RegistryProject.public.is_(True)",
+    ):
+        assert evidence_source in presentation
 
 
 def test_registry_compact_catalog_cards_preserve_actions_and_counts() -> None:
