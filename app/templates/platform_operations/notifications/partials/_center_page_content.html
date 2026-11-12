@@ -73,11 +73,15 @@
                 {% for job in active_jobs %}
                     <div data-server-activity-item>{{ center_item.job_item(job) }}</div>
                 {% endfor %}
-                <div data-running-empty
-                     class="rounded-xl border border-dashed border-outline-default bg-surface-card px-5 py-12 text-center {% if active_jobs %}hidden{% endif %}">
-                    <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"><i data-lucide="circle-check" class="h-5 w-5"></i></span>
-                    <p class="mt-3 text-sm font-semibold text-content-primary">No Active Work</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Queued and running background jobs will appear here automatically.</p>
+                <div data-running-empty class="{% if active_jobs %}hidden{% endif %}">
+                    {% with empty_state_icon='circle-check',
+                        empty_state_label='Queue Clear',
+                        empty_state_tone='normal',
+                        empty_state_title='No Active Work',
+                        empty_state_description='Queued and running jobs or active page operations will appear here automatically.',
+                        empty_state_variant='panel' %}
+                        {% include "components/states/_empty_state.html" %}
+                    {% endwith %}
                 </div>
             {% else %}
                 <div class="flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -317,11 +321,12 @@
                             </table>
                         </div>
                     {% else %}
-                        <div class="px-5 py-12 text-center">
-                            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"><i data-lucide="bell-off" class="h-5 w-5"></i></span>
-                            <p class="mt-3 text-sm font-semibold text-content-primary">No Matching Notifications</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the filters or wait for a persistent operational outcome targeted to your account.</p>
-                        </div>
+                        {% with empty_state_icon='search-x' if filter_active else 'bell-off',
+                            empty_state_label='No Results' if filter_active else 'No Data',
+                            empty_state_title='No Matching Notifications' if filter_active else 'No Notifications Yet',
+                            empty_state_description='Adjust the filters to find matching notifications.' if filter_active else 'Persistent account notifications will appear here after KAORI commits operational outcomes.' %}
+                            {% include "components/states/_empty_state.html" %}
+                        {% endwith %}
                     {% endif %}
                     <footer class="{{ pagination_ui.footer_classes() }}">
                         <div class="{{ pagination_ui.summary_group_classes() }}">

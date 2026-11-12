@@ -39,6 +39,30 @@ Stored event keys are unchanged; category is presentation/filter metadata.
 
 Default Rows remains 5 with 5/10/25/50 options. Pagination renders **Previous**, numeric pages, and **Next** through shared KAORI pagination classes.
 
+## Empty-state semantics
+
+Notification Center **page tabs** use the canonical
+`components/states/_empty_state.html` component inside their existing owning
+surfaces. The component owns icon, semantic status, heading, description, Violet
+styling, spacing, responsive layout, and accessible state markup.
+
+- **Active Work with no queued/running or local page operations:** shared panel
+  variant, `Queue Clear` (healthy normal tone), and `No Active Work`. Preserve
+  `data-running-empty` on the owning wrapper so the existing local-activity
+  reconciler hides the panel when work appears and shows it when work completes.
+  Job and local-activity sources remain canonical, with no false worker health.
+- **Notifications with no account records and no active filter:** neutral
+  `No Data` label and `No Notifications Yet`. This is not a delivery error.
+- **Notifications with active search/category/status/state filters producing
+  zero rows:** `No Results` and `No Matching Notifications` with guidance
+  to adjust filters. Keep the separate conditional Clear Filters control.
+
+Keep the Notification Register filter header, 5-row default pagination footer
+(including zero counts), HTMX 15-second refresh, account authorization and
+committed evidence context visible around the empty component. The navbar's
+compact Notification Deck has a different, narrower presentation contract and
+is not modified by the page-tab empty-state refinement.
+
 ## Copy normalization
 
 Compact Notification titles and event labels render in Title Case while preserving operational acronyms including KAORI, API, ConfigMap, TLS, RBAC, LDAP, OIDC, SSO, SAML, URL, and S3. Visible Kubernetes labels remain fully spelled out. Sentence-style message/detail copy is not title-cased.
